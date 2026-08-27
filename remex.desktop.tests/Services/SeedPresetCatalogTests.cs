@@ -267,8 +267,9 @@ public class SeedPresetCatalogTests
         axaml.Should().Contain("SelectThemeCommand");
 
         // Exactly one tile template, not one template plus leftovers.
-        Regex.Matches(axaml, @"Classes=""theme-tile""").Should().HaveCount(1,
-            "a second theme-tile is a hand-authored preset, which is the thing the catalog removes");
+        // theme-tile became the shared .tile role in RemEx-z7pnx; the invariant is unchanged.
+        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(1,
+            "a second tile is a hand-authored preset, which is the thing the catalog removes");
 
         // And no colour literal survives INSIDE the gallery. Scoped to the ItemsControl on purpose:
         // the accent quick-pick row further down the panel is literals by design — those buttons

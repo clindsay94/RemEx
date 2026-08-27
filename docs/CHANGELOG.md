@@ -42,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Buttons across the PC app follow one rule now instead of thirty-seven.** Every button used to
+  be styled by the screen it happened to sit on — `rd-btn`, `log-btn`, `about-back`, `crumb-btn`
+  — so a name told you where a button was and never what it meant. There were nine corner radii
+  for buttons doing the same job, five spellings of "this action is destructive", three different
+  pressed-feedback scales, and the accent colour swatch declared twice in two files at two sizes.
+  All of it collapses into a small set of roles: pick one of primary, secondary or tertiary, add a
+  danger/success/warning tint if the action carries a consequence, add compact or pill if the
+  layout needs it. The roles live in one place, the rule is written down in
+  `docs/BUTTON-VOCABULARY.md`, and a test fails if a screen starts styling its own buttons again.
+  Three groups keep bespoke styles on purpose — the nav rail, the gear button and the tray chips —
+  each because a later change owns that surface. Destructive buttons also read correctly now: three
+  of the five old danger styles used red text on a red wash, which measures 1.24:1 and is very hard
+  to read; the one rule uses the token that was already measured for that surface. (RemEx-z7pnx)
+
 - **Every raised surface in the PC app is a real Material card now, and depth means something.**
   The 50 places that painted a surface with the hand-rolled `glass-card` Border — Home, Settings,
   About, Connection, File Transfer, Task Manager, Canvas, App Launcher, Diagnostics, Remote and

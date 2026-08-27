@@ -50,10 +50,10 @@
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
                 <Button Content="{local:Localize Btn_Cancel}" 
                         Command="{Binding CancelCommand}"
-                        Classes="outline"/>
+                        Classes="secondary"/>
                 <Button Content="{local:Localize Btn_Pair}" 
                         Command="{Binding SubmitCommand}"
-                        Classes="accent"
+                        Classes="primary"
                         IsEnabled="{Binding !IsBusy}"/>
             </StackPanel>
         </Grid>

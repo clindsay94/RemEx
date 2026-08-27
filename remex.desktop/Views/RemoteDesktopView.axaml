@@ -11,41 +11,7 @@
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <Style Selector="Button.rd-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
-            <Setter Property="Padding" Value="16,10"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.rd-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="scale(1.02)"/>
-        </Style>
-        <Style Selector="Button.rd-btn:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.96)"/>
-        </Style>
         
-        <Style Selector="Button.rd-btn-start">
-            <Setter Property="Background" Value="{DynamicResource SystemSuccessBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
-        </Style>
-        <Style Selector="Button.rd-btn-stop">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
-        </Style>
 
         <Style Selector="controls|VirtualCursorPad">
             <Setter Property="PadBorderBrush">
@@ -79,8 +45,8 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!-- Left: Stream controls -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Button Content="{local:Localize Btn_Start}" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}" IsEnabled="{Binding Connection.IsConnected}"/>
-                        <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
+                        <Button Padding="16,10" Content="{local:Localize Btn_Start}" Command="{Binding StartStreamCommand}" Classes="secondary success" IsVisible="{Binding !IsStreaming}" IsEnabled="{Binding Connection.IsConnected}"/>
+                        <Button Padding="16,10" Content="{local:Localize Btn_Stop}" Command="{Binding StopStreamCommand}" Classes="secondary danger" IsVisible="{Binding IsStreaming}"/>
                     </StackPanel>
 
                     <!-- Center: Title -->
@@ -105,13 +71,13 @@
                         </ComboBox>
                         <Button Content="{local:Localize Logs_Refresh}"
                                 Command="{Binding RefreshDisplayTargetsCommand}"
-                                Classes="rd-btn"
+                                Classes="secondary"
                                 FontSize="11"
                                 Padding="10 6"
                                 IsEnabled="{Binding !IsStreaming}"/>
                         <Button Content="{local:Localize RemoteDesktop_Switch}"
                                 Command="{Binding SwitchDisplayCommand}"
-                                Classes="rd-btn"
+                                Classes="secondary"
                                 FontSize="11"
                                 Padding="10 6"
                                 IsVisible="{Binding IsStreaming}"/>
@@ -144,19 +110,19 @@
                         <Slider Minimum="1" Maximum="360" Value="{Binding TargetFps}" Width="80" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding TargetFps, Converter={x:Static local:FpsDisplayConverter.Instance}}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center"/>
 
-                        <Button Content="{local:Localize Btn_Apply}" Command="{Binding ApplySettingsCommand}" Classes="rd-btn" Margin="4,0,0,0"/>
+                        <Button Padding="16,10" Content="{local:Localize Btn_Apply}" Command="{Binding ApplySettingsCommand}" Classes="secondary" Margin="4,0,0,0"/>
 
                         <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
-                        <Button Content="{local:Localize RemoteDesktop_ToggleCursorPad}" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn" ToolTip.Tip="{local:Localize RemoteDesktop_ToggleCursorPadTip}" FontSize="11" Padding="10 6"/>
+                        <Button Content="{local:Localize RemoteDesktop_ToggleCursorPad}" Command="{Binding ToggleCursorPadCommand}" Classes="secondary" ToolTip.Tip="{local:Localize RemoteDesktop_ToggleCursorPadTip}" FontSize="11" Padding="10 6"/>
 
-                        <Button Content="{Binding CursorPadModeText}" Command="{Binding ToggleCompactCursorPadCommand}" Classes="rd-btn" ToolTip.Tip="{local:Localize RemoteDesktop_SwitchPadModeTip}" FontSize="11" Padding="10 6"/>
+                        <Button Content="{Binding CursorPadModeText}" Command="{Binding ToggleCompactCursorPadCommand}" Classes="secondary" ToolTip.Tip="{local:Localize RemoteDesktop_SwitchPadModeTip}" FontSize="11" Padding="10 6"/>
 
-                        <Button Content="{local:Localize RemoteDesktop_TogglePen}" Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn" ToolTip.Tip="{local:Localize RemoteDesktop_StylusModeTip}" FontSize="11" Padding="10 6"/>
+                        <Button Content="{local:Localize RemoteDesktop_TogglePen}" Command="{Binding ToggleStylusModeCommand}" Classes="secondary" ToolTip.Tip="{local:Localize RemoteDesktop_StylusModeTip}" FontSize="11" Padding="10 6"/>
 
-                        <Button Content="{local:Localize RemoteDesktop_WindowsButton}" Command="{Binding ToggleWindowPanelCommand}" Classes="rd-btn" FontSize="11" Padding="10 6" IsVisible="{Binding SupportsAdvancedWindowControl}"/>
+                        <Button Content="{local:Localize RemoteDesktop_WindowsButton}" Command="{Binding ToggleWindowPanelCommand}" Classes="secondary" FontSize="11" Padding="10 6" IsVisible="{Binding SupportsAdvancedWindowControl}"/>
 
-                        <Button Content="{local:Localize RemoteDesktop_ToggleFullscreen}" Command="{Binding ToggleFullScreenCommand}" Classes="rd-btn" ToolTip.Tip="{local:Localize RemoteDesktop_ToggleFullscreenTip}" FontSize="11" Padding="10 6"/>
+                        <Button Content="{local:Localize RemoteDesktop_ToggleFullscreen}" Command="{Binding ToggleFullScreenCommand}" Classes="secondary" ToolTip.Tip="{local:Localize RemoteDesktop_ToggleFullscreenTip}" FontSize="11" Padding="10 6"/>
                     </StackPanel>
                 </Grid>
             </ScrollViewer>
@@ -167,7 +133,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
                 <TextBlock Text="{local:Localize RemoteDesktop_Host}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBox Grid.Column="1" Text="{Binding Connection.HostAddress}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5" FontSize="11" FontFamily="Consolas, monospace" PlaceholderText="{local:Localize RemoteDesktop_HostWatermark}" IsEnabled="{Binding !IsStreaming}"/>
-                <Button Grid.Column="2" Content="{local:Localize Btn_Save}" Classes="rd-btn" FontSize="11" Padding="10 5" Margin="8,0,0,0" Command="{Binding SaveConnectionCommand}"/>
+                <Button Grid.Column="2" Content="{local:Localize Btn_Save}" Classes="secondary" FontSize="11" Padding="10 5" Margin="8,0,0,0" Command="{Binding SaveConnectionCommand}"/>
             </Grid>
         </Border>
 
@@ -180,7 +146,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                         <TextBox Width="220" Text="{Binding WindowSearchText}" PlaceholderText="{local:Localize RemoteDesktop_SearchWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
-                        <Button Content="{local:Localize RemoteDesktop_Refresh}" Command="{Binding RefreshWindowsCommand}" Classes="rd-btn" Padding="10 5"/>
+                        <Button Content="{local:Localize RemoteDesktop_Refresh}" Command="{Binding RefreshWindowsCommand}" Classes="secondary" Padding="10 5"/>
                     </StackPanel>
                 </Grid>
 
@@ -198,21 +164,21 @@
 
                     <StackPanel Grid.Column="1" Spacing="8" Width="220">
                         <WrapPanel Orientation="Horizontal" ItemWidth="102" ItemHeight="32">
-                            <Button Content="{local:Localize RemoteDesktop_Activate}" Command="{Binding ActivateSelectedWindowCommand}" Classes="rd-btn" Padding="10 5"/>
-                            <Button Content="{local:Localize RemoteDesktop_Raise}" Command="{Binding RaiseSelectedWindowCommand}" Classes="rd-btn" Padding="10 5"/>
-                            <Button Content="{local:Localize RemoteDesktop_Minimize}" Command="{Binding MinimizeSelectedWindowCommand}" Classes="rd-btn" Padding="10 5"/>
-                            <Button Content="{local:Localize RemoteDesktop_Close}" Command="{Binding CloseSelectedWindowCommand}" Classes="rd-btn rd-btn-stop" Padding="10 5"/>
+                            <Button Content="{local:Localize RemoteDesktop_Activate}" Command="{Binding ActivateSelectedWindowCommand}" Classes="secondary" Padding="10 5"/>
+                            <Button Content="{local:Localize RemoteDesktop_Raise}" Command="{Binding RaiseSelectedWindowCommand}" Classes="secondary" Padding="10 5"/>
+                            <Button Content="{local:Localize RemoteDesktop_Minimize}" Command="{Binding MinimizeSelectedWindowCommand}" Classes="secondary" Padding="10 5"/>
+                            <Button Content="{local:Localize RemoteDesktop_Close}" Command="{Binding CloseSelectedWindowCommand}" Classes="secondary danger" Padding="10 5"/>
                         </WrapPanel>
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                             <TextBox Text="{Binding WindowResizeWidth}" PlaceholderText="{local:Localize RemoteDesktop_WidthWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
                             <TextBox Grid.Column="1" Text="{Binding WindowResizeHeight}" PlaceholderText="{local:Localize RemoteDesktop_HeightWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
                         </Grid>
-                        <Button Content="{local:Localize RemoteDesktop_Resize}" Command="{Binding ResizeSelectedWindowCommand}" Classes="rd-btn" Padding="10 5"/>
+                        <Button Content="{local:Localize RemoteDesktop_Resize}" Command="{Binding ResizeSelectedWindowCommand}" Classes="secondary" Padding="10 5"/>
 
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBox Text="{Binding TargetDesktopNumber}" PlaceholderText="{local:Localize RemoteDesktop_DesktopNumberWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
-                            <Button Grid.Column="1" Content="{local:Localize RemoteDesktop_Move}" Command="{Binding MoveSelectedWindowToDesktopCommand}" Classes="rd-btn" Padding="10 5"/>
+                            <Button Grid.Column="1" Content="{local:Localize RemoteDesktop_Move}" Command="{Binding MoveSelectedWindowToDesktopCommand}" Classes="secondary" Padding="10 5"/>
                         </Grid>
                     </StackPanel>
                 </Grid>

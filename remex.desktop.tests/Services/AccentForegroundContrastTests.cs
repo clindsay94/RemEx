@@ -857,14 +857,19 @@ public class AccentForegroundContrastTests
         // of that stops the view from pointing at a different DynamicResource — swapping this style
         // back to SystemErrorBrush, which the test above proves fails AA on all four themes, left the
         // whole file green. A guard that cannot see the regression it was written for is decoration.
-        var canvas = File.ReadAllText(Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Views", "CanvasView.axaml"));
+        // MOVED, AND NOW COVERS MORE THAN IT DID (RemEx-z7pnx). The tint-filled destructive button
+        // used to be CanvasView's Button.card-action-danger, one of five spellings of the same idea;
+        // three of the other four pointed at SystemErrorBrush, the token the test above proves fails
+        // AA on all four themes. The vocabulary collapsed them into one Button.danger in App.axaml,
+        // so pinning that one style now guards every destructive button in the app.
+        var app = File.ReadAllText(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "App.axaml"));
 
         var style = Regex.Match(
-            canvas,
-            "<Style Selector=\"Button\\.card-action-danger\">.*?</Style>",
+            app,
+            "<Style Selector=\"Button\\.danger\">.*?</Style>",
             RegexOptions.Singleline);
-        Assert.True(style.Success, "the card-action-danger style moved or was renamed");
+        Assert.True(style.Success, "the Button.danger tint style moved or was renamed");
 
         Assert.Matches(
             "Property=\"Foreground\" Value=\"\\{DynamicResource ErrorTintForegroundBrush\\}\"",

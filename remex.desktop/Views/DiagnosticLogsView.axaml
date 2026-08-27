@@ -8,23 +8,6 @@
              x:DataType="vm:DiagnosticLogsViewModel">
 
     <UserControl.Styles>
-        <Style Selector="Button.log-btn">
-            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.log-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
         <!-- Compact rows for the virtualized log list -->
         <Style Selector="ListBox.log-list ListBoxItem">
             <Setter Property="Padding" Value="8,1"/>
@@ -65,10 +48,10 @@
                             <ComboBox Grid.Column="1" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" Width="90" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <ComboBox Grid.Column="2" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" Width="195" CornerRadius="8" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="{Binding EntryCountText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                            <Button Grid.Column="3" Classes="log-btn" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
-                            <Button Grid.Column="4" Classes="log-btn" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
-                            <Button Grid.Column="5" Classes="log-btn" Content="{local:Localize Logs_Refresh}" Command="{Binding RefreshLogsCommand}" Margin="0,0,10,0"/>
-                            <Button Grid.Column="6" Classes="log-btn" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
+                            <Button Grid.Column="3" Classes="secondary" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
+                            <Button Grid.Column="4" Classes="secondary" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
+                            <Button Grid.Column="5" Classes="secondary" Content="{local:Localize Logs_Refresh}" Command="{Binding RefreshLogsCommand}" Margin="0,0,10,0"/>
+                            <Button Grid.Column="6" Classes="secondary" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
                         </Grid>
 
                         <!-- Colored, virtualized log list -->
@@ -103,7 +86,7 @@
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
                             <TextBlock Grid.Column="0" Text="{local:Localize Logs_ServiceDesc}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="log-btn" Content="{local:Localize Logs_QueryService}" Command="{Binding FetchServiceLogsCommand}"/>
+                            <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Logs_QueryService}" Command="{Binding FetchServiceLogsCommand}"/>
                         </Grid>
 
                         <!-- Terminal Output -->

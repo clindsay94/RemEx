@@ -41,9 +41,9 @@
         <!-- Buttons -->
         <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,16,0,0">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Click="OnClear"
-                    Classes="glass-button" Foreground="{DynamicResource SystemErrorBrush}" MinWidth="72" Margin="0,0,8,0"/>
+                    Classes="tertiary" Foreground="{DynamicResource SystemErrorBrush}" MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Click="OnCancel"
-                    Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
+                    Classes="tertiary" MinWidth="80" Margin="0,0,8,0"/>
             <Button Grid.Column="3" Content="{local:Localize SecondMetric_SetBtn}" Click="OnSet"
                     MinWidth="90" CornerRadius="8" Padding="16,10"
                     Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"

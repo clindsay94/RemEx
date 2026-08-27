@@ -49,10 +49,10 @@
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
                 <Button Content="{local:Localize FileConsent_Deny}"
                         Command="{Binding DenyCommand}"
-                        Classes="outline"/>
+                        Classes="secondary"/>
                 <Button Content="{local:Localize FileConsent_Allow}"
                         Command="{Binding AllowCommand}"
-                        Classes="accent"/>
+                        Classes="primary"/>
             </StackPanel>
         </Grid>
     </Border>

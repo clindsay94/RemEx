@@ -34,7 +34,7 @@
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto">
             <Button x:Name="SkipBtn"
                     Grid.Column="1"
-                    Classes="glass-button"
+                    Classes="tertiary"
                     Content="{local:Localize Restore_Skip}"
                     Foreground="{DynamicResource TextSecondaryBrush}"
                     MinWidth="110"
@@ -42,22 +42,11 @@
                     Click="OnSkipClicked"/>
             <Button x:Name="RestoreBtn"
                     Grid.Column="2"
+                    Classes="primary"
                     Content="{local:Localize Restore_Accept}"
                     MinWidth="130"
-                    CornerRadius="8"
                     Padding="16,10"
-                    FontWeight="SemiBold"
-                    FontSize="13"
-                    Background="{DynamicResource AccentPrimaryBrush}"
-                    Foreground="{DynamicResource AccentForegroundBrush}"
-                    BorderThickness="0"
-                    Click="OnRestoreClicked">
-                <Button.Styles>
-                    <Style Selector="Button:pressed">
-                        <Setter Property="RenderTransform" Value="scale(0.97)"/>
-                    </Style>
-                </Button.Styles>
-            </Button>
+                    Click="OnRestoreClicked"/>
         </Grid>
 
     </Grid>

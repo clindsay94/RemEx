@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
              xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
              x:Class="Remex.Desktop.App" RequestedThemeVariant="Dark">
     <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
@@ -246,16 +247,204 @@
             <Setter Property="RenderTransform" Value="scale(0.98)"/>
         </Style>
 
-        <!-- Theme Preset Tile Button -->
-        <Style Selector="Button.theme-tile">
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             THE BUTTON VOCABULARY (RemEx-z7pnx). Documented in docs/BUTTON-VOCABULARY.md.
+
+             Before this, 37 button classes across 16 files each answered "what should a button
+             look like?" from scratch: nine different corner radii, six ways to spell "this is
+             the destructive one", and two identical colour swatches declared in two files. The
+             names described SCREENS (rd-btn, log-btn, about-back), so nothing about a name told
+             you what it meant, and a new button had no rule to follow.
+
+             These classes describe ROLE. Pick one emphasis, add a tint if the action carries a
+             consequence, add a shape or size modifier if the layout needs one. That is the whole
+             system, and it is what the Phase 4 view beads apply instead of a preference.
+
+             They sit ON TOP of Material's Button template rather than replacing it: the ripple,
+             the hover overlay (PART_HoverEffect), the focus overlay and the disabled treatment
+             all come from MaterialButtonBase, and what RemEx supplies is the palette and the
+             geometry. ShadowAssist IS used here, unlike on Card — a button's shadow is a plain
+             drop shadow with no accent glow riding on it, so Material's fixed ramp is exactly
+             right and the local-value problem that ruled it out for cards never arises.
+             ═══════════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- EMPHASIS 1/3 — PRIMARY. The one thing this surface exists to do. Accent fill, and
+             the only emphasis that carries elevation, so at most one per surface. -->
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth1"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.primary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+        </Style>
+
+        <!-- EMPHASIS 2/3 — SECONDARY. An action of equal standing to the primary, or the normal
+             emphasis on a surface that has no single primary action. Card surface plus the card
+             border, so a row of them reads as a row of controls rather than a row of shouts. -->
+        <Style Selector="Button.secondary">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.secondary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+
+        <!-- EMPHASIS 3/3 — TERTIARY. Inline, toolbar and dismiss actions: present, not competing.
+             No fill and no border until hovered, which is what lets a toolbar of them sit over a
+             card without drawing a grid of boxes. -->
+        <Style Selector="Button.tertiary">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.tertiary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <!-- Pressed feedback is one rule for all three emphases. It was previously spelled
+             scale(0.96), scale(0.97) and scale(0.98) in different files, which is not a design
+             decision, it is three people not knowing about each other. -->
+        <Style Selector="Button.primary:pressed, Button.secondary:pressed, Button.tertiary:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+        </Style>
+
+        <!-- ─── TINT MODIFIERS. Combine with any emphasis. A tint says the action has a
+             CONSEQUENCE — it never changes how loud the button is, only what it means. Applied
+             after the emphasis blocks above so it wins on the properties it sets; Avalonia has
+             no specificity, so this ordering is the mechanism. -->
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
+            <!-- ErrorTintForegroundBrush, not SystemErrorBrush. The tint is a different surface
+                 from the fill and inverts the answer: red-on-15%-red measures 1.24:1, white
+                 measures 15.96:1 at rest and clears AA against every backdrop (RemEx-1elh, and
+                 the token comment in Themes/Shared/FallbackPalette.axaml). Three of the five
+                 danger buttons this replaces used the red; card-action-danger already used the
+                 white. One rule ends the disagreement on the measured side. -->
+            <Setter Property="Foreground" Value="{DynamicResource ErrorTintForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="Button.danger:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.success">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="Button.warning">
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+        <!-- PRIMARY is already a solid fill, so a tinted primary fills SOLID rather than
+             washing. This is the destructive-confirm shape: one loud button whose colour is the
+             warning. ErrorForegroundBrush is the dark token, correct over solid red, and the
+             opposite of the one the wash above needs. -->
+        <Style Selector="Button.primary.danger">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="Button.primary.success">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="Button.primary.warning">
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+
+        <!-- A tertiary button has no fill to tint, so a tinted one keeps its transparency and
+             only recolours its label. Without this, .tertiary.danger would paint a filled box and
+             stop being tertiary. -->
+        <Style Selector="Button.tertiary.danger, Button.tertiary.success, Button.tertiary.warning">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.tertiary.danger">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <!-- ─── SIZE AND SHAPE MODIFIERS. Orthogonal to emphasis and tint. -->
+        <Style Selector="Button.compact">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector="Button.pill">
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="20,12"/>
+        </Style>
+        <Style Selector="Button.pill.compact">
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+
+        <!-- ─── ICON BUTTON. A square hit target with a glyph and no label. Tertiary paint, so
+             .icon-button is written alongside .tertiary rather than instead of it — the size is
+             the only thing this class owns. -->
+        <Style Selector="Button.icon-button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.icon-button.compact">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- ─── TILE. A large, stretch-content click target: theme presets, the tray's device
+             tiles, Remote's command grid. Distinct from .card, which lifts off the page on hover;
+             a tile sits flat in a grid of its peers and only brightens. Height is deliberately
+             NOT set here — a tile's height belongs to the grid it lives in, and pinning it in the
+             class is what previously forced three near-identical copies of this style. -->
+        <Style Selector="Button.tile">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
@@ -264,50 +453,35 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.theme-tile:pointerover">
+        <Style Selector="Button.tile:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.02)"/>
         </Style>
-        <Style Selector="Button.theme-tile:pressed">
+        <Style Selector="Button.tile:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
-        <Style Selector="Button.theme-tile.selected">
+        <Style Selector="Button.tile:disabled">
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
+        <!-- The selected state of a tile group (theme presets, and any future single-choice grid). -->
+        <Style Selector="Button.tile.selected">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
 
-        <!-- Glass Navigation Button -->
-        <Style Selector="Button.glass-button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12 8"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.glass-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
-        <Style Selector="Button.glass-button:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.98)"/>
-        </Style>
-
-        <!-- Accent Color Swatch -->
-        <Style Selector="Button.accent-swatch">
+        <!-- ─── SWATCH. A round colour chip whose FILL is the value it represents, so the class
+             sets everything except Background. One class now: this was declared twice, as
+             Button.accent-swatch here and Button.accent-picker in PersonalizationPanelView, at 28px
+             and 24px, and the hover-border bug (RemEx-fy0a) had to be fixed in both — once each,
+             months apart. -->
+        <Style Selector="Button.swatch">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
@@ -315,12 +489,16 @@
                 </Transitions>
             </Setter>
         </Style>
-        <!-- BorderBrush is a TOKEN, not White, and this is the same bug that was already fixed for
-             Button.accent-picker in PersonalizationPanelView (RemEx-fy0a). A white hover border is
-             invisible on SolarFlare, whose surface is near-white, so on that theme the swatch had no
-             hover feedback at all - the control looked inert rather than styled. TextPrimaryBrush is
-             the one key guaranteed to contrast with its own theme's background. -->
-        <Style Selector="Button.accent-swatch:pointerover">
+        <Style Selector="Button.swatch.compact">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
+        </Style>
+        <!-- BorderBrush is a TOKEN, not White (RemEx-fy0a). A white hover border is invisible on
+             SolarFlare, whose surface is near-white, so on that theme the swatch had no hover
+             feedback at all - the control looked inert rather than styled. TextPrimaryBrush is the
+             one key guaranteed to contrast with its own theme's background. -->
+        <Style Selector="Button.swatch:pointerover">
             <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>

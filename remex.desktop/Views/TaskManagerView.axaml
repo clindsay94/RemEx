@@ -11,21 +11,6 @@
             <Setter Property="Margin" Value="0"/>
             <Setter Property="CornerRadius" Value="0"/>
         </Style>
-        <Style Selector="Button.sort-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.sort-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
@@ -41,9 +26,9 @@
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
                 <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize TaskMgr_SearchPlaceholder}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" VerticalAlignment="Center"/>
 
-                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="sort-btn" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="sort-btn" VerticalAlignment="Center"/>
-                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="secondary pill compact" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="secondary pill compact" VerticalAlignment="Center"/>
+                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="secondary pill compact" VerticalAlignment="Center"/>
             </Grid>
 
             <Border Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

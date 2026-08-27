@@ -56,7 +56,7 @@
                     <TextBlock Classes="page-subtitle" Text="{local:Localize AppLauncher_Subheader}"/>
                 </StackPanel>
 
-                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
+                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="tertiary" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
                     <DropDownButton.Flyout>
                         <MenuFlyout>
                             <MenuItem Header="{local:Localize AppLauncher_SortNameAsc}" Command="{Binding SortByNameCommand}" CommandParameter="asc"/>
@@ -65,7 +65,7 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
-                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
+                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="tertiary" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
 

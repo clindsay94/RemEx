@@ -4,47 +4,6 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.RemoteView" x:DataType="vm:RemoteViewModel">
 
-    <UserControl.Styles>
-        <Style Selector="Button.remote-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
-            <Setter Property="Padding" Value="12 14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="MinHeight" Value="112"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.remote-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="translateY(-2px)"/>
-        </Style>
-        <Style Selector="Button.remote-btn:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
-        </Style>
-
-        <Style Selector="Button.remote-btn-danger">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
-        </Style>
-        <Style Selector="Button.remote-btn-warn">
-            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
-        </Style>
-    </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32,24,32,32" Spacing="20">
@@ -71,7 +30,7 @@
                                 <SelectableTextBlock Text="{Binding HostMacAddress}" FontSize="18" FontWeight="Bold" FontFamily="Consolas, monospace" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                                 <TextBlock Text="{Binding HostAdapterName}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding HostAdapterName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Classes="remote-btn" MinHeight="0" Padding="16,10" VerticalAlignment="Center" Command="{Binding CopyMacCommand}" Content="{local:Localize Remote_CopyMac}"/>
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Column="1" Classes="tile" MinHeight="0" Padding="16,10" VerticalAlignment="Center" Command="{Binding CopyMacCommand}" Content="{local:Localize Remote_CopyMac}"/>
                         </Grid>
                     </Border>
 
@@ -82,37 +41,37 @@
             <!-- ═══ Graceful Controls ═══ -->
             <TextBlock Text="{local:Localize Remote_Graceful}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="remote-btn" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="tile" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Lock}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔒" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="remote-btn" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="tile" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_SignOut}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🚪" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="remote-btn remote-btn-warn" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="tile warning" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Shutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="remote-btn remote-btn-warn" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="tile warning" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Restart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="remote-btn" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="tile" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Sleep}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🌙" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="remote-btn" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="tile" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Hibernate}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="❄️" FontSize="30" HorizontalAlignment="Center"/>
@@ -123,19 +82,19 @@
             <!-- ═══ Forced Controls ═══ -->
             <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="remote-btn remote-btn-danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="tile danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceShutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="remote-btn remote-btn-danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="tile danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceRestart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="remote-btn remote-btn-danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="tile danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_RebootUefi}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⚙️" FontSize="30" HorizontalAlignment="Center"/>

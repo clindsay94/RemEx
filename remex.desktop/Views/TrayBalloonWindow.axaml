@@ -14,18 +14,6 @@
             <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
 
-        <Style Selector="Button.balloon-close">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="VerticalAlignment" Value="Top"/>
-        </Style>
-        <Style Selector="Button.balloon-close:pointerover">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
     </Window.Styles>
 
     <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusLarge}"
@@ -48,7 +36,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
 
-            <Button Grid.Column="3" Classes="balloon-close" Content="✕" Click="OnCloseBalloon"
+            <Button Grid.Column="3" Classes="tertiary compact" Content="✕" Click="OnCloseBalloon"
                     AutomationProperties.Name="{local:Localize A11y_Close}"/>
         </Grid>
     </Border>

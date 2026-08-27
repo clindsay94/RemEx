@@ -6,47 +6,12 @@
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
     xmlns:controls="clr-namespace:Remex.Desktop.Controls" xmlns:views="using:Remex.Desktop.Views" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
 
-    <UserControl.Styles>
-        <Style Selector="Button.about-back">
-            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12 8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.about-back:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
-        <Style Selector="Button.about-back:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
-        </Style>
-        <Style Selector="Button.github-btn">
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="16 10"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        </Style>
-    </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Classes="page-content" Margin="32" Spacing="24">
 
             <!-- Back Button -->
-            <Button Classes="about-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
+            <Button Classes="secondary" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
 
             <!-- Header -->
             <TextBlock Classes="page-title" Text="{local:Localize About_Header}" HorizontalAlignment="Center"/>
@@ -67,7 +32,7 @@
                     </StackPanel>
 
                     <!-- Keyboard Shortcuts Button -->
-                    <Button Classes="about-back" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
+                    <Button Classes="secondary" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
                         <Button.Flyout>
                             <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
                                 <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -175,11 +140,11 @@
                                            FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextWrapping="Wrap" Margin="30,0,0,0"/>
                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="30,4,0,0">
-                                    <Button Classes="action-btn"
+                                    <Button Classes="primary"
                                             Content="{local:Localize About_Update_CheckButton}"
                                             Command="{Binding CheckForUpdatesCommand}"
                                             IsEnabled="{Binding !IsCheckingForUpdate}"/>
-                                    <Button Classes="github-btn"
+                                    <Button Classes="primary"
                                             Content="{local:Localize About_Update_DownloadButton}"
                                             Command="{Binding DownloadUpdateCommand}"
                                             IsVisible="{Binding IsUpdateAvailable}"/>
@@ -217,7 +182,7 @@
 
                             <TextBlock Text="{local:Localize About_GitHubDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
 
-                            <Button Classes="github-btn" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
+                            <Button Classes="primary" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
                         </StackPanel>
                     </material:Card>
 

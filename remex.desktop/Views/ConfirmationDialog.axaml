@@ -34,31 +34,22 @@
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto">
             <Button x:Name="CancelBtn"
                     Grid.Column="1"
-                    Classes="glass-button"
+                    Classes="tertiary"
                     Foreground="{DynamicResource TextSecondaryBrush}"
                     MinWidth="90"
                     Margin="0,0,10,0"
                     Click="OnCancelClicked"/>
+            <!-- The destructive confirm: a PRIMARY action that happens to be destructive, which
+                 in the vocabulary is the two classes together rather than a bespoke red button
+                 (RemEx-z7pnx). The Button.Styles block this replaces had already stopped working
+                 - its hover selector targeted an unnamed ContentPresenter as the background-
+                 bearing template part, which is Fluent's shape, not Material's. -->
             <Button x:Name="ConfirmBtn"
                     Grid.Column="2"
+                    Classes="primary danger"
                     MinWidth="130"
-                    CornerRadius="8"
                     Padding="16,10"
-                    FontWeight="SemiBold"
-                    FontSize="13"
-                    Background="{DynamicResource SystemErrorBrush}"
-                    Foreground="{DynamicResource ErrorForegroundBrush}"
-                    BorderThickness="0"
-                    Click="OnConfirmClicked">
-                <Button.Styles>
-                    <Style Selector="Button:pointerover /template/ ContentPresenter">
-                        <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
-                    </Style>
-                    <Style Selector="Button:pressed">
-                        <Setter Property="RenderTransform" Value="scale(0.97)"/>
-                    </Style>
-                </Button.Styles>
-            </Button>
+                    Click="OnConfirmClicked"/>
         </Grid>
 
     </Grid>

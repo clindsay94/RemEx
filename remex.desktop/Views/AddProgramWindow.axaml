@@ -21,7 +21,7 @@
             <TextBlock Text="{local:Localize AddProgram_ExePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
                 <TextBox Grid.Column="0" Text="{Binding TargetPath}" PlaceholderText="{local:Localize AddProgram_WatermarkPath}" Margin="0,0,8,0" />
-                <Button Grid.Column="1" Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="glass-button" />
+                <Button Grid.Column="1" Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" />
             </Grid>
 
             <TextBlock Text="{local:Localize AddProgram_DisplayName}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
@@ -42,14 +42,14 @@
                 <material:Card Width="64" Height="64" HorizontalAlignment="Left">
                     <Image Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </material:Card>
-                <Button Content="&#8635;" FontSize="18" Width="32" Height="32" Padding="0" VerticalAlignment="Center" Classes="glass-button" ToolTip.Tip="{local:Localize AddProgram_RefreshIcon}" AutomationProperties.Name="{local:Localize AddProgram_RefreshIcon}" Command="{Binding RefreshIconCommand}" />
+                <Button Content="&#8635;" FontSize="18" Width="32" Height="32" Padding="0" VerticalAlignment="Center" Classes="tertiary" ToolTip.Tip="{local:Localize AddProgram_RefreshIcon}" AutomationProperties.Name="{local:Localize AddProgram_RefreshIcon}" Command="{Binding RefreshIconCommand}" />
             </StackPanel>
 
         </StackPanel>
 
         <Grid Grid.Row="2" ColumnDefinitions="*, *" Margin="0,24,0,0">
-            <Button Grid.Column="0" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}" HorizontalAlignment="Stretch" Margin="0,0,8,0" Classes="glass-button" />
-            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="glass-button" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" />
+            <Button Grid.Column="0" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}" HorizontalAlignment="Stretch" Margin="0,0,8,0" Classes="tertiary" />
+            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="tertiary" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" />
         </Grid>
     </Grid>
 </Window>

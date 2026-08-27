@@ -36,31 +36,8 @@
     </Window.Resources>
 
     <Window.Styles>
-        <Style Selector="Button.tray-tile">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="Height" Value="66"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
 
-        <Style Selector="Button.tray-tile:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
 
-        <Style Selector="Button.tray-tile:disabled">
-            <Setter Property="Opacity" Value="0.4"/>
-            <Setter Property="Cursor" Value="Arrow"/>
-        </Style>
 
         <Style Selector="Button.tray-chip, ToggleButton.tray-chip">
             <Setter Property="Background" Value="Transparent"/>
@@ -241,7 +218,7 @@
                              open. The panel stays enabled, so the pointer still reaches it. -->
                         <Panel ToolTip.Tip="{Binding DisabledTooltip}">
                             <!-- Ordinary tile -->
-                            <Button Classes="tray-tile"
+                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
                                     IsVisible="{Binding !HasSubmenu}"
                                     Command="{Binding Command}"
                                     IsEnabled="{Binding IsEnabled}"
@@ -254,7 +231,7 @@
                                  because Button.Flyout cannot be set per-item from one DataTemplate.
                                  Placement="Top" matters: the window usually sits at the bottom-right
                                  of the screen, where a downward flyout would open off-screen. -->
-                            <Button Classes="tray-tile"
+                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
                                     IsVisible="{Binding HasSubmenu}"
                                     AutomationProperties.Name="{Binding Label}"
                                     ContentTemplate="{StaticResource TrayTileFace}"

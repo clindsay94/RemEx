@@ -8,20 +8,9 @@
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
     <UserControl.Styles>
-        <Style Selector="Button.accent-picker">
-            <Setter Property="Width" Value="24"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-        </Style>
         <!-- The hover ring was literal White, which is invisible against SolarFlare's near-white
              surface - so on that theme there was no hover feedback at all. TextPrimaryBrush is the
              one key guaranteed to contrast with its own theme's background (RemEx-fy0a). -->
-        <Style Selector="Button.accent-picker:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
     </UserControl.Styles>
 
     <StackPanel Spacing="20">
@@ -47,7 +36,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
-                    <Button Classes="theme-tile" Margin="4" Padding="0"
+                    <Button Classes="tile" Margin="4" Padding="0"
                             AutomationProperties.Name="{Binding DisplayName}"
                             Classes.selected="{Binding IsSelected}"
                             Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
@@ -147,7 +136,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -174,7 +163,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -267,12 +256,12 @@
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_SelectColorPaletteTooltip}">
                     <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectNeonVioletTooltip}"/>
-                        <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCyberCyanTooltip}"/>
-                        <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectHotPinkTooltip}"/>
-                        <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectSolarGoldTooltip}"/>
-                        <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
-                        <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
+                        <Button Classes="swatch compact" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectNeonVioletTooltip}"/>
+                        <Button Classes="swatch compact" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCyberCyanTooltip}"/>
+                        <Button Classes="swatch compact" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectHotPinkTooltip}"/>
+                        <Button Classes="swatch compact" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectSolarGoldTooltip}"/>
+                        <Button Classes="swatch compact" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
+                        <Button Classes="swatch compact" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
 
                         <ItemsControl ItemsSource="{Binding CustomAccentColors}">
                             <ItemsControl.ItemsPanel>
@@ -282,7 +271,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                    <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

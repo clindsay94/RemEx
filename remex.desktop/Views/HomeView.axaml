@@ -33,49 +33,6 @@
             <Setter Property="BoxShadow" Value="0 -8 32 0 #40000000"/>
         </Style>
 
-        <Style Selector="Button.action-pill">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="24"/>
-            <Setter Property="Padding" Value="20,14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.action-pill:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="translateY(-2px)"/>
-        </Style>
-        <Style Selector="Button.action-pill:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
-        </Style>
-        <Style Selector="Button.action-pill-accent">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.12"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
-        <Style Selector="Button.action-pill-danger">
-            <!-- Foreground: SystemErrorBrush rather than the raw SystemError Color. This is a
-                 readability change, NOT a bug fix — DynamicResourceExpression converts a Color to a
-                 Brush via ColorToBrushConverter when the target property is IBrush, so the old form
-                 resolved correctly too. Naming the brush just matches every sibling style here.
-                 BorderBrush: deliberate theme alignment, replacing a hardcoded #40FF6B6B with the
-                 theme's own error tint so the danger pill follows the palette the way the accent
-                 pill above it already does (RemEx-fy0a). -->
-            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto">
@@ -96,7 +53,7 @@
                     <TextBlock Text="{local:Localize Home_WelcomeIntro}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="640" TextWrapping="Wrap" LineHeight="21"/>
 
                     <!-- Command palette launcher -->
-                    <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="action-pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
+                    <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="secondary pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Foreground="{DynamicResource TextMutedBrush}" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,12,0"/>
                             <TextBlock Grid.Column="1" Text="{local:Localize Home_SearchPrompt}" FontSize="13" FontWeight="Normal" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
@@ -137,7 +94,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Classes="card-title"
                                    Text="{local:Localize SystemStatus_Title}" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Classes="action-pill" Padding="12,6" FontSize="12"
+                        <Button Grid.Column="1" Classes="secondary pill" Padding="12,6" FontSize="12"
                                 Command="{Binding SystemStatus.RefreshCommand}"
                                 IsEnabled="{Binding !SystemStatus.IsChecking}"
                                 AutomationProperties.Name="{local:Localize SystemStatus_Recheck}"
@@ -189,7 +146,7 @@
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
                                                 VerticalAlignment="Top">
-                                        <Button Classes="action-pill" Padding="12,6" FontSize="12"
+                                        <Button Classes="secondary pill" Padding="12,6" FontSize="12"
                                                 IsVisible="{Binding ShowsFix}"
                                                 IsEnabled="{Binding !$parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).IsChecking}"
                                                 Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).FixCommand}"
@@ -202,7 +159,7 @@
                                              explicit cast. Avalonia binding failures are silent, so
                                              getting this wrong gives a button that does nothing with
                                              no error anywhere. (RemEx-tb0a) -->
-                                        <Button Classes="action-pill" Padding="12,6" FontSize="12"
+                                        <Button Classes="secondary pill" Padding="12,6" FontSize="12"
                                                 IsVisible="{Binding ShowsExplain}"
                                                 Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).ExplainCommand}"
                                                 CommandParameter="{Binding}"
@@ -255,7 +212,7 @@
                 <StackPanel MinWidth="400" MaxWidth="1400" Spacing="24" Margin="0,0,32,32">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="{local:Localize Home_ActiveSensors}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
-                        <Button AutomationProperties.Name="{local:Localize Home_OpenWorkspace}" Grid.Column="1" Classes="action-pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">
+                        <Button AutomationProperties.Name="{local:Localize Home_OpenWorkspace}" Grid.Column="1" Classes="secondary pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="[ ]" FontSize="14" FontFamily="{StaticResource JetBrainsMono}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_OpenWorkspace}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -331,7 +288,7 @@
                         <StackPanel Spacing="16" HorizontalAlignment="Center">
                             <TextBlock Text="{local:Localize Home_NoDataFeed}" FontSize="20" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
                             <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" FontSize="13" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap"/>
-                            <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
+                            <Button Classes="primary pill" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
                         </StackPanel>
                     </material:Card>
                 </StackPanel>
@@ -396,7 +353,7 @@
             <StackPanel MaxWidth="780" HorizontalAlignment="Center" Spacing="16">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="{local:Localize Home_RecentActivity}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
-                    <Button AutomationProperties.Name="{local:Localize Home_ClearActivity}" Grid.Column="1" Classes="action-pill" Command="{Binding ClearActivityCommand}" Padding="14,7" IsVisible="{Binding HasRecentActivity}">
+                    <Button AutomationProperties.Name="{local:Localize Home_ClearActivity}" Grid.Column="1" Classes="secondary pill" Command="{Binding ClearActivityCommand}" Padding="14,7" IsVisible="{Binding HasRecentActivity}">
                         <TextBlock Text="{local:Localize Home_ClearActivity}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold"/>
                     </Button>
                 </Grid>
@@ -496,8 +453,8 @@
                 <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
             <StackPanel Spacing="8">
-                <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
-                <Button Classes="action-pill action-pill-danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="primary pill" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="secondary pill danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
             </StackPanel>
         </StackPanel>
     </material:Card>

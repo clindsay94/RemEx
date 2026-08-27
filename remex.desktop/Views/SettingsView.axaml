@@ -8,28 +8,6 @@
     xmlns:coreModels="using:Remex.Core.Models" x:Class="Remex.Desktop.Views.SettingsView" x:DataType="vm:SettingsViewModel">
 
     <UserControl.Styles>
-        <Style Selector="Button.settings-back">
-            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12 8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.settings-back:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
-        <Style Selector="Button.settings-back:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
-        </Style>
 
         <!-- Modern TextBox styling -->
         <Style Selector="TextBox.modern">
@@ -57,7 +35,7 @@
 
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="Auto,*,Auto">
-                <Button Grid.Column="0" Classes="settings-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
+                <Button Grid.Column="0" Classes="secondary" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
 
                 <TextBlock Grid.Column="1" Classes="page-title" Text="{local:Localize Settings_Header}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 

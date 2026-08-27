@@ -14,74 +14,6 @@
             <Setter Property="Margin" Value="0"/>
             <Setter Property="CornerRadius" Value="0"/>
         </Style>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.action-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.subtle-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.subtle-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.danger-btn">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.danger-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Padding" Value="6"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="14"/>
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
-        <Style Selector="Button.crumb-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.crumb-btn:pointerover">
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="24,20,24,24">
@@ -114,8 +46,8 @@
 
                         <TextBox Grid.Column="2" Text="{Binding SearchQuery}" PlaceholderText="{local:Localize FileTransfer_SearchWatermark}" Width="200" Margin="10,0,0,0" IsEnabled="{Binding SupportsSearch}" IsVisible="{Binding SupportsSearch}" VerticalContentAlignment="Center" CornerRadius="8"/>
 
-                        <Button Grid.Column="3" Content="🖴" Classes="icon-btn" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0"/>
-                        <Button Grid.Column="4" Content="↺" Classes="icon-btn" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="3" Content="🖴" Classes="tertiary icon-button" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0"/>
+                        <Button Grid.Column="4" Content="↺" Classes="tertiary icon-button" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0"/>
                     </Grid>
                     <!-- Explains WHY upload is unavailable on a read-only root, which is otherwise
                          only discoverable by trying it and failing. Bound rather than declared and
@@ -139,7 +71,7 @@
                                     <DataTemplate x:DataType="vm:BreadcrumbSegment">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="›" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="2,0"/>
-                                            <Button Classes="crumb-btn" Content="{Binding Label}"
+                                            <Button Classes="tertiary compact" Content="{Binding Label}"
                                                     Command="{Binding $parent[ItemsControl].((vm:FileTransferViewModel)DataContext).NavigateBreadcrumbCommand}"
                                                     CommandParameter="{Binding}"/>
                                         </StackPanel>
@@ -147,10 +79,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                        <Button Grid.Column="1" Content="📌" Classes="icon-btn" Command="{Binding PinCurrentFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="2" Content="✕" Classes="icon-btn" Command="{Binding RemoveCurrentRootCommand}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="3" Content="↑" Classes="icon-btn" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="4" Content="↻" Classes="icon-btn" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_RefreshTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RefreshTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="1" Content="📌" Classes="tertiary icon-button" Command="{Binding PinCurrentFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="2" Content="✕" Classes="tertiary icon-button" Command="{Binding RemoveCurrentRootCommand}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="3" Content="↑" Classes="tertiary icon-button" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="4" Content="↻" Classes="tertiary icon-button" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_RefreshTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RefreshTooltip}" Margin="4,0,0,0"/>
                     </Grid>
                 </Border>
 
@@ -158,11 +90,11 @@
                 <Border Grid.Row="2" Padding="12,6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="{local:Localize FileTransfer_SortLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
                         <TextBlock Text="{Binding SortDescending, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=↓|↑}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                        <Button Classes="crumb-btn" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0" Content="{Binding IsIconView, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=☰|▦}"/>
+                        <Button Classes="tertiary compact" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0" Content="{Binding IsIconView, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=☰|▦}"/>
                         <Slider Minimum="64" Maximum="176" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}"/>
                     </StackPanel>
                 </Border>
@@ -171,7 +103,7 @@
                 <Border Grid.Row="3" Padding="12,10,12,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding !IsRenaming}">
                     <StackPanel>
                         <WrapPanel Orientation="Horizontal" IsVisible="{Binding !IsCreatingFolder}">
-                            <Button Content="{local:Localize FileTransfer_UploadBtn}" Classes="action-btn" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadBtn}" Classes="primary compact" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
                             <!-- "Send to phone" REMOVED (RemEx-74kfg), not hidden. It never sent anything to a
                                  phone: SendFileAsync was byte-identical to UploadAsync bar a queue label, so it
                                  uploaded into the HOST's own shared root over loopback. Worse than misleading —
@@ -184,26 +116,26 @@
                                  The button beside it, Upload, is what this actually did. Restore a phone-directed
                                  action when there is a PC-to-phone channel to carry it (RemEx-uov9y), and give it
                                  its own code path rather than this one. -->
-                            <Button Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="action-btn" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_DownloadBtn}" Classes="subtle-btn" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="subtle-btn" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="subtle-btn" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_RenameBtn}" Classes="subtle-btn" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_CopyBtn}" Classes="subtle-btn" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_CutBtn}" Classes="subtle-btn" Command="{Binding CutSelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CutTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_PasteBtn}" Classes="subtle-btn" Command="{Binding PasteCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_PasteTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_PropertiesBtn}" Classes="subtle-btn" Command="{Binding ShowPropertiesCommand}" ToolTip.Tip="{local:Localize FileTransfer_PropertiesTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_SelectAllBtn}" Classes="subtle-btn" Command="{Binding SelectAllCommand}" ToolTip.Tip="{local:Localize FileTransfer_SelectAllTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="subtle-btn" Command="{Binding VerifyHashCommand}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_DeleteBtn}" Classes="danger-btn" Command="{Binding DeleteRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="primary compact" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadBtn}" Classes="secondary compact" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="secondary compact" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="secondary compact" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_RenameBtn}" Classes="secondary compact" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CopyBtn}" Classes="secondary compact" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CutBtn}" Classes="secondary compact" Command="{Binding CutSelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CutTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PasteBtn}" Classes="secondary compact" Command="{Binding PasteCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_PasteTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PropertiesBtn}" Classes="secondary compact" Command="{Binding ShowPropertiesCommand}" ToolTip.Tip="{local:Localize FileTransfer_PropertiesTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_SelectAllBtn}" Classes="secondary compact" Command="{Binding SelectAllCommand}" ToolTip.Tip="{local:Localize FileTransfer_SelectAllTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="secondary compact" Command="{Binding VerifyHashCommand}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DeleteBtn}" Classes="secondary danger compact" Command="{Binding DeleteRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
                         </WrapPanel>
 
                         <!-- New folder input -->
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding IsCreatingFolder}" Margin="0,0,0,8">
                             <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_NewFolderLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBox Grid.Column="1" Text="{Binding NewFolderName}" PlaceholderText="{local:Localize FileTransfer_NewFolderWatermark}" FontSize="12" CornerRadius="6" Padding="8,4"/>
-                            <Button Grid.Column="2" Content="{local:Localize FileTransfer_CreateFolderConfirmBtn}" Classes="action-btn" Command="{Binding ConfirmNewFolderCommand}" Margin="8,0,8,0"/>
-                            <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="danger-btn" Command="{Binding CancelNewFolderCommand}" Margin="0"/>
+                            <Button Grid.Column="2" Content="{local:Localize FileTransfer_CreateFolderConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmNewFolderCommand}" Margin="8,0,8,0"/>
+                            <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelNewFolderCommand}" Margin="0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -213,8 +145,8 @@
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBox Grid.Column="1" Text="{Binding RenameInputText}" PlaceholderText="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="12" CornerRadius="6" Padding="8,4"/>
-                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_RenameConfirmBtn}" Classes="action-btn" Command="{Binding ConfirmRenameCommand}" Margin="8,0,8,0"/>
-                        <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="danger-btn" Command="{Binding CancelRenameCommand}" Margin="0"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_RenameConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmRenameCommand}" Margin="8,0,8,0"/>
+                        <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelRenameCommand}" Margin="0"/>
                     </Grid>
                 </Border>
 
@@ -292,7 +224,7 @@
                             <StackPanel Spacing="12">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropertiesTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
-                                    <Button AutomationProperties.Name="{local:Localize A11y_Close}" Grid.Column="1" Content="✕" Classes="icon-btn" Command="{Binding ClosePropertiesCommand}"/>
+                                    <Button AutomationProperties.Name="{local:Localize A11y_Close}" Grid.Column="1" Content="✕" Classes="tertiary icon-button" Command="{Binding ClosePropertiesCommand}"/>
                                 </Grid>
 
                                 <Border IsVisible="{Binding HasThumbnail}" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Center">
@@ -360,8 +292,8 @@
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_QueueTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueCancelAll}" Classes="icon-btn" Command="{Binding CancelAllTransfersCommand}" ToolTip.Tip="{local:Localize FileTransfer_QueueCancelAllTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_QueueCancelAllTooltip}" Margin="0,0,8,0"/>
-                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="icon-btn" Command="{Binding ClearCompletedTransfersCommand}"/>
+                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueCancelAll}" Classes="tertiary icon-button" Command="{Binding CancelAllTransfersCommand}" ToolTip.Tip="{local:Localize FileTransfer_QueueCancelAllTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_QueueCancelAllTooltip}" Margin="0,0,8,0"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="tertiary icon-button" Command="{Binding ClearCompletedTransfersCommand}"/>
                     </Grid>
                     <!--
                         SCROLLVIEWER + MaxHeight + VirtualizingStackPanel, and all three are load-bearing.
@@ -388,7 +320,7 @@
                                         <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" CornerRadius="2" IsVisible="{Binding IsActive}"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding StateLabel}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0"/>
-                                    <Button Grid.Column="3" Content="✕" Classes="icon-btn" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}"/>
+                                    <Button Grid.Column="3" Content="✕" Classes="tertiary icon-button" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

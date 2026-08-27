@@ -71,81 +71,10 @@
         </Style>
 
         <!-- ═══ Toolbar buttons ═══ -->
-        <Style Selector="Button.back-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12 8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.back-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
 
         <!-- ═══ Staging drawer buttons ═══ -->
-        <Style Selector="Button.stage-btn">
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="10 6"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.stage-btn:pointerover">
-            <Setter Property="Opacity" Value="0.85"/>
-        </Style>
-        <Style Selector="Button.stage-mini-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="6 2"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.stage-mini-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
 
         <!-- ═══ Action buttons inside cards ═══ -->
-        <Style Selector="Button.card-action">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="14 8"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        </Style>
-        <Style Selector="Button.card-action:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
-        <Style Selector="Button.card-action-accent">
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
-        </Style>
-        <Style Selector="Button.card-action-accent:pointerover">
-            <Setter Property="Opacity" Value="0.85"/>
-        </Style>
-        <Style Selector="Button.card-action-danger">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-            <!-- NOT SystemErrorBrush, which fails AA on ALL FOUR themes over this tint - 4.35 / 4.31 /
-                 3.48 / 3.51 at rest and 3.95 / 3.98 / 3.19 / 3.13 on hover - and not ErrorForegroundBrush,
-                 which is built for the SOLID fill and is catastrophic here at 1.18-1.67. The tint needs
-                 its own token. (RemEx-1elh) -->
-            <Setter Property="Foreground" Value="{DynamicResource ErrorTintForegroundBrush}"/>
-        </Style>
-        <Style Selector="Button.card-action-danger:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundHoverBrush}"/>
-        </Style>
 
         <!-- ═══ Latency bar ═══ -->
         <Style Selector="Border.lat-bar">
@@ -167,36 +96,36 @@
         <!-- ═══ Toolbar ═══ -->
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                <Button AutomationProperties.Name="{local:Localize Canvas_Header}" Classes="back-btn" IsHitTestVisible="False" Background="Transparent">
+                <Button AutomationProperties.Name="{local:Localize Canvas_Header}" Classes="secondary" IsHitTestVisible="False" Background="Transparent">
                     <TextBlock Text="{local:Localize Canvas_Header}" FontFamily="{DynamicResource PageTitleFontFamily}" FontSize="28" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="secondary" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_RedoTooltip}" Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_RedoTooltip}" Grid.Column="4" Classes="secondary" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="secondary" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_Sync}" Grid.Column="6" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_Sync}" Grid.Column="6" Classes="secondary" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="7" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Download" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock FontSize="12">
@@ -209,27 +138,27 @@
                         </TextBlock>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="8" Classes="secondary" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_ToggleMinimapTooltip}" Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ToggleMinimapTooltip}" Grid.Column="9" Classes="secondary" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Map}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <!-- P8-I: Snapshot export -->
-                <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="10" Classes="secondary" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
-                    <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
+                    <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="secondary" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
                         <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
                     </Button>
                     <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Classes="snapshot-status" Classes.failed="{Binding !SnapshotSucceeded}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
@@ -319,12 +248,12 @@
                                         <!-- ═══ ACTIONS ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
                                             <TextBlock Text="{local:Localize Canvas_Actions}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <Button Classes="card-action card-action-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemErrorBrush}" Foreground="{DynamicResource ErrorForegroundBrush}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).RestartToUefiCommand}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemErrorBrush}" Opacity="0.8" Foreground="{DynamicResource ErrorForegroundBrush}"/>
+                                            <Button Classes="primary" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                                            <Button Classes="secondary" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemErrorBrush}" Foreground="{DynamicResource ErrorForegroundBrush}"/>
+                                            <Button Classes="secondary" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <Button Classes="secondary" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
+                                            <Button Classes="secondary" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).RestartToUefiCommand}"/>
+                                            <Button Classes="secondary" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemErrorBrush}" Opacity="0.8" Foreground="{DynamicResource ErrorForegroundBrush}"/>
                                         </StackPanel>
 
                                         <!-- ═══ LATENCY ═══ -->
@@ -446,15 +375,15 @@
                         CornerRadius="12" Padding="10,6" BoxShadow="0 6 28 0 #60000000">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <TextBlock VerticalAlignment="Center" Margin="6,0,4,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SelectionSummary}"/>
-                        <Button Classes="card-action" Command="{Binding PinSelectedCommand}" Content="{local:Localize Canvas_ActionPin}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <Button Classes="card-action card-action-danger" Command="{Binding RemoveSelectedCommand}" Content="{local:Localize Canvas_ActionRemove}"/>
-                        <Button Classes="card-action card-action-accent" Command="{Binding ClearSelectionCommand}" Content="{local:Localize Canvas_ActionDone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                        <Button Classes="secondary" Command="{Binding PinSelectedCommand}" Content="{local:Localize Canvas_ActionPin}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <Button Classes="secondary danger" Command="{Binding RemoveSelectedCommand}" Content="{local:Localize Canvas_ActionRemove}"/>
+                        <Button Classes="primary" Command="{Binding ClearSelectionCommand}" Content="{local:Localize Canvas_ActionDone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                     </StackPanel>
                 </Border>
 
                 <!-- ═══ "?" REPLAY HINT (always available) ═══ -->
                 <Button HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Width="34" Height="34"
-                        Classes="back-btn" Command="{Binding ReplayCoachMarkCommand}" ToolTip.Tip="{local:Localize Canvas_CoachReplayTooltip}" AutomationProperties.Name="{local:Localize Canvas_CoachReplayTooltip}"
+                        Classes="secondary" Command="{Binding ReplayCoachMarkCommand}" ToolTip.Tip="{local:Localize Canvas_CoachReplayTooltip}" AutomationProperties.Name="{local:Localize Canvas_CoachReplayTooltip}"
                         CornerRadius="17" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                     <TextBlock Text="?" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
@@ -474,7 +403,7 @@
                             <StackPanel Spacing="10">
                                 <TextBlock Text="{local:Localize Canvas_CoachTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBlock Text="{local:Localize Canvas_CoachBody}" FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <Button HorizontalAlignment="Right" Classes="card-action card-action-accent" Command="{Binding DismissCoachMarkCommand}" Content="{local:Localize Canvas_CoachGotIt}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                                <Button HorizontalAlignment="Right" Classes="primary" Command="{Binding DismissCoachMarkCommand}" Content="{local:Localize Canvas_CoachGotIt}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                             </StackPanel>
                         </Border>
                     </Canvas>
@@ -502,8 +431,8 @@
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
                                                 <CheckBox AutomationProperties.Name="{Binding SensorName}" Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveUp}" Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
-                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveDown}" Grid.Column="3" Classes="stage-mini-btn" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
+                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveUp}" Grid.Column="2" Classes="secondary compact" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
+                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveDown}" Grid.Column="3" Classes="secondary compact" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
@@ -556,7 +485,7 @@
                                                 </TextBlock>
                                                 <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
-                                            <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                            <Button Classes="primary compact" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
                                     </material:Card>
                                 </DataTemplate>
