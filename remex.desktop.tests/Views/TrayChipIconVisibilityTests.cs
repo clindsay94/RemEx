@@ -38,8 +38,8 @@ public class TrayChipIconVisibilityTests
     public void EveryCheckedChipStateSetsItsOwnBackgroundAsWellAsItsForeground()
     {
         // SCOPED TO :checked, DELIBERATELY, AND THE FIRST VERSION OF THIS WAS NOT. Asserting the rule
-        // for every chip state flagged the plain :pointerover, which is fine: Fluent's hover fill is
-        // a neutral wash, so an accent glyph still reads against it. Only the CHECKED fill is
+        // for every chip state flagged the plain :pointerover, which is fine: the theme's hover fill
+        // is a neutral wash, so an accent glyph still reads against it. Only the CHECKED fill is
         // accent-derived, and only there does recolouring the glyph accent collide with it.
         //
         // Writing the broader rule would have been writing a rule that is not true, and the stated
@@ -61,7 +61,7 @@ public class TrayChipIconVisibilityTests
     public void TheCheckedPinChipIsStyledAtAll()
     {
         // Guards the fix from being deleted wholesale rather than merely weakened. Without a
-        // :checked style the chip falls entirely to Fluent's accent-on-accent default.
+        // :checked style the chip falls entirely to the theme's accent-on-accent default.
         ToggleChipStateStyles()
             .Select(s => s.Selector)
             .Should().Contain(s => s.Contains(":checked", StringComparison.Ordinal),

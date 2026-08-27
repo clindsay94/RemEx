@@ -50,15 +50,15 @@
                     <!-- /template/ IS REQUIRED HERE, not fragile decoration (RemEx-f51fa). The
                          tempting tidy-up — set Background on the ListBoxItem and let the template
                          binding carry it — silently loses both fills: Fluent 12.1.1's ListBoxItem
-                         ControlTheme sets :pointerover and :selected Backgrounds directly on
+                         ControlTheme set :pointerover and :selected Backgrounds directly on
                          PART_ContentPresenter (ControlTheme style + activator, frame 5), which
-                         outranks the TemplateBinding (frame 6) a control-level value would ride in
+                         outranked the TemplateBinding (frame 6) a control-level value would ride in
                          on. Only another presenter-level setter with an activator (app style,
-                         frame 3) beats it — which is exactly what these are. If the applied theme
-                         ever stops templating ListBoxItem as a bare ContentPresenter (e.g.
-                         MaterialTheme, whose template has no ContentPresenter at all), these match
-                         nothing and the o9gd text recolours below sit on an unpainted fill —
-                         re-verify this file in the same commit as any theme swap. -->
+                         frame 3) beat it — which is exactly what these are. The app now applies
+                         Material 3.19.0 instead, whose ListBoxItem template has no ContentPresenter
+                         at all — re-verify the /template/ ContentPresenter selectors below still
+                         match anything under Material before relying on this file again, or the
+                         o9gd text recolours further down would sit on an unpainted fill. -->
                     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
                         <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}" />
                     </Style>

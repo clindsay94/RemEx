@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Material.Styles.Themes;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
 using System.Diagnostics;
@@ -110,10 +111,40 @@ public class ThemeService : IDisposable
         _osListenerTarget = null;
     }
 
+    /// <summary>
+    /// Writes the seed into MaterialTheme's live palette so Material-templated controls follow the
+    /// same colours every RemEx surface does (RemEx-prkot).
+    /// </summary>
+    /// <remarks>
+    /// UI thread only — called from inside <see cref="ApplyCustomization"/>'s posted lambda.
+    /// Null-tolerant on purpose: unit tests construct this service without a Material application
+    /// (or any application), and a theme push with nowhere to land is a no-op, not a crash.
+    /// </remarks>
+    private static void PushSeedIntoMaterialTheme(Color primary, Color secondary)
+    {
+        try
+        {
+            if (Application.Current is not { } app) return;
+            var materialTheme = app.LocateMaterialTheme<Material.Styles.Themes.MaterialThemeBase>();
+            if (materialTheme is null) return;
+
+            var theme = materialTheme.CurrentTheme.ToMutable();
+            theme.SetPrimaryColor(primary);
+            theme.SetSecondaryColor(secondary);
+            materialTheme.CurrentTheme = theme;
+        }
+        catch (Exception ex)
+        {
+            // A palette that fails to reach Material's swatches leaves its controls on the last
+            // colours rather than taking the theme system down mid-apply.
+            Trace.TraceWarning($"ThemeService: could not push the seed into MaterialTheme — {ex.Message}");
+        }
+    }
+
     private void OnOsColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
     {
         // Re-run the whole apply rather than flipping the variant in place: the palette solve, the
-        // Fluent variant, and every override key have to move together or the window paints a light
+        // theme variant, and every override key have to move together or the window paints a light
         // chrome under dark text. The settings guard means a listener that outlives a mode change
         // (the detach races the event) re-applies the pinned mode, which is a no-op repaint, not a
         // wrong one.
@@ -189,7 +220,7 @@ public class ThemeService : IDisposable
             else DetachOsThemeListener();
 
             // The base theme file resolved a variant from the preset NAME. Now that light/dark is
-            // its own setting, the variant has to follow the setting, or Fluent's own control
+            // its own setting, the variant has to follow the setting, or Material's own control
             // templates paint dark chrome underneath a light M3 palette.
             if (Application.Current is { } themedApp)
             {
@@ -201,7 +232,7 @@ public class ThemeService : IDisposable
             // every colour key on whatever the theme file happened to carry. That was survivable while
             // each preset carried its own complete palette; it stopped being survivable the moment the
             // four presets started sharing one DARK fallback, because RequestedThemeVariant is set
-            // above OUTSIDE this check. A light preset with a bad seed would therefore paint Fluent's
+            // above OUTSIDE this check. A light preset with a bad seed would therefore paint Material's
             // light chrome under near-white RemEx text — unreadable, with no exception and no log.
             //
             // Falling back to the record's own default seed keeps the palette internally consistent
@@ -226,6 +257,16 @@ public class ThemeService : IDisposable
                 settings.SchemeVariant,
                 isDark: !isLightTheme,
                 contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
+
+            // THE SEED REACHES MATERIAL'S OWN PALETTE TOO (RemEx-prkot). MaterialTheme dresses
+            // every control template from its Primary/Secondary swatches; leaving those on the
+            // App.axaml placeholders would make this a two-palette app — RemEx surfaces following
+            // the seed while every Material control stays brand-purple, the exact failure the
+            // component-library evaluation warned about. The seed itself as Primary and the
+            // scheme's own secondary, through the supported SetPrimaryColor/SetSecondaryColor API.
+            // (BaseTheme="Inherit" follows RequestedThemeVariant set above, so light/dark and the
+            // System mode's live OS-follow carry over without a second wire.)
+            PushSeedIntoMaterialTheme(accentColor, palette.Secondary);
 
             SetResourceOverrideInternal("AccentPrimary", palette.Primary);
             SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(palette.Primary));
@@ -319,7 +360,7 @@ public class ThemeService : IDisposable
             // overridden explicitly for the same StaticResource reason as the gradient above.
             SetResourceOverrideInternal("SystemControlBackgroundListLowBrush", new SolidColorBrush(cardColor));
 
-            // Override Fluent theme's SystemAccentColor so native controls (Button, Slider,
+            // Override Material theme's SystemAccentColor so native controls (Button, Slider,
             // ToggleSwitch, ComboBox, TextBox focus ring, etc.) pick up M3 colors.
             SetResourceOverrideInternal("SystemAccentColor", palette.Primary);
             SetResourceOverrideInternal("SystemAccentColorLight1", palette.Secondary);
@@ -384,6 +425,12 @@ public class ThemeService : IDisposable
 
                 app.Resources["BodyFontFamily"] = SystemFontService.ResolveFontOrDefault(
                     settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter");
+
+                // MIRRORED INTO MATERIAL'S KEY (RemEx-prkot): MaterialTheme sets FontFamily on
+                // Window AND on popup roots through MaterialDesignFonts, so the font picker has to
+                // land there too or every tooltip, flyout and context menu stays on the previous
+                // body font while the windows change — the popup half of the audit's §3 trap.
+                app.Resources["MaterialDesignFonts"] = app.Resources["BodyFontFamily"]!;
 
                 // Overall UI scale — clamped to a safe, legible range so the shell can't be shrunk into
                 // illegibility or blown up past the window. Consumed by the shell's layout transform.

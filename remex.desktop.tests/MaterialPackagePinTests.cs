@@ -104,7 +104,7 @@ public class MaterialPackagePinTests
 
         foreach (var package in new[]
                  {
-                     "Avalonia.Desktop", "Avalonia.Themes.Fluent", "Avalonia.Fonts.Inter",
+                     "Avalonia.Desktop", "Avalonia.Fonts.Inter",
                      "Avalonia.Skia", "Avalonia.HarfBuzz",
                  })
         {
@@ -173,6 +173,38 @@ public class MaterialPackagePinTests
                 $"{package} must be referenced versionlessly under central package management");
             reference.Element("Version").Should().BeNull(
                 $"{package} must not carry a Version child element either");
+        }
+    }
+
+    [Fact]
+    public void FluentStaysOut()
+    {
+        // THE DECISION RemEx-prkot RECORDS, held as an assertion. Fluent was removed on 2026-08-26
+        // so MaterialTheme owns every control template; running both meant two template trees
+        // competing per selector, and the RemEx-3e65x audit found that pairing's failure modes all
+        // silent. A restore fixup or an IDE quick-action that re-adds the package would recreate
+        // exactly that, with no build error to catch it — so its absence is pinned here, in both
+        // central management and every project file.
+        XDocument.Load(Path.Combine(RepoRoot(), "Directory.Packages.props"))
+            .Descendants("PackageVersion")
+            .Any(e => (string?)e.Attribute("Include") == "Avalonia.Themes.Fluent")
+            .Should().BeFalse(
+                "Avalonia.Themes.Fluent was removed by RemEx-prkot — MaterialTheme owns every "
+                + "control template, and re-pinning Fluent reopens the two-theme-trees failure "
+                + "mode the RemEx-3e65x audit closed");
+
+        var generatedDirs = new[] { $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                                    $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                                    $"{Path.DirectorySeparatorChar}publish{Path.DirectorySeparatorChar}" };
+        foreach (var csproj in Directory.EnumerateFiles(RepoRoot(), "*.csproj", SearchOption.AllDirectories)
+                     .Where(path => !generatedDirs.Any(path.Contains)))
+        {
+            XDocument.Load(csproj)
+                .Descendants("PackageReference")
+                .Any(e => (string?)e.Attribute("Include") == "Avalonia.Themes.Fluent")
+                .Should().BeFalse(
+                    $"{Path.GetFileName(csproj)} must not reference Avalonia.Themes.Fluent — "
+                    + "see RemEx-prkot for the removal decision and its audit trail");
         }
     }
 

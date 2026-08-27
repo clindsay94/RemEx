@@ -97,24 +97,26 @@
 
              It is a priority collision, not a missing colour. Avalonia's frame order (lower wins) puts
              an app style WITH an activator at StyleTrigger, a ControlTheme style with an activator at
-             StyleTriggerTheme, and a plain app style at Style. So on :checked —
+             StyleTriggerTheme, and a plain app style at Style. So on :checked, under Fluent (the
+             theme applied when this was diagnosed) —
                Foreground: ours (StyleTrigger) beat Fluent's ToggleButtonForegroundChecked. Accent.
                Background: Fluent's ToggleButtonBackgroundChecked (StyleTriggerTheme) beat the plain
                            Background="Transparent" in the base .tray-chip style above (Style).
-             Fluent's checked background is itself accent-derived, so the result was an accent glyph
+             Fluent's checked background was itself accent-derived, so the result was an accent glyph
              on an accent fill. The glyph's own colour was never the problem: it comes from the
              selector above, ToggleButton derives from Button, and $parent[Button] resolves
              correctly.
 
-             Pinning the background at the same activator priority as the foreground is what stops
-             Fluent supplying it. CardBackgroundHoverBrush reads as "this chip is active" and exists
-             in all four PC themes, so the accent glyph keeps its contrast on SolarFlare too. -->
+             Pinning the background at the same activator priority as the theme's own ControlTheme
+             style is what stops the theme (Fluent then, Material 3.19.0 now) supplying it.
+             CardBackgroundHoverBrush reads as "this chip is active" and exists in all four PC themes,
+             so the accent glyph keeps its contrast on SolarFlare too. -->
         <Style Selector="ToggleButton.tray-chip:checked">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
-        <!-- Hover while already pinned must not fall back to Fluent's accent fill either. -->
+        <!-- Hover while already pinned must not fall back to the theme's own accent fill either. -->
         <Style Selector="ToggleButton.tray-chip:checked:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>

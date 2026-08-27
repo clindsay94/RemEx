@@ -20,9 +20,10 @@ namespace Remex.Desktop.Tests.Views;
 /// <para>
 /// The specific shape guarded against is a selector that reaches into a template for a part the
 /// template does not have. <c>ListBoxItem:focus-visible /template/ ContentPresenter</c> renders
-/// under Fluent, whose ListBoxItem template root IS a ContentPresenter — and renders nothing at all
-/// against a template whose root is anything else. HomeView supplies such a template, and the same
-/// selector drew its ring around the item's slot rather than the card inside it.
+/// nothing under Material 3.19.0, whose ListBoxItem template has no ContentPresenter at all — the
+/// ring has to be set on the control itself instead (RemEx-kgs7g). HomeView supplies its own
+/// replacement template too, and the same selector drew its ring around the item's slot rather than
+/// the card inside it.
 /// </para>
 /// <para>
 /// <b>The invariant these pin is not "control-level selectors are safe".</b> It is that a ring set on
@@ -50,10 +51,10 @@ public class FocusVisibleStyleGuardTests
     /// The controls whose ring is allowed to reach into the template for a <c>ContentPresenter</c>.
     /// </summary>
     /// <remarks>
-    /// Fluent — the theme this app applies — templates one for all four content controls, including
-    /// ListBoxItem, so the list is a policy rather than a fact about the templates: ListBoxItem is
-    /// excluded because views replace its template and the presenter is then not what should be
-    /// ringed. The three that remain are not templated anywhere in this repo.
+    /// Material 3.19.0 — the theme this app applies — templates a ContentPresenter for the other
+    /// three content controls, but not for ListBoxItem: its ListBoxItem template has none at all, so
+    /// the ring is set on the control itself there instead of reached in through a template part.
+    /// The three that remain are not templated anywhere in this repo.
     /// </remarks>
     private static readonly string[] MayUseTheTemplateForm = ["Button", "ToggleButton", "RepeatButton"];
 
@@ -108,8 +109,8 @@ public class FocusVisibleStyleGuardTests
     public void AViewThatReplacesTheListBoxItemTemplateStillBindsTheBorderTheRingIsPaintedOn()
     {
         // THE ONE THE FIRST DRAFT GOT WRONG. A ring set on the control renders through whatever
-        // border the template binds; Fluent's ListBoxItem template binds all three, but a view that
-        // supplies its own inherits the obligation. HomeView's pinned-sensor list is the case in
+        // border the template binds; Material's ListBoxItem template binds all three, but a view
+        // that supplies its own inherits the obligation. HomeView's pinned-sensor list is the case in
         // point - its template was a bare ContentPresenter, so the control-level ring reached
         // nothing there and only there.
         var overrides = ListBoxItemTemplateOverrides().ToArray();

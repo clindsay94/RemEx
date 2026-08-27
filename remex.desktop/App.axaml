@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
              x:Class="Remex.Desktop.App" RequestedThemeVariant="Dark">
     <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
@@ -24,19 +25,71 @@
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
             <!-- Overall UI scale (the personalization "UI size" slider). Overridden live by ThemeService. -->
             <x:Double x:Key="UiScale">1</x:Double>
+
+            <!-- ═══ Material typography keys, overridden BY KEY on purpose (RemEx-prkot §3 of
+                 docs/AUDIT-fluent-removal.md). MaterialTheme sets FontFamily/FontSize on Window AND
+                 on PopupRoot/OverlayPopupHost through these two DynamicResources; overriding the
+                 keys reaches both surfaces in one move, where a Window-level pin would fix the ten
+                 dialogs and leave every tooltip, flyout and context menu on Roboto — the silent
+                 half the audit calls a trap. ThemeService mirrors the font picker into
+                 MaterialDesignFonts alongside BodyFontFamily, so the live-themable body font keeps
+                 covering popups too. Types must match what Material's themes expect: a FontFamily
+                 element and an x:Double, not strings. -->
+            <FontFamily x:Key="MaterialDesignFonts">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
+            <x:Double x:Key="MaterialDesignFontSize">14</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
-        <FluentTheme />
-        <!-- Icon glyphs for mi:MaterialIcon. Independent of Material.Avalonia's control
-             themes, which this app does not use — see the FluentTheme note further down. -->
+        <!-- MATERIAL OWNS EVERY CONTROL TEMPLATE NOW (RemEx-prkot, Connor's call 2026-08-26:
+             "wire MaterialTheme in", reversing the 2026-08-20 palette-only decision). Fluent is
+             GONE, not merely shadowed — docs/AUDIT-fluent-removal.md verified per control that
+             nothing this app uses loses its template, and that there is no Simple-theme safety
+             net underneath, which is why the audit had to be per-control rather than optimistic.
+
+             BaseTheme="Inherit" follows Application.RequestedThemeVariant, which ThemeService
+             already flips for light/dark — including the live OS-follow of System mode
+             (RemEx-zk5bc) — so Material's base tracks the same switch everything else does.
+             The initial Primary/Secondary are placeholders: ThemeService pushes the real seed
+             palette into MaterialTheme.CurrentTheme on every ApplyCustomization, which is what
+             keeps this from being a two-palette app (RemEx surfaces seeded, Material controls
+             stuck on a brand colour). -->
+        <themes:MaterialTheme BaseTheme="Inherit" PrimaryColor="Purple" SecondaryColor="Lime" />
+        <!-- Icon glyphs for mi:MaterialIcon — a separate package from Material.Avalonia's control
+             themes, loaded on its own before those went in and unchanged by them. -->
         <mi:MaterialIconStyles />
         <!-- Global Control Styles -->
 
         <!-- Base Text Styling -->
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══ The four inherited Window properties, settled deliberately (RemEx-n0pb8 via the
+             audit's §3). Material's Window theme would supply MaterialPaperBrush/MaterialBodyBrush;
+             three windows pin nothing and every window leaves Foreground to inheritance, so without
+             these the app would mix Material's palette under RemEx-brushed content — the
+             foreground-from-one-palette-over-background-from-another shape that fails on light
+             themes. App styles (frame Style) outrank ControlTheme setters (frame StyleTheme), so
+             these win everywhere a window does not pin its own. FontFamily/FontSize ride the
+             MaterialDesignFonts keys above instead — the key override is what reaches popups. -->
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <!-- Material sets the PAPER brush as the FOREGROUND on both of these — correct against its
+             own dark tooltip surface, near-white-on-near-white against ours on a light palette
+             (the audit's §3 tail). Both take the app's glass treatment instead, same trio as the
+             NotificationCard style below. -->
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        </Style>
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
         <Style Selector="Border.glass-card">
@@ -69,6 +122,19 @@
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="translateY(-6px) scale(1.02)"/>
             <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
+        </Style>
+
+        <!-- Surface variant (RemEx-zm6gp): for glass cards that HOST a list rather than act as a
+             clickable unit. The hover lift is designed for finite cards; on a container as tall as
+             its unvirtualized content, scale(1.01) about the centre displaces the top edge by 1% of
+             half its height - on Task Manager that is ~80px of list sliding up over the search
+             field. Surfaces keep the hover background and shadow, and give up the transform.
+             ORDER IS LOAD-BEARING: Avalonia has no specificity — the last matching style wins —
+             so this block must sit BELOW both transform-setting hover styles above, or a
+             glass-card (or a future "surface interactive") re-acquires the lift and the slide
+             returns. TaskManagerListSurfaceTests asserts this ordering from the source. -->
+        <Style Selector="Border.glass-card.surface:pointerover">
+            <Setter Property="RenderTransform" Value="none"/>
         </Style>
 
         <!-- Theme Preset Tile Button -->
@@ -245,11 +311,12 @@
              BorderThickness or the ring reaches nothing. HomeView's now does, and
              FocusVisibleStyleGuardTests holds both halves.
 
-             A note on provenance, because it nearly went in wrong: this project applies FluentTheme
-             (below), not Material.Avalonia's control themes. docs/AUDIT-fluent-removal.md analyses
-             what breaks if that changes — Material's ListBoxItem has no ContentPresenter to reach at
-             all — but RemEx-prkot, which would have made the swap, was cancelled. Treat that audit
-             as contingent, not as a description of what ships. -->
+             A note on provenance: the theme swap docs/AUDIT-fluent-removal.md analysed HAPPENED
+             (RemEx-prkot, 2026-08-26) — MaterialTheme owns the templates now, and the audit is a
+             description of what ships, not a contingency. This control-level shape is exactly why
+             the ring survived the swap: Material's ListBoxItem has no ContentPresenter to reach at
+             all, but its PART_RootBorder template-binds both border properties, and Material nulls
+             FocusAdorner on nine controls so there is nothing underneath these styles. -->
         <Style Selector="ListBoxItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
@@ -308,11 +375,12 @@
         </Style>
 
         <!-- ═══ In-app toast (RemEx-5wc2) ═══
-             The Fluent control theme dresses NotificationCard from its own palette, which follows
-             the light/dark variant but knows nothing about CyberNOC, Monolith, SolarFlare or
-             BaseDarkGlass - so a toast would be the one surface in the app that ignores the theme
-             the user picked. A Style setter outranks a ControlTheme setter, so these win; the
-             values are theme resources rather than literals for the usual reason. -->
+             The control theme (Material now, Fluent before it — the audit verified Material
+             templates NotificationCard too) dresses toasts from its own palette, which follows
+             the light/dark variant but knows nothing about the seed the user picked - so a toast
+             would be the one surface in the app that ignores it. A Style setter outranks a
+             ControlTheme setter, so these win; the values are theme resources rather than
+             literals for the usual reason. -->
         <Style Selector="NotificationCard">
             <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
