@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
@@ -486,7 +487,7 @@
                     <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
                         <TextBlock Text="{local:Localize Canvas_ActiveSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
-                        <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
+                        <material:Card Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
                             <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                                 <ListBox ItemsSource="{Binding SensorActivationItems}" Background="Transparent" BorderThickness="0" Padding="0">
                                     <ListBox.Styles>
@@ -508,7 +509,7 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                             </ScrollViewer>
-                        </Border>
+                        </material:Card>
 
                         <TextBlock Text="{local:Localize Canvas_NewSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
                     </StackPanel>
@@ -540,7 +541,7 @@
                                       and still legible, because a stale template is exactly as
                                       droppable as a live one and must not look disabled.
                                     -->
-                                    <Border Classes="glass-card interactive" Classes.stale="{Binding IsStale}"
+                                    <material:Card Classes="interactive" Classes.stale="{Binding IsStale}"
                                             Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
@@ -557,7 +558,7 @@
                                             </StackPanel>
                                             <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
-                                    </Border>
+                                    </material:Card>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>

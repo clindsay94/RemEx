@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- ═══ DARK GLASS DESIGN SYSTEM ═══
 
@@ -13,6 +13,20 @@
     <!-- Expressive Shape: Asymmetrical corners for cards -->
     <CornerRadius x:Key="CardCornerRadius">28, 8, 28, 8</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>
-    <BoxShadows x:Key="CardShadow">0 10 40 0 #50000000</BoxShadows>
-    <BoxShadows x:Key="CardHoverShadow">0 20 60 0 #70000000, 0 0 20 3 #306C4CFF</BoxShadows>
+    <!-- ELEVATION RAMP (RemEx-qbzl1). One shadow vocabulary for every raised surface, so a
+         Card, a dialog and an app bar say "level 2" rather than each inventing a BoxShadows.
+         Levels track Material's depth ramp in ORDER, not in absolute values: Material's
+         ShadowProvider is a fixed black drop shadow, while RemEx's is soft, accent-tinted and
+         scaled live by the GlowStrength slider. ThemeService overrides all four on every
+         ApplyCustomization; these literals are what a theme file alone renders with.
+           1 = resting surface (cards, list panels)
+           2 = raised resting (selected/pinned cards, the app bar)
+           3 = hover / interactive lift
+         A fourth level lands when Phase 5 raises dialogs and the tray flyout; adding it now
+         would be a key with no consumer.
+         Replaces CardShadow/CardHoverShadow, which named the same two steps after the ONE
+         control that used them and had no room for a third. -->
+    <BoxShadows x:Key="Elevation1Shadow">0 10 40 0 #50000000</BoxShadows>
+    <BoxShadows x:Key="Elevation2Shadow">0 14 48 0 #5C000000</BoxShadows>
+    <BoxShadows x:Key="Elevation3Shadow">0 20 60 0 #70000000, 0 0 20 3 #306C4CFF</BoxShadows>
 </ResourceDictionary>

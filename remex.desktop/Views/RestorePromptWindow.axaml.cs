@@ -8,7 +8,7 @@ namespace Remex.Desktop.Views;
 /// <summary>
 /// First-run restore prompt: shown once, on desktop lifetimes only, when
 /// <c>dashboard_layout.json</c> is missing on load but a rolling auto-snapshot exists. Mirrors
-/// <see cref="ConfirmationDialog"/>'s minimal glass-card dialog shape.
+/// <see cref="ConfirmationDialog"/>'s minimal card dialog shape.
 /// </summary>
 public partial class RestorePromptWindow : Window
 {

@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
@@ -383,7 +384,7 @@
                         <StackPanel Margin="20" Spacing="16">
 
                             <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
-                            <Border Classes="glass-card" Padding="16" DataContext="{Binding SettingsVm}">
+                            <material:Card Padding="16" DataContext="{Binding SettingsVm}">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{conv:Localize Settings_Language}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch" CornerRadius="8">
@@ -394,7 +395,7 @@
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
                                 </StackPanel>
-                            </Border>
+                            </material:Card>
 
                             <!-- ═══ ALL VISUAL CUSTOMIZATION (live-applied via CustomizationViewModel) ═══ -->
                             <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}"/>

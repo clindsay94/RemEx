@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
@@ -92,7 +93,7 @@
         </StackPanel>
 
         <!-- ═══ REMOTE FILE MANAGER ═══ -->
-        <Border Grid.Row="1" Classes="glass-card" Padding="0" ClipToBounds="True">
+        <material:Card Grid.Row="1" Padding="0" InsideClipping="True">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*">
 
                 <!-- Row 0: Root selector + search + volumes -->
@@ -328,13 +329,13 @@
                     </Border>
                 </Grid>
             </Grid>
-        </Border>
+        </material:Card>
 
         <!-- ═══ VOLUMES + QUEUE + STATUS ═══ -->
         <StackPanel Grid.Row="2" Spacing="12" Margin="0,12,0,0">
 
             <!-- Volumes panel (informational; consent-gated) -->
-            <Border Classes="glass-card" Padding="16,12" IsVisible="{Binding HasVolumes}">
+            <material:Card Padding="16,12" IsVisible="{Binding HasVolumes}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{local:Localize FileTransfer_VolumesTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1"/>
                     <ItemsControl ItemsSource="{Binding Volumes}">
@@ -352,10 +353,10 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- Transfer queue panel -->
-            <Border Classes="glass-card" Padding="16,12" IsVisible="{Binding HasQueueItems}">
+            <material:Card Padding="16,12" IsVisible="{Binding HasQueueItems}">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_QueueTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
@@ -394,10 +395,10 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- Status / hash -->
-            <Border Classes="glass-card" Padding="16,12">
+            <material:Card Padding="16,12">
                 <Grid RowDefinitions="Auto,Auto">
                     <TextBlock Grid.Row="0" Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,6,0,0" IsVisible="{Binding HasVerifiedHash}">
@@ -405,7 +406,7 @@
                         <SelectableTextBlock Grid.Column="1" Text="{Binding VerifiedHash}" FontSize="11" FontFamily="Cascadia Code,Consolas,monospace" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </Grid>
                 </Grid>
-            </Border>
+            </material:Card>
         </StackPanel>
 
     </Grid>

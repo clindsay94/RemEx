@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:converters="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel" DragDrop.AllowDrop="True">
@@ -9,14 +10,14 @@
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <!-- Scoped to this view (via the .launcher-card class) so it doesn't affect glass-card
+        <!-- Scoped to this view (via the .launcher-card class) so it doesn't affect every Card
              usages elsewhere in the app. The card's BorderBrush is already bound to the entry's
              HexColor (at 0.3 opacity) in the DataTemplate below; doubling BorderThickness here
              makes that same tinted border read as brighter/bolder on hover without needing a
              second per-item color binding declared inside a Style (Style Setters resolve
              bindings against the UserControl's own x:DataType, not the DataTemplate item, so a
              HexColor binding here would not resolve). -->
-        <Style Selector="Border.glass-card.launcher-card:pointerover">
+        <Style Selector="material|Card.launcher-card:pointerover">
             <Setter Property="RenderTransform" Value="scale(1.03)"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
@@ -30,7 +31,7 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Border.glass-card.launcher-card:pointerover Border.card-actions">
+        <Style Selector="material|Card.launcher-card:pointerover Border.card-actions">
             <Setter Property="Opacity" Value="1"/>
         </Style>
 
@@ -80,13 +81,13 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Classes="glass-card launcher-card" Margin="8" Padding="0" ClipToBounds="True">
-                            <Border.Background>
+                        <material:Card Classes="launcher-card" Margin="8" Padding="0" InsideClipping="True">
+                            <material:Card.Background>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.1" />
-                            </Border.Background>
-                            <Border.BorderBrush>
+                            </material:Card.Background>
+                            <material:Card.BorderBrush>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.3" />
-                            </Border.BorderBrush>
+                            </material:Card.BorderBrush>
 
                             <Grid RowDefinitions="*, Auto">
                                 <!-- Main Launch Button (Top Area) -->
@@ -111,7 +112,7 @@
                                     </Grid>
                                 </Border>
                             </Grid>
-                        </Border>
+                        </material:Card>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

@@ -3,6 +3,7 @@
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+             xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
              x:Class="Remex.Desktop.App" RequestedThemeVariant="Dark">
     <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
@@ -37,6 +38,83 @@
                  element and an x:Double, not strings. -->
             <FontFamily x:Key="MaterialDesignFonts">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
             <x:Double x:Key="MaterialDesignFontSize">14</x:Double>
+
+            <!-- ═══ THE CARD SURFACE (RemEx-qbzl1). Material.Styles' Card, re-themed rather than
+                 used as shipped, and declared as an OWN key of Application.Resources on purpose.
+                 It CANNOT be a ResourceInclude: ThemeService.ApplyBaseThemeInternal clears every
+                 merged dictionary except its own override dictionary before inserting the new
+                 theme file, so a merged Card theme would survive until the first theme switch and
+                 then vanish — cards would silently fall back to Material's opaque paper on a
+                 translucent shell. Own keys are untouched by that loop.
+
+                 Two things are re-themed, and both are the reason a stock Card will not do:
+
+                 PAINT. Material's Card is opaque MaterialCardBackgroundBrush. RemEx surfaces are
+                 translucent glass over a mica/acrylic window backdrop (RemEx-c437b); an opaque
+                 card would erase the backdrop wherever a card sits, which is most of the app.
+                 Background/BorderBrush/BorderThickness/CornerRadius therefore come from the
+                 Card* palette keys, which is also what keeps the corner-radius sliders in
+                 CustomizationViewModel working — they write CardCornerRadius, and this theme
+                 reads it as a DynamicResource, so the vibrate-feedback preview still animates.
+
+                 SHADOW. Material drives Card elevation through ShadowAssist.ShadowDepth, whose
+                 change handler assigns Border.BoxShadow as a LOCAL value — local values outrank
+                 style setters in Avalonia, so a themed, glow-slider-scaled shadow could never be
+                 pushed past it. This template drops ShadowAssist entirely and binds the ramp key
+                 directly; the App.axaml styles below then step the level on hover.
+
+                 Padding defaults to 0, not Material's 8: every call site already sets its own
+                 padding, and 8 would silently inset all ~50 of them.
+
+                 Structure is otherwise Material's own Card template (Material.Avalonia 3.19.0)
+                 so InsideClipping keeps working — call sites that clipped content with
+                 ClipToBounds on the old Border set InsideClipping here instead, because the Card
+                 itself must stay unclipped or it would clip its own shadow. -->
+            <ControlTheme x:Key="{x:Type material:Card}" TargetType="material:Card">
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
+                <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="ClipToBounds" Value="False"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Setter>
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Panel Name="PART_RootPanel">
+                            <Border Name="PART_BackgroundBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    BoxShadow="{DynamicResource Elevation1Shadow}">
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
+                                            <BoxShadowsTransition.Easing>
+                                                <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
+                                            </BoxShadowsTransition.Easing>
+                                        </BoxShadowsTransition>
+                                    </Transitions>
+                                </Border.Transitions>
+                            </Border>
+                            <Border Name="PART_InnerBorder"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    ClipToBounds="{TemplateBinding InsideClipping}">
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  Padding="{TemplateBinding Padding}"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                            </Border>
+                        </Panel>
+                    </ControlTemplate>
+                </Setter>
+            </ControlTheme>
         </ResourceDictionary>
     </Application.Resources>
 
@@ -92,49 +170,80 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
-        <Style Selector="Border.glass-card">
+        <!-- ═══ CARD STATE (RemEx-qbzl1). Border.glass-card is retired; material:Card is the
+             app's one raised-surface primitive and its resting paint lives in the ControlTheme
+             above. What is left here is STATE.
+
+             The bead's real ask was that an interactive card RAISE A LEVEL on hover rather than
+             only shift colour, so the three-step ramp is spent as: every card rests at level 1,
+             hovering any card takes it to 2, and hovering an .interactive card — one that is
+             itself a click target — takes it to 3 with a bigger lift. Colour still moves too;
+             it is no longer the only signal, which is what the acceptance criterion was about.
+
+             Card has no BoxShadow property of its own (BoxShadow belongs to Border), so the
+             shadow cannot ride a TemplateBinding the way Background does. The /template/
+             selectors below reach PART_BackgroundBorder directly. This works only because the
+             ControlTheme dropped ShadowAssist: ShadowAssist writes BoxShadow as a local value,
+             and a local value would outrank every one of these setters. -->
+        <Style Selector="material|Card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="translateY(-4px) scale(1.01)"/>
+        </Style>
+        <Style Selector="material|Card:pointerover /template/ Border#PART_BackgroundBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+
+        <Style Selector="material|Card.interactive:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="translateY(-6px) scale(1.02)"/>
+        </Style>
+        <Style Selector="material|Card.interactive:pointerover /template/ Border#PART_BackgroundBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
+        </Style>
+
+        <!-- Surface variant (RemEx-zm6gp): for cards that HOST a list rather than act as a
+             clickable unit. The hover lift is designed for finite cards; on a container as tall as
+             its unvirtualized content, scale(1.01) about the centre displaces the top edge by 1% of
+             half its height - on Task Manager that is ~80px of list sliding up over the search
+             field. Surfaces keep the hover background and the elevation step, and give up the
+             transform.
+             ORDER IS LOAD-BEARING: Avalonia has no specificity — the last matching style wins —
+             so this block must sit BELOW both transform-setting hover styles above, or a
+             Card (or a future "surface interactive") re-acquires the lift and the slide
+             returns. TaskManagerListSurfaceTests asserts this ordering from the source. -->
+        <Style Selector="material|Card.surface:pointerover">
+            <Setter Property="RenderTransform" Value="none"/>
+        </Style>
+
+        <!-- ═══ CARD-SHAPED BUTTON (RemEx-qbzl1). HomeView's eight quick actions and three link
+             tiles are cards that happen to be click targets. They carried
+             Classes="glass-card interactive" against a selector that only ever matched Border, so
+             they matched NOTHING and have been rendering as ordinary buttons — dead classes the
+             sweep for leftover .glass-card selectors is what surfaced. They cannot become Cards
+             (a Card is not focusable and raises no Command), so the surface comes to them as a
+             button class instead, painted from the same Card* keys so the two idioms cannot
+             drift apart. RemEx-z7pnx folds .card into the Material button vocabulary. -->
+        <Style Selector="Button.card">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                        <BoxShadowsTransition.Easing>
-                            <SpringEasing Mass="1" Stiffness="120" Damping="12" />
-                        </BoxShadowsTransition.Easing>
-                    </BoxShadowsTransition>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
-
-        <Style Selector="Border.glass-card:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
-            <Setter Property="RenderTransform" Value="translateY(-4px) scale(1.01)"/>
-        </Style>
-
-        <!-- Glass Card Interactive Effect -->
-        <Style Selector="Border.glass-card.interactive:pointerover">
+        <Style Selector="Button.card.interactive:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="translateY(-6px) scale(1.02)"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
         </Style>
-
-        <!-- Surface variant (RemEx-zm6gp): for glass cards that HOST a list rather than act as a
-             clickable unit. The hover lift is designed for finite cards; on a container as tall as
-             its unvirtualized content, scale(1.01) about the centre displaces the top edge by 1% of
-             half its height - on Task Manager that is ~80px of list sliding up over the search
-             field. Surfaces keep the hover background and shadow, and give up the transform.
-             ORDER IS LOAD-BEARING: Avalonia has no specificity — the last matching style wins —
-             so this block must sit BELOW both transform-setting hover styles above, or a
-             glass-card (or a future "surface interactive") re-acquires the lift and the slide
-             returns. TaskManagerListSurfaceTests asserts this ordering from the source. -->
-        <Style Selector="Border.glass-card.surface:pointerover">
-            <Setter Property="RenderTransform" Value="none"/>
+        <Style Selector="Button.card.interactive:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.98)"/>
         </Style>
 
         <!-- Theme Preset Tile Button -->

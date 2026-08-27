@@ -42,6 +42,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Every raised surface in the PC app is a real Material card now, and depth means something.**
+  The 50 places that painted a surface with the hand-rolled `glass-card` Border — Home, Settings,
+  About, Connection, File Transfer, Task Manager, Canvas, App Launcher, Diagnostics, Remote and
+  Personalization — are Material `Card`s, and the two ad-hoc shadow values behind them became a
+  named three-level elevation ramp. Hovering a card now raises it a level rather than only tinting
+  it, and a card you can click raises two. The cards stay translucent glass over the window
+  backdrop rather than adopting Material's opaque paper, the corner-radius sliders still reshape
+  them live, and the glow slider still drives the accent tint at every level. Eleven quick-action
+  buttons on Home were carrying the card classes against a selector that only ever matched a
+  Border, so they had been rendering as plain buttons; they look like the cards they were meant to
+  be again. (RemEx-qbzl1)
+
 - **Every icon in the PC app is a real Material icon now.** The 28 glyphs that used to be
   hand-copied path data in `App.axaml` are gone, and the 38 places that drew them across the shell,
   Home, Canvas, About, Remote Desktop and the tray flyout use `MaterialIcon` instead. Icons now take

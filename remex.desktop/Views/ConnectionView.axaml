@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:views="using:Remex.Desktop.Views"
@@ -14,7 +15,7 @@
             </StackPanel>
 
             <!-- Status + host address + connect/disconnect -->
-            <Border Classes="glass-card" Padding="24">
+            <material:Card Padding="24">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <Ellipse AutomationProperties.Name="{Binding ConnectionStatusAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsConnected}">
@@ -39,10 +40,10 @@
                         <Button Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding GenerateQrCodeCommand}" IsVisible="{Binding CanRevealPairingPin}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- Host info + latency -->
-            <Border Classes="glass-card" Padding="24" IsVisible="{Binding IsConnected}">
+            <material:Card Padding="24" IsVisible="{Binding IsConnected}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{conv:Localize Conn_HostInfo}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                     <TextBlock Text="{Binding HostRuntimeSummary}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
@@ -51,17 +52,17 @@
                         <TextBlock Grid.Column="1" Text="{Binding LatencyText}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </Grid>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- QR Code Display Panel — contents shared with SettingsView (RemEx-xmgw) -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding ShowQrCode}">
+            <material:Card Padding="20" IsVisible="{Binding ShowQrCode}">
                 <views:PairingQrPanelView/>
-            </Border>
+            </material:Card>
 
             <!-- Pairing PIN Display Panel — contents shared with SettingsView (RemEx-xmgw) -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding ShowPairingPin}">
+            <material:Card Padding="20" IsVisible="{Binding ShowPairingPin}">
                 <views:PairingPinPanelView/>
-            </Border>
+            </material:Card>
 
         </StackPanel>
     </ScrollViewer>

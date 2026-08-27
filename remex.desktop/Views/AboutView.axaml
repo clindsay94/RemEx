@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
@@ -93,7 +94,7 @@
                     </Button>
 
                     <!-- Version Info Card -->
-                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                    <material:Card Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16">
                             <!-- This RemEx app's own version (remex.agent is one process — there is no separate desktop client) -->
                             <StackPanel Spacing="8">
@@ -185,7 +186,7 @@
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                 </StackPanel>
 
@@ -193,7 +194,7 @@
                 <StackPanel Width="{Binding #AboutCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
 
                     <!-- What's New Section -->
-                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                    <material:Card Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize About_WhatsNew}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             <ItemsControl ItemsSource="{Binding WhatsNewItems}">
@@ -207,10 +208,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                     <!-- GitHub Section -->
-                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                    <material:Card Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16" HorizontalAlignment="Stretch">
                             <TextBlock Text="{local:Localize About_GitHubStar}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
 
@@ -218,7 +219,7 @@
 
                             <Button Classes="github-btn" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                 </StackPanel>
 

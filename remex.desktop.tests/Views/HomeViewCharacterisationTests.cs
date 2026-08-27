@@ -320,7 +320,7 @@ public class HomeViewCharacterisationTests
         // Section 7 of the characterisation. The footer is row 1 of a two-row Grid and is always
         // visible; folding it into the scrolling body is a behaviour change wearing a layout
         // change's clothes.
-        Home().Should().MatchRegex(@"<Border Grid\.Row=""1"" Classes=""glass-card""",
+        Home().Should().MatchRegex(@"<material:Card Grid\.Row=""1"" Classes=""footer-bar""",
             "the status footer sits in row 1, pinned below the ScrollViewer");
     }
 

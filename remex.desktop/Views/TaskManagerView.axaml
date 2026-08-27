@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services" x:Class="Remex.Desktop.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
@@ -50,7 +51,7 @@
             </Border>
 
             <!-- Unified List Container (M3 Surface) -->
-            <Border Classes="glass-card surface" Padding="0" ClipToBounds="True">
+            <material:Card Classes="surface" Padding="0" InsideClipping="True">
                 <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="models:ProcessInfo">
@@ -114,7 +115,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-            </Border>
+            </material:Card>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

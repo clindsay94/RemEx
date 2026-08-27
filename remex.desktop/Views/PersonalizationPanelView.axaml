@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Desktop.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
@@ -79,7 +80,7 @@
         <!-- The whole palette comes out of one seed, so this is where the seed is chosen. The wheel
              and the three sliders are two views of the same HCT triple: the wheel carries hue and
              chroma, which are the axes a disc can show, and tone is the one it cannot. -->
-        <Border Classes="glass-card" Padding="20">
+        <material:Card Padding="20">
             <StackPanel Spacing="16">
                 <TextBlock Text="{local:Localize Custom_PaletteStudio}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -212,10 +213,10 @@
                     </StackPanel>
                 </Grid>
             </StackPanel>
-        </Border>
+        </material:Card>
 
         <!-- ═══ Section 3: Advanced Overrides ═══ -->
-        <Border Classes="glass-card" Padding="20">
+        <material:Card Padding="20">
             <StackPanel Spacing="20">
                 <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -303,10 +304,10 @@
                     </StackPanel>
                 </Grid>
             </StackPanel>
-        </Border>
+        </material:Card>
 
         <!-- ═══ Section 4: Atmosphere ═══ -->
-        <Border Classes="glass-card" Padding="20">
+        <material:Card Padding="20">
             <StackPanel Spacing="16">
                 <TextBlock Text="{local:Localize Custom_Atmosphere}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                 <Grid ColumnDefinitions="*,2*">
@@ -382,10 +383,10 @@
                     <ToggleSwitch AutomationProperties.Name="{local:Localize Custom_ReducedMotionTitle}" Grid.Column="1" IsChecked="{Binding IsReducedMotion}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
                 </Grid>
             </StackPanel>
-        </Border>
+        </material:Card>
 
         <!-- ═══ Section 5: Typography ═══ -->
-        <Border Classes="glass-card" Padding="20">
+        <material:Card Padding="20">
             <StackPanel Spacing="16">
                 <TextBlock Text="{local:Localize Custom_Typography}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_PageTitleFontTip}">
@@ -412,7 +413,7 @@
                     <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                 </Border>
             </StackPanel>
-        </Border>
+        </material:Card>
 
         <Button Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
 

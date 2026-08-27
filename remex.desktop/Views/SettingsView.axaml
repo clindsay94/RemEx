@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
@@ -73,7 +74,7 @@
                 <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,24,16">
 
                     <!-- ═══ Connection Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
+                    <material:Card Padding="24">
                         <StackPanel Spacing="20">
                             <TextBlock Text="{local:Localize Settings_Connection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -122,7 +123,7 @@
 
                             <!-- QR Code Display Panel — contents shared with ConnectionView
                                  (RemEx-xmgw). The card chrome here is deliberately NOT the
-                                 glass-card style ConnectionView uses; see PairingQrPanelView. -->
+                                 Card surface ConnectionView uses; see PairingQrPanelView. -->
                             <Border IsVisible="{Binding Connection.ShowQrCode}"
                                     Background="{DynamicResource GlassBaseDarkBrush}"
                                     CornerRadius="12" Padding="20"
@@ -138,10 +139,10 @@
                                 <views:PairingPinPanelView DataContext="{Binding Connection}"/>
                             </Border>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                     <!-- ═══ General Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
+                    <material:Card Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize Settings_General}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -205,7 +206,7 @@
                                 <Button Grid.Column="1" Content="{local:Localize Settings_ExitAppButton}" Command="{Binding ExitApplicationCommand}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                 </StackPanel>
 
@@ -213,7 +214,7 @@
                 <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
 
                     <!-- ═══ Layout Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
+                    <material:Card Padding="24">
                         <StackPanel Spacing="20">
                             <TextBlock Text="{local:Localize Settings_Layout}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -233,10 +234,10 @@
                                 <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                     <!-- ═══ Pinned Sensors Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
+                    <material:Card Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                             <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
@@ -253,10 +254,10 @@
                                 </ItemsControl>
                             </ScrollViewer>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                     <!-- ═══ Backup &amp; Restore Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
+                    <material:Card Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize Settings_BackupSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                             <TextBlock Text="{local:Localize Settings_BackupDescription}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
@@ -266,7 +267,7 @@
                                 <Button Content="{local:Localize Settings_ImportButton}" Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
                             </StackPanel>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
 
                 </StackPanel>
             </WrapPanel>
@@ -274,7 +275,7 @@
             <!-- ═══ FULL WIDTH SECTIONS ═══ -->
             <StackPanel Spacing="24">
                 <!-- ═══ Shared Folders Section ═══ -->
-                <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
+                <material:Card Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
                     <StackPanel Spacing="16">
                         <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
@@ -306,7 +307,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
-                </Border>
+                </material:Card>
 
                 <!-- ═══ Paired Devices (RemEx-kirdm) ═══
                      DELIBERATELY ITS OWN CARD, directly above File-Sharing Trust and never merged
@@ -314,7 +315,7 @@
                      pairing; this one IS the pairing. One list would let a user revoke the wrong
                      thing, and on this side that costs them a phone that has to pair again with a
                      new PIN. Read-only for now — rename and unpair are RemEx-4gbp2. -->
-                <Border Classes="glass-card" Padding="24" IsVisible="{Binding CanListPairedDevices}">
+                <material:Card Padding="24" IsVisible="{Binding CanListPairedDevices}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{local:Localize Settings_PairedDevices}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
@@ -375,10 +376,10 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
-                </Border>
+                </material:Card>
 
                 <!-- ═══ File-Sharing Trust Section ═══ -->
-                <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsTrustManagement}">
+                <material:Card Padding="24" IsVisible="{Binding SupportsTrustManagement}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
@@ -418,10 +419,10 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
-                </Border>
+                </material:Card>
 
                 <!-- ═══ Help Section ═══ -->
-                <Border Classes="glass-card" Padding="24">
+                <material:Card Padding="24">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="4">
                             <TextBlock Text="{local:Localize Settings_Help}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
@@ -429,7 +430,7 @@
                         </StackPanel>
                         <Button Grid.Column="1" Content="{local:Localize Settings_ReplayTutorial}" Command="{Binding ReplayTutorialCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_ReplayTutorialTooltip}"/>
                     </Grid>
-                </Border>
+                </material:Card>
             </StackPanel>
 
         </StackPanel>

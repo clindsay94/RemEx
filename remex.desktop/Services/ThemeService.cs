@@ -370,41 +370,56 @@ public class ThemeService : IDisposable
             SetResourceOverrideInternal("SystemAccentColorDark2", palette.SurfaceContainerHigh);
             SetResourceOverrideInternal("SystemAccentColorDark3", palette.Surface);
 
-            // Card hover glow tinted with the current accent color.
+            // ELEVATION RAMP, tinted with the current accent colour (RemEx-qbzl1).
+            // Three ordered levels replace the old CardShadow/CardHoverShadow pair, which named
+            // two steps after the one control that consumed them. Every raised surface — Card,
+            // dialog, app bar — now asks for a LEVEL, so the depth language stays consistent when
+            // a later phase raises something new.
+            //
+            // The accent glow rides on top of the black drop shadow and its intensity follows the
+            // GlowStrength slider (0 = drop shadow only). That is why RemEx cannot use Material's
+            // ShadowAssist.ShadowDepth for cards: ShadowProvider hands back a FIXED black shadow
+            // and writes it as a LOCAL value on the template border, which outranks any style —
+            // there is no seam to push a themed, user-scaled glow through. RemEx owns the Card
+            // ControlTheme (App.axaml) precisely so these keys reach the surface instead.
             var p = palette.Primary;
-            SetResourceOverrideInternal("CardHoverShadow", new BoxShadows(
-                new BoxShadow
-                {
-                    Blur = 48,
-                    Spread = 0,
-                    OffsetY = 12,
-                    Color = Color.FromArgb(0x60, 0, 0, 0)
-                },
-                new BoxShadow[] { new BoxShadow { Blur = 15, Spread = 2,
-                                Color = Color.FromArgb(0x50, p.R, p.G, p.B) } }));
-
-            // Base card drop shadow + a neon accent glow whose intensity follows the
-            // GlowStrength slider (0 = no glow). Every Border.glass-card consumes CardShadow,
-            // so the glow previews live across whatever screen is open.
             double glow = Math.Clamp(settings.GlowStrength, 0, 30);
-            var baseCardShadow = new BoxShadow
+
+            // Blur/offset/alpha grow monotonically with the level; the glow scales with them so a
+            // level-3 lift reads as further off the page than a level-1 card at the same slider
+            // setting. Ratios follow Material's Depth1..Depth3 ordering, softened for glass.
+            BoxShadows Elevation(double blur, double offsetY, byte dropAlpha, double glowScale)
             {
-                Blur = 24, Spread = 0, OffsetY = 6,
-                Color = Color.FromArgb(0x40, 0, 0, 0)
-            };
-            var cardShadow = glow > 0.5
-                ? new BoxShadows(baseCardShadow, new BoxShadow[]
+                var drop = new BoxShadow
+                {
+                    Blur = blur,
+                    Spread = 0,
+                    OffsetY = offsetY,
+                    Color = Color.FromArgb(dropAlpha, 0, 0, 0)
+                };
+
+                if (glow <= 0.5)
+                {
+                    return new BoxShadows(drop);
+                }
+
+                return new BoxShadows(drop, new[]
+                {
+                    new BoxShadow
                     {
-                        new BoxShadow
-                        {
-                            Blur = glow * 1.6,
-                            Spread = glow * 0.15,
-                            OffsetX = 0, OffsetY = 0,
-                            Color = Color.FromArgb((byte)Math.Clamp(0x30 + glow * 6, 0, 255), p.R, p.G, p.B)
-                        }
-                    })
-                : new BoxShadows(baseCardShadow);
-            SetResourceOverrideInternal("CardShadow", cardShadow);
+                        Blur = glow * 1.6 * glowScale,
+                        Spread = glow * 0.15 * glowScale,
+                        OffsetX = 0,
+                        OffsetY = 0,
+                        Color = Color.FromArgb(
+                            (byte)Math.Clamp(0x30 + glow * 6, 0, 255), p.R, p.G, p.B)
+                    }
+                });
+            }
+
+            SetResourceOverrideInternal("Elevation1Shadow", Elevation(24, 6, 0x40, 1.0));
+            SetResourceOverrideInternal("Elevation2Shadow", Elevation(34, 9, 0x50, 1.15));
+            SetResourceOverrideInternal("Elevation3Shadow", Elevation(48, 12, 0x60, 1.3));
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
 

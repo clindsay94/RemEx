@@ -2,7 +2,7 @@
     The QR pairing panel's contents, shared by ConnectionView and SettingsView.
 
     Only the CONTENTS are shared, not the card around them: the two hosts wrap this in visibly
-    different chrome (ConnectionView uses the glass-card style, which is CardBackgroundBrush plus a
+    different chrome (ConnectionView uses the Card surface, which is CardBackgroundBrush plus a
     box shadow; SettingsView uses a flat GlassBaseDarkBrush card). Unifying that would silently
     restyle one of the two screens across all four themes, which is a design decision and not part
     of RemEx-xmgw's dedupe.

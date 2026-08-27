@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
              xmlns:vm="using:Remex.Desktop.ViewModels"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:logging="using:Remex.Core.Logging"
@@ -36,7 +37,7 @@
         <TextBlock Grid.Row="0" Classes="page-title" Text="{local:Localize Logs_Header}" Margin="0,0,0,24"/>
 
         <!-- Main Card -->
-        <Border Grid.Row="1" Classes="glass-card" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <material:Card Grid.Row="1" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <TabControl>
                 <!-- Tab 1: Live App Logs -->
                 <TabItem Header="{local:Localize Logs_LiveTab}">
@@ -123,6 +124,6 @@
                     </Grid>
                 </TabItem>
             </TabControl>
-        </Border>
+        </material:Card>
     </Grid>
 </UserControl>

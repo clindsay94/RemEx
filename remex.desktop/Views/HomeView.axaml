@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
@@ -24,6 +25,14 @@
         </Style>
 
         <!-- Quick-action pill buttons -->
+        <!-- The status footer floats ABOVE the scrolled content, so its shadow has to point
+             UP. The Elevation ramp is all downward drop shadows and cannot express that, and
+             Card has no BoxShadow property to set inline (it belongs to the template's
+             background border), so the one bar that needs it says so here. RemEx-qbzl1. -->
+        <Style Selector="material|Card.footer-bar /template/ Border#PART_BackgroundBorder">
+            <Setter Property="BoxShadow" Value="0 -8 32 0 #40000000"/>
+        </Style>
+
         <Style Selector="Button.action-pill">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -122,7 +131,7 @@
             </Grid>
 
             <!-- ═══ SYSTEM STATUS (RemEx-id37) ═══ -->
-            <Border Classes="glass-card" Padding="24" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0"
+            <material:Card Padding="24" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0"
                     IsVisible="{Binding SystemStatus.IsRendered}">
                 <StackPanel Spacing="14">
                     <Grid ColumnDefinitions="*,Auto">
@@ -205,10 +214,10 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- ═══ ALWAYS-ON STATS STRIP (live CPU · memory · uptime) ═══ -->
-            <Border Classes="glass-card" Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">
+            <material:Card Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">
                 <StackPanel Orientation="Horizontal">
                     <!-- CPU -->
                     <StackPanel Width="190" Spacing="7" Margin="22,14">
@@ -238,7 +247,7 @@
                         <TextBlock Text="{Binding UptimeText}" FontSize="18" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <WrapPanel Margin="0,24,0,0" HorizontalAlignment="Center">
 
@@ -297,7 +306,7 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:SensorViewModel">
                                 <!-- Margin moved onto the ListBoxItem so the focus ring hugs this card. -->
-                                <Border Classes="glass-card interactive" Padding="24" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
+                                <material:Card Classes="interactive" Padding="24" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
                                     <Panel>
                                         <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="80" Margin="-24,0,-24,-24"/>
 
@@ -312,68 +321,68 @@
                                             </StackPanel>
                                         </StackPanel>
                                     </Panel>
-                                </Border>
+                                </material:Card>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
 
                     <!-- No Sensors HUD state -->
-                    <Border Classes="glass-card" Padding="48" IsVisible="{Binding !PinnedSensors.Count}" CornerRadius="4,32,4,32" BorderThickness="1,0,0,0">
+                    <material:Card Padding="48" IsVisible="{Binding !PinnedSensors.Count}" CornerRadius="4,32,4,32" BorderThickness="1,0,0,0">
                         <StackPanel Spacing="16" HorizontalAlignment="Center">
                             <TextBlock Text="{local:Localize Home_NoDataFeed}" FontSize="20" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
                             <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" FontSize="13" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap"/>
                             <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
                 </StackPanel>
 
                 <!-- ═══ RIGHT COLUMN: QUICK LAUNCH ═══ -->
                 <StackPanel Width="340" Spacing="16">
                     <TextBlock Text="{local:Localize Home_Directives}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
                     <UniformGrid Columns="2">
-                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="glass-card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="ChartLineVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsSensors}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="glass-card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsCommands}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="glass-card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="Apps" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsApps}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsProcesses}" Classes="glass-card interactive" Command="{Binding NavigateToTaskManagerCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsProcesses}" Classes="card interactive" Command="{Binding NavigateToTaskManagerCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="FormatListBulleted" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsProcesses}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="glass-card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="FolderOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsFiles}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="glass-card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="FileDocument" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsLogs}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="glass-card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsPersonalize}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="glass-card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsAbout}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
@@ -393,7 +402,7 @@
                 </Grid>
 
                 <!-- Populated feed -->
-                <Border Classes="glass-card" Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
+                <material:Card Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
                     <ScrollViewer MaxHeight="300" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding RecentActivity}">
                             <ItemsControl.ItemTemplate>
@@ -409,20 +418,20 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                </Border>
+                </material:Card>
 
                 <!-- Empty state -->
-                <Border Classes="glass-card" Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
+                <material:Card Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
                     <StackPanel Spacing="8" HorizontalAlignment="Center">
                         <TextBlock Text="🗒" FontSize="26" HorizontalAlignment="Center" Opacity="0.7"/>
                         <TextBlock Text="{local:Localize Home_NoRecentActivity}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
                     </StackPanel>
-                </Border>
+                </material:Card>
             </StackPanel>
 
             <!-- ═══ Links: GitHub + Google Play ═══ -->
             <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
-                <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="glass-card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource CardBackgroundHoverBrush}" Margin="0,0,14,0">
                             <TextBlock Text="🐙" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -433,7 +442,7 @@
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="glass-card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemSuccessBackgroundBrush}" Margin="0,0,14,0">
                             <TextBlock Text="▶" FontSize="20" Foreground="{DynamicResource SystemSuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -444,7 +453,7 @@
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="glass-card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemWarningBackgroundBrush}" Margin="0,0,14,0">
                             <TextBlock Text="🌡️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -461,7 +470,7 @@
     </ScrollViewer>
 
     <!-- Advanced Status Node Footer -->
-    <Border Grid.Row="1" Classes="glass-card" Padding="20" HorizontalAlignment="Center" BoxShadow="0 -8 32 0 #40000000" CornerRadius="20,20,4,4" Margin="0,0,0,16">
+    <material:Card Grid.Row="1" Classes="footer-bar" Padding="20" HorizontalAlignment="Center" CornerRadius="20,20,4,4" Margin="0,0,0,16">
         <StackPanel Orientation="Horizontal" Spacing="24">
             <Grid>
                 <!-- Radar Sweep Animation -->
@@ -491,6 +500,6 @@
                 <Button Classes="action-pill action-pill-danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
             </StackPanel>
         </StackPanel>
-    </Border>
+    </material:Card>
 </Grid>
 </UserControl>

@@ -74,7 +74,12 @@ public class ThemeKeyCoverageTests
         // them — they are simply not declared with a colour-valued element, so the colour scan above
         // cannot see them. Listing them here is what keeps that gap from widening quietly.
         allKeys.Except(colourKeys).Except(GeometryKeys)
-            .Should().BeEquivalentTo(new[] { "CardCornerRadius", "RemoteCardCornerRadius", "CardShadow", "CardHoverShadow" },
+            .Should().BeEquivalentTo(
+                new[]
+                {
+                    "CardCornerRadius", "RemoteCardCornerRadius",
+                    "Elevation1Shadow", "Elevation2Shadow", "Elevation3Shadow",
+                },
                 "anything else left outside the seed pipeline needs a reason recorded here");
     }
 
@@ -125,7 +130,11 @@ public class ThemeKeyCoverageTests
                 .Select(m => m.Groups[1].Value);
 
             ownKeys.Should().BeEquivalentTo(
-                new[] { "CardCornerRadius", "CardBorderThickness", "CardShadow", "CardHoverShadow" },
+                new[]
+                {
+                    "CardCornerRadius", "CardBorderThickness",
+                    "Elevation1Shadow", "Elevation2Shadow", "Elevation3Shadow",
+                },
                 $"{preset}.axaml is geometry plus a merge; anything else belongs in the shared palette");
         }
     }

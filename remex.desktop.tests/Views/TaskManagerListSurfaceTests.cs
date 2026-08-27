@@ -13,16 +13,17 @@ namespace Remex.Desktop.Tests.Views;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <c>Border.glass-card:pointerover</c> applies <c>translateY(-4px) scale(1.01)</c> — a hover lift
-/// designed for finite cards. The Task Manager wraps its ENTIRE process list in one glass-card
-/// Border, and because the ListBox sits in an unbounded StackPanel, that Border is as tall as the
-/// full unvirtualized list — thousands of pixels. A centre-origin scale of 1.01 displaces the top
+/// <c>material|Card:pointerover</c> applies <c>translateY(-4px) scale(1.01)</c> — a hover lift
+/// designed for finite cards. The Task Manager wraps its ENTIRE process list in one Card, and
+/// because the ListBox sits in an unbounded StackPanel, that Card is as tall as the full
+/// unvirtualized list — thousands of pixels. A centre-origin scale of 1.01 displaces the top
 /// edge by 1% of half the height: at ~200 processes, hovering any row slid the card ~80px up over
-/// the search field. Connor hit it live on 2026-08-26.
+/// the search field. Connor hit it live on 2026-08-26. The surface it guards moved from
+/// <c>Border.glass-card</c> to <c>material:Card</c> in RemEx-qbzl1; the trap is unchanged.
 /// </para>
 /// <para>
-/// The fix is the <c>surface</c> class: glass cards that HOST a list keep the hover background and
-/// shadow but give up the transform. Both halves are load-bearing — dropping the class from the
+/// The fix is the <c>surface</c> class: cards that HOST a list keep the hover background and the
+/// elevation step but give up the transform. Both halves are load-bearing — dropping the class from the
 /// view restores the slide, and deleting the App.axaml style turns the class into an inert word.
 /// </para>
 /// <para>
@@ -46,12 +47,13 @@ public class TaskManagerListSurfaceTests
 
         var container = listBoxes[0].Parent;
         container.Should().NotBeNull();
-        container!.Name.LocalName.Should().Be("Border");
+        container!.Name.LocalName.Should().Be("Card",
+            "the surface primitive is Material's Card since RemEx-qbzl1; a plain Border here would " +
+            "silently drop the card paint and the elevation ramp along with the surface override");
 
         var classes = (container.Attribute("Classes")?.Value ?? string.Empty).Split(' ');
-        classes.Should().Contain("glass-card");
         classes.Should().Contain("surface",
-            "without the surface class, the glass-card hover transform scales a list-height Border " +
+            "without the surface class, the Card hover transform scales a list-height surface " +
             "and slides the top of the list over the search field");
     }
 
@@ -63,7 +65,7 @@ public class TaskManagerListSurfaceTests
 
         var surfaceHoverStyles = appXaml
             .Descendants(XName.Get("Style", Avalonia))
-            .Where(style => style.Attribute("Selector")?.Value == "Border.glass-card.surface:pointerover")
+            .Where(style => style.Attribute("Selector")?.Value == "material|Card.surface:pointerover")
             .ToList();
 
         surfaceHoverStyles.Should().ContainSingle(
@@ -95,9 +97,14 @@ public class TaskManagerListSurfaceTests
             .Where(selector => selector is not null)
             .ToList();
 
-        var surfaceIndex = selectorsInDocumentOrder.IndexOf("Border.glass-card.surface:pointerover");
-        var baseHoverIndex = selectorsInDocumentOrder.IndexOf("Border.glass-card:pointerover");
-        var interactiveHoverIndex = selectorsInDocumentOrder.IndexOf("Border.glass-card.interactive:pointerover");
+        var surfaceIndex = selectorsInDocumentOrder.IndexOf("material|Card.surface:pointerover");
+        var baseHoverIndex = selectorsInDocumentOrder.IndexOf("material|Card:pointerover");
+        var interactiveHoverIndex = selectorsInDocumentOrder.IndexOf("material|Card.interactive:pointerover");
+
+        surfaceIndex.Should().BeGreaterThan(-1, "the surface override must still exist in App.axaml");
+        baseHoverIndex.Should().BeGreaterThan(-1, "the base hover lift must still exist to be overridden");
+        interactiveHoverIndex.Should().BeGreaterThan(-1,
+            "the interactive hover lift must still exist to be overridden");
 
         surfaceIndex.Should().BeGreaterThan(baseHoverIndex,
             "last-wins ordering is what lets the surface override beat the base hover lift");
