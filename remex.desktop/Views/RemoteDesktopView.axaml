@@ -57,6 +57,12 @@
                     <!-- Right: Settings -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <TextBlock Text="{local:Localize RemoteDesktop_Display}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                        <!-- A disabled combo box reads as "not available here", not as "still
+                             finding your monitors". The ring is the difference (RemEx-rcgmc). -->
+                        <ProgressBar Classes="circular" IsIndeterminate="True"
+                                     VerticalAlignment="Center"
+                                     IsVisible="{Binding IsLoadingDisplays}"
+                                     AutomationProperties.Name="{local:Localize RemoteDesktop_LoadingDisplays}"/>
                         <ComboBox ItemsSource="{Binding AvailableDisplayTargets}"
                                   SelectedItem="{Binding SelectedDisplayTarget}"
                                   MinWidth="220"

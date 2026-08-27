@@ -42,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Three screens that were quietly working now say so.** Loading a folder over a slow link,
+  connecting from a dashboard card, and enumerating monitors for Remote Desktop all used to look
+  identical to being stuck: a word, a greyed-out control, or a button that had changed its label.
+  Each has a spinner now. Progress bars also follow the palette everywhere instead of on some
+  screens only — the transfer bar and the pairing bar had been using the component library's own
+  colours. Bars that can report a real percentage still do; the pairing handshake, which genuinely
+  cannot, is the only indeterminate one, and every spinner announces itself to screen readers.
+  (RemEx-rcgmc)
+
 - **Off switches are visible again on three of the four PC themes.** Material draws a toggle
   switch's unchecked track in a hardcoded black at a quarter opacity, which over RemEx's dark
   glass is almost exactly the surface behind it — the eight switches in Settings and the two in

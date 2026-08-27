@@ -154,7 +154,19 @@
                 <Grid Grid.Row="5" ColumnDefinitions="*,Auto">
 
                     <Grid Grid.Column="0">
-                        <TextBlock Text="{local:Localize FileTransfer_Loading}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+                        <!-- The word "Loading" on its own says a request was made, not that it is
+                             still running. The indeterminate ring is the part that distinguishes
+                             "working" from "stuck", and a directory listing over a slow link is
+                             exactly where that matters (RemEx-rcgmc). Indeterminate is honest here:
+                             the host sends the listing in one message, so there is no percentage to
+                             report. -->
+                        <StackPanel Orientation="Horizontal" Spacing="10"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    IsVisible="{Binding IsLoading}">
+                            <ProgressBar Classes="circular" IsIndeterminate="True"
+                                         AutomationProperties.Name="{local:Localize FileTransfer_Loading}"/>
+                            <TextBlock Text="{local:Localize FileTransfer_Loading}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
 
                         <!-- Folder listing: details list OR resizable icon grid; hidden during search -->
                         <Panel IsVisible="{Binding !ShowSearchResults}">
@@ -317,7 +329,7 @@
                                     <TextBlock Grid.Column="0" Text="{Binding ModeLabel}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="64"/>
                                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" CornerRadius="2" IsVisible="{Binding IsActive}"/>
+                                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" IsVisible="{Binding IsActive}"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding StateLabel}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0"/>
                                     <Button Grid.Column="3" Content="✕" Classes="tertiary icon-button" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}"/>

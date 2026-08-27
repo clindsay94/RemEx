@@ -42,9 +42,16 @@
                            IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                            TextWrapping="Wrap"/>
                 
-                <ProgressBar IsIndeterminate="True" 
-                             IsVisible="{Binding IsBusy}" 
-                             HorizontalAlignment="Stretch"/>
+                <!-- Indeterminate is honest: a pairing handshake reports no percentage, so a
+                     determinate bar here would be inventing one. The accessible name is what makes
+                     it mean anything to a screen reader - an indeterminate bar has no text and no
+                     value to announce, so without it the dialog simply goes quiet while it works
+                     (RemEx-rcgmc). Status_Connecting rather than a new string: the handshake IS the
+                     connection attempt, and it already reads correctly in all nine locales. -->
+                <ProgressBar IsIndeterminate="True"
+                             IsVisible="{Binding IsBusy}"
+                             HorizontalAlignment="Stretch"
+                             AutomationProperties.Name="{local:Localize Status_Connecting}"/>
             </StackPanel>
             
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">

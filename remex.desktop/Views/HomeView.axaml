@@ -182,7 +182,7 @@
                             <TextBlock Text="{local:Localize Home_StatCpu}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding CpuText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Grid>
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding CpuPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding CpuPercent}" Height="4"/>
                     </StackPanel>
 
                     <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>
@@ -193,7 +193,7 @@
                             <TextBlock Text="{local:Localize Home_StatMemory}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding RamText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Grid>
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding RamPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding RamPercent}" Height="4"/>
                     </StackPanel>
 
                     <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>

@@ -607,6 +607,39 @@
             <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
         </Style>
 
+        <!-- ═══ PROGRESS (RemEx-rcgmc). Material's MaterialProgressBar paints the fill from
+             MaterialPrimaryDarkBrush and the TRACK from MaterialPrimaryLightBrush — a light tint
+             of the primary, not a neutral. HomeView's two stat bars had always overridden both;
+             FileTransferView's transfer bar and PairingDialog's pairing bar had not, so the same
+             control wore two different colour schemes depending on which screen you were on.
+             One rule, and the per-view overrides come out.
+
+             DETERMINATE WHERE A REAL PERCENTAGE EXISTS. All three of the app's linear bars bind a
+             genuine 0-100 value (CPU, memory, transfer progress); the only IsIndeterminate="True"
+             is PairingDialog's, where the host genuinely cannot report progress on a handshake. A
+             fake determinate bar is a lie about progress, so that distinction is deliberate and is
+             what ProgressIndicatorTests pins. -->
+        <Style Selector="ProgressBar">
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="MinHeight" Value="4"/>
+            <Setter Property="CornerRadius" Value="2"/>
+        </Style>
+
+        <!-- The circular variant is a THEME swap, not a class of setters: Material implements it
+             with a different template entirely (an Arc driven by RangeToSweepConverter, spun by
+             Material.Styles' own Rotator). Adding .circular to a ProgressBar is the whole adoption
+             — there is no bespoke spinner geometry anywhere in this app to replace, which is the
+             other half of the bead's acceptance and was already true. -->
+        <Style Selector="ProgressBar.circular">
+            <Setter Property="Theme" Value="{DynamicResource MaterialCircularProgressBar}"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="MinHeight" Value="22"/>
+            <Setter Property="MinWidth" Value="22"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+
         <!-- Typography classes -->
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="22"/>
