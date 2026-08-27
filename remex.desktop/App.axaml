@@ -736,6 +736,65 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             TABS, EXPANDERS AND SCROLL SURFACES (RemEx-04ftl). All three keep Material's
+             templates; what changes is which palette they read and, for the expander, whether it
+             animates at all.
+
+             ThemeService.PushSeedIntoMaterialTheme writes the seed's PRIMARY and SECONDARY into
+             MaterialTheme.CurrentTheme and nothing else, so anything a Material theme draws from
+             its Body, Selection or CardBackground brushes is on Material's palette rather than
+             RemEx's. That is why each of these needs saying explicitly: the parts that happened to
+             use MaterialPrimaryMid were already right, and the parts beside them were not - which
+             is the hardest kind of mismatch to notice, because half of the control looks correct.
+             ═══════════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- TABS. The active indicator already animates between headers - that is Material's own
+             template and this does not touch it. The highlight rode MaterialPrimaryMidBrush, which
+             IS seeded and so was already correct; the INACTIVE header colour rode
+             MaterialBodyLightBrush, which is not, so a selected tab was on the app's accent and
+             its unselected neighbours were on the component library's grey. -->
+        <Style Selector="TabControl">
+            <Setter Property="assists:TabControlAssist.TabHeaderHighlightBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="assists:TabControlAssist.TabHeaderForeground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="assists:TabControlAssist.TabHeaderInactiveBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+
+        <!-- EXPANDERS. Two changes, and the first is not a colour.
+
+             MaterialExpander sets ContentTransition to {x:Null} — the content simply appears and
+             disappears. The bead's acceptance criterion is that expanders animate open and closed,
+             and About's FAQ list is a column of them, so opening one made the whole page jump. A
+             CrossFade is the smallest thing that reads as the panel opening rather than the page
+             reflowing under the pointer.
+
+             The background was MaterialCardBackgroundBrush — Material's OPAQUE paper, the same
+             brush RemEx had to keep off Card (RemEx-qbzl1). An opaque expander sitting inside a
+             translucent card punches a hole in the backdrop exactly where the eye already is. -->
+        <Style Selector="Expander">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="ContentTransition">
+                <CrossFade Duration="0:0:0.2"/>
+            </Setter>
+        </Style>
+
+        <!-- SCROLLBARS. Material draws them from MaterialBodyBrush and MaterialSelectionBrush,
+             neither of which the seed reaches, so every scrollbar in the app was the one piece of
+             chrome that ignored the user's chosen palette. The thumb takes the accent on hover
+             because a scrollbar you are dragging should say so. -->
+        <Style Selector="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+        <Style Selector="ScrollBar /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+        <Style Selector="ScrollBar:pointerover /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
         <!-- Typography classes -->
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="22"/>

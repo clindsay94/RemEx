@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scrollbars, tabs and the FAQ expanders follow your palette now, and expanders open smoothly.**
+  Scrollbars were the one piece of chrome that ignored the colour you picked entirely. On the
+  Diagnostics screen the selected tab was on your accent while its unselected neighbours were in
+  the component library's grey — half a control looking right is harder to notice than a whole one
+  looking wrong. About's FAQ entries used to snap open and shut, which made the page jump under the
+  pointer; they fade open now, and they are translucent like the card they sit in rather than an
+  opaque panel punching a hole in the background. (RemEx-04ftl)
+
 - **Sliders show their value while you drag them, and the arrow keys work.** Dragging a slider
   used to move a number that lived somewhere else on the screen; the value now appears above the
   handle as you move it. Four sliders could barely be used from the keyboard at all — the contrast
