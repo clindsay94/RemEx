@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Remex.Desktop.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Models;
@@ -14,6 +15,27 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // THE MICA/ACRYLIC BACKDROP DEPENDS ON THIS LINE (RemEx-c437b). Without it the window
+        // keeps Material.Avalonia's decorations theme, whose underlay is an opaque sheet over the
+        // OS backdrop — the app then renders a flat surface while reporting that Mica is active.
+        // Themes/Chrome/WindowChrome.axaml carries the diagnosis and why nothing lighter reaches it.
+        // Assigned here rather than as a Window attribute because the theme arrives in a merged
+        // resource dictionary, which only exists once InitializeComponent has run.
+        // TryGetResource, NOT the Resources indexer. The indexer does not search
+        // MergedDictionaries, so it returns null for a key that is plainly there — and because
+        // WindowDecorationsTheme is a nullable ControlTheme, assigning that null is not an error.
+        // The window then quietly keeps Material's decorations and the backdrop stays dead, which
+        // is the same shape of silent failure this whole bug was. Missing means broken, so throw.
+        if (!Resources.TryGetResource("BackdropSafeWindowDecorations", ActualThemeVariant, out var decorations)
+            || decorations is not ControlTheme decorationsTheme)
+        {
+            throw new InvalidOperationException(
+                "Themes/Chrome/WindowChrome.axaml did not supply BackdropSafeWindowDecorations. " +
+                "Without it the OS backdrop is covered by Material's opaque decorations underlay.");
+        }
+
+        WindowDecorationsTheme = decorationsTheme;
 
         _themeService = App.Services.GetService<ThemeService>(); // optional service
         if (_themeService is not null)

@@ -14,18 +14,29 @@ namespace Remex.Desktop.Tests.Controls;
 /// <remarks>
 /// <para>
 /// The Mica, Acrylic and Glass canvas modes sit over a TRANSPARENT window whose real surface is
-/// the OS backdrop — the overlay panels only tint it. They were authored when
-/// <c>GlassBaseDark</c> was <c>#A00A0A10</c> (alpha 0xA0, 63%), so a bare
-/// <c>GlassBaseDarkBrush</c> Fill already let the backdrop through. When ThemeService started
-/// overriding that key with the HCT-solved Surface at full alpha, the Mica tint silently went
-/// 63% → 100% opaque and the OS backdrop vanished behind a solid sheet; Acrylic went ~50% → 80%.
-/// Connor reported it live on 2026-08-26: "mica and acrylic don't do anything anymore."
+/// the OS backdrop — the overlay panels only tint it. GlassBaseDarkBrush is OPAQUE (ThemeService
+/// overrides it with the HCT-solved Surface at full alpha, and 26 files consume it), so a bare
+/// Fill here is a solid sheet: the backdrop vanishes with no exception, no log line, and no
+/// headless render in this suite to catch it. Every tint therefore carries an explicit Opacity,
+/// and this test pins them from the source.
 /// </para>
 /// <para>
-/// The fix keeps the brush opaque (26 files consume it) and puts the old EFFECTIVE opacity on the
-/// overlay rectangles explicitly. This test pins those opacities from the source, because the
-/// failure is a backdrop that silently stops showing — no exception, no log line, and no headless
-/// render in this suite to see it.
+/// THE VALUES ARE LOW ON PURPOSE, AND THAT IS THE SECOND HALF OF A REAL BUG. They were first set
+/// to 0.63 / 0.5 / 0.16 to reproduce the effective opacity these panels shipped with back when
+/// GlassBaseDark itself was <c>#A00A0A10</c>. That preserved the old look, but the old look was
+/// measured while the backdrop was ALREADY dead for an unrelated reason — Material.Avalonia's
+/// window-decorations underlay was covering it (see WindowChromeBackdropTests and
+/// Themes/Chrome/WindowChrome.axaml). With the underlay cleared the backdrop genuinely composites, and a
+/// 0.63 veil over Avalonia's already-dark Mica brush brings the wallpaper contribution back to
+/// ~1/255 — alive and invisible, which is indistinguishable from the bug the user reported.
+/// Measured 2026-08-26 after the fix: at 0.30 the Mica canvas shifts ~2.5/255 across a window
+/// move over a varied wallpaper, and Acrylic at 0.25 is unmistakable.
+/// </para>
+/// <para>
+/// Do not raise these to "restore" the older, heavier look without re-measuring; that is the exact
+/// change that made the feature look broken. They are NOT bound to GlassOpacity either: that
+/// slider is Card Opacity, and wiring the window backdrop to it means a user who wants readable
+/// cards (Frosted = 1.0) gets a fully opaque veil and no backdrop at all.
 /// </para>
 /// </remarks>
 public class DashboardBackdropTintTests
@@ -33,8 +44,8 @@ public class DashboardBackdropTintTests
     private const string Avalonia = "https://github.com/avaloniaui";
 
     [Theory]
-    [InlineData("IsMica", 0.63)]
-    [InlineData("IsAcrylic", 0.5)]
+    [InlineData("IsMica", 0.30)]
+    [InlineData("IsAcrylic", 0.25)]
     [InlineData("IsGlass", 0.16)]
     public void TheBackdropTint_StaysTranslucent(string modeConverter, double expectedOpacity)
     {
@@ -65,8 +76,8 @@ public class DashboardBackdropTintTests
 
         double.Parse(opacityAttribute!.Value, System.Globalization.CultureInfo.InvariantCulture)
             .Should().BeApproximately(expectedOpacity, 0.001,
-                "the explicit opacity restores the tint these panels shipped with while " +
-                "GlassBaseDark still carried alpha 0xA0")
+                "the tint has to stay light enough for the OS backdrop underneath to actually " +
+                "register — a heavier veil is alive and invisible, which reads as broken")
             ;
     }
 

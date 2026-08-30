@@ -171,3 +171,10 @@ FINAL_AUDIT_SONNET.md
 # Local ralph loop procedure. Untracked on purpose: it carries the device unlock PIN so the loop
 # can drive the physical phone, and that does not belong in a repo with a remote.
 /docs/ralph-serial-drain.md
+
+# Editor swap and backup files. Kate writes .<name>.kate-swp next to the file being edited;
+# one of these was committed by accident in the "Fix dead backdrop and build flow" commit.
+*.kate-swp
+*.sw[a-p]
+*~
+*.orig

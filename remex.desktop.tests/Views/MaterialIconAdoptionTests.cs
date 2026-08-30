@@ -57,6 +57,17 @@ public class MaterialIconAdoptionTests
             "cursor-arrow",   // the remote pointer itself, drawn inline
             "cursor-crosshair",
         ],
+        // NOT AN APP VIEW — a verbatim copy of Material.Avalonia 3.19.0's window-decorations
+        // template, taken to clear the opaque underlay that was hiding the OS backdrop
+        // (RemEx-c437b; see WindowChromeBackdropTests). These are upstream's caption-button
+        // glyphs. Redrawing them as MaterialIcon would add drift to the one file whose entire
+        // value is staying re-diffable against the vendor original on the next upgrade.
+        ["WindowChrome.axaml"] =
+        [
+            "FullScreenButtonPath",
+            "RestoreButtonPath",
+            "(unnamed)",      // minimise, maximise, close, and the two popover glyphs
+        ],
     };
 
     [Fact]

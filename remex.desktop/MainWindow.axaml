@@ -5,6 +5,22 @@
     xmlns:views="using:Remex.Desktop.Views"
     xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen">
 
+    <!-- ═══ THE FIX FOR THE DEAD MICA/ACRYLIC BACKDROP (RemEx-c437b, root-caused 2026-08-26).
+         Material.Avalonia's window-decorations theme laid an opaque MaterialPaperBrush underlay
+         between the OS backdrop and everything this app draws, so Mica and Acrylic were applied and
+         then covered — a dead-constant #303030 while ActualTransparencyLevel reported Mica. The full
+         account, the five lighter fixes that were tried and measured inert, and the sync rules
+         against the upstream file live in Themes/Chrome/WindowChrome.axaml. It is applied per-window in the
+         constructor rather than as an attribute here: the theme is a resource in a merged
+         dictionary, and the assignment has to run after InitializeComponent. -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Remex.Desktop/Themes/Chrome/WindowChrome.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Window.KeyBindings>
         <!-- Direct navigation shortcuts -->
         <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToHomeCommand}" />
