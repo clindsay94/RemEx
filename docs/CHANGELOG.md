@@ -48,22 +48,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead: a real, elevated surface carrying the drawer toggle (moved in from being an overlapping
   sibling, not duplicated — the drawer's own round brand-mark toggle is untouched, since it is a
   different affordance for a different state) and the current destination's live, localized name.
-  Background and foreground are RemEx's own theme resources set as local values (`GlassBaseDarkBrush`
-  / `TextPrimaryBrush`) rather than Material's un-seeded, opaque defaults, so the bar reads from the
-  same palette as the rest of the shell and keeps the Mica/Acrylic backdrop visible through it rather
-  than covering it. The window's own title text is retired from the OS decorations' overlay — this
-  bar's page title is the only one on screen now — and sits at the conventional leading position
-  next to the toggle with a bounded width and ellipsis rather than growing unbounded toward the
-  caption buttons. Dragging, double-click-to-maximize and the system menu all come from marking the
-  bar itself with the platform's own title-bar chrome role rather than a hand-wired pointer handler,
-  so the bar gets the OS's full native title-bar contract instead of reimplementing one third of it;
-  the drawer toggle carries the matching override role so its own clicks still open the drawer
-  instead of dragging the window. No window-control buttons were added here: `WindowChrome.axaml`'s
-  decorations overlay already draws minimize/maximize/close independently of the shell's own
-  content, and duplicating them would have been the same three-toggles mistake avoided for the
-  drawer. The whole bar hides with the rest of the immersive chrome (drawer, FAB, snackbar) during
-  fullscreen remote desktop, and stays inside the shell's existing `LayoutTransformControl`/`UiScale`
-  transform, so it scales with everything else rather than needing its own handling. (RemEx-a3prn)
+  The visible surface — a translucent fill from RemEx's own theme palette plus a GlowStrength-aware
+  elevation shadow, both at the same level-2 weight every theme names this control for — lives on a
+  dedicated backing layer behind the `ColorZone` rather than on the control itself, because the
+  brush's fallback translucency never survives past the first frame (the seeded palette lands
+  opaque, same trap `RemEx-c437b` fixed for the window frame) and `ColorZone` has no shadow
+  property of its own to carry the ramp. The window's own title text is retired from the OS
+  decorations' overlay — this bar's page title is the only one on screen now — and sits at the
+  conventional leading position next to the toggle, sized to whatever width the window actually has
+  rather than a fixed guess, with an ellipsis backstop for whatever a narrow window still can't fit.
+  Dragging, double-click-to-maximize and the system menu all come from marking the bar itself with
+  the platform's own title-bar chrome role rather than a hand-wired pointer handler, so the bar gets
+  the OS's full native title-bar contract instead of reimplementing one third of it; the drawer
+  toggle carries the matching override role so its own clicks still open the drawer instead of
+  dragging the window. No window-control buttons were added here: `WindowChrome.axaml`'s decorations
+  overlay already draws minimize/maximize/close independently of the shell's own content, and
+  duplicating them would have been the same three-toggles mistake avoided for the drawer. The whole
+  bar hides with the rest of the immersive chrome (drawer, FAB, snackbar) during fullscreen remote
+  desktop, and stays inside the shell's existing `LayoutTransformControl`/`UiScale` transform, so it
+  scales with everything else rather than needing its own handling. (RemEx-a3prn)
 
 - **The settings panel is a real Material side sheet now, and it and the drawer no longer fight
   over the screen.** The hand-rolled `Border` with a manual `translateX` slide plus a separate
