@@ -76,12 +76,31 @@ public sealed class VersionSourceOfTruthTests
         // both were reachable without the synchronisation: "version.properties" is held alive on its
         // own by the Test-Path guard and its Write-Error message ~120 lines earlier, and a bare
         // "<Version>" survives in any trailing comment — which StripPowerShellComments does not
-        // remove, since it only takes <# #> blocks and whole-line #. Requiring the element and the
-        // $Version variable inside a single -replace is what makes deleting the write turn this red.
+        // remove, since it only takes <# #> blocks and whole-line #. Requiring the element and a
+        // $-variable inside a single -replace is what makes deleting the write turn this red.
+        //
+        // TWO REGEXES, NOT ONE, SINCE a8aba33 (RemEx-wqc6s). The write used to be an inline
+        // statement holding both the <Version> element and $Version itself, so one regex could pin
+        // the whole thing. It now lives in Sync-DirectoryBuildPropsVersion, whose parameter is
+        // $DesiredVersion — the element and the source-of-truth variable no longer share a
+        // statement. Pinning only the -replace would pass with the function never called; pinning
+        // only the call would pass with the function gutted. Each half below is reachable only with
+        // the other intact, which is the property the single regex used to hold on its own.
         script.Should().MatchRegex(
-            @"-replace\s*'[^']*<Version>[^']*'\s*,\s*""[^""]*<Version>\$Version</Version>[^""]*""",
-            "the desktop version has to be WRITTEN into Directory.Build.props from $Version, or the "
-            + "desktop head is versioned by nothing and the parity test above guards a coincidence");
+            @"-replace\s*'[^']*<Version>[^']*'\s*,\s*""[^""]*<Version>\$\w+</Version>[^""]*""",
+            "the desktop version has to be WRITTEN into Directory.Build.props from a variable, or "
+            + "the desktop head is versioned by nothing and the parity test above guards a coincidence");
+
+        // UNINDENTED ON PURPOSE. build-remex.ps1:578 calls this at the top level of the script, so
+        // it runs on every full build; the other call site (inside Set-RemexVersion) only fires on
+        // a version bump. A leading-whitespace-free anchor is what tells those two apart, because
+        // "unconditional" is not otherwise expressible as a grep. Reindenting the call breaks this
+        // test, which is the cheap failure — the expensive one is the sync quietly moving inside a
+        // branch and the desktop head drifting for a release nobody bumped.
+        script.Should().MatchRegex(
+            @"(?m)^Sync-DirectoryBuildPropsVersion\b[^\r\n]*-DesiredVersion\s+\$Version\b",
+            "and that write has to be INVOKED on every build with $Version — the value resolved from "
+            + "Android's versionName — not only from inside the version-bump branch");
 
         script.Should().Contain("version.properties",
             "and $Version itself has to be READ from Android's file for it to be the source of truth");
