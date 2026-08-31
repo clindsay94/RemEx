@@ -5,7 +5,8 @@ using Avalonia.Data.Converters;
 namespace Remex.Desktop.Converters;
 
 /// <summary>
-/// Multi-value converter: subtracts the second bound height from the first, floored at 0.
+/// Multi-value converter: subtracts the second bound height from the first, and optionally a
+/// fixed extra amount from <c>ConverterParameter</c>, floored at 0.
 /// </summary>
 /// <remarks>
 /// Built for <c>ShellView</c>'s settings side sheet (RemEx-zrlze): its <c>ScrollViewer</c> sits
@@ -16,6 +17,12 @@ namespace Remex.Desktop.Converters;
 /// <see cref="global::Avalonia.Visual.Bounds"/>.Height from the sheet's gives the real remaining
 /// space rather than a hardcoded constant, which would be wrong the moment a translated header
 /// subtitle wraps to a second line.
+///
+/// <c>ConverterParameter</c> is a fixed number of additional pixels to subtract - ShellView passes
+/// <c>"5"</c> to cancel <c>PART_SideContentPresenter</c>'s own <c>Margin="0,5,0,0"</c> from
+/// <c>SideSheet</c>'s own ControlTheme, which the two live Bounds readings above cannot see
+/// (review round 2, LOW: without it, MaxHeight overshot the truly available space by exactly that
+/// margin).
 /// </remarks>
 public sealed class SubtractHeightConverter : IMultiValueConverter
 {
@@ -30,7 +37,18 @@ public sealed class SubtractHeightConverter : IMultiValueConverter
             return 0d;
         }
 
-        var result = total - subtract;
+        var extra = 0d;
+        if (parameter is string parameterText &&
+            double.TryParse(parameterText, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            extra = parsed;
+        }
+        else if (parameter is double parameterValue)
+        {
+            extra = parameterValue;
+        }
+
+        var result = total - subtract - extra;
         return result > 0 ? result : 0d;
     }
 }

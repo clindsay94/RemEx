@@ -175,11 +175,30 @@
              Border's `BoxShadow="-8 0 40 0 #40000000"`, dropped in round 1 with no replacement -
              NavigationDrawer gets its own depth from ShadowAssist on PART_LeftDrawerBorder, so this
              panel needs the equivalent named explicitly since nothing supplies it by default
-             (review round 1, LOW). -->
+             (review round 1, LOW).
+
+             Background and BoxShadow are UNCONDITIONED on purpose - neither is set anywhere else in
+             SideSheet's own template or ControlTheme, so BindingPriority.Style is uncontested for
+             them. BorderBrush is NOT: the base theme sets it from an ACTIVATED selector,
+             `^:not(:mobile) /template/ Border#PART_SideSheet { BorderBrush = MaterialDividerBrush }`,
+             at BindingPriority.StyleTrigger - the exact HIGH-1 scrim trap, on a different property
+             (review round 2, MEDIUM). An unconditioned BorderBrush setter here would compile, match,
+             and still lose, leaving the panel's left-edge divider painted Material's default instead
+             of this app's own CardBorderBrush - invisible in a text diff, wrong on screen the moment
+             a theme switch (e.g. SolarFlare) makes the two brushes visibly different. Splitting the
+             BorderBrush setter into its own :not(:mobile) block is what actually wins it.
+
+             GENERAL RULE for every future Material.Avalonia 3.19.0 template-part override: before
+             overriding ANY property a theme sets, check whether the theme's own setter for that
+             property comes from a selector carrying a pseudo-class (`^:open`, `^:not(:mobile)`,
+             etc.) - if it does, the override needs the SAME activator, or it loses regardless of
+             attach order. A property the theme never touches needs no activator at all. -->
         <Style Selector="material|SideSheet /template/ Border#PART_SideSheet">
             <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BoxShadow" Value="-8 0 40 0 #40000000"/>
+        </Style>
+        <Style Selector="material|SideSheet:not(:mobile) /template/ Border#PART_SideSheet">
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
         <!-- ═══ Gear FAB ═══ -->
@@ -651,11 +670,17 @@
                      readings (this sheet's own full height, minus the header's actual rendered
                      height) into the one number that is actually available, so a translated
                      Subtitle that wraps to two lines still gets the header height it really needs
-                     instead of a guessed constant. -->
+                     instead of a guessed constant.
+
+                     ConverterParameter="5" cancels PART_SideContentPresenter's own
+                     Margin="0,5,0,0" (set by SideSheet's ControlTheme, unconditioned, so it applies
+                     regardless of pseudo-class) - without it MaxHeight overshoots the truly available
+                     space by exactly that margin, and on a maximised window the last 5px of the
+                     viewport sit past the window edge, unclipped (review round 2, LOW). -->
                 <material:SideSheet.SideSheetContent>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                         <ScrollViewer.MaxHeight>
-                            <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}">
+                            <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}" ConverterParameter="5">
                                 <Binding ElementName="SettingsSideSheet" Path="Bounds.Height"/>
                                 <Binding ElementName="SettingsSheetHeader" Path="Bounds.Height"/>
                             </MultiBinding>

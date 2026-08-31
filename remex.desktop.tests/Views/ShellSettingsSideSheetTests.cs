@@ -180,8 +180,11 @@ public class ShellSettingsSideSheetTests
     }
 
     [Fact]
-    public void ThePanelsOwnSurfaceAndShadow_AreStyledOnPART_SideSheet()
+    public void ThePanelsSurfaceAndShadow_AreStyledOnPART_SideSheetUnconditioned()
     {
+        // Background and BoxShadow are uncontested: SideSheet's own template/ControlTheme never
+        // sets either property on PART_SideSheet from ANY selector, activated or not, so an
+        // unconditioned override is sufficient and correct for these two specifically.
         var style = Regex.Match(ShellMarkup(),
             @"<Style Selector=""material\|SideSheet /template/ Border#PART_SideSheet"">(?<body>.*?)</Style>",
             RegexOptions.Singleline);
@@ -191,10 +194,39 @@ public class ShellSettingsSideSheetTests
         var body = style.Groups["body"].Value;
         body.Should().Contain("Property=\"Background\"",
             "the panel needs an opaque surface, or the dimmed shell would show through it too");
-        body.Should().Contain("Property=\"BorderBrush\"",
-            "the panel's left edge divider should be this app's own resource, not Material's default");
         body.Should().MatchRegex(@"Property=""BoxShadow""\s*Value=""-8 0 40 0 #40000000""",
             "the old panel's depth shadow (review round 1, LOW) has to be restored, not merely present");
+
+        // NOT here - see the activated block below. BorderBrush is contested (round 2, MEDIUM 1),
+        // so if it ever migrates back into this unconditioned block it silently loses again.
+        body.Should().NotContain("Property=\"BorderBrush\"",
+            "BorderBrush is contested by an activated theme selector and belongs in the " +
+            ":not(:mobile) block, not this unconditioned one - see " +
+            nameof(ThePanelsBorderBrush_IsActivatedAtTheSamePriorityAsTheTheme));
+    }
+
+    [Fact]
+    public void ThePanelsBorderBrush_IsActivatedAtTheSamePriorityAsTheTheme()
+    {
+        // THE LOAD-BEARING DETAIL (review round 2, MEDIUM 1) - HIGH 1's exact trap, on a different
+        // property. Material's own ControlTheme sets BorderBrush on PART_SideSheet from an ACTIVATED
+        // selector - `^:not(:mobile) /template/ Border#PART_SideSheet { BorderBrush = ... }` - at
+        // BindingPriority.StyleTrigger. An unconditioned override resolves at the strictly lower
+        // BindingPriority.Style and loses regardless of attach order, leaving the panel's left-edge
+        // divider painted Material's MaterialDividerBrush instead of this app's CardBorderBrush -
+        // invisible in markup, wrong the moment a theme switch makes the two brushes differ.
+        var style = Regex.Match(ShellMarkup(),
+            @"<Style Selector=""material\|SideSheet:not\(:mobile\) /template/ Border#PART_SideSheet"">(?<body>.*?)</Style>",
+            RegexOptions.Singleline);
+
+        style.Success.Should().BeTrue(
+            "the panel's BorderBrush override has to carry :not(:mobile) - without an activator it " +
+            "resolves at a lower style priority than the theme's own activated selector for the " +
+            "same property and loses outright");
+
+        style.Groups["body"].Value.Should().MatchRegex(
+            @"Setter Property=""BorderBrush""\s*Value=""\{DynamicResource CardBorderBrush\}""",
+            "the panel's edge divider has to be this app's own resource, not Material's default");
     }
 
     [Fact]
@@ -220,15 +252,40 @@ public class ShellSettingsSideSheetTests
         // an unconstrained ScrollViewer sizes itself to its full content instead of scrolling -
         // everything below the fold becomes unreachable, and PART_RootBorder's ClipToBounds="False"
         // means it does not even get visually clipped, just runs off the window.
-        var xaml = ShellMarkup();
+        //
+        // Captured as ONE Singleline block, not three independent whole-file checks (review round 2,
+        // MEDIUM 2): three unscoped checks cannot tell this MaxHeight from any other MultiBinding
+        // anywhere in the file, cannot tell ORDER - and SubtractHeightConverter computes
+        // values[0] - values[1], so swapping the two ElementName bindings silently changes the sum
+        // to headerHeight - sheetHeight, floors at 0, and the whole content area collapses to
+        // nothing, with a loose three-check version of this test staying green throughout (measured:
+        // this is the exact defect the previous version of this test could not see).
+        var block = Regex.Match(ShellMarkup(),
+            @"<ScrollViewer\.MaxHeight>(?<body>.*?)</ScrollViewer\.MaxHeight>",
+            RegexOptions.Singleline);
 
-        xaml.Should().Contain("Converter=\"{x:Static conv:SubtractHeightConverter.Instance}\"",
-            "the ScrollViewer's MaxHeight has to be a real, live-measured bound, not left unconstrained");
-        xaml.Should().MatchRegex(@"Binding ElementName=""SettingsSideSheet"" Path=""Bounds\.Height""",
-            "the sheet's own live height is one half of the bound");
-        xaml.Should().MatchRegex(@"Binding ElementName=""SettingsSheetHeader"" Path=""Bounds\.Height""",
-            "the header's own live height has to be subtracted - a hardcoded constant would be wrong " +
-            "the moment a translated subtitle wraps to a second line");
+        block.Success.Should().BeTrue("the settings ScrollViewer has to declare an explicit MaxHeight");
+
+        var body = block.Groups["body"].Value;
+        body.Should().Contain("Converter=\"{x:Static conv:SubtractHeightConverter.Instance}\"",
+            "the bound has to be the real, live-measured converter, not an unconstrained ScrollViewer");
+        body.Should().Contain("ConverterParameter=\"5\"",
+            "PART_SideContentPresenter carries its own Margin=\"0,5,0,0\" in SideSheet's ControlTheme " +
+            "that neither live Bounds reading can see - without cancelling it, MaxHeight overshoots " +
+            "by exactly that margin and the last 5px of the viewport sit past the window edge, " +
+            "unclipped (review round 2, LOW)");
+
+        var sheetIndex = body.IndexOf(
+            "<Binding ElementName=\"SettingsSideSheet\" Path=\"Bounds.Height\"/>", StringComparison.Ordinal);
+        var headerIndex = body.IndexOf(
+            "<Binding ElementName=\"SettingsSheetHeader\" Path=\"Bounds.Height\"/>", StringComparison.Ordinal);
+
+        sheetIndex.Should().BeGreaterThan(-1, "the sheet's own live height has to feed the MultiBinding");
+        headerIndex.Should().BeGreaterThan(-1, "the header's own live height has to feed the MultiBinding");
+        sheetIndex.Should().BeLessThan(headerIndex,
+            "SubtractHeightConverter computes values[0] - values[1] - the sheet's total height has to " +
+            "be FIRST and the header's SECOND, or the result inverts to a negative number that floors " +
+            "at 0 and the content area silently collapses to nothing");
     }
 
     [Fact]
