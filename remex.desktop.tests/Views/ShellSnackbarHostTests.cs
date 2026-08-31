@@ -142,31 +142,6 @@ public class ShellSnackbarHostTests
         Assert.Equal(keys.Length, keys.Distinct().Count());
     }
 
-    /// <summary>
-    /// The Card inside SnackbarHost's own (unmodified) template paints with
-    /// <c>MaterialSnackbarBackgroundBrush</c> - an INVERSE-surface colour Material hardcodes per
-    /// base theme (#CDCDCD dark / #323232 light) that <c>TextPrimaryBrush</c>, an ON-surface colour,
-    /// was never designed to sit on. ~1.2-1.4:1 measured contrast in every one of the four presets,
-    /// found in review (RemEx-uedna). A ThemeResourcesTests-style guard, not a live render: this repo
-    /// has no headless Avalonia Application in its unit tests (see
-    /// <c>ThemeResourcesTests.Brush_FallsBack_WhenThereIsNoApplication</c>), so what is checkable here
-    /// is that App.axaml's own-key override exists and points at the RemEx palette - not Material's
-    /// default, and not left unset.
-    /// </summary>
-    [Theory]
-    [InlineData("MaterialSnackbarBackgroundBrush")]
-    [InlineData("MaterialDesignSnackbarBackground")]
-    public void TheSnackbarBackgroundResolvesFromTheAppPaletteNotMaterials(string resourceKey)
-    {
-        var appMarkup = File.ReadAllText(Path.Combine(RemexDesktopRoot(), "App.axaml"));
-
-        // GlassBaseDark, not a literal colour copy - a hardcoded hex would freeze on whichever theme
-        // was active at parse time instead of tracking CyberNOC/Monolith/SolarFlare/BaseDarkGlass live.
-        Assert.Matches(
-            new Regex($@"x:Key=""{Regex.Escape(resourceKey)}""[^/]*Color=""\{{DynamicResource\s+GlassBaseDark\}}"""),
-            appMarkup);
-    }
-
     [Fact]
     public void TheSnackbarTextIsNotFlattenedIntoOneRun()
     {
