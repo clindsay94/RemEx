@@ -390,6 +390,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// </remarks>
     public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
 
+    /// <summary>
+    /// This PC's host name, for the drawer header identity block (RemEx-dnqws). The same value
+    /// <c>PairingHandler</c> and <c>MdnsAdvertisingService</c> (both in <c>remex.agent</c>, not
+    /// referenceable from here) already surface as host identity elsewhere - not new data, just this
+    /// view's first use of it. It never
+    /// changes for a running process, so it is a plain get-only property rather than an
+    /// <c>[ObservableProperty]</c>: there is nothing for <see cref="INotifyPropertyChanged"/> to
+    /// announce.
+    /// </summary>
+    public string MachineName => Environment.MachineName;
+
     public void Dispose()
     {
         _themeService.CustomizationApplied -= _onCustomizationApplied;

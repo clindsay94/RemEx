@@ -436,28 +436,88 @@
                             </Border.Background>
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" Opacity="0.9">
                             <Grid RowDefinitions="Auto,*,Auto">
-                                <!-- ═══ Top: Brand / Header ═══ -->
-                                <StackPanel Grid.Row="0" Margin="0,16,0,8">
-                                    <Button Classes="nav-item" Width="48" Height="48" CornerRadius="{DynamicResource CornerRadiusLarge}"
-                                            Command="{Binding ToggleDrawerCommand}" HorizontalAlignment="Center" Padding="0"
-                                            ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}" AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}">
-                                        <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True">
-                                            <ctrl:BrandMark/>
-                                        </Border>
-                                    </Button>
-                                    <TextBlock Text="RemEx" FontFamily="{StaticResource Orbitron}" FontSize="14" FontWeight="Bold"
-                                               LetterSpacing="3" HorizontalAlignment="Center"
-                                               Foreground="{DynamicResource AccentPrimaryBrush}" Margin="4,12,0,0"
-                                              />
-                                    
-                                    <!-- Command Palette Hint -->
-                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
-                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
-                                            <mi:MaterialIcon Kind="Magnify" Foreground="{DynamicResource TextSecondaryBrush}" Width="11" Height="11" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                <!-- ═══ Top: Brand / Header — Material identity block (RemEx-dnqws, phase 2 of
+                                     RemEx-ajpug/RemEx-kb4im) ═══
+                                     A real material:ColorZone, not a plain StackPanel. Mode="PrimaryMid" is a
+                                     PLAIN ATTRIBUTE (LocalValue) rather than an app-level Style override on
+                                     purpose: Material.Avalonia 3.19.0's own ColorZone.axaml sets Background/
+                                     Foreground for every Mode from an ACTIVATED selector (^[Mode=PrimaryMid],
+                                     BindingPriority.StyleTrigger) - the exact shape
+                                     material-avalonia-activated-setters-outrank-plain-overrides warns about - so
+                                     a Style selector here would compile, match, and paint nothing.
+
+                                     PrimaryMid/PrimaryMidForeground ARE SEEDED, unlike Mode=Standard's
+                                     MaterialPaperBrush/MaterialBodyBrush (the unseeded pair RemEx-a3prn's own
+                                     trap warns about): ThemeService.PushSeedIntoMaterialTheme pushes the accent
+                                     seed as Material's own Primary swatch on every ApplyCustomization, so this
+                                     block re-skins with the generated palette exactly as the bead asks, and its
+                                     Foreground is Material's own contrast-solved on-primary brush from that same
+                                     swatch - text stays legible at every RemEx-2gjwn preset without RemEx having
+                                     to hand-roll a contrast check. Every TextBlock/icon below points at that same
+                                     MaterialPrimaryMidForegroundBrush explicitly (Foreground is not reliably
+                                     inherited onto Material icon controls - confirmed by RemEx-a3prn setting it
+                                     per-element rather than relying on inheritance), including the "RemEx"
+                                     wordmark: it used to paint with AccentPrimaryBrush, which is close enough in
+                                     hue to MaterialPrimaryMidBrush (both derive from the same seed) that leaving
+                                     it would have made the word nearly vanish into its own background.
+
+                                     ShadowAssist.ShadowDepth="Depth0" neutralizes ColorZone's own Depth2 default
+                                     (Material's fixed, GlowStrength-blind black shadow) rather than fighting it
+                                     with a lower-priority Style, the same reasoning AppBarSurface/GearFabShadow
+                                     already document - this block does not need its own elevation shadow inside
+                                     the drawer rail.
+
+                                     ABSORBS the round brand-mark drawer-toggle button rather than duplicating
+                                     it: the button IS "the RemEx mark" the bead asks the header to carry, not a
+                                     second affordance next to a new one. -->
+                                <material:ColorZone Grid.Row="0" Name="DrawerHeaderZone" Mode="PrimaryMid"
+                                                     Margin="0,16,0,8" Padding="4,8,4,10"
+                                                     assists:ShadowAssist.ShadowDepth="Depth0">
+                                    <StackPanel>
+                                        <Button Classes="nav-item" Width="48" Height="48" CornerRadius="{DynamicResource CornerRadiusLarge}"
+                                                Command="{Binding ToggleDrawerCommand}" HorizontalAlignment="Center" Padding="0"
+                                                ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}" AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}">
+                                            <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True">
+                                                <ctrl:BrandMark/>
+                                            </Border>
+                                        </Button>
+                                        <TextBlock Text="RemEx" FontFamily="{StaticResource Orbitron}" FontSize="14" FontWeight="Bold"
+                                                   LetterSpacing="3" HorizontalAlignment="Center"
+                                                   Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Margin="4,12,0,0"
+                                                  />
+
+                                        <!-- Machine name: Environment.MachineName, the same host-identity value
+                                             PairingHandler/MdnsAdvertisingService already surface - data, not UI
+                                             copy, so it carries no localization key of its own (AGENTS.md's
+                                             9-file rule is about user-facing prose). MaxWidth+CharacterEllipsis
+                                             keeps a long hostname from overflowing the 220px drawer
+                                             (ShellViewModel.OpenPaneLength) - the block's only length, now that
+                                             the overlay drawer has no compact rail state to also fit. -->
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" Margin="0,8,0,0">
+                                            <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Width="12" Height="12" VerticalAlignment="Center" Opacity="0.85"/>
+                                            <TextBlock Name="DrawerHeaderMachineName" Text="{Binding MachineName}" FontSize="11" FontWeight="SemiBold"
+                                                       MaxWidth="160" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" VerticalAlignment="Center" Opacity="0.85"/>
                                         </StackPanel>
-                                    </Button>
-                                </StackPanel>
+
+                                        <!-- Paired-device summary: PhonePresenceMonitor.PresenceText, the same
+                                             already-localized line RemEx-7zzw put behind Presence on every other
+                                             surface (radar core, the drawer's own connection-status footer) - not
+                                             a new fact, just this block's turn to show it. -->
+                                        <TextBlock Name="DrawerHeaderPresenceSummary" Text="{Binding Presence.PresenceText}"
+                                                   HorizontalAlignment="Center" Margin="12,4,12,0"
+                                                   FontSize="10" TextWrapping="Wrap" TextAlignment="Center"
+                                                   Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Opacity="0.7"/>
+
+                                        <!-- Command Palette Hint -->
+                                        <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
+                                                <mi:MaterialIcon Kind="Magnify" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Width="11" Height="11" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </material:ColorZone>
 
                                 <!-- ═══ Navigation Items (RemEx-zi3ua) ═══
                                      ONE ListBox, not two. It was briefly two - split at the

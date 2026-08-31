@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The drawer header is a Material identity block now** (RemEx-dnqws, phase 2 of RemEx-ajpug):
+  the RemEx mark, this PC's machine name, and the paired-device summary sit inside a real
+  `material:ColorZone` (`Mode="PrimaryMid"`), not a plain panel. That mode is one of the two
+  ColorZone modes whose brushes actually track the generated palette — `ThemeService` pushes the
+  active seed into Material's own Primary swatch — so the block re-skins with every preset instead
+  of staying a fixed Material purple. The round brand-mark drawer-toggle button moved inside the
+  new block rather than gaining a duplicate next to it. Every text element inside points at the
+  zone's own contrast-solved foreground brush, not a RemEx brush authored for a different
+  background — the previous "RemEx" wordmark colour was close enough in hue to the new background
+  that it would have nearly vanished into it.
+
 - **The palette can seed itself from your PC now.** Personalization's Palette Studio gained a
   "From this PC" row: one button adopts your Windows accent colour, the other reads your current
   wallpaper and extracts its strongest colours — Android's Material You trick, pointed at the
