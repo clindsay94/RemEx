@@ -306,4 +306,31 @@ public partial class ShellView : UserControl
         if (DataContext is ShellViewModel vm)
             vm.IsSettingsPanelOpen = false;
     }
+
+    /// <summary>
+    /// Escape closes the navigation drawer (RemEx-q3mle).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Material's <c>NavigationDrawer</c> binds nothing to the keyboard. Its only dismiss gesture is a
+    /// pointer press on the scrim, so without this the drawer is mouse-only — and it now covers the
+    /// content rather than sitting beside it, which makes "get this out of my way" the common case.
+    /// </para>
+    /// <para>
+    /// Bubbling rather than tunnelling, deliberately. <c>OnKeyDown</c> runs only once no child has
+    /// handled the key, so a dialog, a text box or a page that wants Escape for itself still wins; the
+    /// drawer takes it last. Tunnelling would invert that and quietly break every one of them.
+    /// </para>
+    /// </remarks>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is ShellViewModel { IsDrawerOpen: true } vm)
+        {
+            vm.IsDrawerOpen = false;
+            e.Handled = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
+    }
 }

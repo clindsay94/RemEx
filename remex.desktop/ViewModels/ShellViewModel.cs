@@ -58,8 +58,33 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     // IsAndroid / IsDesktop removed with the dead Android chrome (RemEx-f167): remex.desktop
     // targets net10.0, not net10.0-android, so OperatingSystem.IsAndroid() is never true here.
     // The pane widths lost their unreachable zero-width Android branch for the same reason.
-    public double CompactPaneLength => 64;
+    // CompactPaneLength went with the compact rail when the shell moved to an overlay drawer
+    // (RemEx-q3mle): an overlay drawer is either over the content or gone, never a 64px stub.
     public double OpenPaneLength => 220;
+
+    /// <summary>
+    /// The window width past which the navigation drawer would pin itself permanently open.
+    /// Infinite, so it never does.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Material's <c>NavigationDrawer</c> has no overlay/inline switch. It derives the mode from
+    /// <c>LeftDrawerExpandThresholdWidth</c>: <c>UpdateDesktopExpand</c> computes
+    /// <c>status = width &gt; threshold</c>, and while that is false the drawer floats over the content
+    /// behind a scrim, which is the mode this shell wants at every size.
+    /// </para>
+    /// <para>
+    /// **LEAVING IT UNSET DOES THE OPPOSITE OF WHAT IT LOOKS LIKE.** A null threshold takes the
+    /// <c>else</c> branch, which sets <c>_isLeftDrawerDesktopExpanded = true</c> unconditionally —
+    /// permanently expanded. <c>UpdateContentMargin</c> then indents the content by the drawer's width
+    /// whenever it opens, so the page visibly jumps sideways. Infinity is what actually asks for
+    /// "never expand"; any finite value only postpones the jump to a wide enough monitor.
+    /// </para>
+    /// </remarks>
+    public const double NeverExpandThresholdWidth = double.PositiveInfinity;
+
+    /// <summary>Bound to <c>NavigationDrawer.LeftDrawerExpandThresholdWidth</c>, which is nullable.</summary>
+    public double? DrawerExpandThresholdWidth => NeverExpandThresholdWidth;
 
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>

@@ -117,10 +117,38 @@
             <!-- ═══ TITLE BAR DRAG REGION ═══ -->
             <Border Grid.Row="0" Height="32" Background="Transparent" IsHitTestVisible="False"/>
 
-            <!-- ═══ MAIN LAYOUT: Sidebar + Content ═══ -->
-            <SplitView Grid.Row="1" IsPaneOpen="{Binding IsDrawerOpen}" DisplayMode="CompactOverlay" OpenPaneLength="{Binding OpenPaneLength}" CompactPaneLength="{Binding CompactPaneLength}" PaneBackground="Transparent" IsVisible="{Binding !IsShellChromeHidden}">
+            <!-- ═══ DRAWER TOGGLE ═══
+                 An overlay drawer leaves nothing on screen when it is shut, so the toggle cannot live
+                 inside it the way the brand mark did on the old compact rail — it would disappear with
+                 the drawer and strand every nav destination behind something nothing can open. It sits
+                 in the title bar strip for now; RemEx-a3prn turns that strip into a ColorZone app bar
+                 and this is the button it adopts. It carves a hit-testable hole in the drag region
+                 above, which is why that Border stays IsHitTestVisible="False" and this does not. -->
+            <Button Grid.Row="0" Name="DrawerToggle" Classes="icon-button compact"
+                    Command="{Binding ToggleDrawerCommand}"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0"
+                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                    IsVisible="{Binding !IsShellChromeHidden}"
+                    ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}"
+                    AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}">
+                <mi:MaterialIcon Kind="Menu" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}"/>
+            </Button>
 
-                <SplitView.Pane>
+            <!-- ═══ MAIN LAYOUT: Overlay drawer + Content ═══
+                 LeftDrawerOpened is TwoWay on purpose. The control theme's scrim assigns
+                 LeftDrawerOpened = false directly on the control when it is clicked, and the property is
+                 registered without a default binding mode — one-way would swallow that, sliding the
+                 drawer shut while IsDrawerOpen stayed true.
+                 LeftDrawerExpandThresholdWidth is bound rather than omitted: a null threshold means
+                 "permanently expanded" inside NavigationDrawer, not "overlay". See
+                 ShellViewModel.NeverExpandThresholdWidth. -->
+            <material:NavigationDrawer Grid.Row="1" Name="ShellDrawer"
+                                       LeftDrawerOpened="{Binding IsDrawerOpen, Mode=TwoWay}"
+                                       LeftDrawerWidth="{Binding OpenPaneLength}"
+                                       LeftDrawerExpandThresholdWidth="{Binding DrawerExpandThresholdWidth}"
+                                       IsVisible="{Binding !IsShellChromeHidden}">
+
+                <material:NavigationDrawer.LeftDrawerContent>
                     <!-- Wrapper retained as a plain container; its IsDesktop gate was always true (RemEx-f167). -->
                     <Border>
                         <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0">
@@ -276,10 +304,10 @@
                             </Border>
                         </Border>
                     </Border>
-                </SplitView.Pane>
+                </material:NavigationDrawer.LeftDrawerContent>
 
                 <!-- ═══ PAGE CONTENT ═══ -->
-                <SplitView.Content>
+                <material:NavigationDrawer.Content>
                     <Grid RowDefinitions="Auto,Auto,*">
                         <!-- ═══ CONNECTION BANNER ═══ -->
                         <Border Grid.Row="0" IsVisible="{Binding ShowConnectionBanner}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="0,0,0,1" Padding="16,10">
@@ -355,8 +383,8 @@
                             </TransitioningContentControl.PageTransition>
                         </TransitioningContentControl>
                     </Grid>
-                </SplitView.Content>
-            </SplitView>
+                </material:NavigationDrawer.Content>
+            </material:NavigationDrawer>
 
             <!-- ═══ FULLSCREEN REMOTE DESKTOP (bypasses sidebar) ═══ -->
             <TransitioningContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsShellChromeHidden}" Name="ImmersiveHost">
