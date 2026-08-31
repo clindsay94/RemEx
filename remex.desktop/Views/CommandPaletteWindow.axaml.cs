@@ -20,7 +20,11 @@ public partial class CommandPaletteWindow : Window
 
         viewModel.CloseRequested += () => Close();
 
-        // Dismiss when the window loses focus (click outside)
+        // Dismiss when the window loses focus (click outside, or another window — e.g. a
+        // destructive-entry confirmation dialog, see CommandPaletteViewModel.ExecuteEntryAsync —
+        // taking activation). Routed through DismissCommand rather than Close() directly so this
+        // stays on the same path as the Esc keybinding; whatever Dismiss() grows in the future
+        // (clearing query state, unsubscribing) then covers both ways out instead of only one.
         Deactivated += OnDeactivated;
     }
 
@@ -37,7 +41,10 @@ public partial class CommandPaletteWindow : Window
 
     private void OnDeactivated(object? sender, EventArgs e)
     {
-        Close();
+        if (DataContext is CommandPaletteViewModel vm)
+            vm.DismissCommand.Execute(null);
+        else
+            Close();
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

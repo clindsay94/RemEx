@@ -39,6 +39,15 @@
           (BorderBrush/BorderThickness) and the shadow are untouched — they are the visible window
           edge. The fullscreen popover keeps its opaque MaterialPaperBrush; it is a floating bar over
           fullscreen content and has to stay readable.
+       4. PART_TitleTextPanel's TextBlock Margin widened from the upstream 12,0,0,0 to 44,0,0,0
+          (Connor, live 2026-08-31: the title overlapped ShellView's drawer toggle). This underlay
+          has no way to know about that toggle — it is ShellView content, drawn independently of
+          this decorations template — so the fix is a fixed offset that clears the toggle's
+          footprint (6px left margin + 28px compact icon-button width, see ShellView.axaml's
+          DrawerToggle) at any window width, rather than a binding this file cannot reach. The
+          drawer toggle disappears entirely in immersive/chrome-hidden mode
+          (ShellViewModel.IsShellChromeHidden), so the extra margin only ever matters while
+          something is actually sitting under it.
      WindowChromeBackdropTests guards 2 and 3 from this source. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -96,9 +105,12 @@
                      Height="{TemplateBinding TitleBarHeight}"
                      IsHitTestVisible="False"
                      IsVisible="{TemplateBinding HasTitleBar}">
+                <!-- 44px, not the upstream 12px: clears ShellView's DrawerToggle (6px left margin
+                     + 28px compact icon-button), which this decorations underlay has no way to see
+                     coming and so cannot avoid via a binding. See change #4 in the file header. -->
                 <TextBlock Text="{TemplateBinding Title}"
                            VerticalAlignment="Center"
-                           Margin="12,0,0,0"
+                           Margin="44,0,0,0"
                            FontSize="12" />
               </Panel>
               <StackPanel x:Name="PART_OverlayPanel"

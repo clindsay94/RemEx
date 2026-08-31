@@ -201,6 +201,27 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
+        <!-- ═══ POPUP SURFACES, DECOUPLED FROM CARD OPACITY (Connor, live 2026-08-31). Card
+             Opacity (GlassOpacity) at 0 was taking every dropdown to fully transparent along with
+             the cards, because both leak from the same plumbing:
+               - ComboBox.axaml (Material.Avalonia 3.19.0) wraps its dropdown list in a bare
+                 <controls:Card>, with no Theme= override, so it resolves the app-wide
+                 {x:Type material:Card} ControlTheme above and paints with CardBackgroundBrush.
+               - ContextMenu.axaml and MenuFlyoutPresenter.axaml (same package) set their own
+                 Background from {DynamicResource MaterialCardBackgroundBrush} in their own
+                 ControlTheme, a key this app has never overridden until now.
+             ThemeService.ApplyCustomization computes PopupSurfaceBrush the same way as
+             CardBackgroundBrush, floored at PopupOpacityFloor (0.40) — see the comment there. These
+             three selectors are Application.Styles Setters, which is what lets them outrank the
+             ControlTheme-level Background setters above (the same precedence the Card :pointerover
+             styles below already rely on). -->
+        <Style Selector="ContextMenu, MenuFlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource PopupSurfaceBrush}"/>
+        </Style>
+        <Style Selector="ComboBox /template/ Popup#PART_Popup > material|Card#PART_Card">
+            <Setter Property="Background" Value="{DynamicResource PopupSurfaceBrush}"/>
+        </Style>
+
         <!-- ═══ CARD STATE (RemEx-qbzl1). Border.glass-card is retired; material:Card is the
              app's one raised-surface primitive and its resting paint lives in the ControlTheme
              above. What is left here is STATE.

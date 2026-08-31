@@ -77,6 +77,28 @@ public class WindowChromeBackdropTests
     }
 
     [Fact]
+    public void TheTitleText_ClearsShellViewsDrawerToggle()
+    {
+        // No bead — Connor reported this live 2026-08-31: the title text overlapped ShellView's
+        // drawer toggle. ShellView's DrawerToggle sits at Margin="6,0,0,0" with the 28px
+        // icon-button.compact width (App.axaml), a 6..34px footprint from the window's left edge.
+        // The upstream Margin of 12,0,0,0 landed the title text squarely inside that footprint.
+        var titleTextPanel = Chrome()
+            .Descendants(XName.Get("Panel", Avalonia))
+            .Single(e => e.Attribute(XName.Get("Name", "http://schemas.microsoft.com/winfx/2006/xaml"))?.Value
+                         == "PART_TitleTextPanel");
+
+        var textBlock = titleTextPanel.Elements(XName.Get("TextBlock", Avalonia)).Single();
+        var margin = textBlock.Attribute("Margin")?.Value;
+        margin.Should().NotBeNull("the title TextBlock has to declare its own left inset");
+
+        var leftInset = double.Parse(margin!.Split(',')[0]);
+        leftInset.Should().BeGreaterOrEqualTo(34,
+            "ShellView's DrawerToggle occupies 6..34px from the window's left edge (Margin 6 + "
+            + "Width 28); the title text must start at or past that or it renders on top of the button");
+    }
+
+    [Fact]
     public void TheChromeTheme_IsKeyedByNameSoItNeverBecomesTheAppWideDefault()
     {
         var themes = Chrome()

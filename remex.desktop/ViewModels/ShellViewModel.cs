@@ -673,7 +673,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             // the palette closes before the dialog is shown, so parenting to it would leave the
             // dialog owner-less mid-flight (RemEx-eifi).
             vm.OnConfirmationRequested = Remex.Desktop.Views.ConfirmationDialogHost.For(mainWindow);
-            window.ShowDialog(mainWindow);
+
+            // Show, not ShowDialog (Connor, live 2026-08-31): ShowDialog disables mainWindow for as
+            // long as the palette is open, so a click meant to dismiss it lands on a disabled
+            // window and Windows just beeps — the palette never sees the click, never loses focus,
+            // and Esc was the only way out. Show(owner) keeps the same owner (WindowStartupLocation
+            // CenterOwner still centers on it) and the same Topmost="True" from the .axaml keeps it
+            // above mainWindow, but leaves mainWindow clickable, so a click outside genuinely moves
+            // OS focus away and CommandPaletteWindow's Deactivated handler fires — the same light
+            // dismiss that already had to work for the "no main window" Show() branch below, and
+            // the same one ExecuteEntryAsync's confirmation-dialog comment already assumed.
+            window.Show(mainWindow);
         }
         else
         {

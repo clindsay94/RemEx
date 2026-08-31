@@ -188,6 +188,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`strings.xml`) resource files. Updated `scripts/localization-baseline.json` to prune resolved
   backlog entries and keep the 5-axis localization gate strictly enforced. (RemEx-lc25l)
 
+- **The window title overlapped the drawer toggle button.** RemEx-q3mle's overlay drawer put a
+  hamburger-style toggle in the top-left of the title bar strip; the OS-drawn title text painted
+  there too, both anchored to the same 12px-from-the-left inset. The title text now starts past
+  the toggle's footprint at every window width. The toggle itself already hides in
+  immersive/chrome-hidden mode, so there is nothing to collide with there.
+
+- **Dropdown menus, context menus and flyouts went as transparent as the cards when Card Opacity
+  was turned all the way down, making their text unreadable.** ComboBox's dropdown, ContextMenu and
+  MenuFlyout all paint from the same brush plumbing as the on-page card surfaces, so a Card
+  Opacity of 0% took every popup with it. Popup surfaces now use their own brush, decoupled from
+  the slider below a floor of 40% opacity — cards can still go fully transparent, but a popup
+  never drops below readable, and still tracks the slider like a card above that floor.
+
+- **The command palette (Ctrl+Shift+P / Ctrl+K) beeped instead of closing when you clicked outside
+  it.** It opened as a true modal dialog, which disables the main window for as long as it's open —
+  a click meant to dismiss the palette landed on the disabled window and Windows just beeped, and
+  Esc was the only way out. It now opens non-modally, owner-parented and topmost as before, so a
+  click outside genuinely reaches the main window and closes the palette the same way Esc already
+  did.
+
 ### Internal
 
 - **Every Android navigation destination is a type now, not a string.** The whole graph ran on

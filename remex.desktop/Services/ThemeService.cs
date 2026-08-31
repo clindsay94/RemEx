@@ -35,6 +35,16 @@ public class ThemeService : IDisposable
     internal static readonly Color FallbackAccentColor =
         Color.TryParse(FallbackAccentSeed, out var fallback) ? fallback : Color.FromRgb(0x6C, 0x4C, 0xFF);
 
+    /// <summary>
+    /// Minimum alpha (as a 0..1 fraction) for popup surfaces — ComboBox dropdowns, ContextMenu,
+    /// MenuFlyout — regardless of how low the Card Opacity slider (<see cref="CustomizationSettings.GlassOpacity"/>)
+    /// is set. Cards themselves have no floor and can go fully transparent; a popup that goes with
+    /// them is unreadable rather than stylish, since its only content is text over whatever is
+    /// behind the window (Connor, 2026-08-31). Below this floor popups clamp here; above it they
+    /// keep tracking the slider like a card does. One named constant so the number is easy to retune.
+    /// </summary>
+    internal const double PopupOpacityFloor = 0.40;
+
     public ThemeService()
     {
         // Add our override dictionary to the application resources.
@@ -293,6 +303,19 @@ public class ThemeService : IDisposable
             SetResourceOverrideInternal("CardBackgroundHoverBrush", new SolidColorBrush(cardHoverColor));
             SetResourceOverrideInternal("CardBorder", palette.Outline);
             SetResourceOverrideInternal("CardBorderBrush", new SolidColorBrush(palette.Outline));
+
+            // Popup surfaces (RemEx-mmrgc's neighbour, no bead — Connor reported this live).
+            // Material.Avalonia's ComboBox.axaml wraps its dropdown in an un-Themed controls:Card,
+            // which resolves App.axaml's app-wide {x:Type material:Card} override and so paints
+            // with CardBackgroundBrush; ContextMenu.axaml and MenuFlyoutPresenter.axaml both set
+            // their own Background from MaterialCardBackgroundBrush, which App.axaml points at this
+            // same brush for the same reason. A Card Opacity of 0 therefore made every dropdown as
+            // transparent — and as unreadable — as the cards. Popups get their own alpha here,
+            // floored at PopupOpacityFloor so they never go below readable no matter how low the
+            // slider is, while still tracking it (like a card does) above that floor.
+            byte popupAlpha = Math.Max(cardAlpha, (byte)Math.Round(PopupOpacityFloor * 255));
+            var popupColor = Color.FromArgb(popupAlpha, palette.SurfaceContainer.R, palette.SurfaceContainer.G, palette.SurfaceContainer.B);
+            SetResourceOverrideInternal("PopupSurfaceBrush", new SolidColorBrush(popupColor));
 
             // De-emphasised text. M3 has no "muted" role; Outline is the role it has for
             // exactly this job, and it lands where the hand-authored greys already were.
