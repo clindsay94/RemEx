@@ -10,7 +10,8 @@ namespace Remex.Desktop.Tests.Views;
 /// <summary>
 /// Guards the gear FAB's move from a hand-rolled <c>Button.gear-fab</c> (three style blocks in
 /// <c>ShellView.axaml</c>'s <c>UserControl.Styles</c>) onto a real Material
-/// <c>material:FloatingButton</c> (RemEx-bado6, phase 2 of RemEx-ajpug/RemEx-kb4im).
+/// <c>material:FloatingButton</c> (RemEx-bado6, phase 2 of RemEx-ajpug/RemEx-kb4im), plus the fixes
+/// from an Opus review round 2 of the first landing (commit a4c0997).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -39,10 +40,54 @@ namespace Remex.Desktop.Tests.Views;
 /// already assigns to persistently-elevated surfaces like the app bar.
 /// </para>
 /// <para>
+/// ROUND 2, THE GEOMETRY-DRIFT TRAP (MEDIUM). The first landing duplicated Grid.Row/size/alignment/
+/// Margin/IsVisible across BOTH the shadow Border and the FloatingButton — nothing stopped a future
+/// resize of one from silently leaving the other behind, which is exactly how the shadow would stop
+/// being a coincident circle. <c>GearFabWrap</c>, a plain <c>Panel</c>, now owns Grid.Row/alignment/
+/// Margin/IsVisible exactly ONCE; <see cref="TheGearFab_ShadowGeometryCannotDriftFromTheWrapper"/>
+/// pins what is left to drift — the wrapper's own Width/Height against the button's local Width/
+/// Height, and the shadow's CornerRadius against half the wrapper's Width — by comparing the actual
+/// captured NUMBERS rather than asserting three independent "52" literals that could each be edited
+/// without the others noticing.
+/// </para>
+/// <para>
+/// ROUND 2, THE ENTRANCE-ANIMATION TRAP (MEDIUM). FloatingButton.axaml's own ControlTheme animates
+/// its template border from scale 0 to scale 1 over 0:0:0.5 whenever the control becomes visible.
+/// GearFabShadow has no such animation, so exiting fullscreen remote desktop (or the shell's first
+/// render) used to show a fully-visible shadow ring around an invisible, still-scaling-up button for
+/// half a second. <see cref="TheGearFab_OptsOutOfTheEntranceAnimation"/> pins the theme's own
+/// documented opt-out (<c>Classes="no-transitions"</c>, which collapses that one keyframe animation
+/// to near-instant) rather than a hand-rolled workaround — matching the old plain Button, which
+/// never animated in either.
+/// </para>
+/// <para>
+/// ROUND 2, THE MISSING HOVER/PRESS FEEDBACK (MEDIUM). Pinning <c>ShadowDepth="Depth0"</c> also
+/// silences <c>^:pointerover:not(.no-material)</c>'s <c>ShadowAssist.Darken</c> (nothing left to
+/// darken), and Background can't be repainted on <c>:pointerover</c> the way the deleted
+/// <c>Button.gear-fab:pointerover</c> style did — Background is a LocalValue on the button, and a
+/// LocalValue permanently outranks the whole Styles system, activated selectors included.
+/// <see cref="TheGearFab_LiftsAndDeepensItsShadowOnHover"/> and
+/// <see cref="TheGearFab_ScalesDownOnPress"/> pin the fix instead: RenderTransform, which nothing in
+/// FloatingButton's own theme touches at any priority, carries the scale(1.1)/scale(0.95) feedback
+/// the deleted styles used, and the shadow itself steps up to <c>Elevation3Shadow</c> ("hover /
+/// interactive lift" in every theme file's own elevation-ramp comment) via
+/// <c>Panel#GearFabWrap:pointerover Border#GearFabShadow</c> — scoped to the WRAPPER's hover state
+/// because the shadow Border is <c>IsHitTestVisible="False"</c> and could never receive
+/// <c>:pointerover</c> on its own.
+/// </para>
+/// <para>
+/// ROUND 2, THE INVISIBLE RIPPLE (LOW). <c>assists:ButtonAssist.ClickFeedbackColor</c> defaults to
+/// <c>#000000</c> (confirmed against Material.Avalonia 3.19.0's own <c>Assists/ButtonAssist.cs</c> —
+/// <c>RippleFill</c> is a <c>TemplateBinding</c> to this exact property), which reads as a
+/// near-invisible dark smudge on the dark accents CyberNOC/BaseDarkGlass already use for
+/// AccentPrimary. <see cref="TheGearFab_InvertsItsRippleColorWithTheTheme"/> pins the fix: a local
+/// value pointed at AccentForegroundBrush, the same inversion the icon and the shadow already use.
+/// </para>
+/// <para>
 /// A source scan, matching <see cref="ShellAppBarTests"/> and <see cref="ShellSnackbarHostTests"/>:
 /// there is no headless Avalonia render harness in this repo, so nothing here can actually press the
-/// button or measure a rendered shadow. What this proves is that the wiring exists and is shaped the
-/// way the acceptance criteria — and the two traps above — require.
+/// button, hover it, or measure a rendered shadow. What this proves is that the wiring exists and is
+/// shaped the way the acceptance criteria — and every trap above — require.
 /// </para>
 /// </remarks>
 public class ShellGearFabTests
@@ -86,22 +131,101 @@ public class ShellGearFabTests
     }
 
     [Fact]
+    public void TheGearFab_ShadowGeometryCannotDriftFromTheWrapper()
+    {
+        // Review round 2, MEDIUM. Three numbers used to be able to drift independently: the
+        // wrapper's Width, the button's own local Width, and the shadow's CornerRadius. Comparing
+        // the CAPTURED VALUES against each other (not each against a separately hardcoded "52")
+        // is what actually catches a future edit to only one of them.
+        var wrap = GearFabWrapOpenTag();
+        var wrapWidth = ExtractInt(wrap, "Width");
+        var wrapHeight = ExtractInt(wrap, "Height");
+
+        var fab = GearFabOpenTag();
+        ExtractInt(fab, "Width").Should().Be(wrapWidth, "the button has to fill the wrapper exactly, or it is off-centre inside its own shadow");
+        ExtractInt(fab, "Height").Should().Be(wrapHeight, "the button has to fill the wrapper exactly, or it is off-centre inside its own shadow");
+
+        var shadow = GearFabShadowOpenTag();
+        var cornerRadius = ExtractInt(shadow, "CornerRadius");
+        cornerRadius.Should().Be(wrapWidth / 2,
+            "a circular shadow needs CornerRadius = Width / 2 exactly — Avalonia's rounded-rect clamping means a WRONG radius can still render as a circle, so a shape check alone would not catch this");
+    }
+
+    [Fact]
     public void TheGearFabShadow_UsesRemExsElevationRampNotMaterialsFixedOne()
     {
-        var shadow = Regex.Match(ShellMarkup(),
-            @"<Border Grid\.Row=""1"" Name=""GearFabShadow""(?<attrs>.*?)/>",
-            RegexOptions.Singleline);
-        shadow.Success.Should().BeTrue("a dedicated, childless shadow element has to exist behind the FloatingButton, matching AppBarSurface's own pattern");
-
-        var attrs = shadow.Groups["attrs"].Value;
-        attrs.Should().MatchRegex(@"BoxShadow=""\{DynamicResource Elevation2Shadow\}""",
-            "the FAB is a persistently-raised surface — RemEx's own GlowStrength-aware ramp names that level 2 (\"raised resting\"), not Material's fixed black default");
-        attrs.Should().MatchRegex(@"IsHitTestVisible=""False""",
+        var shadowTag = GearFabShadowOpenTag();
+        shadowTag.Should().MatchRegex(@"\bIsHitTestVisible=""False""",
             "the shadow sits behind the real button, which already owns the FAB's hit-testing");
+
+        // BoxShadow is no longer a local attribute on the Border (round 1 set it that way, which
+        // would have permanently blocked any hover-triggered escalation to Elevation3Shadow the
+        // same way Background is permanently blocked on the button itself) — it is a Style now, so
+        // the activated :pointerover variant below can outrank it.
+        shadowTag.Should().NotMatchRegex(@"\bBoxShadow=",
+            "BoxShadow has to be a Style-driven value, not a LocalValue, or the hover escalation to Elevation3Shadow could never win");
+
+        var xaml = ShellMarkup();
+        Regex.Match(xaml, @"<Style Selector=""Border#GearFabShadow"">\s*<Setter Property=""BoxShadow"" Value=""\{DynamicResource Elevation2Shadow\}""\s*/>\s*</Style>")
+            .Success.Should().BeTrue(
+                "the FAB is a persistently-raised surface — RemEx's own GlowStrength-aware ramp names that level 2 (\"raised resting\"), not Material's fixed black default");
 
         var fab = GearFabOpenTag();
         fab.Should().MatchRegex(@"assists:ShadowAssist\.ShadowDepth=""Depth0""",
             "FloatingButton's own ShadowAssist default (Depth1) writes a FIXED black BoxShadow as a local value on its template border — it has to be neutralized or it renders alongside GearFabShadow's real one");
+    }
+
+    [Fact]
+    public void TheGearFab_LiftsAndDeepensItsShadowOnHover()
+    {
+        // Review round 2, MEDIUM. Depth0 silences FloatingButton's own ShadowAssist.Darken hover
+        // feedback; this is what replaces it — scoped to the WRAPPER's :pointerover because
+        // GearFabShadow itself is IsHitTestVisible="False" and could never receive that pseudo-class.
+        var xaml = ShellMarkup();
+        Regex.Match(xaml, @"<Style Selector=""Panel#GearFabWrap:pointerover Border#GearFabShadow"">\s*<Setter Property=""BoxShadow"" Value=""\{DynamicResource Elevation3Shadow\}""\s*/>\s*</Style>")
+            .Success.Should().BeTrue(
+                "\"hover / interactive lift\" is level 3 in every theme file's own elevation-ramp comment — the FAB is exactly the control that description fits, and nothing used it before this");
+    }
+
+    [Fact]
+    public void TheGearFab_ScalesDownOnPress()
+    {
+        // Review round 2, MEDIUM. RenderTransform is free of the LocalValue-vs-Style conflict that
+        // blocks a Background repaint on hover — nothing in FloatingButton's own theme sets it at
+        // any priority — so it carries the scale feedback the deleted Button.gear-fab:pointerover/
+        // :pressed styles used to.
+        var xaml = ShellMarkup();
+
+        Regex.Match(xaml, @"<Style Selector=""material\|FloatingButton#GearFab:pointerover"">\s*<Setter Property=""RenderTransform"" Value=""scale\(1\.1\)""\s*/>\s*</Style>")
+            .Success.Should().BeTrue("hovering the FAB has to visibly lift it, the same as the old Button did");
+        Regex.Match(xaml, @"<Style Selector=""material\|FloatingButton#GearFab:pressed"">\s*<Setter Property=""RenderTransform"" Value=""scale\(0\.95\)""\s*/>\s*</Style>")
+            .Success.Should().BeTrue("pressing the FAB has to visibly compress it, the same as the old Button did");
+    }
+
+    [Fact]
+    public void TheGearFab_OptsOutOfTheEntranceAnimation()
+    {
+        // Review round 2, MEDIUM. Without this, FloatingButton.axaml's own 0:0:0.5 scale-from-zero
+        // entrance animation runs on a button whose shadow (GearFabShadow) has no matching
+        // animation — a full-strength shadow ring around an invisible, still-scaling button for half
+        // a second, worst on the deepest ramps (CyberNOC/BaseDarkGlass). This is the theme's own
+        // documented opt-out, not a workaround, and matches the old plain Button, which never
+        // animated in either.
+        var fab = GearFabOpenTag();
+        fab.Should().MatchRegex(@"\bClasses=""no-transitions""",
+            "without the theme's own opt-out class, the button fades/scales in over half a second while its shadow appears instantly");
+    }
+
+    [Fact]
+    public void TheGearFab_InvertsItsRippleColorWithTheTheme()
+    {
+        // Review round 2, LOW. The theme's own #000000 ripple at 26% opacity is nearly invisible on
+        // the dark accents CyberNOC/BaseDarkGlass already use for AccentPrimary — a local value
+        // beats the theme's own default (also a local value, per Assists/ButtonAssist.cs) regardless
+        // of tier.
+        var fab = GearFabOpenTag();
+        fab.Should().MatchRegex(@"assists:ButtonAssist\.ClickFeedbackColor=""\{DynamicResource AccentForegroundBrush\}""",
+            "the ripple has to invert with the theme the same way the icon and the shadow do, or it stays a near-invisible dark smudge on the dark accents");
     }
 
     [Fact]
@@ -116,17 +240,29 @@ public class ShellGearFabTests
     }
 
     [Fact]
-    public void TheGearFab_KeepsItsCommandAndVisibilityBindings()
+    public void TheGearFab_KeepsItsCommandBinding()
     {
-        var fab = GearFabOpenTag();
-
-        fab.Should().MatchRegex(@"Command=""\{Binding ToggleSettingsPanelCommand\}""",
+        GearFabOpenTag().Should().MatchRegex(@"Command=""\{Binding ToggleSettingsPanelCommand\}""",
             "the FAB still has to open the settings side sheet");
-        fab.Should().MatchRegex(@"IsVisible=""\{Binding !IsShellChromeHidden\}""",
-            "the FAB still has to hide during the fullscreen remote-desktop view, the same as before");
+    }
+
+    [Fact]
+    public void TheGearFabWrap_KeepsItsVisibilityBinding()
+    {
+        // IsVisible moved off the FloatingButton itself onto the shared wrapper (round 2's geometry
+        // fix) — it has to still be bound to the same thing, just from the new location.
+        GearFabWrapOpenTag().Should().MatchRegex(@"IsVisible=""\{Binding !IsShellChromeHidden\}""",
+            "the FAB (and its shadow) still has to hide during the fullscreen remote-desktop view, the same as before");
     }
 
     // ─────────────────────────── plumbing ───────────────────────────
+
+    private static int ExtractInt(string attrs, string property)
+    {
+        var match = Regex.Match(attrs, $@"\b{Regex.Escape(property)}=""(?<value>-?\d+)""");
+        match.Success.Should().BeTrue($"the captured element has to carry a numeric {property} attribute");
+        return int.Parse(match.Groups["value"].Value);
+    }
 
     private static string GearFabOpenTag()
     {
@@ -134,6 +270,30 @@ public class ShellGearFabTests
             @"<material:FloatingButton\b(?<attrs>.*?)>",
             RegexOptions.Singleline);
         match.Success.Should().BeTrue("the FloatingButton element has to exist for its attributes to be inspected");
+        return match.Groups["attrs"].Value;
+    }
+
+    private static string GearFabWrapOpenTag()
+    {
+        // Anchored on the Name via a lookahead rather than attribute position, so reordering
+        // Grid.Row/Width/Height/etc. on this element (a semantically null edit) cannot fail this scan.
+        var match = Regex.Match(ShellMarkup(),
+            @"<Panel\b(?=[^>]*\bName=""GearFabWrap"")(?<attrs>.*?)>",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("the shared GearFabWrap Panel has to exist — it is what keeps the shadow and the button's geometry from drifting apart");
+        return match.Groups["attrs"].Value;
+    }
+
+    private static string GearFabShadowOpenTag()
+    {
+        // Same anchor-on-Name fix as GearFabWrapOpenTag (review round 2, LOW): the original regex
+        // was locked to attribute order (Grid.Row before Name), so a semantically null reordering
+        // would have failed with a message pointing at "the element doesn't exist" instead of at
+        // whatever attribute actually changed.
+        var match = Regex.Match(ShellMarkup(),
+            @"<Border\b(?=[^>]*\bName=""GearFabShadow"")(?<attrs>.*?)/>",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("a dedicated, childless shadow element has to exist behind the FloatingButton, matching AppBarSurface's own pattern");
         return match.Groups["attrs"].Value;
     }
 

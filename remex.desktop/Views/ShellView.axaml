@@ -202,10 +202,49 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
-        <!-- Gear FAB (RemEx-bado6): the old Button.gear-fab style block lived here. Removed, not
-             overridden — the element is a material:FloatingButton now (see its own comment further
-             down), and a Button-typed selector can no longer even reach that control, so the block
-             would have been dead code, not merely superseded. -->
+        <!-- ═══ Gear FAB (RemEx-bado6) ═══
+             The old Button.gear-fab style block is gone — the element is a material:FloatingButton
+             now (its own comment, further down, covers the size/shadow/ripple traps) — and a
+             Button-typed selector can no longer even reach that control, so the block would have
+             been dead code, not merely superseded.
+
+             What is left here is the interactive feedback the migration otherwise dropped (Opus
+             review round 2, MEDIUM): the vendor theme's own hover/press affordances turned out to
+             be nearly silent once ShadowAssist.ShadowDepth was pinned to Depth0 (no shadow left for
+             ^:pointerover:not(.no-material)'s ShadowAssist.Darken to darken) and Background is a
+             LocalValue on the button (permanently outranks any Style, so a :pointerover repaint the
+             old style used is not an option here - see the FAB's own comment). RenderTransform is
+             free of that conflict: nothing in FloatingButton.axaml sets it at any priority, so a
+             plain app Style can drive it uncontested, the same scale(1.1)/scale(0.95) the deleted
+             Button.gear-fab:pointerover/:pressed blocks used.
+
+             The shadow half of the lift lives on GearFabShadow, a plain Avalonia Border with no
+             vendor ControlTheme of its own — nothing here competes with an unconditioned base Style,
+             so BoxShadow can be set the normal way (Style priority) with a :pointerover variant
+             (StyleTrigger priority) safely overriding it, unlike the FloatingButton itself. Scoped to
+             Panel#GearFabWrap:pointerover rather than a pseudo-class on the Border directly - the
+             Border is IsHitTestVisible="False" and could never receive :pointerover on its own; the
+             wrapping Panel's bounds are exactly the FAB's own (GearFabWrap carries the shared size),
+             so hovering anywhere over the visible button IS hovering the Panel. -->
+        <Style Selector="Border#GearFabShadow">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+        <Style Selector="Panel#GearFabWrap:pointerover Border#GearFabShadow">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
+        </Style>
+        <Style Selector="material|FloatingButton#GearFab">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="material|FloatingButton#GearFab:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.1)"/>
+        </Style>
+        <Style Selector="material|FloatingButton#GearFab:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)"/>
+        </Style>
 
         <!-- ═══ Drawer surface ═══
              The SplitView this replaced carried PaneBackground="Transparent", and the drawer content
@@ -803,9 +842,21 @@
                 </material:SideSheet.SideSheetContent>
             </material:SideSheet>
 
-            <!-- ═══ FLOATING GEAR FAB (Bottom-Right, RemEx-bado6) ═══
+            <!-- ═══ FLOATING GEAR FAB (Bottom-Right, RemEx-bado6, revised per Opus review round 2
+                 of a4c0997) ═══
                  material:FloatingButton replaces the hand-rolled Button.gear-fab (its three style
                  blocks are gone from UserControl.Styles above).
+
+                 ONE WRAPPER, ONE POSITION (review round 2, MEDIUM). Grid.Row/size/alignment/Margin/
+                 IsVisible used to be duplicated on BOTH the shadow Border and the FloatingButton —
+                 nothing stopped a future resize of one from silently leaving the other behind,
+                 which is exactly how the shadow would stop being a coincident circle. GearFabWrap
+                 carries all of that exactly ONCE now; the two children below own only what makes
+                 each of them different from the other (CornerRadius/Background/IsHitTestVisible for
+                 the shadow; the button's own local-value overrides for the size/shadow trap below).
+                 Width/Height still appear on the FloatingButton too — not duplication so much as
+                 the other half of the size trap immediately below, which needs a value that beats
+                 the theme regardless of what the Panel would otherwise stretch it to.
 
                  THE SIZE TRAP. Material.Avalonia 3.19.0's FloatingButton.axaml (read from source,
                  not assumed off the DLL, per the RemEx-vryje/RemEx-04ftl lesson) sets its default
@@ -822,10 +873,23 @@
                  same local override as Width/Height, not just the latter — the theme's own MinHeight
                  default (56) would otherwise still win over a Height=52 local value.
 
-                 Background/Foreground are local values too, pointed at RemEx's own AccentPrimary/
+                 Background/Foreground stay local values too, pointed at RemEx's own AccentPrimary/
                  AccentForeground pair (what the old Button used) rather than Material's own
-                 MaterialPrimaryMidBrush/-ForegroundBrush default, so this stays the one accent
-                 source every other themed surface in this file already tracks.
+                 MaterialPrimaryMidBrush/-ForegroundBrush default — which is also WHY the hover/press
+                 feedback below can't just repaint Background on :pointerover the way the old
+                 Button.gear-fab style did: a LocalValue is permanently sticky against the whole
+                 Styles system (Style AND StyleTrigger alike), so a Background assigned here can
+                 never be overridden by any Style rule afterward. RenderTransform carries the
+                 lift/press feedback instead, below, because nothing in FloatingButton's own theme
+                 sets that property at any priority, so there is nothing for an app Style to lose to.
+
+                 assists:ButtonAssist.ClickFeedbackColor is a local value too (review round 2, LOW):
+                 the theme's own default (#000000 at 26% opacity, confirmed against
+                 Material.Avalonia 3.19.0's own Assists/ButtonAssist.cs — RippleFill is a
+                 TemplateBinding to this exact property) reads as a near-invisible dark smudge on
+                 the dark accents CyberNOC/BaseDarkGlass already use for AccentPrimary. Pointed at
+                 AccentForegroundBrush instead, the ripple inverts with the theme the same way the
+                 icon and the shadow do.
 
                  THE SHADOW TRAP. assists:ShadowAssist.ShadowDepth="Depth0" neutralizes
                  FloatingButton's own fixed black shadow (Depth1 default) THE SAME WAY
@@ -833,32 +897,43 @@
                  as a LocalValue on PART_ButtonRootBorder the instant ShadowDepth changes (confirmed
                  against Material.Avalonia 3.19.0's own Assists/ShadowAssist.cs), so no lower-priority
                  override could ever compete with it afterward. The real shadow lives on
-                 GearFabShadow instead, a separate childless Border behind this control carrying
-                 RemEx's own Elevation2Shadow — the "raised resting" level every theme file's
-                 elevation-ramp comment already assigns to persistently-elevated surfaces like the
-                 app bar, GlowStrength-aware and theme-tracked instead of Material's fixed default.
+                 GearFabShadow instead, a separate childless Border behind this control.
 
-                 CornerRadius is left alone: the template bakes it from a StaticResource (32, not a
-                 TemplateBinding), so it cannot be overridden per-instance at all — and does not need
-                 to be, since Avalonia's rounded-rect geometry already clamps an over-large radius to
-                 a full circle on a 52px box the same as it would at 56px. -->
-            <Border Grid.Row="1" Name="GearFabShadow" Width="52" Height="52" CornerRadius="26"
-                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
-                    Background="Transparent" IsHitTestVisible="False"
-                    BoxShadow="{DynamicResource Elevation2Shadow}"
-                    IsVisible="{Binding !IsShellChromeHidden}"/>
-            <material:FloatingButton AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}"
-                                      Grid.Row="1" Name="GearFab"
-                                      Width="52" Height="52" MinWidth="52" MinHeight="52" Padding="0"
-                                      HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
-                                      Background="{DynamicResource AccentPrimaryBrush}"
-                                      Foreground="{DynamicResource AccentForegroundBrush}"
-                                      assists:ShadowAssist.ShadowDepth="Depth0"
-                                      Command="{Binding ToggleSettingsPanelCommand}"
-                                      ToolTip.Tip="{conv:Localize Personalize_FabTooltip}"
-                                      IsVisible="{Binding !IsShellChromeHidden}">
-                <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </material:FloatingButton>
+                 Classes="no-transitions" (review round 2, MEDIUM) opts the button out of its own
+                 theme's entrance animation — FloatingButton.axaml animates PART_ButtonRootBorder
+                 from scale 0 to opacity/scale 1 over 0:0:0.5 whenever it is shown, but GearFabShadow
+                 has no such animation and would otherwise sit fully visible around an invisible,
+                 still-scaling-up button for that half second: a dark ring with nothing inside it,
+                 worst on the deepest shadows (CyberNOC/BaseDarkGlass). The class collapses that
+                 animation to near-instant (the theme's own opt-out, not a workaround), matching the
+                 old plain Button, which never animated in either. It is scoped to exactly that one
+                 entrance keyframe — the ripple and hover-wash effects below are gated by a different
+                 class (:not(.no-material)) and are untouched by this one.
+
+                 CornerRadius on the shadow is NOT settable on the FloatingButton itself to compare
+                 against: the template bakes its own from a StaticResource (32, not a
+                 TemplateBinding). GearFabShadow's 26 is half its own Width (52/2) instead, which
+                 ShellGearFabTests pins directly rather than merely asserting "looks like a circle" —
+                 Avalonia's rounded-rect geometry would still render a circle at other CornerRadius
+                 values too (it clamps an over-large radius), so a geometry test needs the exact
+                 relationship, not just a passing shape. -->
+            <Panel Grid.Row="1" Name="GearFabWrap" Width="52" Height="52"
+                   HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
+                   IsVisible="{Binding !IsShellChromeHidden}">
+                <Border Name="GearFabShadow" CornerRadius="26"
+                        Background="Transparent" IsHitTestVisible="False"/>
+                <material:FloatingButton AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}"
+                                          Name="GearFab" Classes="no-transitions"
+                                          Width="52" Height="52" MinWidth="52" MinHeight="52" Padding="0"
+                                          Background="{DynamicResource AccentPrimaryBrush}"
+                                          Foreground="{DynamicResource AccentForegroundBrush}"
+                                          assists:ShadowAssist.ShadowDepth="Depth0"
+                                          assists:ButtonAssist.ClickFeedbackColor="{DynamicResource AccentForegroundBrush}"
+                                          Command="{Binding ToggleSettingsPanelCommand}"
+                                          ToolTip.Tip="{conv:Localize Personalize_FabTooltip}">
+                    <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </material:FloatingButton>
+            </Panel>
 
             <!-- ═══ SNACKBAR HOST (RemEx-uedna) ═══
                  Replaces the WindowNotificationManager / NotificationCard toast. Declared after the

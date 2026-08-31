@@ -77,7 +77,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plain override would silently lose to: the button's default 56×56 size, and its fixed black
   `ShadowAssist` shadow, which now lives on a separate backing layer using RemEx's own
   GlowStrength-aware elevation ramp — the same pattern the app bar uses — instead of Material's
-  theme-blind default. (RemEx-bado6)
+  theme-blind default. An Opus review round found three follow-on gaps, now fixed: the shadow and
+  the button now share one wrapper (`GearFabWrap`) instead of duplicating position/visibility
+  independently, so the two can't drift apart; the button opts out of the vendor theme's half-second
+  scale-in animation, which used to leave the shadow's full-strength ring sitting around an invisible
+  button on entry; and hover/press now visibly lift the button (a `RenderTransform` scale, since
+  Background can't be repainted on hover once it is a local value) and deepen its shadow to
+  `Elevation3Shadow`, restoring feedback that `ShadowDepth="Depth0"` had silently removed. The click
+  ripple's colour is also a local value now, inverted per theme, instead of Material's fixed black
+  default which was nearly invisible on the darker accent themes. (RemEx-bado6)
 
 - **The settings panel is a real Material side sheet now, and it and the drawer no longer fight
   over the screen.** The hand-rolled `Border` with a manual `translateX` slide plus a separate
