@@ -434,8 +434,18 @@
                                     <GradientStop Offset="1" Color="Transparent"/>
                                 </LinearGradientBrush>
                             </Border.Background>
-                            <Border Background="{DynamicResource GlassBaseDarkBrush}" Opacity="0.9">
                             <Grid RowDefinitions="Auto,*,Auto">
+                                <!-- Glass tint behind Nav Items + Footer only, NOT the header (RemEx-dnqws,
+                                     Opus review round 1). This used to be a Border WRAPPING the whole Grid,
+                                     which put the header's own opaque ColorZone background under this same
+                                     0.9 opacity too - compounding to roughly 3:1 text contrast on SolarFlare's
+                                     light seed with black on-primary text, under the WCAG 4.5:1 floor for
+                                     small text. It is now an ordinary Grid child spanning rows 1-2 instead of
+                                     a container, so it still paints behind the nav list and footer exactly as
+                                     before while leaving the header row at full opacity. NavList and the
+                                     footer Border keep their own Grid.Row values completely unchanged - only
+                                     this element's place in the tree moved, not anything below it. -->
+                                <Border Grid.Row="1" Grid.RowSpan="2" Background="{DynamicResource GlassBaseDarkBrush}" Opacity="0.9"/>
                                 <!-- ═══ Top: Brand / Header — Material identity block (RemEx-dnqws, phase 2 of
                                      RemEx-ajpug/RemEx-kb4im) ═══
                                      A real material:ColorZone, not a plain StackPanel. Mode="PrimaryMid" is a
@@ -497,21 +507,38 @@
                                             <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Width="12" Height="12" VerticalAlignment="Center" Opacity="0.85"/>
                                             <TextBlock Name="DrawerHeaderMachineName" Text="{Binding MachineName}" FontSize="11" FontWeight="SemiBold"
                                                        MaxWidth="160" TextTrimming="CharacterEllipsis"
+                                                       ToolTip.Tip="{Binding MachineName}"
                                                        Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" VerticalAlignment="Center" Opacity="0.85"/>
                                         </StackPanel>
 
                                         <!-- Paired-device summary: PhonePresenceMonitor.PresenceText, the same
                                              already-localized line RemEx-7zzw put behind Presence on every other
                                              surface (radar core, the drawer's own connection-status footer) - not
-                                             a new fact, just this block's turn to show it. -->
+                                             a new fact, just this block's turn to show it.
+
+                                             Opacity="0.85" (Opus review round 1, MEDIUM), not the original 0.7:
+                                             MaterialPrimaryMidForegroundBrush is Material's own contrast-solved
+                                             on-primary colour ONLY at full opacity - dimming it blends toward
+                                             whatever sits behind the zone, which on SolarFlare's light, high-
+                                             luminance seed is a light background under black on-primary text.
+                                             0.7 landed there around 3:1, under the WCAG 4.5:1 floor for small
+                                             text; 0.85 - the same figure the machine-name row already used and
+                                             the review called defensible - clears it with real margin, now that
+                                             the header sits outside the rail's own 0.9-opacity glass tint (see
+                                             the Grid.Row="1" Grid.RowSpan="2" Border above) and is not doubly
+                                             compounded on top of that too. -->
                                         <TextBlock Name="DrawerHeaderPresenceSummary" Text="{Binding Presence.PresenceText}"
                                                    HorizontalAlignment="Center" Margin="12,4,12,0"
                                                    FontSize="10" TextWrapping="Wrap" TextAlignment="Center"
-                                                   Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Opacity="0.7"/>
+                                                   Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Opacity="0.85"/>
 
-                                        <!-- Command Palette Hint -->
+                                        <!-- Command Palette Hint. Opacity="0.85" (Opus review round 1, MEDIUM),
+                                             not the original 0.5: the same contrast-under-dimming trap as the
+                                             presence summary above, worse at 0.5 - 10-11px black-on-light text
+                                             at roughly 3:1 on SolarFlare is exactly the reviewer's own worked
+                                             example. -->
                                         <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
-                                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.85">
                                                 <mi:MaterialIcon Kind="Magnify" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Width="11" Height="11" VerticalAlignment="Center"/>
                                                 <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" VerticalAlignment="Center"/>
                                             </StackPanel>
@@ -686,7 +713,6 @@
                                     </Grid>
                                 </Border>
                             </Grid>
-                            </Border>
                         </Border>
                     </Border>
                 </material:NavigationDrawer.LeftDrawerContent>

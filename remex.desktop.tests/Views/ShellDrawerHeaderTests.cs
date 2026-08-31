@@ -25,21 +25,58 @@ namespace Remex.Desktop.Tests.Views;
 /// <para>
 /// THE UNSEEDED-BRUSH TRAP, THE ONE MODE=STANDARD DOESN'T HIT. <c>Mode=Standard</c> resolves to
 /// <c>MaterialPaperBrush</c>/<c>MaterialBodyBrush</c>, which <c>PushSeedIntoMaterialTheme</c> never
-/// writes (it sets Primary/Secondary only) - RemEx-a3prn's own trap. <c>PrimaryMid</c> is the mode
-/// that IS seeded: <c>ThemeService.PushSeedIntoMaterialTheme</c> pushes the accent seed as Material's
-/// own Primary swatch on every <c>ApplyCustomization</c>, which is what lets this block "pull its
-/// colour from the generated palette automatically" the way the bead's own description asks.
-/// <see cref="TheDrawerHeaderZone_UsesTheSeededPrimaryModeNotTheUnseededStandardOne"/> pins the choice.
+/// writes (it sets Primary/Secondary only) - RemEx-a3prn's own trap - and the same is true of
+/// ColorZone's three OTHER modes (<c>Inverted</c>, <c>Light</c>, <c>Dark</c>, <c>Error</c>), not just
+/// <c>Standard</c>. <c>PrimaryMid</c> is the one mode that IS seeded: <c>ThemeService.
+/// PushSeedIntoMaterialTheme</c> pushes the accent seed as Material's own Primary swatch on every
+/// <c>ApplyCustomization</c>, which is what lets this block "pull its colour from the generated
+/// palette automatically" the way the bead's own description asks.
+/// <see cref="TheDrawerHeaderZone_SetsModeAsAPlainAttribute"/> pins the exact literal
+/// <c>Mode="PrimaryMid"</c> - not merely "not Standard" (Opus review round 1, LOW: an earlier version
+/// of this test asserted only <c>NotMatchRegex(Mode="Standard")</c>, which a switch to
+/// <c>Mode="Light"</c> would have passed just as easily, since Light is equally unseeded).
 /// </para>
 /// <para>
 /// THE NEAR-INVISIBLE-TEXT TRAP. The "RemEx" wordmark used to paint with <c>AccentPrimaryBrush</c>
 /// (= <c>palette.Primary</c>, <c>ThemeService.cs:281</c>) - the same seed <c>MaterialPrimaryMidBrush</c>
 /// derives from, so putting that text on this new background would have made the word nearly vanish
 /// into its own surface. <see cref="TheDrawerHeaderText_UsesTheZonesOwnContrastSolvedForeground"/>
-/// pins that every text/icon element inside the zone - the wordmark, the machine name, the presence
-/// summary, and the command-palette hint (moved inside the zone by this same change) - points at
-/// <c>MaterialPrimaryMidForegroundBrush</c>, Material's own contrast-solved on-primary brush from the
-/// same swatch, instead of a RemEx brush authored against a different background.
+/// pins that every text/icon element carrying an EXPLICIT <c>Foreground</c> attribute inside the zone
+/// - the wordmark, the machine name, the presence summary, and the command-palette hint (moved inside
+/// the zone by this same change) - points at <c>MaterialPrimaryMidForegroundBrush</c>, Material's own
+/// contrast-solved on-primary brush from the same swatch, instead of a RemEx brush authored against a
+/// different background. It deliberately does NOT claim to cover Style-INHERITED foregrounds (Opus
+/// review round 1, LOW): the absorbed brand-mark <c>Button Classes="nav-item"</c> inside the zone
+/// still resolves <c>Foreground</c> from the app-level <c>.nav-item</c> Style
+/// (<c>TextSecondaryBrush</c>, authored for the dark glass rail) rather than the zone's own brush, and
+/// no source scan can see that resolution happen. Harmless today because
+/// <c>Controls/BrandMark.cs</c> draws no text or icon that would consume it, but a future addition
+/// inside that specific button would silently inherit the wrong colour with this test still green -
+/// see that test's own remarks for why the scope stops here rather than pretending otherwise.
+/// </para>
+/// <para>
+/// THE COMPOUNDED-DIMMING TRAP (Opus review round 1, MEDIUM). MaterialPrimaryMidForegroundBrush is
+/// contrast-solved against MaterialPrimaryMidBrush ONLY at full opacity — the review traced the old
+/// 0.7/0.5 <c>Opacity</c> values on the presence summary and command-palette hint, PLUS the rail-wide
+/// glass tint that used to WRAP the whole header at its own <c>Opacity="0.9"</c>, to roughly 3:1
+/// composited contrast on SolarFlare's light seed (black on-primary text there, from Material.
+/// Avalonia's own <c>ColorPair.PickContrastColor</c> - the reviewer's own traced mapping:
+/// <c>ColorZone.axaml</c>'s <c>^[Mode=PrimaryMid]</c> -&gt; <c>MaterialThemeBase.cs:110,113</c> -&gt;
+/// <c>theme.PrimaryMid.ForegroundColor</c> -&gt; <c>PickContrastColor</c>), under the WCAG 4.5:1
+/// floor for small text. Two
+/// independent fixes, both required: <see cref="TheDrawerHeaderZone_IsNotDimmedByTheRailsGlassTint"/>
+/// pins that the glass tint is now an ordinary Grid child spanning only the nav-list/footer rows
+/// rather than a container around the header too, and
+/// <see cref="TheDrawerHeaderZone_SecondaryTextClearsTheContrastFloor"/> pins that the dimmed
+/// elements' own local Opacity was raised to 0.85 - the figure the review called defensible for the
+/// machine-name row - rather than staying at 0.7/0.5 even after the compounding stopped.
+/// </para>
+/// <para>
+/// THE TRUNCATED-HOSTNAME TRAP (Opus review round 1, LOW). <c>DrawerHeaderMachineName</c>'s
+/// <c>MaxWidth="160"</c> + <c>TextTrimming="CharacterEllipsis"</c> can render a long hostname with no
+/// way to see the rest of it — no tooltip, no screen-reader path — on a block whose whole job is
+/// saying which PC this is. <see cref="TheDrawerHeaderMachineName_HasATooltipForTheFullValue"/> pins
+/// <c>ToolTip.Tip="{Binding MachineName}"</c>, a hover path to the untruncated value.
 /// </para>
 /// <para>
 /// THE ELEVATION TRAP, the same one <c>AppBarSurface</c>/<c>GearFabShadow</c> already document:
@@ -88,22 +125,18 @@ public class ShellDrawerHeaderTests
         // targeting this ColorZone's Mode would lose to Material's own activated ^[Mode=...]
         // selectors regardless of what it set — the exact trap
         // material-avalonia-activated-setters-outrank-plain-overrides documents.
+        //
+        // The EXACT LITERAL "PrimaryMid", not merely "not Standard" (Opus review round 1, LOW —
+        // folded from a separate, weaker test). ColorZone has five modes besides PrimaryMid
+        // (Standard, Inverted, Light, Dark, Error) and PushSeedIntoMaterialTheme seeds none of the
+        // other four either — a NotMatchRegex(Mode="Standard") assertion would have stayed green
+        // through a switch to any of the other three, none of which track the generated palette any
+        // better than Standard does. Asserting the one correct value directly is what actually pins
+        // the choice this bead's own description depends on ("pull its colour from the generated
+        // palette automatically").
         var zone = DrawerHeaderZoneOpenTag();
         zone.Should().MatchRegex(@"\bMode=""PrimaryMid""",
-            "Mode has to be set directly on the ColorZone as a plain attribute so it wins over Material's own StyleTrigger-priority selectors");
-    }
-
-    [Fact]
-    public void TheDrawerHeaderZone_UsesTheSeededPrimaryModeNotTheUnseededStandardOne()
-    {
-        var zone = DrawerHeaderZoneOpenTag();
-
-        // PrimaryMid/PrimaryMidForeground ARE seeded (PushSeedIntoMaterialTheme writes Primary).
-        // Standard resolves to MaterialPaperBrush/MaterialBodyBrush, which are NOT — the exact
-        // unseeded pair RemEx-a3prn's own trap warns about, and the wrong choice for a block whose
-        // whole point is to "pull its colour from the generated palette automatically".
-        zone.Should().NotMatchRegex(@"\bMode=""Standard""",
-            "Mode=Standard resolves to the unseeded MaterialPaperBrush/MaterialBodyBrush pair, which does not track the generated palette");
+            "Mode has to be the one plain-attribute value that both wins over Material's StyleTrigger-priority selectors AND is the mode PushSeedIntoMaterialTheme actually seeds — every other Mode value fails one of those two things");
     }
 
     [Fact]
@@ -153,6 +186,16 @@ public class ShellDrawerHeaderTests
     [Fact]
     public void TheDrawerHeaderText_UsesTheZonesOwnContrastSolvedForeground()
     {
+        // SCOPE (Opus review round 1, LOW): this pins every EXPLICIT, INLINE Foreground attribute
+        // inside the zone — it cannot and does not claim anything about Foreground a descendant
+        // resolves from a Style instead. The absorbed brand-mark Button (Classes="nav-item") is
+        // exactly that case: App.axaml's ".nav-item" Style sets TextSecondaryBrush — a brush
+        // authored for the dark glass rail, not this primary band — and that resolution is invisible
+        // to a source scan. TheDrawerHeaderZone_NavItemButtonCarriesNoInlineForegroundToFight is the
+        // narrower, honest claim about that element: it has none to conflict with the Style today,
+        // because Controls/BrandMark.cs draws no text or icon that would consume an inherited
+        // Foreground. A future TextBlock/MaterialIcon added directly inside that button would
+        // silently inherit the rail's brush, not the zone's — outside what either test can catch.
         var zoneBlock = DrawerHeaderZoneFullElement();
 
         // Every text/icon element inside the zone has to point at the zone's own contrast-solved
@@ -162,10 +205,31 @@ public class ShellDrawerHeaderTests
         Regex.Matches(zoneBlock, @"Foreground=""\{DynamicResource (?<brush>[A-Za-z]+)\}""")
             .Should().NotBeEmpty("the identity block has to contain at least one explicit Foreground so this test is not vacuously true")
             .And.OnlyContain(m => m.Groups["brush"].Value == "MaterialPrimaryMidForegroundBrush",
-                "every Foreground inside the identity block has to be the zone's own contrast-solved brush — a RemEx brush authored for a different background is not guaranteed to be legible here");
+                "every explicit, inline Foreground inside the identity block has to be the zone's own contrast-solved brush — a RemEx brush authored for a different background is not guaranteed to be legible here");
 
         zoneBlock.Should().NotMatchRegex(@"Foreground=""\{DynamicResource AccentPrimaryBrush\}""",
             "AccentPrimaryBrush is close enough in hue to MaterialPrimaryMidBrush (both derive from the same seed) that text painted with it would nearly vanish into the new background");
+    }
+
+    [Fact]
+    public void TheDrawerHeaderZone_NavItemButtonCarriesNoInlineForegroundToFight()
+    {
+        // The narrower, honest counterpart to TheDrawerHeaderText_UsesTheZonesOwnContrastSolvedForeground's
+        // scope note above (Opus review round 1, LOW). The absorbed brand-mark Button
+        // (Classes="nav-item") resolves Foreground from the app-level ".nav-item" Style
+        // (TextSecondaryBrush, authored for the dark glass rail) — a source scan cannot see that
+        // Style resolution, so this pins only what IS observable: the button itself sets no
+        // conflicting inline Foreground, which is what keeps today's element (BrandMark, which
+        // consumes no Foreground at all) harmless. This test going green is NOT proof the button's
+        // effective foreground contrasts against DrawerHeaderZone's background — it is proof the two
+        // are not fighting over an inline value, which is a different and smaller claim.
+        var zoneBlock = DrawerHeaderZoneFullElement();
+        var navItemButton = Regex.Match(zoneBlock,
+            @"<Button\b(?=[^>]*\bClasses=""nav-item"")(?<attrs>.*?)>",
+            RegexOptions.Singleline);
+        navItemButton.Success.Should().BeTrue("the absorbed brand-mark toggle button has to still be a Classes=\"nav-item\" Button inside the zone");
+        navItemButton.Groups["attrs"].Value.Should().NotMatchRegex(@"\bForeground=",
+            "the button relies on the .nav-item Style for its foreground today (BrandMark draws no text/icon) — an inline Foreground here would silently stop tracking that Style without this test noticing anything changed");
     }
 
     [Fact]
@@ -175,6 +239,68 @@ public class ShellDrawerHeaderTests
 
         source.Should().MatchRegex(@"public string MachineName => Environment\.MachineName;",
             "the drawer header binds {Binding MachineName} — ShellViewModel has to expose it, sourced from the same Environment.MachineName every other host-identity surface (PairingHandler, MdnsAdvertisingService) already uses");
+    }
+
+    [Fact]
+    public void TheDrawerHeaderMachineName_HasATooltipForTheFullValue()
+    {
+        // Opus review round 1, LOW: MaxWidth + CharacterEllipsis truncates a long hostname
+        // ("connor-workstation-lab-04" -> "connor-workstation-l…") with no hover, no tooltip, and no
+        // screen-reader path to the full value — on a block whose entire job is saying which PC this
+        // is. ToolTip.Tip restores a hover path to the untruncated MachineName.
+        var zoneBlock = DrawerHeaderZoneFullElement();
+        var match = Regex.Match(zoneBlock,
+            @"<TextBlock\b(?=[^>]*\bName=""DrawerHeaderMachineName"")(?<attrs>.*?)/>",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("the machine-name TextBlock has to exist for its attributes to be inspected");
+        match.Groups["attrs"].Value.Should().MatchRegex(@"ToolTip\.Tip=""\{Binding MachineName\}""",
+            "a truncated hostname needs a hover path to the full value, the same binding the visible Text already uses");
+    }
+
+    [Fact]
+    public void TheDrawerHeaderZone_SecondaryTextClearsTheContrastFloor()
+    {
+        // Opus review round 1, MEDIUM. MaterialPrimaryMidForegroundBrush is Material's own
+        // contrast-solved on-primary colour ONLY at full opacity — dimming it blends the rendered
+        // pixel toward whatever sits behind the zone. On SolarFlare's light, high-luminance seed
+        // (PickContrastColor returns black on-primary text there) the presence summary's old 0.7 and
+        // the command-palette hint's old 0.5 landed around 3:1, under the WCAG 4.5:1 floor for small
+        // text — the reviewer's own worked example. 0.85 matches the figure the machine-name row
+        // already used and the review called defensible.
+        var zoneBlock = DrawerHeaderZoneFullElement();
+
+        zoneBlock.Should().NotMatchRegex(@"Opacity=""0\.7""",
+            "the presence summary's old 0.7 opacity is exactly the value the review measured landing under the WCAG 4.5:1 floor on SolarFlare");
+        zoneBlock.Should().NotMatchRegex(@"Opacity=""0\.5""",
+            "the command-palette hint's old 0.5 opacity is the reviewer's own worked worst-case example (roughly 3:1 black-on-light text)");
+
+        var presenceSummary = Regex.Match(zoneBlock,
+            @"<TextBlock\b(?=[^>]*\bName=""DrawerHeaderPresenceSummary"")(?<attrs>.*?)/>",
+            RegexOptions.Singleline);
+        presenceSummary.Success.Should().BeTrue("the presence-summary TextBlock has to exist for its attributes to be inspected");
+        presenceSummary.Groups["attrs"].Value.Should().MatchRegex(@"\bOpacity=""0\.85""",
+            "the presence summary has to be raised to the same 0.85 the review called defensible for the machine-name row");
+    }
+
+    [Fact]
+    public void TheDrawerHeaderZone_IsNotDimmedByTheRailsGlassTint()
+    {
+        // Opus review round 1, MEDIUM. The rail-wide glass tint used to be a Border WRAPPING the
+        // entire header/nav-list/footer Grid at Opacity="0.9" — compounding with the zone's own
+        // dimmed elements to push contrast further under the WCAG floor than the local Opacity
+        // values alone would suggest. It is now an ordinary Grid child spanning rows 1-2 (nav list +
+        // footer) instead of a container, so DrawerHeaderZone (row 0) renders at full opacity while
+        // the nav list and footer keep their previous translucent look.
+        var xaml = ShellMarkup();
+
+        xaml.Should().MatchRegex(@"<Border Grid\.Row=""1"" Grid\.RowSpan=""2"" Background=""\{DynamicResource GlassBaseDarkBrush\}"" Opacity=""0\.9""\s*/>",
+            "the glass tint has to be a self-contained Grid child spanning only the nav-list/footer rows, not a wrapper around the whole Grid");
+
+        // The exact old shape this replaced: a Border OPENING tag (no self-close) immediately
+        // followed by the Grid it used to wrap. If this reappears, the header is back under the
+        // ancestor opacity that caused the MEDIUM finding.
+        xaml.Should().NotMatchRegex(@"<Border Background=""\{DynamicResource GlassBaseDarkBrush\}"" Opacity=""0\.9"">\s*<Grid RowDefinitions=""Auto,\*,Auto"">",
+            "a wrapping Border around the header/nav-list/footer Grid would put DrawerHeaderZone's opaque background back under the rail's 0.9 opacity");
     }
 
     // ─────────────────────────── plumbing ───────────────────────────
