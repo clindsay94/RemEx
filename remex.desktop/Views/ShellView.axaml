@@ -202,30 +202,10 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
-        <!-- ═══ Gear FAB ═══ -->
-        <Style Selector="Button.gear-fab">
-            <Setter Property="Width" Value="52"/>
-            <Setter Property="Height" Value="52"/>
-            <Setter Property="CornerRadius" Value="26"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.gear-fab:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.1)"/>
-            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
-        </Style>
-        <Style Selector="Button.gear-fab:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.95)"/>
-        </Style>
+        <!-- Gear FAB (RemEx-bado6): the old Button.gear-fab style block lived here. Removed, not
+             overridden — the element is a material:FloatingButton now (see its own comment further
+             down), and a Button-typed selector can no longer even reach that control, so the block
+             would have been dead code, not merely superseded. -->
 
         <!-- ═══ Drawer surface ═══
              The SplitView this replaced carried PaneBackground="Transparent", and the drawer content
@@ -823,10 +803,62 @@
                 </material:SideSheet.SideSheetContent>
             </material:SideSheet>
 
-            <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
-            <Button AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}" Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}" IsVisible="{Binding !IsShellChromeHidden}">
+            <!-- ═══ FLOATING GEAR FAB (Bottom-Right, RemEx-bado6) ═══
+                 material:FloatingButton replaces the hand-rolled Button.gear-fab (its three style
+                 blocks are gone from UserControl.Styles above).
+
+                 THE SIZE TRAP. Material.Avalonia 3.19.0's FloatingButton.axaml (read from source,
+                 not assumed off the DLL, per the RemEx-vryje/RemEx-04ftl lesson) sets its default
+                 56x56 footprint from an UNCONDITIONED <Style Selector="^"> inside its own
+                 ControlTheme, and its 40x40 (.Mini) / 48-tall ([IsExtended=true]) variants from
+                 ACTIVATED class/attribute selectors — the same
+                 material-avalonia-activated-setters-outrank-plain-overrides shape a plain app-level
+                 Style override would silently lose to regardless of which kind of selector actually
+                 wins. Width/Height/MinWidth/MinHeight/Padding are LOCAL VALUES here instead, which
+                 beat every one of those unconditionally — and stay at 52/52/0 because
+                 ShellSnackbarHostTests.TheSnackbarHostIsAnchoredClearOfTheGearFab measures the
+                 toast's own bottom margin (88 = 20 + 52 + 16) against exactly that number; a
+                 different footprint here silently reopens that gap. MinWidth/MinHeight need the
+                 same local override as Width/Height, not just the latter — the theme's own MinHeight
+                 default (56) would otherwise still win over a Height=52 local value.
+
+                 Background/Foreground are local values too, pointed at RemEx's own AccentPrimary/
+                 AccentForeground pair (what the old Button used) rather than Material's own
+                 MaterialPrimaryMidBrush/-ForegroundBrush default, so this stays the one accent
+                 source every other themed surface in this file already tracks.
+
+                 THE SHADOW TRAP. assists:ShadowAssist.ShadowDepth="Depth0" neutralizes
+                 FloatingButton's own fixed black shadow (Depth1 default) THE SAME WAY
+                 AppBarSurface/ColorZone above do, for the same reason: ShadowAssist writes BoxShadow
+                 as a LocalValue on PART_ButtonRootBorder the instant ShadowDepth changes (confirmed
+                 against Material.Avalonia 3.19.0's own Assists/ShadowAssist.cs), so no lower-priority
+                 override could ever compete with it afterward. The real shadow lives on
+                 GearFabShadow instead, a separate childless Border behind this control carrying
+                 RemEx's own Elevation2Shadow — the "raised resting" level every theme file's
+                 elevation-ramp comment already assigns to persistently-elevated surfaces like the
+                 app bar, GlowStrength-aware and theme-tracked instead of Material's fixed default.
+
+                 CornerRadius is left alone: the template bakes it from a StaticResource (32, not a
+                 TemplateBinding), so it cannot be overridden per-instance at all — and does not need
+                 to be, since Avalonia's rounded-rect geometry already clamps an over-large radius to
+                 a full circle on a 52px box the same as it would at 56px. -->
+            <Border Grid.Row="1" Name="GearFabShadow" Width="52" Height="52" CornerRadius="26"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
+                    Background="Transparent" IsHitTestVisible="False"
+                    BoxShadow="{DynamicResource Elevation2Shadow}"
+                    IsVisible="{Binding !IsShellChromeHidden}"/>
+            <material:FloatingButton AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}"
+                                      Grid.Row="1" Name="GearFab"
+                                      Width="52" Height="52" MinWidth="52" MinHeight="52" Padding="0"
+                                      HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
+                                      Background="{DynamicResource AccentPrimaryBrush}"
+                                      Foreground="{DynamicResource AccentForegroundBrush}"
+                                      assists:ShadowAssist.ShadowDepth="Depth0"
+                                      Command="{Binding ToggleSettingsPanelCommand}"
+                                      ToolTip.Tip="{conv:Localize Personalize_FabTooltip}"
+                                      IsVisible="{Binding !IsShellChromeHidden}">
                 <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
+            </material:FloatingButton>
 
             <!-- ═══ SNACKBAR HOST (RemEx-uedna) ═══
                  Replaces the WindowNotificationManager / NotificationCard toast. Declared after the

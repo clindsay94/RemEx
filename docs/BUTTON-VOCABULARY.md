@@ -153,13 +153,16 @@ a Border that template-binds both — and it is **load-bearing**, because Materi
 
 ## Documented exceptions
 
-Three groups of buttons keep bespoke styles, each because another bead owns them:
+Two groups of buttons keep bespoke styles, each because another bead owns them:
 
 | Style | Where | Owned by |
 |---|---|---|
 | `nav-item` | `ShellView.axaml` | **RemEx-zi3ua** — retained for the drawer-toggle brand button; the nine nav destinations moved to `ListBoxItem` |
-| `gear-fab` | `ShellView.axaml` | **RemEx-bado6** — the gear becomes a Material `FloatingButton` |
 | Window chrome buttons | `Themes/Chrome/WindowChrome.axaml` | Template parts of the window chrome, not app buttons |
+
+`gear-fab` (`ShellView.axaml`) was on this list until **RemEx-bado6**: the gear is a Material
+`FloatingButton` now, not a `Button`, so the guard tests it used to except from can no longer even
+see it.
 
 The tray flyout's chips were on this list until RemEx-x3vom; they are
 `tertiary icon-button compact` now, with their `:checked` state part of the toggle rule below.

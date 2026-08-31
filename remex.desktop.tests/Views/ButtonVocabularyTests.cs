@@ -54,7 +54,10 @@ public class ButtonVocabularyTests
         // widened, which is the whole point of an exception list that gets checked. "nav-item"
         // itself stays: the drawer's round brand-mark toggle Button still wears it.
         ["nav-item"] = "RemEx-zi3ua — retained for the drawer-toggle Button after nav destinations became a Material list",
-        ["gear-fab"] = "RemEx-bado6 — the gear becomes a Material FloatingButton",
+        // "gear-fab" (RemEx-bado6) is RETIRED, not widened: the gear is a material:FloatingButton
+        // now, not a Button, so the regexes below — scoped to Button/ToggleButton/RepeatButton/
+        // DropDownButton/SplitButton tags — can no longer even see a Classes="gear-fab" if one
+        // existed. Keeping the entry would have been an exception with nothing left to except.
     };
 
     [Fact]

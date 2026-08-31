@@ -68,6 +68,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   desktop, and stays inside the shell's existing `LayoutTransformControl`/`UiScale` transform, so it
   scales with everything else rather than needing its own handling. (RemEx-a3prn)
 
+- **The gear FAB is a real Material floating action button now, not a plain `Button` wearing a
+  round style.** `material:FloatingButton` replaces the hand-rolled `Button.gear-fab` (three style
+  blocks, now deleted rather than left inert). It keeps the exact same 52×52 footprint, position and
+  margin — the snackbar's own clearance is measured against that number — its tooltip and its
+  accessible name. Two Material defaults were overridden as local values rather than app-level
+  styles, because both are set from activated selectors inside the vendor's own control theme that a
+  plain override would silently lose to: the button's default 56×56 size, and its fixed black
+  `ShadowAssist` shadow, which now lives on a separate backing layer using RemEx's own
+  GlowStrength-aware elevation ramp — the same pattern the app bar uses — instead of Material's
+  theme-blind default. (RemEx-bado6)
+
 - **The settings panel is a real Material side sheet now, and it and the drawer no longer fight
   over the screen.** The hand-rolled `Border` with a manual `translateX` slide plus a separate
   backdrop `Border` (its own `PointerPressed` handler standing in for a scrim) is gone, replaced by
