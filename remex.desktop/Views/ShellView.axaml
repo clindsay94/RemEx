@@ -123,26 +123,27 @@
             <Setter Property="Padding" Value="0"/>
         </Style>
 
-        <!-- ═══ Settings overlay panel ═══ -->
-        <Style Selector="Border.settings-overlay">
-            <!-- Must clear the panel's full width. It is Width=440 with MaxWidth=460, so the old
-                 420px left up to 40px of it still inside the viewport - invisible only because
-                 Opacity is 0, which means it was still hit-testable and still being composited.
-                 460 matches the widest the panel can be (RemEx-vm0j). -->
-            <Setter Property="RenderTransform" Value="translateX(460px)"/>
-            <Setter Property="Opacity" Value="0"/>
-            <Setter Property="IsHitTestVisible" Value="False"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.settings-overlay.open">
-            <Setter Property="RenderTransform" Value="translateX(0px)"/>
-            <Setter Property="Opacity" Value="1"/>
-            <Setter Property="IsHitTestVisible" Value="True"/>
+        <!-- ═══ Settings side sheet (RemEx-zrlze) ═══
+             The hand-rolled translateX slide + separate scrim Border this replaced are gone -
+             material:SideSheet (below, now the UserControl's outermost element) supplies the slide,
+             and this override supplies a working scrim for it.
+
+             SideSheet's own template (Material.Styles 3.19.0's Controls/SideSheet.axaml, read from
+             source rather than assumed off the DLL, per the RemEx-vryje/RemEx-04ftl lesson) disables
+             PART_Scrim outright for anything not carrying its :mobile pseudo-class:
+             `^:not(:mobile) /template/ Border#PART_Scrim { IsEnabled False; IsVisible False }`.
+             Nothing in SideSheet.axaml.cs ever applies :mobile - the class carries a
+             "// TODO: mobile variant" comment and UpdatePseudoClasses only ever sets :open/:closed
+             and :left/:right - so that selector matches unconditionally and the built-in scrim never
+             appears on desktop as shipped. This app-level Style outranks the ControlTheme's own (the
+             same precedence already relied on for PART_LeftDrawerBorder below), and only touches
+             IsEnabled/IsVisible/Background - PART_Scrim's own :open opacity transition and its
+             click-to-dismiss handler (PART_Scrim_Pressed -> SideSheetOpened = false, which then
+             propagates back through the TwoWay binding) are untouched and still do the rest. -->
+        <Style Selector="material|SideSheet /template/ Border#PART_Scrim">
+            <Setter Property="IsEnabled" Value="True"/>
+            <Setter Property="IsVisible" Value="True"/>
+            <Setter Property="Background" Value="{DynamicResource GlassOverlayBrush}"/>
         </Style>
 
         <!-- ═══ Gear FAB ═══ -->
@@ -190,6 +191,70 @@
             <Setter Property="Background" Value="Transparent"/>
         </Style>
     </UserControl.Styles>
+
+    <!-- ═══ SETTINGS SIDE SHEET (RemEx-zrlze) ═══
+         Wraps the whole shell as material:SideSheet's Content, docked right, in place of the
+         hand-rolled Border+scrim this replaced. SideSheetPadding is forced to 0 so this view keeps
+         full control of the header's and content's own padding (20,16 / 20 below) instead of
+         fighting an inherited 16px inset around both - see the header Border's own padding for
+         where that value actually landed.
+
+         SideSheetOpened is TwoWay for the same reason ShellDrawer's LeftDrawerOpened is (comment
+         further down): the built-in scrim click and close button assign SideSheetOpened = false
+         directly on the control, and the property's own default binding mode IS already TwoWay, but
+         this stays explicit so the reason doesn't have to be rediscovered.
+
+         SideSheetCanClose="False" hides SideSheet's own PART_CloseButton - this view supplies its
+         own close button inside SideSheetHeader instead, wired to CloseSettingsPanelCommand rather
+         than the template's bare "set SideSheetOpened false", so the header keeps the exact markup
+         (title/subtitle stack, accessible close button) the old panel had. -->
+    <material:SideSheet Name="SettingsSideSheet"
+                         SideSheetOpened="{Binding IsSettingsPanelOpen, Mode=TwoWay}"
+                         SideSheetDirection="Right"
+                         SideSheetWidth="440"
+                         SideSheetPadding="0"
+                         SideSheetCanClose="False"
+                         Background="{DynamicResource GlassBaseDarkBrush}"
+                         BorderBrush="{DynamicResource CardBorderBrush}">
+        <material:SideSheet.SideSheetHeader>
+            <Border Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
+                        <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
+                    </StackPanel>
+                    <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                        <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </material:SideSheet.SideSheetHeader>
+
+        <!-- Live personalization content: language + all visual customization -->
+        <material:SideSheet.SideSheetContent>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="20" Spacing="16">
+
+                    <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
+                    <material:Card Padding="16" DataContext="{Binding SettingsVm}">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{conv:Localize Settings_Language}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </material:Card>
+
+                    <!-- ═══ ALL VISUAL CUSTOMIZATION (live-applied via CustomizationViewModel) ═══ -->
+                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}"/>
+
+                </StackPanel>
+            </ScrollViewer>
+        </material:SideSheet.SideSheetContent>
 
     <ctrl:DashboardBackgroundControl>
         <Grid RowDefinitions="Auto,*,Auto">
@@ -534,58 +599,6 @@
                 </TransitioningContentControl.PageTransition>
             </TransitioningContentControl>
 
-            <!-- ═══ SETTINGS OVERLAY BACKDROP ═══ -->
-            <Border Grid.Row="0" Grid.RowSpan="3" IsVisible="{Binding IsSettingsPanelOpen}" Background="{DynamicResource GlassOverlayBrush}" PointerPressed="OnSettingsBackdropPressed" IsHitTestVisible="{Binding IsSettingsPanelOpen}">
-                <Border.Transitions>
-                    <Transitions>
-                        <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
-                    </Transitions>
-                </Border.Transitions>
-            </Border>
-
-            <!-- ═══ SETTINGS SLIDE-IN PANEL (Right side) ═══ -->
-            <Border Grid.Row="0" Grid.RowSpan="3" x:Name="SettingsPanel" Classes="settings-overlay" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="440" MaxWidth="460" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" BoxShadow="-8 0 40 0 #40000000">
-                <Grid RowDefinitions="Auto,*">
-                    <!-- Panel header -->
-                    <Border Grid.Row="0" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
-                                <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
-                            </StackPanel>
-                            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
-                                <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-
-                    <!-- Live personalization content: language + all visual customization -->
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel Margin="20" Spacing="16">
-
-                            <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
-                            <material:Card Padding="16" DataContext="{Binding SettingsVm}">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{conv:Localize Settings_Language}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding DisplayName}"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                </StackPanel>
-                            </material:Card>
-
-                            <!-- ═══ ALL VISUAL CUSTOMIZATION (live-applied via CustomizationViewModel) ═══ -->
-                            <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}"/>
-
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
-
-
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
             <Button AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}" Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}" IsVisible="{Binding !IsShellChromeHidden}">
                 <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -814,4 +827,5 @@
 
         </Grid>
     </ctrl:DashboardBackgroundControl>
+    </material:SideSheet>
 </UserControl>

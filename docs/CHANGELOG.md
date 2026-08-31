@@ -42,6 +42,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The settings panel is a real Material side sheet now, and it and the drawer no longer fight
+  over the screen.** The hand-rolled `Border` with a manual `translateX` slide plus a separate
+  backdrop `Border` (its own `PointerPressed` handler standing in for a scrim) is gone, replaced
+  by `Material.Styles.Controls.SideSheet` docked right. Its own template disables the built-in
+  scrim on desktop by default — verified against the actual template source rather than the DLL,
+  since the class only exposes the escape hatch it needs (a `:mobile` pseudo-class) and never
+  applies it — so an app-level style override re-enables it, painted with the same overlay brush
+  the old backdrop used. Opening the drawer or the settings sheet now closes the other: both are
+  full-height overlays with their own scrim, and two at once would double-darken the shell with no
+  rule for which one should win. Escape now closes the settings sheet too (it had no keyboard
+  dismissal before this), checked ahead of the drawer so precedence is explicit rather than
+  incidental — the mutual-exclusion rule above means at most one of the two is ever open anyway.
+  The command palette needed no change: it is a separate top-level window with its own Escape
+  binding, so keyboard focus already routes Escape to it correctly. (RemEx-zrlze)
+
 - **The drawer's nine nav destinations are a Material list now instead of nine hand-styled
   buttons.** Home, Sensors, Commands, App Launcher, Processes, Files, Logs, Settings and About
   moved from `Button` with a hand-toggled `Classes.nav-item-active` to `ListBoxItem` inside a

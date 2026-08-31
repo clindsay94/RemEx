@@ -58,7 +58,6 @@ public partial class ShellView : UserControl
     private TransitioningContentControl? _pageHost;
     private TransitioningContentControl? _immersiveHost;
     private DispatcherTimer? _pageHostWatchdog;
-    private Border? _settingsPanel;
     private ListBox? _navList;
 
     public ShellView()
@@ -72,7 +71,6 @@ public partial class ShellView : UserControl
         base.OnLoaded(e);
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
         _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
-        _settingsPanel = this.FindControl<Border>("SettingsPanel");
         _navList = this.FindControl<ListBox>("NavList");
 
         // The XAML sets a plain CrossFade to keep the designer honest; the guarded equivalent is
@@ -339,13 +337,9 @@ public partial class ShellView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ShellViewModel.IsSettingsPanelOpen) && _settingsPanel != null && sender is ShellViewModel settingsVm)
-        {
-            if (settingsVm.IsSettingsPanelOpen)
-                _settingsPanel.Classes.Add("open");
-            else
-                _settingsPanel.Classes.Remove("open");
-        }
+        // IsSettingsPanelOpen no longer needs a handler here (RemEx-zrlze) - it is bound straight to
+        // material:SideSheet's own SideSheetOpened, which drives the slide/scrim itself instead of a
+        // hand-toggled "open" class.
 
         if (e.PropertyName == nameof(ShellViewModel.CurrentView) && sender is ShellViewModel navVm)
         {
@@ -412,12 +406,6 @@ public partial class ShellView : UserControl
         new InterruptSafePageTransition(reducedMotion
             ? new CrossFade(TransitionDuration / 2)
             : new SharedAxisPageTransition(TransitionDuration));
-
-    private void OnSettingsBackdropPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm)
-            vm.IsSettingsPanelOpen = false;
-    }
 
     /// <summary>
     /// Commits navigation for a nav-list destination on pointer/touch activation (RemEx-zi3ua).
@@ -527,27 +515,56 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
-    /// Escape closes the navigation drawer (RemEx-q3mle).
+    /// Escape closes whichever of the drawer (RemEx-q3mle) or the settings side sheet
+    /// (RemEx-zrlze) is the topmost surface.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Material's <c>NavigationDrawer</c> binds nothing to the keyboard. Its only dismiss gesture is a
-    /// pointer press on the scrim, so without this the drawer is mouse-only — and it now covers the
-    /// content rather than sitting beside it, which makes "get this out of my way" the common case.
+    /// Neither Material control binds Escape itself. <c>NavigationDrawer</c>'s only dismiss gesture is
+    /// a pointer press on its scrim, and <c>SideSheet</c>'s is the same plus its own close button - so
+    /// without this, both are mouse-only, and each now covers the content rather than sitting beside
+    /// it, which makes "get this out of my way" the common case.
+    /// </para>
+    /// <para>
+    /// The precedence is explicit rather than left to which branch happens to run first: settings is
+    /// checked before the drawer. <c>ShellViewModel.OnIsDrawerOpenChanged</c> /
+    /// <c>OnIsSettingsPanelOpenChanged</c> make the two mutually exclusive - opening either closes the
+    /// other - so in practice at most one of these two <c>if</c>s is ever true, and this ordering is
+    /// what makes "closes the topmost surface" a real guarantee rather than an accident of whichever
+    /// property happened to be checked first: settings renders on top of the drawer in z-order (it is
+    /// declared, and therefore composited, after <c>ShellDrawer</c> in the visual tree), so if that
+    /// invariant were ever violated by a future change, Escape still closes the one actually on top
+    /// instead of silently doing the wrong thing.
+    /// </para>
+    /// <para>
+    /// This does not have to account for the command palette (<c>CommandPaletteWindow</c>): that is a
+    /// separate top-level <c>Window</c> with its own <c>Escape</c> <c>KeyBinding</c>
+    /// (<c>DismissCommand</c>), so Escape is routed to it by ordinary keyboard-focus scoping whenever
+    /// it is the active window - it never reaches this method at all.
     /// </para>
     /// <para>
     /// Bubbling rather than tunnelling, deliberately. <c>OnKeyDown</c> runs only once no child has
-    /// handled the key, so a dialog, a text box or a page that wants Escape for itself still wins; the
-    /// drawer takes it last. Tunnelling would invert that and quietly break every one of them.
+    /// handled the key, so a dialog, a text box or a page that wants Escape for itself still wins;
+    /// the shell takes it last. Tunnelling would invert that and quietly break every one of them.
     /// </para>
     /// </remarks>
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && DataContext is ShellViewModel { IsDrawerOpen: true } vm)
+        if (e.Key == Key.Escape && DataContext is ShellViewModel vm)
         {
-            vm.IsDrawerOpen = false;
-            e.Handled = true;
-            return;
+            if (vm.IsSettingsPanelOpen)
+            {
+                vm.IsSettingsPanelOpen = false;
+                e.Handled = true;
+                return;
+            }
+
+            if (vm.IsDrawerOpen)
+            {
+                vm.IsDrawerOpen = false;
+                e.Handled = true;
+                return;
+            }
         }
 
         base.OnKeyDown(e);

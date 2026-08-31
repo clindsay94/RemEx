@@ -110,6 +110,32 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isSettingsPanelOpen;
 
+    /// <summary>
+    /// Mutual exclusion between the drawer (RemEx-q3mle) and the settings side sheet (RemEx-zrlze).
+    /// Both are full-height overlays with their own scrim, and both can be triggered from several
+    /// places (the drawer toggle, nav-item activation, the gear FAB, <c>NavigateToCustomization</c>,
+    /// <c>DismissOverlays</c>) - putting the rule here instead of in each call site means every one
+    /// of them gets it for free, and a new caller added later cannot forget it. Closing the OTHER
+    /// side is a plain assignment rather than a toggle, so setting either property false never
+    /// re-opens the one that was just closed: only the "opening" transition (value == true) cascades.
+    /// This is also what keeps the scrim from ever doubling up (ShellView's SideSheet and
+    /// NavigationDrawer each paint their own) and what makes Esc's "close the topmost surface"
+    /// unambiguous in ShellView.OnKeyDown - at most one of these two is ever true at once, so there
+    /// is no real stack to order, only these two mutually-exclusive flags.
+    /// </summary>
+    partial void OnIsDrawerOpenChanged(bool value)
+    {
+        if (value)
+            IsSettingsPanelOpen = false;
+    }
+
+    /// <summary>See <see cref="OnIsDrawerOpenChanged(bool)"/>.</summary>
+    partial void OnIsSettingsPanelOpenChanged(bool value)
+    {
+        if (value)
+            IsDrawerOpen = false;
+    }
+
     // ═══════════════ Sensor Alert Notifications ═══════════════
 
     /// <summary>Number of sensor alerts fired in this session (badge count).</summary>
