@@ -116,6 +116,34 @@
                     </ControlTemplate>
                 </Setter>
             </ControlTheme>
+
+            <!-- ═══ SNACKBAR SURFACE (RemEx-uedna, found in review). Material's own snackbar
+                 background is a hardcoded INVERSE-surface colour - #FFCDCDCD on
+                 MaterialDesignDarkTheme, #FF323232 on MaterialDesignLightTheme (ThemeService flips to
+                 the latter for SolarFlare) - and nothing in this file overrode it, because the
+                 SnackbarToastSink fix only set the toast's Foreground/icon from the palette. Pairing
+                 an ON-surface TextPrimaryBrush (ThemeService.cs's OnSurface mapping) with Material's
+                 INVERSE surface is wrong by construction: measured contrast is ~1.2-1.4:1 in every
+                 preset, nowhere near WCAG's 3:1 floor for large text - the toast animates, stacks and
+                 times out correctly and still cannot be read.
+
+                 Overridden BY KEY exactly like the Card and MaterialDesignFonts entries above, not by
+                 replacing SnackbarHost's ControlTemplate (that stays Material's own - only the colour
+                 it resolves needed to change). Both keys are real: found as embedded UTF-16 literals
+                 in Material.Styles.dll 3.19.0 (a plain ASCII scan misses them - .NET string literals
+                 live in the UTF-16 #US heap, not the ASCII #Strings heap of type/member names).
+                 MaterialSnackbarBackgroundBrush is the Brush the Card inside SnackbarHost's template
+                 actually paints with - confirmed live-aliasable the same way GlassBaseDarkBrush itself
+                 already is, `Color="{DynamicResource ...}"` being a normal property value rather than
+                 element content. MaterialDesignSnackbarBackground is declared the same way rather than
+                 as a raw `Color` element: `<Color x:Key="…">{DynamicResource …}</Color>` does not
+                 parse (AVLN2005, measured) because a Color's element content goes through its
+                 TypeConverter directly with no markup-extension support, unlike a property VALUE.
+                 Both alias GlassBaseDark(Brush) rather than a literal copy, so this still tracks live
+                 theme switching across all four presets instead of freezing on whichever one was
+                 active when the app started. -->
+            <SolidColorBrush x:Key="MaterialDesignSnackbarBackground" Color="{DynamicResource GlassBaseDark}"/>
+            <SolidColorBrush x:Key="MaterialSnackbarBackgroundBrush" Color="{DynamicResource GlassBaseDark}"/>
         </ResourceDictionary>
     </Application.Resources>
 

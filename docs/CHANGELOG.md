@@ -49,9 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stack (up to three) rather than replacing one another, and each carries an icon and colour for
   its severity — red for a problem, green for an outcome, muted for chatter — built from the app's
   own theme palette rather than Material's default paper colours, which is the same fix the
-  tooltip needed for the same reason. The routing decision itself (which events get a toast, a
-  tray balloon, or nothing at all) is unchanged; only the toast's own presentation moved.
-  (RemEx-uedna)
+  tooltip needed for the same reason. Material's own snackbar background is a hardcoded colour too
+  (an inverse-surface grey), and pairing it with our on-surface text was unreadable in every theme
+  until the background was pinned to the palette as well; the title and message are now two
+  separate lines rather than one flattened string, each trimmed with an ellipsis instead of
+  silently dropping the overflow. The routing decision itself (which events get a toast, a tray
+  balloon, or nothing at all) is unchanged; only the toast's own presentation moved. (RemEx-uedna)
 
 - **The PC's navigation drawer floats over the page now instead of shoving it sideways.** It used
   to be a compact icon rail that sat on screen permanently and widened when you opened it. It is

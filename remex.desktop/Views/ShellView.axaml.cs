@@ -230,6 +230,43 @@ public partial class ShellView : UserControl
         {
             var (icon, brushKey) = SnackbarSeverityMapping.For(importance);
             var iconBrush = ThemeResources.Brush(brushKey, FallbackBrush(importance));
+            var textBrush = ThemeResources.Brush("TextPrimaryBrush", Brushes.White);
+
+            // Title and message are two TextBlocks, not one flattened "$title — $message" string.
+            // Flattening them meant TextWrapping.Wrap + MaxLines=2 could truncate mid-message with no
+            // visual sign anything was cut - a real transfer-failure toast ("Transfer failed" /
+            // "<long path>: access denied") lost exactly the ": access denied" half, leaving a red
+            // icon and a bare filename. Each line now gets its own TextTrimming.CharacterEllipsis, so
+            // an overflow is visibly "…" rather than silently absent, and the title stays legible even
+            // when the message alone would have exceeded two lines.
+            var textStack = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 2,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = title,
+                        Foreground = textBrush,
+                        FontWeight = FontWeight.SemiBold,
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    },
+                },
+            };
+
+            if (!string.IsNullOrEmpty(message))
+            {
+                textStack.Children.Add(new TextBlock
+                {
+                    Text = message,
+                    Foreground = textBrush,
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxLines = 2,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+            }
 
             var content = new StackPanel
             {
@@ -245,14 +282,7 @@ public partial class ShellView : UserControl
                         Foreground = iconBrush,
                         VerticalAlignment = VerticalAlignment.Center,
                     },
-                    new TextBlock
-                    {
-                        Text = string.IsNullOrEmpty(message) ? title : $"{title} — {message}",
-                        Foreground = ThemeResources.Brush("TextPrimaryBrush", Brushes.White),
-                        TextWrapping = TextWrapping.Wrap,
-                        MaxLines = 2,
-                        VerticalAlignment = VerticalAlignment.Center,
-                    },
+                    textStack,
                 },
             };
 

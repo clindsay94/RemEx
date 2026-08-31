@@ -61,7 +61,7 @@ that the column turned out to be empty.
 
 | Control | Where we use it | Material templates it? | Verdict |
 |---|---|---|---|
-| `NotificationCard` | styled directly in `App.axaml` | **Yes** — `Themes/NotificationCard.axaml` | Safe. Our style sets only `Background`, `BorderBrush`, `BorderThickness`, `Foreground`; all four survive a template swap because they are control properties, not template internals. |
+| `NotificationCard` | **SUPERSEDED by RemEx-uedna** — the in-app toast moved off `WindowNotificationManager`/`NotificationCard` onto a Material `SnackbarHost` (see `ShellView.axaml`/`ShellView.axaml.cs`); the row below described a style that no longer exists in `App.axaml` | **Yes** — `Themes/NotificationCard.axaml` | N/A — nothing instantiates `NotificationCard` any more. |
 | `NumericUpDown` | `SetAlertDialog.axaml` ×1 | **Yes** — plus `ButtonSpinner.axaml`, which it composes | Safe |
 | `UniformGrid` | 5, incl. `RemoteView`, `HomeView`, `TrayFlyoutWindow` | **Neither theme templates it** | Safe, and the worry was misplaced. `UniformGrid : Panel : Control` never derives from `TemplatedControl`, so it has no `Template` property for a `ControlTheme` to fill — nothing for Fluent's removal to take away. The rule is *not* "panels are never themed": `AdornerLayer` is a `Panel` and **does** have a `ControlTheme` in both themes. The base type is what carries the argument, not the fact that it is a panel. |
 | `SelectableTextBlock` | 4 — `FileTransferView`, `RemoteView`, `AboutView`, `PairingPinPanelView` | **Yes** — `Themes/SelectableTextBlock.axaml` | Safe |
