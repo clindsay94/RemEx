@@ -515,6 +515,29 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
+    /// Drags the window by the app bar (RemEx-a3prn), the same <c>BeginMoveDrag</c> pattern
+    /// <c>TrayFlyoutWindow.OnHeaderPressed</c> already uses for its own header.
+    /// </summary>
+    /// <remarks>
+    /// Needed because the app bar is a real <c>ColorZone</c> with a surface now, not the transparent,
+    /// non-hit-testable spacer this replaced - it no longer falls through to WindowChrome.axaml's
+    /// underlay title-bar region for a click anywhere in its bounds, so dragging has to be wired
+    /// here directly instead.
+    ///
+    /// No guard against <c>DrawerToggle</c> is needed: Avalonia's own <c>Button.OnPointerPressed</c>
+    /// sets <c>e.Handled = true</c> on a left-button press (confirmed against Avalonia 12.1.1's own
+    /// source, not assumed), and this is a plain bubble handler - a press that started on the button
+    /// never reaches here. <c>AppBarTitle</c> is <c>IsHitTestVisible="False"</c> so a press over the
+    /// title text reaches this handler the same as one over bare bar background.
+    /// </remarks>
+    private void OnAppBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            && TopLevel.GetTopLevel(this) is Window window)
+            window.BeginMoveDrag(e);
+    }
+
+    /// <summary>
     /// Escape closes whichever of the drawer (RemEx-q3mle) or the settings side sheet
     /// (RemEx-zrlze) is the topmost surface.
     /// </summary>

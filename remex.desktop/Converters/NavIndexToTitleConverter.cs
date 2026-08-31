@@ -1,0 +1,49 @@
+using System.Globalization;
+using Avalonia.Data.Converters;
+
+namespace Remex.Desktop.Converters;
+
+/// <summary>
+/// Maps <c>ShellViewModel.ActiveNavIndex</c> to the localized destination title, for the ColorZone
+/// app bar's "current page" label (RemEx-a3prn).
+/// </summary>
+/// <remarks>
+/// Reuses the same resource keys the drawer's <c>ListBoxItem</c>s already localize with
+/// (<c>Nav_Home</c>, <c>Nav_Sensors</c>, ...) instead of adding new ones — every key here is already
+/// translated in all 9 locales, so this needed no localization work of its own.
+///
+/// Index 5 (<c>RemoteDesktopViewModel</c>) has no drawer entry — it is reached from inside the
+/// Commands/Remote flow, not the nav list, and it is also the one page that hides this whole app
+/// bar via <c>IsShellChromeHidden</c> when shown fullscreen (<c>ImmersiveHost</c>). Falling back to
+/// empty rather than guessing a label keeps this converter honest about not knowing one.
+/// </remarks>
+public class NavIndexToTitleConverter : IValueConverter
+{
+    public static readonly NavIndexToTitleConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not int index) return string.Empty;
+
+        var key = index switch
+        {
+            0 => "Nav_Home",
+            1 => "Nav_Sensors",
+            2 => "Nav_Commands",
+            3 => "Nav_Launcher",
+            4 => "Nav_Processes",
+            6 => "Shell_About",
+            7 => "Nav_Files",
+            8 => "Shell_LogsDiagnostics",
+            9 => "Nav_Settings",
+            _ => null,
+        };
+
+        return key is null ? string.Empty : Services.LocalizationService.Instance[key] ?? string.Empty;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

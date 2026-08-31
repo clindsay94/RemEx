@@ -42,6 +42,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The top bar is a real Material app bar now, not an invisible spacer.** The 32px `Border`
+  spacer above the shell — transparent and non-hit-testable, existing only so a click could fall
+  through two layers to the window's own drag region — is a `Material.Styles.Controls.ColorZone`
+  instead: a real elevated surface carrying the drawer toggle (moved in from being an overlapping
+  sibling, not duplicated — the drawer's own round brand-mark toggle is untouched, since it is a
+  different affordance for a different state) and the current destination's name. Giving the bar a
+  real surface breaks the old fall-through trick outright, so dragging the window by the bar is now
+  wired directly — the same `PointerPressed` → `BeginMoveDrag` pattern `TrayFlyoutWindow`'s own
+  header already uses — rather than depending on nothing being drawn on top of the OS decorations'
+  title-bar region. No window-control buttons were added here: `WindowChrome.axaml`'s decorations
+  overlay already draws minimize/maximize/close independently of the shell's own content, and
+  duplicating them would have been the same three-toggles mistake avoided for the drawer. The whole
+  bar hides with the rest of the immersive chrome (drawer, FAB, snackbar) during fullscreen remote
+  desktop, and stays inside the shell's existing `LayoutTransformControl`/`UiScale` transform, so it
+  scales with everything else rather than needing its own handling. (RemEx-a3prn)
+
 - **The settings panel is a real Material side sheet now, and it and the drawer no longer fight
   over the screen.** The hand-rolled `Border` with a manual `translateX` slide plus a separate
   backdrop `Border` (its own `PointerPressed` handler standing in for a scrim) is gone, replaced by
