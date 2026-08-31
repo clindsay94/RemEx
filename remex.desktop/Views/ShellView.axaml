@@ -110,6 +110,26 @@
         <Style Selector="Button.gear-fab:pressed">
             <Setter Property="RenderTransform" Value="scale(0.95)"/>
         </Style>
+
+        <!-- ═══ Drawer surface ═══
+             The SplitView this replaced carried PaneBackground="Transparent", and the drawer content
+             brings its own accent gradient over GlassBaseDarkBrush at 0.9 opacity. Material's control
+             theme paints PART_LeftDrawerBorder with MaterialCardBackgroundBrush, which would sit
+             behind that glass as opaque paper and stop the drawer compositing onto the window
+             backdrop — most visibly under SolarFlare, the one light theme, where the paper is nearly
+             white. Transparent restores what the SplitView did.
+
+             This override wins, and the two facts it depends on were read out of Material.Avalonia
+             3.19.0's own NavigationDrawer.axaml rather than assumed, because both fail SILENTLY:
+             PART_LeftDrawerBorder really is a Border (a wrong type here matches nothing), and its
+             Background arrives from a Style setter inside the ControlTheme, not an inline attribute
+             on the ControlTemplate. That second one is the load-bearing part — an inline attribute
+             would be a LocalValue and would beat any Style, which is the ShadowAssist trap App.axaml
+             already documents. An app-level Style outranks a ControlTheme setter, so this applies.
+             Not yet confirmed on screen across the four themes: see RemEx-j2gfa. -->
+        <Style Selector="material|NavigationDrawer /template/ Border#PART_LeftDrawerBorder">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
     </UserControl.Styles>
 
     <ctrl:DashboardBackgroundControl>
@@ -149,6 +169,12 @@
                                        IsVisible="{Binding !IsShellChromeHidden}">
 
                 <material:NavigationDrawer.LeftDrawerContent>
+                    <!-- Every label, the brand text and the status panel below used to carry
+                         IsVisible="{Binding IsDrawerOpen}" so they vanished in the 64px compact rail.
+                         An overlay drawer has no compact state — it is either over the content or off
+                         screen — so those gates went with it (RemEx-q3mle). They were not merely
+                         redundant: IsDrawerOpen flips at the START of the 300ms close animation, so
+                         the labels blinked out while the panel was still sliding away. -->
                     <!-- Wrapper retained as a plain container; its IsDesktop gate was always true (RemEx-f167). -->
                     <Border>
                         <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0">
@@ -174,10 +200,10 @@
                                     <TextBlock Text="RemEx" FontFamily="{StaticResource Orbitron}" FontSize="14" FontWeight="Bold"
                                                LetterSpacing="3" HorizontalAlignment="Center"
                                                Foreground="{DynamicResource AccentPrimaryBrush}" Margin="4,12,0,0"
-                                               IsVisible="{Binding IsDrawerOpen}"/>
+                                              />
                                     
                                     <!-- Command Palette Hint -->
-                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" IsVisible="{Binding IsDrawerOpen}" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
+                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
                                             <mi:MaterialIcon Kind="Magnify" Foreground="{DynamicResource TextSecondaryBrush}" Width="11" Height="11" VerticalAlignment="Center"/>
                                             <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
@@ -192,7 +218,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" ToolTip.Tip="{conv:Localize Nav_Home}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -216,7 +242,7 @@
                                                                  HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
                                                 </material:Badged>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -224,7 +250,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{conv:Localize Nav_Commands}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -232,7 +258,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -240,7 +266,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{conv:Localize Nav_Processes}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -248,7 +274,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" ToolTip.Tip="{conv:Localize Nav_Files}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -256,7 +282,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8}" Command="{Binding NavigateToDiagnosticLogsCommand}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -267,7 +293,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9}" Command="{Binding NavigateToSettingsCommand}" ToolTip.Tip="{conv:Localize Nav_Settings}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -275,7 +301,7 @@
                                         <Button AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                             </Grid>
                                         </Button>
 
@@ -287,7 +313,7 @@
                                     <Grid ColumnDefinitions="64,*">
                                         <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                                         </Ellipse>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,12,0" IsVisible="{Binding IsDrawerOpen}">
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,12,0">
                                             <!-- PHONE PRESENCE IS THE HEADLINE, the loopback link is the detail
                                                  below it (RemEx-0z7w / RemEx-porg). Connection.IsConnected is the
                                                  UI's own socket to its embedded host and is up essentially always,

@@ -130,8 +130,37 @@ public class ShellDrawerOverlayTests
         Assert.True(contentStart >= 0 && contentEnd > contentStart,
             "ShellView.axaml no longer declares NavigationDrawer.LeftDrawerContent as a property element");
 
-        var outsideTheDrawer = xaml.Remove(contentStart, contentEnd - contentStart);
+        // Comments are stripped first: the drawer toggle is discussed in prose both here and in
+        // ShellView.axaml, and a guard that a comment can satisfy is not a guard.
+        var outsideTheDrawer = WithoutXmlComments(xaml.Remove(contentStart, contentEnd - contentStart));
 
         Assert.Contains("ToggleDrawerCommand", outsideTheDrawer, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void NothingStillReachesForTheShellSplitViewByAncestorType()
+    {
+        // The regression this bead nearly shipped. CanvasView gated its Undo/Redo labels on
+        // {Binding $parent[SplitView].IsPaneOpen, FallbackValue=False} — a binding that reached out of
+        // the page and up into the shell's layout container. Deleting that container did not break the
+        // build, break a test, or log anything: the ancestor lookup simply failed and the FallbackValue
+        // took over, hiding both labels forever. An $parent[T] binding is a dependency on a control
+        // that no compiler checks, so it has to be checked here.
+        // The whole project, not just Views/ — App.axaml, Controls/ and Themes/ carry markup too, and
+        // a guard that stops at one directory only proves the bug moved.
+        var desktopProject = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..",
+            "remex.desktop");
+
+        var offenders = Directory.EnumerateFiles(desktopProject, "*.axaml", SearchOption.AllDirectories)
+            .Where(f => File.ReadAllText(f).Contains("$parent[SplitView]", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToList();
+
+        Assert.True(offenders.Count == 0,
+            "These views bind to an ancestor SplitView, which the shell no longer has: " +
+            string.Join(", ", offenders));
+    }
+
+    private static string WithoutXmlComments(string xaml) =>
+        Regex.Replace(xaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
 }

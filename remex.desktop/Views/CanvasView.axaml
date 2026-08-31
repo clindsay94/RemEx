@@ -104,13 +104,19 @@
                 <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="secondary" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                        <!-- Label was gated on the shell SplitView's IsPaneOpen. That ancestor stopped
+                             existing when the shell moved to an overlay drawer (RemEx-q3mle), and the
+                             binding would have failed silently to FallbackValue=False — leaving a bare
+                             arrow with no word next to it, permanently. The gate is not re-pointed
+                             because an overlay drawer has no compact state for it to mean anything:
+                             it floats above this toolbar instead of narrowing it. -->
+                        <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_RedoTooltip}" Grid.Column="4" Classes="secondary" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                        <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="secondary" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">

@@ -42,6 +42,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The PC's navigation drawer floats over the page now instead of shoving it sideways.** It used
+  to be a compact icon rail that sat on screen permanently and widened when you opened it. It is
+  now a Material overlay drawer: it slides in over the content behind a dimmed scrim and the page
+  underneath does not move at all. Click the scrim or press Escape to dismiss it, and a hamburger
+  in the title bar opens it — the rail used to be the way back in, and an overlay drawer leaves
+  nothing on screen when it closes. Every nav destination is still one click away. The bead asked
+  for Material's `DrawerPage` in `Overlay` mode; Material.Avalonia 3.19.0 has neither, so this uses
+  `NavigationDrawer`, where overlay is not a mode flag at all but a consequence of the drawer's
+  expand threshold — and leaving that threshold unset means *permanently expanded*, which is the
+  exact opposite of what writing nothing looks like. (RemEx-q3mle)
+
 - **Scrollbars, tabs and the FAQ expanders follow your palette now, and expanders open smoothly.**
   Scrollbars were the one piece of chrome that ignored the colour you picked entirely. On the
   Diagnostics screen the selected tab was on your accent while its unselected neighbours were in
