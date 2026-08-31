@@ -249,23 +249,72 @@
 
     <ctrl:DashboardBackgroundControl>
         <Grid RowDefinitions="Auto,*,Auto">
-            <!-- ═══ APP BAR (RemEx-a3prn) ═══
-                 The transparent title-bar spacer this replaced relied on falling through to
-                 WindowChrome.axaml's underlay PART_TitleBar (drag hit-test region, behind window
-                 content) for anything not covered by the drawer toggle's own hit-testable "hole".
-                 That trick depended on nothing here having a real Background — the moment this
-                 became an actual Material app bar with a surface (ColorZone's own Mode=Standard
-                 gives it MaterialPaperBrush, elevated by the theme's default Depth2 shadow, both
-                 read from Material.Avalonia 3.19.0's own ColorZone.axaml rather than assumed), it
-                 covers that drag region for its whole width and the fall-through stops working.
+            <!-- ═══ APP BAR (RemEx-a3prn, revised per Opus review of 6522b12) ═══
+                 BACKGROUND/FOREGROUND ARE LOCAL VALUES, not an app-level Style. ColorZone's
+                 `^[Mode=Standard]` (Material.Avalonia 3.19.0's own ColorZone.axaml) is an ACTIVATED
+                 selector at BindingPriority.StyleTrigger, so an app-level override would compile,
+                 match, and still lose outright - the same trap the memory entry
+                 material-avalonia-activated-setters-outrank-plain-overrides documents. A LOCAL value
+                 (a plain attribute right here) resolves at BindingPriority.LocalValue, which beats
+                 StyleTrigger, so this one actually wins.
 
-                 So dragging is wired directly on THIS control instead (OnAppBarPointerPressed /
-                 BeginMoveDrag in the code-behind) - the same pattern TrayFlyoutWindow already uses
-                 for its own header (OnHeaderPressed), rather than a second geometry trick. Button
-                 clicks are safe from it without any extra guard: Avalonia's own Button.OnPointerPressed
-                 sets e.Handled=true on a left-button press (confirmed against Avalonia 12.1.1's own
-                 source, not assumed), and this handler is a plain (non-"handledEventsToo") bubble
-                 listener, so a press that started on DrawerToggle never reaches it.
+                 GlassBaseDarkBrush, not MaterialPaperBrush: MaterialTheme.CurrentTheme only ever gets
+                 PRIMARY/SECONDARY pushed into it (ThemeService.PushSeedIntoMaterialTheme, App.axaml)
+                 - Material's own Body/Paper/Card brushes are never seeded from RemEx's palette, so
+                 Mode=Standard's default resolves to Material's OWN two constants (#FAFAFA light,
+                 #303030 dark - WindowChrome.axaml's own header already names that #303030 as "a
+                 dead-constant - MaterialPaperBrush exactly"), not this app's. GlassBaseDarkBrush is
+                 already RemEx's own resource and already used for exactly this "translucent panel
+                 over the shell" role (the drawer, the connection/layout-warning banners, the tutorial
+                 overlay) - reusing it means the four-theme check this needed was already done by
+                 those call sites, rather than a new brush needing its own verification. It is also
+                 NOT opaque (#A00A0A10, ~63% alpha) - MainWindow runs
+                 TransparencyLevelHint="Mica, AcrylicBlur, None" specifically so the OS backdrop shows
+                 through, and WindowChrome.axaml change #3 exists only to stop an opaque layer from
+                 covering it - painting another opaque strip back across the top 32px would undo that
+                 for exactly the height this control occupies. Foreground is RemEx's own
+                 TextPrimaryBrush, the same brush DrawerToggle's icon already paints with, so the app
+                 bar's surface and its content read from ONE palette rather than the
+                 foreground-from-RemEx/background-from-Material split App.axaml's own ToolTip override
+                 exists to prevent elsewhere.
+
+                 ShadowDepth is left at the theme's own default (Depth2) rather than overridden: it
+                 renders as a drop shadow cast onto the content below the bar, the ordinary Material
+                 "app bar sits above the page" read, and that is orthogonal to the brush's own alpha -
+                 unlike the WindowChrome bug, this Border is ordinary window CONTENT compositing
+                 normally on top of the already-Mica-composited backdrop, not a layer racing the OS
+                 compositor for it.
+
+                 THE TITLE IS LEADING, NOT RIGHT-ALIGNED. WindowChrome's PART_TitleTextPanel now
+                 renders nothing (see its own file, change #5) specifically so there is only ONE
+                 title on screen - this one, in the conventional position immediately after the
+                 toggle. MaxWidth+CharacterEllipsis bound its growth for long locale strings (pl
+                 "Dziennik i diagnostyka", uk "Журнали та діагностика") rather than letting it grow
+                 unbounded toward the caption strip.
+
+                 DRAGGING IS WindowDecorationProperties.ElementRole="TitleBar" ON THIS CONTROL, not a
+                 hand-wired PointerPressed/BeginMoveDrag. The property "can be applied to any element
+                 in the visual tree, not limited to decoration children" (Avalonia 12.1.1's own doc
+                 comment on WindowDecorationProperties.ElementRoleProperty) - Win32's
+                 WindowImpl.CustomCaptionProc and X11's X11Window both resolve it by walking UP the
+                 visual-parent chain from the topmost hit-test-visible element at the click point
+                 (PresentationSource.GetChromeRoleFromVisual, confirmed against Avalonia's own source)
+                 until a role is found, so setting it here restores the FULL native title-bar
+                 contract at once - drag, double-click-to-maximize/restore, and the system menu -
+                 instead of the single BeginMoveDrag-per-click a hand-written handler could reach.
+                 Win32 additionally maps this role to HTCAPTION for WM_NCHITTEST, which is what makes
+                 double-click and right-click work at all; a client-side PointerPressed handler never
+                 produces the NC messages those depend on.
+
+                 DrawerToggle needs its OWN role - WindowDecorationProperties.ElementRole
+                 ="DecorationsElement" - or the ancestor walk above would find THIS control's TitleBar
+                 role for clicks on the button too and drag the window instead of opening the drawer.
+                 This is the exact pattern WindowChrome.axaml's own RemexDrawnCaptionButton ControlTheme
+                 already uses for its caption buttons, which sit inside the same extended title-bar
+                 area for the same reason. AppBarTitle needs no such override: IsHitTestVisible="False"
+                 already excludes it from the hit-test walk entirely (PresentationSource's
+                 ChromeHitTestFilter requires IsHitTestVisible), so a press over the title text
+                 reaches this control's own TitleBar role the same as one over bare bar background.
 
                  ONE toggle lives here, not two: DrawerToggle moves in from being Grid.Row="0"'s
                  sibling to this bar's own content, and the drawer's round brand-mark button (further
@@ -273,25 +322,19 @@
                  different state (only on screen while the drawer is actually open) rather than a
                  second way to do what this one already does.
 
-                 The title text is right-aligned rather than sitting next to the toggle at the
-                 conventional leading position: WindowChrome's own Window.Title text renders in the
-                 decorations' Overlay slot, on TOP of this control at Margin="44,0,0,0" (see
-                 WindowChrome.axaml's file-header change #4), so anything placed there would paint
-                 straight through it. 190px keeps this clear of the four 45px-wide caption buttons the
-                 same Overlay slot draws top-right (180px + a small buffer). It carries
-                 IsHitTestVisible="False" for the same reason the old spacer did - so a press over the
-                 title still reaches the drag handler above instead of stopping here.
-
                  No window-control buttons are added here. WindowChrome.axaml already draws them (the
                  RemexDrawnCaptionButton set, top-right, independent of ShellView's own content) -
                  duplicating them would be the exact "three toggles" mistake this bead was warned
                  against, just for minimize/maximize/close instead of the drawer. -->
             <material:ColorZone Grid.Row="0" Name="AppBar" Height="32"
+                                 Background="{DynamicResource GlassBaseDarkBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
                                  IsVisible="{Binding !IsShellChromeHidden}"
-                                 PointerPressed="OnAppBarPointerPressed">
+                                 WindowDecorationProperties.ElementRole="TitleBar">
                 <Grid>
                     <Button Name="DrawerToggle" Classes="icon-button compact"
                             Command="{Binding ToggleDrawerCommand}"
+                            WindowDecorationProperties.ElementRole="DecorationsElement"
                             HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}"
@@ -300,7 +343,8 @@
                     </Button>
                     <TextBlock Name="AppBarTitle" IsHitTestVisible="False"
                                Text="{Binding ActiveNavIndex, Converter={x:Static conv:NavIndexToTitleConverter.Instance}}"
-                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,190,0"
+                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="40,0,0,0"
+                               MaxWidth="140" TextTrimming="CharacterEllipsis"
                                FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Grid>
             </material:ColorZone>

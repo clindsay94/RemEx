@@ -101,6 +101,9 @@
   <data name="Nav_Files" xml:space="preserve">
     <value>Dosyalar</value>
   </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>Uzak Masaüstü</value>
+  </data>
 
   
   <data name="Btn_Connect" xml:space="preserve">

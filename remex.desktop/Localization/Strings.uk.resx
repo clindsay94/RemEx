@@ -101,6 +101,9 @@
   <data name="Nav_Files" xml:space="preserve">
     <value>Файли</value>
   </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>Віддалений робочий стіл</value>
+  </data>
 
   
   <data name="Btn_Connect" xml:space="preserve">

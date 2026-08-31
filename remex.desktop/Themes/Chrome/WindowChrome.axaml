@@ -27,8 +27,8 @@
      app-wide turns that text invisible. Owning the template is what is left.
 
      KEEPING IT IN SYNC: this is Material.Avalonia 3.19.0's
-     Material.Styles/Resources/Themes/WindowDrawnDecorations.axaml, verbatim except for the three
-     changes listed below. On a Material.Avalonia upgrade, re-diff against that file.
+     Material.Styles/Resources/Themes/WindowDrawnDecorations.axaml, verbatim except for the changes
+     listed below. On a Material.Avalonia upgrade, re-diff against that file.
        1. MaterialDrawnCaptionButton renamed RemexDrawnCaptionButton, so this dictionary is
           self-contained and does not depend on a StaticResource inside Material's dictionary.
        2. Keyed BackdropSafeWindowDecorations rather than {x:Type WindowDrawnDecorations}, so it
@@ -48,6 +48,19 @@
           drawer toggle disappears entirely in immersive/chrome-hidden mode
           (ShellViewModel.IsShellChromeHidden), so the extra margin only ever matters while
           something is actually sitting under it.
+
+          SUPERSEDED BY CHANGE 5 BELOW: the TextBlock this margin belongs to no longer renders
+          anything, so the margin is now dead weight rather than an active fix. Left in place
+          rather than reverted to the upstream 12,0,0,0 — reverting it would read as "this repo
+          restored the upstream value" to a future re-diff, when the actual reason is simpler
+          (nothing here paints, so no margin is correct either).
+       5. PART_TitleTextPanel's TextBlock carries IsVisible="False" (Opus review of 6522b12,
+          RemEx-a3prn). ShellView's own ColorZone app bar shows a live, localized "current page"
+          title next to its drawer toggle now — a SECOND static "RemEx — Command Center" title
+          painted on top of it, from this decorations Overlay slot, was overlap #2 in the same bar
+          in one bead. Window.Title is not lost: it still drives the taskbar entry and Alt-Tab, the
+          only two places it was ever load-bearing — this is the one place it was purely
+          decorative and colliding with something that now says more.
      WindowChromeBackdropTests guards 2 and 3 from this source. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -105,13 +118,15 @@
                      Height="{TemplateBinding TitleBarHeight}"
                      IsHitTestVisible="False"
                      IsVisible="{TemplateBinding HasTitleBar}">
-                <!-- 44px, not the upstream 12px: clears ShellView's DrawerToggle (6px left margin
-                     + 28px compact icon-button), which this decorations underlay has no way to see
-                     coming and so cannot avoid via a binding. See change #4 in the file header. -->
+                <!-- IsVisible="False": ShellView's ColorZone app bar shows the live page title now
+                     (change #5 in the file header) - this would be a second, static title painted
+                     on top of it. Margin stays at 44,0,0,0 (change #4) rather than reverting to the
+                     upstream 12px; see change #4's own text for why. -->
                 <TextBlock Text="{TemplateBinding Title}"
                            VerticalAlignment="Center"
                            Margin="44,0,0,0"
-                           FontSize="12" />
+                           FontSize="12"
+                           IsVisible="False" />
               </Panel>
               <StackPanel x:Name="PART_OverlayPanel"
                           VerticalAlignment="Top"
