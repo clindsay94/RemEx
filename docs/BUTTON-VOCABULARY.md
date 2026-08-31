@@ -157,7 +157,7 @@ Three groups of buttons keep bespoke styles, each because another bead owns them
 
 | Style | Where | Owned by |
 |---|---|---|
-| `nav-item`, `nav-item-active` | `ShellView.axaml` | **RemEx-zi3ua** — nav items become a Material list with ripple and icons |
+| `nav-item` | `ShellView.axaml` | **RemEx-zi3ua** — retained for the drawer-toggle brand button; the nine nav destinations moved to `ListBoxItem` |
 | `gear-fab` | `ShellView.axaml` | **RemEx-bado6** — the gear becomes a Material `FloatingButton` |
 | Window chrome buttons | `Themes/Chrome/WindowChrome.axaml` | Template parts of the window chrome, not app buttons |
 

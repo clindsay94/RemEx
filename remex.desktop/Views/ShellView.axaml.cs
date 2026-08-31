@@ -396,6 +396,50 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
+    /// Dispatches a nav-list selection to the matching NavigateToX command (RemEx-zi3ua).
+    /// </summary>
+    /// <remarks>
+    /// The XAML deliberately does NOT two-way bind either <c>NavList</c>/<c>SettingsNavList</c>'s
+    /// selection to <see cref="ShellViewModel.ActiveNavIndex"/>. Each destination's Navigate command
+    /// carries side effects a bare index assignment would skip — clearing the sensor alert badge,
+    /// the disconnected-feature toast, lazily constructing the target view model — and
+    /// <c>SetTransitionAndNavigate</c> reads the OLD <c>ActiveNavIndex</c> to pick the shared-axis
+    /// transition direction, which a binding that had already overwritten it first would always read
+    /// as "forward". So each <c>ListBoxItem</c> carries its destination's index as a string
+    /// <c>Tag</c>, and this handler maps that back to the one command that does the whole job.
+    ///
+    /// The equality guard against <c>vm.ActiveNavIndex</c> is what stops an infinite ping-pong: every
+    /// item's <c>IsSelected</c> is itself bound (one-way) to <c>ActiveNavIndex</c>, so a navigation
+    /// command run from anywhere else — the connection banner's "Open Settings" button, for one —
+    /// flips the matching item's <c>IsSelected</c> and raises this same event. Without the guard that
+    /// would re-invoke the command it was only echoing.
+    /// </remarks>
+    private void OnNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not ShellViewModel vm)
+            return;
+
+        if (e.AddedItems.Count == 0
+            || e.AddedItems[0] is not ListBoxItem { Tag: string tag }
+            || !int.TryParse(tag, out var index)
+            || index == vm.ActiveNavIndex)
+            return;
+
+        switch (index)
+        {
+            case 0: vm.NavigateToHomeCommand.Execute(null); break;
+            case 1: vm.NavigateToCanvasCommand.Execute(null); break;
+            case 2: vm.NavigateToRemoteCommand.Execute(null); break;
+            case 3: vm.NavigateToAppLauncherCommand.Execute(null); break;
+            case 4: vm.NavigateToTaskManagerCommand.Execute(null); break;
+            case 6: vm.NavigateToAboutCommand.Execute(null); break;
+            case 7: vm.NavigateToFileTransferCommand.Execute(null); break;
+            case 8: vm.NavigateToDiagnosticLogsCommand.Execute(null); break;
+            case 9: vm.NavigateToSettingsCommand.Execute(null); break;
+        }
+    }
+
+    /// <summary>
     /// Escape closes the navigation drawer (RemEx-q3mle).
     /// </summary>
     /// <remarks>

@@ -157,6 +157,12 @@ public class MaterialIconAdoptionTests
     /// lives entirely in three descendant selectors. Retargeting them was the easiest half of this
     /// migration to forget, and forgetting it costs the rail its entire state feedback.
     /// </summary>
+    /// <remarks>
+    /// RemEx-zi3ua moved the nine nav destinations from Button to ListBoxItem, so ":active" (a
+    /// hand-rolled Classes.nav-item-active toggle) became ":selected" (Avalonia's own pseudo-class,
+    /// driven by IsSelected) — the selectors below were retargeted, not merely renamed under the
+    /// same class prefix.
+    /// </remarks>
     [Fact]
     public void TheNavRail_StillColoursItsIconsPerButtonState()
     {
@@ -164,9 +170,9 @@ public class MaterialIconAdoptionTests
 
         foreach (var selector in new[]
                  {
-                     "Button.nav-item mi|MaterialIcon",
-                     "Button.nav-item:pointerover mi|MaterialIcon",
-                     "Button.nav-item-active mi|MaterialIcon",
+                     "ListBoxItem.nav-item mi|MaterialIcon",
+                     "ListBoxItem.nav-item:pointerover mi|MaterialIcon",
+                     "ListBoxItem.nav-item:selected mi|MaterialIcon",
                  })
         {
             shell.Should().Contain($"Selector=\"{selector}\"",

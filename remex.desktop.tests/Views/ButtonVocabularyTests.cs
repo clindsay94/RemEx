@@ -49,8 +49,11 @@ public class ButtonVocabularyTests
     /// </summary>
     private static readonly Dictionary<string, string> Exceptions = new()
     {
-        ["nav-item"] = "RemEx-zi3ua — nav items become a Material list",
-        ["nav-item-active"] = "RemEx-zi3ua — nav items become a Material list",
+        // The nine nav DESTINATIONS moved to ListBoxItem under RemEx-zi3ua, so nav-item-active
+        // (their old Classes.nav-item-active toggle) is gone entirely — retired here rather than
+        // widened, which is the whole point of an exception list that gets checked. "nav-item"
+        // itself stays: the drawer's round brand-mark toggle Button still wears it.
+        ["nav-item"] = "RemEx-zi3ua — retained for the drawer-toggle Button after nav destinations became a Material list",
         ["gear-fab"] = "RemEx-bado6 — the gear becomes a Material FloatingButton",
     };
 

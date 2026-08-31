@@ -9,7 +9,12 @@
     xmlns:views="using:Remex.Desktop.Views" x:Class="Remex.Desktop.Views.ShellView" x:DataType="vm:ShellViewModel">
 
     <UserControl.Styles>
-        <!-- ═══ Sidebar nav item base ═══ -->
+        <!-- ═══ Drawer-toggle brand button base (RemEx-zi3ua) ═══
+             This class used to also style the nine nav DESTINATIONS. They are ListBoxItems now
+             (below) and get their own selectors from Material's ListBoxItem control theme plus the
+             ListBoxItem.nav-item block further down. What is left here is only the round brand-mark
+             toggle button at the top of the drawer (Width=48/CornerRadius=Large override) - the
+             ButtonVocabularyTests exception for "nav-item" stays live for exactly this one Button. -->
         <Style Selector="Button.nav-item">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
@@ -38,7 +43,52 @@
         <Style Selector="Button.nav-item:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
-        <Style Selector="Button.nav-item-active">
+
+        <!-- ═══ Nav destination list items (RemEx-zi3ua) ═══
+             The rail used to hand-roll active state as a bool Classes.nav-item-active flipped by a
+             converter binding on nine Buttons, duplicated again for each Path/MaterialIcon's colour.
+             ListBoxItem's own :selected pseudo-class is the same state Avalonia already tracks once
+             IsSelected is bound to ActiveNavIndex - no hand-toggled class, no risk of the class and
+             the "real" state disagreeing.
+
+             Ripple and the hover/press state layer are NOT set here - they come from Material's
+             ListBoxItem control theme itself. Verified against the actual template source
+             (Material.Styles 3.19.0's Resources/Themes/ListBoxItem.axaml on GitHub, not just the
+             type's presence in the DLL, per the RemEx-vryje/RemEx-04ftl lesson that a resource
+             existing proves it was declared, not that any template consumes it): the default
+             ControlTheme for ListBoxItem wraps content in a ripple:RippleEffect named PART_Ripple,
+             which fires from the pointer position on press with no extra wiring, plus a
+             PART_HoverEffect overlay that already answers :pointerover/:selected. This block only
+             adds what that shared theme cannot know - this app's accent colour for the selected fill
+             and the per-state icon recolour below. -->
+        <Style Selector="ListBoxItem.nav-item">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ListBoxItem.nav-item:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <!-- :selected IS the active destination - Avalonia's own pseudo-class, driven by
+             IsSelected, not a hand-rolled bool class. The accent tint here composes with Material's
+             own :selected state layer (ListBoxItem.axaml's PART_HoverEffect, Opacity 0.12) rather
+             than replacing it, matching how a selected Material list item is meant to read: fill AND
+             state layer together, so the active destination stays unambiguous against all four
+             themes rather than relying on either alone. -->
+        <Style Selector="ListBoxItem.nav-item:selected">
             <Setter Property="Background">
                 <Setter.Value>
                     <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.22"/>
@@ -46,10 +96,10 @@
             </Setter>
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
-        <!-- Nav rail icon colour follows button state. MaterialIcon paints with Foreground,
+        <!-- Nav rail icon colour follows item state. MaterialIcon paints with Foreground,
              not Fill, so these selectors must name the property the control actually reads -
              a leftover Fill setter here would compile and simply never apply. -->
-        <Style Selector="Button.nav-item mi|MaterialIcon">
+        <Style Selector="ListBoxItem.nav-item mi|MaterialIcon">
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="Transitions">
                 <Transitions>
@@ -57,10 +107,10 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.nav-item:pointerover mi|MaterialIcon">
+        <Style Selector="ListBoxItem.nav-item:pointerover mi|MaterialIcon">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
-        <Style Selector="Button.nav-item-active mi|MaterialIcon">
+        <Style Selector="ListBoxItem.nav-item:selected mi|MaterialIcon">
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
@@ -211,99 +261,144 @@
                                     </Button>
                                 </StackPanel>
 
-                                <!-- ═══ Navigation Items ═══ -->
+                                <!-- ═══ Navigation Items (RemEx-zi3ua) ═══
+                                     Two ListBoxes, not one: a plain Separator placed as a direct
+                                     ListBox child would be auto-wrapped in its own generated
+                                     ListBoxItem container (Avalonia wraps any non-container child of
+                                     an ItemsControl declared inline), making the divider a phantom
+                                     selectable/rippling destination and an extra stop for arrow-key
+                                     navigation. Splitting at the divider keeps it a plain sibling.
+                                     Both lists use Theme="{StaticResource NoScrollListBox}"
+                                     (Material.Styles 3.19.0 ListBox.axaml) instead of the default
+                                     ListBox control theme, which wraps its own PART_ScrollViewer -
+                                     two of those nested inside the outer ScrollViewer below would be
+                                     double scrolling. SelectionMode="Single" is the same "exactly one
+                                     active destination" invariant the old Classes.nav-item-active
+                                     bindings enforced by construction (nine bindings all comparing
+                                     against the same ActiveNavIndex, so at most one could ever be
+                                     true) - the control now owns that instead of relying on nine
+                                     independent bindings to agree by accident.
+
+                                     IsSelected stays explicitly Mode=OneWay from ActiveNavIndex:
+                                     ObjectConverters.Equal has no ConvertBack, and IsSelected's own
+                                     default binding mode is TwoWay, so an unguarded binding would try
+                                     to push a click's boolean back through an equality converter that
+                                     cannot invert it into an index. Navigation itself is NOT bound
+                                     here - ShellView.axaml.cs's OnNavSelectionChanged reads each
+                                     item's Tag and calls the matching NavigateToX command, which is
+                                     what runs the alert-clear, disconnected-toast and lazy-VM side
+                                     effects a bare SelectedIndex/ActiveNavIndex two-way bind would
+                                     have skipped, and what lets SetTransitionAndNavigate still read
+                                     the OLD ActiveNavIndex to pick the shared-axis transition
+                                     direction. -->
                                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <StackPanel Spacing="4" Margin="0,8">
-                                        <!-- Home Dashboard -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" ToolTip.Tip="{conv:Localize Nav_Home}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                    <StackPanel Margin="0,8">
+                                        <ListBox Name="NavList" Theme="{StaticResource NoScrollListBox}" SelectionMode="Single" SelectionChanged="OnNavSelectionChanged">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Spacing="4"/>
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
 
-                                        <!-- Live Sensors -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
-                                                     incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
-                                                     kept twenty AlertNotifications and offered a DismissAlerts command
-                                                     since it was written - and NO view bound any of it. The pipeline ran
-                                                     correctly into a number nobody could see. Sensors is where the alerts
-                                                     come from, so it is where the count belongs.
+                                            <!-- Home Dashboard -->
+                                            <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Home}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
 
-                                                     IsBadgeVisible is bound rather than left to Material, which renders a
-                                                     badge reading "0" quite happily - a notification that there is nothing
-                                                     to notify. Placement and colour come from App.axaml so no call site
-                                                     can put one somewhere else. -->
-                                                <material:Badged Grid.Column="0"
-                                                                 BadgeContent="{Binding AlertBadgeCount}"
-                                                                 IsBadgeVisible="{Binding HasAlerts}"
-                                                                 HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                    <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
-                                                </material:Badged>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- Live Sensors -->
+                                            <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
+                                                         incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
+                                                         kept twenty AlertNotifications and offered a DismissAlerts command
+                                                         since it was written - and NO view bound any of it. The pipeline ran
+                                                         correctly into a number nobody could see. Sensors is where the alerts
+                                                         come from, so it is where the count belongs.
 
-                                        <!-- Commands (remote power/control commands) -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{conv:Localize Nav_Commands}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                                         IsBadgeVisible is bound rather than left to Material, which renders a
+                                                         badge reading "0" quite happily - a notification that there is nothing
+                                                         to notify. Placement and colour come from App.axaml so no call site
+                                                         can put one somewhere else. -->
+                                                    <material:Badged Grid.Column="0"
+                                                                     BadgeContent="{Binding AlertBadgeCount}"
+                                                                     IsBadgeVisible="{Binding HasAlerts}"
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
+                                                    </material:Badged>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
 
-                                        <!-- App Launcher -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- Commands (remote power/control commands) -->
+                                            <ListBoxItem Tag="2" AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Commands}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
 
-                                        <!-- Processes (running programs / task manager) -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{conv:Localize Nav_Processes}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- App Launcher -->
+                                            <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
 
-                                        <!-- File Explorer -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" ToolTip.Tip="{conv:Localize Nav_Files}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- Processes (running programs / task manager) -->
+                                            <ListBoxItem Tag="4" AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Processes}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
 
-                                        <!-- Logs & Diagnostics -->
-                                        <Button AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8}" Command="{Binding NavigateToDiagnosticLogsCommand}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- File Explorer -->
+                                            <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Files}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
+
+                                            <!-- Logs & Diagnostics -->
+                                            <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
+                                        </ListBox>
 
                                         <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,12" Opacity="0.3"/>
 
                                         <!-- ═══ Settings family ═══ -->
-                                        <!-- Settings -->
-                                        <Button AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9}" Command="{Binding NavigateToSettingsCommand}" ToolTip.Tip="{conv:Localize Nav_Settings}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                        <ListBox Name="SettingsNavList" Theme="{StaticResource NoScrollListBox}" SelectionMode="Single" SelectionChanged="OnNavSelectionChanged">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Spacing="4"/>
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
 
-                                        <!-- About (moved into settings cluster) -->
-                                        <Button AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            </Grid>
-                                        </Button>
+                                            <!-- Settings -->
+                                            <ListBoxItem Tag="9" AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Settings}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
+
+                                            <!-- About (moved into settings cluster) -->
+                                            <ListBoxItem Tag="6" AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_About}">
+                                                <Grid ColumnDefinitions="64,*">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </ListBoxItem>
+                                        </ListBox>
 
                                     </StackPanel>
                                 </ScrollViewer>

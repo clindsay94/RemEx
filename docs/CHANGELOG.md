@@ -42,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The drawer's nine nav destinations are a Material list now instead of nine hand-styled
+  buttons.** Home, Sensors, Commands, App Launcher, Processes, Files, Logs, Settings and About
+  moved from `Button` with a hand-toggled `Classes.nav-item-active` to `ListBoxItem` inside two
+  `ListBox`es (split at the divider so the Separator can't be swept into keyboard/selection
+  navigation as a phantom destination). The active destination is Avalonia's own `:selected`
+  pseudo-class now, bound one-way from the same index the old class toggle compared against,
+  rather than nine independent bindings that happened to agree. Pressing an item shows a real
+  ripple from the pointer position — Material's `ListBoxItem` control theme supplies it — where
+  the old buttons had none, and arrow keys now move the selection between destinations within each
+  group. Every destination kept its accessible name and tooltip; clicking still runs the same
+  per-destination command (alert-badge clear on Sensors, the disconnected-feature toast, lazy view
+  model construction) since a bare index binding would have skipped all of it — `ShellView`'s
+  code-behind reads the clicked item's index and calls that command directly. (RemEx-zi3ua)
+
 - **In-app toasts are a Material snackbar now instead of Avalonia's stock notification card.**
   File transfers, pairing results and errors that used to pop a `NotificationCard` in the corner
   now post through a `SnackbarHost` anchored above the personalization FAB instead of behind it,
