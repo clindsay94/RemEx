@@ -44,17 +44,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The drawer's nine nav destinations are a Material list now instead of nine hand-styled
   buttons.** Home, Sensors, Commands, App Launcher, Processes, Files, Logs, Settings and About
-  moved from `Button` with a hand-toggled `Classes.nav-item-active` to `ListBoxItem` inside two
-  `ListBox`es (split at the divider so the Separator can't be swept into keyboard/selection
-  navigation as a phantom destination). The active destination is Avalonia's own `:selected`
-  pseudo-class now, bound one-way from the same index the old class toggle compared against,
-  rather than nine independent bindings that happened to agree. Pressing an item shows a real
-  ripple from the pointer position — Material's `ListBoxItem` control theme supplies it — where
-  the old buttons had none, and arrow keys now move the selection between destinations within each
-  group. Every destination kept its accessible name and tooltip; clicking still runs the same
-  per-destination command (alert-badge clear on Sensors, the disconnected-feature toast, lazy view
-  model construction) since a bare index binding would have skipped all of it — `ShellView`'s
-  code-behind reads the clicked item's index and calls that command directly. (RemEx-zi3ua)
+  moved from `Button` with a hand-toggled `Classes.nav-item-active` to `ListBoxItem` inside a
+  single `ListBox` — the "Settings family" divider lives inside it too, as its own
+  non-selectable, non-focusable `ListBoxItem`, rather than as a sibling `Separator` that would
+  otherwise stop being reachable by arrow keys past the split. The active destination is
+  Avalonia's own `:selected` pseudo-class now, bound one-way from the same index the old class
+  toggle compared against. Pressing an item shows a real ripple from the pointer position —
+  Material's `ListBoxItem` control theme supplies it — where the old buttons had none.
+  Arrow keys move only the highlight between destinations (Avalonia moves selection on arrow
+  presses, and a highlight is not a commit); Enter, Space, and a click or tap are what actually
+  navigate, each running the same per-destination command a plain index change would have skipped
+  — alert-badge clear on Sensors, the disconnected-feature toast, lazy view model construction,
+  and closing the drawer. Re-activating the already-active destination behaves exactly as the old
+  buttons did (dismisses the drawer, re-clears an already-zero badge) rather than being a dead
+  click. Every destination kept its accessible name and tooltip. (RemEx-zi3ua)
+
+  Visual acceptance ("the active destination is unambiguous") was established by reading
+  Material's `ListBoxItem` template source, not by looking at a running build — this repo has no
+  headless Avalonia harness. See the bead's notes for exactly what that leaves unconfirmed,
+  SolarFlare called out specifically.
 
 - **In-app toasts are a Material snackbar now instead of Avalonia's stock notification card.**
   File transfers, pairing results and errors that used to pop a `NotificationCard` in the corner

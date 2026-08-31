@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
 
@@ -7,23 +11,60 @@ namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
 /// Guards the nav rail's move from nine hand-rolled <c>Button</c>s to Material
-/// <c>ListBoxItem</c>s (RemEx-zi3ua).
+/// <c>ListBoxItem</c>s inside one <c>ListBox</c> (RemEx-zi3ua).
 /// </summary>
 /// <remarks>
-/// Everything here is a markup scan — there is no headless Avalonia harness in this repo (see
-/// AGENTS.md and <c>ButtonVocabularyTests</c>/<c>MaterialIconAdoptionTests</c>, which do the same).
-/// These tests prove the XAML SHAPE the bead's acceptance criteria depend on — that the
-/// class-toggling code is gone, that selection state is real <c>IsSelected</c> rather than a
-/// <c>Classes</c> hack, and that every destination kept its accessible name — not the runtime
-/// click/keyboard behaviour itself. Named for what they actually check, not for the acceptance
-/// criterion they support: a markup scan named e.g. "ArrowKeysMoveThroughDestinations" would be
-/// exactly the "test whose name makes a runtime claim its body cannot back up" shape this bead's
-/// handoff warned against.
+/// Everything here is a markup/source scan — there is no headless Avalonia harness in this repo
+/// (see AGENTS.md and <c>ButtonVocabularyTests</c>/<c>MaterialIconAdoptionTests</c>, which do the
+/// same). These tests prove the XAML SHAPE the bead's acceptance criteria depend on, not the
+/// runtime click/keyboard behaviour itself. Named for what they actually check, not for the
+/// acceptance criterion they support.
+///
+/// Parsed with <see cref="XDocument"/> (the pattern <c>FocusVisibleStyleGuardTests</c> already
+/// uses), not independent <c>Should().Contain()</c> substring checks against the whole file. The
+/// first draft of this file did the latter and it is exactly the shape RemEx-hev1g/RemEx-thwlr
+/// warn about: three unrelated substrings anywhere in the document, never asserted to sit on the
+/// SAME element, so changing <c>&lt;ListBoxItem Tag="7"</c> to <c>&lt;Button Tag="7"</c> left every
+/// assertion green. Per-element attribute checks below close that gap.
 /// </remarks>
 public class ShellNavListTests
 {
-    private static string ShellViewXaml()
-        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml"));
+    private const string Avalonia = "https://github.com/avaloniaui";
+
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
+
+    private static string ShellViewPath()
+        => Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml");
+
+    private static string ShellViewCodeBehindPath()
+        => Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml.cs");
+
+    private static string ShellViewXaml() => File.ReadAllText(ShellViewPath());
+
+    /// <summary>The single ListBox the nine destinations and the divider live inside.</summary>
+    private static XElement NavList()
+    {
+        var listBox = XDocument.Load(ShellViewPath())
+            .Descendants(XName.Get("ListBox", Avalonia))
+            .SingleOrDefault(e => e.Attribute("Name")?.Value == "NavList");
+
+        listBox.Should().NotBeNull(
+            "the nav destinations have to live in exactly one ListBox named NavList - two lists " +
+            "split arrow-key travel into two scopes and made Settings/About unreachable by keyboard");
+
+        return listBox!;
+    }
+
+    /// <summary>The nine destination items — everything in NavList wearing .nav-item.</summary>
+    private static IEnumerable<XElement> RealNavItems() =>
+        NavList().Descendants(XName.Get("ListBoxItem", Avalonia))
+            .Where(e => (e.Attribute("Classes")?.Value ?? string.Empty).Split(' ').Contains("nav-item"));
+
+    /// <summary>The one divider item — everything in NavList wearing .nav-divider.</summary>
+    private static XElement Divider() =>
+        NavList().Descendants(XName.Get("ListBoxItem", Avalonia))
+            .Single(e => (e.Attribute("Classes")?.Value ?? string.Empty).Split(' ').Contains("nav-divider"));
 
     /// <summary>
     /// The hand-rolled selection state the bead names explicitly: nine
@@ -34,20 +75,51 @@ public class ShellNavListTests
     [Fact]
     public void ShellView_NoLongerTogglesAClassForTheActiveDestination()
     {
-        // The attribute usage, not the bare name — the surrounding XAML's own comments now discuss
-        // the retired pattern by name (including in this file's own doc comments), and a substring
-        // match on the name alone would fail on prose that mentions history rather than code that
-        // revived it.
+        // The attribute usage, not the bare name — this file's own doc comments discuss the
+        // retired pattern by name, and a substring match on the name alone would fail on prose
+        // rather than on code that revived it.
         ShellViewXaml().Should().NotContain("Classes.nav-item-active=\"",
             "selection state belongs to the ListBoxItem now (IsSelected), not a hand-toggled class");
     }
 
     /// <summary>
-    /// Each of the nine destinations has to survive as a <c>ListBoxItem</c> carrying: the
-    /// <c>Tag</c> that <c>ShellView.axaml.cs</c>'s <c>OnNavSelectionChanged</c> reads to find the
-    /// matching <c>NavigateToX</c> command, the accessible name the bead's acceptance criteria
-    /// required kept, and a one-way <c>IsSelected</c> binding against the same
-    /// <c>ActiveNavIndex</c> the old <c>Classes.nav-item-active</c> bindings compared against.
+    /// Also NOT wired to SelectionChanged, per the HIGH finding this bead's review round fixed:
+    /// Avalonia moves selection on arrow keys, so a SelectionChanged handler cannot tell an
+    /// arrow-key highlight move from a genuine activation.
+    /// </summary>
+    [Fact]
+    public void ShellView_DoesNotDriveNavigationFromSelectionChanged()
+    {
+        ShellViewXaml().Should().NotContain("SelectionChanged=",
+            "SelectionChanged fires identically for an arrow-key highlight move and a real " +
+            "activation - navigation has to come from Tapped/KeyDown instead");
+    }
+
+    [Fact]
+    public void NavList_IsASingleSelectionListBox()
+    {
+        // Parenthesized, not a bare ?. chain: item.Attribute(x)?.Value.Should() short-circuits the
+        // WHOLE tail (including .Should().Be(...)) to a no-op when the attribute is missing, which
+        // is precisely the "asserted nothing at all" shape FocusVisibleStyleGuardTests' own remarks
+        // warn about - measured here, not assumed, by a defect injection that stayed green until
+        // every occurrence in this file was rewritten this way.
+        (NavList().Attribute("SelectionMode")?.Value).Should().Be("Single",
+            "more than one destination able to read as selected would make the active one ambiguous");
+    }
+
+    [Fact]
+    public void ExactlyNineRealDestinationsExist()
+    {
+        RealNavItems().Should().HaveCount(9,
+            "Home, Sensors, Commands, Launcher, Processes, Files, Logs, Settings, About");
+    }
+
+    /// <summary>
+    /// Each destination has to survive as a <c>ListBoxItem</c> — carrying the <c>Tag</c>
+    /// <c>ActivateNavItem</c> reads to find its command, the accessible name the bead's acceptance
+    /// criteria required kept, a one-way <c>IsSelected</c> binding against
+    /// <c>ActiveNavIndex</c>, and the two activation handlers — ALL ON THE SAME ELEMENT, which is
+    /// what an XDocument parse checks and an independent-substring scan cannot.
     /// </summary>
     [Theory]
     [InlineData("Nav_Home", 0)]
@@ -59,17 +131,82 @@ public class ShellNavListTests
     [InlineData("Shell_LogsDiagnostics", 8)]
     [InlineData("Nav_Settings", 9)]
     [InlineData("Shell_About", 6)]
-    public void EveryDestination_IsAListBoxItemWithItsAccessibleNameAndSelectionBinding(string localizationKey, int navIndex)
+    public void EveryDestination_CarriesItsNameSelectionBindingAndActivationHandlersOnOneElement(
+        string localizationKey, int navIndex)
     {
-        var shell = ShellViewXaml();
+        var item = RealNavItems().SingleOrDefault(e => e.Attribute("Tag")?.Value == navIndex.ToString());
+        item.Should().NotBeNull($"index {navIndex} has to exist as exactly one real ListBoxItem");
 
-        shell.Should().Contain($"Tag=\"{navIndex}\"",
-            $"OnNavSelectionChanged reads each item's Tag to find the NavigateTo command for index {navIndex}");
-        shell.Should().Contain($"AutomationProperties.Name=\"{{conv:Localize {localizationKey}}}\"",
-            $"{localizationKey}'s accessible name must survive the ListBox migration");
-        shell.Should().Contain(
-            $"IsSelected=\"{{Binding ActiveNavIndex, Converter={{x:Static ObjectConverters.Equal}}, ConverterParameter={navIndex}, Mode=OneWay}}\"",
-            $"index {navIndex}'s active state has to be real ListBoxItem selection, one-way from ActiveNavIndex");
+        // Every check below is parenthesized as (item.Attribute(x)?.Value).Should() rather than
+        // item.Attribute(x)?.Value.Should() - the latter's ?. short-circuits .Should().Be(...) to a
+        // no-op along with .Value when the attribute is absent, so a MISSING attribute would pass
+        // silently instead of failing loudly. Confirmed by defect injection: removing KeyDown from
+        // one item kept the unparenthesized form green.
+        (item!.Attribute("AutomationProperties.Name")?.Value).Should().Be(
+            $"{{conv:Localize {localizationKey}}}",
+            $"{localizationKey}'s accessible name must survive on the SAME element as Tag={navIndex}");
+
+        (item.Attribute("IsSelected")?.Value).Should().Be(
+            "{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, " +
+            $"ConverterParameter={navIndex}, Mode=OneWay}}",
+            $"index {navIndex}'s active state has to be a one-way ListBoxItem selection binding");
+
+        (item.Attribute("Tapped")?.Value).Should().Be("OnNavItemTapped",
+            "a click has to commit navigation directly, not wait on a SelectionChanged echo");
+
+        (item.Attribute("KeyDown")?.Value).Should().Be("OnNavItemKeyDown",
+            "Enter/Space is the keyboard commit gesture; arrow keys are left to move the highlight");
+    }
+
+    [Fact]
+    public void TheDivider_IsNotSelectableFocusableOrHitTestable()
+    {
+        var divider = Divider();
+
+        (divider.Attribute("Focusable")?.Value).Should().Be("False",
+            "Focusable=\"False\" is what ItemsControl.GetNextControl uses to skip this item during " +
+            "arrow-key traversal (confirmed against Avalonia 12.1.1's own source)");
+
+        (divider.Attribute("IsHitTestVisible")?.Value).Should().Be("False",
+            "a pointer click must not be able to land on the divider at all");
+
+        divider.Attribute("Tag").Should().BeNull(
+            "the divider is not a destination and must never reach ActivateNavItem's switch");
+    }
+
+    [Fact]
+    public void TheDividerStyle_ZeroesTheBaseThemesDefaultPadding()
+    {
+        ShellViewXaml().Should().Contain("Selector=\"ListBoxItem.nav-divider\"",
+            "without this the base Material ListBoxItem theme's own 8px Padding default shifts " +
+            "the divider line away from where the old sibling Separator sat");
+    }
+
+    /// <summary>
+    /// THE STRUCTURAL GUARD for the MEDIUM finding this review round raised: a Tag with no
+    /// matching <c>case</c> in <c>ActivateNavItem</c> falls through silently in a Release build
+    /// (<c>Debug.Fail</c> compiles out there), so nothing at runtime would catch a typo'd, missing,
+    /// or orphaned Tag. This test can.
+    /// </summary>
+    [Fact]
+    public void TheTagSetInMarkupMatchesTheCaseSetInActivateNavItem()
+    {
+        var tagValues = RealNavItems()
+            .Select(e => int.Parse(e.Attribute("Tag")!.Value))
+            .OrderBy(i => i)
+            .ToArray();
+
+        tagValues.Should().NotBeEmpty("an empty set would make this test pass vacuously");
+
+        var codeBehind = File.ReadAllText(ShellViewCodeBehindPath());
+        var caseValues = Regex.Matches(codeBehind, @"case (\d+): vm\.NavigateTo\w+Command\.Execute\(null\); break;")
+            .Select(m => int.Parse(m.Groups[1].Value))
+            .OrderBy(i => i)
+            .ToArray();
+
+        caseValues.Should().BeEquivalentTo(tagValues,
+            "every Tag in NavList has to have exactly one matching case in ActivateNavItem's switch, " +
+            "and vice versa - an orphaned case is dead code, an unmatched Tag is a silent dead click");
     }
 
     /// <summary>
@@ -100,7 +237,4 @@ public class ShellNavListTests
                 "has to name the selector that theme actually exposes");
         }
     }
-
-    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
-        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

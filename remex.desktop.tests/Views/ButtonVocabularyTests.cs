@@ -63,6 +63,12 @@ public class ButtonVocabularyTests
         // THE ANTI-SPRAWL RULE. A new screen-named class is not an error — it compiles, it
         // renders, and it looks fine on the one screen its author was looking at. This is the
         // only place that notices.
+        //
+        // KNOWN GAP (noted, not fixed, during RemEx-zi3ua's review): the tag list below only
+        // matches Button and its WPF-style siblings, so a screen-named class on a ListBoxItem —
+        // the nav rail's own ".nav-item" among them — is invisible to this rule. Not introduced by
+        // this bead and not a loosening of anything this rule used to catch; recorded here so a
+        // future pass knows the vocabulary's coverage stops at Button-shaped controls.
         var offenders = new List<string>();
 
         foreach (var (file, text) in XamlFiles())

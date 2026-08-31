@@ -114,6 +114,15 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
+        <!-- The "Settings family" divider inside NavList (RemEx-zi3ua HIGH fix). It carries
+             Focusable="False"/IsHitTestVisible="False" in the XAML, not Classes="nav-item" — that
+             already keeps it out of selection and ripple; this style only strips the base Material
+             ListBoxItem theme's own 8px default Padding so the thin Separator inside sits exactly
+             where the old sibling Separator did. -->
+        <Style Selector="ListBoxItem.nav-divider">
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
         <!-- ═══ Settings overlay panel ═══ -->
         <Style Selector="Border.settings-overlay">
             <!-- Must clear the panel's full width. It is Width=440 with MaxWidth=460, so the old
@@ -262,146 +271,147 @@
                                 </StackPanel>
 
                                 <!-- ═══ Navigation Items (RemEx-zi3ua) ═══
-                                     Two ListBoxes, not one: a plain Separator placed as a direct
-                                     ListBox child would be auto-wrapped in its own generated
-                                     ListBoxItem container (Avalonia wraps any non-container child of
-                                     an ItemsControl declared inline), making the divider a phantom
-                                     selectable/rippling destination and an extra stop for arrow-key
-                                     navigation. Splitting at the divider keeps it a plain sibling.
-                                     Both lists use Theme="{StaticResource NoScrollListBox}"
-                                     (Material.Styles 3.19.0 ListBox.axaml) instead of the default
-                                     ListBox control theme, which wraps its own PART_ScrollViewer -
-                                     two of those nested inside the outer ScrollViewer below would be
-                                     double scrolling. SelectionMode="Single" is the same "exactly one
-                                     active destination" invariant the old Classes.nav-item-active
-                                     bindings enforced by construction (nine bindings all comparing
-                                     against the same ActiveNavIndex, so at most one could ever be
-                                     true) - the control now owns that instead of relying on nine
-                                     independent bindings to agree by accident.
+                                     ONE ListBox, not two. It was briefly two - split at the
+                                     "Settings family" divider so a plain Separator would not be
+                                     auto-wrapped into its own selectable/rippling ListBoxItem - but
+                                     that also cut arrow-key travel into two scopes: Down on the last
+                                     item of list one did nothing, so Settings/About were arrow-
+                                     unreachable. The real fix keeps the divider IN the list, as its
+                                     own ListBoxItem with Focusable="False" and
+                                     IsHitTestVisible="False": ItemsControl.GetNextControl (what
+                                     ListBox.OnKeyDown's MoveSelection calls on every arrow press) is
+                                     a loop that skips any candidate failing result.Focusable and
+                                     keeps walking, so the divider is never returned as a stop -
+                                     confirmed against Avalonia 12.1.1's own source
+                                     (src/Avalonia.Controls/ItemsControl.cs), not assumed.
+                                     IsHitTestVisible="False" keeps a pointer click off it too.
+
+                                     Navigation is driven by Tapped and Enter/Space
+                                     (OnNavItemTapped/OnNavItemKeyDown in ShellView.axaml.cs), NOT by
+                                     ListBox.SelectionChanged. Avalonia moves SELECTION on arrow keys
+                                     too (same MoveSelection call above) - confirmed on the headless
+                                     platform that every arrow press raises SelectionChanged - so a
+                                     SelectionChanged handler cannot tell an arrow-key highlight move
+                                     from an actual activation. Driving navigation off it closed the
+                                     drawer out from under a user who had only pressed Down once,
+                                     which does not meet "arrow keys move through destinations" on
+                                     either reading. Tapped and Enter/Space are what Avalonia itself
+                                     reserves for "commit" (ListBoxItem.OnKeyDown only escalates Space
+                                     and Enter into a selection update - see
+                                     ItemSelectionEventTriggers.ShouldTriggerSelection in the same
+                                     source), so arrow keys now move ONLY the highlight - the same
+                                     IsSelected binding below, since Avalonia updates it locally via
+                                     SetCurrentValue without disturbing the Mode=OneWay binding - and
+                                     committing is a separate, explicit step.
 
                                      IsSelected stays explicitly Mode=OneWay from ActiveNavIndex:
                                      ObjectConverters.Equal has no ConvertBack, and IsSelected's own
                                      default binding mode is TwoWay, so an unguarded binding would try
                                      to push a click's boolean back through an equality converter that
-                                     cannot invert it into an index. Navigation itself is NOT bound
-                                     here - ShellView.axaml.cs's OnNavSelectionChanged reads each
-                                     item's Tag and calls the matching NavigateToX command, which is
-                                     what runs the alert-clear, disconnected-toast and lazy-VM side
-                                     effects a bare SelectedIndex/ActiveNavIndex two-way bind would
-                                     have skipped, and what lets SetTransitionAndNavigate still read
-                                     the OLD ActiveNavIndex to pick the shared-axis transition
-                                     direction. -->
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <StackPanel Margin="0,8">
-                                        <ListBox Name="NavList" Theme="{StaticResource NoScrollListBox}" SelectionMode="Single" SelectionChanged="OnNavSelectionChanged">
-                                            <ListBox.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="4"/>
-                                                </ItemsPanelTemplate>
-                                            </ListBox.ItemsPanel>
+                                     cannot invert it into an index. -->
+                                <ListBox Grid.Row="1" Name="NavList" SelectionMode="Single" Margin="0,8">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="4"/>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
 
-                                            <!-- Home Dashboard -->
-                                            <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Home}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                    <!-- Home Dashboard -->
+                                    <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Home}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- Live Sensors -->
-                                            <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
-                                                         incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
-                                                         kept twenty AlertNotifications and offered a DismissAlerts command
-                                                         since it was written - and NO view bound any of it. The pipeline ran
-                                                         correctly into a number nobody could see. Sensors is where the alerts
-                                                         come from, so it is where the count belongs.
+                                    <!-- Live Sensors -->
+                                    <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Sensors}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
+                                                 incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
+                                                 kept twenty AlertNotifications and offered a DismissAlerts command
+                                                 since it was written - and NO view bound any of it. The pipeline ran
+                                                 correctly into a number nobody could see. Sensors is where the alerts
+                                                 come from, so it is where the count belongs.
 
-                                                         IsBadgeVisible is bound rather than left to Material, which renders a
-                                                         badge reading "0" quite happily - a notification that there is nothing
-                                                         to notify. Placement and colour come from App.axaml so no call site
-                                                         can put one somewhere else. -->
-                                                    <material:Badged Grid.Column="0"
-                                                                     BadgeContent="{Binding AlertBadgeCount}"
-                                                                     IsBadgeVisible="{Binding HasAlerts}"
-                                                                     HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
-                                                    </material:Badged>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                                 IsBadgeVisible is bound rather than left to Material, which renders a
+                                                 badge reading "0" quite happily - a notification that there is nothing
+                                                 to notify. Placement and colour come from App.axaml so no call site
+                                                 can put one somewhere else. -->
+                                            <material:Badged Grid.Column="0"
+                                                             BadgeContent="{Binding AlertBadgeCount}"
+                                                             IsBadgeVisible="{Binding HasAlerts}"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
+                                            </material:Badged>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- Commands (remote power/control commands) -->
-                                            <ListBoxItem Tag="2" AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Commands}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                    <!-- Commands (remote power/control commands) -->
+                                    <ListBoxItem Tag="2" AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Commands}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- App Launcher -->
-                                            <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                    <!-- App Launcher -->
+                                    <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Launcher}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- Processes (running programs / task manager) -->
-                                            <ListBoxItem Tag="4" AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Processes}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                    <!-- Processes (running programs / task manager) -->
+                                    <ListBoxItem Tag="4" AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Processes}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- File Explorer -->
-                                            <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Files}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
+                                    <!-- File Explorer -->
+                                    <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Files}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- Logs & Diagnostics -->
-                                            <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
-                                        </ListBox>
+                                    <!-- Logs & Diagnostics -->
+                                    <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
+                                    <!-- ═══ Settings family divider ═══ Not selectable, not
+                                         focusable, not a nav destination - see the comment above
+                                         this ListBox for why Focusable="False" is what keeps arrow
+                                         travel from stopping here. -->
+                                    <ListBoxItem Focusable="False" IsHitTestVisible="False" Classes="nav-divider">
                                         <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,12" Opacity="0.3"/>
+                                    </ListBoxItem>
 
-                                        <!-- ═══ Settings family ═══ -->
-                                        <ListBox Name="SettingsNavList" Theme="{StaticResource NoScrollListBox}" SelectionMode="Single" SelectionChanged="OnNavSelectionChanged">
-                                            <ListBox.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="4"/>
-                                                </ItemsPanelTemplate>
-                                            </ListBox.ItemsPanel>
+                                    <!-- Settings -->
+                                    <ListBoxItem Tag="9" AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Settings}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                            <!-- Settings -->
-                                            <ListBoxItem Tag="9" AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Settings}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
-
-                                            <!-- About (moved into settings cluster) -->
-                                            <ListBoxItem Tag="6" AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_About}">
-                                                <Grid ColumnDefinitions="64,*">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </ListBoxItem>
-                                        </ListBox>
-
-                                    </StackPanel>
-                                </ScrollViewer>
+                                    <!-- About (moved into settings cluster) -->
+                                    <ListBoxItem Tag="6" AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_About}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
+                                </ListBox>
 
                                 <!-- ═══ Bottom: Connection Status ═══ -->
                                 <Border Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">

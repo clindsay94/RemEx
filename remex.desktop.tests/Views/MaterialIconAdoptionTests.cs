@@ -164,7 +164,7 @@ public class MaterialIconAdoptionTests
     /// same class prefix.
     /// </remarks>
     [Fact]
-    public void TheNavRail_StillColoursItsIconsPerButtonState()
+    public void TheNavRail_StillColoursItsIconsPerItemState()
     {
         var shell = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml"));
 

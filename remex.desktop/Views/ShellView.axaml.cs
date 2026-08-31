@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -396,33 +397,59 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
-    /// Dispatches a nav-list selection to the matching NavigateToX command (RemEx-zi3ua).
+    /// Commits navigation for a nav-list destination on pointer/touch activation (RemEx-zi3ua).
     /// </summary>
     /// <remarks>
-    /// The XAML deliberately does NOT two-way bind either <c>NavList</c>/<c>SettingsNavList</c>'s
-    /// selection to <see cref="ShellViewModel.ActiveNavIndex"/>. Each destination's Navigate command
-    /// carries side effects a bare index assignment would skip — clearing the sensor alert badge,
-    /// the disconnected-feature toast, lazily constructing the target view model — and
-    /// <c>SetTransitionAndNavigate</c> reads the OLD <c>ActiveNavIndex</c> to pick the shared-axis
-    /// transition direction, which a binding that had already overwritten it first would always read
-    /// as "forward". So each <c>ListBoxItem</c> carries its destination's index as a string
-    /// <c>Tag</c>, and this handler maps that back to the one command that does the whole job.
+    /// Deliberately NOT wired to <c>ListBox.SelectionChanged</c>. Avalonia moves SELECTION on arrow
+    /// keys too (<c>ListBox.OnKeyDown</c> calls <c>MoveSelection</c> for any directional key,
+    /// confirmed against Avalonia 12.1.1's own source), so a <c>SelectionChanged</c> handler cannot
+    /// tell an arrow-key highlight move from a genuine activation — treating both as "navigate" ran
+    /// a real navigation (alert-badge clear, disconnected toast, lazy VM construction) on every arrow
+    /// press and closed the drawer out from under a user who had only pressed Down once. Tapped and
+    /// Enter/Space (<see cref="OnNavItemKeyDown"/>) are what Avalonia itself reserves for "commit" on
+    /// a <c>ListBoxItem</c>, so each gets its own explicit handler instead, and arrow keys are left to
+    /// move only the highlight.
     ///
-    /// The equality guard against <c>vm.ActiveNavIndex</c> is what stops an infinite ping-pong: every
-    /// item's <c>IsSelected</c> is itself bound (one-way) to <c>ActiveNavIndex</c>, so a navigation
-    /// command run from anywhere else — the connection banner's "Open Settings" button, for one —
-    /// flips the matching item's <c>IsSelected</c> and raises this same event. Without the guard that
-    /// would re-invoke the command it was only echoing.
+    /// Runs on every activation, INCLUDING re-activating the already-active destination — unlike the
+    /// retired <c>SelectionChanged</c>-driven design, there is no "did the index change" guard here,
+    /// matching the nine Buttons this replaced: clicking "Home" while already on Home still dismisses
+    /// the drawer (<c>IsDrawerOpen = false</c> lives inside <c>NavigateToHome</c>), and re-clicking
+    /// "Sensors" still clears the alert badge.
     /// </remarks>
-    private void OnNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnNavItemTapped(object? sender, TappedEventArgs e) => ActivateNavItem(sender);
+
+    /// <summary>
+    /// Commits navigation for a nav-list destination on Enter/Space (RemEx-zi3ua).
+    /// </summary>
+    /// <remarks>
+    /// Arrow keys are deliberately NOT handled here — <c>ListBox.OnKeyDown</c> already moves the
+    /// highlight for those (see <see cref="OnNavItemTapped"/>), and this handler only reacts to the
+    /// two keys Avalonia's own <c>ListBoxItem.OnKeyDown</c>/<c>ItemSelectionEventTriggers
+    /// .ShouldTriggerSelection</c> reserve for "activate the focused item" — confirmed against
+    /// Avalonia 12.1.1's own source, not assumed.
+    /// </remarks>
+    private void OnNavItemKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space))
+            return;
+
+        ActivateNavItem(sender);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Maps a nav <see cref="ListBoxItem"/>'s <c>Tag</c> back to the one <c>NavigateToX</c> command
+    /// that does the whole job — clearing the sensor alert badge, the disconnected-feature toast,
+    /// lazily constructing the target view model, closing the drawer, and letting
+    /// <c>SetTransitionAndNavigate</c> read the OLD <c>ActiveNavIndex</c> to pick the shared-axis
+    /// transition direction — all of which a bare index assignment would have skipped.
+    /// </summary>
+    private void ActivateNavItem(object? sender)
     {
         if (DataContext is not ShellViewModel vm)
             return;
 
-        if (e.AddedItems.Count == 0
-            || e.AddedItems[0] is not ListBoxItem { Tag: string tag }
-            || !int.TryParse(tag, out var index)
-            || index == vm.ActiveNavIndex)
+        if (sender is not ListBoxItem { Tag: string tag } || !int.TryParse(tag, out var index))
             return;
 
         switch (index)
@@ -436,6 +463,15 @@ public partial class ShellView : UserControl
             case 7: vm.NavigateToFileTransferCommand.Execute(null); break;
             case 8: vm.NavigateToDiagnosticLogsCommand.Execute(null); break;
             case 9: vm.NavigateToSettingsCommand.Execute(null); break;
+            default:
+                // Silent otherwise: the activated item just never navigates, and its still-true
+                // IsSelected binding (nothing changed ActiveNavIndex) leaves the PREVIOUS
+                // destination looking active while the page shows neither. ShellNavListTests
+                // asserts the set of Tag values in ShellView.axaml equals the set of case labels
+                // here, so this should be unreachable outside a broken build; Debug.Fail is the
+                // local-dev signal for the gap between "the test runs" and "the test ran".
+                Debug.Fail($"ShellView nav list: no NavigateToX command mapped for Tag \"{tag}\".");
+                break;
         }
     }
 
