@@ -481,6 +481,31 @@
                 <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
+            <!-- ═══ SNACKBAR HOST (RemEx-uedna) ═══
+                 Replaces the WindowNotificationManager / NotificationCard toast. Declared after the
+                 FAB so it paints on top of it should the two ever overlap, but the real fix is the
+                 bottom margin: 20 (FAB's own margin) + 52 (FAB height) + 16 (gap) = 88, which clears
+                 the FAB's footprint entirely rather than relying on z-order alone - the acceptance
+                 criterion is "above the FAB", not merely "not visually identical to it".
+                 HorizontalAlignment/VerticalAlignment (not the Snackbar* ones) are set to Right/Bottom
+                 so the control sizes to its own content instead of stretching over the row - a
+                 stretched ContentControl with a Background (the control theme sets Transparent, and
+                 Avalonia hit-tests a transparent brush same as an opaque one) would swallow every
+                 click over the content area whenever no toast is showing. SnackbarMaxCounts=3 matches
+                 the old WindowNotificationManager's MaxItems so multiple toasts still stack instead of
+                 replacing each other outright.
+
+                 HostName is a plain literal, not an x:Static against ShellView.ShellSnackbarHostName -
+                 XamlIl cannot resolve a static member of the very class its own code-behind partial is
+                 compiling (AVLN2000, measured). Same convention this file already uses for x:Name /
+                 FindControl pairs (PageHost, SettingsPanel, ImmersiveHost, BootSplash): the string must
+                 match SnackbarToastSink's ShellSnackbarHostName below, and ShellSnackbarHostTests pins
+                 both ends. -->
+            <material:SnackbarHost Grid.Row="1" HostName="ShellSnackbar"
+                                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                   Margin="0,0,20,88"
+                                   SnackbarHorizontalAlignment="Right" SnackbarVerticalAlignment="Bottom"
+                                   SnackbarMaxCounts="3"/>
 
             <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══ -->
             <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>

@@ -1,9 +1,14 @@
 using System.ComponentModel;
 using Avalonia.Animation;
 using Avalonia.Controls;
-using Avalonia.Controls.Notifications;
 using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
+using Material.Icons;
+using Material.Icons.Avalonia;
+using Material.Styles.Controls;
+using Material.Styles.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
@@ -11,6 +16,14 @@ namespace Remex.Desktop.Views;
 
 public partial class ShellView : UserControl
 {
+    /// <summary>
+    /// Name of the shell's <see cref="SnackbarHost"/> (RemEx-uedna). ShellView.axaml's HostName
+    /// attribute is a plain literal that must match this - not <c>x:Static</c>, which XamlIl cannot
+    /// resolve against a static member of the very class its own code-behind partial is compiling
+    /// (AVLN2000, measured). <c>ShellSnackbarHostTests</c> pins both ends against drift instead.
+    /// </summary>
+    internal const string ShellSnackbarHostName = "ShellSnackbar";
+
     /// <summary>
     /// How long a page transition runs. Material's figure for a shared-axis transition, and the
     /// upper end of what the shell can afford: this fires on every navigation, so a slow one makes
@@ -110,16 +123,13 @@ public partial class ShellView : UserControl
         }
 
         // The in-app toast host. Guarded for the same reason the boot splash below is: OnLoaded runs
-        // again on every reattach to the visual tree, and a second manager over the same TopLevel
-        // would stack a second overlay layer of toasts on top of the first.
-        if (!_toastHostInstalled && TopLevel.GetTopLevel(this) is { } topLevel)
+        // again on every reattach to the visual tree, and installing a second sink would just be
+        // redundant work, not a second overlay layer - the SnackbarHost itself lives once in this
+        // view's XAML and registers itself by name in Material's own static dictionary.
+        if (!_toastHostInstalled)
         {
             _toastHostInstalled = true;
-            NotificationService.Instance.InApp = new WindowToastSink(new WindowNotificationManager(topLevel)
-            {
-                Position = NotificationPosition.BottomRight,
-                MaxItems = 3,
-            });
+            NotificationService.Instance.InApp = new SnackbarToastSink();
         }
 
         var bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
@@ -199,18 +209,66 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
-    /// Adapts Avalonia's toast host to the notification service's sink, mapping how much the user
-    /// needs to be told onto the card's own severity styling.
+    /// Adapts the shell's Material <see cref="SnackbarHost"/> to the notification service's sink
+    /// (RemEx-uedna), replacing the Avalonia <c>WindowNotificationManager</c> /
+    /// <c>NotificationCard</c> toast it used to wrap.
     /// </summary>
-    private sealed class WindowToastSink(WindowNotificationManager manager) : IInAppNotificationSink
+    /// <remarks>
+    /// A snackbar's default content template is a bare string with no notion of severity, so
+    /// <see cref="NotificationImportance"/> is rendered here as an icon + theme colour instead of
+    /// relying on Material's own template - losing that distinction would undo exactly what the
+    /// retired <c>NotificationCard</c> style existed to add. Built fresh per call rather than cached,
+    /// per <see cref="ThemeResources"/>'s own rule: each toast is short-lived, so there is no live
+    /// control sitting around to go stale across a theme switch.
+    /// </remarks>
+    private sealed class SnackbarToastSink : IInAppNotificationSink
     {
-        public void Show(NotificationImportance importance, string title, string message) =>
-            manager.Show(new Notification(title, message, importance switch
+        /// <summary>How long a toast stays up before it times out on its own.</summary>
+        private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(5);
+
+        public void Show(NotificationImportance importance, string title, string message)
+        {
+            var (icon, brushKey) = SnackbarSeverityMapping.For(importance);
+            var iconBrush = ThemeResources.Brush(brushKey, FallbackBrush(importance));
+
+            var content = new StackPanel
             {
-                NotificationImportance.Problem => NotificationType.Error,
-                NotificationImportance.Outcome => NotificationType.Success,
-                _ => NotificationType.Information,
-            }));
+                Orientation = Orientation.Horizontal,
+                Spacing = 10,
+                Children =
+                {
+                    new MaterialIcon
+                    {
+                        Kind = icon,
+                        Width = 20,
+                        Height = 20,
+                        Foreground = iconBrush,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    },
+                    new TextBlock
+                    {
+                        Text = string.IsNullOrEmpty(message) ? title : $"{title} — {message}",
+                        Foreground = ThemeResources.Brush("TextPrimaryBrush", Brushes.White),
+                        TextWrapping = TextWrapping.Wrap,
+                        MaxLines = 2,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    },
+                },
+            };
+
+            SnackbarHost.Post(new SnackbarModel(content, ToastDuration), ShellSnackbarHostName, DispatcherPriority.Normal);
+        }
+
+        /// <summary>
+        /// A fixed colour to fall back to if the theme key is somehow absent, so a lookup miss still
+        /// distinguishes severity by hue rather than rendering every toast identically grey.
+        /// </summary>
+        private static IBrush FallbackBrush(NotificationImportance importance) => importance switch
+        {
+            NotificationImportance.Problem => Brushes.IndianRed,
+            NotificationImportance.Outcome => Brushes.MediumSeaGreen,
+            _ => Brushes.Gray,
+        };
     }
 
     private ShellViewModel? _previousVm;
@@ -333,4 +391,23 @@ public partial class ShellView : UserControl
 
         base.OnKeyDown(e);
     }
+}
+
+/// <summary>
+/// Maps a notification's <see cref="NotificationImportance"/> onto the icon and theme brush key
+/// <see cref="ShellView"/>'s snackbar sink renders it with (RemEx-uedna).
+/// </summary>
+/// <remarks>
+/// Pulled out of <c>SnackbarToastSink</c> so the mapping itself - which importance gets which icon
+/// and which brush key - is testable without an Avalonia application (resolving the brush from the
+/// key still needs one, via <see cref="ThemeResources"/>, and stays in the sink).
+/// </remarks>
+internal static class SnackbarSeverityMapping
+{
+    internal static (MaterialIconKind Icon, string BrushKey) For(NotificationImportance importance) => importance switch
+    {
+        NotificationImportance.Problem => (MaterialIconKind.AlertCircleOutline, "SystemErrorBrush"),
+        NotificationImportance.Outcome => (MaterialIconKind.CheckCircleOutline, "SystemSuccessBrush"),
+        _ => (MaterialIconKind.InformationOutline, "TextSecondaryBrush"),
+    };
 }

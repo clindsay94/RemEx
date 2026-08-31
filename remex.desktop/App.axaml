@@ -158,8 +158,10 @@
         </Style>
         <!-- Material sets the PAPER brush as the FOREGROUND on both of these — correct against its
              own dark tooltip surface, near-white-on-near-white against ours on a light palette
-             (the audit's §3 tail). Both take the app's glass treatment instead, same trio as the
-             NotificationCard style below. -->
+             (the audit's §3 tail). Both take the app's glass treatment instead - the same trio the
+             in-app toast used before RemEx-uedna moved it off NotificationCard onto a Snackbar built
+             from theme-resource brushes directly (ShellView.axaml.cs), which needed no style override
+             here at all. -->
         <Style Selector="ToolTip">
             <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -968,19 +970,13 @@
             <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
 
-        <!-- ═══ In-app toast (RemEx-5wc2) ═══
-             The control theme (Material now, Fluent before it — the audit verified Material
-             templates NotificationCard too) dresses toasts from its own palette, which follows
-             the light/dark variant but knows nothing about the seed the user picked - so a toast
-             would be the one surface in the app that ignores it. A Style setter outranks a
-             ControlTheme setter, so these win; the values are theme resources rather than
-             literals for the usual reason. -->
-        <Style Selector="NotificationCard">
-            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
+        <!-- The in-app toast (RemEx-5wc2) moved off Avalonia's WindowNotificationManager /
+             NotificationCard onto a Material SnackbarHost in the shell (RemEx-uedna) - see
+             ShellView.axaml's SnackbarHost and ShellView.axaml.cs's SnackbarToastSink. NotificationCard
+             is no longer instantiated anywhere in the app, so the Style override that used to live
+             here (theming its Background/BorderBrush/Foreground off the app's glass palette, the same
+             fix the ToolTip override above still needs) went with it rather than styling a control
+             nothing shows. -->
     </Application.Styles>
 
     <TrayIcon.Icons>

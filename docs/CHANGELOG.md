@@ -42,6 +42,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **In-app toasts are a Material snackbar now instead of Avalonia's stock notification card.**
+  File transfers, pairing results and errors that used to pop a `NotificationCard` in the corner
+  now post through a `SnackbarHost` anchored above the personalization FAB instead of behind it,
+  so the two surfaces no longer compete for the same corner of the screen. Multiple toasts still
+  stack (up to three) rather than replacing one another, and each carries an icon and colour for
+  its severity — red for a problem, green for an outcome, muted for chatter — built from the app's
+  own theme palette rather than Material's default paper colours, which is the same fix the
+  tooltip needed for the same reason. The routing decision itself (which events get a toast, a
+  tray balloon, or nothing at all) is unchanged; only the toast's own presentation moved.
+  (RemEx-uedna)
+
 - **The PC's navigation drawer floats over the page now instead of shoving it sideways.** It used
   to be a compact icon rail that sat on screen permanently and widened when you opened it. It is
   now a Material overlay drawer: it slides in over the content behind a dimmed scrim and the page
