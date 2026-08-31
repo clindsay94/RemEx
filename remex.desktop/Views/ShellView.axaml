@@ -391,8 +391,13 @@
                                     <!-- ═══ Settings family divider ═══ Not selectable, not
                                          focusable, not a nav destination - see the comment above
                                          this ListBox for why Focusable="False" is what keeps arrow
-                                         travel from stopping here. -->
-                                    <ListBoxItem Focusable="False" IsHitTestVisible="False" Classes="nav-divider">
+                                         travel from stopping here. Focusable/IsHitTestVisible keep
+                                         it out of keyboard and pointer traversal, but Avalonia still
+                                         builds an automation peer for every ListBoxItem regardless -
+                                         without AccessibilityView="Raw" a screen reader announces a
+                                         10-item list with one unnamed, unreachable entry, which the
+                                         old sibling Separator (not a list item at all) never did. -->
+                                    <ListBoxItem Focusable="False" IsHitTestVisible="False" Classes="nav-divider" AutomationProperties.AccessibilityView="Raw">
                                         <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,12" Opacity="0.3"/>
                                     </ListBoxItem>
 

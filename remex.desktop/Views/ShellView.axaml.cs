@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -58,6 +59,7 @@ public partial class ShellView : UserControl
     private TransitioningContentControl? _immersiveHost;
     private DispatcherTimer? _pageHostWatchdog;
     private Border? _settingsPanel;
+    private ListBox? _navList;
 
     public ShellView()
     {
@@ -71,6 +73,7 @@ public partial class ShellView : UserControl
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
         _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
         _settingsPanel = this.FindControl<Border>("SettingsPanel");
+        _navList = this.FindControl<ListBox>("NavList");
 
         // The XAML sets a plain CrossFade to keep the designer honest; the guarded equivalent is
         // installed here before the first navigation can reach either host. Sequencing keeps the main
@@ -121,6 +124,11 @@ public partial class ShellView : UserControl
             // PageHost.Content is deliberately unbound in XAML - see PageHostSequencer.
             RequestPageView(vm.CurrentView);
             vm.BeginWelcomeSplash();
+
+            // Seeds the nav list's highlight to match ActiveNavIndex on first load, same reasoning
+            // as ResyncNavListSelection's IsDrawerOpen hook below - belt and braces for whatever
+            // order attach and DataContext assignment happen to land in.
+            ResyncNavListSelection();
         }
 
         // The in-app toast host. Guarded for the same reason the boot splash below is: OnLoaded runs
@@ -344,6 +352,21 @@ public partial class ShellView : UserControl
             RequestPageView(navVm.CurrentView);
         }
 
+        // RemEx-zi3ua (review round 2, MEDIUM): the nav list's :selected highlight now does two
+        // jobs - keyboard cursor AND "you are here" - and arrow keys move only the first of them
+        // (see the comment on OnNavItemTapped). Nothing else resyncs the two, so a user who arrows
+        // to a different item and then leaves without committing (Escape, or just closing the
+        // drawer another way) strands the highlight on the wrong destination, and it stays wrong
+        // even after navigating BACK to the truly-active page - ActiveNavIndex's setter is
+        // equality-gated, so returning to where you logically already are raises no
+        // PropertyChanged and the one-way IsSelected binding never re-fires. Re-asserting the
+        // selection on every IsDrawerOpen flip (both open and close) is cheap - a no-op if nothing
+        // drifted - and covers the failure whichever way the user leaves the list uncommitted.
+        if (e.PropertyName == nameof(ShellViewModel.IsDrawerOpen))
+        {
+            ResyncNavListSelection();
+        }
+
         // The direction only raises a notification when it actually changes, which is correct here:
         // two navigations the same way down the sidebar want the same transition, and the one
         // already installed is it.
@@ -473,6 +496,34 @@ public partial class ShellView : UserControl
                 Debug.Fail($"ShellView nav list: no NavigateToX command mapped for Tag \"{tag}\".");
                 break;
         }
+    }
+
+    /// <summary>
+    /// Re-asserts <c>NavList</c>'s selection from <see cref="ShellViewModel.ActiveNavIndex"/>
+    /// (RemEx-zi3ua, review round 2). See the remark on the <c>IsDrawerOpen</c> branch in
+    /// <see cref="OnViewModelPropertyChanged"/> for why this exists at all.
+    /// </summary>
+    /// <remarks>
+    /// Walks <c>NavList.Items</c> rather than computing a positional <c>SelectedIndex</c> from
+    /// <c>ActiveNavIndex</c>. The items are declared directly in XAML with no <c>ItemsSource</c>,
+    /// so each entry in <c>Items</c> IS its own container - the <see cref="ListBoxItem"/> whose
+    /// <c>Tag</c> already carries the destination index <see cref="ActivateNavItem"/> reads.
+    /// Setting <c>SelectedItem</c> to that exact container sidesteps the Tag values being sparse
+    /// and out of visual order (About is <c>Tag="6"</c> but sits last, after Settings'
+    /// <c>Tag="9"</c>) - a positional index would have to duplicate that mapping a second time to
+    /// get it right, and getting it wrong here would highlight a different wrong destination
+    /// instead of fixing the bug.
+    /// </remarks>
+    private void ResyncNavListSelection()
+    {
+        if (_navList == null || DataContext is not ShellViewModel vm)
+            return;
+
+        var target = _navList.Items.OfType<ListBoxItem>()
+            .FirstOrDefault(item => item.Tag is string tag && tag == vm.ActiveNavIndex.ToString());
+
+        if (target != null)
+            _navList.SelectedItem = target;
     }
 
     /// <summary>

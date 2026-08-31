@@ -172,6 +172,14 @@ public class ShellNavListTests
 
         divider.Attribute("Tag").Should().BeNull(
             "the divider is not a destination and must never reach ActivateNavItem's switch");
+
+        // Focusable/IsHitTestVisible keep it out of traversal and hit testing, but Avalonia still
+        // builds an automation peer for every ListBoxItem regardless of either - without this a
+        // screen reader announces a 10-item list with one unnamed, unreachable entry (review
+        // round 2, LOW).
+        (divider.Attribute("AutomationProperties.AccessibilityView")?.Value).Should().Be("Raw",
+            "the divider must not surface in the accessibility tree at all - the old sibling " +
+            "Separator was never a list item and so was never announced as one");
     }
 
     [Fact]
@@ -207,6 +215,53 @@ public class ShellNavListTests
         caseValues.Should().BeEquivalentTo(tagValues,
             "every Tag in NavList has to have exactly one matching case in ActivateNavItem's switch, " +
             "and vice versa - an orphaned case is dead code, an unmatched Tag is a silent dead click");
+    }
+
+    /// <summary>
+    /// THE STRUCTURAL GUARD for the MEDIUM finding review round 2 raised: the nav list's
+    /// <c>:selected</c> highlight now does two jobs (keyboard cursor AND "you are here"), arrow
+    /// keys move only the first, and nothing else in this file resyncs the two - so a user who
+    /// arrows to a different item and leaves without committing strands the highlight on the wrong
+    /// destination, permanently (<c>ActiveNavIndex</c>'s equality-gated setter means even
+    /// navigating back to the truly-active page raises no <c>PropertyChanged</c> to re-push the
+    /// one-way <c>IsSelected</c> binding).
+    /// </summary>
+    /// <remarks>
+    /// A source scan, not a behavioural test - there is no headless Avalonia harness in this repo,
+    /// so nothing here can actually open the drawer, press Down, and look. What this proves is that
+    /// the resync hook exists and is wired to the right property; it cannot prove
+    /// <c>ResyncNavListSelection</c> resolves the correct container at runtime.
+    /// </remarks>
+    [Fact]
+    public void IsDrawerOpenChanges_ResyncNavListSelectionFromActiveNavIndex()
+    {
+        var codeBehind = File.ReadAllText(ShellViewCodeBehindPath());
+
+        codeBehind.Should().Contain("nameof(ShellViewModel.IsDrawerOpen)",
+            "OnViewModelPropertyChanged has to react to IsDrawerOpen - opening or closing the " +
+            "drawer is the resync point, since that is when a stale highlight becomes visible " +
+            "again or gets left behind uncommitted");
+
+        codeBehind.Should().Contain("private void ResyncNavListSelection()",
+            "the resync method itself has to exist");
+
+        codeBehind.Should().Contain("_navList.SelectedItem = target;",
+            "the resync has to move NavList's actual SelectedItem, not just read ActiveNavIndex - " +
+            "reading it without writing back to the control would leave the drifted highlight in " +
+            "place");
+
+        // Loose position check rather than parsing the method body: the IsDrawerOpen branch has to
+        // actually CALL the resync method, not merely exist alongside an unrelated call to it
+        // elsewhere in the file (e.g. only from OnLoaded, which would miss every later toggle).
+        var drawerBranchIndex = codeBehind.IndexOf("nameof(ShellViewModel.IsDrawerOpen)", StringComparison.Ordinal);
+        var nextResyncCallIndex = codeBehind.IndexOf("ResyncNavListSelection();", drawerBranchIndex, StringComparison.Ordinal);
+
+        nextResyncCallIndex.Should().BeGreaterThan(-1,
+            "the IsDrawerOpen branch has to call ResyncNavListSelection(), not just check the " +
+            "property name without acting on it");
+        (nextResyncCallIndex - drawerBranchIndex).Should().BeLessThan(400,
+            "the call has to be the one inside the IsDrawerOpen branch, not some unrelated later " +
+            "call the string search happened to find next");
     }
 
     /// <summary>

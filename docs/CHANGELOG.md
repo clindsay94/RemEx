@@ -57,7 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   — alert-badge clear on Sensors, the disconnected-feature toast, lazy view model construction,
   and closing the drawer. Re-activating the already-active destination behaves exactly as the old
   buttons did (dismisses the drawer, re-clears an already-zero badge) rather than being a dead
-  click. Every destination kept its accessible name and tooltip. (RemEx-zi3ua)
+  click. Every destination kept its accessible name and tooltip. The highlight also now resyncs to
+  the true active destination whenever the drawer opens or closes: arrowing to a different item
+  and then leaving without pressing Enter/Space (Escape, for one) used to strand the accent fill on
+  the browsed-to item rather than the page actually on screen, and nothing — not even navigating
+  back to the original page — put it right again, because re-arriving where you logically already
+  are raises no change to resync from. The divider between the primary destinations and the
+  Settings family is marked out of the accessibility tree (`AccessibilityView="Raw"`); it is
+  otherwise unreachable and unnamed but Avalonia still gives every `ListBoxItem` an automation
+  peer, which a screen reader would otherwise announce as a blank tenth entry. (RemEx-zi3ua)
 
   Visual acceptance ("the active destination is unambiguous") was established by reading
   Material's `ListBoxItem` template source, not by looking at a running build — this repo has no
