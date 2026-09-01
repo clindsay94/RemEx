@@ -833,19 +833,24 @@
             <Setter Property="BadgeFontSize" Value="10"/>
         </Style>
 
-        <!-- Typography classes -->
-        <Style Selector="TextBlock.h1">
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="Black"/>
-        </Style>
-        <Style Selector="TextBlock.h2">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="TextBlock.caption">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-        </Style>
+        <!-- ═══ Typography classes ═══
+             The RemEx type vocabulary and its mapping onto Material's scale is
+             docs/TYPOGRAPHY-VOCABULARY.md (RemEx-9iz00.2). Read it before adding a style here or an
+             inline FontSize in a view.
+
+             THE THREE THAT USED TO LIVE HERE ARE GONE: TextBlock.h1 (22/Black), .h2 (16/SemiBold)
+             and .caption (11/TextMuted) had ZERO usages anywhere in remex.desktop — verified by
+             scanning every Classes="..." attribute in the app, not by grepping the bare names, which
+             collide with words in prose and comments.
+
+             .caption was more than dead weight. Material.Avalonia ships
+             Resources/Compatibility/TextBlockClasses.axaml, which defines class selectors for its
+             own scale in BOTH cases — `:is(Control).Caption` and `:is(Control).caption`. RemEx does
+             not merge that dictionary today, so there was no live conflict, but a `TextBlock.caption`
+             sitting here meant the day anyone merged it for the Phase 4 sweeps, two different
+             definitions of `.caption` would both match every element carrying the class, and which
+             one won would come down to declaration order. Deleting it removes the trap rather than
+             documenting it. -->
         <Style Selector="TextBlock.page-title">
             <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
             <Setter Property="FontSize" Value="30"/>
