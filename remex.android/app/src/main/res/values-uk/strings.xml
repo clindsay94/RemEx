@@ -129,6 +129,9 @@
     <string name="rc_media_hint">Утримуйте кнопки гучності, щоб продовжувати змінювати її.</string>
     <string name="rc_media_unavailable">Цей ПК не налаштовано приймати натискання клавіш, тому ці кнопки нічого не зроблять.</string>
     <string name="rc_media_disconnected">Підключіться до ПК, щоб користуватися цими елементами керування.</string>
+    <string name="rc_media_state_playing">Відтворення</string>
+    <string name="rc_media_state_paused">Призупинено</string>
+    <string name="rc_media_state_idle">Нічого не відтворюється</string>
     <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
     <string name="cd_show_keyboard">Показати клавіатуру</string>
     <string name="cd_key_escape">Esc</string>

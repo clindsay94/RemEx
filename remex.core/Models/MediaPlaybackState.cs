@@ -37,6 +37,11 @@ public sealed record MediaPlaybackState
     public string Status { get; init; } = MediaPlaybackStatus.Unknown;
 
     /// <summary>Track title, when the session publishes one.</summary>
+    /// <remarks>
+    /// RENDERED AS THE PHONE'S NOW-PLAYING LINE (RemEx-nmvz6), which is why a blank must arrive as
+    /// null rather than as an empty string: the client picks its primary line with
+    /// <c>title ?: statusWord</c>, and <c>""</c> would win that fallback and draw an empty row.
+    /// </remarks>
     public string? Title { get; init; }
 
     /// <summary>Artist or author, when the session publishes one.</summary>
@@ -46,11 +51,13 @@ public sealed record MediaPlaybackState
     /// The app the session belongs to — a Windows AUMID or an MPRIS bus suffix, not a display name.
     /// </summary>
     /// <remarks>
-    /// CARRIED BUT NOT YET RENDERED, along with <see cref="Title"/> and <see cref="Artist"/>. The
-    /// platform reads produce all three in the same call, so including them costs nothing here, and
-    /// omitting them would make the eventual now-playing line a protocol change rather than a UI one.
-    /// Nothing on the phone reads them today; do not treat their presence as a promise that something
-    /// does.
+    /// CARRIED BUT DELIBERATELY NOT RENDERED, unlike <see cref="Title"/> and <see cref="Artist"/>,
+    /// which the now-playing line does draw. This one is an IDENTIFIER —
+    /// <c>Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic</c>, not "Groove" — so putting it in
+    /// front of the user would mean showing them a string and calling it their app's name. The phone
+    /// does not even parse it. It stays on the wire because the platform reads produce all three in
+    /// the same call and because turning it into a display name later should be a UI change rather
+    /// than a protocol one.
     /// </remarks>
     public string? SourceApp { get; init; }
 }

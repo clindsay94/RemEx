@@ -117,6 +117,67 @@ class MediaPlaybackFaceTest {
         )
     }
 
+    @Test
+    fun `an unknown reading draws no now-playing line at all`() {
+        val text = mediaSectionSource()
+
+        // THE ONE GUARD ON THIS FEATURE THAT IS ABOUT HONESTY RATHER THAN LAYOUT. The play/pause face
+        // has a neutral position to fall back to; a text line does not, so "Nothing playing" for a
+        // reading the phone never received would be a claim about the user's machine. An early return
+        // is also what keeps the parent's `spacedBy` from leaving a gap where the line would have been
+        // - a composable that emitted an empty Column would space it as if it were there.
+        assertTrue(
+                "an UNKNOWN reading must emit no node",
+                Regex("""if\s*\(playback\.status\s*==\s*MediaPlaybackStatus\.UNKNOWN\)\s*return""")
+                        .containsMatchIn(text)
+        )
+    }
+
+    @Test
+    fun `the track title is the primary line, with the status word as its fallback`() {
+        val text = mediaSectionSource()
+
+        // A paused track is far more usefully described by its name than by the word "Paused", and the
+        // transport icon beside it already says which way the toggle will go. The status word is the
+        // primary line ONLY when there is no track to name.
+        assertTrue(
+                "the title must lead, falling back to the status word",
+                text.contains("text = title ?: statusWord")
+        )
+    }
+
+    @Test
+    fun `the announcement carries the status word even when the visible line drops it`() {
+        val text = mediaSectionSource()
+
+        // A SCREEN READER HAS NO ICON. The visible primary line can drop "Playing" because the pause
+        // face is right beside it; an announcement that did the same would describe a track without
+        // ever saying whether the PC was playing it.
+        assertTrue(
+                "the merged description must start with the status word",
+                text.contains("listOfNotNull(statusWord, title, artist)")
+        )
+    }
+
+    @Test
+    fun `the source app is carried on the wire but never put in front of the user`() {
+        // IT IS AN IDENTIFIER, NOT A NAME. The host sends a Windows AUMID or an MPRIS bus suffix -
+        // "Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic", not "Groove". Rendering it raw
+        // would put that string on the screen and call it the app's name, so the phone does not parse
+        // it at all; this pins BOTH halves, because a field that gets parsed is a field something
+        // eventually renders.
+        assertEquals(
+                MediaPlaybackSnapshot.parse("""{"status":"playing","title":"Nightswimming"}"""),
+                MediaPlaybackSnapshot.parse(
+                        """{"status":"playing","title":"Nightswimming","sourceApp":"Spotify.exe"}"""
+                )
+        )
+        assertTrue(
+                "MediaControlSection must not render the source app",
+                !mediaSectionSource().contains("sourceApp")
+        )
+    }
+
     /**
      * The composable's source with comments stripped.
      *

@@ -50,11 +50,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
+import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaPlaybackStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -113,22 +116,28 @@ private const val RepeatIntervalMs = 150L
  *   on disconnect: the last-known `supportsInputSimulation = true` outlives the connection, so
  *   after a drop the row would stay lit and dead indefinitely.
  * @param inputSupported Whether the host advertises `supportsInputSimulation`.
+ * @param playback What the PC reports it is playing. Drives the now-playing line and the play/pause
+ *   face; it is NOT a third gate on the row, because not knowing what is playing is no reason to
+ *   refuse to send a key.
  */
 @Composable
 fun MediaControlSection(
         connected: Boolean,
         inputSupported: Boolean,
-        playbackStatus: MediaPlaybackStatus,
+        playback: MediaPlaybackSnapshot,
         shape: Shape,
         onSendKey: (Int) -> Unit,
         modifier: Modifier = Modifier
 ) {
     val enabled = connected && inputSupported
+    val playbackStatus = playback.status
     Card(modifier = modifier.fillMaxWidth(), shape = shape) {
         Column(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            NowPlayingLine(playback)
+
             Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -227,6 +236,85 @@ fun MediaControlSection(
                             ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * What the PC is playing, above the transport row (RemEx-nmvz6).
+ *
+ * THE METADATA WAS ALREADY ON THE WIRE AND NOTHING DREW IT. `MediaPlaybackState` has carried
+ * `Title` and `Artist` since RemEx-xx6xf, and [MediaPlaybackSnapshot] has parsed them, but the
+ * screen showed only the play/pause face — so the user could tell the PC was playing and not what.
+ *
+ * AN UNKNOWN READING RENDERS NOTHING AT ALL, which is the same rule the play/pause face follows and
+ * it matters more here. The face has an honest neutral position to fall back to; a text line does
+ * not. "Nothing playing" for a reading the phone never received would be a claim about the user's
+ * machine, and the whole point of the `unknown` token is that the phone must not make one. So the
+ * line is absent before the first `media_state` arrives, absent after a disconnect (the manager
+ * resets the snapshot to [MediaPlaybackSnapshot.Unknown]), and absent on a host that cannot read a
+ * session — none of which need a separate `connected` gate to achieve.
+ *
+ * THE TITLE IS THE PRIMARY LINE, NOT THE STATUS WORD. A player that is paused mid-track is far more
+ * usefully described by the track than by "Paused", and the transport icon beside it already says
+ * which way the toggle will go. The status word appears as the primary line only when there is no
+ * track to name — a reading with no metadata, or nothing playing at all.
+ *
+ * SOURCE APP IS DELIBERATELY NOT SHOWN. The host sends it, but it is a Windows AUMID or an MPRIS bus
+ * suffix — `Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic`, not "Groove". Rendering it raw
+ * would put an identifier in front of the user and call it a name.
+ */
+@Composable
+private fun NowPlayingLine(playback: MediaPlaybackSnapshot) {
+    // NOT a `when` returning early inside the Column: an UNKNOWN reading must contribute no node at
+    // all, or the parent's 12.dp `spacedBy` would leave a gap where the line would have been.
+    if (playback.status == MediaPlaybackStatus.UNKNOWN) return
+
+    val statusWord =
+            stringResource(
+                    when (playback.status) {
+                        MediaPlaybackStatus.PLAYING -> R.string.rc_media_state_playing
+                        MediaPlaybackStatus.PAUSED -> R.string.rc_media_state_paused
+                        // STOPPED and NONE are different facts about the PC — a player open and
+                        // stopped, versus no player at all — but they read the same to someone
+                        // looking at a phone: the next press starts something.
+                        else -> R.string.rc_media_state_idle
+                    }
+            )
+
+    val title = playback.title
+    val artist = playback.artist
+
+    Column(
+            modifier =
+                    Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                        // BUILT RATHER THAN READ OFF THE SCREEN. The visible primary line drops the
+                        // status word whenever there is a title, because the icon carries it; a
+                        // screen reader has no icon, so the announcement puts it back.
+                        contentDescription =
+                                listOfNotNull(statusWord, title, artist).joinToString(". ")
+                    },
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+                text = title ?: statusWord,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+        )
+
+        // The second line is the artist when there is one, and the status word when a track is named
+        // without one — so a titled reading never loses the playing/paused distinction entirely.
+        val secondary = artist ?: title?.let { statusWord }
+        if (secondary != null) {
+            Text(
+                    text = secondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
             )
         }
     }
