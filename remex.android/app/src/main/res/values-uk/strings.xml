@@ -123,6 +123,8 @@
     <string name="rc_media_mute">Вимкнути звук</string>
     <string name="rc_media_previous">Попередній трек</string>
     <string name="rc_media_play_pause">Відтворити або призупинити</string>
+    <string name="rc_media_play">Відтворити</string>
+    <string name="rc_media_pause">Призупинити</string>
     <string name="rc_media_next">Наступний трек</string>
     <string name="rc_media_hint">Утримуйте кнопки гучності, щоб продовжувати змінювати її.</string>
     <string name="rc_media_unavailable">Цей ПК не налаштовано приймати натискання клавіш, тому ці кнопки нічого не зроблять.</string>

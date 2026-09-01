@@ -33,7 +33,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snap — every part of this, including the background layers, is switched off by that setting
   rather than merely shortened. (RemEx-zgtn1)
 
+### Fixed
+
+- **The media and volume row on the phone's Remote Control screen went dead once you had opened
+  Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and
+  from then on every volume and transport button did nothing for the rest of the app's life. The
+  phone still buzzed on each tap, nothing showed an error, and only force-stopping the app brought
+  the row back.
+
+  Those keys were being sent down the remote-desktop socket, which is the wrong pipe for a screen
+  that has no video on it. That socket deliberately refuses input after you stop a stream, so that a
+  key still in flight cannot restart a screen capture you just ended — correct for the streaming
+  screen, and it silently swallowed everything the Remote Control screen sent. The same path had the
+  opposite problem beforehand: on a fresh launch, tapping Volume Up would start a full screen
+  capture on your PC, keep-awake and all, to press one key.
+
+  Those keys now go over the ordinary control connection the rest of that screen already uses.
+  Nothing changed on the PC side; it has always accepted them there. (RemEx-035d6)
+
 ### Added
+
+- **The play/pause button on the phone shows which way it will go.** It was a play triangle no
+  matter what — the one control on the screen whose job is to tell you what pressing it does, and it
+  could not, because nothing ever told the phone what the PC was playing.
+
+  Your PC now reports that: playing, paused, stopped, or nothing open at all, pushed to the phone
+  when it changes rather than polled. The button shows a pause bar while something is playing and
+  the triangle the rest of the time, and TalkBack announces "Pause" or "Play" to match. On Windows
+  this reads the same media session the volume flyout shows, which is the one the media keys act
+  on; on Linux it reads MPRIS, preferring whatever is actually playing.
+
+  A PC that cannot report — an older host, or one with no session bus — leaves the button exactly as
+  it was, a plain triangle that still works. It never guesses. (RemEx-xx6xf)
 
 - **The seven palette styles are a row of live previews now, not a dropdown.** Personalization used
   to offer "Scheme Variant" as a combo box of seven words — Tonal Spot, Vibrant, Expressive,

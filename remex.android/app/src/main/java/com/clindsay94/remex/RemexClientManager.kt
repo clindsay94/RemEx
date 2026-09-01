@@ -2,6 +2,7 @@ package com.clindsay94.remex
 
 import android.content.Context
 import android.util.Log
+import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
@@ -135,6 +137,20 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _hostCapabilities =
             MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val hostCapabilities = _hostCapabilities.asSharedFlow()
+
+    /**
+     * What the PC is playing (RemEx-xx6xf).
+     *
+     * A `StateFlow` rather than a `replay = 1` `SharedFlow`, AND IT IS RESET ON DISCONNECT — which is
+     * the difference that matters, not the type. [hostCapabilities] above is a replaying flow that is
+     * never cleared, so its last value outlives the connection that produced it; RemEx-hulc had to
+     * gate the media row on `connected` SEPARATELY for exactly that reason. A playback reading is far
+     * more perishable than a capability set: keeping "playing" across a disconnect would leave a pause
+     * icon on screen describing a PC the phone can no longer see, and the user's next press would go
+     * nowhere while the icon still claimed to know.
+     */
+    private val _mediaState = MutableStateFlow(MediaPlaybackSnapshot.Unknown)
+    val mediaState: StateFlow<MediaPlaybackSnapshot> = _mediaState.asStateFlow()
 
     /**
      * Why the desktop stream failed. **MUST-DELIVER, and the most consequential flow here
@@ -749,6 +765,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         if (isConnected) {
             _pairingRequired.resetReplayCache()
         }
+        // THE READING DIES WITH THE CONNECTION (RemEx-xx6xf). Cleared on connect as well as on
+        // disconnect, and both directions are deliberate: on disconnect because a pause icon
+        // describing a PC the phone can no longer reach is a claim it cannot back, and on connect
+        // because a host switch drives this callback false-then-true, so the state of the PREVIOUS PC
+        // would otherwise be shown against the new one until it happened to report. A fresh host sends
+        // its current reading as soon as its stream starts, so the blank is brief and honest.
+        _mediaState.value = MediaPlaybackSnapshot.Unknown
     }
 
     fun setConnecting(isConnecting: Boolean) {
@@ -790,6 +813,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             _hostCapabilities.tryEmit(it)
             captureHostReportedMac(it)
         }
+    }
+
+    override fun onMediaState(mediaStateJson: String?) {
+        // A null payload is not a reading. The native router only forwards a media_state whose
+        // payload survived deserialization, so this should not arrive - and if it does, holding the
+        // previous state is better than blanking a good icon on a message that said nothing.
+        _mediaState.value = mediaStateJson?.let(MediaPlaybackSnapshot::parse) ?: return
     }
 
     /**

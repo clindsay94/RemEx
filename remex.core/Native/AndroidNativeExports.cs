@@ -2,6 +2,7 @@ using Remex.Core.Validation;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading.Channels;
 using Remex.Core.Messages;
 using Remex.Core.Models;
@@ -183,6 +184,9 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopCursorStateMethodId;
     private static IntPtr _onDesktopCursorShapeMethodId;
 
+    /// <summary>Carries <c>media_state</c> to Kotlin, so the play/pause icon can tell the truth.</summary>
+    private static IntPtr _onMediaStateMethodId;
+
     /// <summary>Reports which phase of pairing is running, so a long wait can say what it is doing.</summary>
     private static IntPtr _onPairingProgressMethodId;
     // RD-E: byte[] callback carrying the raw 32-byte "RDXC" cursor-position packet (parsed in Kotlin).
@@ -310,6 +314,7 @@ public static class AndroidNativeExports
         _onDesktopCursorBinaryMethodId = IntPtr.Zero;
         _onDesktopCursorShapeMethodId = IntPtr.Zero;
         _onPairingProgressMethodId = IntPtr.Zero;
+        _onMediaStateMethodId = IntPtr.Zero;
     }
 
     private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
@@ -421,6 +426,7 @@ public static class AndroidNativeExports
                 var onDesktopCursorBinaryMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorBinary", "([B)V");
                 var onDesktopCursorShapeMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorShape", "(Ljava/lang/String;)V");
                 var onPairingProgressMethodId = GetRequiredCallbackMethodId(env, clazz, "onPairingProgress", "(Ljava/lang/String;)V");
+                var onMediaStateMethodId = GetRequiredCallbackMethodId(env, clazz, "onMediaState", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
@@ -440,7 +446,8 @@ public static class AndroidNativeExports
                     || onDesktopCursorStateMethodId == IntPtr.Zero
                     || onDesktopCursorBinaryMethodId == IntPtr.Zero
                     || onDesktopCursorShapeMethodId == IntPtr.Zero
-                    || onPairingProgressMethodId == IntPtr.Zero)
+                    || onPairingProgressMethodId == IntPtr.Zero
+                    || onMediaStateMethodId == IntPtr.Zero)
                 {
                     return;
                 }
@@ -466,6 +473,7 @@ public static class AndroidNativeExports
                 _onDesktopCursorBinaryMethodId = onDesktopCursorBinaryMethodId;
                 _onDesktopCursorShapeMethodId = onDesktopCursorShapeMethodId;
                 _onPairingProgressMethodId = onPairingProgressMethodId;
+                _onMediaStateMethodId = onMediaStateMethodId;
                 registrationSucceeded = true;
 
                 if (oldCallbackGlobalRef != IntPtr.Zero)
@@ -527,6 +535,20 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessageNative")]
     public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
         => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
+
+    /// <summary>
+    /// Sends one input event on the control socket, for screens that have no Remote Desktop stream
+    /// (RemEx-035d6).
+    /// </summary>
+    /// <param name="inputJsonUtf8">JSON <see cref="InputEvent"/> — the payload alone, not an envelope.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/> describing the QUEUEING, not the host's reply.</returns>
+    /// <remarks>
+    /// <see cref="HandleSendControlInput"/> carries why this is separate from
+    /// <see cref="SendMessage"/> rather than another <c>desktop_input</c> through it.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendControlInputNative")]
+    public static IntPtr SendControlInput(IntPtr env, IntPtr thiz, IntPtr inputJsonUtf8)
+        => Export(env, () => HandleSendControlInput(JniHelper.ReadJString(env, inputJsonUtf8)));
 
     /// <summary>Judges a clipboard payload with the SAME rule the host applies (RemEx-hgqs).</summary>
     /// <param name="textUtf8">The candidate clipboard text.</param>
@@ -1297,6 +1319,86 @@ public static class AndroidNativeExports
     }
 
     /// <summary>
+    /// Sends one input event on the CONTROL socket, never on <c>/ws/desktop</c> (RemEx-035d6).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THIS EXISTS BECAUSE ROUTING BY MESSAGE TYPE WAS WRONG FOR HALF THE CALLERS.
+    /// <see cref="HandleDesktopMessage"/> claims every <c>desktop_input</c> and hands it to
+    /// <see cref="RemexDesktopClient"/>, which is correct for the Remote Desktop screen — its input
+    /// belongs on the same socket as the stream it is aimed at — and wrong for the Remote Control
+    /// screen, which has no stream at all. That screen's media and volume row (RemEx-hulc) went down
+    /// that path anyway, and it failed in both directions:
+    /// </para>
+    /// <para>
+    /// DEAD. <c>RemexDesktopClient</c> is a process singleton, and its stopped-by-request latch is
+    /// set by <c>StopStreamAsync</c> and cleared ONLY by <c>StartStreamAsync</c> (RemEx-yzbb).
+    /// <c>RemoteDesktopViewModel.onCleared</c> stops the stream, so merely opening the Remote Desktop
+    /// screen and navigating away latched it for the life of the process — after which
+    /// <c>SendInputAsync</c> returned before sending and every media key was silently discarded. The
+    /// phone still buzzed on tap. Only killing the app brought the row back.
+    /// </para>
+    /// <para>
+    /// OR WORSE THAN DEAD. With the latch clear, <c>SendInputAsync</c> auto-starts a stream when one
+    /// is not running — the right recovery after a socket blip, and absurd here: tapping Volume Up on
+    /// a screen that shows no video began a full H.264 capture session on the PC, keep-awake engaged,
+    /// encoding frames for nobody.
+    /// </para>
+    /// <para>
+    /// The host already handles <c>desktop_input</c> on this socket, with held-key cleanup on
+    /// disconnect (<c>PingPongHandler.DispatchInput</c>); its own comment records that no client had
+    /// yet sent there. So this needs no new message type, no <c>protocolVersion</c> bump and no host
+    /// change — which also means there is no new CLIENT-BOUND type for the inbound router to drop
+    /// silently, the RemEx-y6x6 failure mode.
+    /// </para>
+    /// <para>
+    /// IT TAKES AN <see cref="InputEvent"/>, NOT AN ENVELOPE, AND THAT IS THE POINT. The caller
+    /// cannot choose the type, so this entry point can only ever put input on the control socket. An
+    /// envelope-shaped export would be <see cref="HandleDispatchMessage"/> with the routing switch
+    /// removed, and the next caller to reach for it would send something else through.
+    /// </para>
+    /// </remarks>
+    internal static string HandleSendControlInput(string? inputJson)
+    {
+        if (string.IsNullOrWhiteSpace(inputJson))
+        {
+            return SerializeOperationFailure("Input event JSON is required.");
+        }
+
+        // CAUGHT HERE RATHER THAN LEFT TO Export, which is a deliberate deviation from
+        // HandleDispatchMessage next door. Deserialize THROWS on malformed JSON, so that one relies
+        // on the export wrapper's generic fallback — an answer that names no cause. This path is the
+        // only report a caller ever gets about an input event, so it says which of the two things
+        // went wrong: the payload was unreadable, or it read as nothing.
+        InputEvent? input;
+        try
+        {
+            input = RemexJson.Deserialize(inputJson, RemexJsonSerializerContext.Default.InputEvent);
+        }
+        catch (JsonException ex)
+        {
+            return SerializeOperationFailure("Malformed input event JSON.", ex.Message);
+        }
+
+        if (input == null)
+        {
+            return SerializeOperationFailure("Failed to deserialize input event.");
+        }
+
+        EnsureOutboundSendLoopStarted();
+        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        {
+            Type = MessageTypes.DesktopInput,
+            InputEvent = input,
+        }))
+        {
+            return SerializeOperationFailure("Failed to queue control input.");
+        }
+
+        return SerializeOperationSuccess("Control input dispatched.");
+    }
+
+    /// <summary>
     /// Every Remote Desktop operation, in the order it was handed to this queue.
     /// </summary>
     /// <remarks>
@@ -1648,7 +1750,21 @@ public static class AndroidNativeExports
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
         }
 
-
+        // WHAT THE PC IS PLAYING (RemEx-xx6xf). A SINGLE TYPE, SO NEITHER FAMILY FORWARD ABOVE CARRIES
+        // IT — this line is the only thing between a host that sends correctly and a phone that never
+        // hears, which is the entire RemEx-y6x6 failure mode and looks from either end like the other
+        // end being broken. MediaStateReachesTheClientTests pins it.
+        //
+        // The PAYLOAD, not the envelope, because the phone has no use for the rest of it and this is
+        // the shape onHostInfoUpdate already uses for the same kind of message. Guarded on non-null so
+        // a media_state that lost its payload in deserialization becomes silence rather than a phone
+        // parsing "null" into an icon.
+        if (msg.Type == MessageTypes.MediaState && msg.MediaState != null)
+        {
+            NotifyJavaData(
+                _onMediaStateMethodId,
+                RemexJson.Serialize(msg.MediaState, RemexJsonSerializerContext.Default.MediaPlaybackState));
+        }
     }
 
     private static (string Host, int Port, string ClientId, string SpkiHash) GetDesktopEndpoint()

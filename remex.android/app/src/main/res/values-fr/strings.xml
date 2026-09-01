@@ -123,6 +123,8 @@
     <string name="rc_media_mute">Couper le son</string>
     <string name="rc_media_previous">Piste précédente</string>
     <string name="rc_media_play_pause">Lire ou mettre en pause</string>
+    <string name="rc_media_play">Lire</string>
+    <string name="rc_media_pause">Mettre en pause</string>
     <string name="rc_media_next">Piste suivante</string>
     <string name="rc_media_hint">Maintenez les boutons de volume pour continuer à le modifier.</string>
     <string name="rc_media_unavailable">Ce PC n’est pas configuré pour accepter les frappes de touches, ces boutons n’auront donc aucun effet.</string>

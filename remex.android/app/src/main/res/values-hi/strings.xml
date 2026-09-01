@@ -123,6 +123,8 @@
     <string name="rc_media_mute">म्यूट करें</string>
     <string name="rc_media_previous">पिछला ट्रैक</string>
     <string name="rc_media_play_pause">चलाएँ या रोकें</string>
+    <string name="rc_media_play">चलाएँ</string>
+    <string name="rc_media_pause">रोकें</string>
     <string name="rc_media_next">अगला ट्रैक</string>
     <string name="rc_media_hint">आवाज़ बदलते रहने के लिए वॉल्यूम बटन दबाए रखें।</string>
     <string name="rc_media_unavailable">यह पीसी कुंजी दबाने को स्वीकार करने के लिए सेट नहीं है, इसलिए ये बटन कुछ नहीं करेंगे।</string>

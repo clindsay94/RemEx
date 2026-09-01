@@ -56,7 +56,8 @@ public class ClipboardPushHandlerTests
             new Remex.Agent.Services.ClientSessionRegistry(),
             null!,
             null!,
-            clipboard);
+            clipboard,
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
 
     [Fact]
     public async Task AcceptableTextReachesTheClipboardIntact()

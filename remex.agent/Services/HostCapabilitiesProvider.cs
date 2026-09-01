@@ -35,6 +35,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     private readonly IInputSimulationService _inputSimulation;
     private readonly Lazy<HostCapabilities> _cached;
     private readonly Func<string> _macProbe;
+    private readonly Func<bool> _mediaStateProbe;
     private LinuxPrerequisiteReport? _linuxReport;
 
     /// <summary>
@@ -52,14 +53,31 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     /// can be tested without a network interface that obligingly appears mid-test; production
     /// always uses <see cref="PrimaryNetworkAdapter"/>.
     /// </param>
+    /// <param name="mediaStateProbe">
+    /// Whether this host can read a media session (RemEx-xx6xf).
+    /// </param>
+    /// <remarks>
+    /// A <c>Func&lt;bool&gt;</c> RATHER THAN THE READER ITSELF, and not to make it testable — that is
+    /// a side benefit. <c>IMediaSessionReader</c> is internal to the agent while this constructor is
+    /// public, so taking it directly would mean widening a platform-detail interface to public to
+    /// satisfy a call this class makes exactly once. The one fact needed is a bool.
+    /// <para>
+    /// DEFAULTS TO FALSE, WHICH IS THE SAFE END. A caller that forgets to supply it advertises a host
+    /// that will never report — and the phone's fallback for that is the neutral play triangle it drew
+    /// before this feature existed. Defaulting true would make every such host promise a reading that
+    /// never comes.
+    /// </para>
+    /// </remarks>
     public HostCapabilitiesProvider(
         IScreenCaptureService screenCapture,
         IInputSimulationService inputSimulation,
-        Func<string>? macProbe = null)
+        Func<string>? macProbe = null,
+        Func<bool>? mediaStateProbe = null)
     {
         _screenCapture = Guard.NotNull(screenCapture);
         _inputSimulation = Guard.NotNull(inputSimulation);
         _macProbe = macProbe ?? (() => PrimaryNetworkAdapter.Find().Mac);
+        _mediaStateProbe = mediaStateProbe ?? (static () => false);
         _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
     }
 
@@ -163,6 +181,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsCursorQuery = SupportsCursorQuery(isInteractiveSession, linuxBackend),
             SupportsAdvancedWindowControl = SupportsAdvancedWindowControl(isInteractiveSession, linuxBackend),
             SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession,
+            SupportsMediaState = _mediaStateProbe(),
             InputBackend = GetInputBackendName(linuxBackend, prereqReport, windowsReport),
             WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,

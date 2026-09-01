@@ -38,6 +38,7 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.MediaPlaybackStatus
 import com.clindsay94.remex.ui.components.MediaControlSection
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
@@ -236,7 +237,13 @@ data class RemoteControlUiState(
          * outlives the connection it described. Input travelling this path is silently dropped when
          * the capability is absent, with no error anywhere (RemEx-hulc).
          */
-        val supportsInputSimulation: Boolean = false
+        val supportsInputSimulation: Boolean = false,
+        /**
+         * What the PC reports it is playing (RemEx-xx6xf). Drives the play/pause face only — it is
+         * NOT a third gate on the row, because not knowing what is playing is no reason to refuse to
+         * send a key.
+         */
+        val playbackStatus: MediaPlaybackStatus = MediaPlaybackStatus.UNKNOWN
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,6 +258,10 @@ fun RemoteControlScreen(
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val supportsInputSimulation by
             viewModel.supportsInputSimulation.collectAsStateWithLifecycle()
+    // Straight off the manager, like isConnected above rather than through the view model: it is a
+    // snapshot the manager already resets on connect and disconnect, and a pass-through flow would be
+    // a second place for that lifetime rule to drift out of step (RemEx-xx6xf).
+    val mediaState by RemexClientManager.mediaState.collectAsStateWithLifecycle()
 
     val uiState =
             RemoteControlUiState(
@@ -258,7 +269,8 @@ fun RemoteControlScreen(
                     shapePreset = shapePreset,
                     cornerRadius = cornerRadius,
                     isConnected = isConnected,
-                    supportsInputSimulation = supportsInputSimulation
+                    supportsInputSimulation = supportsInputSimulation,
+                    playbackStatus = mediaState.status
             )
 
     RemoteControlScreenContent(
@@ -367,6 +379,7 @@ fun RemoteControlScreenContent(
                 MediaControlSection(
                         connected = uiState.isConnected,
                         inputSupported = uiState.supportsInputSimulation,
+                        playbackStatus = uiState.playbackStatus,
                         shape =
                                 com.clindsay94.remex.ui.theme.cardShape(
                                         uiState.shapePreset,
@@ -517,7 +530,11 @@ private fun RemoteControlScreenPreview() {
                 isConnected = true,
                 // Otherwise the preview renders the greyed-out "not set up to accept key presses"
                 // face, which is a real state but the least useful one to design against.
-                supportsInputSimulation = true
+                supportsInputSimulation = true,
+                // The pause face, for the same reason: it is the state the default UNKNOWN cannot
+                // show, so leaving it out would mean the preview never exercised the icon this
+                // feature added (RemEx-xx6xf).
+                playbackStatus = MediaPlaybackStatus.PLAYING
             ),
             onNavigateToConnection = {},
             onWakePc = {},

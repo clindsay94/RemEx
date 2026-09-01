@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -54,6 +55,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
+import com.clindsay94.remex.data.MediaPlaybackStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -62,8 +64,16 @@ import kotlinx.coroutines.launch
  * Windows virtual-key codes for the media and volume keys (RemEx-hulc).
  *
  * These travel over the EXISTING `keyDown`/`keyUp` input path, so this feature adds no message
- * type, no `protocolVersion` bump and no JNI routing — which also means it cannot be silently
- * dropped by the router the way a new client-bound type could be (RemEx-y6x6).
+ * type and no `protocolVersion` bump — which also means it cannot be silently dropped by the router
+ * the way a new client-bound type could be (RemEx-y6x6).
+ *
+ * WHAT THIS ORIGINALLY CLAIMED, AND WHAT IT COST. It also said "no JNI routing", and that turned out
+ * to be the defect rather than the safeguard: with no route of its own, the events went out through
+ * `SendMessage`, which routes by TYPE and hands every `desktop_input` to the Remote Desktop client
+ * and its `/ws/desktop` socket. This screen has no stream, so that path either discarded the key
+ * silently for the rest of the process or started a screen capture on the PC in order to press it.
+ * There IS a JNI route now — `RemexCoreClient.SendControlInput` — and it exists so these keys reach
+ * the socket this screen is already on (RemEx-035d6).
  *
  * The host halves are already shipped and pinned by tests (RemEx-3cnq): Windows hands the code
  * straight to `SendInput`; Linux translates to `KEY_MUTE`/`KEY_VOLUMEDOWN`/`KEY_VOLUMEUP`/
@@ -108,6 +118,7 @@ private const val RepeatIntervalMs = 150L
 fun MediaControlSection(
         connected: Boolean,
         inputSupported: Boolean,
+        playbackStatus: MediaPlaybackStatus,
         shape: Shape,
         onSendKey: (Int) -> Unit,
         modifier: Modifier = Modifier
@@ -164,9 +175,28 @@ fun MediaControlSection(
                         repeatable = false,
                         onSendKey = onSendKey
                 )
+                // THE ONE BUTTON HERE THAT REPORTS AS WELL AS ACTS (RemEx-xx6xf). It shows what the
+                // next press will DO, which is the transport-control convention everywhere else and
+                // the only one that makes a toggle legible: a pause bar means "playing, press to
+                // pause". Anything the PC has not told us keeps the triangle.
                 MediaButton(
-                        icon = Icons.Default.PlayArrow,
-                        labelRes = R.string.rc_media_play_pause,
+                        icon =
+                                if (playbackStatus == MediaPlaybackStatus.PLAYING) Icons.Default.Pause
+                                else Icons.Default.PlayArrow,
+                        labelRes =
+                                when (playbackStatus) {
+                                    MediaPlaybackStatus.PLAYING -> R.string.rc_media_pause
+                                    // A reading, so the label can be specific: the next press starts
+                                    // something.
+                                    MediaPlaybackStatus.PAUSED,
+                                    MediaPlaybackStatus.STOPPED,
+                                    MediaPlaybackStatus.NONE -> R.string.rc_media_play
+                                    // NO READING, so neither. "Play or pause" is what a screen reader
+                                    // got before this feature existed and is still the only honest
+                                    // thing to say about a toggle whose current state is unknown —
+                                    // announcing "Play" here would be a claim about the PC.
+                                    MediaPlaybackStatus.UNKNOWN -> R.string.rc_media_play_pause
+                                },
                         virtualKey = MediaVirtualKeys.MEDIA_PLAY_PAUSE,
                         enabled = enabled,
                         repeatable = false,

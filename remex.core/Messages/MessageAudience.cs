@@ -109,6 +109,12 @@ public static class MessageAudience
         [MessageTypes.HostInfo] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LauncherSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LayoutSync] = ClientSurface.PcUi,
+        // The phone only (RemEx-xx6xf). The PC's own UI is in the same process as the sampler and
+        // would read it by reference if it ever wanted it, so sending it over loopback would be the
+        // round trip RemEx-ite8 removed for telemetry — and PingPongHandler does not start this
+        // stream for a loopback connection at all, so declaring PcUi here would describe a message
+        // that is never sent.
+        [MessageTypes.MediaState] = ClientSurface.AndroidControl,
         [MessageTypes.PairingComplete] = ClientSurface.Pairing,
         [MessageTypes.PairingError] = ClientSurface.Pairing,
         [MessageTypes.PairingPinResponse] = ClientSurface.Pairing,

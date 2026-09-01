@@ -36,7 +36,8 @@ public sealed class PingPongHandler(
     ClientSessionRegistry sessionRegistry,
     PairedClientNameStore nameStore,
     PairedDeviceActivityStore activityStore,
-    Remex.Core.Services.Clipboard.IHostClipboard hostClipboard) : IDisposable
+    Remex.Core.Services.Clipboard.IHostClipboard hostClipboard,
+    Remex.Agent.Services.Media.IMediaSessionMonitor mediaSessionMonitor) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -47,12 +48,13 @@ public sealed class PingPongHandler(
     /// on the user's desktop, and only the host can clean that up because the client is what went
     /// away.
     ///
-    /// BE HONEST ABOUT WHAT THIS CURRENTLY PROTECTS. No shipping client sends <c>desktop_input</c>
-    /// over this socket: the Android side routes it through <c>HandleDesktopMessage</c> to
-    /// <c>/ws/desktop</c> instead, so the Remote Control screen's keystrokes are already covered by
-    /// the Remote Desktop handler. This branch of the protocol is still reachable and still presses
-    /// real keys, so leaving it as the one input path with no cleanup would be a trap for whoever
-    /// next sends input here — but it is defensive symmetry, not a live user-facing bug.
+    /// THIS IS NOW A LIVE PATH, AND IT WAS WRITTEN BEFORE IT HAD A CLIENT. The note here used to say
+    /// no shipping client sent <c>desktop_input</c> over this socket — the Android side routed every
+    /// one of them through <c>HandleDesktopMessage</c> to <c>/ws/desktop</c> — and that it was
+    /// defensive symmetry rather than a live user-facing bug. The Remote Control screen sends here
+    /// now (RemEx-035d6): its media and volume row has no stream to ride, and routing it down the
+    /// Remote Desktop path made it either silently dead or a reason to start capturing the user's
+    /// screen. So the cleanup this tracker performs is load-bearing today, not a precaution.
     /// </remarks>
     private readonly HeldKeyTracker _heldKeys = new();
     public async Task HandleAsync(
@@ -183,6 +185,12 @@ public sealed class PingPongHandler(
         // a Local\RemExGuiHost single-instance mutex.
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var streamTask = isLoopback ? Task.CompletedTask : StreamTelemetryAsync(webSocket, streamCts.Token);
+
+        // What the PC is playing, on the same terms as telemetry: pushed, not polled, and not to the
+        // PC's own UI (RemEx-xx6xf). A SEPARATE LOOP RATHER THAN A BRANCH INSIDE THE TELEMETRY ONE,
+        // because the two have unrelated cadences — telemetry ticks every second by construction while
+        // this sends only when the reading actually changes, which on a quiet machine is never.
+        var mediaTask = isLoopback ? Task.CompletedTask : StreamMediaStateAsync(webSocket, streamCts.Token);
 
         try
         {
@@ -860,9 +868,14 @@ public sealed class PingPongHandler(
                 logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
             }
 
-            // Cancel background stream
+            // Cancel background streams
             streamCts.Cancel();
             try { await streamTask; } catch (OperationCanceledException) { /* expected on cancel; the sibling catch below reports anything else */ } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
+            // AWAITED SEPARATELY, NOT VIA Task.WhenAll WITH THE ONE ABOVE. WhenAll surfaces only the
+            // first exception, and these two fail for unrelated reasons; more importantly a media task
+            // left unawaited would outlive the connection it writes to and go on calling SendAsync on a
+            // disposed socket.
+            try { await mediaTask; } catch (OperationCanceledException) { /* expected on cancel */ } catch (Exception ex) { logger.LogTrace(ex, "Media state stream ended with error."); }
 
             if (webSocket.State == WebSocketState.Open)
             {
@@ -1330,6 +1343,66 @@ public sealed class PingPongHandler(
         finally
         {
             CryptographicOperations.ZeroMemory(reconnectSecret);
+        }
+    }
+
+    /// <summary>
+    /// Pushes <c>media_state</c> to this client whenever the PC's playback changes (RemEx-xx6xf).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE FIRST SEND IS THE ONE THAT MATTERS AND IT IS NOT SPECIAL-CASED. <c>WaitForNextAsync(null,
+    /// …)</c> returns immediately when a reading already exists, so a phone connecting mid-song gets
+    /// the current state at once rather than waiting for the next change — which on a machine playing
+    /// one long album could be twenty minutes of the icon being wrong, the exact complaint this
+    /// feature answers.
+    /// </para>
+    /// <para>
+    /// NO LOOP OF ITS OWN AND NO TIMER. The sampler publishes only on a real change, so this loop
+    /// sends exactly as often as the PC's playback actually changes: nothing at all while a track
+    /// plays out, one message when it is paused.
+    /// </para>
+    /// <para>
+    /// GATED ON THE CAPABILITY, so an unsupported host opens no task at all rather than parking one
+    /// forever on a gate nobody will ever publish to.
+    /// </para>
+    /// </remarks>
+    private async Task StreamMediaStateAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        if (!mediaSessionMonitor.IsSupported)
+        {
+            return;
+        }
+
+        Remex.Core.Models.MediaPlaybackState? lastSent = null;
+
+        while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        {
+            try
+            {
+                var state = await mediaSessionMonitor.WaitForNextAsync(lastSent, ct);
+
+                await MessageSerializer.SendAsync(
+                    webSocket,
+                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = state },
+                    ct);
+
+                lastSent = state;
+            }
+            catch (OperationCanceledException) { return; }
+            catch (WebSocketException ex)
+            {
+                logger.LogDebug(ex, "Media state stream halted: WebSocket error.");
+                return;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // A concurrent send on the same socket, or one closing underneath this. Ending is
+                // right: unlike telemetry there is nothing to catch up on later, and the next
+                // connection re-sends the current reading on its first tick anyway.
+                logger.LogDebug(ex, "Media state stream halted: socket not in a sendable state.");
+                return;
+            }
         }
     }
 

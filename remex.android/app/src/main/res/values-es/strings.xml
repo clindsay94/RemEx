@@ -123,6 +123,8 @@
     <string name="rc_media_mute">Silenciar</string>
     <string name="rc_media_previous">Pista anterior</string>
     <string name="rc_media_play_pause">Reproducir o pausar</string>
+    <string name="rc_media_play">Reproducir</string>
+    <string name="rc_media_pause">Pausar</string>
     <string name="rc_media_next">Pista siguiente</string>
     <string name="rc_media_hint">Mantén pulsados los botones de volumen para seguir cambiándolo.</string>
     <string name="rc_media_unavailable">Este PC no está configurado para aceptar pulsaciones de teclas, así que estos botones no harán nada.</string>

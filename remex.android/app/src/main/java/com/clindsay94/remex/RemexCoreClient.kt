@@ -67,6 +67,15 @@ object RemexCoreClient {
          * so a phase added later needs no coordinated release.
          */
         fun onPairingProgress(phase: String?)
+
+        /**
+         * What the PC is playing, as a `MediaPlaybackState` payload (RemEx-xx6xf).
+         *
+         * Pushed on connect and then only when the reading actually changes, so a quiet machine sends
+         * nothing at all. Parse with
+         * [com.clindsay94.remex.data.MediaPlaybackSnapshot.parse], which degrades rather than throws.
+         */
+        fun onMediaState(mediaStateJson: String?)
     }
 
     init {
@@ -188,6 +197,42 @@ object RemexCoreClient {
     @JvmStatic
     @JvmName("SendMessageNative")
     private external fun SendMessageNative(messageJson: String): String
+
+    /**
+     * Sends one input event on the CONTROL socket, never on `/ws/desktop` (RemEx-035d6).
+     *
+     * **THE ARGUMENT IS THE `inputEvent` PAYLOAD ALONE, NOT A `desktop_input` ENVELOPE**, and the
+     * native side builds the envelope. A `desktop_input` handed to [SendMessage] is intercepted by
+     * type and routed to the Remote Desktop client instead — correct for the Remote Desktop screen,
+     * whose input belongs on the same socket as its stream, and wrong for every screen that has no
+     * stream. That is how the media and volume row (RemEx-hulc) ended up either silently discarded
+     * for the rest of the process or starting a full screen capture on the PC to press one key.
+     *
+     * Callers must serialise their own sends. A key press is `keyDown` then `keyUp`, and the two are
+     * separate calls; the native queue preserves the order it is handed, but it cannot invent one.
+     * [com.clindsay94.remex.ui.screens.RemoteControlViewModel] uses a single-threaded dispatcher for
+     * exactly this.
+     */
+    @JvmStatic
+    fun SendControlInput(inputEventJson: String): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(SendControlInputNative(inputEventJson))
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "SendControlInputNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SendControlInputNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("SendControlInputNative")
+    private external fun SendControlInputNative(inputEventJson: String): String
 
     /**
      * Judges a clipboard payload with the SAME rule the PC applies (RemEx-hgqs).

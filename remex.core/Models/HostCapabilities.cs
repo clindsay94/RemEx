@@ -60,6 +60,19 @@ public sealed record HostCapabilities
     /// <summary>Whether the host can perform interactive application launches.</summary>
     public bool SupportsInteractiveAppLaunch { get; init; }
 
+    /// <summary>
+    /// Whether the host can report what it is playing, as <c>media_state</c> (RemEx-xx6xf).
+    /// </summary>
+    /// <remarks>
+    /// DEFAULTS TO FALSE, WHICH IS THE OPPOSITE OF <see cref="SupportsInputSimulation"/> AND
+    /// DELIBERATE. That one defaults to true because an absent key means an older host that should
+    /// keep working, and refusing to send it input would break a shipping feature. Here an absent key
+    /// means a host that will never send a reading, and the honest UI for "no reading" is the neutral
+    /// play triangle the phone drew before this existed. Defaulting true would make every older PC
+    /// look like one that is about to report, and it never would.
+    /// </remarks>
+    public bool SupportsMediaState { get; init; }
+
     /// <summary>Name of the preferred mouse/keyboard input backend for the current runtime.</summary>
     public string? InputBackend { get; init; }
 

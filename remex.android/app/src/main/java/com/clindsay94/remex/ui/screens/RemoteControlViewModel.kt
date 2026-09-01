@@ -747,15 +747,25 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         // is reachable on a host where remote desktop is off entirely - which made it a WIDER
         // exposure than the remote-desktop path it was omitted from, not a narrower one (RemEx-i8ty,
         // found by the review of RemEx-q9zw).
+        //
+        // SendControlInput, NOT SendMessage, AND THE DIFFERENCE IS THE WHOLE ROW WORKING
+        // (RemEx-035d6). This used to hand-build a `desktop_input` envelope and pass it to
+        // SendMessage, which routes BY TYPE: every desktop_input goes to RemexDesktopClient and out
+        // over /ws/desktop. That is right for the Remote Desktop screen and wrong here, because this
+        // screen has no stream - and RemexDesktopClient is a process singleton whose
+        // stopped-by-request latch (RemEx-yzbb) is cleared only by starting one. Opening the Remote
+        // Desktop screen and navigating away sets that latch via onCleared, so the media and volume
+        // row went permanently dead for the rest of the process, with the phone still buzzing on
+        // every tap. Before the latch is set it is no better: that path AUTO-STARTS a stream, so a
+        // volume tap began a full capture session on the PC for a screen showing no video.
+        //
+        // The new export puts the same event on the control socket this screen is already talking
+        // on, where the host has always handled it (PingPongHandler.DispatchInput), held keys and
+        // all. No new message type, so nothing for the inbound router to drop (RemEx-y6x6).
         if (!capabilityState.value.supportsInputSimulation) return
         viewModelScope.launch(sendDispatcher) {
             if (RemexCoreClient.isLibraryLoaded) {
-                val message =
-                        JSONObject().apply {
-                            put("type", "desktop_input")
-                            put("inputEvent", input)
-                        }
-                RemexCoreClient.SendMessage(message.toString()).getOrNull()
+                RemexCoreClient.SendControlInput(input.toString()).getOrNull()
             }
         }
     }

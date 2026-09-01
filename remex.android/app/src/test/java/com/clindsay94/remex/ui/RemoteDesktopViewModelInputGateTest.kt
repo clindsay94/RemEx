@@ -78,8 +78,21 @@ class RemoteDesktopViewModelInputGateTest {
         val text = source("RemoteControlViewModel")
 
         assertTrue(
-                "RemoteControlViewModel still sends desktop_input, so this test is still needed",
-                text.contains("\"desktop_input\"")
+                "RemoteControlViewModel still sends input, so this test is still needed",
+                text.contains("RemexCoreClient.SendControlInput(")
+        )
+
+        // AND IT MUST NOT GO BACK TO THE OTHER ONE (RemEx-035d6). SendMessage routes by type, so a
+        // hand-built "desktop_input" envelope is intercepted and pushed out over /ws/desktop by
+        // RemexDesktopClient - a process singleton whose stopped-by-request latch (RemEx-yzbb) is
+        // cleared only by starting a stream. Closing the Remote Desktop screen sets that latch, and
+        // this screen's media and volume row then went dead for the rest of the process with no
+        // error anywhere. Pinned as the absence of the literal, because the regression is one
+        // reviewable line - swapping SendControlInput back for SendMessage - and it presents as
+        // silence, not as a failure.
+        assertTrue(
+                "RemoteControlViewModel must not route input through SendMessage (RemEx-035d6)",
+                !text.contains("\"desktop_input\"")
         )
         // STILL KEYED ON THE CAPABILITY NAME RATHER THAN THE GUARD TEXT. That was what let the
         // previous, inverted version of this assertion fire at all: the sibling's guard reads

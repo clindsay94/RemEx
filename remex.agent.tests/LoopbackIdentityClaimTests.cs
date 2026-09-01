@@ -165,7 +165,8 @@ public class LoopbackIdentityClaimTests
             new ClientSessionRegistry(),
             NewNameStore(),
             NewActivityStore(),
-            new FakeHostClipboard());
+            new FakeHostClipboard(),
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
 
         var socket = new ScriptedWebSocket(awaitedResponseType, script);
         try

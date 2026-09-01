@@ -90,7 +90,14 @@ public static class HostBootstrapper
         // PROTO-1 (RemEx-htt): the 8338 command channel authenticates callers against the paired-client
         // registry. Without this registration the listener fails closed (rejects every command).
         builder.Services.AddSingleton<Remex.Core.Services.Network.ICommandChannelAuthenticator, Remex.Agent.Services.Network.PairedClientChannelAuthenticator>();
-        builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
+        // A FACTORY RATHER THAN A TYPE REGISTRATION, so the media-session probe can be supplied
+        // (RemEx-xx6xf). Its parameter is an optional Func that defaults to FALSE, so a plain
+        // AddSingleton<,>() would compile, resolve, and quietly tell every phone that this PC will
+        // never report what it is playing.
+        builder.Services.AddSingleton<IHostCapabilitiesProvider>(sp => new HostCapabilitiesProvider(
+            sp.GetRequiredService<IScreenCaptureService>(),
+            sp.GetRequiredService<IInputSimulationService>(),
+            mediaStateProbe: () => sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>().IsSupported));
         // The PC clipboard, for clipboard_push (RemEx-hgqs). Lives in remex.desktop because that is
         // where Avalonia is; the implementation hops to the UI thread, which nothing in this project
         // can do - remex.agent has no Dispatcher reference of its own.
@@ -165,6 +172,28 @@ public static class HostBootstrapper
         // Same instance again, under the interface the in-process UI can name (RemEx-ite8).
         builder.Services.AddSingleton<Remex.Core.Services.ITelemetryBroadcaster>(
             sp => sp.GetRequiredService<TelemetryBackgroundService>());
+
+        // ── Media session reporting (RemEx-xx6xf) ──
+        // The reader is chosen here and NOWHERE ELSE branches on the platform: an unsupported host
+        // gets a real stub rather than a null registration, so the sampler, the capability provider
+        // and the per-connection stream are all platform-agnostic. What a host cannot do is said once,
+        // in HostCapabilities.SupportsMediaState, rather than re-derived at each call site.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSessionReader>(sp =>
+            OperatingSystem.IsWindows()
+                ? new Remex.Agent.Services.Media.WindowsMediaSessionReader(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.WindowsMediaSessionReader>>())
+                : OperatingSystem.IsLinux()
+                    ? new Remex.Agent.Services.Media.LinuxMediaSessionReader(
+                        sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.LinuxMediaSessionReader>>())
+                    : new Remex.Agent.Services.Media.UnsupportedMediaSessionReader());
+
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.MediaSessionBackgroundService>();
+        builder.Services.AddHostedService(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
+        // Same instance under the interface its consumers name, the shape used by the telemetry
+        // broadcaster above: one sampler, several readers, no second poll.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSessionMonitor>(
+            sp => sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
@@ -481,7 +510,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<ClientSessionRegistry>(),
                 context.RequestServices.GetRequiredService<PairedClientNameStore>(),
                 context.RequestServices.GetRequiredService<PairedDeviceActivityStore>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

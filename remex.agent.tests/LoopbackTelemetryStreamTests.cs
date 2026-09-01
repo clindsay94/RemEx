@@ -182,7 +182,8 @@ public class LoopbackTelemetryStreamTests
             sessionRegistry ?? new ClientSessionRegistry(),
             NewNameStore(),
             NewActivityStore(),
-            new FakeHostClipboard());
+            new FakeHostClipboard(),
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
 
         try
         {

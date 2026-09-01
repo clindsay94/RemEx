@@ -330,6 +330,18 @@ public sealed record RemexMessage
     /// <summary>What the PC did with a pushed clipboard, for <see cref="MessageTypes.ClipboardPushResult"/>.</summary>
     [JsonPropertyName("clipboardPushResult")]
     public Remex.Core.Models.ClipboardPushResult? ClipboardPushResult { get; init; }
+
+    /// <summary>
+    /// What the PC is playing, for <see cref="MessageTypes.MediaState"/> (RemEx-xx6xf). Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// HOST TO CLIENT ONLY. A client never sends one — it has nothing to say about the PC's media
+    /// session — and the host has no case for it, so one arriving from a phone falls through to the
+    /// handler's unknown-type default and is ignored.
+    /// </remarks>
+    [JsonPropertyName("mediaState")]
+    public Remex.Core.Models.MediaPlaybackState? MediaState { get; init; }
 }
 
 /// <summary>
@@ -474,4 +486,17 @@ public static class MessageTypes
     // The push's answer (RemEx-s1ay7). clipboard_ prefixed, so the router carries it with no new
     // wiring at all - which is the payoff of forwarding the family by prefix rather than by name.
     public const string ClipboardPushResult = "clipboard_push_result";
+
+    /// <summary>
+    /// What the PC is playing, HOST -> CLIENT (RemEx-xx6xf).
+    /// </summary>
+    /// <remarks>
+    /// UNPREFIXED AND THEREFORE NOT CARRIED BY ANY OF THE FAMILY FORWARDS. The <c>file_</c> and
+    /// <c>clipboard_</c> prefixes each get a whole family routed to a callback in
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>; this one is a single type and needs its
+    /// own line there. That is the RemEx-y6x6 shape exactly — a host that sends correctly and a phone
+    /// that never hears, with a successful send on one side and silence on the other — so the routing
+    /// has its own guard rather than being left to a reviewer to notice.
+    /// </remarks>
+    public const string MediaState = "media_state";
 }

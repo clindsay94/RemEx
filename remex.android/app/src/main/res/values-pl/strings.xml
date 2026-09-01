@@ -112,6 +112,8 @@
     <string name="rc_media_mute">Wycisz</string>
     <string name="rc_media_previous">Poprzedni utwór</string>
     <string name="rc_media_play_pause">Odtwórz lub wstrzymaj</string>
+    <string name="rc_media_play">Odtwórz</string>
+    <string name="rc_media_pause">Wstrzymaj</string>
     <string name="rc_media_next">Następny utwór</string>
     <string name="rc_media_hint">Przytrzymaj przyciski głośności, aby dalej ją zmieniać.</string>
     <string name="rc_media_unavailable">Ten komputer nie jest skonfigurowany do przyjmowania naciśnięć klawiszy, więc te przyciski nic nie zrobią.</string>

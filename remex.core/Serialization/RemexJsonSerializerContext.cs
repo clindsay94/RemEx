@@ -150,6 +150,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(ClipboardPushResult))]
 [JsonSerializable(typeof(FilePushOffer))]
 [JsonSerializable(typeof(FilePushResponse))]
+[JsonSerializable(typeof(MediaPlaybackState))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }
