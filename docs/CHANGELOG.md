@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The seven palette styles are a row of live previews now, not a dropdown.** Personalization used
+  to offer "Scheme Variant" as a combo box of seven words — Tonal Spot, Vibrant, Expressive,
+  Rainbow, Fruit Salad, From Content, Spritz — which told you nothing about what any of them would
+  do to your PC until you picked one and looked. They are swatches now: each style paints its own
+  strip from *your* current seed, in your current light/dark mode, so the choice is visible before
+  it is made. Underneath sits the tonal ramp the palette is actually built from — primary,
+  secondary, tertiary and neutral at every tone from 0 to 100 — plus the three pairs that decide
+  whether text is readable (Primary on OnPrimary, Surface on OnSurface, Error on OnError) shown as
+  real foreground-on-background, so a seed that produces unreadable text shows you that here
+  instead of on the screen you were about to use.
+
+  Each strip carries a fourth, neutral chip on purpose. Rainbow is Tonal Spot with the neutral
+  palette's colour taken out, so on a saturated seed those two produce identical accents and three
+  accent chips alone would render them as the same choice twice — a picker whose options look
+  identical reads as broken rather than as accurate. (RemEx-lrxyo)
+
 - **The drawer header is a Material identity block now** (RemEx-dnqws, phase 2 of RemEx-ajpug):
   the RemEx mark, this PC's machine name, and the paired-device summary sit inside a real
   `material:ColorZone` (`Mode="PrimaryMid"`), not a plain panel. That mode is one of the two

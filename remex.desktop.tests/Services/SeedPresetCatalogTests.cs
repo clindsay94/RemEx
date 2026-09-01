@@ -266,21 +266,43 @@ public class SeedPresetCatalogTests
             "the gallery has to come from the catalog");
         axaml.Should().Contain("SelectThemeCommand");
 
-        // Exactly one tile template, not one template plus leftovers.
-        // theme-tile became the shared .tile role in RemEx-z7pnx; the invariant is unchanged.
-        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(1,
-            "a second tile is a hand-authored preset, which is the thing the catalog removes");
+        // Exactly two tile templates, not two templates plus leftovers. The preset gallery and the
+        // scheme-variant strip row (RemEx-lrxyo) are both catalog/generator-driven galleries sharing
+        // the .tile role from RemEx-z7pnx; a third would be a hand-authored duplicate of one of them.
+        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(2,
+            "the preset gallery and the scheme-variant strip row are the only two tile templates");
 
-        // And no colour literal survives INSIDE the gallery. Scoped to the ItemsControl on purpose:
-        // the accent quick-pick row further down the panel is literals by design — those buttons
-        // set a seed rather than describe one — so a whole-file scan would fail for the wrong
-        // reason and get deleted rather than fixed.
+        // And no colour literal survives INSIDE either gallery. Scoped to the ItemsControls on
+        // purpose: the accent quick-pick row further down the panel is literals by design — those
+        // buttons set a seed rather than describe one — so a whole-file scan would fail for the
+        // wrong reason and get deleted rather than fixed.
         var gallery = Regex.Match(axaml, @"<ItemsControl ItemsSource=""\{Binding ThemePresets\}"".*?</ItemsControl>",
             RegexOptions.Singleline);
         gallery.Success.Should().BeTrue("the gallery block has to be findable for this scan to mean anything");
 
         Regex.Match(gallery.Value, @"#[0-9A-Fa-f]{6}").Success.Should().BeFalse(
             "a colour literal in the gallery is a tile describing a palette instead of rendering it");
+
+        axaml.Should().Contain("ItemsSource=\"{Binding SchemeVariantStrips}\"",
+            "the variant row has to come from the same live-generated strips the seed change repaints");
+        axaml.Should().Contain("SelectSchemeVariantCommand");
+
+        var variantStrip = Regex.Match(axaml, @"<ItemsControl ItemsSource=""\{Binding SchemeVariantStrips\}"".*?</ItemsControl>",
+            RegexOptions.Singleline);
+        variantStrip.Success.Should().BeTrue("the variant strip block has to be findable for this scan to mean anything");
+
+        Regex.Match(variantStrip.Value, @"#[0-9A-Fa-f]{6}").Success.Should().BeFalse(
+            "a colour literal in the variant strip row is a swatch describing a palette instead of rendering it");
+
+        // WHICH two blocks own the tiles, not just how many exist (review LOW, RemEx-lrxyo). A bare
+        // count of 2 stays green if someone deletes the gallery's tile and hand-authors one
+        // somewhere else — the exact substitution the original "exactly one" assertion was written
+        // to catch. Both scoped blocks are already in hand, so pinning one tile inside each costs
+        // two lines and restores the precision the count lost when it went from 1 to 2.
+        Regex.Matches(gallery.Value, @"Classes=""tile""").Should().HaveCount(1,
+            "the preset gallery owns exactly one of the two tile templates");
+        Regex.Matches(variantStrip.Value, @"Classes=""tile""").Should().HaveCount(1,
+            "the variant strip row owns exactly one of the two tile templates");
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path

@@ -143,6 +143,39 @@ public static class DynamicColorGenerator
             BackgroundEnd:        ToColor(core.Neutral[isDark ?  0u : 100u]));
     }
 
+    /// <summary>The eleven tones the Material tonal scale is conventionally sampled at.</summary>
+    private static readonly uint[] RampTones = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+
+    /// <summary>
+    /// A palette's tonal palette rendered at <see cref="RampTones"/>, for a UI that wants to show the
+    /// scale itself rather than just the roles the scheme mapper picked off it.
+    /// </summary>
+    public record TonalRampSet(
+        IReadOnlyList<(int Tone, Color Color)> Primary,
+        IReadOnlyList<(int Tone, Color Color)> Secondary,
+        IReadOnlyList<(int Tone, Color Color)> Tertiary,
+        IReadOnlyList<(int Tone, Color Color)> Neutral);
+
+    /// <summary>
+    /// Samples the primary/secondary/tertiary/neutral tonal palettes at 0,10,…,100 for the given seed
+    /// and variant. Independent of light/dark mode and contrast — a tonal palette is the raw scale a
+    /// scheme mapper picks roles off, and neither mode nor contrast change what tones exist on it.
+    /// </summary>
+    public static TonalRampSet GenerateTonalRamps(Color seed, string variant = "TonalSpot")
+    {
+        var style = StyleFor(variant);
+        var core = CoreFor(ToArgb(seed), style);
+
+        return new TonalRampSet(
+            Primary:   RampFor(core.Primary),
+            Secondary: RampFor(core.Secondary),
+            Tertiary:  RampFor(core.Tertiary),
+            Neutral:   RampFor(core.Neutral));
+    }
+
+    private static IReadOnlyList<(int Tone, Color Color)> RampFor(TonalPalette palette) =>
+        RampTones.Select(tone => ((int)tone, ToColor(palette[tone]))).ToList();
+
     private static Style StyleFor(string variant) => variant switch
     {
         "Vibrant"    => Style.Vibrant,

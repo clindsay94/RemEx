@@ -2785,6 +2785,30 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="Custom_TonalRamp" xml:space="preserve">
+    <value>Rampe tonale</value>
+  </data>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Primaire</value>
+  </data>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Secondaire</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Tertiaire</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Neutre</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Primaire / Sur primaire</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Surface / Sur surface</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Erreur / Sur erreur</value>
+  </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Impossible de terminer « {0} » (PID {1}). Rien n'a été modifié. Actualisez la liste et réessayez.</value>
   </data>

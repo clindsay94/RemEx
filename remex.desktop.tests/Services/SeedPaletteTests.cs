@@ -217,6 +217,47 @@ public class SeedPaletteTests
     }
 
     [Fact]
+    public void EveryVariantProducesADistinctPaletteFromTheSameSeed()
+    {
+        // THE HEADLINE ACCEPTANCE CRITERION OF RemEx-lrxyo, which until this test was verified only
+        // by looking at a screenshot. The variant row shows seven strips painted from one seed; if
+        // two variants collapse onto identical output, the picker silently offers the user a choice
+        // that is not a choice, and every one of the 2989 other tests stays green while it does.
+        //
+        // Asserted on the six values the strip and its surface actually paint, not on the whole
+        // M3Palette: two variants agreeing on some interior role is normal and not a defect. What
+        // must never happen is two strips being indistinguishable to the code that draws them.
+        //
+        // This locks in behaviour that is correct TODAY — measured 7/7 distinct across these seeds
+        // and both modes — rather than chasing a known bug. The risk it guards is a future tweak to
+        // StyleFor or to the neutral-chroma handling quietly merging two variants.
+        foreach (var seed in Seeds)
+        {
+            foreach (var isDark in new[] { true, false })
+            {
+                var seen = new Dictionary<string, string>();
+
+                foreach (var variant in Variants)
+                {
+                    var p = DynamicColorGenerator.Generate(seed, variant, isDark: isDark, contrast: 0.0);
+                    var fingerprint = string.Join(
+                        "|", p.Surface, p.Primary, p.Secondary, p.Tertiary, p.OnSurface, p.Outline);
+
+                    seen.Should().NotContainKey(fingerprint,
+                        $"variant '{variant}' must not render identically to '{(seen.TryGetValue(fingerprint, out var other) ? other : "?")}' " +
+                        $"for seed {seed} in {(isDark ? "dark" : "light")} mode — the variant row would " +
+                        "show the user two strips that are the same choice");
+
+                    seen[fingerprint] = variant;
+                }
+
+                seen.Should().HaveCount(Variants.Length,
+                    $"all {Variants.Length} variants have to be distinguishable for seed {seed}");
+            }
+        }
+    }
+
+    [Fact]
     public void SuccessAndWarningStayGreenAndAmberWhateverTheSeedIs()
     {
         // SEMANTIC COLOURS ARE NOT THEME COLOURS. If success drifted with the accent, a user who

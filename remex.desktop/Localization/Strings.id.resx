@@ -2788,6 +2788,30 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="Custom_TonalRamp" xml:space="preserve">
+    <value>Ramp Tonal</value>
+  </data>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Primer</value>
+  </data>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Sekunder</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Tersier</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Netral</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Primer / Di Atas Primer</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Permukaan / Di Atas Permukaan</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Error / Di Atas Error</value>
+  </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Tidak dapat menghentikan "{0}" (PID {1}). Tidak ada yang berubah. Segarkan daftar lalu coba lagi.</value>
   </data>

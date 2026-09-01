@@ -138,6 +138,24 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     };
 
     /// <summary>
+    /// The variant row: one strip per <see cref="AvailableSchemeVariants"/> entry, each painted from
+    /// the live seed in its OWN variant (RemEx-lrxyo).
+    /// </summary>
+    /// <remarks>
+    /// Refreshed from <see cref="RefreshSchemeVariantStrips"/>, which runs at the tail of
+    /// <c>ApplyAndSave</c> AND from the <c>CustomizationApplied</c> handler in the constructor. Both
+    /// are required and neither implies the other: the first covers every user action, the second
+    /// covers an OS light/dark flip, which repaints the app with no user action at all. An earlier
+    /// draft of this comment claimed the strips were "refreshed everywhere ThemePresets is" while
+    /// only the first path was wired, and that sentence is exactly what a future maintainer would
+    /// have trusted instead of re-deriving it.
+    /// </remarks>
+    public ObservableCollection<SchemeVariantStripViewModel> SchemeVariantStrips { get; } = new();
+
+    /// <summary>The tonal-ramp preview beneath the variant row, for the currently-selected variant.</summary>
+    public TonalRampViewModel TonalRamp { get; } = new();
+
+    /// <summary>
     /// User-saved custom accent colours shown after the built-in swatches, most recent first. Also
     /// the Palette Studio's "recently used seeds" row — one list, two views of it, because a seed
     /// the user liked enough to keep and a seed they just landed on are the same thing.
@@ -405,8 +423,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         foreach (var preset in SeedPresetCatalog.All)
             ThemePresets.Add(new SeedPresetTileViewModel(preset));
 
+        // Same ordering reason as the gallery above: built after the seed axes exist, since the
+        // strips and the ramp are painted from the live settings.
+        foreach (var variant in AvailableSchemeVariants)
+            SchemeVariantStrips.Add(new SchemeVariantStripViewModel(variant));
+
         RefreshPresetPreviews(onlyVarying: false);
         UpdatePresetSelection();
+        RefreshSchemeVariantStrips();
+        UpdateSchemeVariantSelection();
 
         // AN OS THEME FLIP REPAINTS THE TILES TOO (RemEx-zk5bc review). In System mode the window
         // can change light/dark with no slider touched — ApplyCustomization re-runs from the
@@ -414,7 +439,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // without this it keeps the old mode's swatches until the next user action. A NAMED
         // delegate in a field, not a lambda, so Dispose can detach it — the same convention
         // ShellViewModel uses on this event, and for the same reason: the service outlives us.
-        _onCustomizationApplied = _ => RefreshPresetPreviews(onlyVarying: true);
+        // The variant strips ride this event too (review HIGH, RemEx-lrxyo). They are previews of
+        // what a click WOULD produce, so an OS light/dark flip that repaints the app without any
+        // slider being touched has to repaint them as well — otherwise the row keeps rendering the
+        // old mode's palette and the preview stops agreeing with the app, which is the one thing it
+        // exists to guarantee. This is the same defect RemEx-zk5bc's review caught for the preset
+        // tiles, which is why this line exists at all.
+        // No Dispatcher.Post: CustomizationApplied is already raised inside one, so the collection
+        // mutations below stay on the UI thread.
+        _onCustomizationApplied = _ =>
+        {
+            RefreshPresetPreviews(onlyVarying: true);
+            RefreshSchemeVariantStrips();
+        };
         _themeService.CustomizationApplied += _onCustomizationApplied;
 
         // Load available background types
@@ -612,7 +649,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         SyncSeedFromAccent();
         ApplyAndSave();
     }
-    partial void OnSchemeVariantChanged(string value) => ApplyAndSave();
+    partial void OnSchemeVariantChanged(string value)
+    {
+        UpdateSchemeVariantSelection();
+        ApplyAndSave();
+    }
     partial void OnCanvasBackgroundTypeChanged(string value)
     {
         OnPropertyChanged(nameof(IsGlassModeSelected));
@@ -711,6 +752,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // The gallery is downstream of the same settings the shell is, so it repaints here rather
         // than from four separate change handlers that would each have to remember to.
         RefreshPresetPreviews(onlyVarying: true);
+        RefreshSchemeVariantStrips();
+    }
+
+    /// <summary>Clicking a variant strip is choosing a variant — the same live-apply path the old ComboBox used.</summary>
+    [RelayCommand]
+    private void SelectSchemeVariant(string variant)
+    {
+        if (string.IsNullOrEmpty(variant)) return;
+        SchemeVariant = variant;
     }
 
     [RelayCommand]
@@ -771,6 +821,43 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private static bool HasLiveInput(SeedPreset preset) =>
         preset.Seed is null || preset.SchemeVariant is null
         || preset.IsLight is null || preset.Contrast is null;
+
+    /// <summary>
+    /// Rebuilds every variant strip's palette (each in its OWN variant, always — unlike the preset
+    /// gallery there is no "pinned" strip to skip) and the ramp preview for the currently-selected
+    /// variant. Seven strips plus one ramp is cheap enough to run on every seed/mode/contrast tick.
+    /// </summary>
+    private void RefreshSchemeVariantStrips()
+    {
+        var liveIsLight = CurrentIsLightPalette();
+        foreach (var strip in SchemeVariantStrips)
+            strip.Refresh(AccentColor, liveIsLight, ThemeContrast);
+
+        TonalRamp.Refresh(AccentColor, SchemeVariant, liveIsLight, ThemeContrast);
+    }
+
+    private void UpdateSchemeVariantSelection()
+    {
+        var matched = false;
+        foreach (var strip in SchemeVariantStrips)
+        {
+            strip.IsSelected = string.Equals(strip.Variant, SchemeVariant, StringComparison.Ordinal);
+            matched |= strip.IsSelected;
+        }
+
+        // An unrecognised variant string — a stale or hand-edited profile carrying, say,
+        // "Monochrome" — must still light up a strip (review LOW, RemEx-lrxyo).
+        // DynamicColorGenerator.StyleFor falls through to TonalSpot for anything it does not know,
+        // so the app IS rendering TonalSpot; leaving the row with nothing selected would show a
+        // picker that disagrees with the palette on screen. The old ComboBox had the same blank
+        // state, but the row is now the only affordance, so it is worth closing here.
+        if (!matched)
+        {
+            var fallback = SchemeVariantStrips.FirstOrDefault(
+                s => string.Equals(s.Variant, "TonalSpot", StringComparison.Ordinal));
+            if (fallback is not null) fallback.IsSelected = true;
+        }
+    }
 
     /// <summary>
     /// What light/dark the profile is actually painting right now — the session's mode choice if
@@ -863,6 +950,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // singleton outlives this view model - an undisposed tile is pinned for the process lifetime.
         foreach (var tile in ThemePresets) tile.Dispose();
         ThemePresets.Clear();
+        foreach (var strip in SchemeVariantStrips) strip.Dispose();
+        SchemeVariantStrips.Clear();
         _themeService.CustomizationApplied -= _onCustomizationApplied;
     }
 }

@@ -2799,6 +2799,30 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="Custom_TonalRamp" xml:space="preserve">
+    <value>Rampa tonal</value>
+  </data>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Primario</value>
+  </data>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Secundario</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Terciario</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Neutro</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Primario / Sobre primario</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Superficie / Sobre superficie</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Error / Sobre error</value>
+  </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>No se pudo terminar «{0}» (PID {1}). No se cambió nada. Actualiza la lista e inténtalo de nuevo.</value>
   </data>

@@ -2791,6 +2791,30 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="Custom_TonalRamp" xml:space="preserve">
+    <value>Tonal Ramp</value>
+  </data>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Primary</value>
+  </data>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Secondary</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Tertiary</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Neutral</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Primary / On Primary</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Surface / On Surface</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Error / On Error</value>
+  </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Could not end “{0}” (PID {1}). Nothing was changed. Refresh the list and try again.</value>
   </data>

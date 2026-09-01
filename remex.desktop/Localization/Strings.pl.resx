@@ -2786,6 +2786,30 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="Custom_TonalRamp" xml:space="preserve">
+    <value>Rampa tonalna</value>
+  </data>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Podstawowy</value>
+  </data>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Drugorzędny</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Trzeciorzędny</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Neutralny</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Podstawowy / Na podstawowym</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Powierzchnia / Na powierzchni</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Błąd / Na błędzie</value>
+  </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Nie udało się zakończyć procesu "{0}" (PID {1}). Nic nie zostało zmienione. Odśwież listę i spróbuj ponownie.</value>
   </data>

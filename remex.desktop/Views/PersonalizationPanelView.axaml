@@ -323,23 +323,165 @@
                         <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </Grid>
-                <Grid ColumnDefinitions="*,2*">
-                    <TextBlock Text="{local:Localize Custom_SchemeVariant}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="160">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:CompileBindings="False">
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_Scheme_">
-                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                            <Binding/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                <!-- THE ROW PREVIEWS ITSELF, same reason as the preset gallery above (RemEx-lrxyo):
+                     the ComboBox this replaced showed the SAME text for every entry regardless of
+                     what a variant actually looked like on the user's own seed. Each strip is
+                     DynamicColorGenerator.Generate run with that strip's OWN variant against the
+                     live seed/mode/contrast, so a strip cannot show a colour a click would not
+                     produce. -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{local:Localize Custom_SchemeVariant}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding SchemeVariantStrips}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SchemeVariantStripViewModel">
+                                <Button Classes="tile" Margin="0" Padding="0" MinWidth="56"
+                                        AutomationProperties.Name="{Binding DisplayName}"
+                                        Classes.selected="{Binding IsSelected}"
+                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}"
+                                        CommandParameter="{Binding Variant}">
+                                    <!-- Same shape as the preset tile: painted in the strip's OWN
+                                         surface/outline/on-surface, so a variant whose own text is
+                                         unreadable against its own surface looks unreadable here. -->
+                                    <Border Background="{Binding SurfaceBrush}"
+                                            BorderBrush="{Binding OutlineBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="6,8">
+                                        <StackPanel Spacing="4">
+                                            <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center">
+                                                <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
+                                                <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
+                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
+                                                <!-- THE NEUTRAL CHIP IS WHAT SEPARATES TWO VARIANTS THAT SHARE ACCENTS
+                                                     (review LOW, RemEx-lrxyo). Rainbow is TonalSpot with the neutral
+                                                     palette's chroma taken to zero, so for a saturated seed the two
+                                                     produce IDENTICAL primary/secondary/tertiary — measured on a dark
+                                                     red seed, all three match exactly and the entire difference
+                                                     is the neutrals. Three accent chips therefore render them
+                                                     indistinguishable, and a picker whose choices look the same reads
+                                                     as broken rather than as faithful. OnSurface is the neutral that
+                                                     carries the difference AND is already bound here, so this needs
+                                                     no new view-model surface. -->
+                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding OnSurfaceBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource OverlineTextBlock}"
+                                                       TextAlignment="Center" TextWrapping="Wrap"
+                                                       Foreground="{Binding OnSurfaceBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
                             </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </Grid>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ═══ Tonal ramp preview ═══ The scale itself, not just the roles a scheme mapper
+                     picked off it, and the resolved role pairs shown as text-on-background so a
+                     contrast problem (what the slider above the fold exists to fix) is visible at a
+                     glance instead of inferred from separate swatches. -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{local:Localize Custom_TonalRamp}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <StackPanel Spacing="6">
+                        <!-- One Grid per palette: a fixed label column plus the eleven-tone row. The
+                             DataTemplate is shared by copy rather than by a resource key, matching how
+                             the rest of this view templates ItemsControl rows - see the file header
+                             note on Presets above for why the colours themselves are never literals. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_Primary}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.PrimaryTones}"
+                                          AutomationProperties.Name="{local:Localize Custom_TonalRamp_Primary}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}"
+                                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5"
+                                                ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_Secondary}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.SecondaryTones}"
+                                          AutomationProperties.Name="{local:Localize Custom_TonalRamp_Secondary}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}"
+                                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5"
+                                                ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_Tertiary}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.TertiaryTones}"
+                                          AutomationProperties.Name="{local:Localize Custom_TonalRamp_Tertiary}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}"
+                                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5"
+                                                ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_Neutral}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.NeutralTones}"
+                                          AutomationProperties.Name="{local:Localize Custom_TonalRamp_Neutral}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}"
+                                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5"
+                                                ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- The role pairs, shown as foreground text ON its own background rather than as
+                         six isolated chips - an unreadable pair looks unreadable here, not merely
+                         similar to its neighbour. -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.PrimaryBrush}">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_PrimaryPair}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{Binding TonalRamp.OnPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.SurfaceBrush}">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_SurfacePair}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{Binding TonalRamp.OnSurfaceBrush}" TextAlignment="Center" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.ErrorBrush}">
+                            <TextBlock Text="{local:Localize Custom_TonalRamp_ErrorPair}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{Binding TonalRamp.OnErrorBrush}" TextAlignment="Center" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
 
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">
                     <TextBlock Text="{local:Localize Custom_SplashScreen}" VerticalAlignment="Center"/>
