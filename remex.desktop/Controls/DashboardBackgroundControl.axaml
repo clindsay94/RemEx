@@ -8,18 +8,86 @@
     <ContentControl.Template>
         <ControlTemplate>
             <Grid x:DataType="vm:ShellViewModel">
-                <Grid IsHitTestVisible="False">
+                <Grid IsHitTestVisible="False" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
+                    <!-- ═══ PALETTE CROSSFADE (RemEx-zgtn1). This is the largest surface in the app —
+                         every mode below fills the whole window — and it used to be the one place a
+                         palette change SNAPPED instead of crossfading; the ten pre-existing
+                         BrushTransition spots (App.axaml) only ever covered chrome (Card, Button,
+                         Ellipse). Classes="palette-bg" opts a Rectangle into the Fill transition
+                         defined below; suppression follows the same Classes.palette-transition-
+                         suppressed flag as MainWindow.axaml, bound once here rather than per-rectangle
+                         since every one of them is a descendant of this Grid.
+                         Rectangles bound through a nested SolidColorBrush's own Color (Acrylic's tint,
+                         the Aurora gradients) are deliberately NOT tagged: ThemeService swaps the
+                         COLOR in place there, never the brush instance, so Fill itself never raises a
+                         change and a BrushTransition on it would never fire. Only a Rectangle whose
+                         Fill is DIRECTLY "{DynamicResource ...Brush}" gets a new brush object on every
+                         apply and is worth tagging. -->
+                    <Grid.Styles>
+                        <Style Selector="Rectangle.palette-bg">
+                            <Setter Property="Transitions">
+                                <Transitions>
+                                    <BrushTransition Property="Fill" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                                </Transitions>
+                            </Setter>
+                        </Style>
+                        <!-- The gradient base needs BOTH a Fill and an Opacity transition, and it needs
+                             both to be SUPPRESSIBLE. Carrying them in the Rectangle's own
+                             <Rectangle.Transitions> would make them a LocalValue, which outranks the
+                             StyleTrigger a class setter resolves at — so the suppressor below could
+                             never reach them, and a reduced-motion user would get an unturnoffable
+                             400ms ease on the largest surface in the app (review MEDIUM, round 2).
+                             Both live on this class instead, which is what makes them switchable. -->
+                        <Style Selector="Rectangle.palette-bg-gradient-base">
+                            <Setter Property="Transitions">
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:1"/>
+                                    <BrushTransition Property="Fill" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                                </Transitions>
+                            </Setter>
+                        </Style>
+                        <!-- Declared after the styles above. BOTH selectors in each pair carry an
+                             activator, so both resolve at BindingPriority.StyleTrigger and the tie
+                             breaks on declaration order — which is the one case where "later wins" is
+                             the real rule. It is NOT a general specificity rule: a style with no
+                             activator loses to either of these wherever it sits. (RemEx-zrlze shipped
+                             a P0 from confusing the two.)
+
+                             The suppressed gradient base keeps its Opacity transition and drops only
+                             the Fill one: the 8-second opacity breathing is decorative motion the
+                             palette change does not drive, and killing it here would stop the
+                             background animating for reasons that have nothing to do with this bead. -->
+                        <Style Selector="Grid.palette-transition-suppressed Rectangle.palette-bg">
+                            <Setter Property="Transitions" Value="{x:Null}"/>
+                        </Style>
+                        <Style Selector="Grid.palette-transition-suppressed Rectangle.palette-bg-gradient-base">
+                            <Setter Property="Transitions">
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:1"/>
+                                </Transitions>
+                            </Setter>
+                        </Style>
+                    </Grid.Styles>
                     <!-- ═══ Custom Gradient Mode ═══ -->
-                    <!-- Static base — always visible when gradient mode is active -->
-                    <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8">
-                        <Rectangle.Transitions>
-                            <Transitions>
-                                <DoubleTransition Property="Opacity" Duration="0:0:1" />
-                            </Transitions>
-                        </Rectangle.Transitions>
-                    </Rectangle>
+                    <!-- Static base — always visible when gradient mode is active, and a full-window
+                         surface, so it has to crossfade with everything else rather than hard-cutting
+                         underneath the layer above it.
+
+                         TWO WRONG ANSWERS PRECEDED THIS ONE, both silent. The first left it untagged,
+                         reasoning that a Fill transition "would fight the Opacity transition it
+                         already owns for the same property collection" — a Transitions collection
+                         holds transitions for different properties without conflict, so that was
+                         simply not true. The second added the Fill transition to a local
+                         <Rectangle.Transitions>, which does fire, but as a LocalValue it outranks the
+                         suppression class and could never be turned off — handing a reduced-motion
+                         user a 400ms ease on the largest surface in the app with no setting to stop
+                         it, which is worse than the snap it replaced.
+
+                         Both transitions come off the .palette-bg-gradient-base class above, where
+                         the suppressor can reach them. -->
+                    <Rectangle Classes="palette-bg-gradient-base" IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8"/>
                     <!-- Animated opacity pulse — suppressed when reduced motion is on -->
-                    <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
+                    <Rectangle Classes="palette-bg" Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
                         <Rectangle.IsVisible>
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
@@ -45,7 +113,7 @@
                     <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
                         <!-- Base dark layer -->
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
                         <!-- Animated aurora layer 1 — primary accent glow -->
                         <Rectangle Name="AuroraLayer1">
@@ -158,7 +226,7 @@
                     <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
                         <!-- 0.8 × the old 0.63 brush alpha ≈ 0.5 -->
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
                         <Rectangle Opacity="{Binding Customization.GlassOpacity}">
                             <Rectangle.Fill>
                                 <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
@@ -168,8 +236,8 @@
 
                     <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.30" />
-                        <Rectangle Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.30" />
+                        <Rectangle Classes="palette-bg" Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
                     </Panel>
 
                     <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
@@ -177,16 +245,16 @@
                  so UI elements remain readable when the desktop shows behind the window. -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
                         <!-- 0.25 × the old 0.63 brush alpha ≈ 0.16 -->
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.16" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.16" />
                         <!-- Very light accent tint to tint the frost toward the theme color -->
-                        <Rectangle Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
                     </Panel>
 
                     <!-- ═══ Solid Mode — dark base + accent tint from color picker ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
                         <!-- Accent tint driven by Glass Opacity slider so color picker affects the result -->
-                        <Rectangle Opacity="{Binding Customization.GlassOpacity}" Fill="{DynamicResource AccentPrimaryBrush}" />
+                        <Rectangle Classes="palette-bg" Opacity="{Binding Customization.GlassOpacity}" Fill="{DynamicResource AccentPrimaryBrush}" />
                     </Panel>
                 </Grid>
 

@@ -82,6 +82,7 @@
                     Hue="{Binding SeedHue, Mode=TwoWay}"
                     Chroma="{Binding SeedChroma, Mode=TwoWay}"
                     Tone="{Binding SeedTone, Mode=TwoWay}"
+                    IsDragging="{Binding IsSeedDragging, Mode=OneWayToSource}"
                     SeedCommitted="OnSeedCommitted"
                     AutomationProperties.Name="{local:Localize Custom_SeedWheel}"
                     ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>

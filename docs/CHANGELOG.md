@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Changing your palette fades instead of snapping.** Flipping light/dark, picking a preset or
+  landing on a new seed used to repaint the whole window in a single frame. It crossfades now — the
+  window, the backdrop and every card, button and status dot easing together over about
+  four-tenths of a second.
+
+  Two things deliberately do not animate. Dragging the colour wheel suppresses the fade entirely,
+  because the palette is recomputed on every frame of a drag and a crossfade there would spend its
+  whole duration chasing the pointer and arriving late; the preview tracks your drag exactly, and
+  the fade returns the moment you let go. And if you have Reduced motion on, palette changes still
+  snap — every part of this, including the background layers, is switched off by that setting
+  rather than merely shortened. (RemEx-zgtn1)
+
 ### Added
 
 - **The seven palette styles are a row of live previews now, not a dropdown.** Personalization used

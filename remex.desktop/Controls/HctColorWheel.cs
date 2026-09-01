@@ -99,6 +99,23 @@ public class HctColorWheel : Control
     /// </remarks>
     public event EventHandler? SeedCommitted;
 
+    public static readonly StyledProperty<bool> IsDraggingProperty =
+        AvaloniaProperty.Register<HctColorWheel, bool>(nameof(IsDragging));
+
+    /// <summary>
+    /// True from the pointer going down on the wheel to it letting go (or losing capture) — the same
+    /// window <see cref="_isDragging"/> already tracked internally, surfaced as a real property so
+    /// the panel can bind it out (RemEx-zgtn1). A StyledProperty rather than a plain field because
+    /// PersonalizationPanelView needs to observe it via <c>Mode=OneWayToSource</c> to suppress the
+    /// palette crossfade while a drag is live — every frame of a drag repaints the whole palette, and
+    /// letting the crossfade restart on each one would have it visibly lag behind the pointer.
+    /// </summary>
+    public bool IsDragging
+    {
+        get => GetValue(IsDraggingProperty);
+        private set => SetValue(IsDraggingProperty, value);
+    }
+
     private readonly Dictionary<int, WriteableBitmap> _discCache = new();
     private bool _isDragging;
 
@@ -172,6 +189,7 @@ public class HctColorWheel : Control
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
         _isDragging = true;
+        IsDragging = true;
         e.Pointer.Capture(this);
         Focus();
         ApplyPointer(e.GetPosition(this));
@@ -192,6 +210,7 @@ public class HctColorWheel : Control
         if (!_isDragging) return;
 
         _isDragging = false;
+        IsDragging = false;
         e.Pointer.Capture(null);
         SeedCommitted?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
@@ -205,6 +224,7 @@ public class HctColorWheel : Control
         // interaction. Without this the wheel would keep following the pointer with no button down.
         if (!_isDragging) return;
         _isDragging = false;
+        IsDragging = false;
         SeedCommitted?.Invoke(this, EventArgs.Empty);
     }
 

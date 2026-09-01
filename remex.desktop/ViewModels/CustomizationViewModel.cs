@@ -690,6 +690,34 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public bool IsGlassModeSelected => CanvasBackgroundType == "Glass";
 
+    /// <summary>
+    /// A view of <see cref="ShellViewModel.IsPaletteDragging"/>, set by the seed wheel's own
+    /// <c>IsDragging</c> (bound <c>Mode=OneWayToSource</c> in PersonalizationPanelView.axaml). Every
+    /// frame of a drag calls <see cref="ApplyAndSave"/> through <see cref="PushSeedToAccent"/>, and
+    /// this is what tells the crossfade in App.axaml / DashboardBackgroundControl to sit out those
+    /// frames rather than restart on each one and fall behind the pointer (RemEx-zgtn1). Same
+    /// shell-proxy shape as <see cref="IsReducedMotion"/> above — the flag lives on the shell because
+    /// that is what the window and the backdrop are bound to, not this screen.
+    /// </summary>
+    /// <remarks>
+    /// THE GETTER RAISES NO CHANGE NOTIFICATION OF ITS OWN, and that is sound only while the wheel's
+    /// <c>OneWayToSource</c> binding is the single writer of <c>_shell.IsPaletteDragging</c> — the
+    /// binding pushes into this setter, so nothing needs to be told about a value it just wrote
+    /// (review LOW, RemEx-zgtn1). If a second writer ever appears — a keyboard seed nudge, a
+    /// hardware injection marking itself as a drag — this property has to subscribe to the shell,
+    /// or it will silently report a stale value to anything that binds it.
+    /// </remarks>
+    public bool IsSeedDragging
+    {
+        get => _shell.IsPaletteDragging;
+        set
+        {
+            if (_shell.IsPaletteDragging == value) return;
+            _shell.IsPaletteDragging = value;
+            OnPropertyChanged();
+        }
+    }
+
     private void ApplyAndSave()
     {
         if (_isApplyingPreset) return;

@@ -156,6 +156,46 @@
             <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
+        <!-- ═══ PALETTE CROSSFADE (RemEx-zgtn1) ═══
+             OPT-IN VIA `.palette-crossfade`, NOT ON BARE `Window`. An unqualified Window selector
+             reaches every window in the app — ConfirmationDialog, PairingDialog, FileConsentDialog,
+             TrayFlyoutWindow, CommandPaletteWindow and the rest — and only MainWindow binds the
+             suppression class below. Those windows would therefore have animated for 400ms with no
+             way to turn it off, including for a user who has asked for reduced motion, where before
+             this bead they snapped. That is a NEW accessibility regression rather than an inherited
+             one, which is why the selector is opt-in (review MEDIUM).
+
+             MainWindow paints Background="Transparent" as a LOCAL value (Mica/Acrylic needs it,
+             RemEx-c437b), so the Background transition never fires there — DashboardBackgroundControl
+             carries that surface and animates it itself. Foreground does reach MainWindow, since
+             nothing else pins it. -->
+        <Style Selector="Window.palette-crossfade">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Suppression, bound onto Classes.palette-transition-suppressed by
+             ShellViewModel.SuppressPaletteTransitions (MainWindow.axaml).
+
+             WHY THIS WINS, precisely — because getting this wrong shipped a P0 once already
+             (RemEx-zrlze's dead scrim). It is NOT "the last matching style wins": Avalonia's
+             StyleInstance.GetPriority returns StyleTrigger for any style carrying an activator and
+             Style otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. Both of these
+             selectors carry a class activator, so both resolve at StyleTrigger and the tie is broken
+             by declaration order — which is the one case where "declared later wins" is the real
+             rule, and why this must stay below the style above. A style with no activator would lose
+             to either of them no matter where it sat. -->
+        <Style Selector="Window.palette-crossfade.palette-transition-suppressed">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+
+        <!-- The chrome suppressors are NOT here. They have to be the last thing in
+             Application.Styles — see the block at the very bottom of this file and the comment on
+             it. Putting them next to the Window pair, which is where they were first written, made
+             them inert. -->
         <!-- Material sets the PAPER brush as the FOREGROUND on both of these — correct against its
              own dark tooltip surface, near-white-on-near-white against ours on a light palette
              (the audit's §3 tail). Both take the app's glass treatment instead - the same trio the
@@ -1003,6 +1043,42 @@
              here (theming its Background/BorderBrush/Foreground off the app's glass palette, the same
              fix the ToolTip override above still needs) went with it rather than styling a control
              nothing shows. -->
+
+        <!-- ═══ DRAG SUPPRESSION FOR THE CHROME'S OWN COLOUR TRANSITIONS (RemEx-zgtn1) ═══
+             THIS BLOCK MUST STAY LAST IN Application.Styles. That is not tidiness, it is the only
+             thing that makes it work.
+
+             Every style that installs a chrome Transitions collection — `:is(Button).card`,
+             `.primary`, `.secondary`, `.tertiary`, `.tile`, `.swatch`, `Ellipse.status-dot`,
+             `Ellipse.status-ring` — carries a class activator, so it resolves at
+             BindingPriority.StyleTrigger. So do these. At equal priority Avalonia breaks the tie on
+             declaration order, so a suppressor declared ABOVE them is simply overwritten by them and
+             does nothing at all. These were first written next to the Window pair a thousand lines
+             up, where they were inert while looking correct, and a test asserting their mere
+             presence passed the whole time (review MEDIUM, round 2).
+
+             WHY IT MATTERS: ApplyAndSave runs on every FRAME of a seed-wheel drag. Without this,
+             every card, button, tile, swatch and status dot restarts a 200-400ms Background or Fill
+             crossfade on each frame and visibly trails the backdrop it sits on — the "preview fights
+             the animation" cost the bead names.
+
+             Nulling the whole collection is safe here: Avalonia binds a running transition at
+             BindingPriority.Animation, so removing it drops the property to its correct final value
+             rather than freezing an intermediate colour. Hover and press feedback declared in
+             view-level Styles collections is unaffected, because those are applied after
+             Application.Styles and win at equal priority. -->
+        <Style Selector="Window.palette-transition-suppressed material|Card">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Button">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Border">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Ellipse">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
     </Application.Styles>
 
     <TrayIcon.Icons>

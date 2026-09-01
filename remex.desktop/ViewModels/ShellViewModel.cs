@@ -312,7 +312,32 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
         var updated = current with { IsReducedMotion = value };
         _layoutService.RequestSave(updated);
+        OnPropertyChanged(nameof(SuppressPaletteTransitions));
     }
+
+    /// <summary>
+    /// True while the Palette Studio's seed wheel has a pointer captured (RemEx-zgtn1). Set by
+    /// <see cref="CustomizationViewModel.IsSeedDragging"/>, which mirrors
+    /// <see cref="Remex.Desktop.Controls.HctColorWheel"/>'s own <c>IsDragging</c> — every frame of a drag repaints the whole
+    /// palette, and a crossfade that restarts on every frame would lag a full <c>Duration</c> behind
+    /// the pointer instead of tracking it. NOT persisted: this is transient interaction state, not a
+    /// setting.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPaletteDragging;
+
+    partial void OnIsPaletteDraggingChanged(bool value) => OnPropertyChanged(nameof(SuppressPaletteTransitions));
+
+    /// <summary>
+    /// Whether the window/backdrop crossfade that follows a palette change should be skipped in
+    /// favour of an instant snap — either because the user asked for reduced motion, or because a
+    /// wheel drag is live and the preview needs to track the pointer with no easing. Bound onto the
+    /// suppression <c>Classes</c> on <see cref="Remex.Desktop.MainWindow"/> and
+    /// <see cref="Remex.Desktop.Controls.DashboardBackgroundControl"/> (App.axaml's
+    /// <c>Window.palette-transition-suppressed</c> / <c>Grid.palette-transition-suppressed</c>
+    /// selectors null out their <c>Transitions</c> while this is true).
+    /// </summary>
+    public bool SuppressPaletteTransitions => IsReducedMotion || IsPaletteDragging;
 
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
