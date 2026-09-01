@@ -50,6 +50,15 @@ function Stop-Remex {
 }
 
 if ($Start) {
+    # STOP FIRST, THEN BUILD. A running Remex.Agent holds an exclusive lock on the very DLLs the
+    # build copies into artifacts/bin/remex.agent/debug - Remex.Desktop.dll and
+    # Remex.Agent.Windows.dll - so building while it runs fails with MSB3026 after six retries.
+    # It fails in the WORST possible way for this script's purpose: -Start reports the build error,
+    # but the stale process is still running and still answering UI Automation, so the screenshot
+    # that follows looks fine and is of the OLD build. A visual gate that silently photographs the
+    # previous binary is worse than no gate. Measured while gating RemEx-lrxyo.
+    Stop-Remex
+
     if (-not $NoBuild) {
         Write-Host 'Building Debug (hot reload is Debug-only)...' -ForegroundColor Cyan
         & dotnet build (Join-Path $repoRoot 'remex.agent\remex.agent.csproj') -c Debug -v q --nologo
@@ -57,7 +66,6 @@ if ($Start) {
     }
     if (-not (Test-Path $debugExe)) { throw "Debug host not found at $debugExe - run without -NoBuild." }
 
-    Stop-Remex
     Start-Process $debugExe -WorkingDirectory (Split-Path -Parent $debugExe)
     Start-Sleep -Seconds 12
 
