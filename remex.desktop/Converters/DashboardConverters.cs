@@ -133,6 +133,31 @@ public class LatencyToHeightConverter : IValueConverter
 }
 
 /// <summary>
+/// Multiplies a bound double by a fixed factor parsed from the ConverterParameter, clamped to
+/// [0, 1]. Used to scale the Mica/Acrylic canvas base-tint veils by Customization.GlassOpacity
+/// (RemEx-mmrgc): "Clear" (0.01) leaves the OS backdrop almost bare, "Frosted" (1.0) reproduces
+/// the fixed ceiling passed as ConverterParameter rather than going fully opaque.
+/// </summary>
+public class MultiplyConverter : IValueConverter
+{
+    public static readonly MultiplyConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is double d &&
+            parameter is string s &&
+            double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var factor))
+        {
+            return Math.Clamp(d * factor, 0.0, 1.0);
+        }
+        return 0.0;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Converts a CornerRadius to a Thickness (padding/margin) that scales with the corner arc,
 /// ensuring card content never visually crowds the rounded edges.
 /// Formula: max(16, maxCorner * 0.7) so large radii get proportionally more breathing room.

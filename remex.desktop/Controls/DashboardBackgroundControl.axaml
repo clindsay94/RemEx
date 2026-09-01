@@ -220,13 +220,17 @@
                          HCT-solved Surface at full alpha (26 files consume it; its opacity is not
                          this control's to change), which silently turned these tints into opaque
                          sheets: Mica went 63%→100% and the backdrop vanished. Each Rectangle
-                         therefore carries the old EFFECTIVE opacity explicitly. Solid mode below is
-                         the one mode whose sheet is opaque on purpose. -->
+                         therefore carries the old EFFECTIVE opacity as a ceiling. Mica and Acrylic
+                         (RemEx-mmrgc) scale that ceiling by Customization.GlassOpacity via
+                         MultiplyConverter, so Card Opacity's "Clear" leaves the backdrop nearly bare
+                         and "Frosted" reproduces the old fixed value — Glass's tint stays a fixed
+                         literal below. Solid mode is the one mode whose sheet is opaque on purpose. -->
 
                     <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
-                        <!-- 0.8 × the old 0.63 brush alpha ≈ 0.5 -->
-                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
+                        <!-- Veil scales with Card Opacity: GlassOpacity × 0.25 ceiling (RemEx-mmrgc).
+                             Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.25. -->
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.25, FallbackValue=0.0, TargetNullValue=0.0}" />
                         <Rectangle Opacity="{Binding Customization.GlassOpacity}">
                             <Rectangle.Fill>
                                 <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
@@ -236,7 +240,9 @@
 
                     <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
-                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.30" />
+                        <!-- Veil scales with Card Opacity: GlassOpacity × 0.30 ceiling (RemEx-mmrgc).
+                             Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.30. -->
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.30, FallbackValue=0.0, TargetNullValue=0.0}" />
                         <Rectangle Classes="palette-bg" Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
                     </Panel>
 

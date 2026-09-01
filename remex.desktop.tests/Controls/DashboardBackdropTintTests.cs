@@ -34,9 +34,13 @@ namespace Remex.Desktop.Tests.Controls;
 /// </para>
 /// <para>
 /// Do not raise these to "restore" the older, heavier look without re-measuring; that is the exact
-/// change that made the feature look broken. They are NOT bound to GlassOpacity either: that
-/// slider is Card Opacity, and wiring the window backdrop to it means a user who wants readable
-/// cards (Frosted = 1.0) gets a fully opaque veil and no backdrop at all.
+/// change that made the feature look broken. Mica and Acrylic ARE now bound to GlassOpacity
+/// (RemEx-mmrgc) — but by SCALING, not raw binding: effective veil = GlassOpacity × ceiling
+/// (0.30 / 0.25), via MultiplyConverter. That preserves this same ceiling as a maximum, so
+/// "Frosted" (GlassOpacity = 1.0) reproduces exactly the old fixed value instead of going opaque;
+/// "Clear" (0.01) leaves the veil almost fully transparent. A raw binding to GlassOpacity would
+/// have broken the "Frosted = fully opaque veil, no backdrop at all" case this remark used to warn
+/// against — scaling is what avoids that. Glass mode's tint stays a fixed literal, unscaled.
 /// </para>
 /// </remarks>
 public class DashboardBackdropTintTests
@@ -44,20 +48,10 @@ public class DashboardBackdropTintTests
     private const string Avalonia = "https://github.com/avaloniaui";
 
     [Theory]
-    [InlineData("IsMica", 0.30)]
-    [InlineData("IsAcrylic", 0.25)]
     [InlineData("IsGlass", 0.16)]
     public void TheBackdropTint_StaysTranslucent(string modeConverter, double expectedOpacity)
     {
-        var control = XDocument.Parse(File.ReadAllText(Path.Combine(
-            RepoRoot(), "remex.desktop", "Controls", "DashboardBackgroundControl.axaml")));
-
-        var modePanel = control
-            .Descendants(XName.Get("Panel", Avalonia))
-            .Where(panel => (panel.Attribute("IsVisible")?.Value ?? string.Empty)
-                .Contains("StringMatchConverter." + modeConverter))
-            .Should().ContainSingle($"exactly one overlay panel should own the {modeConverter} mode")
-            .Subject;
+        var modePanel = FindModePanel(modeConverter);
 
         var tintRectangles = modePanel
             .Elements(XName.Get("Rectangle", Avalonia))
@@ -79,6 +73,62 @@ public class DashboardBackdropTintTests
                 "the tint has to stay light enough for the OS backdrop underneath to actually " +
                 "register — a heavier veil is alive and invisible, which reads as broken")
             ;
+    }
+
+    [Theory]
+    [InlineData("IsMica", 0.30)]
+    [InlineData("IsAcrylic", 0.25)]
+    public void TheBackdropTint_ScalesWithGlassOpacity(string modeConverter, double expectedCeiling)
+    {
+        var modePanel = FindModePanel(modeConverter);
+
+        var tintRectangles = modePanel
+            .Elements(XName.Get("Rectangle", Avalonia))
+            .Where(rect => (rect.Attribute("Fill")?.Value ?? string.Empty)
+                .Contains("GlassBaseDarkBrush"))
+            .ToList();
+
+        tintRectangles.Should().ContainSingle(
+            "the mode's base tint is the one GlassBaseDarkBrush rectangle in its panel");
+
+        var opacityAttribute = tintRectangles[0].Attribute("Opacity");
+        opacityAttribute.Should().NotBeNull(
+            "the veil must bind to something — an omitted Opacity inherits full alpha from the " +
+            "opaque GlassBaseDarkBrush and the OS backdrop disappears");
+
+        var opacityValue = opacityAttribute!.Value;
+        opacityValue.Should().Contain("Customization.GlassOpacity",
+            "the veil scales with the Card Opacity slider (RemEx-mmrgc)");
+        opacityValue.Should().Contain("MultiplyConverter.Instance",
+            "scaling — not a raw binding — is what keeps Frosted (1.0) from going fully opaque");
+        opacityValue.Should().Contain("FallbackValue=0",
+            "an unresolved binding skips the converter and leaves Opacity at its default of 1.0 — " +
+            "an opaque sheet — so the fallback has to be 'no veil', not 'full veil'");
+        opacityValue.Should().Contain("TargetNullValue=0",
+            "a null source value must also fall to 'no veil' rather than the property default");
+
+        var parameterMatch = System.Text.RegularExpressions.Regex.Match(
+            opacityValue, @"ConverterParameter=(?<value>[0-9.]+)");
+        parameterMatch.Success.Should().BeTrue(
+            "the ConverterParameter carries the veil's ceiling — it must be present and numeric");
+
+        double.Parse(parameterMatch.Groups["value"].Value, System.Globalization.CultureInfo.InvariantCulture)
+            .Should().BeApproximately(expectedCeiling, 0.001,
+                "the ceiling is what Frosted (GlassOpacity = 1.0) reproduces — it must match the " +
+                "measured maximum veil, not drift from it");
+    }
+
+    private static XElement FindModePanel(string modeConverter)
+    {
+        var control = XDocument.Parse(File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Controls", "DashboardBackgroundControl.axaml")));
+
+        return control
+            .Descendants(XName.Get("Panel", Avalonia))
+            .Where(panel => (panel.Attribute("IsVisible")?.Value ?? string.Empty)
+                .Contains("StringMatchConverter." + modeConverter))
+            .Should().ContainSingle($"exactly one overlay panel should own the {modeConverter} mode")
+            .Subject;
     }
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")

@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one: the hardware colour is a live overlay for as long as sync is on, and what you chose is what
   is saved. (RemEx-w6c4s)
 
+- **The Card Opacity slider now reaches the Mica and Acrylic canvas too.** Those two modes used
+  to sit behind a fixed veil the slider never touched, so Clear and Frosted looked the same on the
+  canvas and only the cards changed. The veil follows the slider now, scaled so that Frosted lands
+  exactly where the fixed value used to be and Clear leaves the Windows backdrop almost bare. The
+  ceiling is deliberate: the old constants were measured as the heaviest veil the backdrop still
+  shows through, and the slider cannot push past them. Glass mode is unchanged. (RemEx-mmrgc)
+
 - **Changing your palette fades instead of snapping.** Flipping light/dark, picking a preset or
   landing on a new seed used to repaint the whole window in a single frame. It crossfades now — the
   window, the backdrop and every card, button and status dot easing together over about
