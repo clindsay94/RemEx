@@ -15,9 +15,11 @@ namespace Remex.Desktop.Views;
 
 public partial class AppLauncherView : UserControl
 {
-    // Must match the WrapPanel's ItemWidth/ItemHeight in AppLauncherView.axaml.
-    private const double ItemWidth = 160;
-    private const double ItemHeight = 160;
+    // Must match the WrapPanel's ItemWidth/ItemHeight in AppLauncherView.axaml. Guarded by
+    // LauncherTileSizeTests: drift here does not throw, it silently drops a dragged tile in the
+    // wrong slot, and the offset grows with every row down the grid.
+    internal const double ItemWidth = 176;
+    internal const double ItemHeight = 176;
     private const double MouseDragThreshold = 8;
     private const double TouchLongPressMoveThreshold = 10;
     private const int TouchLongPressDelayMs = 250;

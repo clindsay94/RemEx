@@ -16,6 +16,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly ILauncherStorageService _storageService;
     private readonly RemexSavefileService? _savefileService;
+    private readonly IIconExtractionService? _iconService;
     private readonly Action<System.Collections.Generic.List<AppEntry>> _launcherEntriesHandler;
 
     public ConnectionViewModel Connection { get; }
@@ -50,11 +51,14 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => NotifyFilterChanged();
 
-    public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService, RemexSavefileService? savefileService = null)
+    public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService, RemexSavefileService? savefileService = null, IIconExtractionService? iconService = null)
     {
         Connection = connection;
         _shell = shell;
         _storageService = storageService;
+        // Optional: absent in tests and on any platform without an icon extractor registered, in
+        // which case the stored icon is left exactly as it was found.
+        _iconService = iconService;
         // Optional: only populated once WP-A's savefile service is registered in DI. Used solely
         // to nudge the rolling auto-snapshot after a local (unconnected) launcher save.
         _savefileService = savefileService;
@@ -77,7 +81,147 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     {
         // If connected, host will sync. Fallback to local storage
         var entries = await _storageService.LoadEntriesAsync();
-        Launchers = new ObservableCollection<AppEntry>(NormalizeEntries(entries));
+        var normalized = NormalizeEntries(entries).ToList();
+
+        var upgraded = UpgradeLowResolutionIcons(normalized, out var changed);
+        Launchers = new ObservableCollection<AppEntry>(upgraded);
+
+        if (changed)
+        {
+            await SaveLaunchersAsync();
+        }
+    }
+
+    /// <summary>
+    /// Minimum stored icon edge, in pixels, that the 80px launcher tile can draw without visible
+    /// upscaling. Mirrors <c>DesktopIconExtractionService.LowResolutionIconEdge</c>; duplicated as a
+    /// literal because remex.desktop cannot reference the platform-specific agent assembly.
+    /// </summary>
+    private const int MinimumIconEdge = 64;
+
+    /// <summary>
+    /// Re-extracts any stored icon that is too small for the tile it is drawn in.
+    /// </summary>
+    /// <remarks>
+    /// Every entry added before RemEx-u4244 carries a baked 32x32 PNG, because the old Windows
+    /// extractor could not produce anything else. Fixing the extractor alone would leave those
+    /// entries blurry forever — the savefile is the source of truth and nothing re-reads the
+    /// executable. So the size is checked on load and a stale icon is refreshed in place. Entries
+    /// whose target no longer exists, or whose re-extraction yields nothing better, keep the icon
+    /// they have rather than losing it.
+    /// </remarks>
+    private IEnumerable<AppEntry> UpgradeLowResolutionIcons(List<AppEntry> entries, out bool changed)
+    {
+        changed = false;
+
+        if (_iconService is null)
+            return entries;
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+
+            if (string.IsNullOrWhiteSpace(entry.TargetPath) || !File.Exists(entry.TargetPath))
+                continue;
+
+            if (!NeedsSharperIcon(entry.IconBase64))
+                continue;
+
+            string? refreshed;
+            try
+            {
+                refreshed = _iconService.ExtractIconAsBase64(entry.TargetPath);
+            }
+            catch
+            {
+                // A launcher entry is still usable with a soft icon; it is not usable if a throwing
+                // extractor takes the whole page down on load.
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(refreshed) || refreshed == entry.IconBase64)
+                continue;
+
+            if (NeedsSharperIcon(refreshed))
+                continue;
+
+            entries[i] = entry with { IconBase64 = refreshed };
+            changed = true;
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Encoded bytes per pixel below which a stored icon is mostly empty canvas rather than artwork.
+    /// </summary>
+    /// <remarks>
+    /// Measured against this machine's 50-entry launcher: the two parked-canvas icons came in at
+    /// 0.010 and 0.011 bytes per pixel, while the leanest genuine 256px icon — a flat two-tone glyph —
+    /// was 0.053. The threshold sits in that gap with roughly a factor of two either side, so it is
+    /// not balanced on a knife edge.
+    /// </remarks>
+    private const double MinimumIconBytesPerPixel = 0.025;
+
+    /// <summary>
+    /// True when a stored icon is worth re-extracting: unreadable, too small, or mostly empty.
+    /// </summary>
+    /// <remarks>
+    /// SIZE ALONE IS NOT ENOUGH, and assuming it was is what left 7-Zip and FastCopy looking wrong
+    /// after the first pass. The shell hands back a full 256x256 bitmap for a file that has no 256px
+    /// icon variant, with the small artwork parked in a corner and everything else transparent.
+    /// Those entries measure 256 wide and sail past a dimension check, while rendering as a
+    /// thumbnail-sized glyph in the corner of an otherwise empty tile.
+    /// </remarks>
+    internal static bool NeedsSharperIcon(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64))
+            return true;
+
+        if (TryGetPngEdge(base64) is not int edge)
+            return true;
+
+        if (edge < MinimumIconEdge)
+            return true;
+
+        // Base64 carries 3 bytes per 4 characters; exact enough for a density ratio.
+        var encodedBytes = base64.Length / 4.0 * 3.0;
+        return encodedBytes < edge * (double)edge * MinimumIconBytesPerPixel;
+    }
+
+    /// <summary>
+    /// Reads the pixel width out of a base64 PNG's IHDR chunk, or null if it is not a decodable PNG.
+    /// </summary>
+    /// <remarks>
+    /// Header-only on purpose. This runs over every entry on every launcher load, and fully decoding
+    /// each bitmap just to read two numbers would put image decoding on the UI startup path.
+    /// </remarks>
+    internal static int? TryGetPngEdge(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64))
+            return null;
+
+        // 8-byte signature + 4-byte length + "IHDR" + 4-byte width + 4-byte height = 24 bytes.
+        Span<byte> header = stackalloc byte[24];
+        Span<char> chars = stackalloc char[32];
+        var prefixLength = Math.Min(32, base64.Length);
+        base64.AsSpan(0, prefixLength).CopyTo(chars);
+
+        // Whole 4-char groups only: base64 decodes in quartets, and a partial group is not decodable.
+        if (!System.Convert.TryFromBase64Chars(chars[..(prefixLength / 4 * 4)], header, out var written) || written < 24)
+            return null;
+
+        ReadOnlySpan<byte> pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        if (!header[..8].SequenceEqual(pngSignature))
+            return null;
+
+        if (!header.Slice(12, 4).SequenceEqual("IHDR"u8))
+            return null;
+
+        var width = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.Slice(16, 4));
+        var height = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.Slice(20, 4));
+
+        return width <= 0 || height <= 0 ? null : Math.Min(width, height);
     }
 
     public async Task SaveLaunchersAsync()

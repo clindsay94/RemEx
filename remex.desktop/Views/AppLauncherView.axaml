@@ -76,7 +76,13 @@
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" ItemWidth="160" ItemHeight="160" />
+                        <!-- 176, up from 160 (RemEx-u4244). The 80px icon plus its label no longer
+                             fits the old cell: 160 leaves the button 102px of inner height for
+                             104px of content, so the label clips. MUST stay in step with
+                             AppLauncherView.axaml.cs ItemWidth/ItemHeight — LauncherTileSizeTests
+                             asserts the two agree, because a drift here misplaces every drop target
+                             during a drag-to-rearrange without anything throwing. -->
+                        <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="176" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
@@ -93,7 +99,10 @@
                                 <!-- Main Launch Button (Top Area) -->
                                 <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
-                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        <!-- 80px, up from 64 (RemEx-u4244). The source is now a 256px
+                                             shell icon rather than a 32px one, so the art can carry
+                                             the extra weight inside the same 160x160 tile. -->
+                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="80" Height="80" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
                                         <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
                                     </Grid>

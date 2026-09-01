@@ -263,6 +263,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **App Launcher icons are sharp now** (RemEx-u4244). Every tile was drawn from a 32x32 bitmap,
+  because the Windows extractor used `Icon.ExtractAssociatedIcon` — an API that always returns
+  32x32 no matter what the executable actually contains. Blowing that up into the tile is where
+  the blur came from, and nothing failed along the way to point at it: extraction succeeded, it
+  just produced a small image. It now reads the shell's system image list, which is where the
+  256px variant most modern applications ship actually lives. On a 50-entry launcher the stored
+  icons went from 32px to 128-256px.
+
+  Two things follow from that. Icons already saved are re-extracted on load, since the savefile is
+  the source of truth and nothing re-reads the executable — without that, existing entries would
+  have stayed blurry forever. And an entry whose target no longer exists keeps the icon it has
+  rather than losing it. The tile art grew from 64px to 80px, with the grid cell going 160 to 176
+  to fit it.
+
+  One wrinkle worth naming, because it looked like a bug in its own right: Windows hands back a
+  full 256x256 bitmap even for a file whose icon tops out at 48px, parking the small artwork in a
+  corner and leaving the rest transparent. Stored as-is that renders as a thumbnail adrift in an
+  empty card. Those are cropped down to the artwork.
+
 - **Sensor alerts that fire while you are on another screen are visible now.** The app has been
   counting them all along and had nowhere to show the number, so an alert raised while you were in
   Files or Settings simply never reached you. The Sensors item in the sidebar carries the count,
