@@ -172,6 +172,63 @@ public partial class ShellView : UserControl
     private bool _pageHostSequenced;
 
     /// <summary>
+    /// Re-seeds the imperative half of this view after a XAML hot reload (RemEx-1us2w).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// DEVELOPMENT-ONLY, and dead code in a Release build — nothing in this repo calls it. HotAvalonia
+    /// discovers it BY NAME: any parameterless instance method called <c>InitializeComponentState</c>
+    /// is re-run on a reload. Named rather than attributed on purpose, so this file takes no
+    /// compile-time dependency on the <c>HotAvalonia</c> package, which is
+    /// <c>PrivateAssets="All"</c> and gated to Debug — a <c>[AvaloniaHotReload]</c> attribute here
+    /// would be a Release compile error the day someone builds without it.
+    /// </para>
+    /// <para>
+    /// WHY IT IS NEEDED AT ALL. A hot reload rebuilds this control's visual tree without re-running
+    /// the constructor, so <see cref="_pageHost"/>, <see cref="_immersiveHost"/> and
+    /// <see cref="_navList"/> are left pointing at the OLD controls, which are no longer in the tree.
+    /// <c>PageHost.Content</c> is deliberately unbound in XAML (see <see cref="PageHostSequencer"/>),
+    /// so the fresh host starts empty and nothing ever fills it: every reload of ShellView.axaml
+    /// produced a shell with working chrome and a blank content area. That is a hot-reload artifact,
+    /// not the RemEx-b8dxy covered-shell bug, but it looks identical from the outside — which is
+    /// exactly why it is worth a named method and this comment instead of a silent re-resolve.
+    /// </para>
+    /// <para>
+    /// The <c>_pageHostSequenced</c> / <c>_toastHostInstalled</c> / <c>_bootSplashHooked</c> guards
+    /// stay SET. They exist to keep reattach from installing a second watchdog timer or a second
+    /// toast sink, and a reload is a reattach as far as those are concerned. What does have to be
+    /// redone is the part bound to specific control instances: the transitions and the
+    /// TransitionCompleted subscription live on controls that just got replaced.
+    /// </para>
+    /// </remarks>
+    private void InitializeComponentState()
+    {
+        _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
+        _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
+        _navList = this.FindControl<ListBox>("NavList");
+
+        if (_pageHost != null)
+        {
+            _pageHost.PageTransition = NewPageTransition(reducedMotion: false);
+
+            // Re-subscribed, not guarded: the previous subscription is on the control this one
+            // replaced, so it can never fire again. Posted for the same HideOldPresenter ordering
+            // reason OnLoaded documents.
+            _pageHost.TransitionCompleted += (_, _) => Dispatcher.UIThread.Post(FlushPageHost);
+        }
+
+        if (_immersiveHost != null)
+            _immersiveHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+
+        if (DataContext is ShellViewModel vm)
+        {
+            ApplyPageTransition(vm);
+            RequestPageView(vm.CurrentView);
+            ResyncNavListSelection();
+        }
+    }
+
+    /// <summary>
     /// Routes a navigation through <see cref="PageHostSequencer"/> instead of straight at the host.
     /// </summary>
     private void RequestPageView(object? view)

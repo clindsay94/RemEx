@@ -37,6 +37,19 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="QRCoder" />
+
+    <!-- HotAvalonia (RemEx-1us2w). Every .axaml in this repo lives in THIS project, so it is
+         referenced here as well as in the startup project (remex.agent) — HotAvalonia's README asks
+         for both, and without the reference here the controls in this assembly are not registered
+         for reload. PrivateAssets="All" keeps it out of anything that consumes this library.
+
+         NOT `Publish="True"`, despite the README's snippet showing it: that attribute exists for the
+         remote-filesystem (Android/iOS) flow, where the package genuinely has to ship inside the
+         deployed app. This is a desktop-local build, so publishing it would put a development-only
+         dependency into C:\Program Files\RemEx for no benefit. -->
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" PrivateAssets="All" />
+    <PackageReference Include="HotAvalonia" PrivateAssets="All" />
+    <PackageReference Include="MonoMod.RuntimeDetour" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

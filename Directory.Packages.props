@@ -110,6 +110,22 @@
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
 
+    <!-- HotAvalonia — XAML hot reload, DEVELOPMENT ONLY (RemEx-1us2w).
+         Referenced with PrivateAssets="All" and gated by <HotAvalonia>, which HotAvalonia.targets
+         defaults to Debug-only. Nothing from these two packages reaches a Release publish, which is
+         what scripts/update-local-install.ps1 ships.
+
+         Avalonia.Markup.Xaml.Loader is the runtime XAML parser and MUST track the Avalonia version
+         exactly (12.1.1). HotAvalonia bundles a deliberately old copy of it to support every
+         Avalonia back to 11.0, and its own README says to bump it manually on the next major —
+         which 12.x is. Left unpinned, hot reload parses this repo's XAML with an 11.x parser.
+
+         HotAvalonia 3.1.4 is not merely "latest": 3.1.1 is the release that fixed Avalonia 12.0.4
+         support (Kira-NT/HotAvalonia#58), so anything below that line does not work here at all. -->
+    <PackageVersion Include="Avalonia.Markup.Xaml.Loader" Version="12.1.1" />
+    <PackageVersion Include="HotAvalonia" Version="3.1.4" />
+    <PackageVersion Include="MonoMod.RuntimeDetour" Version="25.3.6" />
+
     <!-- Testing Packages -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <!-- Pinned FluentAssertions (7.0.0 line - v8 has license change) -->

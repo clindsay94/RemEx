@@ -110,6 +110,18 @@
     <PackageReference Include="Tmds.DBus.Protocol" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+
+    <!-- HotAvalonia (RemEx-1us2w). This is the STARTUP project — OutputType WinExe — so this is the
+         reference that actually turns hot reload on; HotAvaloniaAutoEnable defaults to true for an
+         exe and calls .UseHotReload() on the AppBuilder for us, so Program.cs needs no change.
+
+         <HotAvalonia> defaults to Debug-only and is left at that default deliberately. The README's
+         own warning is "please, do not enable it unconditionally", and Release is what
+         scripts/update-local-install.ps1 publishes into C:\Program Files\RemEx. Hot reload is a
+         development loop, not a shipped feature. -->
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" PrivateAssets="All" />
+    <PackageReference Include="HotAvalonia" PrivateAssets="All" />
+    <PackageReference Include="MonoMod.RuntimeDetour" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
