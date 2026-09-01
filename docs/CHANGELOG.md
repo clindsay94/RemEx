@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A colour picked up from your RGB hardware now reseeds the whole palette instead of repainting
+  one swatch.** Hardware sync used to overwrite the accent colour and nothing else, leaving the
+  other fifty-odd colours the app derives — surfaces, text, borders, containers — sitting on your
+  old seed. The result agreed with itself nowhere. A hardware colour is treated as a seed now, so
+  everything moves together and the change crossfades exactly like picking a seed by hand does.
+
+  Turning hardware sync off puts your own colour back. Your seed is never overwritten by a hardware
+  one: the hardware colour is a live overlay for as long as sync is on, and what you chose is what
+  is saved. (RemEx-w6c4s)
+
 - **Changing your palette fades instead of snapping.** Flipping light/dark, picking a preset or
   landing on a new seed used to repaint the whole window in a single frame. It crossfades now — the
   window, the backdrop and every card, button and status dot easing together over about
