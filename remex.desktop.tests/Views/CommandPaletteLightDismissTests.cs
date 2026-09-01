@@ -81,6 +81,41 @@ public class CommandPaletteLightDismissTests
             "the click-outside path has to call the same DismissCommand Esc uses, not Close() directly");
     }
 
+    [Fact]
+    public void ClickOutsideDismissal_IsPosted_NotRunInsideTheDeactivationNotification()
+    {
+        // RemEx-27a0s. Deactivated is raised from inside WM_ACTIVATE(WA_INACTIVE) — Windows is
+        // part-way through handing activation to whatever was clicked. Closing the window there
+        // aborts that transfer, and Windows falls back to the next top-level window in the GLOBAL
+        // z-order rather than the intended target. Topmost="True" makes the owner an unlikely
+        // fallback, so the winner is usually an unrelated application.
+        //
+        // Measured before the fix, with the palette open and the click landing on empty RemEx
+        // background: WindowFromPoint returned RemEx's own main window HWND, the palette closed,
+        // and GetForegroundWindow came back as WindowsTerminal. Nothing fell through in the
+        // hit-testing sense — the ACTIVATION did, which is why it reads to a user as "my click went
+        // through the app".
+        //
+        // There is no headless render or window harness in this repo, so nothing here can open the
+        // palette and click beside it. The guard has to be the shape of the handler.
+        var codeBehind = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CommandPaletteWindow.axaml.cs"));
+        var onDeactivated = ExtractMethod(codeBehind, "OnDeactivated");
+
+        onDeactivated.Should().MatchRegex(@"Dispatcher\.UIThread\.Post\(",
+            "the dismiss has to be queued so Windows can finish the activation transfer first");
+        onDeactivated.Should().MatchRegex(@"DispatcherPriority\.Background",
+            "Normal priority still runs ahead of the input and layout work the activation queues — " +
+            "Background is what actually lands after it");
+
+        // The posted callback can outlive the window: executing an entry raises CloseRequested and
+        // deactivates, and a destructive entry's confirmation dialog takes activation while the
+        // palette is still up. Both would otherwise dismiss a window that is already closing.
+        onDeactivated.Should().Contain("_closing",
+            "the posted callback has to bail out if the window started closing while it was queued");
+        codeBehind.Should().MatchRegex(@"protected override void OnClosing\(WindowClosingEventArgs e\)\s*\{\s*_closing = true;",
+            "_closing has to be set from OnClosing, or the guard never trips");
+    }
+
     private static string ShellViewModelSource([CallerFilePath] string thisSourceFile = "")
         => File.ReadAllText(Path.Combine(RepoRoot(thisSourceFile), "remex.desktop", "ViewModels", "ShellViewModel.cs"));
 
