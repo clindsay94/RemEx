@@ -44,6 +44,20 @@ namespace Remex.Desktop.Tests.Views;
 /// <c>Content</c>.
 /// </para>
 /// <para>
+/// THE BLANK SHELL (RemEx-b8dxy, P0). Shipped, and this file's own test is what shipped it. The
+/// original guard asserted that no <c>Background=</c> attribute appears on the SideSheet element,
+/// reasoning correctly that a colour there reaches <c>PART_RootBorder</c> and paints the whole
+/// shell — and missing that leaving it UNSET does not paint nothing, it lets Material's opaque
+/// <c>MaterialPaperBrush</c> default reach the same border. With <c>Grid.RowSpan="3"</c> and a
+/// declaration position after the app bar, the drawer and the page host, the CLOSED sheet covered
+/// all three: the app rendered one flat #303030 rectangle with only the gear FAB on it. Layout and
+/// hit-testing were completely intact the whole time, so it presented as pure silence — no
+/// exception, no log line, and 2939 green tests. <see cref="TheSideSheetPaintsNothingOnItself_ButMustSaySoExplicitly"/>
+/// now pins <c>Background="Transparent"</c> as required, not merely permitted. The general lesson,
+/// which is the same one round 2's priority trap taught on a different axis: before deciding a
+/// property should be absent, check what the THEME puts there when you are absent.
+/// </para>
+/// <para>
 /// A source scan, not a behavioural test — there is no headless Avalonia harness in this repo (see
 /// <see cref="ShellNavListTests"/>, <see cref="ShellDrawerOverlayTests"/>), so nothing here can
 /// actually open the sheet, press Esc, and look. What this proves is that the wiring exists and is
@@ -165,16 +179,42 @@ public class ShellSettingsSideSheetTests
     }
 
     [Fact]
-    public void TheSideSheetDoesNotSetBackgroundOrBorderBrushOnItself()
+    public void TheSideSheetPaintsNothingOnItself_ButMustSaySoExplicitly()
     {
-        // Those attributes template-bind to PART_RootBorder, which wraps BOTH the sliding panel AND
-        // the scrim's remainder - setting them on the control paints/borders the entire shell rather
-        // than the 440px panel (review round 1, MEDIUM). They belong on PART_SideSheet specifically.
+        // RemEx-b8dxy, P0. This test previously asserted the OPPOSITE - that no Background=
+        // attribute appears on the control at all - and that is what shipped a shell which rendered
+        // as one flat grey rectangle.
+        //
+        // Both halves of the reasoning are true and they are NOT the same instruction:
+        //
+        //   1. A real COLOUR here is wrong. Background/BorderBrush template-bind to
+        //      PART_RootBorder, which wraps BOTH the sliding panel AND the scrim's remainder, so a
+        //      colour on the control paints/borders the entire shell rather than the 440px panel
+        //      (review round 1, MEDIUM). Those belong on PART_SideSheet.
+        //
+        //   2. Leaving it UNSET is also wrong, and worse. Unset does not mean "paints nothing" - it
+        //      means Material.Avalonia 3.19.0's ControlTheme default flows into that same
+        //      PART_RootBorder, and that default is an opaque MaterialPaperBrush (#303030, the exact
+        //      brush MainWindow.axaml and Themes/Chrome/WindowChrome.axaml already had to
+        //      neutralise). Because this control is Grid.Row="0" Grid.RowSpan="3" and is declared
+        //      AFTER the app bar, the drawer and the page host, the CLOSED sheet painted that opaque
+        //      sheet over all three. Measured on the live window: a dead-flat #FF303030 everywhere
+        //      except the gear FAB and the snackbar host, the only later siblings.
+        //
+        // Transparent is the one value that satisfies both. It also keeps PART_RootBorder
+        // hit-testable, which null would not - the same reason WindowChrome.axaml's PART_TitleBar is
+        // Transparent rather than null.
+        //
+        // There is no headless render in this repo, so nothing here can see the paint. The guard has
+        // to be the attribute itself.
         var sheetOpenTag = Regex.Match(ShellMarkup(), @"<material:SideSheet\b[^>]*>", RegexOptions.Singleline);
         sheetOpenTag.Success.Should().BeTrue("the SideSheet element has to exist");
 
-        sheetOpenTag.Value.Should().NotMatchRegex(@"\bBackground=",
-            "Background on the control itself paints the whole shell, not just the panel");
+        sheetOpenTag.Value.Should().MatchRegex(@"\bBackground=""Transparent""",
+            "an unset Background lets Material's opaque MaterialPaperBrush default reach " +
+            "PART_RootBorder, which spans all three shell rows - that is the RemEx-b8dxy blank shell");
+        sheetOpenTag.Value.Should().NotMatchRegex(@"\bBackground=""(?!Transparent"")",
+            "any Background other than Transparent paints the whole shell, not just the panel");
         sheetOpenTag.Value.Should().NotMatchRegex(@"\bBorderBrush=",
             "BorderBrush on the control itself borders the whole shell, not just the panel");
     }

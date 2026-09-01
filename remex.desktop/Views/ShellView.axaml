@@ -851,12 +851,32 @@
                  false", so the header keeps the exact markup (title/subtitle stack, accessible close
                  button) the old panel had.
 
-                 Background/BorderBrush are deliberately NOT set here - the template routes both to
+                 The PANEL's Background/BorderBrush are not set here - the template routes both to
                  PART_RootBorder, which wraps the WHOLE control including the scrim's remainder area,
-                 so setting them on the control itself would paint (and border) the entire shell, not
-                 the 440px panel. They're set on PART_SideSheet specifically instead, in
-                 UserControl.Styles below. -->
+                 so a real colour on the control would paint (and border) the entire shell, not the
+                 440px panel. They're set on PART_SideSheet specifically instead, in
+                 UserControl.Styles below.
+
+                 Background="Transparent" IS still required, and is the single most load-bearing
+                 attribute on this element (RemEx-b8dxy, P0). "Do not set a colour" is NOT the same
+                 instruction as "leave it unset": unset means Material.Avalonia 3.19.0's own
+                 ControlTheme default flows into that same PART_RootBorder, and that default is an
+                 OPAQUE MaterialPaperBrush - a dead-flat #303030, the exact brush MainWindow.axaml
+                 and Themes/Chrome/WindowChrome.axaml already had to neutralise for the window
+                 decorations. Because this control is Grid.Row="0" Grid.RowSpan="3" it spans the app
+                 bar, the drawer AND the page host, and it is declared AFTER all three, so the closed
+                 sheet painted that opaque sheet over the whole shell: the app rendered a blank grey
+                 rectangle with nothing on it but the gear FAB and the snackbar host, which are the
+                 only later siblings. Everything still laid out and still hit-tested correctly (the
+                 UIA tree was completely intact) - it was purely covered, which is why it presented
+                 as the usual RemEx silent failure with no exception and no log line.
+
+                 Transparent rather than null on purpose, matching WindowChrome.axaml's PART_TitleBar
+                 for the same reason: null makes PART_RootBorder untestable for hit purposes and
+                 would break the scrim's click-to-dismiss, Transparent keeps it hit-testable while
+                 painting nothing. -->
             <material:SideSheet Grid.Row="0" Grid.RowSpan="3" Name="SettingsSideSheet"
+                                 Background="Transparent"
                                  SideSheetOpened="{Binding IsSettingsPanelOpen, Mode=TwoWay}"
                                  SideSheetDirection="Right"
                                  SideSheetWidth="440"

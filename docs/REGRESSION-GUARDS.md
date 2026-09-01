@@ -489,6 +489,43 @@ control traffic.
 
 ---
 
+## Desktop shell — Material.Avalonia template parts
+
+### An unset property is not a neutral property (INVARIANT)
+
+`remex.desktop/Views/ShellView.axaml:859` — `material:SideSheet#SettingsSideSheet` **must** carry
+`Background="Transparent"`.
+
+The sheet spans the whole shell (`Grid.Row="0" Grid.RowSpan="3"`) and is declared *after* the app
+bar, the drawer and the page host. `Background` template-binds to `PART_RootBorder`, which wraps the
+sliding panel **and** the scrim's remainder — so a real colour there paints the entire shell rather
+than the 440px panel. That much was already known, and the guard written for it asserted that no
+`Background=` attribute appears on the element at all.
+
+That guard shipped a blank app (RemEx-b8dxy, P0). **Absent is not the same as transparent**: with the
+attribute gone, Material.Avalonia 3.19.0's `ControlTheme` default reaches the same
+`PART_RootBorder`, and that default is an opaque `MaterialPaperBrush` — a dead-flat `#303030`, the
+same brush `MainWindow.axaml:9` and `Themes/Chrome/WindowChrome.axaml:7` already had to neutralise
+for the window decorations. The *closed* sheet therefore covered the app bar, the drawer and the
+page host. Measured on the live window: uniform `#FF303030` everywhere except the gear FAB and the
+snackbar host, which are the only siblings declared later.
+
+Layout, focus and hit-testing were untouched — the UI Automation tree was completely intact, with
+every nav item and page element present at the right coordinates. The failure was purely paint, so
+there was no exception, no log line, and 2939 green tests. `remex.desktop.tests` has **no headless
+render**, so no test in this repo can see a covered shell; the attribute itself is the only guard,
+pinned by `ShellSettingsSideSheetTests.TheSideSheetPaintsNothingOnItself_ButMustSaySoExplicitly`.
+
+`Transparent` rather than `null`: `null` stops `PART_RootBorder` hit-testing and breaks the scrim's
+click-to-dismiss. Same reason `WindowChrome.axaml:37`'s `PART_TitleBar` is `Transparent`.
+
+**The general rule for every Material.Avalonia template-part override:** before concluding a
+property should be *absent*, check what the theme puts there in your absence. This is the same trap
+as the scrim's priority bug (`ShellView.axaml:142`) on a different axis — there the override lost to
+an activated selector, here the absence lost to a plain default.
+
+---
+
 ## Security
 
 > **These surfaces are tightly coupled between `remex.agent` and `remex.android`. Changes here need
