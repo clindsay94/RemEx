@@ -217,6 +217,31 @@ public class HardwareAccentInjectionTests
             "turning sync off must stop the poller AND restore the user's seed, not just stop polling");
     }
 
+    [Fact]
+    public void ApplyingTheSameHardwareColourTwice_AppliesOnce()
+    {
+        // NO CustomizationApplied EVENT EXISTS ON ThemeService to subscribe to (checked before
+        // writing this), so "did a second apply actually happen" is observed the same way
+        // ApplyCustomizationCore_DerivesTheWholePaletteFromTheInjectedSeed does: ApplyCustomizationCore
+        // (ThemeService.cs:355) always does `new SolidColorBrush(palette.Primary)` when it runs, so
+        // the AccentPrimaryBrush *instance* changes on every real apply and stays the exact same
+        // reference when the dedupe guard (ThemeService.cs:~635) skips the second call.
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        theme.ApplyCustomization(UserSettings("#224466"));
+        var color = Color.FromRgb(0xAA, 0x33, 0x66);
+
+        theme.ApplyHardwareAccent(color);
+        var brushAfterFirstApply = theme.GetOverrideResource("AccentPrimaryBrush");
+
+        theme.ApplyHardwareAccent(color);
+        var brushAfterSecondCall = theme.GetOverrideResource("AccentPrimaryBrush");
+
+        brushAfterSecondCall.Should().BeSameAs(brushAfterFirstApply,
+            "a second call with the identical colour must be deduped, not regenerate the whole " +
+            "palette and restart RemEx-zgtn1's crossfade for no visible change");
+        theme.HardwareAccentOverride.Should().Be(color);
+    }
+
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }
