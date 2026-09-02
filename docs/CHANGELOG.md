@@ -61,6 +61,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The background gradient was barely a gradient.** Since the palette started being generated from
+  your seed, the desktop backdrop had been near-black to black with a faint tint in one corner
+  instead of the sweep it is meant to be. The three stops were being taken two tone steps apart, and
+  two of the three off the greyest palette the seed produces, so there was nothing to sweep between.
+
+  The stops are spread much further apart now, and the middle one comes off a palette with a
+  different hue, so the backdrop sweeps colour and not just brightness — the way the hand-authored
+  one it replaced did. This applies to every seed, every variant and both light and dark. Palettes
+  built from a deliberately colourless variant still separate; they do it on brightness alone,
+  because there is no hue there to sweep. (RemEx-bv9bu)
+
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and
   from then on every volume and transport button did nothing for the rest of the app's life. The
