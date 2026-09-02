@@ -1288,7 +1288,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Ваш ПК</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Розгляньте можливість поставити зірочку на GitHub!</value>
+    <value>Розгляньте можливість поставити зірочку на GitHub!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Відкритий код та безкоштовно. (будь ласка, поставте зірочку, вони тримають мого кота!)</value>

@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings is on the Material type scale now. Every size on the page comes from the shared
   vocabulary instead of a number on the element. Nothing it does has changed. (RemEx-a6xnd)
 
+- About is on the Material type scale now, with a ColorZone hero for the logo and version and
+  Material Separator dividers in place of the hand-rolled ones. Nothing it does has changed.
+  (RemEx-ep10v)
+
 - The dashboard is on the Material type scale now. Every size on it comes from the shared
   vocabulary instead of a number on the element, and the footer's hard-coded shadow is gone.
   Nothing it does has changed. (RemEx-oszfm)

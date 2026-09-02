@@ -46,10 +46,12 @@ public class TypographyVocabularyTests
     /// the RemEx-a6xnd sweep of <c>SettingsView.axaml</c> (63 of its 64 sites moved onto the Theme
     /// type scale; the one TextBox has no matching ControlTheme and stays inline) landed after the
     /// RemEx-enbqf sweep of <c>RemoteView.axaml</c> (27 sites; its SelectableTextBlock stays
-    /// inline). 458 (the RemEx-oszfm baseline) minus both sweeps is 368. LOWER THIS when a Phase 4
-    /// view bead sweeps a screen. Never raise it.
+    /// inline). 458 (the RemEx-oszfm baseline) minus both sweeps is 368. Re-pinned to 350 on
+    /// 2026-09-02 after the RemEx-ep10v sweep of <c>AboutView.axaml</c> (18 sites; its three
+    /// SelectableTextBlocks stay inline). LOWER THIS when a Phase 4 view bead sweeps a screen.
+    /// Never raise it.
     /// </summary>
-    private const int InlineFontSizeBaseline = 368;
+    private const int InlineFontSizeBaseline = 350;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

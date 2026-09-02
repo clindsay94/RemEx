@@ -4,7 +4,8 @@
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
-    xmlns:controls="clr-namespace:Remex.Desktop.Controls" xmlns:views="using:Remex.Desktop.Views" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
+    xmlns:controls="clr-namespace:Remex.Desktop.Controls" xmlns:views="using:Remex.Desktop.Views"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
 
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
@@ -23,13 +24,19 @@
                 <StackPanel Width="{Binding #AboutCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,24,16">
 
                     <!-- App Logo and Name -->
-                    <StackPanel Spacing="12" HorizontalAlignment="Center">
-                        <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
-                            <controls:BrandMark/>
-                        </Border>
+                    <material:ColorZone Mode="PrimaryMid" assists:ShadowAssist.ShadowDepth="Depth0"
+                                         CornerRadius="{DynamicResource CardCornerRadius}" Padding="16">
+                        <StackPanel Spacing="12" HorizontalAlignment="Center">
+                            <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
+                                <controls:BrandMark/>
+                            </Border>
 
-                        <TextBlock Classes="page-subtitle" Text="{local:Localize About_Tagline}" HorizontalAlignment="Center"/>
-                    </StackPanel>
+                            <TextBlock Text="{local:Localize About_Tagline}" Theme="{StaticResource Subtitle2TextBlock}"
+                                       LetterSpacing="4" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding ClientVersion}" Theme="{StaticResource Headline6TextBlock}"
+                                       Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </material:ColorZone>
 
                     <!-- Keyboard Shortcuts Button -->
                     <Button Classes="secondary" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
@@ -37,7 +44,7 @@
                             <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
                                 <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="{local:Localize About_KeyboardShortcuts}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{local:Localize About_KeyboardShortcuts}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
 
                                         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + K" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
@@ -65,9 +72,9 @@
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <mi:MaterialIcon Kind="Laptop" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize About_DesktopClient}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
-                                <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                                <TextBlock Text="{Binding ClientVersion}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
                                 <!-- Build id: which BUILD, as opposed to which release (RemEx-2ckhm).
                                      Monospaced and selectable on purpose — the entire use case is
                                      reading it off a screen and typing it into a message, and the
@@ -76,7 +83,7 @@
                                      when the assembly carries no stamp. -->
                                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="30,0,0,0"
                                             IsVisible="{Binding HasClientBuildId}">
-                                    <TextBlock Text="{local:Localize About_BuildId}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize About_BuildId}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                                     <SelectableTextBlock Text="{Binding ClientBuildId}"
                                                          FontSize="12"
                                                          FontFamily="Consolas, Menlo, monospace"
@@ -85,15 +92,15 @@
                             </StackPanel>
 
                             <!-- Divider -->
-                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+                            <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
 
                             <!-- Embedded host connection status / version ("Your PC") -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize About_PCHost}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
-                                <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                                <TextBlock Text="{Binding HostVersion}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
                                 <!-- The host's build id in its COMPARABLE form: sha, and a bare '+'
                                      for a dirty build — never the remote dirty suffix, which a
                                      different tool hashed and which would invite a false mismatch
@@ -102,7 +109,7 @@
                                      so an older host shows nothing here rather than "unknown". -->
                                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="30,0,0,0"
                                             IsVisible="{Binding HasHostBuildId}">
-                                    <TextBlock Text="{local:Localize About_BuildId}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize About_BuildId}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                                     <SelectableTextBlock Text="{Binding HostBuildId}"
                                                          FontSize="12"
                                                          FontFamily="Consolas, Menlo, monospace"
@@ -111,7 +118,7 @@
                             </StackPanel>
 
                             <!-- Divider -->
-                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+                            <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
 
                             <!-- This PC's certificate fingerprint (RemEx-n8xk).
                                  The phone shows the same value in the same grouping when it warns that this
@@ -121,23 +128,23 @@
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <mi:MaterialIcon Kind="LinkVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{local:Localize About_HostFingerprint}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize About_HostFingerprint}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <SelectableTextBlock Text="{Binding HostFingerprint}" FontFamily="{StaticResource JetBrainsMono}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
-                                <TextBlock Text="{local:Localize About_HostFingerprint_Hint}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="30,0,0,0"/>
+                                <TextBlock Text="{local:Localize About_HostFingerprint_Hint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="30,0,0,0"/>
                             </StackPanel>
 
                             <!-- Divider -->
-                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+                            <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
 
                             <!-- Software Update -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{local:Localize About_Update_Title}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize About_Update_Title}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding UpdateStatusText}" IsVisible="{Binding HasUpdateStatus}"
-                                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextWrapping="Wrap" Margin="30,0,0,0"/>
                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="30,4,0,0">
                                     <Button Classes="primary"
@@ -161,13 +168,13 @@
                     <!-- What's New Section -->
                     <material:Card Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize About_WhatsNew}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize About_WhatsNew}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             <ItemsControl ItemsSource="{Binding WhatsNewItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Spacing="4" Margin="0,0,0,12">
-                                            <TextBlock Text="{Binding Version}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Version}" Theme="{StaticResource Subtitle2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -178,11 +185,20 @@
                     <!-- GitHub Section -->
                     <material:Card Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16" HorizontalAlignment="Stretch">
-                            <TextBlock Text="{local:Localize About_GitHubStar}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                <mi:MaterialIcon Kind="Star" Width="18" Height="18" Foreground="{DynamicResource SystemWarningBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize About_GitHubStar}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
 
-                            <TextBlock Text="{local:Localize About_GitHubDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            <TextBlock Text="{local:Localize About_GitHubDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
 
-                            <Button Classes="primary" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
+                            <Button Classes="primary" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"
+                                    AutomationProperties.Name="{local:Localize About_ViewGitHub}">
+                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                    <mi:MaterialIcon Kind="OpenInNew" Width="18" Height="18"/>
+                                    <TextBlock Text="{local:Localize About_ViewGitHub}"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </material:Card>
 
@@ -192,7 +208,7 @@
 
             <!-- FAQ (merged from the former standalone FAQ page) -->
             <StackPanel Spacing="12" MaxWidth="900" HorizontalAlignment="Stretch" Margin="0,8,0,0">
-                <TextBlock Text="{local:Localize Nav_Faq}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                <TextBlock Text="{local:Localize Nav_Faq}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                 <ItemsControl ItemsSource="{Binding FaqItems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -205,7 +221,7 @@
             </StackPanel>
 
             <!-- Footer -->
-            <TextBlock Text="{local:Localize About_MadeWith}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" Margin="0,16,0,32"/>
+            <TextBlock Text="{local:Localize About_MadeWith}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" Margin="0,16,0,32"/>
 
         </StackPanel>
     </ScrollViewer>

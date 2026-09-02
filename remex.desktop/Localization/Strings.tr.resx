@@ -1288,7 +1288,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>PC'niz</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ GitHub'da bir yıldız vermeyi düşünün!</value>
+    <value>GitHub'da bir yıldız vermeyi düşünün!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Açık kaynaklı ve ücretsiz. (lütfen bir yıldız verin, kedimi rehin aldılar!)</value>

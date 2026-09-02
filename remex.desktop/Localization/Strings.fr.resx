@@ -1288,7 +1288,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Hôte PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Pensez à donner une étoile sur GitHub !</value>
+    <value>Pensez à donner une étoile sur GitHub !</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Open source et gratuit. (svp donnez une étoile, ils ont mon chat !)</value>

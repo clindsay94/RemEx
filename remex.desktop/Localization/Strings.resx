@@ -1333,7 +1333,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Your PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Follow RemEx on GitHub</value>
+    <value>Follow RemEx on GitHub</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Browse releases, report issues, and star the project if RemEx helps you.</value>

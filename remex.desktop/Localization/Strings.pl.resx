@@ -1185,7 +1185,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Twój komputer</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Rozważ danie gwiazdki na GitHubie!</value>
+    <value>Rozważ danie gwiazdki na GitHubie!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Otwarte oprogramowanie i darmowe. (proszę daj gwiazdkę, mają mojego kota!)</value>

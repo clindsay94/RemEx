@@ -1294,7 +1294,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Tu PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ ¡Considera dar una estrella en GitHub!</value>
+    <value>¡Considera dar una estrella en GitHub!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Código abierto y gratis. (¡por favor da una estrella, tienen a mi gato!)</value>
