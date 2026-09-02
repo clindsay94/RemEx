@@ -1,7 +1,12 @@
 package com.clindsay94.remex
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.SystemClock
+import android.util.Base64
 import android.util.Log
+import com.clindsay94.remex.data.MediaArtworkCache
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
@@ -19,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicLong
 import org.json.JSONObject
 
@@ -35,6 +41,9 @@ import org.json.JSONObject
 data class EstablishedConnection(val host: String, val port: Int, val epoch: Long)
 
 object RemexClientManager : RemexCoreClient.RemexCallback {
+
+    /** Longest side an artwork bitmap is decoded to; see [decodeDownsampledArtwork]. */
+    private const val MaxArtworkDimensionPx = 512
 
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var settingsManager: SettingsManager? = null
@@ -151,6 +160,21 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      */
     private val _mediaState = MutableStateFlow(MediaPlaybackSnapshot.Unknown)
     val mediaState: StateFlow<MediaPlaybackSnapshot> = _mediaState.asStateFlow()
+
+    /**
+     * Cache of decoded artwork, content-addressed by `artworkId` (RemEx-vtorl.4).
+     *
+     * **NOT RESET ON DISCONNECT, UNLIKE [_mediaArtwork] BELOW.** An artwork id is a content hash, so
+     * the bitmap it names is still correct after a reconnect to the same PC — the asymmetry with
+     * [_mediaArtwork], which IS cleared alongside [_mediaState] in [onConnectionStateChanged], is
+     * deliberate: that flow describes what belongs on screen for the CURRENT connection, while this
+     * cache describes bytes that do not stop being valid just because the socket briefly closed.
+     */
+    private val artworkCache = MediaArtworkCache<Bitmap>()
+
+    /** The bitmap for [mediaState]'s current `artworkId`, or null. Reset to null with [_mediaState]. */
+    private val _mediaArtwork = MutableStateFlow<Bitmap?>(null)
+    val mediaArtwork: StateFlow<Bitmap?> = _mediaArtwork.asStateFlow()
 
     /**
      * Why the desktop stream failed. **MUST-DELIVER, and the most consequential flow here
@@ -772,6 +796,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // would otherwise be shown against the new one until it happened to report. A fresh host sends
         // its current reading as soon as its stream starts, so the blank is brief and honest.
         _mediaState.value = MediaPlaybackSnapshot.Unknown
+        // [_mediaArtwork] resets here for the same reason as [_mediaState] above; [artworkCache] does
+        // NOT — see the KDoc on that field.
+        _mediaArtwork.value = null
     }
 
     fun setConnecting(isConnecting: Boolean) {
@@ -819,8 +846,99 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // A null payload is not a reading. The native router only forwards a media_state whose
         // payload survived deserialization, so this should not arrive - and if it does, holding the
         // previous state is better than blanking a good icon on a message that said nothing.
-        _mediaState.value = mediaStateJson?.let(MediaPlaybackSnapshot::parse) ?: return
+        val snapshot =
+                mediaStateJson?.let {
+                    MediaPlaybackSnapshot.parse(it, SystemClock.elapsedRealtime())
+                }
+                        ?: return
+        _mediaState.value = snapshot
+        reconcileArtwork(snapshot)
     }
+
+    /**
+     * Keeps [mediaArtwork] pointed at the bitmap for [snapshot]'s `artworkId`: served from
+     * [artworkCache] when present, requested through the narrow JNI export
+     * ([RemexCoreClient.RequestMediaArtwork]) when it is worth asking for, and null in every other
+     * case — including while a request is in flight, so the UI never shows a stale bitmap under a
+     * new id.
+     */
+    private fun reconcileArtwork(snapshot: MediaPlaybackSnapshot) {
+        val id = snapshot.artworkId
+        if (id == null) {
+            _mediaArtwork.value = null
+            return
+        }
+        val cached = artworkCache.get(id)
+        if (cached != null) {
+            _mediaArtwork.value = cached
+            return
+        }
+        _mediaArtwork.value = null
+        if (artworkCache.tryBeginRequest(id, SystemClock.elapsedRealtime())) {
+            RemexCoreClient.RequestMediaArtwork(id)
+        }
+    }
+
+    /**
+     * Delivers the answer to [RemexCoreClient.RequestMediaArtwork]: one JSON string
+     * `{artworkId, pngBase64}`, never pushed unsolicited. Runs on the JNI delivery thread, so every
+     * failure here is silent - malformed JSON, a blank id, bad base64, or a decode that returns null
+     * all land on doing nothing rather than throwing off that thread.
+     *
+     * A missing `pngBase64` means the host has evicted the id; that is remembered via
+     * [MediaArtworkCache.markEvicted] so [reconcileArtwork] does not keep re-requesting it. A bitmap
+     * that fails to decode is treated the same way, per contract.
+     */
+    override fun onMediaArtwork(mediaArtworkJson: String?) {
+        val json = mediaArtworkJson?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return
+        val id = json.optString("artworkId").ifBlank { null } ?: return
+        val base64 =
+                if (json.has("pngBase64") && !json.isNull("pngBase64")) {
+                    json.optString("pngBase64").ifBlank { null }
+                } else {
+                    null
+                }
+        if (base64 == null) {
+            artworkCache.markEvicted(id)
+            return
+        }
+        managerScope.launch {
+            val bitmap = withContext(Dispatchers.Default) { decodeDownsampledArtwork(base64) }
+            if (bitmap == null) {
+                artworkCache.markEvicted(id)
+                return@launch
+            }
+            artworkCache.put(id, bitmap)
+            // The reply may answer a track that has since changed; only publish it if it is still
+            // the one the current snapshot wants.
+            if (_mediaState.value.artworkId == id) {
+                _mediaArtwork.value = bitmap
+            }
+        }
+    }
+
+    /**
+     * Decodes base64 artwork (PNG or JPEG - `BitmapFactory` is format-agnostic, no host transcoding
+     * per contract) down to at most [MaxArtworkDimensionPx] on its longest side, so that up to four
+     * cached bitmaps ([artworkCache]'s default capacity) stay a bounded amount of memory even against
+     * a full-resolution album cover. Follows [com.clindsay94.remex.ui.screens.rememberAppIconBitmap]'s
+     * decode shape (`Base64.decode` + `BitmapFactory`, null on any failure) with sampling added.
+     */
+    private fun decodeDownsampledArtwork(base64: String): Bitmap? =
+            try {
+                val bytes = Base64.decode(base64, Base64.DEFAULT)
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                var sampleSize = 1
+                val longestSide = maxOf(bounds.outWidth, bounds.outHeight)
+                while (longestSide / sampleSize > MaxArtworkDimensionPx) {
+                    sampleSize *= 2
+                }
+                val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            } catch (_: Exception) {
+                null
+            }
 
     /**
      * Remembers the MAC the host just reported, so Wake-on-LAN needs no setup step (RemEx-izuj).
