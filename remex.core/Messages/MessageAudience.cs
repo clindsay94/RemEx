@@ -109,6 +109,13 @@ public static class MessageAudience
         [MessageTypes.HostInfo] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LauncherSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LayoutSync] = ClientSurface.PcUi,
+        // The phone only, for the same reason as media_state below (RemEx-vtorl): the PC's UI shares
+        // a process with the artwork store and would read the bytes by reference, and
+        // PingPongHandler does not run this stream for a loopback connection at all. Declared here so
+        // that the router line carrying it to Kotlin cannot be removed in silence — an artwork reply
+        // that is sent and never delivered looks, from the phone, exactly like a host that has no
+        // cover for the track.
+        [MessageTypes.MediaArtwork] = ClientSurface.AndroidControl,
         // The phone only (RemEx-xx6xf). The PC's own UI is in the same process as the sampler and
         // would read it by reference if it ever wanted it, so sending it over loopback would be the
         // round trip RemEx-ite8 removed for telemetry — and PingPongHandler does not start this

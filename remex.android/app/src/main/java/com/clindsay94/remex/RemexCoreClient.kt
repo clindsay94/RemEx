@@ -76,6 +76,25 @@ object RemexCoreClient {
          * [com.clindsay94.remex.data.MediaPlaybackSnapshot.parse], which degrades rather than throws.
          */
         fun onMediaState(mediaStateJson: String?)
+
+        /**
+         * One cover image, as a `MediaArtwork` payload (RemEx-vtorl).
+         *
+         * ONE JSON STRING, `{"artworkId":"…","pngBase64":"…"}`, rather than the two arguments the
+         * design sketched — every other callback here is a single JSON string through
+         * `NotifyJavaData`, and the information is identical either way.
+         *
+         * A **missing `pngBase64` is a real answer**: the host's store is a small LRU and that id has
+         * been evicted. Stop asking for it and draw the placeholder glyph; retrying will not bring it
+         * back. Delivered only in reply to [RequestMediaArtwork], never pushed.
+         *
+         * The bytes are whatever the PC's platform supplied — often JPEG despite the field name —
+         * which is fine, `BitmapFactory` sniffs the format.
+         *
+         * Defaulted to a no-op so a callback implementation that has no use for artwork does not have
+         * to say so.
+         */
+        fun onMediaArtwork(mediaArtworkJson: String?) {}
     }
 
     init {
@@ -233,6 +252,38 @@ object RemexCoreClient {
     @JvmStatic
     @JvmName("SendControlInputNative")
     private external fun SendControlInputNative(inputEventJson: String): String
+
+    /**
+     * Asks the PC for the cover image behind one artwork id (RemEx-vtorl).
+     *
+     * The `Result` describes the QUEUEING only. The image arrives later on
+     * [RemexCallback.onMediaArtwork], or does not arrive at all — an id the host has evicted comes
+     * back with no `pngBase64`, and an id it has never seen is answered the same way.
+     *
+     * ASK ONCE PER ID. The reply can be a megabyte or more on a socket that is also carrying input,
+     * so the caller is responsible for caching what it gets and for not re-asking while a request is
+     * in flight; see `MediaArtworkCache`.
+     */
+    @JvmStatic
+    fun RequestMediaArtwork(artworkId: String): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(RequestMediaArtworkNative(artworkId))
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "RequestMediaArtworkNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "RequestMediaArtworkNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("RequestMediaArtworkNative")
+    private external fun RequestMediaArtworkNative(artworkId: String): String
 
     /**
      * Judges a clipboard payload with the SAME rule the PC applies (RemEx-hgqs).

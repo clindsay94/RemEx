@@ -187,6 +187,9 @@ public static class AndroidNativeExports
     /// <summary>Carries <c>media_state</c> to Kotlin, so the play/pause icon can tell the truth.</summary>
     private static IntPtr _onMediaStateMethodId;
 
+    /// <summary>Carries one <c>media_artwork</c> reply to Kotlin, so a cover can be drawn.</summary>
+    private static IntPtr _onMediaArtworkMethodId;
+
     /// <summary>Reports which phase of pairing is running, so a long wait can say what it is doing.</summary>
     private static IntPtr _onPairingProgressMethodId;
     // RD-E: byte[] callback carrying the raw 32-byte "RDXC" cursor-position packet (parsed in Kotlin).
@@ -315,6 +318,7 @@ public static class AndroidNativeExports
         _onDesktopCursorShapeMethodId = IntPtr.Zero;
         _onPairingProgressMethodId = IntPtr.Zero;
         _onMediaStateMethodId = IntPtr.Zero;
+        _onMediaArtworkMethodId = IntPtr.Zero;
     }
 
     private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
@@ -427,6 +431,7 @@ public static class AndroidNativeExports
                 var onDesktopCursorShapeMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorShape", "(Ljava/lang/String;)V");
                 var onPairingProgressMethodId = GetRequiredCallbackMethodId(env, clazz, "onPairingProgress", "(Ljava/lang/String;)V");
                 var onMediaStateMethodId = GetRequiredCallbackMethodId(env, clazz, "onMediaState", "(Ljava/lang/String;)V");
+                var onMediaArtworkMethodId = GetRequiredCallbackMethodId(env, clazz, "onMediaArtwork", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
@@ -447,7 +452,8 @@ public static class AndroidNativeExports
                     || onDesktopCursorBinaryMethodId == IntPtr.Zero
                     || onDesktopCursorShapeMethodId == IntPtr.Zero
                     || onPairingProgressMethodId == IntPtr.Zero
-                    || onMediaStateMethodId == IntPtr.Zero)
+                    || onMediaStateMethodId == IntPtr.Zero
+                    || onMediaArtworkMethodId == IntPtr.Zero)
                 {
                     return;
                 }
@@ -474,6 +480,7 @@ public static class AndroidNativeExports
                 _onDesktopCursorShapeMethodId = onDesktopCursorShapeMethodId;
                 _onPairingProgressMethodId = onPairingProgressMethodId;
                 _onMediaStateMethodId = onMediaStateMethodId;
+                _onMediaArtworkMethodId = onMediaArtworkMethodId;
                 registrationSucceeded = true;
 
                 if (oldCallbackGlobalRef != IntPtr.Zero)
@@ -549,6 +556,20 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendControlInputNative")]
     public static IntPtr SendControlInput(IntPtr env, IntPtr thiz, IntPtr inputJsonUtf8)
         => Export(env, () => HandleSendControlInput(JniHelper.ReadJString(env, inputJsonUtf8)));
+
+    /// <summary>
+    /// Asks the host for the cover image behind one artwork id (RemEx-vtorl).
+    /// </summary>
+    /// <param name="artworkIdUtf8">The id from a <c>media_state</c> — the id ALONE, not an envelope.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/> describing the QUEUEING, not the image.</returns>
+    /// <remarks>
+    /// The image itself arrives asynchronously on the <c>onMediaArtwork</c> callback, or does not
+    /// arrive at all if the host has evicted that id. <see cref="HandleRequestMediaArtwork"/> carries
+    /// why the argument is a bare id.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RequestMediaArtworkNative")]
+    public static IntPtr RequestMediaArtwork(IntPtr env, IntPtr thiz, IntPtr artworkIdUtf8)
+        => Export(env, () => HandleRequestMediaArtwork(JniHelper.ReadJString(env, artworkIdUtf8)));
 
     /// <summary>Judges a clipboard payload with the SAME rule the host applies (RemEx-hgqs).</summary>
     /// <param name="textUtf8">The candidate clipboard text.</param>
@@ -1399,6 +1420,44 @@ public static class AndroidNativeExports
     }
 
     /// <summary>
+    /// Puts one <c>media_artwork_request</c> on the control socket (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT TAKES AN ARTWORK ID, NOT AN ENVELOPE, AND THAT IS THE POINT — the same reasoning as
+    /// <see cref="HandleSendControlInput"/> next door. The caller cannot choose the type, so this
+    /// entry point can only ever ask the host for a cover. An envelope-shaped export would be
+    /// <see cref="HandleDispatchMessage"/> with the routing switch removed, and the next caller to
+    /// reach for it would send something else through.
+    /// </para>
+    /// <para>
+    /// It also means there is no JSON to parse and therefore no malformed-payload case: the only
+    /// thing that can be wrong with the argument is that it is missing, which is what the guard
+    /// below reports. The host answers an id it does not recognise with an empty
+    /// <c>media_artwork</c> rather than an error, so nothing here has to know which ids are live.
+    /// </para>
+    /// </remarks>
+    internal static string HandleRequestMediaArtwork(string? artworkId)
+    {
+        if (string.IsNullOrWhiteSpace(artworkId))
+        {
+            return SerializeOperationFailure("Artwork id is required.");
+        }
+
+        EnsureOutboundSendLoopStarted();
+        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        {
+            Type = MessageTypes.MediaArtworkRequest,
+            MediaArtworkRequest = new MediaArtworkRequest { ArtworkId = artworkId },
+        }))
+        {
+            return SerializeOperationFailure("Failed to queue artwork request.");
+        }
+
+        return SerializeOperationSuccess("Artwork request dispatched.");
+    }
+
+    /// <summary>
     /// Every Remote Desktop operation, in the order it was handed to this queue.
     /// </summary>
     /// <remarks>
@@ -1764,6 +1823,21 @@ public static class AndroidNativeExports
             NotifyJavaData(
                 _onMediaStateMethodId,
                 RemexJson.Serialize(msg.MediaState, RemexJsonSerializerContext.Default.MediaPlaybackState));
+        }
+
+        // THE COVER IMAGE THE PHONE ASKED FOR (RemEx-vtorl). Unprefixed like media_state above, so
+        // this line is again the only thing between a host that answered and a phone that never
+        // hears — and here the send genuinely succeeded, which makes the missing cover read as "the
+        // host has no art for this track" rather than as a routing bug. The audience table declares
+        // it for AndroidControl so MessageAudienceTests fails if this line goes.
+        //
+        // The PAYLOAD, not the envelope, and guarded on non-null so a reply that lost its payload in
+        // deserialization becomes silence rather than Kotlin parsing "null" into a bitmap decode.
+        if (msg.Type == MessageTypes.MediaArtwork && msg.MediaArtwork != null)
+        {
+            NotifyJavaData(
+                _onMediaArtworkMethodId,
+                RemexJson.Serialize(msg.MediaArtwork, RemexJsonSerializerContext.Default.MediaArtwork));
         }
     }
 
