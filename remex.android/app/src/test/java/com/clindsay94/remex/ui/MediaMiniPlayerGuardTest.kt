@@ -25,12 +25,14 @@ class MediaMiniPlayerGuardTest {
                 text.contains("playback.status != MediaPlaybackStatus.UNKNOWN")
         )
 
-        // NONE ("the PC answered, nothing is playing") must also be excluded - the handoff
-        // acceptance is "with nothing playing, the bar is absent", and a bar reading "Nothing
-        // playing" for a whole idle session is not that.
-        assertTrue(
-                "MediaMiniPlayer must also gate its visibility on playback.status != NONE",
-                text.contains("playback.status != MediaPlaybackStatus.NONE")
+        // NONE ("the PC answered, nothing is playing") must stay visible: it is the bar's only
+        // route to MediaNowPlayingSheet's volume/transport controls when nothing is playing.
+        assertFalse(
+                "MediaMiniPlayer must not also gate on NONE - that removes the phone's only path"
+                        + " to volume/transport when idle",
+                Regex("""playback\.status\s*!=\s*MediaPlaybackStatus\.UNKNOWN\s*&&\s*"""
+                                + """\s*playback\.status\s*!=\s*MediaPlaybackStatus\.NONE""")
+                        .containsMatchIn(text)
         )
     }
 
@@ -127,9 +129,12 @@ class MediaMiniPlayerGuardTest {
                 "miniPlayerShown must exclude UNKNOWN",
                 text.contains("uiState.playback.status != MediaPlaybackStatus.UNKNOWN")
         )
-        assertTrue(
-                "miniPlayerShown must also exclude NONE",
-                text.contains("uiState.playback.status != MediaPlaybackStatus.NONE")
+        assertFalse(
+                "miniPlayerShown must not also exclude NONE - that removes the phone's only path"
+                        + " to volume/transport when idle",
+                Regex("""uiState\.playback\.status\s*!=\s*MediaPlaybackStatus\.UNKNOWN\s*&&\s*"""
+                                + """\s*uiState\.playback\.status\s*!=\s*MediaPlaybackStatus\.NONE""")
+                        .containsMatchIn(text)
         )
     }
 

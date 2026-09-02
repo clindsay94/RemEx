@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,13 +74,11 @@ fun MediaMiniPlayer(
 ) {
     // UNKNOWN has no reading to show a bar about - same reasoning as NowPlayingLine's early return
     // in MediaControlSection (RemEx-nmvz6): a bar with nothing to say would be a claim the phone
-    // cannot back up. NONE is a reading ("the PC answered, nothing is playing"), not an absence of
-    // one, but a docked bar reading "Nothing playing" for the whole session is not a claim worth
-    // making either - it is the "nothing playing" case the handoff acceptance means by "absent".
+    // cannot back up. NONE ("the PC answered, nothing is playing") is still a reading, and stays
+    // visible: it is the bar's only route to the volume/transport controls in MediaNowPlayingSheet
+    // when nothing is playing (RemEx-vtorl.5 review round 2 - reverted the NONE hide).
     AnimatedVisibility(
-            visible =
-                    playback.status != MediaPlaybackStatus.UNKNOWN &&
-                            playback.status != MediaPlaybackStatus.NONE,
+            visible = playback.status != MediaPlaybackStatus.UNKNOWN,
             enter =
                     slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) {
                         it
@@ -107,10 +106,14 @@ fun MediaMiniPlayer(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 3.dp
         ) {
-            Column {
+            // A Box, not a Column: the Row below is the full 72dp of the Surface (fillMaxSize),
+            // and the wavy progress is drawn as an overlay pinned to the bottom edge. A Column
+            // here would measure the Row first (12+48+12 = exactly 72dp) and leave the progress
+            // indicator 0dp of remaining height to draw in (RemEx-vtorl.5 review round 2).
+            Box(modifier = Modifier.fillMaxSize()) {
                 Row(
                         modifier =
-                                Modifier.fillMaxWidth()
+                                Modifier.fillMaxSize()
                                         .clickable(
                                                 onClickLabel =
                                                         stringResource(
@@ -186,7 +189,9 @@ fun MediaMiniPlayer(
                 if (playback.hasTimeline) {
                     RemexLinearWavyProgress(
                             progress = progress ?: 0f,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier =
+                                    Modifier.fillMaxWidth()
+                                            .align(Alignment.BottomCenter)
                     )
                 }
             }

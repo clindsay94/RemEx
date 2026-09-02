@@ -371,10 +371,10 @@ fun RemoteControlScreenContent(
 
         // UNKNOWN has no reading to dock a bar about (RemEx-nmvz6's reasoning applied to layout):
         // the whole stacking/occlusion story below is driven off this one flag rather than
-        // repeating the status check at each of its three use sites.
-        val miniPlayerShown =
-                uiState.playback.status != MediaPlaybackStatus.UNKNOWN &&
-                        uiState.playback.status != MediaPlaybackStatus.NONE
+        // repeating the status check at each of its three use sites. NONE stays shown - it is
+        // the bar's only route to MediaNowPlayingSheet's volume/transport controls when nothing
+        // is playing (RemEx-vtorl.5 review round 2 - reverted the NONE hide).
+        val miniPlayerShown = uiState.playback.status != MediaPlaybackStatus.UNKNOWN
         val toolbarOcclusion = rememberFloatingToolbarOcclusion(miniPlayerShown)
         var sheetOpen by remember { mutableStateOf(false) }
 
