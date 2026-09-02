@@ -121,7 +121,9 @@ private const val RepeatIntervalMs = 150L
  *   refuse to send a key.
  * @param showNowPlaying Whether this card renders its own title/artist line (RemEx-vtorl). The
  *   now-playing sheet draws that text itself, full-width and outside this card's expressive shape,
- *   so it passes `false` here; every other caller keeps the default and gets the line as before.
+ *   so it passes `false` here. The sheet is currently this composable's only caller; the `true`
+ *   default exists for API stability and because `MediaPlaybackFaceTest`'s source guards still
+ *   assert on the gated `NowPlayingLine` branch — file a follow-up if that branch should be retired.
  */
 @Composable
 fun MediaControlSection(

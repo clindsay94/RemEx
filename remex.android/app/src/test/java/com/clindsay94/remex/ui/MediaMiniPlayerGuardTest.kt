@@ -281,6 +281,12 @@ class MediaMiniPlayerGuardTest {
                         + " render title/artist itself instead",
                 text.contains("showNowPlaying: Boolean = true")
         )
+        assertTrue(
+                "the flag must actually gate NowPlayingLine's call site - a revert back to an"
+                        + " unconditional call would restore the clipped line and double-render it"
+                        + " in the sheet, and nothing else here would catch that",
+                text.contains("if (showNowPlaying) NowPlayingLine")
+        )
     }
 
     private fun miniPlayerSource(): String =

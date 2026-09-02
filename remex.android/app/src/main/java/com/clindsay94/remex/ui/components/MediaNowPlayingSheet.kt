@@ -142,13 +142,19 @@ fun MediaNowPlayingSheet(
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                    modifier = Modifier.fillMaxWidth()
             )
 
             // ONE line with a marquee, not two-line ellipsis: an "Artist — Album - EP" reading is
             // exactly the shape that used to be clipped mid-word by the shaped card's slanted
             // bottom edge (RemEx-vtorl). Scrolling it keeps the whole string reachable instead of
             // silently dropping the tail.
+            //
+            // No fillMaxWidth() here: basicMarquee() measures its child with an infinite max
+            // width, so a fixed-width parent would make textAlign = Center a no-op (the placeable
+            // is always exactly as wide as the text). Without fillMaxWidth, the marquee box sizes
+            // to min(intrinsic, available), so the Column's CenterHorizontally alignment centers
+            // short artist strings and long ones still fill the width and scroll.
             playback.artist?.let { artist ->
                 Text(
                         text = artist,
@@ -156,10 +162,7 @@ fun MediaNowPlayingSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
-                        modifier =
-                                Modifier.fillMaxWidth()
-                                        .padding(horizontal = 24.dp)
-                                        .basicMarquee()
+                        modifier = Modifier.basicMarquee()
                 )
             }
 
