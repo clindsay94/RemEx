@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- App Launcher tiles use the Material icon set and type scale now instead of emoji and inline
+  sizes; the tile's hover lift comes from the shared elevation ramp, and right-clicking a tile
+  now offers the same move/edit/remove actions as its toolbar. (RemEx-o2fee)
+
 - Task Manager moves onto the Material type scale; kill button joins the danger vocabulary
   (RemEx-ygit2)
 

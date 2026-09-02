@@ -54,7 +54,8 @@ public class TypographyVocabularyTests
     /// Never raise it.
     /// </summary>
     // Re-pinned by RemEx-ygit2 (TaskManagerView sweep): 298 -> 289.
-    private const int InlineFontSizeBaseline = 289;
+    // Re-pinned by RemEx-o2fee (AppLauncherView sweep): 289 -> 283.
+    private const int InlineFontSizeBaseline = 283;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

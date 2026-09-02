@@ -60,7 +60,7 @@ public class LauncherTileSizeTests
         // action toolbar along the bottom, and the launch Button's own Padding, all of which come
         // off before the icon and its label get any room.
         const double cardMargin = 8 * 2;
-        const double actionToolbarHeight = 26;
+        const double actionToolbarHeight = 28; // 28px compact icon-button, Padding 4,0 (RemEx-o2fee)
         const double buttonPadding = 12 * 2;
         const double labelHeight = 16 + 8; // 12pt line box plus its top margin
 
