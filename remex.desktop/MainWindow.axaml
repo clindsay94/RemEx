@@ -42,11 +42,12 @@
         <KeyBinding Gesture="Escape" Command="{Binding DismissOverlaysCommand}" />
         <!-- Refresh / sync sensors -->
         <KeyBinding Gesture="F5" Command="{Binding NavigateToCanvasCommand}" />
-        <!-- Command palette. Ctrl+Shift+P is the documented shortcut: the tutorial body and
-             Shell_OpenCommandPaletteTooltip both name it, in all 9 locales. Ctrl+K stays as an
-             undocumented alias so anyone who learned the old binding is not stranded. -->
-        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
+        <!-- Command palette. Ctrl+K is the documented shortcut: the tutorial body,
+             Shell_OpenCommandPaletteTooltip, and the visible hints in ShellView and HomeView all
+             name it, in all 9 locales. Ctrl+Shift+P stays as an undocumented alias so anyone who
+             learned it from the old tooltip is not stranded. -->
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
         <!-- Canvas undo / redo -->
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />

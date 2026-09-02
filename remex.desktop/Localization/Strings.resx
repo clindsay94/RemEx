@@ -1254,7 +1254,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: Command Palette</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Press Ctrl+K to jump to screens, trigger quick actions, and search the command center instantly.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Glossary: App Launcher</value>
@@ -2088,7 +2088,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Grid placement increment bounds in absolute pixels</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Open Command Palette (Ctrl+Shift+P)</value>
+    <value>Open Command Palette (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Toggle Sidebar</value>

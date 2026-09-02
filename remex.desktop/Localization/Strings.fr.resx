@@ -1209,7 +1209,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Glossaire : Palette de commandes</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Appuyez sur Ctrl+Maj+P pour naviguer entre les écrans, déclencher des actions rapides et rechercher dans le centre de commandes.</value>
+    <value>Appuyez sur Ctrl+K pour naviguer entre les écrans, déclencher des actions rapides et rechercher dans le centre de commandes.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Glossaire : Lanceur d'applications</value>
@@ -1890,7 +1890,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Limites d'incrément de la grille en pixels absolus</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Ouvrir la palette de commandes (Ctrl+Shift+P)</value>
+    <value>Ouvrir la palette de commandes (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Basculer la barre latérale</value>

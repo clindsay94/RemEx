@@ -1209,7 +1209,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Komut Paleti</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+Shift+P tuşlarına basın.</value>
+    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+K tuşlarına basın.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Sözlük: Uygulama Başlatıcı</value>
@@ -1890,7 +1890,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Mutlak piksel cinsinden kılavuz yerleşim artış sınırları</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Komut Paletini Aç (Ctrl+Shift+P)</value>
+    <value>Komut Paletini Aç (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Kenar Çubuğunu Aç/Kapat</value>

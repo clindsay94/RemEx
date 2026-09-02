@@ -42,7 +42,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         new TutorialPage(6, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
         new TutorialPage(7, "File Transfer",    "Share folders between phone and PC.",     PlatformFlags.All),
         // Glossary Pages
-        new TutorialPage(8, "Glossary: Command Palette", "Press Ctrl+Shift+P to search for commands, screens, and quick actions instantly. Use it to quickly disconnect, lock your PC, or jump to Settings.", PlatformFlags.All),
+        new TutorialPage(8, "Glossary: Command Palette", "Press Ctrl+K to search for commands, screens, and quick actions instantly. Use it to quickly disconnect, lock your PC, or jump to Settings.", PlatformFlags.All),
         new TutorialPage(9, "Glossary: App Launcher", "Launch predefined apps and scripts directly on the host machine. You can configure custom paths and arguments in the Settings menu.", PlatformFlags.All),
         new TutorialPage(10, "Glossary: Task Manager", "View and terminate running processes on your host PC remotely. Includes CPU and Memory usage statistics to identify resource hogs.", PlatformFlags.All),
         new TutorialPage(11, "Glossary: Sensor Canvas", "A draggable workspace to monitor your PC's telemetry in real-time. Pin sensors (CPU, RAM, Temps), resize cards, and arrange them to build your ideal dashboard.", PlatformFlags.All),

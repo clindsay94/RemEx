@@ -1682,7 +1682,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Granice przyrostu siatki w pikselach</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Otwórz paletę poleceń (Ctrl+Shift+P)</value>
+    <value>Otwórz paletę poleceń (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Przełącz pasek boczny</value>
@@ -2308,7 +2308,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Słownik: Paleta poleceń</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Naciśnij Ctrl+Shift+P, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
+    <value>Naciśnij Ctrl+K, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Słownik: Launcher aplikacji</value>

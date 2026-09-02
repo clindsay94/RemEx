@@ -1209,7 +1209,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Glosarium: Palet Perintah</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Tekan Ctrl+Shift+P untuk berpindah layar, memicu tindakan cepat, dan mencari di pusat komando secara instan.</value>
+    <value>Tekan Ctrl+K untuk berpindah layar, memicu tindakan cepat, dan mencari di pusat komando secara instan.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Glosarium: Peluncur Aplikasi</value>
@@ -1890,7 +1890,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Batas kenaikan penempatan kisi dalam piksel absolut</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Buka Palet Perintah (Ctrl+Shift+P)</value>
+    <value>Buka Palet Perintah (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alihkan Bilah Sisi</value>
