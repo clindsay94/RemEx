@@ -43,11 +43,13 @@ public class TypographyVocabularyTests
 {
     /// <summary>
     /// Inline <c>FontSize="N"</c> occurrences across <c>remex.desktop</c>, measured 2026-09-01 after
-    /// the RemEx-oszfm sweep of <c>HomeView.axaml</c> collapsed its 60 sized <c>TextBlock</c>s onto
-    /// the Theme type scale (518 - 60 = 458; the dashboard's one exception, the 280 splash glyph,
-    /// stays inline). LOWER THIS when a Phase 4 view bead sweeps a screen. Never raise it.
+    /// the RemEx-a6xnd sweep of <c>SettingsView.axaml</c> (63 of its 64 sites moved onto the Theme
+    /// type scale; the one TextBox has no matching ControlTheme and stays inline) landed after the
+    /// RemEx-enbqf sweep of <c>RemoteView.axaml</c> (27 sites; its SelectableTextBlock stays
+    /// inline). 458 (the RemEx-oszfm baseline) minus both sweeps is 368. LOWER THIS when a Phase 4
+    /// view bead sweeps a screen. Never raise it.
     /// </summary>
-    private const int InlineFontSizeBaseline = 458;
+    private const int InlineFontSizeBaseline = 368;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

@@ -207,11 +207,11 @@ public class FileTrustDisplayNameTests
 
         // The name carries the row's weight, the id does not.
         template.Should().MatchRegex(
-            @"Text=""\{Binding DisplayName\}"" FontSize=""14"" FontWeight=""Bold""",
-            "the name is the 14pt bold line — demoting it to the small muted style is the bug");
+            @"Text=""\{Binding DisplayName\}"" Theme=""\{StaticResource Body2TextBlock\}"" FontWeight=""Bold""",
+            "the name is the Body2 bold line — demoting it to the small muted style is the bug");
         template.Should().MatchRegex(
-            @"Text=""\{Binding ShortId\}"" FontSize=""11""",
-            "the id is the small secondary line");
+            @"Text=""\{Binding ShortId\}"" Theme=""\{StaticResource CaptionTextBlock\}""",
+            "the id is the small Caption secondary line");
     }
 
     [Fact]

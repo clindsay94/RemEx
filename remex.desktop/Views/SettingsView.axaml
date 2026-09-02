@@ -22,8 +22,10 @@
                 <TextBlock Grid.Column="1" Classes="page-title" Text="{local:Localize Settings_Header}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SavedStatus}" FontSize="13" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="20,10" CornerRadius="10" FontSize="14" FontWeight="Bold" Cursor="Hand"/>
+                    <TextBlock Text="{Binding SavedStatus}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <Button Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="20,10" CornerRadius="10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_SaveChanges}">
+                        <TextBlock Text="{local:Localize Settings_SaveChanges}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold"/>
+                    </Button>
                 </StackPanel>
             </Grid>
 
@@ -36,7 +38,7 @@
                     <!-- ═══ Connection Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="20">
-                            <TextBlock Text="{local:Localize Settings_Connection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_Connection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <StackPanel Spacing="10">
@@ -48,20 +50,20 @@
                                              them is a fact about the phone. -->
                                         <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                                         </Ellipse>
-                                        <TextBlock Text="{Binding Presence.PresenceText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <!-- UNGATED on purpose (review). HostRuntimeText and HostCapabilityText below are
                                          both IsVisible-bound to Connection.IsConnected, so replacing this line rather
                                          than demoting it left the card saying nothing at all about the host in exactly
                                          the state a user opens it to diagnose. -->
-                                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
-                                    <TextBlock Text="{Binding HostRuntimeText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
-                                    <TextBlock Text="{Binding HostCapabilityText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                                    <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{Binding HostRuntimeText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                                    <TextBlock Text="{Binding HostCapabilityText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
                                 </StackPanel>
                             </Border>
 
                             <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_ConfigureHostAddressTooltip}">
-                                <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{local:Localize Settings_HostAddress}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}"/>
                                     <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DiscoverHostsTooltip}"/>
@@ -69,16 +71,21 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}"/>
+                                <Button Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}" AutomationProperties.Name="{local:Localize Settings_SaveReconnect}">
+                                    <TextBlock Text="{local:Localize Settings_SaveReconnect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                </Button>
                                 <Button Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
                                 <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3); see ConnectionView. -->
-                                <Button Content="{local:Localize Home_PairPhoneButton}"
+                                <Button
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
                                         IsVisible="{Binding Connection.CanRevealPairingPin}"
                                         Background="{DynamicResource CardBackgroundBrush}"
                                         Foreground="{DynamicResource TextSecondaryBrush}"
-                                        Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"
-                                        ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"/>
+                                        Padding="18,10" CornerRadius="8" Cursor="Hand"
+                                        ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"
+                                        AutomationProperties.Name="{local:Localize Home_PairPhoneButton}">
+                                    <TextBlock Text="{local:Localize Home_PairPhoneButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                </Button>
                             </StackPanel>
 
                             <!-- QR Code Display Panel — contents shared with ConnectionView
@@ -104,13 +111,13 @@
                     <!-- ═══ General Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_General}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_General}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                             <!-- Close behavior: minimize to tray vs. exit on window close -->
                             <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CloseToTrayTooltip}">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_CloseToTray}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_CloseToTrayDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{local:Localize Settings_CloseToTray}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_CloseToTrayDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CloseToTray}" Grid.Column="1" IsChecked="{Binding IsCloseToTrayEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
@@ -118,8 +125,8 @@
                             <!-- Automatic update check: query GitHub for a newer release on startup -->
                             <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CheckForUpdatesTooltip}">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_CheckForUpdates}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_CheckForUpdatesDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{local:Localize Settings_CheckForUpdates}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_CheckForUpdatesDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CheckForUpdates}" Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
@@ -133,13 +140,13 @@
                             <StackPanel Spacing="4" IsVisible="{Binding IsLaunchAtLoginSupported}">
                                 <TextBlock Text="{local:Localize Settings_LaunchAtLoginStateUnknown}"
                                            IsVisible="{Binding IsLaunchAtLoginStateUnknown}"
-                                           FontSize="12"
+                                           Theme="{StaticResource CaptionTextBlock}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource SystemWarningBrush}"/>
                                 <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_LaunchAtLoginTooltip}">
                                     <StackPanel Spacing="2">
-                                        <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
@@ -149,21 +156,23 @@
                             <StackPanel Spacing="4" IsVisible="{Binding IsKeepSessionUnlockedSupported}">
                                 <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_KeepSessionUnlockedTooltip}">
                                     <StackPanel Spacing="2">
-                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_KeepSessionUnlocked}" Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                                 </Grid>
-                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
+                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
                             </StackPanel>
 
                             <!-- Fully exit the application (ends the process) -->
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_ExitApp}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_ExitAppDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{local:Localize Settings_ExitApp}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_ExitAppDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="{local:Localize Settings_ExitAppButton}" Command="{Binding ExitApplicationCommand}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Command="{Binding ExitApplicationCommand}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Settings_ExitAppButton}">
+                                    <TextBlock Text="{local:Localize Settings_ExitAppButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                </Button>
                             </Grid>
                         </StackPanel>
                     </material:Card>
@@ -176,20 +185,20 @@
                     <!-- ═══ Layout Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="20">
-                            <TextBlock Text="{local:Localize Settings_Layout}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_Layout}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                             <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_EnableAlignmentGuidesTooltip}">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_SnapToGrid}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_SnapToGrid}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_SnapToGrid}" Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
                             <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}" ToolTip.Tip="{local:Localize Settings_GridPlacementIncrementTooltip}">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{local:Localize Settings_GridSize}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
+                                    <TextBlock Text="{local:Localize Settings_GridSize}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
                                 </Grid>
                                 <Slider Minimum="10" Maximum="100" TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" SmallChange="10" LargeChange="20" Value="{Binding GridSize}" AutomationProperties.Name="{local:Localize Settings_GridSize}"/>
                             </StackPanel>
@@ -199,15 +208,15 @@
                     <!-- ═══ Pinned Sensors Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
+                            <TextBlock Text="{local:Localize Settings_PinnedSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
 
                             <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding AvailableSensors}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SensorPinItem">
                                             <CheckBox AutomationProperties.Name="{Binding SensorName}" IsChecked="{Binding IsPinned}" Margin="0,4">
-                                                <TextBlock Text="{Binding SensorName}" FontSize="13" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding SensorName}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
                                             </CheckBox>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -219,12 +228,16 @@
                     <!-- ═══ Backup &amp; Restore Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_BackupSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_BackupDescription}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
+                            <TextBlock Text="{local:Localize Settings_BackupSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_BackupDescription}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_ExportButton}" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Content="{local:Localize Settings_ImportButton}" Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <Button Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ExportButton}">
+                                    <TextBlock Text="{local:Localize Settings_ExportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                </Button>
+                                <Button Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ImportButton}">
+                                    <TextBlock Text="{local:Localize Settings_ImportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                </Button>
                             </StackPanel>
                         </StackPanel>
                     </material:Card>
@@ -237,13 +250,17 @@
                 <!-- ═══ Shared Folders Section ═══ -->
                 <material:Card Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                        <TextBlock Text="{local:Localize Settings_FileTransferSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,16,0" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Content="{local:Localize Settings_FileTransferRestoreDefaults}" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <Button Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferAddFolder}">
+                                    <TextBlock Text="{local:Localize Settings_FileTransferAddFolder}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                </Button>
+                                <Button Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferRestoreDefaults}">
+                                    <TextBlock Text="{local:Localize Settings_FileTransferRestoreDefaults}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                </Button>
                             </StackPanel>
                         </Grid>
 
@@ -253,11 +270,11 @@
                                     <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <StackPanel Spacing="4">
-                                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding AbsolutePath}" FontSize="12" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding AbsolutePath}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="24,0">
-                                                <TextBlock Text="{local:Localize Settings_FileTransferWritable}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{local:Localize Settings_FileTransferWritable}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_FileTransferWritable}" IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
                                             </StackPanel>
                                             <Button Grid.Column="2" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
@@ -278,11 +295,13 @@
                 <material:Card Padding="24" IsVisible="{Binding CanListPairedDevices}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_PairedDevices}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Content="{local:Localize Settings_PairedDevicesRefresh}" Command="{Binding RefreshPairedDeviceListCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_PairedDevices}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Command="{Binding RefreshPairedDeviceListCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_PairedDevicesRefresh}">
+                                <TextBlock Text="{local:Localize Settings_PairedDevicesRefresh}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                            </Button>
                         </Grid>
 
-                        <TextBlock Text="{local:Localize Settings_PairedDevicesEmpty}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding !PairedDevices.Count}"/>
+                        <TextBlock Text="{local:Localize Settings_PairedDevicesEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding !PairedDevices.Count}"/>
 
                         <ItemsControl ItemsSource="{Binding PairedDevices}">
                             <ItemsControl.ItemTemplate>
@@ -294,12 +313,12 @@
                                                  whole-app presence here would light every row at once. -->
                                             <Ellipse AutomationProperties.Name="{Binding StatusAccessibleName}" Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,14,0" Classes="status-dot" Classes.connected="{Binding IsOnline}"/>
                                             <StackPanel Grid.Column="1" Spacing="4">
-                                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                                 <StackPanel Orientation="Horizontal" Spacing="16">
-                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextMutedBrush}">
+                                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}">
                                                         <Run Text="{local:Localize Settings_PairedDeviceFirstPaired}"/><Run Text=": "/><Run Text="{Binding FirstPairedText}"/>
                                                     </TextBlock>
-                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextMutedBrush}">
+                                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}">
                                                         <Run Text="{local:Localize Settings_PairedDeviceLastSeen}"/><Run Text=": "/><Run Text="{Binding LastSeenText}"/>
                                                     </TextBlock>
                                                 </StackPanel>
@@ -311,24 +330,30 @@
                                                      "fall back to the device id", which the hint says. -->
                                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}">
                                                     <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                    <Button Content="{local:Localize Settings_PairedDeviceRename}"
+                                                    <Button
                                                             Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"
                                                             CommandParameter="{Binding}"
-                                                            Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                                            Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,6" CornerRadius="6" Cursor="Hand"
+                                                            AutomationProperties.Name="{local:Localize Settings_PairedDeviceRename}">
+                                                        <TextBlock Text="{local:Localize Settings_PairedDeviceRename}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                                    </Button>
 
                                                     <!-- UNPAIR IS THE ONE ACTION HERE THAT CANNOT BE UNDONE, so it
                                                          is visually separated from the rename beside it and drawn
                                                          in the error colour — and it confirms before doing anything
                                                          (RemEx-5lb90). Its own gate, because revoking needs a
                                                          different service from renaming. -->
-                                                    <Button Content="{local:Localize Confirm_Unpair_Btn}"
+                                                    <Button
                                                             Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).UnpairDeviceCommand}"
                                                             CommandParameter="{Binding}"
                                                             IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanUnpairDevices}"
                                                             Margin="12,0,0,0"
-                                                            Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                                            Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="14,6" CornerRadius="6" Cursor="Hand"
+                                                            AutomationProperties.Name="{local:Localize Confirm_Unpair_Btn}">
+                                                        <TextBlock Text="{local:Localize Confirm_Unpair_Btn}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                                    </Button>
                                                 </StackPanel>
-                                                <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"/>
+                                                <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -342,13 +367,15 @@
                 <material:Card Padding="24" IsVisible="{Binding SupportsTrustManagement}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Content="{local:Localize Settings_TrustRefresh}" Command="{Binding RefreshTrustedDevicesCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Command="{Binding RefreshTrustedDevicesCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_TrustRefresh}">
+                                <TextBlock Text="{local:Localize Settings_TrustRefresh}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                            </Button>
                         </Grid>
 
-                        <TextBlock Text="{local:Localize Settings_TrustDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{local:Localize Settings_TrustDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
 
-                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasTrustedDevices}"/>
+                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasTrustedDevices}"/>
 
                         <ItemsControl ItemsSource="{Binding TrustedDevices}">
                             <ItemsControl.ItemTemplate>
@@ -360,17 +387,17 @@
                                                      one thing here comparable against what the phone shows; it is just no
                                                      longer the only thing, which is what made this card unreadable. -->
                                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding ShortId}" FontSize="11" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding ShortId}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Content="{local:Localize Settings_TrustRevoke}" Command="{Binding RevokeCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
                                             </Grid>
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustFullBrowse}" Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
                                             </Grid>
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustAutoAccept}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustAutoAccept}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustAutoAccept}" Grid.Column="1" IsChecked="{Binding AutoAcceptIncoming}" OnContent="" OffContent=""/>
                                             </Grid>
                                         </StackPanel>
@@ -385,10 +412,12 @@
                 <material:Card Padding="24">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="{local:Localize Settings_Help}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_HelpPrompt}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{local:Localize Settings_Help}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_HelpPrompt}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="{local:Localize Settings_ReplayTutorial}" Command="{Binding ReplayTutorialCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_ReplayTutorialTooltip}"/>
+                        <Button Grid.Column="1" Command="{Binding ReplayTutorialCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_ReplayTutorialTooltip}" AutomationProperties.Name="{local:Localize Settings_ReplayTutorial}">
+                            <TextBlock Text="{local:Localize Settings_ReplayTutorial}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                        </Button>
                     </Grid>
                 </material:Card>
             </StackPanel>
