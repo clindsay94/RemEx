@@ -129,6 +129,9 @@
     <string name="rc_media_hint">Mantén pulsados los botones de volumen para seguir cambiándolo.</string>
     <string name="rc_media_unavailable">Este PC no está configurado para aceptar pulsaciones de teclas, así que estos botones no harán nada.</string>
     <string name="rc_media_disconnected">Conéctate a tu PC para usar estos controles.</string>
+    <string name="rc_media_state_playing">Reproduciendo</string>
+    <string name="rc_media_state_paused">En pausa</string>
+    <string name="rc_media_state_idle">No se está reproduciendo nada</string>
     <string name="screen_remote_desktop_title">Escritorio Remoto</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
     <string name="cd_key_escape">Esc</string>

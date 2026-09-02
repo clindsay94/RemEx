@@ -38,6 +38,7 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaPlaybackStatus
 import com.clindsay94.remex.ui.components.MediaControlSection
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -239,11 +240,15 @@ data class RemoteControlUiState(
          */
         val supportsInputSimulation: Boolean = false,
         /**
-         * What the PC reports it is playing (RemEx-xx6xf). Drives the play/pause face only — it is
-         * NOT a third gate on the row, because not knowing what is playing is no reason to refuse to
-         * send a key.
+         * What the PC reports it is playing (RemEx-xx6xf). Drives the play/pause face and the
+         * now-playing line (RemEx-nmvz6) — it is NOT a third gate on the row, because not knowing
+         * what is playing is no reason to refuse to send a key.
+         *
+         * THE WHOLE SNAPSHOT, NOT JUST THE STATUS. This carried only `playbackStatus` while the face
+         * was the only consumer, and the track metadata sat parsed and unread one layer below —
+         * which is precisely how a wire field that nothing renders stays that way.
          */
-        val playbackStatus: MediaPlaybackStatus = MediaPlaybackStatus.UNKNOWN
+        val playback: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -270,7 +275,7 @@ fun RemoteControlScreen(
                     cornerRadius = cornerRadius,
                     isConnected = isConnected,
                     supportsInputSimulation = supportsInputSimulation,
-                    playbackStatus = mediaState.status
+                    playback = mediaState
             )
 
     RemoteControlScreenContent(
@@ -379,7 +384,7 @@ fun RemoteControlScreenContent(
                 MediaControlSection(
                         connected = uiState.isConnected,
                         inputSupported = uiState.supportsInputSimulation,
-                        playbackStatus = uiState.playbackStatus,
+                        playback = uiState.playback,
                         shape =
                                 com.clindsay94.remex.ui.theme.cardShape(
                                         uiState.shapePreset,
@@ -533,8 +538,15 @@ private fun RemoteControlScreenPreview() {
                 supportsInputSimulation = true,
                 // The pause face, for the same reason: it is the state the default UNKNOWN cannot
                 // show, so leaving it out would mean the preview never exercised the icon this
-                // feature added (RemEx-xx6xf).
-                playbackStatus = MediaPlaybackStatus.PLAYING
+                // feature added (RemEx-xx6xf). A title and artist come with it, because UNKNOWN
+                // draws no now-playing line at all and the preview would not show that either
+                // (RemEx-nmvz6).
+                playback =
+                        MediaPlaybackSnapshot(
+                                status = MediaPlaybackStatus.PLAYING,
+                                title = "Sound of Silence",
+                                artist = "Simon & Garfunkel"
+                        )
             ),
             onNavigateToConnection = {},
             onWakePc = {},
