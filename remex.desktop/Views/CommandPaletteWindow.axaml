@@ -47,23 +47,47 @@
                         <Setter Property="Padding" Value="10,6" />
                         <Setter Property="Cursor" Value="Hand" />
                     </Style>
-                    <!-- /template/ IS REQUIRED HERE, not fragile decoration (RemEx-f51fa). The
-                         tempting tidy-up — set Background on the ListBoxItem and let the template
-                         binding carry it — silently loses both fills: Fluent 12.1.1's ListBoxItem
-                         ControlTheme set :pointerover and :selected Backgrounds directly on
-                         PART_ContentPresenter (ControlTheme style + activator, frame 5), which
-                         outranked the TemplateBinding (frame 6) a control-level value would ride in
-                         on. Only another presenter-level setter with an activator (app style,
-                         frame 3) beat it — which is exactly what these are. The app now applies
-                         Material 3.19.0 instead, whose ListBoxItem template has no ContentPresenter
-                         at all — re-verify the /template/ ContentPresenter selectors below still
-                         match anything under Material before relying on this file again, or the
-                         o9gd text recolours further down would sit on an unpainted fill. -->
-                    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                    <!-- /template/ IS REQUIRED HERE, and the PART NAME IS TOO (RemEx-f51fa, then
+                         RemEx-3ule6). The tempting tidy-up — set Background on the ListBoxItem and
+                         let the template binding carry it — loses both fills, because a part-level
+                         setter with an activator (app style, frame 3) is the only thing that
+                         outranks what the ControlTheme puts on the part itself (frame 5) and the
+                         TemplateBinding a control-level value would ride in on (frame 6).
+
+                         WHICH part changed when Fluent left. These selectors used to name
+                         ContentPresenter, which was right for Fluent 12.1.1. Material 3.19.0 owns
+                         every template now (App.axaml, RemEx-prkot) and its ListBoxItem has NO
+                         ContentPresenter part at all — it is Border#PART_RootBorder > Panel#
+                         PART_RootPanel > { Border#PART_BehaviourEffect, RippleEffect#PART_Ripple,
+                         Border#PART_HoverEffect }, with the content inside the ripple. So both
+                         selectors matched nothing, the fills vanished, and the o9gd text recolours
+                         below kept firing over Material's own faint scrim — an accent-tinted label
+                         on a nearly-unpainted row, which is the unreadable-selected-row bug o9gd
+                         was raised to fix.
+
+                         PART_RootBorder IS THE ONLY CORRECT TARGET FOR A FILL. PART_HoverEffect is
+                         what Material varies for these states, but it is the LAST child of the
+                         panel — it paints OVER the content, and is only ever a translucent veil
+                         (MaterialBodyBrush at 0.05 hover / 0.12 selected). Moving an opaque accent
+                         onto it would cover the label instead of sitting behind it. PART_RootBorder
+                         is the outermost Border, drawn beneath everything and already carrying the
+                         CornerRadius, so the fill lands where a fill belongs. -->
+                    <Style Selector="ListBoxItem:pointerover /template/ Border#PART_RootBorder">
                         <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}" />
                     </Style>
-                    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                    <Style Selector="ListBoxItem:selected /template/ Border#PART_RootBorder">
                         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                    </Style>
+
+                    <!-- AND MATERIAL'S OWN SELECTED VEIL HAS TO GO (RemEx-3ule6). Its 0.12
+                         MaterialBodyBrush over the accent is not cosmetic here: AccentForegroundBrush
+                         is pinned at AA against each theme's RAW accent by
+                         AccentForegroundContrastTests, and compositing a body-coloured scrim over
+                         that fill measures something else. The accent IS the selection indicator on
+                         this row, so the veil is redundant as well as inaccurate. Hover keeps its
+                         0.05 — CardBackgroundHoverBrush carries no contrast guarantee to void. -->
+                    <Style Selector="ListBoxItem:selected /template/ Border#PART_HoverEffect">
+                        <Setter Property="Opacity" Value="0" />
                     </Style>
 
                     <!-- ═══ Row text, and it has to follow the fill (RemEx-o9gd) ═══
