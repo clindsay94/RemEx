@@ -487,6 +487,32 @@ public sealed class PingPongHandler(
                             ct);
                         break;
 
+                    // NOTHING IS SENT BACK, AND THE PUBLISH IS THE REPLY (RemEx-vtorl). The seek is
+                    // handed to the platform and this case ends: no anchor is stamped here, and the
+                    // snapshot gate is not touched. The sampler's next poll reads the moved position,
+                    // PlaybackAnchorTracker re-anchors because the reading diverged past tolerance,
+                    // and the gate publishes one media_state to EVERY connected client — which is
+                    // what a second phone watching the same PC needs and a point-to-point
+                    // acknowledgement would not give it.
+                    //
+                    // It also means a seek the player ignored produces no message at all. That is
+                    // load-bearing rather than a gap: it is how the phone learns to put its own
+                    // optimistic position back, and an ack here would tell it the opposite.
+                    case MessageTypes.MediaSeek when message.MediaSeek is not null:
+                        var seeked = await mediaSessionMonitor.TrySeekAsync(message.MediaSeek.PositionMs, ct);
+                        if (!seeked)
+                        {
+                            // Debug, not warning. A session that declines the call is ordinary — it is
+                            // most media on a PC that has none playing — and this arrives once per
+                            // scrubber gesture, so a warning would be noise with a rate limit
+                            // attached to it.
+                            logger.LogDebug(
+                                "Media seek to {PositionMs}ms was not accepted by the current session.",
+                                message.MediaSeek.PositionMs);
+                        }
+
+                        break;
+
                     // ── 2.5 Clipboard ──
                     // Pairing-gated for free: RequiresPairing defaults unknown types to true, and
                     // writing the PC's clipboard is exactly the kind of thing that default exists

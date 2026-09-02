@@ -30,7 +30,7 @@ namespace Remex.Agent.Services.Media;
 /// </remarks>
 [SupportedOSPlatform("windows10.0.17763.0")]
 internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReader> logger)
-    : IMediaSessionReader, IMediaArtworkSource
+    : IMediaSessionReader, IMediaArtworkSource, IMediaSeekTarget
 {
     /// <summary>
     /// The anchor state for this reader's readings.
@@ -250,6 +250,68 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
         }
 
         return await WindowsAppIconResolver.ReadImageStreamAsync(properties.Thumbnail, ct);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// THE SESSION IS RE-REQUESTED, exactly as <see cref="ResolveArtworkAsync"/> does and for the
+    /// same reason: this runs off the poll tick, on the connection's message loop, and a session
+    /// captured a second ago may belong to a player the user has since closed.
+    /// </para>
+    /// <para>
+    /// SMTC COUNTS 100-NANOSECOND TICKS, NOT MILLISECONDS, and it counts them from
+    /// <c>StartTime</c> rather than from zero — which is the same asymmetry <see cref="ReadTimeline"/>
+    /// undoes on the way out and therefore has to be redone on the way in. For an ordinary track
+    /// <c>StartTime</c> is zero and the two forms agree; for a chaptered audiobook or a clipped
+    /// stream it is not, and omitting it would land the seek an entire chapter away from where the
+    /// user's finger was. Sending back what the reading produced is the only way the number the phone
+    /// computed from <c>AnchorPositionMs</c> means the same thing here.
+    /// </para>
+    /// <para>
+    /// A FALSE RETURN IS ORDINARY. Some sessions advertise the control and decline the call, and a
+    /// few accept it and do nothing at all; the phone reconciles against the next <c>media_state</c>
+    /// rather than against this answer, so the only job here is to not throw and to not lie.
+    /// </para>
+    /// </remarks>
+    public async Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
+    {
+        try
+        {
+            var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync().AsTask(ct);
+            var session = manager.GetCurrentSession();
+            if (session is null)
+            {
+                return false;
+            }
+
+            var requested = positionMs * TimeSpan.TicksPerMillisecond;
+
+            // GetTimelineProperties reaches into a third-party player like everything else here, so a
+            // session that will not describe its timeline seeks relative to zero rather than not at
+            // all — which is right for the overwhelming majority of tracks, whose StartTime is zero.
+            try
+            {
+                requested += session.GetTimelineProperties().StartTime.Ticks;
+            }
+            catch (Exception ex)
+            {
+                logger.LogTrace(ex, "Media session would not report its timeline for a seek.");
+            }
+
+            return await session.TryChangePlaybackPositionAsync(requested).AsTask(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // The contract is "never throws". This reaches whatever media player the user happens to
+            // have open, and a scrubber drag must not be able to drop their connection.
+            logger.LogDebug(ex, "Could not seek the current media session.");
+            return false;
+        }
     }
 
     /// <summary>Empty and whitespace become null, so absent is one value on the wire rather than three.</summary>

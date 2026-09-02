@@ -34,7 +34,7 @@ namespace Remex.Agent.Services.Media;
 /// </remarks>
 [SupportedOSPlatform("linux")]
 internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> logger)
-    : IMediaSessionReader, IMediaArtworkSource, IAsyncDisposable
+    : IMediaSessionReader, IMediaArtworkSource, IMediaSeekTarget, IAsyncDisposable
 {
     private const string PlayerInterface = "org.mpris.MediaPlayer2.Player";
     private const string RootInterface = "org.mpris.MediaPlayer2";
@@ -482,6 +482,158 @@ internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> l
 
         yield return "/usr/share/applications";
         yield return "/var/lib/flatpak/exports/share/applications";
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// THE PLAYER IS THE ONE THE LAST READING WON WITH, not "the MPRIS player". There is no current
+    /// session on this platform — the class remarks say why — so the only defensible answer to
+    /// "seek what" is the player whose state the phone is looking at, which is precisely
+    /// <see cref="_anchorBusName"/>. Re-running the preference loop here would let a player that
+    /// started playing since the last poll take a seek meant for the one on screen.
+    /// </para>
+    /// <para>
+    /// <c>SetPosition</c> TAKES THE TRACK ID, AND THAT IS A SAFETY INTERLOCK RATHER THAN
+    /// BOOKKEEPING. MPRIS specifies that a player ignores the call when the id is not the one it is
+    /// currently playing, so a seek that raced a track change lands nowhere instead of landing 90
+    /// seconds into the next song. Re-reading the id in the same round trip as <c>CanSeek</c> is
+    /// what makes that interlock work: a cached id would be exactly the stale one it protects
+    /// against.
+    /// </para>
+    /// <para>
+    /// MICROSECONDS ON THE BUS, milliseconds at this interface, and no <c>StartTime</c> to undo —
+    /// MPRIS positions are relative to the start of the track, so unlike the Windows reader there is
+    /// nothing to add back.
+    /// </para>
+    /// </remarks>
+    public async Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
+    {
+        var busName = _anchorBusName;
+        if (busName is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var conn = await EnsureConnectionAsync(ct);
+            if (conn is null)
+            {
+                return false;
+            }
+
+            MessageBuffer buf;
+            {
+                var writer = conn.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: busName,
+                    path: PlayerPath,
+                    @interface: "org.freedesktop.DBus.Properties",
+                    member: "GetAll",
+                    signature: "s");
+                writer.WriteString(PlayerInterface);
+                buf = writer.CreateMessage();
+            }
+
+            var properties = await conn.CallMethodAsync(
+                buf,
+                static (Message msg, object? state) => msg.GetBodyReader().ReadDictionaryOfStringToVariantValue());
+
+            ct.ThrowIfCancellationRequested();
+
+            // ABSENT COUNTS AS NO. CanSeek is a required Player property, so a player that omits it
+            // is one this code has no working model of, and a SetPosition sent hopefully would be a
+            // method call to a peer that may answer with an error nobody reads.
+            if (!properties.TryGetValue("CanSeek", out var rawCanSeek)
+                || rawCanSeek.Type != VariantValueType.Bool
+                || !rawCanSeek.GetBool())
+            {
+                return false;
+            }
+
+            var trackId = ReadTrackId(properties);
+            if (trackId is null)
+            {
+                return false;
+            }
+
+            MessageBuffer seek;
+            {
+                var writer = conn.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: busName,
+                    path: PlayerPath,
+                    @interface: PlayerInterface,
+                    member: "SetPosition",
+                    signature: "ox");
+                writer.WriteObjectPath(trackId);
+                writer.WriteInt64(Math.Max(0, positionMs) * 1000);
+                seek = writer.CreateMessage();
+            }
+
+            await conn.CallMethodAsync(seek);
+
+            // TRUE MEANS THE PLAYER TOOK THE CALL WITHOUT AN ERROR, WHICH IS NOT THE SAME AS MOVING.
+            // SetPosition returns nothing and a player is allowed to ignore an out-of-range request
+            // silently. The phone reconciles against the next media_state rather than against this,
+            // so the honest reading of true here is "asked, and was not refused".
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // The contract is "never throws", and this call reaches whatever media player the user
+            // happens to have open: a departed peer, a refused connection and a malformed reply are
+            // all different exception types, so the honest guard is the broad one.
+            logger.LogDebug(ex, "Could not seek MPRIS player {BusName}.", busName);
+            return false;
+        }
+    }
+
+    /// <summary>The <c>mpris:trackid</c> out of a <c>GetAll</c> reply, or null when it is unusable.</summary>
+    /// <remarks>
+    /// THE SPEC SAYS OBJECT PATH AND PLAYERS DISAGREE — the same disagreement <see cref="TryGetInt64"/>
+    /// documents for <c>mpris:length</c>. Several shipping players publish the id as a plain string,
+    /// so accepting both is the difference between a working scrubber and none on those players.
+    /// <c>NoTrack</c> is the spec's own sentinel for "nothing is loaded" and is refused rather than
+    /// sent, because a player is required to ignore it and answering true to a call that was ignored
+    /// by definition is the one thing this method must not do.
+    /// </remarks>
+    private static string? ReadTrackId(Dictionary<string, VariantValue> properties)
+    {
+        if (!properties.TryGetValue("Metadata", out var rawMetadata))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (!rawMetadata.GetDictionary<string, VariantValue>().TryGetValue("mpris:trackid", out var raw))
+            {
+                return null;
+            }
+
+            var id = raw.Type switch
+            {
+                VariantValueType.ObjectPath => raw.GetObjectPathAsString(),
+                VariantValueType.String => raw.GetString(),
+                _ => null,
+            };
+
+            return string.IsNullOrEmpty(id)
+                || !id.StartsWith('/')
+                || id.EndsWith("/NoTrack", StringComparison.Ordinal)
+                ? null
+                : id;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static string? TryGetString(VariantValue value)

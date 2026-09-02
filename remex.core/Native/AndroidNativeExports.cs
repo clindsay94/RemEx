@@ -571,6 +571,20 @@ public static class AndroidNativeExports
     public static IntPtr RequestMediaArtwork(IntPtr env, IntPtr thiz, IntPtr artworkIdUtf8)
         => Export(env, () => HandleRequestMediaArtwork(JniHelper.ReadJString(env, artworkIdUtf8)));
 
+    /// <summary>
+    /// Asks the host to move the current track's playback position (RemEx-vtorl).
+    /// </summary>
+    /// <param name="positionMs">Milliseconds from the start of the track — the number ALONE, not an envelope.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/> describing the QUEUEING, not the seek.</returns>
+    /// <remarks>
+    /// Whether the player actually moved is only observable in the next <c>media_state</c>, which
+    /// arrives on the <c>onMediaState</c> callback like any other reading.
+    /// <see cref="HandleSeekMedia"/> carries why the argument is a bare number.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SeekMediaNative")]
+    public static IntPtr SeekMedia(IntPtr env, IntPtr thiz, long positionMs)
+        => Export(env, () => HandleSeekMedia(positionMs));
+
     /// <summary>Judges a clipboard payload with the SAME rule the host applies (RemEx-hgqs).</summary>
     /// <param name="textUtf8">The candidate clipboard text.</param>
     /// <returns>
@@ -1455,6 +1469,53 @@ public static class AndroidNativeExports
         }
 
         return SerializeOperationSuccess("Artwork request dispatched.");
+    }
+
+    /// <summary>
+    /// Puts one <c>media_seek</c> on the control socket (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT TAKES A POSITION IN MILLISECONDS, NOT AN ENVELOPE, AND THAT IS THE POINT — the same
+    /// reasoning as <see cref="HandleRequestMediaArtwork"/> next door. The caller cannot choose the
+    /// type, so this entry point can only ever move the position of the track the host is already
+    /// playing. An envelope-shaped export would be <see cref="HandleDispatchMessage"/> with the
+    /// routing switch removed, and the next caller to reach for it would send something else
+    /// through.
+    /// </para>
+    /// <para>
+    /// A NEGATIVE POSITION IS REFUSED HERE rather than clamped, because the two answers differ in
+    /// what they teach the caller. Clamping to zero would restart the track and report success, so a
+    /// unit bug on the phone — microseconds where milliseconds were wanted, or a subtraction that
+    /// went past the start — would present as playback jumping to the beginning with nothing
+    /// anywhere saying why. The upper end is deliberately NOT checked: this side does not know the
+    /// duration of what the PC is playing, and the platform readers already answer an unreachable
+    /// position with false.
+    /// </para>
+    /// <para>
+    /// The queueing is all this can report. Whether the player honoured the seek is only visible in
+    /// the next <c>media_state</c>: some sessions accept the call and ignore it, which is why the
+    /// Android side reconciles rather than trusting its own optimistic update.
+    /// </para>
+    /// </remarks>
+    internal static string HandleSeekMedia(long positionMs)
+    {
+        if (positionMs < 0)
+        {
+            return SerializeOperationFailure("Seek position must not be negative.");
+        }
+
+        EnsureOutboundSendLoopStarted();
+        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        {
+            Type = MessageTypes.MediaSeek,
+            MediaSeek = new MediaSeekRequest { PositionMs = positionMs },
+        }))
+        {
+            return SerializeOperationFailure("Failed to queue seek request.");
+        }
+
+        return SerializeOperationSuccess("Seek request dispatched.");
     }
 
     /// <summary>

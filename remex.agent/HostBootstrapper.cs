@@ -197,6 +197,14 @@ public static class HostBootstrapper
             sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaArtworkSource
             ?? Remex.Agent.Services.Media.NullMediaArtworkSource.Instance);
 
+        // Seeking opts in the same way and for the same reason: the session to seek is the session
+        // the reading came from, and nothing else in this process knows which player that is. A
+        // reader that is not a seek target is a platform that cannot move a playback position, and
+        // the null object answers false rather than making every call site check for null.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSeekTarget>(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaSeekTarget
+            ?? Remex.Agent.Services.Media.NullMediaSeekTarget.Instance);
+
         builder.Services.AddSingleton<Remex.Agent.Services.Media.MediaSessionBackgroundService>();
         builder.Services.AddHostedService(sp =>
             sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());

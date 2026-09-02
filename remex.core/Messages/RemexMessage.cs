@@ -361,6 +361,20 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("mediaArtwork")]
     public Remex.Core.Models.MediaArtwork? MediaArtwork { get; init; }
+
+    /// <summary>
+    /// A client asking the host to move the playback position, for
+    /// <see cref="MessageTypes.MediaSeek"/> (RemEx-vtorl). Optional addition; no protocolVersion
+    /// bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. Like
+    /// <see cref="MediaArtworkRequest"/> it is pairing-gated for free by the default-true
+    /// <c>RequiresPairing</c>, which is what a message that reaches into the user's media player
+    /// wants.
+    /// </remarks>
+    [JsonPropertyName("mediaSeek")]
+    public Remex.Core.Models.MediaSeekRequest? MediaSeek { get; init; }
 }
 
 /// <summary>
@@ -541,4 +555,16 @@ public static class MessageTypes
     /// makes that impossible to ship.
     /// </remarks>
     public const string MediaArtwork = "media_artwork";
+
+    /// <summary>
+    /// A client asking the host to move the playback position, CLIENT -> HOST (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// The second client-originated member of this family, and like
+    /// <see cref="MediaArtworkRequest"/> it needs no audience entry, because
+    /// <c>MessageAudience.HostToClient</c> describes the other direction. It also needs no line in
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>: nothing comes back under this type. The
+    /// answer is the next <c>media_state</c>, which the phone is already listening for.
+    /// </remarks>
+    public const string MediaSeek = "media_seek";
 }

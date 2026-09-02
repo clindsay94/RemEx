@@ -153,6 +153,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(MediaPlaybackState))]
 [JsonSerializable(typeof(MediaArtworkRequest))]
 [JsonSerializable(typeof(MediaArtwork))]
+[JsonSerializable(typeof(MediaSeekRequest))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }

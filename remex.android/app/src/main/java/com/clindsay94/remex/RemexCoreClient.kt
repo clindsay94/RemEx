@@ -286,6 +286,40 @@ object RemexCoreClient {
     private external fun RequestMediaArtworkNative(artworkId: String): String
 
     /**
+     * Asks the PC to move the current track's playback position (RemEx-vtorl).
+     *
+     * The `Result` describes the QUEUEING only, and a successful queue is not a moved track. Some
+     * sessions accept the call and do nothing — Apple Music on Windows does this — so the caller
+     * must reconcile against the next [RemexCallback.onMediaState] rather than treat its own
+     * optimistic update as fact.
+     *
+     * A negative [positionMs] is refused rather than clamped: clamping would silently restart the
+     * track and report success, which is the wrong thing to learn from a unit mistake on this side.
+     * There is no upper check here, because this process does not know what the PC is playing;
+     * the PC answers an unreachable position by leaving the position where it was.
+     */
+    @JvmStatic
+    fun SeekMedia(positionMs: Long): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(SeekMediaNative(positionMs))
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "SeekMediaNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SeekMediaNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("SeekMediaNative")
+    private external fun SeekMediaNative(positionMs: Long): String
+
+    /**
      * Judges a clipboard payload with the SAME rule the PC applies (RemEx-hgqs).
      *
      * **DO NOT REIMPLEMENT THIS IN KOTLIN, WHICH IS THE ONLY REASON IT CROSSES JNI FOR A LENGTH

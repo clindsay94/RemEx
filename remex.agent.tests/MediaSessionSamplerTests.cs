@@ -69,11 +69,16 @@ public class MediaSessionSamplerTests
     private static MediaSessionBackgroundService NewSampler(
         IMediaSessionReader reader,
         IMediaArtworkSource? artworkSource = null,
-        IMediaArtworkStore? artworkStore = null)
+        IMediaArtworkStore? artworkStore = null,
+        IMediaSeekTarget? seekTarget = null)
         => new(
             reader,
             artworkSource ?? NullMediaArtworkSource.Instance,
             artworkStore ?? new MediaArtworkStore(),
+            // Nothing in this file seeks. The null target is the honest default rather than a mock:
+            // it is what a host with an unseekable reader actually gets, so the polling tests run
+            // against the same object the unsupported platforms do.
+            seekTarget ?? NullMediaSeekTarget.Instance,
             NullLogger<MediaSessionBackgroundService>.Instance);
 
     /// <summary>Waits for a condition rather than for a duration, up to a generous ceiling.</summary>

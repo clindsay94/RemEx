@@ -45,6 +45,29 @@ public interface IMediaSessionMonitor
     /// <summary>The image bytes behind an <c>ArtworkId</c> a reading carried, or null when this host
     /// never resolved that id or has since evicted it.</summary>
     byte[]? TryGetArtwork(string artworkId);
+
+    /// <summary>
+    /// Moves the current session to <paramref name="positionMs"/> milliseconds from the start of the
+    /// track, answering whether the platform reported the move as accepted (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// FALSE IS A NORMAL ANSWER AND NOTHING IS THROWN. A host with no seekable session — every
+    /// platform but Windows and Linux, and Windows sessions whose player declines the call — answers
+    /// false through <see cref="NullMediaSeekTarget"/>. This is reached from the per-connection
+    /// message loop, so an exception here would drop a phone's whole connection to answer a scrubber
+    /// drag.
+    /// </para>
+    /// <para>
+    /// IT PUBLISHES NOTHING, WHICH IS THE PART WORTH SAYING OUT LOUD. No anchor is stamped and the
+    /// gate is not touched: the next poll reads the moved position, the tracker re-anchors because
+    /// the reading diverged past tolerance, and the gate publishes one <c>media_state</c> to every
+    /// client. That publish is the reply, and it is the only one — a seek that the player ignored
+    /// therefore produces no message at all, which is exactly what the phone needs in order to notice
+    /// and put its own optimistic position back.
+    /// </para>
+    /// </remarks>
+    Task<bool> TrySeekAsync(long positionMs, CancellationToken ct);
 }
 
 /// <inheritdoc cref="IMediaSessionMonitor"/>
@@ -60,6 +83,7 @@ internal sealed class MediaSessionBackgroundService(
     IMediaSessionReader reader,
     IMediaArtworkSource artworkSource,
     IMediaArtworkStore artworkStore,
+    IMediaSeekTarget seekTarget,
     ILogger<MediaSessionBackgroundService> logger) : BackgroundService, IMediaSessionMonitor
 {
     /// <summary>
@@ -91,6 +115,17 @@ internal sealed class MediaSessionBackgroundService(
         => _gate.WaitForNextAsync(alreadySent, ct);
 
     public byte[]? TryGetArtwork(string artworkId) => artworkStore.TryGet(artworkId);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// STRAIGHT THROUGH, WITH NO BOOKKEEPING ON THE WAY. The temptation is to stamp the requested
+    /// position onto the gate here so the phone hears back instantly, and it is exactly the mistake:
+    /// the host would then be reporting a position nobody has confirmed a player moved to, and a
+    /// session that ignored the seek would leave every connected phone showing a number the PC is not
+    /// playing until the next reading happened to differ.
+    /// </remarks>
+    public Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
+        => seekTarget.TrySeekAsync(positionMs, ct);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
