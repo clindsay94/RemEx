@@ -930,7 +930,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 managerScope.launch {
                     delay(SeekConfirmWindowMs)
                     if (MediaSeekReconciler.shouldRevert(issuedAtElapsedMs, lastHostArrivalElapsedMs)) {
-                        _mediaState.value = lastHostSnapshot
+                        // compareAndSet, not a plain write: a confirming media_state can land on the
+                        // JNI thread between the shouldRevert read and this line, and a plain write
+                        // would overwrite that fresh host reading with the pre-seek one. If the flow
+                        // no longer holds our optimistic instance, someone newer won; leave it.
+                        _mediaState.compareAndSet(optimistic, lastHostSnapshot)
                     }
                 }
     }
