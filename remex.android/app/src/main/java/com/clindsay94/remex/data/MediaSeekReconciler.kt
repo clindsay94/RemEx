@@ -20,7 +20,9 @@ object MediaSeekReconciler {
     ): MediaPlaybackSnapshot {
         val clamped =
                 if (current.hasTimeline) {
-                    positionMs.coerceIn(0L, current.durationMs!!)
+                    positionMs.coerceIn(0L, requireNotNull(current.durationMs) {
+                        "hasTimeline implies a duration"
+                    })
                 } else {
                     positionMs
                 }

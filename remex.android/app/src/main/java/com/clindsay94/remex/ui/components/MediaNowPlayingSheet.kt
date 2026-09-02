@@ -47,8 +47,8 @@ import kotlinx.coroutines.delay
  * Full media controls, opened by tapping [MediaMiniPlayer] (spec 4.4).
  *
  * Large artwork up top, the existing [MediaControlSection] unchanged below (title/artist/volume/
- * transport), and — only once [MediaPlaybackSnapshot.hasTimeline] is true — a full-width wavy
- * progress bar with elapsed (`m:ss`) and remaining (`-m:ss`) labels above it.
+ * transport), and — only once [MediaPlaybackSnapshot.hasTimeline] is true — a full-width
+ * [Slider] seek control with elapsed (`m:ss`) and remaining (`-m:ss`) labels above it.
  *
  * `rememberBottomSheetState`, not the deprecated `rememberModalBottomSheetState`: material3
  * 1.5.0-alpha20+ unified the partial/full-expand states behind one API.
@@ -124,8 +124,10 @@ fun MediaNowPlayingSheet(
                 val durationMs = playback.durationMs ?: 0L
                 // Non-null only while the user has a finger on the thumb; the drag value wins over
                 // the extrapolated one so the label and thumb follow the gesture instead of fighting
-                // the ticking clock above.
-                var dragProgress by remember(playback) { mutableStateOf<Float?>(null) }
+                // the ticking clock above. Deliberately NOT keyed on `playback`: an unrelated
+                // media_state arriving mid-gesture must not wipe an in-flight drag (RemEx-vtorl
+                // review) — it is already cleared explicitly in onValueChangeFinished below.
+                var dragProgress by remember { mutableStateOf<Float?>(null) }
                 val sliderProgress = dragProgress ?: (playback.progressAt(nowElapsedMs) ?: 0f)
                 val positionMs =
                         dragProgress?.let { (it * durationMs).toLong() }

@@ -190,13 +190,18 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      * what a seek reverts to when that confirmation never arrives. Reset to [MediaPlaybackSnapshot.Unknown]
      * on the same disconnect that resets [_mediaState].
      */
-    private var lastHostSnapshot: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown
+    // @Volatile on these three (RemEx-vtorl review): onMediaState runs on the JNI dispatcher
+    // thread (attached via AttachCurrentThreadAsDaemon), while seekMedia and the revert coroutine
+    // run on managerScope (Main). Without a happens-before edge, the revert coroutine could read a
+    // pre-seek lastHostArrivalElapsedMs racing a confirming media_state, decide shouldRevert==true,
+    // and stomp the freshly-arrived host truth with a stale lastHostSnapshot.
+    @Volatile private var lastHostSnapshot: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown
 
     /** [android.os.SystemClock.elapsedRealtime] at [lastHostSnapshot]; see [MediaSeekReconciler.shouldRevert]. */
-    private var lastHostArrivalElapsedMs: Long = 0L
+    @Volatile private var lastHostArrivalElapsedMs: Long = 0L
 
     /** Pending revert timer from the most recent [seekMedia] call; cancelled by the next host arrival. */
-    private var seekRevertJob: Job? = null
+    @Volatile private var seekRevertJob: Job? = null
 
     /**
      * Why the desktop stream failed. **MUST-DELIVER, and the most consequential flow here
@@ -822,6 +827,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // later against a since-reset/replaced state would be reverting to the wrong PC's truth.
         seekRevertJob?.cancel()
         lastHostSnapshot = MediaPlaybackSnapshot.Unknown
+        lastHostArrivalElapsedMs = 0L
         // [_mediaArtwork] resets here for the same reason as [_mediaState] above; [artworkCache] does
         // NOT — see the KDoc on that field.
         _mediaArtwork.value = null
@@ -909,17 +915,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      */
     fun seekMedia(positionMs: Long) {
         val current = _mediaState.value
-        val clampedPositionMs =
-                if (current.hasTimeline) {
-                    positionMs.coerceIn(0L, current.durationMs!!)
-                } else {
-                    positionMs
-                }
+        val issuedAtElapsedMs = SystemClock.elapsedRealtime()
+        // MediaSeekReconciler.optimistic owns the one clamp to [0, durationMs]; read the clamped
+        // value back off its result rather than clamping a second time here (RemEx-vtorl review).
+        val optimistic = MediaSeekReconciler.optimistic(current, positionMs, issuedAtElapsedMs)
+        val clampedPositionMs = optimistic.positionMs ?: positionMs
         Log.d("RemexManager", "media_seek: $clampedPositionMs")
         RemexCoreClient.SeekMedia(clampedPositionMs)
 
-        val issuedAtElapsedMs = SystemClock.elapsedRealtime()
-        _mediaState.value = MediaSeekReconciler.optimistic(current, clampedPositionMs, issuedAtElapsedMs)
+        _mediaState.value = optimistic
 
         seekRevertJob?.cancel()
         seekRevertJob =
