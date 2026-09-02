@@ -160,9 +160,10 @@ fun MediaNowPlayingSheet(
                         text = artist,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
                         maxLines = 1,
-                        modifier = Modifier.basicMarquee()
+                        // Unbounded: the default of three passes parks the line at its head
+                        // afterwards, which is the clipped tail back again for a long sheet visit.
+                        modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                 )
             }
 

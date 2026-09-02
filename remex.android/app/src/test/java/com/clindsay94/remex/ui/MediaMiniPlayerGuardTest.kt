@@ -264,9 +264,9 @@ class MediaMiniPlayerGuardTest {
                 text.contains("maxLines = 2")
         )
         assertTrue(
-                "the artist line must scroll with basicMarquee() instead of being cut by the"
-                        + " card's shape",
-                text.contains("basicMarquee()")
+                "the artist line must scroll with an unbounded basicMarquee instead of being cut"
+                        + " by the card's shape (the default three passes park it clipped again)",
+                text.contains("basicMarquee(iterations = Int.MAX_VALUE)")
         )
     }
 
