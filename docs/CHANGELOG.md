@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Material Separator dividers in place of the hand-rolled ones. Nothing it does has changed.
   (RemEx-ep10v)
 
+- The dashboard's aurora background follows the palette now. Its glow layers fade out onto the
+  palette surface instead of onto black, so a light seed no longer gets dark halos, and every
+  layer eases in and out instead of stepping. (RemEx-orn90)
+
 - The dashboard is on the Material type scale now. Every size on it comes from the shared
   vocabulary instead of a number on the element, and the footer's hard-coded shadow is gone.
   Nothing it does has changed. (RemEx-oszfm)

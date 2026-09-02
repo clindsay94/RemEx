@@ -97,7 +97,7 @@
                         <Rectangle.Styles>
                             <Style Selector="Rectangle">
                                 <Style.Animations>
-                                    <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                    <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                         <KeyFrame KeyTime="0:0:0">
                                             <Setter Property="Opacity" Value="0.7"/>
                                         </KeyFrame>
@@ -110,9 +110,17 @@
                         </Rectangle.Styles>
                     </Rectangle>
 
-                    <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══ -->
+                    <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══
+                         Each aurora RadialGradientBrush is exactly two DynamicResource stops: the
+                         accent tone at Offset 0, and the Surface base (GlassBaseDark — same brush as
+                         the base rectangle below) at Offset 1. Because the base rectangle underneath
+                         is filled with that same Surface color, an opaque Surface end stop composited
+                         at the layer's animated Opacity is invisible against it — the glow fades to
+                         nothing with no alpha interpolation toward black, which is what makes this
+                         look right on both dark and light palettes. No OpacityMask is used to fade the
+                         edges further: each one would be an extra full-window SaveLayer. -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
-                        <!-- Base dark layer -->
+                        <!-- Surface base layer -->
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
                         <!-- Animated aurora layer 1 — primary accent glow -->
@@ -126,14 +134,13 @@
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="25%,35%" RadiusX="0.65" RadiusY="0.75">
                                     <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
-                                    <GradientStop Offset="0.5" Color="#1600F3FF" />
-                                    <GradientStop Offset="1" Color="#00000000" />
+                                    <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
                                 <Style Selector="Rectangle#AuroraLayer1">
                                     <Style.Animations>
-                                        <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                        <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0">
                                                 <Setter Property="Opacity" Value="0.40"/>
                                             </KeyFrame>
@@ -159,14 +166,13 @@
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="72%,65%" RadiusX="0.70" RadiusY="0.60">
                                     <GradientStop Offset="0" Color="{DynamicResource AccentHover}" />
-                                    <GradientStop Offset="0.4" Color="#22F43F5E" />
-                                    <GradientStop Offset="1" Color="#00000000" />
+                                    <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
                                 <Style Selector="Rectangle#AuroraLayer2">
                                     <Style.Animations>
-                                        <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                        <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0">
                                                 <Setter Property="Opacity" Value="0.28"/>
                                             </KeyFrame>
@@ -192,13 +198,13 @@
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="50%,8%" RadiusX="0.55" RadiusY="0.45">
                                     <GradientStop Offset="0" Color="{DynamicResource AccentPressed}" />
-                                    <GradientStop Offset="1" Color="#00000000" />
+                                    <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
                                 <Style Selector="Rectangle#AuroraLayer3">
                                     <Style.Animations>
-                                        <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                        <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0">
                                                 <Setter Property="Opacity" Value="0.18"/>
                                             </KeyFrame>
@@ -256,7 +262,7 @@
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
                     </Panel>
 
-                    <!-- ═══ Solid Mode — dark base + accent tint from color picker ═══ -->
+                    <!-- ═══ Solid Mode — Surface base + accent tint from color picker ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
                         <!-- Accent tint driven by Glass Opacity slider so color picker affects the result -->
