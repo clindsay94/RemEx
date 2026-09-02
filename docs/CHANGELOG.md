@@ -79,6 +79,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Personalize side sheet on the PC titled itself with its own class name instead of
   "Personalize". The Material side sheet wraps whatever header you give it in a text template, so
   a header that is already a control has to opt out of that template.
+- **The background gradient was barely a gradient.** Since the palette started being generated from
+  your seed, the desktop backdrop had been near-black to black with a faint tint in one corner
+  instead of the sweep it is meant to be. The three stops were being taken two tone steps apart, and
+  two of the three off the greyest palette the seed produces, so there was nothing to sweep between.
+
+  The stops are spread much further apart now, and the middle one comes off a palette with a
+  different hue, so the backdrop sweeps colour and not just brightness — the way the hand-authored
+  one it replaced did. This applies to every seed, every variant and both light and dark. Palettes
+  built from a deliberately colourless variant still separate; they do it on brightness alone,
+  because there is no hue there to sweep. (RemEx-bv9bu)
+- **The Task Manager built the whole process list up front instead of just the part you can see.**
+  A typical PC runs a couple of hundred processes and each row is a small stack of controls, so the
+  page was laying out well over a thousand of them — and doing it again on every refresh tick, for
+  the rows scrolled far off screen as much as the ones in front of you.
+
+  The list can virtualize; it just was not being given the chance. The page scrolled as one long
+  column, which offers its contents unlimited height, and a list told it has unlimited height has no
+  reason to leave anything out. The list now has its own bounded area and scrolls inside it, so only
+  the visible rows exist. The title and the search and sort bar stay put at the top while you scroll
+  the list, which is where they were always meant to be. (RemEx-3oy7x)
+- **Switching theme no longer throws away styling it was never meant to touch.** Applying a preset
+  replaced the previous theme by emptying the app's whole resource stack and putting one file back,
+  so anything else the app merged in alongside the theme vanished the first time you changed theme —
+  never at startup, and with nothing logged. It removes exactly the theme it is replacing now, so
+  the rest of the stack is left where it was. (RemEx-gcqw5)
+- **Tabbing onto the Live Application Logs and System Event Logs headers in Diagnostic Logs now
+  shows the same accent focus ring as everything else.** Every other control RemEx rings on
+  keyboard focus — buttons, list items, text boxes, checkboxes, sliders — draws a 2px ring in the
+  current theme's accent. Tabs were the one control left out, and they had no focus indicator at
+  all, so keyboard focus simply disappeared for a step before reappearing on the next control. They
+  ring like the rest now, in whichever accent the active theme is using. (RemEx-83zq1)
 
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and

@@ -136,11 +136,29 @@ public static class DynamicColorGenerator
             Warning:              warning,
             OnWarning:            Contrasted(warningCore.Primary, ToColor(warningScheme.OnPrimary),     warning,            contrast),
             // The shell's background wash. Taken as raw tones rather than named roles because no M3
-            // role is "the third stop of a diagonal gradient"; the tones chosen are the ones that
-            // reproduce the old hand-authored backdrop for the default seed.
-            BackgroundStart:      ToColor(core.Primary[isDark ? 10u : 95u]),
-            BackgroundMid:        ToColor(core.Neutral[isDark ?  8u : 98u]),
-            BackgroundEnd:        ToColor(core.Neutral[isDark ?  0u : 100u]));
+            // role is "the third stop of a diagonal gradient".
+            //
+            // A GRADIENT NEEDS TWO AXES TO SEPARATE, AND THIS ONE HAD NEITHER (RemEx-bv9bu). The
+            // first pass took Primary[10] / Neutral[8] / Neutral[0]: two tone steps between the
+            // first two stops, and the last two both near-zero-chroma neutrals, so the whole
+            // backdrop read as flat black with one faintly tinted corner. Restated in the terms of
+            // the hand-authored backdrop it replaced (#1A0A2E → #0D1B2A → #000000), the mistake was
+            // reading that as a tone sweep — it is not, all three sit near tone 8 — it is a HUE
+            // sweep, violet to navy to black, and hue was the one thing dropped.
+            //
+            // So both axes are put back. MID MOVES OFF THE NEUTRAL PALETTE ONTO TERTIARY, which is
+            // the tonal palette furthest from Primary in hue by construction, giving the sweep a
+            // second colour instead of a second grey; and the tones are spaced far enough apart
+            // (~10 in dark, ~9 in light) that the sweep survives the two-layer compositing in
+            // DashboardBackgroundControl — a 0.8-opacity base with a 0.7–0.9 pulse over it.
+            // END STAYS NEUTRAL on purpose: ThemeService takes the dark scrim from BackgroundEnd,
+            // and a scrim's job is to darken what is behind it, not to tint it.
+            //
+            // Styles whose palettes carry no chroma at all (Spritz) lose the hue axis and are
+            // carried by tone alone, which is why the spacing has to stand on its own.
+            BackgroundStart:      ToColor(core.Primary [isDark ? 20u : 82u]),
+            BackgroundMid:        ToColor(core.Tertiary[isDark ? 10u : 91u]),
+            BackgroundEnd:        ToColor(core.Neutral [isDark ?  0u : 100u]));
     }
 
     /// <summary>The eleven tones the Material tonal scale is conventionally sampled at.</summary>

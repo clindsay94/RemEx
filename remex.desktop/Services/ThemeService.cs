@@ -16,6 +16,17 @@ public class ThemeService : IDisposable
     private readonly ResourceDictionary _overrideResources = new();
 
     /// <summary>
+    /// The base-theme <see cref="ResourceInclude"/> this service last merged into
+    /// <c>Application.Resources</c>, so the next switch can remove EXACTLY that one.
+    /// </summary>
+    /// <remarks>
+    /// Null until the first switch, at which point <see cref="SwapBaseTheme"/> adopts the include
+    /// <c>App.axaml</c> declared instead — see the comment there for why anything else merged into
+    /// <c>Application.Resources</c> has to survive.
+    /// </remarks>
+    private IResourceProvider? _baseThemeResources;
+
+    /// <summary>
     /// The seed used when the saved accent will not parse. Kept equal to
     /// <c>CustomizationSettings.AccentColor</c>'s own default on purpose: a user with a broken accent
     /// should land where a user with no accent lands, not somewhere third.
@@ -575,19 +586,7 @@ public class ThemeService : IDisposable
     {
         if (Application.Current?.Resources is not ResourceDictionary resources) return;
 
-        // Clear existing theme files, but keep our override dictionary!
-        var dictionaries = resources.MergedDictionaries;
-        for (int i = dictionaries.Count - 1; i >= 0; i--)
-        {
-            if (dictionaries[i] != _overrideResources)
-            {
-                dictionaries.RemoveAt(i);
-            }
-        }
-
-        var themeFile = theme == AppTheme.Dynamic ? "BaseDarkGlass" : theme.ToString();
-        var uri = new Uri($"avares://Remex.Desktop/Themes/{themeFile}.axaml");
-        dictionaries.Insert(0, new ResourceInclude(uri) { Source = uri });
+        _baseThemeResources = SwapBaseTheme(resources.MergedDictionaries, _baseThemeResources, BaseThemeUri(theme));
 
         if (Application.Current is { })
         {
@@ -596,6 +595,83 @@ public class ThemeService : IDisposable
                 : ThemeVariant.Dark;
         }
     }
+
+    /// <summary>The folder every selectable base theme file lives in.</summary>
+    private const string ThemeDictionaryPrefix = "avares://Remex.Desktop/Themes/";
+
+    /// <summary>The theme file a preset resolves to. <c>Dynamic</c> has no file of its own and
+    /// paints from the seed, so it rides on BaseDarkGlass's geometry.</summary>
+    internal static Uri BaseThemeUri(AppTheme theme) =>
+        new($"{ThemeDictionaryPrefix}{(theme == AppTheme.Dynamic ? "BaseDarkGlass" : theme.ToString())}.axaml");
+
+    /// <summary>
+    /// The base theme files, by source string — the ONLY dictionaries a theme switch is allowed to
+    /// remove. Four entries for five presets, because <see cref="AppTheme.Dynamic"/> rides on
+    /// BaseDarkGlass. Ordinal on purpose: these paths are written by this file and by
+    /// <c>App.axaml</c>, and an avares URI that differed by case would not have resolved at all.
+    /// </summary>
+    private static readonly HashSet<string> BaseThemeSources =
+        Enum.GetValues<AppTheme>()
+            .Select(theme => BaseThemeUri(theme).OriginalString)
+            .ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Replaces the base theme merged into <paramref name="dictionaries"/> with the one at
+    /// <paramref name="uri"/>, and returns the include that was inserted so the caller can hand it
+    /// back as <paramref name="current"/> next time.
+    /// </summary>
+    /// <remarks>
+    /// REMOVES BASE THEMES ONLY, NOT EVERY DICTIONARY (RemEx-gcqw5). This used to clear everything
+    /// that was not the override dictionary, which did replace the previous theme but also deleted
+    /// any other <c>ResourceInclude</c> <c>App.axaml</c> merges — on the FIRST theme switch, never
+    /// at startup, with no exception and no log line. RemEx-qbzl1 had to move the Card
+    /// <c>ControlTheme</c> out of a merged dictionary to escape it; the next one added would have
+    /// been caught the same way.
+    ///
+    /// MATCHED AGAINST <see cref="BaseThemeSources"/> — the exact four files, NOT the
+    /// <c>Themes/</c> folder prefix. That folder also holds <c>Chrome/WindowChrome.axaml</c>
+    /// (merged by <c>MainWindow.axaml</c>) and <c>Shared/FallbackPalette.axaml</c>. A prefix test
+    /// would eat either of those the moment it was hoisted to app scope AND leave the real theme
+    /// sitting behind the new one, where it keeps painting — the same silent failure this method
+    /// exists to remove, in a narrower disguise.
+    ///
+    /// <paramref name="current"/> is null on the first call, because the theme in place then is the
+    /// one <c>App.axaml</c> declared rather than one this service inserted. It still has to go, or
+    /// it would outrank every later theme: the override dictionary is appended LAST to take
+    /// precedence, so position in this list is priority, and a stale theme left behind the new one
+    /// at index 0 would keep painting.
+    ///
+    /// EVERY match goes, not just the first. A duplicate base theme is precisely the state that
+    /// paints the wrong palette forever, so sweeping the whole list is what keeps this self-healing
+    /// the way the clear-everything loop it replaced was.
+    ///
+    /// Insert at 0 rather than append, for that same reason: the theme is the floor everything else
+    /// overrides.
+    /// </remarks>
+    internal static IResourceProvider SwapBaseTheme(
+        IList<IResourceProvider> dictionaries,
+        IResourceProvider? current,
+        Uri uri)
+    {
+        for (var i = dictionaries.Count - 1; i >= 0; i--)
+        {
+            if (ReferenceEquals(dictionaries[i], current) || IsBaseTheme(dictionaries[i]))
+            {
+                dictionaries.RemoveAt(i);
+            }
+        }
+
+        var include = new ResourceInclude(uri) { Source = uri };
+        dictionaries.Insert(0, include);
+        return include;
+    }
+
+    /// <summary>Whether a merged dictionary is one of the base theme files — that is, something a
+    /// theme switch owns and may replace. Anything else merged into <c>Application.Resources</c>
+    /// is never a candidate.</summary>
+    private static bool IsBaseTheme(IResourceProvider dictionary) =>
+        dictionary is ResourceInclude { Source: { } source }
+        && BaseThemeSources.Contains(source.OriginalString);
 
     public void SetResourceOverrideInternal(string key, object value)
     {

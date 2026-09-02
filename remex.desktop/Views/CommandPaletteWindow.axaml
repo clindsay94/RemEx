@@ -47,23 +47,66 @@
                         <Setter Property="Padding" Value="10,6" />
                         <Setter Property="Cursor" Value="Hand" />
                     </Style>
-                    <!-- /template/ IS REQUIRED HERE, not fragile decoration (RemEx-f51fa). The
-                         tempting tidy-up — set Background on the ListBoxItem and let the template
-                         binding carry it — silently loses both fills: Fluent 12.1.1's ListBoxItem
-                         ControlTheme set :pointerover and :selected Backgrounds directly on
-                         PART_ContentPresenter (ControlTheme style + activator, frame 5), which
-                         outranked the TemplateBinding (frame 6) a control-level value would ride in
-                         on. Only another presenter-level setter with an activator (app style,
-                         frame 3) beat it — which is exactly what these are. The app now applies
-                         Material 3.19.0 instead, whose ListBoxItem template has no ContentPresenter
-                         at all — re-verify the /template/ ContentPresenter selectors below still
-                         match anything under Material before relying on this file again, or the
-                         o9gd text recolours further down would sit on an unpainted fill. -->
-                    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                    <!-- BOTH FILLS GO ON THE CONTROL (RemEx-f51fa, corrected by RemEx-3ule6). These
+                         two selectors used to read `/template/ ContentPresenter`, which was right
+                         for Fluent 12.1.1: Fluent set its OWN :pointerover and :selected Backgrounds
+                         on PART_ContentPresenter, so only a part-level app style outranked them.
+                         RemEx-prkot then handed every template to Material 3.19.0 (App.axaml), whose
+                         ListBoxItem has NO ContentPresenter part at all — it is
+                         Border#PART_RootBorder > Panel#PART_RootPanel > { Border#PART_BehaviourEffect,
+                         RippleEffect#PART_Ripple, Border#PART_HoverEffect }, with the content inside
+                         the ripple. Both selectors matched nothing, the fills vanished, and the o9gd
+                         text recolours below kept firing over Material's own faint scrim — an
+                         accent-tinted label on a nearly-unpainted row, which is the
+                         unreadable-selected-row bug o9gd was raised to fix.
+
+                         A CONTROL-LEVEL Background IS ENOUGH UNDER MATERIAL, and that is the whole
+                         difference from the Fluent era. Material template-binds Background to
+                         PART_RootBorder — the outermost, bottom-most Border, drawn beneath the
+                         content and already carrying the CornerRadius — and sets no competing
+                         Background on any part, so there is nothing to outrank and no part name to
+                         go stale. This is how the shipped nav rail paints its selection
+                         (ShellView.axaml, ListBoxItem.nav-item:selected), what
+                         docs/REGRESSION-GUARDS.md records about PART_RootBorder, and the invariant
+                         FocusVisibleStyleGuardTests pins for ListBoxItem under Material
+                         (RemEx-kgs7g — same control, same theme, same root cause). Reaching into
+                         the template for a plain fill would render identically; it just buys a part
+                         name that the next Material bump can rename out from under us.
+
+                         AND NOT PART_HoverEffect, which is the tempting target because it IS what
+                         Material varies for these states: it is the LAST child of the panel, so it
+                         paints OVER the content, and an opaque accent there covers the label rather
+                         than backing it.
+
+                         :selected is declared after :pointerover on purpose — same priority, so the
+                         later one wins and a hovered selected row keeps the accent. -->
+                    <Style Selector="ListBoxItem:pointerover">
                         <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}" />
                     </Style>
-                    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                    <Style Selector="ListBoxItem:selected">
                         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                    </Style>
+
+                    <!-- AND MATERIAL'S OWN SELECTED VEIL GOES WHERE THE GUARANTEE IS MEASURED
+                         (RemEx-3ule6). /template/ IS required here, unlike the fills above: Opacity
+                         on the control would fade the whole row, and it is specifically Material's
+                         :selected state layer — MaterialBodyBrush at 0.12 on PART_HoverEffect —
+                         that must stop compositing over the accent. AccentForegroundBrush is pinned
+                         at AA against each theme's RAW accent by AccentForegroundContrastTests, and
+                         a body-coloured scrim over that fill measures something else. The accent IS
+                         the selection indicator on this row, so the veil is redundant as well as
+                         inaccurate.
+
+                         SCOPED TO :not(:pointerover) DELIBERATELY (review). Zeroing it
+                         unconditionally made the selected row pixel-identical hovered and unhovered
+                         — the one row in the list that stopped answering the pointer. Under the
+                         pointer Material's veil comes back, which is what shipped before this bead;
+                         the keyboard path (arrow onto a row, read it, press Enter) is the one the AA
+                         measurement describes, and it is now the one that renders it. Unselected
+                         rows keep Material's 0.05 hover veil on top of CardBackgroundHoverBrush,
+                         which carries no contrast guarantee to void. -->
+                    <Style Selector="ListBoxItem:selected:not(:pointerover) /template/ Border#PART_HoverEffect">
+                        <Setter Property="Opacity" Value="0" />
                     </Style>
 
                     <!-- ═══ Row text, and it has to follow the fill (RemEx-o9gd) ═══

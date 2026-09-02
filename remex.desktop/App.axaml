@@ -42,11 +42,14 @@
 
             <!-- ═══ THE CARD SURFACE (RemEx-qbzl1). Material.Styles' Card, re-themed rather than
                  used as shipped, and declared as an OWN key of Application.Resources on purpose.
-                 It CANNOT be a ResourceInclude: ThemeService.ApplyBaseThemeInternal clears every
-                 merged dictionary except its own override dictionary before inserting the new
-                 theme file, so a merged Card theme would survive until the first theme switch and
-                 then vanish — cards would silently fall back to Material's opaque paper on a
-                 translucent shell. Own keys are untouched by that loop.
+                 It was FORCED to be an own key: ThemeService used to clear every merged dictionary
+                 except its own override dictionary before inserting the new theme file, so a merged
+                 Card theme survived launch and then vanished on the first theme switch — cards
+                 silently falling back to Material's opaque paper on a translucent shell. That trap
+                 is gone (RemEx-gcqw5): a switch now removes only the base theme files it owns, and
+                 a merged dictionary would survive. The own key STAYS, because it is the right shape
+                 for a single ControlTheme — one key, no second file to load — and because
+                 CardSurfaceTests pins it structurally by reading this element out of App.axaml.
 
                  Two things are re-themed, and both are the reason a stock Card will not do:
 
@@ -1004,6 +1007,33 @@
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
         <Style Selector="Slider:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!-- TabItem was the one interactive control this block missed (RemEx-83zq1). Material
+             3.19.0's TabItem theme styles no :focus state AND leaves FocusAdorner null, and there
+             is no framework default behind it - measured null both before and during
+             :focus-visible. So a keyboard user tabbing onto DiagnosticLogsView's "Live Application
+             Logs" / "System Event Logs" headers got no focus indicator at all, not a differently
+             drawn one. That is the accessibility hole RemEx-2p19 closed for the other ten, not a
+             cosmetic inconsistency.
+
+             CONTROL-LEVEL, NOT `/template/ ContentPresenter`, and not by analogy with ListBoxItem.
+             The template form is not inert - a ContentPresenter renders its own BorderBrush and
+             BorderThickness whether or not the template binds them, which is exactly why the
+             Button/ToggleButton/RepeatButton template-form selectors work. It is wrong here for a
+             different reason. Material's tree is
+                 Border#PART_RootBorder > Panel#PART_RootPanel > RippleEffect#PART_Ripple
+                 > ContentPresenter#PART_ContentPresenter > Panel#PART_InnerPanel
+                 > ContentPresenter#PART_ContentPresenter
+             so the presenter the selector matches wraps the header *text*: probed on a 360x48
+             header, the template form drew its 2px ring at 150,14,59,21 - tight around the label,
+             floating inside the header. That is the "ring around the wrong rectangle" failure
+             RemEx-kgs7g exists to prevent. PART_RootBorder is the header's own rectangle and
+             template-binds BorderBrush, BorderThickness and CornerRadius, so the control-level form
+             frames the header and follows its corners. -->
+        <Style Selector="TabItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
