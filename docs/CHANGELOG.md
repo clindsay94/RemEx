@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Canvas moves onto the Material type scale, icon set and elevation ramp: undo/redo, sync and
+  pin icons replace their glyph text, the coach-mark hint and shadowed surfaces use the shared
+  elevation resources, and the staging drawer's two sensor lists share one item style instead of
+  two identical copies. (RemEx-evw7y)
+
 - App Launcher tiles use the Material icon set and type scale now instead of emoji and inline
   sizes; the tile's hover lift comes from the shared elevation ramp, and right-clicking a tile
   now offers the same move/edit/remove actions as its toolbar. (RemEx-o2fee)

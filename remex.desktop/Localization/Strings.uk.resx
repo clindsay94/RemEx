@@ -1185,7 +1185,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>🔧 Перезавантажити в UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Закріпити/Відкріпити на Головній</value>
+    <value>Закріпити/Відкріпити на Головній</value>
   </data>
 
   

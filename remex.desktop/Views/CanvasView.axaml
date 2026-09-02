@@ -36,6 +36,8 @@
             </Setter>
         </Style>
         <!-- ═══ DraggableCard chrome ═══ -->
+        <!-- Stays a local Style, not a ControlTheme, until RemEx-9iz00.3: it carries the resize-thumb
+             hit-test template and there is no headless render to verify a template move against. -->
         <Style Selector="ctrl|DraggableCard">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
@@ -44,7 +46,7 @@
             <Setter Property="ClipToBounds" Value="False"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 8 32 0 #40000000" Padding="0">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
                         <Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
                             <!-- Resize grip -->
@@ -52,9 +54,9 @@
                                 <Thumb.Template>
                                     <ControlTemplate>
                                         <Canvas Width="12" Height="12" Margin="2">
-                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="#6666AA" StrokeThickness="1.5"/>
-                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="#6666AA" StrokeThickness="1.5"/>
-                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
                                         </Canvas>
                                     </ControlTemplate>
                                 </Thumb.Template>
@@ -75,6 +77,14 @@
         <!-- ═══ Staging drawer buttons ═══ -->
 
         <!-- ═══ Action buttons inside cards ═══ -->
+
+        <!-- Staging drawer ListBoxes: both the active-sensors and new-sensors lists reset item chrome
+             the same way, so the shared class replaces two identical local blocks (RemEx-evw7y). -->
+        <Style Selector="ListBox.staging ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
 
         <!-- ═══ Latency bar ═══ -->
         <Style Selector="Border.lat-bar">
@@ -97,44 +107,44 @@
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <Button AutomationProperties.Name="{local:Localize Canvas_Header}" Classes="secondary" IsHitTestVisible="False" Background="Transparent">
-                    <TextBlock Text="{local:Localize Canvas_Header}" FontFamily="{DynamicResource PageTitleFontFamily}" FontSize="28" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    <TextBlock Text="{local:Localize Canvas_Header}" Theme="{StaticResource Headline5TextBlock}" FontFamily="{DynamicResource PageTitleFontFamily}" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
-                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="secondary" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Undo" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <!-- Label was gated on the shell SplitView's IsPaneOpen. That ancestor stopped
                              existing when the shell moved to an overlay drawer (RemEx-q3mle), and the
                              binding would have failed silently to FallbackValue=False — leaving a bare
                              arrow with no word next to it, permanently. The gate is not re-pointed
                              because an overlay drawer has no compact state for it to mean anything:
                              it floats above this toolbar instead of narrowing it. -->
-                        <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Undo}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_RedoTooltip}" Grid.Column="4" Classes="secondary" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12"/>
+                        <mi:MaterialIcon Kind="Redo" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Redo}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="secondary" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Save}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_Sync}" Grid.Column="6" Classes="secondary" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Sync}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="7" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Download" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
-                        <TextBlock FontSize="12">
+                        <TextBlock Theme="{StaticResource CaptionTextBlock}">
                             <TextBlock.Text>
                                 <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
                                     <Binding Path="[Canvas_Sensors]" Source="{x:Static svc:LocalizationService.Instance}"/>
@@ -146,28 +156,28 @@
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="8" Classes="secondary" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
+                        <mi:MaterialIcon Kind="Restore" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_ResetView}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_ToggleMinimapTooltip}" Grid.Column="9" Classes="secondary" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Map}" FontSize="12"/>
+                        <mi:MaterialIcon Kind="Map" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Map}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <!-- P8-I: Snapshot export -->
                 <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="10" Classes="secondary" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
+                        <mi:MaterialIcon Kind="Export" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Export}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
                     <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="secondary" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
-                        <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Copy}" Theme="{StaticResource CaptionTextBlock}"/>
                     </Button>
-                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Classes="snapshot-status" Classes.failed="{Binding !SnapshotSucceeded}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
+                    <TextBlock Text="{Binding SnapshotStatus}" Theme="{StaticResource OverlineTextBlock}" Classes="snapshot-status" Classes.failed="{Binding !SnapshotSucceeded}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -224,7 +234,7 @@
                                             <Separator/>
                                             <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding TogglePinToHomeCommand}">
                                                 <MenuItem.Icon>
-                                                    <TextBlock Text="📌" IsVisible="{Binding IsPinnedToHome}"/>
+                                                    <mi:MaterialIcon Kind="Pin" Width="16" Height="16" IsVisible="{Binding IsPinnedToHome}"/>
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <Separator/>
@@ -236,24 +246,24 @@
                                     <Grid>
                                         <!-- ═══ CONNECTION ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
-                                            <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{local:Localize Canvas_Connection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <!-- Phone presence, not the loopback link (RemEx-7zzw). -->
                                                 <Ellipse Width="10" Height="10" AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                                                 </Ellipse>
-                                                <TextBlock Text="{Binding Presence.PresenceText}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
                                             <!-- Demoted, not dropped (review). I first replaced this line, reasoning that
                                                  HostRuntimeText carried the host detail — it does not: that lives on
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
-                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
-                                            <TextBlock Text="{local:Localize Canvas_Actions}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{local:Localize Canvas_Actions}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                             <Button Classes="primary" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
                                             <!-- Connecting is the one action here with no end the user can see, so it is the one that
                                                  needs a busy indicator rather than just a button that changed
@@ -274,16 +284,16 @@
 
                                         <!-- ═══ LATENCY ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsLatency}}">
-                                            <TextBlock Text="{local:Localize Canvas_Latency}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{local:Localize Canvas_Latency}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Connection.LatencyText}" Theme="{StaticResource Headline5TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
                                                 <StackPanel>
-                                                    <TextBlock Text="{local:Localize Canvas_Avg}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
-                                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                                                    <TextBlock Text="{local:Localize Canvas_Avg}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
                                                 </StackPanel>
                                                 <StackPanel>
-                                                    <TextBlock Text="{local:Localize Canvas_Max}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
-                                                    <TextBlock Foreground="{DynamicResource SystemErrorBrush}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                                                    <TextBlock Text="{local:Localize Canvas_Max}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                    <TextBlock Foreground="{DynamicResource SystemErrorBrush}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
@@ -306,8 +316,8 @@
                                         <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}" RowDefinitions="Auto,*">
                                             <!-- Row 0: title band on top, above the sparkline (readable without a plate). -->
                                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8,5,8,2" VerticalAlignment="Top">
-                                                <TextBlock Text="📌" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
-                                                <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" FontSize="11" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis"/>
+                                                <mi:MaterialIcon Kind="Pin" Width="10" Height="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
+                                                <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
 
                                             <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
@@ -320,7 +330,7 @@
                                                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="34" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding Sensor.ShowValueOverlay}">
                                                     <Border CornerRadius="6" Padding="7,3" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock FontSize="20" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                            <TextBlock Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                                 <TextBlock.Text>
                                                                     <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                                         <Binding Path="Sensor.Value"/>
@@ -328,7 +338,7 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.Unit}" FontSize="11" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.Unit}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Viewbox>
@@ -339,7 +349,7 @@
                                                          IsVisible="{Binding Sensor.HasSecondary}">
                                                     <Border CornerRadius="6" Padding="7,3" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock FontSize="17" FontWeight="Black" Foreground="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                            <TextBlock Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                                 <TextBlock.Text>
                                                                     <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                                         <Binding Path="Sensor.SecondarySensor.Value"/>
@@ -347,7 +357,7 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Viewbox>
@@ -359,11 +369,11 @@
                                                     <StackPanel Spacing="3">
                                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName}" FontSize="9" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding Sensor.HasSecondary}">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" FontSize="9" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
@@ -380,7 +390,7 @@
                 </ctrl:ZoomableCanvas>
 
                 <!-- Minimap overlay -->
-                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" IsVisible="{Binding IsMinimapVisible}" CornerRadius="8" ClipToBounds="True" BoxShadow="0 4 24 0 #50000000">
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" IsVisible="{Binding IsMinimapVisible}" CornerRadius="8" ClipToBounds="True" BoxShadow="{DynamicResource Elevation2Shadow}">
                     <ctrl:CanvasMinimap x:Name="Minimap" Width="200" Height="160" Cards="{Binding Cards}" ViewportRect="{Binding MinimapViewportRect}"/>
                 </Border>
 
@@ -388,20 +398,20 @@
                 <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20"
                         IsVisible="{Binding HasSelection}"
                         Background="{DynamicResource GlassBaseMediumBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
-                        CornerRadius="12" Padding="10,6" BoxShadow="0 6 28 0 #60000000">
+                        CornerRadius="12" Padding="10,6" BoxShadow="{DynamicResource Elevation2Shadow}">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock VerticalAlignment="Center" Margin="6,0,4,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SelectionSummary}"/>
+                        <TextBlock VerticalAlignment="Center" Margin="6,0,4,0" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SelectionSummary}"/>
                         <Button Classes="secondary" Command="{Binding PinSelectedCommand}" Content="{local:Localize Canvas_ActionPin}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <Button Classes="secondary danger" Command="{Binding RemoveSelectedCommand}" Content="{local:Localize Canvas_ActionRemove}"/>
                         <Button Classes="primary" Command="{Binding ClearSelectionCommand}" Content="{local:Localize Canvas_ActionDone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                     </StackPanel>
                 </Border>
 
-                <!-- ═══ "?" REPLAY HINT (always available) ═══ -->
+                <!-- ═══ REPLAY HINT (always available) ═══ -->
                 <Button HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Width="34" Height="34"
                         Classes="secondary" Command="{Binding ReplayCoachMarkCommand}" ToolTip.Tip="{local:Localize Canvas_CoachReplayTooltip}" AutomationProperties.Name="{local:Localize Canvas_CoachReplayTooltip}"
                         CornerRadius="17" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <TextBlock Text="?" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
 
                 <!-- ═══ COACH MARK OVERLAY (first-visit hint) — card + arrow positioned in code-behind
@@ -414,11 +424,11 @@
                         <Border x:Name="CoachCard" Width="320"
                                 Background="{DynamicResource GlassBaseMediumBrush}"
                                 BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1.5"
-                                CornerRadius="12" Padding="18,16" BoxShadow="0 8 32 0 #70000000"
+                                CornerRadius="12" Padding="18,16" BoxShadow="{DynamicResource Elevation3Shadow}"
                                 SizeChanged="OnCoachCardSizeChanged">
                             <StackPanel Spacing="10">
-                                <TextBlock Text="{local:Localize Canvas_CoachTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="{local:Localize Canvas_CoachBody}" FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{local:Localize Canvas_CoachTitle}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{local:Localize Canvas_CoachBody}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <Button HorizontalAlignment="Right" Classes="primary" Command="{Binding DismissCoachMarkCommand}" Content="{local:Localize Canvas_CoachGotIt}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                             </StackPanel>
                         </Border>
@@ -430,25 +440,22 @@
             <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
-                        <TextBlock Text="{local:Localize Canvas_ActiveSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                        <TextBlock Text="{local:Localize Canvas_ActiveSensors}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                         <material:Card Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
                             <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                                <ListBox ItemsSource="{Binding SensorActivationItems}" Background="Transparent" BorderThickness="0" Padding="0">
-                                    <ListBox.Styles>
-                                        <Style Selector="ListBoxItem">
-                                            <Setter Property="Padding" Value="0"/>
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                        </Style>
-                                    </ListBox.Styles>
+                                <ListBox ItemsSource="{Binding SensorActivationItems}" Classes="staging" Background="Transparent" BorderThickness="0" Padding="0">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SensorActivationItem">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
                                                 <CheckBox AutomationProperties.Name="{Binding SensorName}" Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveUp}" Grid.Column="2" Classes="secondary compact" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
-                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveDown}" Grid.Column="3" Classes="secondary compact" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
+                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveUp}" Grid.Column="2" Classes="secondary compact" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}">
+                                                    <mi:MaterialIcon Kind="ArrowUp" Width="14" Height="14"/>
+                                                </Button>
+                                                <Button AutomationProperties.Name="{local:Localize A11y_MoveDown}" Grid.Column="3" Classes="secondary compact" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}">
+                                                    <mi:MaterialIcon Kind="ArrowDown" Width="14" Height="14"/>
+                                                </Button>
                                             </Grid>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
@@ -456,17 +463,12 @@
                             </ScrollViewer>
                         </material:Card>
 
-                        <TextBlock Text="{local:Localize Canvas_NewSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                        <TextBlock Text="{local:Localize Canvas_NewSensors}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <ScrollViewer>
-                        <ListBox ItemsSource="{Binding StagedCards}" Background="Transparent" BorderThickness="0" Padding="0">
+                        <ListBox ItemsSource="{Binding StagedCards}" Classes="staging" Background="Transparent" BorderThickness="0" Padding="0">
                             <ListBox.Styles>
-                                <Style Selector="ListBoxItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                </Style>
                                 <!--
                                   A conditional class rather than a converter: Avalonia toggles it
                                   straight from the bool, so there is no third type to keep in step
@@ -489,9 +491,9 @@
                                     <material:Card Classes="interactive" Classes.stale="{Binding IsStale}"
                                             Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CardTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
+                                                <TextBlock Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
                                                     <TextBlock.Text>
                                                         <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                             <Binding Path="Sensor.Value"/>
@@ -499,7 +501,7 @@
                                                         </MultiBinding>
                                                     </TextBlock.Text>
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                <TextBlock Text="{Binding Sensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
                                             <Button Classes="primary compact" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>

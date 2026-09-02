@@ -1185,7 +1185,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>🔧 UEFI'ye Yeniden Başlat</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
+    <value>Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
   </data>
 
   

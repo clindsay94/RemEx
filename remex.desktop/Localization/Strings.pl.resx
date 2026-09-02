@@ -1145,7 +1145,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>🔧 Uruchom do UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Przypnij/Odepnij od strony głównej</value>
+    <value>Przypnij/Odepnij od strony głównej</value>
   </data>
 
   

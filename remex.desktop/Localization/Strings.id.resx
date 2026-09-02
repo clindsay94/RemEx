@@ -1185,7 +1185,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>🔧 Reboot ke UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Alihkan Sematkan ke Beranda</value>
+    <value>Alihkan Sematkan ke Beranda</value>
   </data>
 
   

@@ -1185,7 +1185,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>🔧 Redémarrer vers UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Épingler/Désépingler de l'Accueil</value>
+    <value>Épingler/Désépingler de l'Accueil</value>
   </data>
 
   

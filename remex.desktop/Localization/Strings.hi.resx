@@ -1185,7 +1185,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>🔧 UEFI में रीबूट करें</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 होम पर पिन टॉगल करें</value>
+    <value>होम पर पिन टॉगल करें</value>
   </data>
 
   

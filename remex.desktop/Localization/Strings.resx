@@ -1230,7 +1230,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>🔧 Reboot to UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Toggle Pin to Home</value>
+    <value>Toggle Pin to Home</value>
   </data>
 
   

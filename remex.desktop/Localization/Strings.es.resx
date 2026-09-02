@@ -1191,7 +1191,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>🔧 Reiniciar a UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Alternar Fijar al Inicio</value>
+    <value>Alternar Fijar al Inicio</value>
   </data>
 
   
