@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The connection indicator at the bottom of the sidebar is a real button now, with a details
+  panel behind it.** It used to be a rounded pill with a coloured dot in it: no tooltip, no text
+  when the sidebar was narrow, and nothing to click. It now shows a phone icon with the presence
+  dot on it, your phone's name and the host link status, and clicking it opens a panel with the
+  phone's address, the host link, latency, and what runtime the host is on.
+
+  The panel's actions follow the situation. If the host itself is down you get Logs & Diagnostics
+  and Connect; if the host is fine but no phone is attached you get Pair a phone; if a phone is
+  attached you get Settings. Host-down and no-phone were the same grey dot before, which sent
+  people to check their phone and Wi-Fi when the fault was on this PC. There is deliberately no
+  Disconnect in the panel; that stays on Home and Settings. The IPv4 address is shown as an IPv4
+  address rather than the `::ffff:` form the dual-stack listener reports. Screen readers get one
+  name for the button and the presence as its help text, instead of the dot and the button each
+  announcing the same thing. (RemEx-44gc6)
+
 - **A colour picked up from your RGB hardware now reseeds the whole palette instead of repainting
   one swatch.** Hardware sync used to overwrite the accent colour and nothing else, leaving the
   other fifty-odd colours the app derives — surfaces, text, borders, containers — sitting on your

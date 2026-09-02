@@ -118,4 +118,53 @@ public class PhonePresenceTests
         Assert.Equal(PhonePresenceState.NoPhone, PhonePresence.Evaluate([]).State);
         Assert.Equal(PhonePresenceState.NoPhone, PhonePresence.Evaluate(null).State);
     }
+
+    // ─── RemEx-44gc6: RemoteAddress follows the same single-phone-only rule FirstDeviceName does ───
+
+    [Fact]
+    public void AnAddressIsOfferedOnlyWhenExactlyOnePhoneIsAttached()
+    {
+        Assert.Equal("192.168.1.42", PhonePresence.Evaluate([Phone("192.168.1.42")]).RemoteAddress);
+    }
+
+    [Fact]
+    public void SeveralPhonesOfferNoAddress_NamingOneWouldBeArbitrary()
+    {
+        var status = PhonePresence.Evaluate(
+            [Phone("192.168.1.42"), Phone("192.168.1.43")]);
+
+        Assert.Equal(PhonePresenceState.SeveralPhones, status.State);
+        Assert.Null(status.RemoteAddress);
+    }
+
+    [Fact]
+    public void TheLoopbackLinkAloneOffersNoAddress()
+    {
+        Assert.Null(PhonePresence.Evaluate([Loopback()]).RemoteAddress);
+    }
+
+    [Fact]
+    public void NoSessionsAtAllOffersNoAddress()
+    {
+        Assert.Null(PhonePresence.Evaluate([]).RemoteAddress);
+        Assert.Null(PhonePresence.Evaluate(null).RemoteAddress);
+    }
+
+    // A dual-stack listener reports an IPv4 phone as "::ffff:a.b.c.d". Seen live on 2026-09-01 in
+    // the first render of the status flyout; the address a person can compare against their phone
+    // is the unwrapped one.
+    [Fact]
+    public void AnIPv4MappedAddressIsShownAsPlainIPv4()
+    {
+        Assert.Equal("100.86.103.89", PhonePresence.Evaluate([Phone("::ffff:100.86.103.89")]).RemoteAddress);
+    }
+
+    [Theory]
+    [InlineData("fe80::1", "fe80::1")]
+    [InlineData("  10.0.0.7  ", "10.0.0.7")]
+    [InlineData("not-an-address", "not-an-address")]
+    public void OtherAddressFormsPassThroughUnchanged(string raw, string expected)
+    {
+        Assert.Equal(expected, PhonePresence.DisplayAddress(raw));
+    }
 }

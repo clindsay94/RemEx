@@ -694,24 +694,94 @@
                                     </ListBoxItem>
                                 </ListBox>
 
-                                <!-- ═══ Bottom: Connection Status ═══ -->
-                                <Border Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <!-- ═══ Bottom: Connection Status (RemEx-44gc6) ═══
+                                     Border → Button: a Border cannot be focused or carry a ToolTip, and the
+                                     status this control reports is the whole reason someone would want either.
+                                     No Classes vocabulary role fits a status summary (ButtonVocabularyTests),
+                                     so this stays a plain Button styled inline, matching how the banner/dismiss
+                                     Buttons elsewhere in this file already do it rather than adding a class. -->
+                                <Button Name="ConnectionStatusButton" Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand" AutomationProperties.Name="{conv:Localize A11y_ConnectionStatusButton}" AutomationProperties.HelpText="{Binding Presence.PresenceAccessibleName}">
+                                    <!-- THE COLLAPSED DRAWER'S ONLY INFORMATION CHANNEL (RemEx-44gc6). With the
+                                         drawer closed, column [1] below is hidden and this tooltip is the whole
+                                         picture — the reason host-down and no-phone have to read differently
+                                         here, not just in Presence.State. -->
+                                    <ToolTip.Tip>
+                                        <StackPanel Spacing="2" MaxWidth="260">
+                                            <TextBlock Text="{Binding Presence.SummaryTooltip}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Connection.LatencyText}" Theme="{StaticResource CaptionTextBlock}" IsVisible="{Binding Connection.IsConnected}"/>
+                                        </StackPanel>
+                                    </ToolTip.Tip>
                                     <Grid ColumnDefinitions="64,*">
-                                        <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
-                                        </Ellipse>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,12,0">
+                                        <!-- The dot carries NO AutomationProperties.Name (spec §7 / RemEx-x12a):
+                                             the name belongs on the Button, which now identifies the whole
+                                             control, not on a child that would double-announce it. -->
+                                        <Panel Grid.Column="0" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <mi:MaterialIcon Kind="Cellphone" Width="22" Height="22" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <Ellipse Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}"/>
+                                        </Panel>
+                                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="8,0,12,0" IsVisible="{Binding IsDrawerOpen}">
                                             <!-- PHONE PRESENCE IS THE HEADLINE, the loopback link is the detail
                                                  below it (RemEx-0z7w / RemEx-porg). Connection.IsConnected is the
                                                  UI's own socket to its embedded host and is up essentially always,
                                                  so leading with it told a user with no phone paired that they were
                                                  "Connected" — the one fact this panel exists to convey, absent.
                                                  The dot to the left is bound to phone presence for the same reason. -->
-                                            <TextBlock Text="{Binding Presence.PresenceText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Connection.LatencyText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding Connection.IsConnected}"/>
-                                        </StackPanel>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Presence.PresenceText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Connection.LatencyText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding Connection.IsConnected}"/>
+                                            </StackPanel>
+                                            <!-- Reads as actionable — this row now opens a flyout. -->
+                                            <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                        </Grid>
                                     </Grid>
-                                </Border>
+                                    <Button.Flyout>
+                                        <Flyout Placement="TopEdgeAlignedLeft">
+                                            <Border Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16" MaxWidth="320">
+                                                <StackPanel Spacing="12">
+                                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                                        <Ellipse Width="10" Height="10" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}"/>
+                                                        <StackPanel Spacing="0">
+                                                            <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                                            <TextBlock Text="{Binding Presence.DeviceName}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding Presence.DeviceName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <StackPanel Spacing="4">
+                                                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Presence.RemoteAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                            <TextBlock Grid.Column="0" Text="{conv:Localize Shell_StatusFlyoutAddress}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Presence.RemoteAddress}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Connection.StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                            <TextBlock Grid.Column="0" Text="{conv:Localize Shell_StatusFlyoutHostLink}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Connection.LatencyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                            <TextBlock Grid.Column="0" Text="{conv:Localize Shell_StatusFlyoutLatency}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Connection.LatencyText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Connection.HostRuntimeSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                            <TextBlock Grid.Column="0" Text="{conv:Localize Shell_StatusFlyoutHostRuntime}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Connection.HostRuntimeSummary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                    <!-- Action matrix (spec §4): HostDown is the only state offering two
+                                                         actions — understand (Diagnostics) and act (Reconnect). The other
+                                                         two states are one obvious next step each. No Disconnect here —
+                                                         it already exists on Settings/Home and a click-outside-dismisses
+                                                         flyout is the wrong home for something you cannot undo without a
+                                                         reconnect round-trip. -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                        <Button Content="{conv:Localize Shell_LogsDiagnostics}" Command="{Binding NavigateToDiagnosticLogsCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasNoPhone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Content="{conv:Localize Nav_Settings}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasPhone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
                             </Grid>
                         </Border>
                     </Border>

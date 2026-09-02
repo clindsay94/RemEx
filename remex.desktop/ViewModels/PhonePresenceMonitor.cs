@@ -69,7 +69,55 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
     [ObservableProperty]
     private string _presenceAccessibleName = string.Empty;
 
+    /// <summary>
+    /// The refinement <see cref="IsPhoneAttached"/> cannot express: host-down and no-phone both
+    /// collapse to <c>false</c> there, which is the exact defect RemEx-44gc6 exists to fix in the
+    /// collapsed drawer. ADDITIVE — <see cref="IsPhoneAttached"/> keeps its existing meaning for the
+    /// four other indicators RemEx-7zzw already lined up; a test pins that the two can never
+    /// contradict each other.
+    /// </summary>
+    [ObservableProperty]
+    private ShellConnectionState _state;
+
+    /// <summary>The single attached phone's name, mirroring <see cref="PhonePresenceStatus.FirstDeviceName"/>.</summary>
+    [ObservableProperty]
+    private string? _deviceName;
+
+    /// <summary>The single attached phone's address, mirroring <see cref="PhonePresenceStatus.RemoteAddress"/>.</summary>
+    [ObservableProperty]
+    private string? _remoteAddress;
+
+    /// <summary>
+    /// What the collapsed drawer's <c>ToolTip.Tip</c> shows — the one channel that survives when the
+    /// text column is hidden (RemEx-44gc6). Starts from the same localized <see cref="PresenceText"/>
+    /// every other surface already shows, with the address appended when there is one to show.
+    /// </summary>
+    [ObservableProperty]
+    private string _summaryTooltip = string.Empty;
+
     private DispatcherTimer? _timer;
+
+    /// <summary>Whether the embedded host is not registered — a PC fault, not an absent phone.</summary>
+    public bool IsHostDown => State == ShellConnectionState.HostDown;
+
+    /// <summary>Whether the host is healthy and no phone is attached.</summary>
+    public bool HasNoPhone => State == ShellConnectionState.NoPhone;
+
+    /// <summary>Whether at least one phone is attached — the <see cref="State"/>-flavoured twin of
+    /// <see cref="IsPhoneAttached"/>, for the flyout's action matrix.</summary>
+    public bool HasPhone => State == ShellConnectionState.PhoneAttached;
+
+    /// <summary>
+    /// CommunityToolkit.Mvvm generated partial hook — fired whenever <see cref="State"/> changes, so
+    /// the three computed booleans above stay in sync without a caller having to remember to raise
+    /// them.
+    /// </summary>
+    partial void OnStateChanged(ShellConnectionState value)
+    {
+        OnPropertyChanged(nameof(IsHostDown));
+        OnPropertyChanged(nameof(HasNoPhone));
+        OnPropertyChanged(nameof(HasPhone));
+    }
 
     private PhonePresenceMonitor()
     {
@@ -134,12 +182,16 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
         if (source is null)
         {
             IsPhoneAttached = false;
+            State = ShellConnectionState.HostDown;
+            DeviceName = null;
+            RemoteAddress = null;
 
             // The same words to a screen reader as on the screen. Reusing the no-phone a11y string
             // would say "no phone" while the row said the host is down, which is the shape that
             // makes an indicator worse than none.
             PresenceText = LocalizationService.Instance["Shell_PhonePresenceHostDown"];
             PresenceAccessibleName = PresenceText;
+            SummaryTooltip = PresenceText;
             return;
         }
 
@@ -149,11 +201,25 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
 
         var attached = status.State != PhonePresenceState.NoPhone;
         IsPhoneAttached = attached;
+        State = attached ? ShellConnectionState.PhoneAttached : ShellConnectionState.NoPhone;
+        DeviceName = status.FirstDeviceName;
+        RemoteAddress = status.RemoteAddress;
         PresenceAccessibleName = LocalizationService.Instance[
             attached ? "A11y_PhonePresenceAttached" : "A11y_PhonePresenceNone"];
         PresenceText = argument is null
             ? template
             : string.Format(CultureInfo.CurrentCulture, template, argument);
+
+        // RemoteAddress is null whenever there is nothing worth appending — no phone, several
+        // phones, or a single phone Evaluate could not resolve an address for — so the tooltip
+        // degrades to the plain presence line rather than a format string with a hole in it.
+        SummaryTooltip = RemoteAddress is null
+            ? PresenceText
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Shell_StatusTooltipAddressLine"],
+                PresenceText,
+                RemoteAddress);
     }
 
     private void StartPolling()

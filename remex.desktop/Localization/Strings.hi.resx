@@ -3204,4 +3204,22 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_SeedFromWallpaper" xml:space="preserve">
     <value>वॉलपेपर से</value>
   </data>
+  <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
+    <value>{0}&#xD;&#xA;पता: {1}</value>
+  </data>
+  <data name="Shell_StatusFlyoutAddress" xml:space="preserve">
+    <value>पता</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
+    <value>होस्ट लिंक</value>
+  </data>
+  <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
+    <value>विलंबता</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostRuntime" xml:space="preserve">
+    <value>रनटाइम</value>
+  </data>
+  <data name="A11y_ConnectionStatusButton" xml:space="preserve">
+    <value>कनेक्शन स्थिति</value>
+  </data>
 </root>

@@ -21,6 +21,24 @@ public enum PhonePresenceState
     SeveralPhones
 }
 
+/// <summary>What the shell's connection-status control should render, beyond the plain bool
+/// <see cref="ViewModels.PhonePresenceMonitor.IsPhoneAttached"/> already exposes (RemEx-44gc6).</summary>
+/// <remarks>
+/// ADDITIVE ONLY. <c>IsPhoneAttached</c> is load-bearing for RemEx-7zzw's four other indicators and
+/// does not change meaning; this enum only lets the collapsed-drawer control say more than one bit.
+/// </remarks>
+public enum ShellConnectionState
+{
+    /// <summary>The embedded host is not registered — a PC-side fault, not an absent phone.</summary>
+    HostDown,
+
+    /// <summary>The host is healthy and no phone is attached.</summary>
+    NoPhone,
+
+    /// <summary>At least one phone is attached.</summary>
+    PhoneAttached
+}
+
 /// <summary>The presence picture the shell renders.</summary>
 /// <param name="State">Whether any phone is attached.</param>
 /// <param name="PhoneCount">How many, excluding loopback.</param>
@@ -28,10 +46,17 @@ public enum PhonePresenceState
 /// The name of a connected phone when exactly one is attached and it has identified itself;
 /// otherwise null.
 /// </param>
+/// <param name="RemoteAddress">
+/// The single attached phone's address as the host sees it, offered under the same rule as
+/// <paramref name="FirstDeviceName"/> and for the same reason (RemEx-44gc6): naming ONE of several
+/// peers is arbitrary and reads as though it is the only one, so with more than one phone attached
+/// this stays null.
+/// </param>
 public readonly record struct PhonePresenceStatus(
     PhonePresenceState State,
     int PhoneCount,
-    string? FirstDeviceName);
+    string? FirstDeviceName,
+    string? RemoteAddress = null);
 
 /// <summary>
 /// Separates "a phone is attached" from "the loopback link is up" (RemEx-porg).
@@ -78,7 +103,27 @@ public static class PhonePresence
             ? phones[0].DeviceName
             : null;
 
-        return new PhonePresenceStatus(state, phones.Count, name);
+        // Same rule, same reason, for the address (RemEx-44gc6): only the single-phone case names a
+        // peer, and only when there is actually something to show.
+        var address = phones.Count == 1 && !string.IsNullOrWhiteSpace(phones[0].RemoteAddress)
+            ? DisplayAddress(phones[0].RemoteAddress!)
+            : null;
+
+        return new PhonePresenceStatus(state, phones.Count, name, address);
+    }
+
+    /// <summary>
+    /// The address as a person expects to read it. A dual-stack listener reports an IPv4 peer as
+    /// the IPv4-mapped IPv6 form (<c>::ffff:100.86.103.89</c>); that is the same address the phone
+    /// shows in its own settings only once the <c>::ffff:</c> prefix is gone, so it is unwrapped
+    /// here. Anything that does not parse is passed through untouched rather than hidden.
+    /// </summary>
+    internal static string DisplayAddress(string raw)
+    {
+        var trimmed = raw.Trim();
+        return IPAddress.TryParse(trimmed, out var parsed) && parsed.IsIPv4MappedToIPv6
+            ? parsed.MapToIPv4().ToString()
+            : trimmed;
     }
 
     /// <summary>
