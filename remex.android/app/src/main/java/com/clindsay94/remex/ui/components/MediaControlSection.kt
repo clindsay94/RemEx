@@ -88,7 +88,7 @@ import kotlinx.coroutines.launch
  * playing", which would restart a track instead of pausing it. If a device test on CachyOS shows
  * that symptom, that pair is the first place to look.
  */
-private object MediaVirtualKeys {
+internal object MediaVirtualKeys {
     const val VOLUME_MUTE = 0xAD
     const val VOLUME_DOWN = 0xAE
     const val VOLUME_UP = 0xAF

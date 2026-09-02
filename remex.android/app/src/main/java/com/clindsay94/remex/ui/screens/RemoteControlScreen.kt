@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -40,9 +41,14 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaPlaybackStatus
-import com.clindsay94.remex.ui.components.MediaControlSection
+import com.clindsay94.remex.ui.components.MediaMiniPlayer
+import com.clindsay94.remex.ui.components.MediaNowPlayingSheet
+import com.clindsay94.remex.ui.components.MediaVirtualKeys
+import com.clindsay94.remex.ui.components.MiniPlayerHeight
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
+import android.graphics.Bitmap
+import androidx.compose.animation.core.animateDpAsState
 
 private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     SESSION(R.string.rc_category_session),
@@ -129,8 +135,33 @@ private data class RemoteCommandCard(
  * so the two cannot drift apart: a scroll that merely brings the Confirm/Cancel row's trailing
  * edge to the viewport bottom would park it *behind* the toolbar, which is the same
  * discoverability bug in a new place. (RemEx-tgl1.)
+ *
+ * ONLY the toolbar's own footprint. Since RemEx-vtorl.5 the docked mini-player can raise the
+ * toolbar further still, so a bare constant is no longer the whole answer - see
+ * [rememberFloatingToolbarOcclusion], which every use site now reads instead.
  */
-private val FloatingToolbarOcclusion = 104.dp
+private val ToolbarOnlyOcclusion = 104.dp
+
+/**
+ * How much of the bottom of the screen the floating toolbar stack occludes right now, animated
+ * as the docked [MediaMiniPlayer] appears and disappears above the nav bar.
+ *
+ * Both former reads of the bare [ToolbarOnlyOcclusion] constant (the grid's bottom
+ * [PaddingValues] and the RemEx-tgl1 bring-into-view maths) go through this instead, so a track
+ * starting or stopping mid-session can never leave one of the two out of step with the other.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun rememberFloatingToolbarOcclusion(miniPlayerShown: Boolean): Dp {
+    val target = ToolbarOnlyOcclusion + if (miniPlayerShown) MiniPlayerHeight else 0.dp
+    val animated by
+            animateDpAsState(
+                    targetValue = target,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    label = "floatingToolbarOcclusion"
+            )
+    return animated
+}
 
 private val remoteCommandCards =
         listOf(
@@ -248,7 +279,9 @@ data class RemoteControlUiState(
          * was the only consumer, and the track metadata sat parsed and unread one layer below —
          * which is precisely how a wire field that nothing renders stays that way.
          */
-        val playback: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown
+        val playback: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown,
+        /** The bitmap for [playback]'s current `artworkId`, or null. Drives [MediaMiniPlayer]/[MediaNowPlayingSheet]. */
+        val artwork: Bitmap? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -267,6 +300,9 @@ fun RemoteControlScreen(
     // snapshot the manager already resets on connect and disconnect, and a pass-through flow would be
     // a second place for that lifetime rule to drift out of step (RemEx-xx6xf).
     val mediaState by RemexClientManager.mediaState.collectAsStateWithLifecycle()
+    // Same lifetime rule as mediaState above: RemexClientManager resets this on disconnect, so a
+    // pass-through view-model flow would be a second place for that reset to drift out of step.
+    val mediaArtwork by RemexClientManager.mediaArtwork.collectAsStateWithLifecycle()
 
     val uiState =
             RemoteControlUiState(
@@ -275,7 +311,8 @@ fun RemoteControlScreen(
                     cornerRadius = cornerRadius,
                     isConnected = isConnected,
                     supportsInputSimulation = supportsInputSimulation,
-                    playback = mediaState
+                    playback = mediaState,
+                    artwork = mediaArtwork
             )
 
     RemoteControlScreenContent(
@@ -332,6 +369,13 @@ fun RemoteControlScreenContent(
         val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
         val view = LocalView.current
 
+        // UNKNOWN has no reading to dock a bar about (RemEx-nmvz6's reasoning applied to layout):
+        // the whole stacking/occlusion story below is driven off this one flag rather than
+        // repeating the status check at each of its three use sites.
+        val miniPlayerShown = uiState.playback.status != MediaPlaybackStatus.UNKNOWN
+        val toolbarOcclusion = rememberFloatingToolbarOcclusion(miniPlayerShown)
+        var sheetOpen by remember { mutableStateOf(false) }
+
       Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
         LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -341,13 +385,14 @@ fun RemoteControlScreenContent(
                 // mid-grid, so without it the keyboard covers the row being typed into
                 // (RemEx-a9ci).
                 modifier = Modifier.fillMaxSize().imePadding(),
-                // Extra bottom inset so the floating toolbar never covers the last row.
+                // Extra bottom inset so the floating toolbar (and, when docked, the mini-player
+                // beneath it) never cover the last row.
                 contentPadding =
                         PaddingValues(
                                 start = 16.dp,
                                 top = 16.dp,
                                 end = 16.dp,
-                                bottom = FloatingToolbarOcclusion
+                                bottom = toolbarOcclusion
                         )
         ) {
             item(span = { GridItemSpan(2) }) {
@@ -367,32 +412,9 @@ fun RemoteControlScreenContent(
                 }
             }
 
-            // Media sits FIRST, above Session/Power/Energy. It is the only group here that is
-            // reversible, repeatable and used casually - everything below it either interrupts the
-            // session or shuts the machine down, and half of it shows a confirm face. Putting the
-            // harmless controls where the thumb lands keeps the destructive ones further away.
-            item(span = { GridItemSpan(2) }) {
-                SectionHeader(
-                        label = stringResource(R.string.rc_category_media),
-                        icon = Icons.Default.MusicNote,
-                        backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        topPadding = 0.dp
-                )
-            }
-            item(span = { GridItemSpan(2) }) {
-                MediaControlSection(
-                        connected = uiState.isConnected,
-                        inputSupported = uiState.supportsInputSimulation,
-                        playback = uiState.playback,
-                        shape =
-                                com.clindsay94.remex.ui.theme.cardShape(
-                                        uiState.shapePreset,
-                                        uiState.cornerRadius
-                                ),
-                        onSendKey = onSendKey
-                )
-            }
+            // Media moved out of the grid onto the docked mini-player (RemEx-vtorl.5): it was the
+            // only reversible, casually-used group here, which is exactly why it now lives where
+            // the thumb always lands rather than scrolling away with the rest of the grid.
 
             CommandCategory.entries.forEach { category ->
                 val categoryCards = cardsByCategory[category].orEmpty()
@@ -407,6 +429,7 @@ fun RemoteControlScreenContent(
                             card = cmdCard,
                             isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
                             timerText = timerInputs[cmdCard.id].orEmpty(),
+                            toolbarOcclusion = toolbarOcclusion,
                             shape =
                                     com.clindsay94.remex.ui.theme.cardShape(
                                             uiState.shapePreset,
@@ -445,12 +468,22 @@ fun RemoteControlScreenContent(
             }
         }
 
+        // The toolbar's own clearance above the nav bar / docked mini-player: 16.dp normally, plus
+        // the bar's height while it is docked so the two never overlap. Animated with the same
+        // spec as rememberFloatingToolbarOcclusion so both raises land in step.
+        val toolbarBottomPadding by
+                animateDpAsState(
+                        targetValue = 16.dp + if (miniPlayerShown) MiniPlayerHeight else 0.dp,
+                        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                        label = "toolbarBottomPadding"
+                )
+
         // M3 Expressive: floating quick-actions for the most-used safe commands.
         HorizontalFloatingToolbar(
             expanded = true,
             modifier = Modifier.align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+                .padding(bottom = toolbarBottomPadding)
         ) {
             FilledTonalIconButton(onClick = {
                 view.hapticCommandSent()
@@ -519,7 +552,34 @@ fun RemoteControlScreenContent(
                 )
             }
         }
+
+        // Docked directly on the nav bar, same navigationBarsPadding() treatment as the toolbar
+        // above it (spec 4.1). AnimatedVisibility inside MediaMiniPlayer itself handles the
+        // UNKNOWN-status show/hide, so this call is unconditional.
+        MediaMiniPlayer(
+                playback = uiState.playback,
+                artwork = uiState.artwork,
+                onOpen = { sheetOpen = true },
+                onPlayPause = { onSendKey(MediaVirtualKeys.MEDIA_PLAY_PAUSE) },
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+        )
       }
+
+        if (sheetOpen) {
+            MediaNowPlayingSheet(
+                    connected = uiState.isConnected,
+                    inputSupported = uiState.supportsInputSimulation,
+                    playback = uiState.playback,
+                    artwork = uiState.artwork,
+                    shape =
+                            com.clindsay94.remex.ui.theme.cardShape(
+                                    uiState.shapePreset,
+                                    uiState.cornerRadius
+                            ),
+                    onSendKey = onSendKey,
+                    onDismiss = { sheetOpen = false }
+            )
+        }
     }
 }
 
@@ -658,6 +718,9 @@ private fun CommandCard(
         isAwaitingConfirmation: Boolean,
         timerText: String,
         shape: androidx.compose.ui.graphics.Shape,
+        // Defaults to the toolbar-only footprint so CommandCardPreview keeps compiling without
+        // wiring up the animated value RemoteControlScreenContent computes for the real screen.
+        toolbarOcclusion: androidx.compose.ui.unit.Dp = ToolbarOnlyOcclusion,
         onTimerTextChanged: (String) -> Unit,
         onPrimaryClick: () -> Unit,
         onConfirm: () -> Unit,
@@ -689,7 +752,7 @@ private fun CommandCard(
     val scope = rememberCoroutineScope()
     val confirmActionsRequester = remember { BringIntoViewRequester() }
     var confirmActionsSize by remember { mutableStateOf(IntSize.Zero) }
-    val toolbarOcclusionPx = with(LocalDensity.current) { FloatingToolbarOcclusion.toPx() }
+    val toolbarOcclusionPx = with(LocalDensity.current) { toolbarOcclusion.toPx() }
 
     suspend fun revealConfirmActions() {
         val size = confirmActionsSize
