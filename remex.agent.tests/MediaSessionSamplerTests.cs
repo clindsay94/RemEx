@@ -48,11 +48,33 @@ public class MediaSessionSamplerTests
         }
     }
 
+    /// <summary>Hands out a scripted answer (or throws) for every artwork resolution asked of it.</summary>
+    private sealed class ScriptedArtworkSource(Func<MediaPlaybackState, byte[]?> resolve) : IMediaArtworkSource
+    {
+        private int _calls;
+
+        /// <summary>How many times the sampler asked this source to resolve something.</summary>
+        public int Calls => Volatile.Read(ref _calls);
+
+        public Task<byte[]?> ResolveArtworkAsync(MediaPlaybackState state, CancellationToken ct)
+        {
+            Interlocked.Increment(ref _calls);
+            return Task.FromResult(resolve(state));
+        }
+    }
+
     private static MediaPlaybackState Playing(string? title = null)
         => new() { Status = MediaPlaybackStatus.Playing, Title = title };
 
-    private static MediaSessionBackgroundService NewSampler(IMediaSessionReader reader)
-        => new(reader, NullLogger<MediaSessionBackgroundService>.Instance);
+    private static MediaSessionBackgroundService NewSampler(
+        IMediaSessionReader reader,
+        IMediaArtworkSource? artworkSource = null,
+        IMediaArtworkStore? artworkStore = null)
+        => new(
+            reader,
+            artworkSource ?? NullMediaArtworkSource.Instance,
+            artworkStore ?? new MediaArtworkStore(),
+            NullLogger<MediaSessionBackgroundService>.Instance);
 
     /// <summary>Waits for a condition rather than for a duration, up to a generous ceiling.</summary>
     /// <remarks>
@@ -197,5 +219,206 @@ public class MediaSessionSamplerTests
         Assert.Equal(a, b);
         Assert.NotSame(a, b);
         Assert.NotEqual(a, a with { Title = "z" });
+    }
+
+    [Fact]
+    public async Task ManyIdenticallyAnchoredPollsPublishOnceAndOnlyAGenuineChangePublishesAgain()
+    {
+        // THE ANCHOR GUARD. Thirty polls of the exact same (status, title, anchor) must not
+        // republish — AnchorPositionMs/AnchorUtcMs participate in the record's value equality, so a
+        // bug that stamped either of them freshly per read would turn this into thirty broadcasts.
+        // Then three genuine changes (a seek, a pause, a new track) must each publish exactly once.
+        var identical = new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Track A",
+            AnchorPositionMs = 10_000,
+            AnchorUtcMs = 1_000_000,
+        };
+        var movedAnchor = identical with { AnchorPositionMs = 40_000 }; // a 30s seek
+        var paused = movedAnchor with { Status = MediaPlaybackStatus.Paused };
+        var newTitle = paused with { Title = "Track B" };
+
+        var script = new List<MediaPlaybackState>();
+        for (var i = 0; i < 30; i++) script.Add(identical);
+        script.Add(movedAnchor);
+        script.Add(paused);
+        script.Add(newTitle);
+
+        var reader = new ScriptedReader(script.ToArray());
+        var sampler = NewSampler(reader);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            var publishes = new List<MediaPlaybackState>();
+            var collect = Task.Run(async () =>
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                MediaPlaybackState? last = null;
+                while (publishes.Count < 4)
+                {
+                    last = await sampler.WaitForNextAsync(last, cts.Token);
+                    publishes.Add(last);
+                }
+            });
+
+            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 60),
+                "the sampler should have polled through the whole script");
+            await collect;
+
+            Assert.Equal(4, publishes.Count);
+            Assert.Equal(MediaPlaybackStatus.Playing, publishes[0].Status);
+            Assert.Equal(10_000, publishes[0].AnchorPositionMs);
+            Assert.Equal(40_000, publishes[1].AnchorPositionMs);
+            Assert.Equal(MediaPlaybackStatus.Paused, publishes[2].Status);
+            Assert.Equal("Track B", publishes[3].Title);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task PublishedStatesNeverCarryAProjectedPosition()
+    {
+        // PositionMs is filled in by MediaPositionProjection at SEND time, never by the sampler.
+        // A reading with an anchor set publishing with PositionMs already non-null would mean the
+        // sampler broke that split.
+        var reader = new ScriptedReader(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Anything",
+            AnchorPositionMs = 5_000,
+            AnchorUtcMs = 1_000_000,
+        });
+        var sampler = NewSampler(reader);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.True(await Within(() => sampler.Current is not null));
+            Assert.Null(sampler.Current!.PositionMs);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task ArtworkIsInTheStoreBeforeItsIdIsEverPublished()
+    {
+        // THE STORE-BEFORE-PUBLISH INVARIANT. The moment a phone can see an ArtworkId, TryGetArtwork
+        // for that id must already answer — never "eventually", because the id came from a
+        // media_state a client could act on immediately.
+        var reader = new ScriptedReader(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Cover Track",
+        });
+        var artworkSource = new ScriptedArtworkSource(_ => new byte[] { 9, 9, 9 });
+        var sampler = NewSampler(reader, artworkSource);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            MediaPlaybackState? last = null;
+            string? artworkId = null;
+
+            while (artworkId is null)
+            {
+                last = await sampler.WaitForNextAsync(last, cts.Token);
+                artworkId = last.ArtworkId;
+            }
+
+            // Asserted right here, inside the consumer of the very state that carried the id — not
+            // after some further delay that would let a race pass by accident.
+            Assert.NotNull(sampler.TryGetArtwork(artworkId));
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task TheArtworkSourceIsInvokedOncePerTrackIdentityAndAgainOnATitleChange()
+    {
+        var same = new MediaPlaybackState { Status = MediaPlaybackStatus.Playing, Title = "Same Track" };
+        var script = new List<MediaPlaybackState>();
+        for (var i = 0; i < 10; i++) script.Add(same);
+        script.Add(same with { Title = "Different Track" });
+
+        var reader = new ScriptedReader(script.ToArray());
+        var artworkSource = new ScriptedArtworkSource(_ => new byte[] { 1 });
+        var sampler = NewSampler(reader, artworkSource);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 30),
+                "the sampler should have polled through the whole script");
+            Assert.True(await Within(() => artworkSource.Calls >= 2),
+                "the title change should have started a second resolution");
+            Assert.Equal(2, artworkSource.Calls);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task AThrowingArtworkSourceLeavesArtworkIdNullButTheStateStillPublishes()
+    {
+        var reader = new ScriptedReader(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Broken Cover",
+        });
+        var artworkSource = new ScriptedArtworkSource(_ => throw new InvalidOperationException("boom"));
+        var sampler = NewSampler(reader, artworkSource);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.True(await Within(() => sampler.Current is not null));
+            Assert.True(await Within(() => artworkSource.Calls >= 1));
+            // Give the failing resolution a moment to actually run and be swallowed.
+            await Task.Delay(200);
+            Assert.Null(sampler.Current!.ArtworkId);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task AnArtworkSourceReturningNullLeavesArtworkIdNullButTheStateStillPublishes()
+    {
+        var reader = new ScriptedReader(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "No Cover Available",
+        });
+        var artworkSource = new ScriptedArtworkSource(_ => null);
+        var sampler = NewSampler(reader, artworkSource);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.True(await Within(() => sampler.Current is not null));
+            Assert.True(await Within(() => artworkSource.Calls >= 1));
+            await Task.Delay(200);
+            Assert.Null(sampler.Current!.ArtworkId);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
     }
 }

@@ -462,6 +462,26 @@ public sealed class PingPongHandler(
                         DispatchInput(message.InputEvent);
                         break;
 
+                    // PULL, NOT PUSH — see MediaArtworkRequest's own remarks. An unknown or evicted id
+                    // still answers, with PngBase64 null, so the client stops asking rather than
+                    // retrying an id that will never resolve.
+                    case MessageTypes.MediaArtworkRequest when message.MediaArtworkRequest is not null:
+                        var requestedArtworkId = message.MediaArtworkRequest.ArtworkId;
+                        var artworkBytes = mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.MediaArtwork,
+                                MediaArtwork = new Remex.Core.Models.MediaArtwork
+                                {
+                                    ArtworkId = requestedArtworkId,
+                                    PngBase64 = artworkBytes is null ? null : Convert.ToBase64String(artworkBytes),
+                                },
+                            },
+                            ct);
+                        break;
+
                     // ── 2.5 Clipboard ──
                     // Pairing-gated for free: RequiresPairing defaults unknown types to true, and
                     // writing the PC's clipboard is exactly the kind of thing that default exists
@@ -1382,9 +1402,16 @@ public sealed class PingPongHandler(
             {
                 var state = await mediaSessionMonitor.WaitForNextAsync(lastSent, ct);
 
+                // lastSent KEEPS TRACKING THE ANCHOR OBJECT THE GATE HANDED BACK, NEVER THE
+                // PROJECTION BELOW. TelemetrySnapshotGate.WaitForNextAsync compares by reference, so
+                // handing it the projected copy next time round would make every send look "new"
+                // even when nothing actually changed.
+                var projected = Remex.Agent.Services.Media.MediaPositionProjection.Project(
+                    state, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
                 await MessageSerializer.SendAsync(
                     webSocket,
-                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = state },
+                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = projected },
                     ct);
 
                 lastSent = state;
