@@ -187,6 +187,24 @@ public static class HostBootstrapper
                         sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.LinuxMediaSessionReader>>())
                     : new Remex.Agent.Services.Media.UnsupportedMediaSessionReader());
 
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaArtworkStore, Remex.Agent.Services.Media.MediaArtworkStore>();
+        // The platform readers opt into artwork resolution by implementing IMediaArtworkSource
+        // themselves (WindowsMediaSessionReader, LinuxMediaSessionReader) — the handle they resolve
+        // from comes out of the same session object the reading did. A reader that does not is a
+        // platform with no artwork at all, and falls back to the null object rather than a nullable
+        // dependency every call site would have to check.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaArtworkSource>(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaArtworkSource
+            ?? Remex.Agent.Services.Media.NullMediaArtworkSource.Instance);
+
+        // Seeking opts in the same way and for the same reason: the session to seek is the session
+        // the reading came from, and nothing else in this process knows which player that is. A
+        // reader that is not a seek target is a platform that cannot move a playback position, and
+        // the null object answers false rather than making every call site check for null.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSeekTarget>(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaSeekTarget
+            ?? Remex.Agent.Services.Media.NullMediaSeekTarget.Instance);
+
         builder.Services.AddSingleton<Remex.Agent.Services.Media.MediaSessionBackgroundService>();
         builder.Services.AddHostedService(sp =>
             sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());

@@ -462,6 +462,57 @@ public sealed class PingPongHandler(
                         DispatchInput(message.InputEvent);
                         break;
 
+                    // PULL, NOT PUSH — see MediaArtworkRequest's own remarks. An unknown or evicted id
+                    // still answers, with PngBase64 null, so the client stops asking rather than
+                    // retrying an id that will never resolve.
+                    case MessageTypes.MediaArtworkRequest when message.MediaArtworkRequest is not null:
+                        // ArtworkId is non-nullable in the model, but System.Text.Json does not
+                        // honour that for a paired client sending an explicit JSON null — guard
+                        // defensively rather than let a blank id reach the store lookup.
+                        var requestedArtworkId = message.MediaArtworkRequest.ArtworkId ?? string.Empty;
+                        var artworkBytes = string.IsNullOrWhiteSpace(requestedArtworkId)
+                            ? null
+                            : mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.MediaArtwork,
+                                MediaArtwork = new Remex.Core.Models.MediaArtwork
+                                {
+                                    ArtworkId = requestedArtworkId,
+                                    PngBase64 = artworkBytes is null ? null : Convert.ToBase64String(artworkBytes),
+                                },
+                            },
+                            ct);
+                        break;
+
+                    // NOTHING IS SENT BACK, AND THE PUBLISH IS THE REPLY (RemEx-vtorl). The seek is
+                    // handed to the platform and this case ends: no anchor is stamped here, and the
+                    // snapshot gate is not touched. The sampler's next poll reads the moved position,
+                    // PlaybackAnchorTracker re-anchors because the reading diverged past tolerance,
+                    // and the gate publishes one media_state to EVERY connected client — which is
+                    // what a second phone watching the same PC needs and a point-to-point
+                    // acknowledgement would not give it.
+                    //
+                    // It also means a seek the player ignored produces no message at all. That is
+                    // load-bearing rather than a gap: it is how the phone learns to put its own
+                    // optimistic position back, and an ack here would tell it the opposite.
+                    case MessageTypes.MediaSeek when message.MediaSeek is not null:
+                        var seeked = await mediaSessionMonitor.TrySeekAsync(message.MediaSeek.PositionMs, ct);
+                        if (!seeked)
+                        {
+                            // Debug, not warning. A session that declines the call is ordinary — it is
+                            // most media on a PC that has none playing — and this arrives once per
+                            // scrubber gesture, so a warning would be noise with a rate limit
+                            // attached to it.
+                            logger.LogDebug(
+                                "Media seek to {PositionMs}ms was not accepted by the current session.",
+                                message.MediaSeek.PositionMs);
+                        }
+
+                        break;
+
                     // ── 2.5 Clipboard ──
                     // Pairing-gated for free: RequiresPairing defaults unknown types to true, and
                     // writing the PC's clipboard is exactly the kind of thing that default exists
@@ -1382,9 +1433,16 @@ public sealed class PingPongHandler(
             {
                 var state = await mediaSessionMonitor.WaitForNextAsync(lastSent, ct);
 
+                // lastSent KEEPS TRACKING THE ANCHOR OBJECT THE GATE HANDED BACK, NEVER THE
+                // PROJECTION BELOW. TelemetrySnapshotGate.WaitForNextAsync compares by reference, so
+                // handing it the projected copy next time round would make every send look "new"
+                // even when nothing actually changed.
+                var projected = Remex.Agent.Services.Media.MediaPositionProjection.Project(
+                    state, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
                 await MessageSerializer.SendAsync(
                     webSocket,
-                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = state },
+                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = projected },
                     ct);
 
                 lastSent = state;

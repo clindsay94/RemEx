@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Remex.Core.Models;
 
 /// <summary>
@@ -60,6 +62,100 @@ public sealed record MediaPlaybackState
     /// than a protocol one.
     /// </remarks>
     public string? SourceApp { get; init; }
+
+    /// <summary>
+    /// Opaque handle for the current artwork — the first 16 lowercase hex characters of the SHA-256
+    /// of the image bytes — or null when there is nothing to draw.
+    /// </summary>
+    /// <remarks>
+    /// AN ID RATHER THAN THE IMAGE, BECAUSE THIS RECORD IS THE THING WHOSE EQUALITY DECIDES WHETHER
+    /// TO BROADCAST. Embedding a megabyte of PNG here would put that megabyte through every value
+    /// comparison and, worse, onto the wire again on every unrelated field change. The id is stable
+    /// for identical bytes, so a phone that already has it draws from its own cache and never asks;
+    /// one that does not asks once with <c>media_artwork_request</c>.
+    /// </remarks>
+    public string? ArtworkId { get; init; }
+
+    /// <summary>Track length in milliseconds; null or 0 means live or unknown.</summary>
+    /// <remarks>
+    /// ZERO IS TREATED THE SAME AS NULL ON PURPOSE. Platform sessions publish 0 for streams that have
+    /// no end and for tracks whose metadata has not arrived yet, and a progress bar drawn against a
+    /// zero length is either a divide by zero or a bar pinned at one end lying about a live stream.
+    /// </remarks>
+    public long? DurationMs { get; init; }
+
+    /// <summary>
+    /// Whether the session will accept a position change at all — SMTC's
+    /// <c>IsPlaybackPositionEnabled</c>, MPRIS's <c>CanSeek</c>. False when the host cannot tell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THIS EXISTS BECAUSE A SEEK THAT THE HOST REPORTS AS SUCCEEDING CAN STILL DO NOTHING. Apple
+    /// Music's SMTC session returns true from <c>TryChangePlaybackPositionAsync</c> and never moves;
+    /// the phone's slider jumped, waited out its confirmation window, and honestly snapped back. A
+    /// bar that bounces is a worse answer than a bar the user cannot drag, so the capability travels
+    /// with the reading and the client disables the control instead of guessing from timing.
+    /// </para>
+    /// <para>
+    /// A CAPABILITY OF THE SESSION, NOT AN OBSERVATION OF A POLL. It comes off the same
+    /// platform call the status does, so it is as stable as the session is, and a reader must never
+    /// derive it from whether a recent seek appeared to work — a value that moved with timing would
+    /// make the equality gate republish on ticks where nothing changed.
+    /// </para>
+    /// <para>
+    /// A NON-NULLABLE BOOL, SO IT IS ALWAYS ON THE WIRE. <c>WhenWritingNull</c> only drops nulls, and
+    /// that is the behaviour worth having here: an older host that never sets it sends false, and a
+    /// client that reads a missing field as false lands in the same place — the conservative one,
+    /// where the slider is disabled rather than offering an action the session will swallow.
+    /// </para>
+    /// </remarks>
+    public bool CanSeek { get; init; }
+
+    /// <summary>
+    /// Playback position in milliseconds AT THE MOMENT THIS ENVELOPE WAS SERIALIZED, or null when
+    /// the session publishes no timeline.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THIS FIELD IS NULL ON EVERY INSTANCE THE SAMPLER COMPARES, AND THAT IS THE WHOLE DESIGN.**
+    /// A position that advances is a position that differs, so a state carrying a live position would
+    /// be unequal to the previous one on every single poll — which is exactly the per-second
+    /// broadcast to every connected phone that making this a record was meant to stop. The sampler
+    /// holds <see cref="AnchorPositionMs"/>/<see cref="AnchorUtcMs"/>, which only change when
+    /// playback actually jumps, and <c>MediaPositionProjection</c> fills this in at SEND time.
+    /// </para>
+    /// <para>
+    /// So: read it on the client, never set it on the host outside the projection.
+    /// </para>
+    /// </remarks>
+    public long? PositionMs { get; init; }
+
+    /// <summary>
+    /// The position the host last actually observed, in milliseconds. Host-side only — never on the
+    /// wire.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="JsonIgnoreAttribute"/> KEEPS IT OFF THE WIRE, BUT IT IS STILL AN ORDINARY RECORD
+    /// PROPERTY, so it participates in value equality. That is deliberate: re-anchoring is a real
+    /// change in what the host believes about playback — a seek, a track change, a player that
+    /// drifted past tolerance — and it must republish. A field excluded from equality would let a
+    /// seek pass unnoticed until something else changed.
+    /// </remarks>
+    [JsonIgnore]
+    public long? AnchorPositionMs { get; init; }
+
+    /// <summary>
+    /// When <see cref="AnchorPositionMs"/> was observed, as Unix milliseconds on the host's wall
+    /// clock (<c>DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()</c>). Host-side only.
+    /// </summary>
+    /// <remarks>
+    /// WALL CLOCK RATHER THAN A MONOTONIC TICK COUNT because the projection subtracts it from a
+    /// second reading taken elsewhere in the process, and both readings have to come from the same
+    /// clock. Off the wire for the same reason as <see cref="AnchorPositionMs"/>, and in equality for
+    /// the same reason too.
+    /// </remarks>
+    [JsonIgnore]
+    public long? AnchorUtcMs { get; init; }
 }
 
 /// <summary>

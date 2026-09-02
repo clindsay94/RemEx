@@ -132,6 +132,10 @@
     <string name="rc_media_state_playing">Lecture en cours</string>
     <string name="rc_media_state_paused">En pause</string>
     <string name="rc_media_state_idle">Aucune lecture en cours</string>
+    <string name="rc_media_now_playing">Lecture en cours</string>
+    <string name="rc_media_open_now_playing">Ouvrir la lecture en cours</string>
+    <string name="rc_media_artwork">Pochette de l’album</string>
+    <string name="rc_media_seek">Rechercher la position de lecture</string>
     <string name="screen_remote_desktop_title">Bureau à Distance</string>
     <string name="cd_show_keyboard">Afficher le Clavier</string>
     <string name="cd_key_escape">Esc (Échap)</string>

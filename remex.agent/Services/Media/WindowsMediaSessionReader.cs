@@ -21,10 +21,30 @@ namespace Remex.Agent.Services.Media;
 /// a stale manager keeps returning the session that existed when it was captured, which is the stale
 /// reading this whole feature exists to eliminate.
 /// </para>
+/// <para>
+/// IT IS ALSO THE ARTWORK SOURCE (RemEx-vtorl), because the cover comes out of the same session
+/// object the reading did. The two interfaces stay separate — see <see cref="IMediaArtworkSource"/>
+/// — so the poll tick never pays for a thumbnail stream, but one class implements both because one
+/// class owns the session.
+/// </para>
 /// </remarks>
 [SupportedOSPlatform("windows10.0.17763.0")]
-internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReader> logger) : IMediaSessionReader
+internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReader> logger)
+    : IMediaSessionReader, IMediaArtworkSource, IMediaSeekTarget
 {
+    /// <summary>
+    /// The anchor state for this reader's readings.
+    /// </summary>
+    /// <remarks>
+    /// RUN ON WINDOWS TOO, EVEN THOUGH SMTC HANDS US AN ANCHOR. <c>LastUpdatedTime</c> is the OS's own
+    /// anchor timestamp and spec 1.3 says to use it directly — which is what feeding it into the
+    /// observed position below does. But several shipping players re-stamp it once a second while
+    /// changing nothing else, and passing that straight onto the gated record would republish
+    /// <c>media_state</c> every second on exactly those machines. The tracker is what turns a
+    /// re-stamped timeline back into an unchanged value.
+    /// </remarks>
+    private readonly PlaybackAnchorTracker _anchors = new();
+
     public bool IsSupported => true;
 
     public async Task<MediaPlaybackState> ReadAsync(CancellationToken ct)
@@ -42,7 +62,12 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
                 return new MediaPlaybackState { Status = MediaPlaybackStatus.None };
             }
 
-            var status = session.GetPlaybackInfo().PlaybackStatus switch
+            // ONE GetPlaybackInfo, TWO FACTS. The status and the seek capability are fields of the
+            // same struct, and calling it twice would be two chances for the session to answer
+            // differently within a single reading.
+            var playbackInfo = session.GetPlaybackInfo();
+
+            var status = playbackInfo.PlaybackStatus switch
             {
                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing => MediaPlaybackStatus.Playing,
                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused => MediaPlaybackStatus.Paused,
@@ -57,13 +82,27 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
             };
 
             var (title, artist) = await ReadPropertiesAsync(session, ct);
+            var sourceApp = Blank(session.SourceAppUserModelId);
+
+            var nowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var (durationMs, observedPositionMs) = ReadTimeline(session, status);
+            var (anchorPositionMs, anchorUtcMs) = _anchors.Observe(
+                status, observedPositionMs, nowUtcMs, TrackKey(title, artist, sourceApp));
 
             return new MediaPlaybackState
             {
                 Status = status,
                 Title = title,
                 Artist = artist,
-                SourceApp = Blank(session.SourceAppUserModelId),
+                SourceApp = sourceApp,
+                DurationMs = durationMs,
+
+                // THE SESSION'S OWN CLAIM, TAKEN AT FACE VALUE. Apple Music reports false here and
+                // still returns true from TryChangePlaybackPositionAsync, which is exactly why this
+                // is the field the phone believes: it is the only one of the two that is honest.
+                CanSeek = playbackInfo.Controls.IsPlaybackPositionEnabled,
+                AnchorPositionMs = anchorPositionMs,
+                AnchorUtcMs = anchorUtcMs,
             };
         }
         catch (OperationCanceledException)
@@ -107,6 +146,181 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
         {
             logger.LogTrace(ex, "Media session gave no track metadata.");
             return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Track length and where the session says it is, both in milliseconds.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// POSITIONS ARE RELATIVE TO <c>StartTime</c>, NOT TO ZERO. SMTC's timeline is an interval, and
+    /// for a chaptered audiobook or a clipped stream <c>StartTime</c> is not zero — subtracting it is
+    /// the difference between a progress bar that starts full and one that starts empty.
+    /// </para>
+    /// <para>
+    /// THE OBSERVATION IS ADVANCED BY <c>now - LastUpdatedTime</c> WHILE PLAYING, and that is spec
+    /// 1.3's "use <c>LastUpdatedTime</c> directly". <c>Position</c> is a snapshot from whenever the
+    /// player last bothered to update, which for most players is a seek or a track change, not this
+    /// second; reporting it unadvanced would freeze the phone's progress bar for minutes at a time.
+    /// </para>
+    /// <para>
+    /// A DEFAULT <c>LastUpdatedTime</c> IS NO OBSERVATION AT ALL. Sessions that never publish a
+    /// timeline leave it at its zero value, and treating that as "the position was true in the year
+    /// 1601" would advance the observation by four centuries. Null means the tracker keeps whatever
+    /// it had, which is the honest answer.
+    /// </para>
+    /// <para>
+    /// It also does not throw. <c>GetTimelineProperties</c> reaches into the same third-party player
+    /// as everything else here, and a missing progress bar must not cost the play/pause icon.
+    /// </para>
+    /// </remarks>
+    private (long? DurationMs, long? ObservedPositionMs) ReadTimeline(
+        GlobalSystemMediaTransportControlsSession session, string status)
+    {
+        try
+        {
+            var timeline = session.GetTimelineProperties();
+
+            var duration = (long)(timeline.EndTime - timeline.StartTime).TotalMilliseconds;
+            long? durationMs = duration > 0 ? duration : null;
+
+            if (timeline.LastUpdatedTime == default)
+            {
+                return (durationMs, null);
+            }
+
+            var position = (timeline.Position - timeline.StartTime).TotalMilliseconds;
+
+            if (string.Equals(status, MediaPlaybackStatus.Playing, StringComparison.Ordinal))
+            {
+                var elapsed = (DateTimeOffset.UtcNow - timeline.LastUpdatedTime).TotalMilliseconds;
+                if (elapsed > 0)
+                {
+                    position += elapsed;
+                }
+            }
+
+            // Clamped at zero only. NOT clamped to the duration on purpose: a player that resumes
+            // without updating its timeline leaves a stale LastUpdatedTime and the projection
+            // overshoots until it next updates — the OS media flyout shows the same overshoot, and
+            // pinning it to the duration would instead make every such track look finished.
+            return (durationMs, position > 0 ? (long)position : 0);
+        }
+        catch (Exception ex)
+        {
+            logger.LogTrace(ex, "Media session gave no timeline.");
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// What identifies "still the same thing playing" for the anchor tracker.
+    /// </summary>
+    /// <remarks>
+    /// TITLE, ARTIST AND APP RATHER THAN ANY ID, because SMTC does not expose one that survives a
+    /// player restart, and this only has to be sensitive to CHANGE. Two consecutive tracks with the
+    /// same title, artist and app is the same track in every case that matters.
+    /// </remarks>
+    private static string TrackKey(string? title, string? artist, string? sourceApp)
+        => $"{title}|{artist}|{sourceApp}";
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// THE SESSION IS RE-REQUESTED RATHER THAN CAPTURED FROM THE READ, for the same reason
+    /// <see cref="ReadAsync"/> re-requests the manager: this runs off the poll tick, possibly a
+    /// second later, and a captured session that has since closed answers with the track that was
+    /// playing when it was captured. Re-requesting and then CONFIRMING THE TITLE is what makes a
+    /// late-arriving cover belong to the track it is stored against — without that check the store
+    /// ends up mapping the new track's artwork id to the old track's image.
+    /// </remarks>
+    public Task<byte[]?> ResolveArtworkAsync(MediaPlaybackState state, CancellationToken ct)
+        => MediaArtworkFallback.FirstNonEmptyAsync(
+            [
+                c => ReadSessionThumbnailAsync(state, c),
+                c => WindowsAppIconResolver.ResolveAsync(state.SourceApp, c),
+            ],
+            ct);
+
+    private async Task<byte[]?> ReadSessionThumbnailAsync(MediaPlaybackState state, CancellationToken ct)
+    {
+        var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync().AsTask(ct);
+        var session = manager.GetCurrentSession();
+        if (session is null)
+        {
+            return null;
+        }
+
+        var properties = await session.TryGetMediaPropertiesAsync().AsTask(ct);
+        if (!string.Equals(Blank(properties.Title), state.Title, StringComparison.Ordinal))
+        {
+            // The session moved on between the reading and this resolve. Returning the new track's
+            // art under the old track's id is worse than returning nothing.
+            return null;
+        }
+
+        return await WindowsAppIconResolver.ReadImageStreamAsync(properties.Thumbnail, ct);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// THE SESSION IS RE-REQUESTED, exactly as <see cref="ResolveArtworkAsync"/> does and for the
+    /// same reason: this runs off the poll tick, on the connection's message loop, and a session
+    /// captured a second ago may belong to a player the user has since closed.
+    /// </para>
+    /// <para>
+    /// SMTC COUNTS 100-NANOSECOND TICKS, NOT MILLISECONDS, and it counts them from
+    /// <c>StartTime</c> rather than from zero — which is the same asymmetry <see cref="ReadTimeline"/>
+    /// undoes on the way out and therefore has to be redone on the way in. For an ordinary track
+    /// <c>StartTime</c> is zero and the two forms agree; for a chaptered audiobook or a clipped
+    /// stream it is not, and omitting it would land the seek an entire chapter away from where the
+    /// user's finger was. Sending back what the reading produced is the only way the number the phone
+    /// computed from <c>AnchorPositionMs</c> means the same thing here.
+    /// </para>
+    /// <para>
+    /// A FALSE RETURN IS ORDINARY. Some sessions advertise the control and decline the call, and a
+    /// few accept it and do nothing at all; the phone reconciles against the next <c>media_state</c>
+    /// rather than against this answer, so the only job here is to not throw and to not lie.
+    /// </para>
+    /// </remarks>
+    public async Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
+    {
+        try
+        {
+            var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync().AsTask(ct);
+            var session = manager.GetCurrentSession();
+            if (session is null)
+            {
+                return false;
+            }
+
+            var requested = positionMs * TimeSpan.TicksPerMillisecond;
+
+            // GetTimelineProperties reaches into a third-party player like everything else here, so a
+            // session that will not describe its timeline seeks relative to zero rather than not at
+            // all — which is right for the overwhelming majority of tracks, whose StartTime is zero.
+            try
+            {
+                requested += session.GetTimelineProperties().StartTime.Ticks;
+            }
+            catch (Exception ex)
+            {
+                logger.LogTrace(ex, "Media session would not report its timeline for a seek.");
+            }
+
+            return await session.TryChangePlaybackPositionAsync(requested).AsTask(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // The contract is "never throws". This reaches whatever media player the user happens to
+            // have open, and a scrubber drag must not be able to drop their connection.
+            logger.LogDebug(ex, "Could not seek the current media session.");
+            return false;
         }
     }
 

@@ -41,11 +41,49 @@ public interface IMediaSessionMonitor
 
     /// <summary>Waits for a reading the caller has not already sent.</summary>
     Task<MediaPlaybackState> WaitForNextAsync(MediaPlaybackState? alreadySent, CancellationToken ct);
+
+    /// <summary>The image bytes behind an <c>ArtworkId</c> a reading carried, or null when this host
+    /// never resolved that id or has since evicted it.</summary>
+    byte[]? TryGetArtwork(string artworkId);
+
+    /// <summary>
+    /// Moves the current session to <paramref name="positionMs"/> milliseconds from the start of the
+    /// track, answering whether the platform reported the move as accepted (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// FALSE IS A NORMAL ANSWER AND NOTHING IS THROWN. A host with no seekable session — every
+    /// platform but Windows and Linux, and Windows sessions whose player declines the call — answers
+    /// false through <see cref="NullMediaSeekTarget"/>. This is reached from the per-connection
+    /// message loop, so an exception here would drop a phone's whole connection to answer a scrubber
+    /// drag.
+    /// </para>
+    /// <para>
+    /// IT PUBLISHES NOTHING, WHICH IS THE PART WORTH SAYING OUT LOUD. No anchor is stamped and the
+    /// gate is not touched: the next poll reads the moved position, the tracker re-anchors because
+    /// the reading diverged past tolerance, and the gate publishes one <c>media_state</c> to every
+    /// client. That publish is the reply, and it is the only one — a seek that the player ignored
+    /// therefore produces no message at all, which is exactly what the phone needs in order to notice
+    /// and put its own optimistic position back.
+    /// </para>
+    /// </remarks>
+    Task<bool> TrySeekAsync(long positionMs, CancellationToken ct);
 }
 
 /// <inheritdoc cref="IMediaSessionMonitor"/>
+/// <remarks>
+/// ARTWORK RESOLUTION IS KEYED TO TRACK IDENTITY, NOT TO THE POLL TICK. <c>(Title, Artist,
+/// SourceApp)</c> changing is what starts a new resolve-and-cancel-the-old-one; an unrelated field
+/// changing (status, a position anchor) leaves whatever id is already resolved alone. The id is only
+/// ever made visible to a poll AFTER <see cref="IMediaArtworkStore.Put"/> has returned it — the
+/// store-before-publish invariant — so a phone that asks for an id from a fresh <c>media_state</c>
+/// never races the store that is supposed to answer it.
+/// </remarks>
 internal sealed class MediaSessionBackgroundService(
     IMediaSessionReader reader,
+    IMediaArtworkSource artworkSource,
+    IMediaArtworkStore artworkStore,
+    IMediaSeekTarget seekTarget,
     ILogger<MediaSessionBackgroundService> logger) : BackgroundService, IMediaSessionMonitor
 {
     /// <summary>
@@ -61,6 +99,14 @@ internal sealed class MediaSessionBackgroundService(
 
     private readonly TelemetrySnapshotGate<MediaPlaybackState> _gate = new();
 
+    private readonly object _artworkLock = new();
+    private bool _hasArtworkIdentity;
+    private (string? Title, string? Artist, string? SourceApp) _artworkIdentity;
+    private long _artworkGeneration;
+    private string? _currentArtworkId;
+    private CancellationTokenSource? _artworkCts;
+    private CancellationToken _stoppingToken;
+
     public bool IsSupported => reader.IsSupported;
 
     public MediaPlaybackState? Current => _gate.Current;
@@ -68,8 +114,23 @@ internal sealed class MediaSessionBackgroundService(
     public Task<MediaPlaybackState> WaitForNextAsync(MediaPlaybackState? alreadySent, CancellationToken ct)
         => _gate.WaitForNextAsync(alreadySent, ct);
 
+    public byte[]? TryGetArtwork(string artworkId) => artworkStore.TryGet(artworkId);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// STRAIGHT THROUGH, WITH NO BOOKKEEPING ON THE WAY. The temptation is to stamp the requested
+    /// position onto the gate here so the phone hears back instantly, and it is exactly the mistake:
+    /// the host would then be reporting a position nobody has confirmed a player moved to, and a
+    /// session that ignored the seek would leave every connected phone showing a number the PC is not
+    /// playing until the next reading happened to differ.
+    /// </remarks>
+    public Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
+        => seekTarget.TrySeekAsync(positionMs, ct);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
+
         if (!reader.IsSupported)
         {
             // NOTHING IS PUBLISHED, WHICH IS NOT THE SAME AS PUBLISHING "unknown". A host that cannot
@@ -110,6 +171,8 @@ internal sealed class MediaSessionBackgroundService(
                 continue;
             }
 
+            reading = ApplyArtwork(reading);
+
             // VALUE comparison, feeding a gate that tests REFERENCE equality. See the class remarks.
             if (reading != lastPublished)
             {
@@ -133,5 +196,128 @@ internal sealed class MediaSessionBackgroundService(
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Merges the current resolved artwork id onto <paramref name="reading"/>, kicking off a fresh
+    /// resolution (and cancelling any resolution still running for the previous track) exactly when
+    /// track identity changes.
+    /// </summary>
+    private MediaPlaybackState ApplyArtwork(MediaPlaybackState reading)
+    {
+        var identity = (reading.Title, reading.Artist, reading.SourceApp);
+        string? artworkId;
+        MediaPlaybackState? toResolve = null;
+        long generation = 0;
+        var resolveToken = CancellationToken.None;
+
+        lock (_artworkLock)
+        {
+            if (!_hasArtworkIdentity || !_artworkIdentity.Equals(identity))
+            {
+                // A NEW TRACK IDENTITY CLEARS THE ID IMMEDIATELY, before anything has resolved for
+                // it. The alternative — keeping the previous track's art up until a new one resolves
+                // — is a stale cover under a new title, which is worse than the glyph it would
+                // otherwise show for the ~1s the resolve takes.
+                _artworkCts?.Cancel();
+                _artworkCts?.Dispose();
+                _artworkCts = null;
+
+                _hasArtworkIdentity = true;
+                _artworkIdentity = identity;
+                _artworkGeneration++;
+                _currentArtworkId = null;
+
+                var eligible = (reading.Title is not null || reading.Artist is not null)
+                    && reading.Status != MediaPlaybackStatus.None
+                    && reading.Status != MediaPlaybackStatus.Unknown;
+
+                if (eligible)
+                {
+                    var cts = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
+                    _artworkCts = cts;
+                    generation = _artworkGeneration;
+                    resolveToken = cts.Token;
+                    toResolve = reading;
+                }
+            }
+
+            artworkId = _currentArtworkId;
+        }
+
+        // Started OUTSIDE the lock: IMediaArtworkSource implementations are free to complete
+        // synchronously (NullMediaArtworkSource does), and that would re-enter this same method's
+        // completion path before the lock above was ever released.
+        if (toResolve is not null)
+        {
+            _ = ResolveArtworkAsync(toResolve, generation, resolveToken);
+        }
+
+        return reading with { ArtworkId = artworkId };
+    }
+
+    /// <summary>
+    /// Resolves artwork off the poll tick and, if this track identity is still the current one,
+    /// stores it before making its id visible.
+    /// </summary>
+    private async Task ResolveArtworkAsync(MediaPlaybackState state, long generation, CancellationToken ct)
+    {
+        byte[]? bytes;
+        try
+        {
+            bytes = await artworkSource.ResolveArtworkAsync(state, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            // The source's contract says it does not throw, so reaching here means it broke that
+            // contract. Log and drop it: artwork is decoration on a feature whose real job is the
+            // play/pause icon, and letting this take the sampler down would blank that too.
+            logger.LogWarning(ex, "Artwork resolution threw; the source is meant to swallow this. Continuing.");
+            return;
+        }
+
+        if (bytes is null || ct.IsCancellationRequested)
+        {
+            return;
+        }
+
+        // STORE BEFORE PUBLISH: the id below only becomes visible to the poll loop once Put has
+        // returned it, so a phone that later asks for this id from a fresh media_state can never
+        // race the store that is supposed to answer it.
+        var id = artworkStore.Put(bytes);
+        if (id is null)
+        {
+            return;
+        }
+
+        lock (_artworkLock)
+        {
+            // Only apply it if this is still the identity it was resolved for — a track change while
+            // this was in flight already cleared the id and bumped the generation.
+            if (_artworkGeneration == generation)
+            {
+                _currentArtworkId = id;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cancels and disposes whatever artwork resolution is still in flight so a stopping sampler
+    /// does not leave a resolve (a WinRT thumbnail drain, an https fetch) running past shutdown.
+    /// </summary>
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        lock (_artworkLock)
+        {
+            _artworkCts?.Cancel();
+            _artworkCts?.Dispose();
+            _artworkCts = null;
+        }
+
+        return base.StopAsync(cancellationToken);
     }
 }

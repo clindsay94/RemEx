@@ -342,6 +342,39 @@ public sealed record RemexMessage
     /// </remarks>
     [JsonPropertyName("mediaState")]
     public Remex.Core.Models.MediaPlaybackState? MediaState { get; init; }
+
+    /// <summary>
+    /// A client asking for one cover image, for <see cref="MessageTypes.MediaArtworkRequest"/>
+    /// (RemEx-vtorl). Optional addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. It is
+    /// pairing-gated by the default-true <c>RequiresPairing</c>, like every other client-originated
+    /// type.
+    /// </remarks>
+    [JsonPropertyName("mediaArtworkRequest")]
+    public Remex.Core.Models.MediaArtworkRequest? MediaArtworkRequest { get; init; }
+
+    /// <summary>
+    /// One cover image, for <see cref="MessageTypes.MediaArtwork"/> (RemEx-vtorl). Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("mediaArtwork")]
+    public Remex.Core.Models.MediaArtwork? MediaArtwork { get; init; }
+
+    /// <summary>
+    /// A client asking the host to move the playback position, for
+    /// <see cref="MessageTypes.MediaSeek"/> (RemEx-vtorl). Optional addition; no protocolVersion
+    /// bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. Like
+    /// <see cref="MediaArtworkRequest"/> it is pairing-gated for free by the default-true
+    /// <c>RequiresPairing</c>, which is what a message that reaches into the user's media player
+    /// wants.
+    /// </remarks>
+    [JsonPropertyName("mediaSeek")]
+    public Remex.Core.Models.MediaSeekRequest? MediaSeek { get; init; }
 }
 
 /// <summary>
@@ -499,4 +532,39 @@ public static class MessageTypes
     /// has its own guard rather than being left to a reviewer to notice.
     /// </remarks>
     public const string MediaState = "media_state";
+
+    /// <summary>
+    /// A client asking for one cover image by id, CLIENT -> HOST (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// The only client-originated member of this family. It reaches the host through the ordinary
+    /// inbound handler and needs no audience entry, because <c>MessageAudience.HostToClient</c>
+    /// describes the other direction.
+    /// </remarks>
+    public const string MediaArtworkRequest = "media_artwork_request";
+
+    /// <summary>
+    /// One cover image, HOST -> CLIENT (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// UNPREFIXED, EXACTLY LIKE <see cref="MediaState"/>, AND SO IT NEEDS ITS OWN LINE IN
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>. It is worth repeating rather than
+    /// cross-referencing because this is the failure that costs the most to diagnose here: the phone
+    /// asked, the host answered, the send succeeded, and the cover never appeared — with nothing in
+    /// either log to say the reply was dropped one layer above the socket. The audience guard is what
+    /// makes that impossible to ship.
+    /// </remarks>
+    public const string MediaArtwork = "media_artwork";
+
+    /// <summary>
+    /// A client asking the host to move the playback position, CLIENT -> HOST (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// The second client-originated member of this family, and like
+    /// <see cref="MediaArtworkRequest"/> it needs no audience entry, because
+    /// <c>MessageAudience.HostToClient</c> describes the other direction. It also needs no line in
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>: nothing comes back under this type. The
+    /// answer is the next <c>media_state</c>, which the phone is already listening for.
+    /// </remarks>
+    public const string MediaSeek = "media_seek";
 }
