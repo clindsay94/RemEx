@@ -53,7 +53,8 @@ public class TypographyVocabularyTests
     /// SelectableTextBlock stay inline). LOWER THIS when a Phase 4 view bead sweeps a screen.
     /// Never raise it.
     /// </summary>
-    private const int InlineFontSizeBaseline = 298;
+    // Re-pinned by RemEx-ygit2 (TaskManagerView sweep): 298 -> 289.
+    private const int InlineFontSizeBaseline = 289;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be
