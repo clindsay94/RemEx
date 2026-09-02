@@ -71,6 +71,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one it replaced did. This applies to every seed, every variant and both light and dark. Palettes
   built from a deliberately colourless variant still separate; they do it on brightness alone,
   because there is no hue there to sweep. (RemEx-bv9bu)
+- **The Task Manager built the whole process list up front instead of just the part you can see.**
+  A typical PC runs a couple of hundred processes and each row is a small stack of controls, so the
+  page was laying out well over a thousand of them — and doing it again on every refresh tick, for
+  the rows scrolled far off screen as much as the ones in front of you.
+
+  The list can virtualize; it just was not being given the chance. The page scrolled as one long
+  column, which offers its contents unlimited height, and a list told it has unlimited height has no
+  reason to leave anything out. The list now has its own bounded area and scrolls inside it, so only
+  the visible rows exist. The title and the search and sort bar stay put at the top while you scroll
+  the list, which is where they were always meant to be. (RemEx-3oy7x)
 
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and

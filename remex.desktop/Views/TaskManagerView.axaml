@@ -13,94 +13,102 @@
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32,24,32,32" Spacing="24">
+    <!-- Rows: header, search/sort, kill error, process list. The list gets the star row so it is
+         measured against a real viewport and its VirtualizingStackPanel realizes only what fits.
+         A ScrollViewer>StackPanel root measured it with infinite height, which realized all ~200
+         rows (RemEx-3oy7x). Header and search stay pinned; only the list scrolls. -->
+    <Grid Background="Transparent" Margin="32,24,32,32" RowDefinitions="Auto,Auto,Auto,*">
 
-            <!-- Header -->
-            <StackPanel Spacing="4">
-                <TextBlock Classes="page-title" Text="{local:Localize TaskMgr_Header}"/>
-                <TextBlock Classes="page-subtitle" Text="{local:Localize TaskMgr_Subheader}"/>
-            </StackPanel>
-
-            <!-- Search and Sort Controls -->
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
-                <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize TaskMgr_SearchPlaceholder}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-
-                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="secondary pill compact" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="secondary pill compact" VerticalAlignment="Center"/>
-                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="secondary pill compact" VerticalAlignment="Center"/>
-            </Grid>
-
-            <Border Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <TextBlock Text="{Binding KillError}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
-            </Border>
-
-            <!-- Unified List Container (M3 Surface) -->
-            <material:Card Classes="surface" Padding="0" InsideClipping="True">
-                <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="models:ProcessInfo">
-                            <!-- List Item Surface -->
-                            <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                                <Border.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}" Foreground="{DynamicResource SystemErrorBrush}" />
-                                    </ContextMenu>
-                                </Border.ContextMenu>
-
-                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2">
-                                                <TextBlock.Text>
-                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
-                                                        <Binding Path="[TaskMgr_PidFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                                        <Binding Path="Id"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <StackPanel Opacity="0.6" Spacing="1">
-                                            <TextBlock IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
-                                                <TextBlock.Text>
-                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
-                                                        <Binding Path="[TaskMgr_PathFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                                        <Binding Path="FilePath"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                            <TextBlock IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
-                                                <TextBlock.Text>
-                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
-                                                        <Binding Path="[TaskMgr_PublisherFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                                        <Binding Path="Publisher"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- Metrics -->
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24" VerticalAlignment="Center" Margin="16,0,0,0">
-                                        <StackPanel Width="60">
-                                            <TextBlock Text="{local:Localize TaskMgr_CpuLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Width="80">
-                                            <TextBlock Text="{local:Localize TaskMgr_MemLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="{Binding MemoryUsage, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- Kill Button (visible only when row is selected) -->
-                                    <Button Grid.Column="2" Content="{local:Localize TaskMgr_KillProcess}" Margin="12,0,0,0" Padding="10,6" CornerRadius="8" Background="{DynamicResource SystemErrorBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" IsVisible="{Binding $parent[ListBoxItem].IsSelected}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </material:Card>
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,24">
+            <TextBlock Classes="page-title" Text="{local:Localize TaskMgr_Header}"/>
+            <TextBlock Classes="page-subtitle" Text="{local:Localize TaskMgr_Subheader}"/>
         </StackPanel>
-    </ScrollViewer>
+
+        <!-- Search and Sort Controls -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,32">
+            <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize TaskMgr_SearchPlaceholder}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+
+            <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="secondary pill compact" VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="secondary pill compact" VerticalAlignment="Center"/>
+            <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="secondary pill compact" VerticalAlignment="Center"/>
+        </Grid>
+
+        <Border Grid.Row="2" Margin="0,0,0,24" Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding KillError}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Unified List Container (M3 Surface) -->
+        <material:Card Grid.Row="3" Classes="surface" Padding="0" InsideClipping="True">
+            <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <!-- Explicit, not inherited: correctness, not styling. See RemEx-3oy7x. -->
+                        <VirtualizingStackPanel/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProcessInfo">
+                        <!-- List Item Surface -->
+                        <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{local:Localize TaskMgr_KillProcess}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}" Foreground="{DynamicResource SystemErrorBrush}" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                    <Binding Path="[TaskMgr_PidFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                    <Binding Path="Id"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Opacity="0.6" Spacing="1">
+                                        <TextBlock IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                    <Binding Path="[TaskMgr_PathFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                    <Binding Path="FilePath"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                    <Binding Path="[TaskMgr_PublisherFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                    <Binding Path="Publisher"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Metrics -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24" VerticalAlignment="Center" Margin="16,0,0,0">
+                                    <StackPanel Width="60">
+                                        <TextBlock Text="{local:Localize TaskMgr_CpuLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                    <StackPanel Width="80">
+                                        <TextBlock Text="{local:Localize TaskMgr_MemLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding MemoryUsage, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Kill Button (visible only when row is selected) -->
+                                <Button Grid.Column="2" Content="{local:Localize TaskMgr_KillProcess}" Margin="12,0,0,0" Padding="10,6" CornerRadius="8" Background="{DynamicResource SystemErrorBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" IsVisible="{Binding $parent[ListBoxItem].IsSelected}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </material:Card>
+    </Grid>
 </UserControl>
