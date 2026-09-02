@@ -21,8 +21,8 @@ namespace Remex.Desktop.Tests.Views;
 /// </para>
 /// <para>
 /// Three of them would each turn RemEx's glass shell opaque or flat without a single exception:
-/// putting the Card theme in a merged dictionary (ThemeService wipes those), letting ShadowAssist
-/// back into the template (it writes BoxShadow as a local value, which outranks every style), or
+/// moving the Card theme out of <c>Application.Resources</c>' own keys, letting ShadowAssist back
+/// into the template (it writes BoxShadow as a local value, which outranks every style), or
 /// unhooking CornerRadius from <c>CardCornerRadius</c> (the personalization slider's only path).
 /// </para>
 /// </remarks>
@@ -61,13 +61,15 @@ public class CardSurfaceTests
     [Fact]
     public void TheCardThemeIsAnOwnKeyOfApplicationResources_NotAMergedDictionary()
     {
-        // THE SILENT ONE. ThemeService.ApplyBaseThemeInternal clears EVERY merged dictionary except
-        // its own override dictionary before inserting the newly selected theme file. A Card theme
-        // reached through a ResourceInclude would therefore work on launch and disappear the first
-        // time anyone switched theme — cards would fall back to Material's opaque
-        // MaterialCardBackgroundBrush over a translucent mica/acrylic window, erasing the backdrop
-        // wherever a card sits. No exception, no log line, and it only reproduces after a theme
-        // switch. Own keys are untouched by that loop, so the theme must be declared inline.
+        // WHY THIS SHAPE. ThemeService used to clear EVERY merged dictionary except its own
+        // override dictionary before inserting the newly selected theme file, so a Card theme
+        // reached through a ResourceInclude worked on launch and disappeared the first time anyone
+        // switched theme — cards falling back to Material's opaque MaterialCardBackgroundBrush
+        // over a translucent mica/acrylic window, erasing the backdrop wherever a card sits, with
+        // no exception and no log line. RemEx-gcqw5 fixed the swap itself, and
+        // ThemeSwapMergedDictionaryTests guards it, so an own key is no longer the ONLY safe shape
+        // — it is still the right one for a single ControlTheme, and moving it would be churn
+        // whose failure mode is invisible, so pin it here.
         var resources = AppResources();
 
         var cardTheme = resources
@@ -76,8 +78,8 @@ public class CardSurfaceTests
                                       == "{x:Type material:Card}");
 
         cardTheme.Should().NotBeNull(
-            "the Card ControlTheme has to be a direct child of Application.Resources; a merged "
-            + "dictionary is cleared by ApplyBaseThemeInternal on the first theme switch");
+            "the Card ControlTheme has to stay a direct child of Application.Resources; moving it "
+            + "into a merged dictionary is churn whose failure mode is silent");
 
         cardTheme!.Attribute("TargetType")?.Value.Should().Be("material:Card");
     }

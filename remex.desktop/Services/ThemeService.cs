@@ -605,25 +605,45 @@ public class ThemeService : IDisposable
         new($"{ThemeDictionaryPrefix}{(theme == AppTheme.Dynamic ? "BaseDarkGlass" : theme.ToString())}.axaml");
 
     /// <summary>
+    /// The base theme files, by source string — the ONLY dictionaries a theme switch is allowed to
+    /// remove. Four entries for five presets, because <see cref="AppTheme.Dynamic"/> rides on
+    /// BaseDarkGlass. Ordinal on purpose: these paths are written by this file and by
+    /// <c>App.axaml</c>, and an avares URI that differed by case would not have resolved at all.
+    /// </summary>
+    private static readonly HashSet<string> BaseThemeSources =
+        Enum.GetValues<AppTheme>()
+            .Select(theme => BaseThemeUri(theme).OriginalString)
+            .ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>
     /// Replaces the base theme merged into <paramref name="dictionaries"/> with the one at
     /// <paramref name="uri"/>, and returns the include that was inserted so the caller can hand it
     /// back as <paramref name="current"/> next time.
     /// </summary>
     /// <remarks>
-    /// REMOVES ONE DICTIONARY, NOT EVERY DICTIONARY (RemEx-gcqw5). This used to clear everything
+    /// REMOVES BASE THEMES ONLY, NOT EVERY DICTIONARY (RemEx-gcqw5). This used to clear everything
     /// that was not the override dictionary, which did replace the previous theme but also deleted
     /// any other <c>ResourceInclude</c> <c>App.axaml</c> merges — on the FIRST theme switch, never
     /// at startup, with no exception and no log line. RemEx-qbzl1 had to move the Card
     /// <c>ControlTheme</c> out of a merged dictionary to escape it; the next one added would have
-    /// been caught the same way. Tracking the exact instance means an unrelated dictionary is
-    /// simply never a candidate for removal.
+    /// been caught the same way.
+    ///
+    /// MATCHED AGAINST <see cref="BaseThemeSources"/> — the exact four files, NOT the
+    /// <c>Themes/</c> folder prefix. That folder also holds <c>Chrome/WindowChrome.axaml</c>
+    /// (merged by <c>MainWindow.axaml</c>) and <c>Shared/FallbackPalette.axaml</c>. A prefix test
+    /// would eat either of those the moment it was hoisted to app scope AND leave the real theme
+    /// sitting behind the new one, where it keeps painting — the same silent failure this method
+    /// exists to remove, in a narrower disguise.
     ///
     /// <paramref name="current"/> is null on the first call, because the theme in place then is the
-    /// one <c>App.axaml</c> declared rather than one this service inserted. That one is found by its
-    /// <c>Source</c>, which is the only thing that distinguishes it — and it must go, or it would
-    /// outrank every later theme: the override dictionary is appended LAST to take precedence, so
-    /// position in this list is priority, and a stale theme left behind the new one at index 0 would
-    /// keep painting.
+    /// one <c>App.axaml</c> declared rather than one this service inserted. It still has to go, or
+    /// it would outrank every later theme: the override dictionary is appended LAST to take
+    /// precedence, so position in this list is priority, and a stale theme left behind the new one
+    /// at index 0 would keep painting.
+    ///
+    /// EVERY match goes, not just the first. A duplicate base theme is precisely the state that
+    /// paints the wrong palette forever, so sweeping the whole list is what keeps this self-healing
+    /// the way the clear-everything loop it replaced was.
     ///
     /// Insert at 0 rather than append, for that same reason: the theme is the floor everything else
     /// overrides.
@@ -633,10 +653,12 @@ public class ThemeService : IDisposable
         IResourceProvider? current,
         Uri uri)
     {
-        var previous = current ?? DeclaredBaseTheme(dictionaries);
-        if (previous is not null)
+        for (var i = dictionaries.Count - 1; i >= 0; i--)
         {
-            dictionaries.Remove(previous);
+            if (ReferenceEquals(dictionaries[i], current) || IsBaseTheme(dictionaries[i]))
+            {
+                dictionaries.RemoveAt(i);
+            }
         }
 
         var include = new ResourceInclude(uri) { Source = uri };
@@ -644,13 +666,12 @@ public class ThemeService : IDisposable
         return include;
     }
 
-    /// <summary>The base theme <c>App.axaml</c> merged at startup, identified by its source path.
-    /// Ordinal on purpose: the path is written by this file and by <c>App.axaml</c>, and an
-    /// avares URI that differs by case would not have resolved in the first place.</summary>
-    private static IResourceProvider? DeclaredBaseTheme(IList<IResourceProvider> dictionaries) =>
-        dictionaries.FirstOrDefault(dictionary =>
-            dictionary is ResourceInclude { Source: { } source }
-            && source.OriginalString.StartsWith(ThemeDictionaryPrefix, StringComparison.Ordinal));
+    /// <summary>Whether a merged dictionary is one of the base theme files — that is, something a
+    /// theme switch owns and may replace. Anything else merged into <c>Application.Resources</c>
+    /// is never a candidate.</summary>
+    private static bool IsBaseTheme(IResourceProvider dictionary) =>
+        dictionary is ResourceInclude { Source: { } source }
+        && BaseThemeSources.Contains(source.OriginalString);
 
     public void SetResourceOverrideInternal(string key, object value)
     {

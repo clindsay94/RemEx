@@ -42,11 +42,14 @@
 
             <!-- ═══ THE CARD SURFACE (RemEx-qbzl1). Material.Styles' Card, re-themed rather than
                  used as shipped, and declared as an OWN key of Application.Resources on purpose.
-                 It CANNOT be a ResourceInclude: ThemeService.ApplyBaseThemeInternal clears every
-                 merged dictionary except its own override dictionary before inserting the new
-                 theme file, so a merged Card theme would survive until the first theme switch and
-                 then vanish — cards would silently fall back to Material's opaque paper on a
-                 translucent shell. Own keys are untouched by that loop.
+                 It was FORCED to be an own key: ThemeService used to clear every merged dictionary
+                 except its own override dictionary before inserting the new theme file, so a merged
+                 Card theme survived launch and then vanished on the first theme switch — cards
+                 silently falling back to Material's opaque paper on a translucent shell. That trap
+                 is gone (RemEx-gcqw5): a switch now removes only the base theme files it owns, and
+                 a merged dictionary would survive. The own key STAYS, because it is the right shape
+                 for a single ControlTheme — one key, no second file to load — and because
+                 CardSurfaceTests pins it structurally by reading this element out of App.axaml.
 
                  Two things are re-themed, and both are the reason a stock Card will not do:
 
