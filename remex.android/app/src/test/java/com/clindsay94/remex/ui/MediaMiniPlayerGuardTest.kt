@@ -178,6 +178,26 @@ class MediaMiniPlayerGuardTest {
         )
     }
 
+    @Test
+    fun `the sheet's progress row is a seek control, and the bar never grows one`() {
+        val sheetText = nowPlayingSheetSource()
+
+        assertTrue(
+                "MediaNowPlayingSheet must use a Slider for the seek control",
+                sheetText.contains("Slider(")
+        )
+        assertTrue(
+                "the Slider must commit the seek on release, not on every drag frame",
+                sheetText.contains("onValueChangeFinished")
+        )
+
+        val barText = miniPlayerSource()
+        assertFalse(
+                "the mini-player BAR must stay a display-only indicator - dragging it is the sheet's job",
+                barText.contains("Slider(")
+        )
+    }
+
     private fun miniPlayerSource(): String =
             readSource("java/com/clindsay94/remex/ui/components/MediaMiniPlayer.kt")
 

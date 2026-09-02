@@ -205,6 +205,7 @@
     <string name="rc_media_now_playing">Now playing</string>
     <string name="rc_media_open_now_playing">Open now playing</string>
     <string name="rc_media_artwork">Album art</string>
+    <string name="rc_media_seek">Seek playback position</string>
 
     
     <string name="screen_remote_desktop_title">Remote Desktop</string>

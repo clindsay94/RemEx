@@ -18,13 +18,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,11 +35,12 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaPlaybackStatus
-import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
 import kotlinx.coroutines.delay
 
 /**
@@ -50,6 +52,11 @@ import kotlinx.coroutines.delay
  *
  * `rememberBottomSheetState`, not the deprecated `rememberModalBottomSheetState`: material3
  * 1.5.0-alpha20+ unified the partial/full-expand states behind one API.
+ *
+ * The progress row doubles as a seek control (RemEx-vtorl): dragging the [Slider] moves the
+ * elapsed label with the thumb, and releasing it fires [onSeek] with the target position. The
+ * host confirms it — or doesn't — asynchronously; [onSeek]'s caller owns the optimistic-then-
+ * revert bookkeeping, not this composable.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +67,7 @@ fun MediaNowPlayingSheet(
         artwork: Bitmap?,
         shape: Shape,
         onSendKey: (Int) -> Unit,
+        onSeek: (Long) -> Unit,
         onDismiss: () -> Unit
 ) {
     val sheetState = rememberBottomSheetState(SheetValue.Hidden)
@@ -113,20 +121,33 @@ fun MediaNowPlayingSheet(
                         nowElapsedMs = SystemClock.elapsedRealtime()
                     }
                 }
-                val positionMs = playback.positionAt(nowElapsedMs) ?: 0L
                 val durationMs = playback.durationMs ?: 0L
+                // Non-null only while the user has a finger on the thumb; the drag value wins over
+                // the extrapolated one so the label and thumb follow the gesture instead of fighting
+                // the ticking clock above.
+                var dragProgress by remember(playback) { mutableStateOf<Float?>(null) }
+                val sliderProgress = dragProgress ?: (playback.progressAt(nowElapsedMs) ?: 0f)
+                val positionMs =
+                        dragProgress?.let { (it * durationMs).toLong() }
+                                ?: playback.positionAt(nowElapsedMs) ?: 0L
+                val seekDescription = stringResource(R.string.rc_media_seek)
 
-                RemexLinearWavyProgress(
-                        progress = playback.progressAt(nowElapsedMs) ?: 0f,
-                        modifier = Modifier.fillMaxWidth(),
-                        // M3 Expressive spec 4.3: flatten the wave while paused.
-                        amplitude = {
-                            if (playback.status == MediaPlaybackStatus.PLAYING) {
-                                WavyProgressIndicatorDefaults.indicatorAmplitude(it)
-                            } else {
-                                0f
+                Slider(
+                        value = sliderProgress,
+                        onValueChange = { dragProgress = it },
+                        onValueChangeFinished = {
+                            val target = dragProgress
+                            dragProgress = null
+                            if (target != null) {
+                                onSeek((target * durationMs).toLong())
                             }
-                        }
+                        },
+                        valueRange = 0f..1f,
+                        enabled = connected && inputSupported,
+                        modifier =
+                                Modifier.fillMaxWidth().semantics {
+                                    contentDescription = seekDescription
+                                }
                 )
                 Row(
                         modifier = Modifier.fillMaxWidth(),

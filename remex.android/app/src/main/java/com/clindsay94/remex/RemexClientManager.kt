@@ -8,6 +8,7 @@ import android.util.Base64
 import android.util.Log
 import com.clindsay94.remex.data.MediaArtworkCache
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
+import com.clindsay94.remex.data.MediaSeekReconciler
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicLong
@@ -44,6 +46,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     /** Longest side an artwork bitmap is decoded to; see [decodeDownsampledArtwork]. */
     private const val MaxArtworkDimensionPx = 512
+
+    /**
+     * How long an optimistic seek is allowed to stand without a confirming `media_state` before
+     * [seekMedia] reverts it. See [MediaSeekReconciler.shouldRevert].
+     */
+    private const val SeekConfirmWindowMs = 2_500L
 
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var settingsManager: SettingsManager? = null
@@ -175,6 +183,20 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     /** The bitmap for [mediaState]'s current `artworkId`, or null. Reset to null with [_mediaState]. */
     private val _mediaArtwork = MutableStateFlow<Bitmap?>(null)
     val mediaArtwork: StateFlow<Bitmap?> = _mediaArtwork.asStateFlow()
+
+    /**
+     * The last snapshot [onMediaState] actually delivered from the host — as opposed to [_mediaState],
+     * which [seekMedia] may briefly hold at an OPTIMISTIC value the host has not confirmed. This is
+     * what a seek reverts to when that confirmation never arrives. Reset to [MediaPlaybackSnapshot.Unknown]
+     * on the same disconnect that resets [_mediaState].
+     */
+    private var lastHostSnapshot: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown
+
+    /** [android.os.SystemClock.elapsedRealtime] at [lastHostSnapshot]; see [MediaSeekReconciler.shouldRevert]. */
+    private var lastHostArrivalElapsedMs: Long = 0L
+
+    /** Pending revert timer from the most recent [seekMedia] call; cancelled by the next host arrival. */
+    private var seekRevertJob: Job? = null
 
     /**
      * Why the desktop stream failed. **MUST-DELIVER, and the most consequential flow here
@@ -796,6 +818,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // would otherwise be shown against the new one until it happened to report. A fresh host sends
         // its current reading as soon as its stream starts, so the blank is brief and honest.
         _mediaState.value = MediaPlaybackSnapshot.Unknown
+        // A pending revert timer belongs to the connection that issued the seek; letting it fire
+        // later against a since-reset/replaced state would be reverting to the wrong PC's truth.
+        seekRevertJob?.cancel()
+        lastHostSnapshot = MediaPlaybackSnapshot.Unknown
         // [_mediaArtwork] resets here for the same reason as [_mediaState] above; [artworkCache] does
         // NOT — see the KDoc on that field.
         _mediaArtwork.value = null
@@ -864,7 +890,45 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 "media_state: status=${snapshot.status} title=${snapshot.title} pos=${snapshot.positionMs} dur=${snapshot.durationMs} art=${snapshot.artworkId}"
         )
         _mediaState.value = snapshot
+        // This IS the host's own truth arriving - it settles any optimistic seek outright, whether
+        // it agrees with the guess or not (spec 1.3: never left standing as an unconfirmed claim).
+        lastHostSnapshot = snapshot
+        lastHostArrivalElapsedMs = snapshot.receivedAtElapsedMs
+        seekRevertJob?.cancel()
         reconcileArtwork(snapshot)
+    }
+
+    /**
+     * Drags the now-playing sheet's slider to [positionMs] (RemEx-vtorl). Fires the JNI seek
+     * export (result ignored — [PingPongHandler]'s reply IS the next `media_state`, not a direct
+     * ack) and immediately shows an OPTIMISTIC snapshot so the bar and sheet jump at once, rather
+     * than waiting out a round trip. If [onMediaState] has not delivered a fresher host reading
+     * within [SeekConfirmWindowMs], [MediaSeekReconciler.shouldRevert] says the host ignored the
+     * seek (some sessions on Windows do), and the guess is snapped back to [lastHostSnapshot]
+     * rather than left standing as a claim the phone cannot back.
+     */
+    fun seekMedia(positionMs: Long) {
+        val current = _mediaState.value
+        val clampedPositionMs =
+                if (current.hasTimeline) {
+                    positionMs.coerceIn(0L, current.durationMs!!)
+                } else {
+                    positionMs
+                }
+        Log.d("RemexManager", "media_seek: $clampedPositionMs")
+        RemexCoreClient.SeekMedia(clampedPositionMs)
+
+        val issuedAtElapsedMs = SystemClock.elapsedRealtime()
+        _mediaState.value = MediaSeekReconciler.optimistic(current, clampedPositionMs, issuedAtElapsedMs)
+
+        seekRevertJob?.cancel()
+        seekRevertJob =
+                managerScope.launch {
+                    delay(SeekConfirmWindowMs)
+                    if (MediaSeekReconciler.shouldRevert(issuedAtElapsedMs, lastHostArrivalElapsedMs)) {
+                        _mediaState.value = lastHostSnapshot
+                    }
+                }
     }
 
     /**

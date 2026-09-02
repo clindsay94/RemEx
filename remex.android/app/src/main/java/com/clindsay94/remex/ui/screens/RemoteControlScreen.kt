@@ -324,6 +324,7 @@ fun RemoteControlScreen(
             onSendClipboard = { viewModel.sendClipboardToPc() },
             onFetchClipboard = { viewModel.fetchClipboardFromPc() },
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
+            onSeek = RemexClientManager::seekMedia,
             onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
 }
@@ -339,6 +340,7 @@ fun RemoteControlScreenContent(
         onSendClipboard: () -> Unit = {},
         onFetchClipboard: () -> Unit = {},
         onSendKey: (Int) -> Unit,
+        onSeek: (Long) -> Unit = {},
         onClearCommandStatus: () -> Unit
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
@@ -579,6 +581,7 @@ fun RemoteControlScreenContent(
                                     uiState.cornerRadius
                             ),
                     onSendKey = onSendKey,
+                    onSeek = onSeek,
                     onDismiss = { sheetOpen = false }
             )
         }
