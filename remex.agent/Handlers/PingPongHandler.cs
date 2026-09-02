@@ -466,8 +466,13 @@ public sealed class PingPongHandler(
                     // still answers, with PngBase64 null, so the client stops asking rather than
                     // retrying an id that will never resolve.
                     case MessageTypes.MediaArtworkRequest when message.MediaArtworkRequest is not null:
-                        var requestedArtworkId = message.MediaArtworkRequest.ArtworkId;
-                        var artworkBytes = mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
+                        // ArtworkId is non-nullable in the model, but System.Text.Json does not
+                        // honour that for a paired client sending an explicit JSON null — guard
+                        // defensively rather than let a blank id reach the store lookup.
+                        var requestedArtworkId = message.MediaArtworkRequest.ArtworkId ?? string.Empty;
+                        var artworkBytes = string.IsNullOrWhiteSpace(requestedArtworkId)
+                            ? null
+                            : mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
                         await MessageSerializer.SendAsync(
                             webSocket,
                             new RemexMessage

@@ -81,6 +81,7 @@ internal sealed class MediaSessionBackgroundService(
     private long _artworkGeneration;
     private string? _currentArtworkId;
     private CancellationTokenSource? _artworkCts;
+    private CancellationToken _stoppingToken;
 
     public bool IsSupported => reader.IsSupported;
 
@@ -93,6 +94,8 @@ internal sealed class MediaSessionBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
+
         if (!reader.IsSupported)
         {
             // NOTHING IS PUBLISHED, WHICH IS NOT THE SAME AS PUBLISHING "unknown". A host that cannot
@@ -196,7 +199,7 @@ internal sealed class MediaSessionBackgroundService(
 
                 if (eligible)
                 {
-                    var cts = new CancellationTokenSource();
+                    var cts = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
                     _artworkCts = cts;
                     generation = _artworkGeneration;
                     resolveToken = cts.Token;
@@ -265,5 +268,21 @@ internal sealed class MediaSessionBackgroundService(
                 _currentArtworkId = id;
             }
         }
+    }
+
+    /// <summary>
+    /// Cancels and disposes whatever artwork resolution is still in flight so a stopping sampler
+    /// does not leave a resolve (a WinRT thumbnail drain, an https fetch) running past shutdown.
+    /// </summary>
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        lock (_artworkLock)
+        {
+            _artworkCts?.Cancel();
+            _artworkCts?.Dispose();
+            _artworkCts = null;
+        }
+
+        return base.StopAsync(cancellationToken);
     }
 }

@@ -81,6 +81,11 @@ internal sealed class MediaArtworkStore(int capacity = 8) : IMediaArtworkStore
     /// <inheritdoc />
     public byte[]? TryGet(string artworkId)
     {
+        if (string.IsNullOrEmpty(artworkId))
+        {
+            return null;
+        }
+
         lock (_lock)
         {
             if (!_entries.TryGetValue(artworkId, out var node))
