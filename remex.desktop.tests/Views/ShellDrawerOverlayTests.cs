@@ -116,6 +116,31 @@ public class ShellDrawerOverlayTests
     }
 
     [Fact]
+    public void EscapeClosesTheSettingsPanelBeforeTheDrawer()
+    {
+        // The settings overlay sits ON TOP of the drawer, so Escape has to peel it off first
+        // (RemEx-8sfwp). Checking IsDrawerOpen first would shut the drawer out from under a panel
+        // that stays on screen — the drawer is not even visible when the panel covers it, so the
+        // keypress would look like it did nothing at all.
+        var body = OnKeyDownBody();
+
+        var settings = body.IndexOf("IsSettingsPanelOpen", StringComparison.Ordinal);
+        var drawer = body.IndexOf("IsDrawerOpen", StringComparison.Ordinal);
+
+        Assert.True(settings >= 0, "OnKeyDown no longer closes the settings panel on Escape");
+        Assert.True(drawer >= 0, "OnKeyDown no longer closes the drawer on Escape");
+        Assert.True(settings < drawer,
+            "OnKeyDown checks IsDrawerOpen before IsSettingsPanelOpen; the panel must win");
+
+        // Precedence alone is not enough: without an early exit, control falls through and closes
+        // the drawer in the same keypress.
+        var settingsBranch = body[settings..drawer];
+
+        Assert.Contains("e.Handled = true", settingsBranch, StringComparison.Ordinal);
+        Assert.Contains("return;", settingsBranch, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TheDrawerCanBeReopenedFromOutsideItself()
     {
         // The SplitView was CompactOverlay: a 64px icon rail stayed on screen when the drawer was shut,
@@ -160,6 +185,53 @@ public class ShellDrawerOverlayTests
             "These views bind to an ancestor SplitView, which the shell no longer has: " +
             string.Join(", ", offenders));
     }
+
+    /// <summary>
+    /// The braces-matched body of <c>ShellView.OnKeyDown</c>, comments stripped.
+    /// </summary>
+    /// <remarks>
+    /// Scoped to the method rather than the whole file because both property names appear elsewhere
+    /// in the code-behind — <c>OnPropertyChanged</c> watches <c>IsSettingsPanelOpen</c> above it —
+    /// so a file-wide index comparison would pass no matter what order Escape actually handles them
+    /// in. Comments go for the same reason the drawer-toggle guard strips them: the precedence is
+    /// discussed in prose right above the method, and a guard a comment can satisfy is not a guard.
+    /// </remarks>
+    private static string OnKeyDownBody()
+    {
+        var cs = ShellCodeBehind();
+
+        var signature = cs.IndexOf("protected override void OnKeyDown(", StringComparison.Ordinal);
+        Assert.True(signature >= 0, "ShellView.axaml.cs no longer overrides OnKeyDown");
+
+        var open = cs.IndexOf('{', signature);
+        Assert.True(open > signature, "ShellView.OnKeyDown has no body");
+
+        var depth = 0;
+        var close = -1;
+
+        for (var i = open; i < cs.Length; i++)
+        {
+            if (cs[i] == '{')
+            {
+                depth++;
+            }
+            else if (cs[i] == '}' && --depth == 0)
+            {
+                close = i;
+                break;
+            }
+        }
+
+        Assert.True(close > open, "ShellView.OnKeyDown's braces do not balance");
+
+        return WithoutCsComments(cs[open..(close + 1)]);
+    }
+
+    private static string WithoutCsComments(string source) =>
+        Regex.Replace(
+            Regex.Replace(source, @"/\*.*?\*/", string.Empty, RegexOptions.Singleline),
+            @"//[^\r\n]*",
+            string.Empty);
 
     private static string WithoutXmlComments(string xaml) =>
         Regex.Replace(xaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
