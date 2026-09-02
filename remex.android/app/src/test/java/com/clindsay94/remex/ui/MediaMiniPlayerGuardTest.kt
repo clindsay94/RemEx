@@ -53,6 +53,27 @@ class MediaMiniPlayerGuardTest {
     }
 
     @Test
+    fun `the wavy progress bar's amplitude is gated on PLAYING, not just drawn wavy`() {
+        val text = miniPlayerSource()
+
+        // M3 Expressive spec 4.3: the wave must flatten while paused. A regression here (dropping
+        // the amplitude argument, or gating on something other than PLAYING) would compile fine and
+        // render fine — the bar would just never flatten, which no unit test can see since
+        // `remex.android` has no Compose render in unit tests.
+        assertTrue(
+                "RemexLinearWavyProgress must receive an amplitude argument",
+                text.contains("RemexLinearWavyProgress(")
+        )
+        assertTrue(
+                "the amplitude lambda must gate on playback.status == PLAYING and fall back to 0f"
+                        + " otherwise",
+                Regex("""amplitude\s*=\s*\{[^}]*playback\.status\s*==\s*MediaPlaybackStatus\.PLAYING"""
+                                + """[\s\S]*?else[\s\S]*?0f""")
+                        .containsMatchIn(text)
+        )
+    }
+
+    @Test
     fun `the now-playing sheet uses the unified bottom sheet API, not the deprecated one`() {
         val text = nowPlayingSheetSource()
 

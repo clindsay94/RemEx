@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -117,7 +118,15 @@ fun MediaNowPlayingSheet(
 
                 RemexLinearWavyProgress(
                         progress = playback.progressAt(nowElapsedMs) ?: 0f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        // M3 Expressive spec 4.3: flatten the wave while paused.
+                        amplitude = {
+                            if (playback.status == MediaPlaybackStatus.PLAYING) {
+                                WavyProgressIndicatorDefaults.indicatorAmplitude(it)
+                            } else {
+                                0f
+                            }
+                        }
                 )
                 Row(
                         modifier = Modifier.fillMaxWidth(),

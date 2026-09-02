@@ -799,6 +799,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // [_mediaArtwork] resets here for the same reason as [_mediaState] above; [artworkCache] does
         // NOT — see the KDoc on that field.
         _mediaArtwork.value = null
+        // In-flight requests are connection-scoped: a media_artwork_request sent just before the
+        // socket dropped never gets a reply, so forget it here rather than letting it block a
+        // re-request until its TTL expires. The cached bitmaps themselves are not connection-scoped
+        // (see [artworkCache]'s KDoc), so only the in-flight bookkeeping is cleared.
+        artworkCache.clearAllInFlight()
     }
 
     fun setConnecting(isConnecting: Boolean) {

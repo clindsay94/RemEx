@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -191,7 +192,15 @@ fun MediaMiniPlayer(
                             progress = progress ?: 0f,
                             modifier =
                                     Modifier.fillMaxWidth()
-                                            .align(Alignment.BottomCenter)
+                                            .align(Alignment.BottomCenter),
+                            // M3 Expressive spec 4.3: flatten the wave while paused.
+                            amplitude = {
+                                if (playback.status == MediaPlaybackStatus.PLAYING) {
+                                    WavyProgressIndicatorDefaults.indicatorAmplitude(it)
+                                } else {
+                                    0f
+                                }
+                            }
                     )
                 }
             }

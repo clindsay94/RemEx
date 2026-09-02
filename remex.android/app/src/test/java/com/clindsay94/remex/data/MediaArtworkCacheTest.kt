@@ -85,6 +85,27 @@ class MediaArtworkCacheTest {
     }
 
     @Test
+    fun `clearAllInFlight clears in-flight markers but leaves bitmaps and evicted ids untouched`() {
+        val cache = MediaArtworkCache<String>()
+        assertTrue(cache.tryBeginRequest("id1", nowElapsedMs = 0L))
+        cache.put("id2", "bytes")
+        cache.markEvicted("id3")
+
+        cache.clearAllInFlight()
+
+        assertTrue(
+                "an in-flight request must be re-triable immediately after a disconnect, " +
+                        "even though its TTL has not elapsed",
+                cache.tryBeginRequest("id1", nowElapsedMs = 1L)
+        )
+        assertEquals("a cached bitmap must survive clearAllInFlight", "bytes", cache.get("id2"))
+        assertFalse(
+                "an evicted id must stay refused after clearAllInFlight",
+                cache.tryBeginRequest("id3", nowElapsedMs = 1_000_000L)
+        )
+    }
+
+    @Test
     fun `the cache has no reset method, so its contents outlive a simulated disconnect`() {
         // There is no clear()/reset() to call here — that absence IS the assertion. Per contract,
         // RemexClientManager resets `mediaArtwork` on disconnect but never this cache, because

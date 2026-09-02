@@ -63,6 +63,15 @@ class MediaArtworkCache<T : Any>(
         inFlightSince.remove(id)
     }
 
+    /**
+     * Clears every in-flight marker. Not a general reset — [entries] and [evicted] are untouched,
+     * only requests outstanding on a connection that no longer exists are forgotten.
+     */
+    @Synchronized
+    fun clearAllInFlight() {
+        inFlightSince.clear()
+    }
+
     @Synchronized
     fun markEvicted(id: String) {
         inFlightSince.remove(id)
