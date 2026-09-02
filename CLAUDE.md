@@ -33,6 +33,7 @@ them on their next sync, and the beads block is content-hashed. So the correctio
 | "NEVER edit a function, class, or method without first running `gitnexus_impact`" | Applies to **cross-cutting edits** — a symbol with callers outside its own file, anything named in `docs/REGRESSION-GUARDS.md`, or a signature/contract change. Not to test files, new symbols, localization, comments, or single-call-site private helpers. |
 | "MUST warn the user if impact analysis returns HIGH or CRITICAL" | In a headless `/ralph` or `/drain` iteration there is no user. Record the risk in the bead and the journal instead. |
 | "NEVER commit changes without running `gitnexus_detect_changes()`" | `scripts/verify.ps1 -Check` is the commit gate (`AGENTS.md`). `detect_changes` is advisory on top of it, not a second gate. |
+| "Conservative (default): Do not run git commits … unless explicitly asked" / "Do not commit or push without clear authority" | **Committing is standing-authorized.** When work is done and the verify gate passes, commit it that turn (conventional prefix + bead ID) without asking — Connor decided 2026-09-02 that ending a turn with an uncommitted, verified change is the wrong default. Pushing and Dolt remote sync still wait for an explicit ask. |
 
 A rule nobody can follow is worse than no rule: it teaches agents that this file's MUSTs are
 decorative, which discounts the ones that are load-bearing. If you find another unfollowable
@@ -141,7 +142,7 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) �
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (26232 symbols, 60378 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (27099 symbols, 62174 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
