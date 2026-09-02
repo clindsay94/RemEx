@@ -951,6 +951,7 @@
                                  SideSheetWidth="440"
                                  SideSheetPadding="0"
                                  SideSheetCanClose="False"
+                                 SideSheetHeaderTemplate="{x:Null}"
                                  IsHitTestVisible="{Binding IsSettingsPanelOpen}">
                 <material:SideSheet.SideSheetHeader>
                     <Border Name="SettingsSheetHeader" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
