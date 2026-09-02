@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- File Transfer uses the Material icon set and type scale now instead of emoji and inline sizes.
+  The queue, transfer progress and every button do what they did before. (RemEx-z7706)
+
 - The command palette hint says Ctrl+K everywhere now. The sidebar and Home screen already showed
   Ctrl+K while the tooltip and the tutorial said Ctrl+Shift+P; all of them agree now, in every
   language. Both shortcuts still open the palette — Ctrl+Shift+P just isn't advertised any more.

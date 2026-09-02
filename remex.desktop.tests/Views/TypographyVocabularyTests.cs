@@ -48,10 +48,12 @@ public class TypographyVocabularyTests
     /// RemEx-enbqf sweep of <c>RemoteView.axaml</c> (27 sites; its SelectableTextBlock stays
     /// inline). 458 (the RemEx-oszfm baseline) minus both sweeps is 368. Re-pinned to 350 on
     /// 2026-09-02 after the RemEx-ep10v sweep of <c>AboutView.axaml</c> (18 sites; its three
-    /// SelectableTextBlocks stay inline). LOWER THIS when a Phase 4 view bead sweeps a screen.
+    /// SelectableTextBlocks stay inline). Re-pinned to 298 on 2026-09-02 after the RemEx-z7706
+    /// sweep of <c>FileTransferView.axaml</c> (44 sites; its two TextBoxes and one
+    /// SelectableTextBlock stay inline). LOWER THIS when a Phase 4 view bead sweeps a screen.
     /// Never raise it.
     /// </summary>
-    private const int InlineFontSizeBaseline = 350;
+    private const int InlineFontSizeBaseline = 298;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be
