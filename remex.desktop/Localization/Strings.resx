@@ -1640,6 +1640,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Export as:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Scope:</value>
+  </data>
   <data name="Logs_Export" xml:space="preserve">
     <value>Export</value>
   </data>

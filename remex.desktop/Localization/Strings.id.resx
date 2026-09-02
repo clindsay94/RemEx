@@ -2453,6 +2453,9 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Ekspor sebagai:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Cakupan:</value>
+  </data>
   <data name="Logs_Export" xml:space="preserve">
     <value>Ekspor</value>
   </data>

@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+             xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:vm="using:Remex.Desktop.ViewModels"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:logging="using:Remex.Core.Logging"
@@ -27,36 +29,26 @@
                     <Grid RowDefinitions="Auto,Auto,*" Margin="0,16,0,0">
                         <!-- Filter toolbar (live, non-destructive) -->
                         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,8">
-                                <TextBlock Text="{local:Localize Logs_VerbosityFilter}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" Width="140" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,8">
-                                <TextBlock Text="{local:Localize Logs_Preset}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Width="185" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize Logs_SearchWatermark}" Width="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,0,8">
-                                <TextBlock Text="{local:Localize Logs_CaptureLevel}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" Width="120" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
-                            </StackPanel>
+                            <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_VerbosityFilter}" MinWidth="200" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" assists:ComboBoxAssist.Label="{local:Localize Logs_Preset}" MinWidth="185" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <TextBox Text="{Binding SearchText}" assists:TextFieldAssist.Label="{local:Localize Logs_SearchWatermark}" MinWidth="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_CaptureLevel}" MinWidth="120" VerticalAlignment="Center" Margin="0,0,0,8" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
                         </WrapPanel>
 
                         <!-- Export + actions bar -->
-                        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,12">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Logs_ExportAs}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" Width="90" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="2" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" Width="195" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="{Binding EntryCountText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" Margin="0,0,0,12">
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportAs}" MinWidth="130" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportScope}" MinWidth="195" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{Binding EntryCountText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             <Button Grid.Column="3" Classes="secondary" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="4" Classes="secondary" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="5" Classes="secondary" Content="{local:Localize Logs_Refresh}" Command="{Binding RefreshLogsCommand}" Margin="0,0,10,0"/>
-                            <Button Grid.Column="6" Classes="secondary" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
+                            <Button Grid.Column="6" Classes="secondary danger" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}"/>
                         </Grid>
 
                         <!-- Colored, virtualized log list -->
-                        <Border Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="4" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <ListBox Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="Consolas" FontSize="12">
+                        <material:Card Grid.Row="2" Classes="surface" Padding="4" InsideClipping="True" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <ListBox Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}">
                                 <!-- Ctrl+C on the list itself, so the shortcut works wherever the
                                      selection was made rather than only while the button has focus. -->
                                 <ListBox.KeyBindings>
@@ -65,18 +57,19 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="logging:LogEntry">
                                         <StackPanel Spacing="1" Margin="0,1">
-                                            <Grid ColumnDefinitions="Auto,Auto,Auto,*">
-                                                <TextBlock Grid.Column="0" Text="{Binding TimeStamp, StringFormat='{}{0:HH:mm:ss}'}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding Level}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" FontWeight="Bold" Width="76" Margin="0,0,8,0"/>
-                                                <TextBlock Grid.Column="2" Text="{Binding Category}" Foreground="{DynamicResource TextMutedBrush}" Width="170" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
-                                                <TextBlock Grid.Column="3" Text="{Binding Message}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" TextWrapping="Wrap"/>
+                                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
+                                                <mi:MaterialIcon Grid.Column="0" Width="14" Height="14" Kind="{Binding Level, Converter={x:Static local:LogLevelToIconKindConverter.Instance}}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" Margin="0,0,6,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding TimeStamp, StringFormat='{}{0:HH:mm:ss}'}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Level}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" FontWeight="Bold" Width="76" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding Category}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Width="170" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding Message}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" FontFamily="{StaticResource JetBrainsMono}" TextWrapping="Wrap"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Exception}" IsVisible="{Binding Exception, Converter={x:Static ObjectConverters.IsNotNull}}" Foreground="{DynamicResource SystemErrorBrush}" FontSize="11" TextWrapping="Wrap" Margin="84,0,0,0"/>
+                                            <TextBlock Text="{Binding Exception}" IsVisible="{Binding Exception, Converter={x:Static ObjectConverters.IsNotNull}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap" Margin="106,0,0,0"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                        </Border>
+                        </material:Card>
                     </Grid>
                 </TabItem>
 
@@ -85,23 +78,23 @@
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Logs_ServiceDesc}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{local:Localize Logs_ServiceDesc}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Logs_QueryService}" Command="{Binding FetchServiceLogsCommand}"/>
                         </Grid>
 
                         <!-- Terminal Output -->
-                        <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <material:Card Grid.Row="1" Classes="surface" Padding="16" InsideClipping="True" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <TextBox Text="{Binding ServiceLogsText}"
                                          IsReadOnly="True"
                                          AcceptsReturn="True"
                                          TextWrapping="NoWrap"
-                                         FontFamily="Consolas"
+                                         FontFamily="{StaticResource JetBrainsMono}"
                                          FontSize="12"
-                                         Foreground="{DynamicResource SystemSuccessBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          Margin="0"/>
                             </ScrollViewer>
-                        </Border>
+                        </material:Card>
                     </Grid>
                 </TabItem>
             </TabControl>

@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Remote page uses the Material icon set and type scale now instead of emoji and inline sizes.
   Every button does what it did before. (RemEx-enbqf)
 
+- Diagnostic Logs moved onto Material cards and floating field labels; every filter and export
+  ComboBox, including export scope, now has a label a screen reader can announce. (RemEx-peagx)
+
 - Settings is on the Material type scale now. Every size on the page comes from the shared
   vocabulary instead of a number on the element. Nothing it does has changed. (RemEx-a6xnd)
 

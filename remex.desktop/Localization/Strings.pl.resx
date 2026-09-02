@@ -2556,6 +2556,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Eksportuj jako:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Zakres:</value>
+  </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
     <value>Eksportuj logi</value>
   </data>

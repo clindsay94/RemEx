@@ -2559,6 +2559,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Dışa Aktar Olarak:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Kapsam:</value>
+  </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
     <value>Günlükleri Dışa Aktar</value>
   </data>

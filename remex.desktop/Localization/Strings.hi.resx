@@ -2450,6 +2450,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>इसे इस रूप में निर्यात करें:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>दायरा:</value>
+  </data>
   <data name="Logs_Export" xml:space="preserve">
     <value>निर्यात</value>
   </data>
