@@ -81,6 +81,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reason to leave anything out. The list now has its own bounded area and scrolls inside it, so only
   the visible rows exist. The title and the search and sort bar stay put at the top while you scroll
   the list, which is where they were always meant to be. (RemEx-3oy7x)
+- **Switching theme no longer throws away styling it was never meant to touch.** Applying a preset
+  replaced the previous theme by emptying the app's whole resource stack and putting one file back,
+  so anything else the app merged in alongside the theme vanished the first time you changed theme —
+  never at startup, and with nothing logged. It removes exactly the theme it is replacing now, so
+  the rest of the stack is left where it was. (RemEx-gcqw5)
 
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and
