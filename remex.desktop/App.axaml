@@ -1012,17 +1012,27 @@
         </Style>
 
         <!-- TabItem was the one interactive control this block missed (RemEx-83zq1). Material
-             3.19.0's TabItem theme neither styles :focus nor nulls FocusAdorner, so a keyboard user
-             tabbing onto DiagnosticLogsView's Live/Archived headers got whatever Avalonia's stock
-             adorner happens to draw rather than RemEx's ring - the exact inconsistency RemEx-2p19
-             set out to remove for the other ten.
+             3.19.0's TabItem theme styles no :focus state AND leaves FocusAdorner null, and there
+             is no framework default behind it - measured null both before and during
+             :focus-visible. So a keyboard user tabbing onto DiagnosticLogsView's "Live Application
+             Logs" / "System Event Logs" headers got no focus indicator at all, not a differently
+             drawn one. That is the accessibility hole RemEx-2p19 closed for the other ten, not a
+             cosmetic inconsistency.
 
-             CONTROL-LEVEL, NOT `/template/ ContentPresenter`, and not by analogy with ListBoxItem -
-             the template says so. Material's TabItem root is `Border#PART_RootBorder`, which
-             template-binds BorderBrush, BorderThickness and CornerRadius; the ring renders through
-             it and follows the header's corners. Its PART_ContentPresenter is buried three levels
-             down (Border > Panel > RippleEffect > Panel) and binds no border properties at all, so
-             the template form would have drawn nothing, silently, around the header text. -->
+             CONTROL-LEVEL, NOT `/template/ ContentPresenter`, and not by analogy with ListBoxItem.
+             The template form is not inert - a ContentPresenter renders its own BorderBrush and
+             BorderThickness whether or not the template binds them, which is exactly why the
+             Button/ToggleButton/RepeatButton template-form selectors work. It is wrong here for a
+             different reason. Material's tree is
+                 Border#PART_RootBorder > Panel#PART_RootPanel > RippleEffect#PART_Ripple
+                 > ContentPresenter#PART_ContentPresenter > Panel#PART_InnerPanel
+                 > ContentPresenter#PART_ContentPresenter
+             so the presenter the selector matches wraps the header *text*: probed on a 360x48
+             header, the template form drew its 2px ring at 150,14,59,21 - tight around the label,
+             floating inside the header. That is the "ring around the wrong rectangle" failure
+             RemEx-kgs7g exists to prevent. PART_RootBorder is the header's own rectangle and
+             template-binds BorderBrush, BorderThickness and CornerRadius, so the control-level form
+             frames the header and follows its corners. -->
         <Style Selector="TabItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>

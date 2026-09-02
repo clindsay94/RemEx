@@ -92,12 +92,16 @@ public class FocusVisibleStyleGuardTests
     }
 
     [Fact]
-    public void TheTabItemRingIsOnTheControlBecauseMaterialsHeaderPresenterCarriesNoBorder()
+    public void TheTabItemRingIsOnTheControlSoItFramesTheHeaderNotTheHeaderText()
     {
-        // RemEx-83zq1. Material 3.19.0's TabItem template roots at Border#PART_RootBorder, which
-        // template-binds BorderBrush and BorderThickness; its PART_ContentPresenter sits three
-        // levels below that inside a RippleEffect and binds neither. The template form would have
-        // compiled, applied, and drawn nothing.
+        // RemEx-83zq1. Not because the template form is inert — a ContentPresenter draws its own
+        // BorderBrush/BorderThickness, which is why the Button/ToggleButton/RepeatButton
+        // template-form selectors work. `/template/ ContentPresenter` matches inside Material
+        // 3.19.0's RippleEffect, where the presenter wraps only the header text: probed on a 360x48
+        // header it drew the ring at 150,14,59,21, hugging the label — RemEx-kgs7g's "ring around
+        // the wrong rectangle". The control-level form reaches Border#PART_RootBorder, which
+        // template-binds BorderBrush, BorderThickness and CornerRadius, so the ring frames the
+        // header itself.
         FocusStyles().Single(s => s.Control == "TabItem").Suffix.Trim().Should().BeEmpty();
     }
 
