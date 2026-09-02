@@ -148,31 +148,31 @@
     <value>जबरन (तत्काल)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 पीसी लॉक करें</value>
+    <value>पीसी लॉक करें</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 साइन आउट</value>
+    <value>साइन आउट</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ शटडाउन</value>
+    <value>शटडाउन</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 रीस्टार्ट</value>
+    <value>रीस्टार्ट</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 स्लीप</value>
+    <value>स्लीप</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ हाइबरनेट</value>
+    <value>हाइबरनेट</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ फोर्स शटडाउन</value>
+    <value>फोर्स शटडाउन</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ फोर्स रीस्टार्ट</value>
+    <value>फोर्स रीस्टार्ट</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI में रीबूट</value>
+    <value>UEFI में रीबूट</value>
   </data>
 
   

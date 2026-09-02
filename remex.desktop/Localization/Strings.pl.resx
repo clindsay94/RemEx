@@ -148,31 +148,31 @@
     <value>WYMUSZONE (NATYCHMIASTOWE)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒  Zablokuj PC</value>
+    <value>Zablokuj PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪  Wyloguj</value>
+    <value>Wyloguj</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻  Wyłącz</value>
+    <value>Wyłącz</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄  Uruchom ponownie</value>
+    <value>Uruchom ponownie</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤  Uśpij</value>
+    <value>Uśpij</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄  Hibernacja</value>
+    <value>Hibernacja</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠  Wymuś wyłączenie</value>
+    <value>Wymuś wyłączenie</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠  Wymuś restart</value>
+    <value>Wymuś restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧  Uruchom do UEFI</value>
+    <value>Uruchom do UEFI</value>
   </data>
 
   

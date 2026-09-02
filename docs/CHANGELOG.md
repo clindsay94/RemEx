@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Remote page uses the Material icon set and type scale now instead of emoji and inline sizes.
+  Every button does what it did before. (RemEx-enbqf)
+
+- Settings is on the Material type scale now. Every size on the page comes from the shared
+  vocabulary instead of a number on the element. Nothing it does has changed. (RemEx-a6xnd)
+
 - The dashboard is on the Material type scale now. Every size on it comes from the shared
   vocabulary instead of a number on the element, and the footer's hard-coded shadow is gone.
   Nothing it does has changed. (RemEx-oszfm)
@@ -64,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than merely shortened. (RemEx-zgtn1)
 
 ### Fixed
+
+- The Personalize side sheet on the PC titled itself with its own class name instead of
+  "Personalize". The Material side sheet wraps whatever header you give it in a text template, so
+  a header that is already a control has to opt out of that template.
 
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and

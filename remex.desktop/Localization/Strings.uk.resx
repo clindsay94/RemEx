@@ -148,31 +148,31 @@
     <value>ПРИМУСОВЕ (НЕГАЙНО)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 Заблокувати ПК</value>
+    <value>Заблокувати ПК</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Вихід</value>
+    <value>Вихід</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Вимкнути</value>
+    <value>Вимкнути</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Перезавантажити</value>
+    <value>Перезавантажити</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Сон</value>
+    <value>Сон</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Сплячий режим</value>
+    <value>Сплячий режим</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Примусове вимкнення</value>
+    <value>Примусове вимкнення</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Примусове перезавантаження</value>
+    <value>Примусове перезавантаження</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 Перезавантаження в UEFI</value>
+    <value>Перезавантаження в UEFI</value>
   </data>
 
   

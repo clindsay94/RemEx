@@ -148,31 +148,31 @@
     <value>ZORLA (ANINDA)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 PC'yi Kilitle</value>
+    <value>PC'yi Kilitle</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Oturumu Kapat</value>
+    <value>Oturumu Kapat</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Kapat</value>
+    <value>Kapat</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Yeniden Başlat</value>
+    <value>Yeniden Başlat</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Uyku</value>
+    <value>Uyku</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Hazırda Beklet</value>
+    <value>Hazırda Beklet</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Zorla Kapat</value>
+    <value>Zorla Kapat</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Zorla Yeniden Başlat</value>
+    <value>Zorla Yeniden Başlat</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI'ye Yeniden Başlat</value>
+    <value>UEFI'ye Yeniden Başlat</value>
   </data>
 
   

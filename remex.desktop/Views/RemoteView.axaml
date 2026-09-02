@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.RemoteView" x:DataType="vm:RemoteViewModel">
 
@@ -18,92 +19,92 @@
             <material:Card Padding="20">
                 <StackPanel Spacing="14">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="🔌" FontSize="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="{local:Localize Remote_WakeTitle}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Lan" Foreground="{DynamicResource AccentPrimaryBrush}" Width="20" Height="20" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_WakeTitle}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="{local:Localize Remote_WakeExplainer}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18"/>
+                    <TextBlock Text="{local:Localize Remote_WakeExplainer}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18"/>
 
                     <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="10" Padding="14,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                                <TextBlock Text="{local:Localize Remote_ThisPcMac}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
+                                <TextBlock Text="{local:Localize Remote_ThisPcMac}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                                 <SelectableTextBlock Text="{Binding HostMacAddress}" FontSize="18" FontWeight="Bold" FontFamily="Consolas, monospace" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                <TextBlock Text="{Binding HostAdapterName}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding HostAdapterName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding HostAdapterName}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding HostAdapterName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
                             <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Column="1" Classes="tile" MinHeight="0" Padding="16,10" VerticalAlignment="Center" Command="{Binding CopyMacCommand}" Content="{local:Localize Remote_CopyMac}"/>
                         </Grid>
                     </Border>
 
-                    <TextBlock Text="{local:Localize Remote_WakeInstruction}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18"/>
+                    <TextBlock Text="{local:Localize Remote_WakeInstruction}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18"/>
                 </StackPanel>
             </material:Card>
 
             <!-- ═══ Graceful Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Graceful}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <TextBlock Text="{local:Localize Remote_Graceful}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="tile" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_Lock}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="🔒" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_Lock}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Lock" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="tile" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_SignOut}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="🚪" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_SignOut}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Logout" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="tile warning" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_Shutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_Shutdown}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Power" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="tile warning" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_Restart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_Restart}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Restart" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="tile" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_Sleep}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="🌙" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_Sleep}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Sleep" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="tile" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_Hibernate}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="❄️" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_Hibernate}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Snowflake" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </UniformGrid>
 
             <!-- ═══ Forced Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
+            <TextBlock Text="{local:Localize Remote_Forced}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="tile danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_ForceShutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_ForceShutdown}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="PowerPlugOff" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="tile danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_ForceRestart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_ForceRestart}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="RestartAlert" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="tile danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{local:Localize Remote_RebootUefi}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="⚙️" FontSize="30" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Remote_RebootUefi}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Cog" Width="32" Height="32" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </UniformGrid>
 
             <!-- Command status -->
-            <TextBlock Text="{Binding WolStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding WolStatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
         </StackPanel>
     </ScrollViewer>

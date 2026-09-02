@@ -106,6 +106,10 @@ to:
 2. **Badge and chip counters** already sized by their own control theme's setter.
 3. **Anything inside a `ControlTheme`** in `Themes/`, which is defining a component, not consuming
    the vocabulary.
+4. **Controls that are not a `TextBlock`** (`TextBox`, `SelectableTextBlock`). The Themes above
+   target `TextBlock`; applied to a subclass they replace that control's own theme, and a
+   `SelectableTextBlock` on `Headline6TextBlock` loses its `SelectionBrush` so drag-select paints
+   nothing (RemEx-enbqf review). Those keep an inline size until they get a theme of their own.
 
 Add to this list rather than quietly re-introducing a number.
 

@@ -166,31 +166,31 @@
     <value>FORCED (IMMEDIATE)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒  Lock PC</value>
+    <value>Lock PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪  Sign Out</value>
+    <value>Sign Out</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻  Shutdown</value>
+    <value>Shutdown</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄  Restart</value>
+    <value>Restart</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤  Sleep</value>
+    <value>Sleep</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄  Hibernate</value>
+    <value>Hibernate</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠  Force Shutdown</value>
+    <value>Force Shutdown</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠  Force Restart</value>
+    <value>Force Restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧  Reboot to UEFI</value>
+    <value>Reboot to UEFI</value>
   </data>
 
   

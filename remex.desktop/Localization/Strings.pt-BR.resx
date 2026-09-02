@@ -148,31 +148,31 @@
     <value>FORÇADO (IMEDIATO)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 Bloquear PC</value>
+    <value>Bloquear PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Sair</value>
+    <value>Sair</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Desligar</value>
+    <value>Desligar</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Reiniciar</value>
+    <value>Reiniciar</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Suspender</value>
+    <value>Suspender</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Hibernar</value>
+    <value>Hibernar</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Forçar Desligamento</value>
+    <value>Forçar Desligamento</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Forçar Reinicialização</value>
+    <value>Forçar Reinicialização</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 Reiniciar para UEFI</value>
+    <value>Reiniciar para UEFI</value>
   </data>
 
   

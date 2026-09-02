@@ -148,31 +148,31 @@
     <value>FORCÉ (IMMÉDIAT)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒  Verrouiller le PC</value>
+    <value>Verrouiller le PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪  Déconnexion</value>
+    <value>Déconnexion</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻  Éteindre</value>
+    <value>Éteindre</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄  Redémarrer</value>
+    <value>Redémarrer</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤  Mettre en veille</value>
+    <value>Mettre en veille</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄  Hiberner</value>
+    <value>Hiberner</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠  Forcer l'arrêt</value>
+    <value>Forcer l'arrêt</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠  Forcer le redémarrage</value>
+    <value>Forcer le redémarrage</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧  Redémarrer vers l'UEFI</value>
+    <value>Redémarrer vers l'UEFI</value>
   </data>
 
   

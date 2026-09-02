@@ -148,31 +148,31 @@
     <value>PAKSA (LANGSUNG)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 Kunci PC</value>
+    <value>Kunci PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Keluar</value>
+    <value>Keluar</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Matikan</value>
+    <value>Matikan</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Restart</value>
+    <value>Restart</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Tidur</value>
+    <value>Tidur</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Hibernasi</value>
+    <value>Hibernasi</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Paksa Matikan</value>
+    <value>Paksa Matikan</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Paksa Restart</value>
+    <value>Paksa Restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 Reboot ke UEFI</value>
+    <value>Reboot ke UEFI</value>
   </data>
 
   
