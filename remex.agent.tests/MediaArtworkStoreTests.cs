@@ -117,4 +117,22 @@ public class MediaArtworkStoreTests
 
         Assert.Null(store.TryGet("0000000000000000"));
     }
+
+    [Fact]
+    public void ABlankIdIsNotAKeyAndReturnsNull()
+    {
+        // A paired client can send an explicit JSON null or empty string for artworkId (System.Text.Json
+        // does not enforce non-nullability on deserialize). TryGet must treat that as "not found" rather
+        // than throwing or, worse, matching some entry — proven against a store that already holds a real
+        // entry, not an empty dictionary where the guard would never actually be exercised.
+        var store = new MediaArtworkStore();
+        var realId = store.Put(new byte[] { 1, 2, 3 });
+        Assert.NotNull(realId);
+
+        Assert.Null(store.TryGet(null!));
+        Assert.Null(store.TryGet(string.Empty));
+
+        // The real entry must still be there — proves the guard short-circuited rather than clobbering it.
+        Assert.NotNull(store.TryGet(realId!));
+    }
 }
