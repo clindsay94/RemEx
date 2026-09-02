@@ -33,6 +33,27 @@ class MediaPlaybackSnapshotTimelineTest {
     }
 
     @Test
+    fun `canSeek parses true when the host says the session accepts a position change`() {
+        val snapshot =
+                MediaPlaybackSnapshot.parse(
+                        """{"status":"playing","title":"T","durationMs":180000,"canSeek":true}"""
+                )
+
+        assertTrue(snapshot.canSeek)
+    }
+
+    @Test
+    fun `an absent or false canSeek both mean the slider stays disabled`() {
+        // THE CONSERVATIVE DEFAULT IS THE WHOLE POINT. A host that predates the field and a session
+        // that genuinely cannot seek must land on the same answer, because the alternative is a
+        // slider that jumps to the user's finger and snaps back 2.5 s later - the exact behaviour
+        // this field was added to stop.
+        assertFalse(MediaPlaybackSnapshot.parse("""{"status":"playing","title":"T"}""").canSeek)
+        assertFalse(MediaPlaybackSnapshot.parse("""{"status":"playing","canSeek":false}""").canSeek)
+        assertFalse(MediaPlaybackSnapshot.Unknown.canSeek)
+    }
+
+    @Test
     fun `a blank artworkId parses to null, matching title and artist`() {
         val snapshot = MediaPlaybackSnapshot.parse("""{"status":"playing","artworkId":""}""")
 

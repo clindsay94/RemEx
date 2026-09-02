@@ -62,7 +62,12 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
                 return new MediaPlaybackState { Status = MediaPlaybackStatus.None };
             }
 
-            var status = session.GetPlaybackInfo().PlaybackStatus switch
+            // ONE GetPlaybackInfo, TWO FACTS. The status and the seek capability are fields of the
+            // same struct, and calling it twice would be two chances for the session to answer
+            // differently within a single reading.
+            var playbackInfo = session.GetPlaybackInfo();
+
+            var status = playbackInfo.PlaybackStatus switch
             {
                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing => MediaPlaybackStatus.Playing,
                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused => MediaPlaybackStatus.Paused,
@@ -91,6 +96,11 @@ internal sealed class WindowsMediaSessionReader(ILogger<WindowsMediaSessionReade
                 Artist = artist,
                 SourceApp = sourceApp,
                 DurationMs = durationMs,
+
+                // THE SESSION'S OWN CLAIM, TAKEN AT FACE VALUE. Apple Music reports false here and
+                // still returns true from TryChangePlaybackPositionAsync, which is exactly why this
+                // is the field the phone believes: it is the only one of the two that is honest.
+                CanSeek = playbackInfo.Controls.IsPlaybackPositionEnabled,
                 AnchorPositionMs = anchorPositionMs,
                 AnchorUtcMs = anchorUtcMs,
             };

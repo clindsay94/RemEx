@@ -912,9 +912,19 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      * within [SeekConfirmWindowMs], [MediaSeekReconciler.shouldRevert] says the host ignored the
      * seek (some sessions on Windows do), and the guess is snapped back to [lastHostSnapshot]
      * rather than left standing as a claim the phone cannot back.
+     *
+     * A session that reports [MediaPlaybackSnapshot.canSeek] false is refused HERE as well as being
+     * disabled in the UI. The revert above is a backstop for a session that lies; this is the case
+     * where the host has already said it will not move, and sending anyway would buy a guaranteed
+     * 2.5 s of bouncing bar. The sheet disables the slider on the same flag, so reaching this line
+     * means something else called it, not that the user got past a disabled control.
      */
     fun seekMedia(positionMs: Long) {
         val current = _mediaState.value
+        if (!current.canSeek) {
+            Log.d("RemexManager", "media_seek ignored: session cannot seek")
+            return
+        }
         val issuedAtElapsedMs = SystemClock.elapsedRealtime()
         // MediaSeekReconciler.optimistic owns the one clamp to [0, durationMs]; read the clamped
         // value back off its result rather than clamping a second time here (RemEx-vtorl review).

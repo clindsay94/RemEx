@@ -145,7 +145,13 @@ fun MediaNowPlayingSheet(
                             }
                         },
                         valueRange = 0f..1f,
-                        enabled = connected && inputSupported,
+                        // DISABLED, NOT HIDDEN, WHEN THE SESSION WILL NOT SEEK. It is still the
+                        // progress readout for a track that is playing perfectly well; taking it
+                        // away would remove information to communicate the loss of an action. A
+                        // greyed thumb says "this bar does not drag" without the bar jumping to the
+                        // user's finger and snapping back 2.5 s later, which is what happened before
+                        // canSeek existed.
+                        enabled = connected && inputSupported && playback.canSeek,
                         modifier =
                                 Modifier.fillMaxWidth().semantics {
                                     contentDescription = seekDescription

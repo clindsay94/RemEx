@@ -85,6 +85,33 @@ public sealed record MediaPlaybackState
     public long? DurationMs { get; init; }
 
     /// <summary>
+    /// Whether the session will accept a position change at all — SMTC's
+    /// <c>IsPlaybackPositionEnabled</c>, MPRIS's <c>CanSeek</c>. False when the host cannot tell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THIS EXISTS BECAUSE A SEEK THAT THE HOST REPORTS AS SUCCEEDING CAN STILL DO NOTHING. Apple
+    /// Music's SMTC session returns true from <c>TryChangePlaybackPositionAsync</c> and never moves;
+    /// the phone's slider jumped, waited out its confirmation window, and honestly snapped back. A
+    /// bar that bounces is a worse answer than a bar the user cannot drag, so the capability travels
+    /// with the reading and the client disables the control instead of guessing from timing.
+    /// </para>
+    /// <para>
+    /// A CAPABILITY OF THE SESSION, NOT AN OBSERVATION OF A POLL. It comes off the same
+    /// platform call the status does, so it is as stable as the session is, and a reader must never
+    /// derive it from whether a recent seek appeared to work — a value that moved with timing would
+    /// make the equality gate republish on ticks where nothing changed.
+    /// </para>
+    /// <para>
+    /// A NON-NULLABLE BOOL, SO IT IS ALWAYS ON THE WIRE. <c>WhenWritingNull</c> only drops nulls, and
+    /// that is the behaviour worth having here: an older host that never sets it sends false, and a
+    /// client that reads a missing field as false lands in the same place — the conservative one,
+    /// where the slider is disabled rather than offering an action the session will swallow.
+    /// </para>
+    /// </remarks>
+    public bool CanSeek { get; init; }
+
+    /// <summary>
     /// Playback position in milliseconds AT THE MOMENT THIS ENVELOPE WAS SERIALIZED, or null when
     /// the session publishes no timeline.
     /// </summary>

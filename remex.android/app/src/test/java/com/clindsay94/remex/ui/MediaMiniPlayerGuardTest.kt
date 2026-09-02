@@ -198,6 +198,36 @@ class MediaMiniPlayerGuardTest {
         )
     }
 
+    @Test
+    fun `the seek slider is disabled when the host says the session cannot seek`() {
+        // A SESSION THAT WILL NOT SEEK MUST NOT BE OFFERED A DRAGGABLE BAR. Apple Music accepts the
+        // seek through SMTC, reports success and never moves, so the phone's optimistic jump was
+        // reverted 2.5 s later every time. The host now says canSeek up front and the slider has to
+        // spend it - and only a source guard can check that, because there is no Compose render
+        // here to observe a disabled thumb.
+        val sheetText = nowPlayingSheetSource()
+
+        val sliderAt = sheetText.indexOf("Slider(")
+        assertTrue("MediaNowPlayingSheet must still have a Slider to gate", sliderAt >= 0)
+
+        // Bounded at MediaControlSection so this reads the SLIDER's enabled expression and cannot
+        // accidentally be satisfied by the transport buttons' one further down the file.
+        val controlsAt = sheetText.indexOf("MediaControlSection(", sliderAt)
+        assertTrue("MediaControlSection should follow the Slider", controlsAt > sliderAt)
+
+        val enabledLine =
+                sheetText
+                        .substring(sliderAt, controlsAt)
+                        .lineSequence()
+                        .firstOrNull { it.contains("enabled =") }
+        assertTrue("the Slider must declare an enabled expression", enabledLine != null)
+        assertTrue(
+                "the Slider's enabled expression must gate on playback.canSeek, not just on the " +
+                        "connection: $enabledLine",
+                enabledLine!!.contains("playback.canSeek")
+        )
+    }
+
     private fun miniPlayerSource(): String =
             readSource("java/com/clindsay94/remex/ui/components/MediaMiniPlayer.kt")
 

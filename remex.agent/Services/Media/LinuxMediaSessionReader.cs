@@ -235,6 +235,11 @@ internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> l
                     Artist = metadata.Artist,
                     SourceApp = busName[MprisPrefix.Length..],
                     DurationMs = metadata.DurationMs,
+
+                    // OUT OF THE SAME GetAll, for the same reason Position is: this is read once a
+                    // second per player, and a dedicated Get for one boolean would double the bus
+                    // traffic of the poll to learn something that changes about once per session.
+                    CanSeek = ReadCanSeek(properties),
                 },
                 observedPositionMs,
                 busName,
@@ -322,6 +327,20 @@ internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> l
         var microseconds = TryGetInt64(rawPosition);
         return microseconds is null ? null : Math.Max(0, microseconds.Value / 1000);
     }
+
+    /// <summary>
+    /// The player's <c>CanSeek</c>, or false when it is absent or is not a boolean.
+    /// </summary>
+    /// <remarks>
+    /// ABSENT COUNTS AS NO, the same rule the seek path applies before it sends a <c>SetPosition</c>.
+    /// <c>CanSeek</c> is a required Player property, so a player that omits it is one this code has no
+    /// working model of, and the honest thing to tell the phone about a player nobody understands is
+    /// that dragging its bar is not on offer.
+    /// </remarks>
+    private static bool ReadCanSeek(Dictionary<string, VariantValue> properties)
+        => properties.TryGetValue("CanSeek", out var rawCanSeek)
+            && rawCanSeek.Type == VariantValueType.Bool
+            && rawCanSeek.GetBool();
 
     /// <summary>
     /// A microsecond count out of a variant, whatever numeric type the player chose to publish it as.
@@ -542,12 +561,10 @@ internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> l
 
             ct.ThrowIfCancellationRequested();
 
-            // ABSENT COUNTS AS NO. CanSeek is a required Player property, so a player that omits it
-            // is one this code has no working model of, and a SetPosition sent hopefully would be a
-            // method call to a peer that may answer with an error nobody reads.
-            if (!properties.TryGetValue("CanSeek", out var rawCanSeek)
-                || rawCanSeek.Type != VariantValueType.Bool
-                || !rawCanSeek.GetBool())
+            // THE SAME READ THE POLL PUBLISHES, so the fact the phone was told and the fact this
+            // path acts on cannot disagree. A SetPosition sent hopefully would be a method call to a
+            // peer that may answer with an error nobody reads.
+            if (!ReadCanSeek(properties))
             {
                 return false;
             }

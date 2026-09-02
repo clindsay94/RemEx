@@ -93,6 +93,49 @@ public class MediaPlaybackStateWireTests
     }
 
     [Fact]
+    public void TheSeekCapabilityIsAlwaysOnTheWireInBothDirections()
+    {
+        // BOTH VALUES ARE WRITTEN, WHICH IS THE POINT OF THE FIELD BEING A NON-NULLABLE BOOL. The
+        // phone's default is "no drag offered", so a host that means false must SAY false rather
+        // than leave the client to infer it from an absent key; and false is the value that arrives
+        // on every reading of a session like Apple Music's, which is the case this feature exists
+        // for. A nullable bool would have made the common answer the omitted one.
+        var canSeek = Serialize(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            DurationMs = 337_000,
+            CanSeek = true,
+        });
+        var cannotSeek = Serialize(new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            DurationMs = 337_000,
+            CanSeek = false,
+        });
+
+        Assert.Contains("\"canSeek\":true", canSeek);
+        Assert.Contains("\"canSeek\":false", cannotSeek);
+    }
+
+    [Fact]
+    public void TheSeekCapabilityIsInValueEqualityLikeEveryOtherField()
+    {
+        // The sampler's gate is `reading != lastPublished`. A capability outside equality would let
+        // a session that gained or lost seeking go on telling the phone the old answer until some
+        // unrelated field moved - and the whole feature is the phone being told the truth about the
+        // control it is drawing.
+        var cannotSeek = new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Blue in Green",
+        };
+
+        Assert.False(cannotSeek.CanSeek);
+        Assert.NotEqual(cannotSeek, cannotSeek with { CanSeek = true });
+        Assert.Equal(cannotSeek with { CanSeek = true }, cannotSeek with { CanSeek = true });
+    }
+
+    [Fact]
     public void AnEmptyTimelineIsAbsentRatherThanNull()
     {
         // WhenWritingNull is the existing policy and this feature has to live inside it: media_state

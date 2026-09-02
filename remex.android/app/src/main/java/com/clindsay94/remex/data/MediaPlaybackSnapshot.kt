@@ -23,7 +23,20 @@ data class MediaPlaybackSnapshot(
          */
         val positionMs: Long? = null,
         /** [android.os.SystemClock.elapsedRealtime] when this snapshot arrived. */
-        val receivedAtElapsedMs: Long = 0L
+        val receivedAtElapsedMs: Long = 0L,
+        /**
+         * Whether the PC's session will accept a position change at all.
+         *
+         * THE ANSWER TO A SLIDER THAT JUMPED AND BOUNCED BACK. Some sessions — Apple Music through
+         * SMTC is the one that was caught — accept a seek, report success and never move, so the
+         * phone's optimistic guess was reverted 2.5 s later every single time. This says so up
+         * front, and the sheet disables the slider instead.
+         *
+         * DEFAULTS FALSE, AND ABSENT PARSES TO FALSE, so an older host that never sends it lands on
+         * the conservative side: no drag offered rather than a drag the PC will swallow. Declared
+         * LAST so every existing positional caller keeps compiling.
+         */
+        val canSeek: Boolean = false
 ) {
     /**
      * [positionMs] projected forward to [nowElapsedMs], entirely on the phone's own monotonic clock —
@@ -89,7 +102,8 @@ data class MediaPlaybackSnapshot(
                                             } else {
                                                 null
                                             },
-                                    receivedAtElapsedMs = receivedAtElapsedMs
+                                    receivedAtElapsedMs = receivedAtElapsedMs,
+                                    canSeek = obj.optBoolean("canSeek", false)
                             )
                         }
                         .getOrDefault(Unknown)

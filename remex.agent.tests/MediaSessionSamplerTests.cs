@@ -286,6 +286,61 @@ public class MediaSessionSamplerTests
     }
 
     [Fact]
+    public async Task ARepeatedSeekCapabilityPublishesOnceAndAChangedOnePublishesAgain()
+    {
+        // THE SAME GUARD AS THE ANCHORS, FOR THE SAME REASON, ON THE NEWEST FIELD. CanSeek is a
+        // CAPABILITY OF THE SESSION, not an observation of a poll: it comes off the same platform
+        // call as the status, so a correct reader hands back the identical value every tick and the
+        // gate stays quiet. The bug this pins is a reader that derived it from timing — from whether
+        // a recent seek looked like it worked — which would flip it under the gate and turn a
+        // once-a-session fact into a once-a-second broadcast to every connected phone.
+        var seekable = new MediaPlaybackState
+        {
+            Status = MediaPlaybackStatus.Playing,
+            Title = "Track A",
+            CanSeek = true,
+        };
+
+        var script = new List<MediaPlaybackState>();
+        for (var i = 0; i < 5; i++) script.Add(seekable);
+
+        // The session genuinely lost the capability - the user switched to a player that will not
+        // seek. That IS a change worth republishing: the phone has a live slider to disable.
+        script.Add(seekable with { CanSeek = false });
+
+        var reader = new ScriptedReader(script.ToArray());
+        var sampler = NewSampler(reader);
+
+        await sampler.StartAsync(CancellationToken.None);
+        try
+        {
+            var publishes = new List<MediaPlaybackState>();
+            var collect = Task.Run(async () =>
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                MediaPlaybackState? last = null;
+                while (publishes.Count < 2)
+                {
+                    last = await sampler.WaitForNextAsync(last, cts.Token);
+                    publishes.Add(last);
+                }
+            });
+
+            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 60),
+                "the sampler should have polled through the whole script");
+            await collect;
+
+            Assert.Equal(2, publishes.Count);
+            Assert.True(publishes[0].CanSeek);
+            Assert.False(publishes[1].CanSeek);
+        }
+        finally
+        {
+            await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task PublishedStatesNeverCarryAProjectedPosition()
     {
         // PositionMs is filled in by MediaPositionProjection at SEND time, never by the sampler.
