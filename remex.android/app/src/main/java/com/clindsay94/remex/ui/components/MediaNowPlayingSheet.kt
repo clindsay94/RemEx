@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
@@ -46,9 +49,10 @@ import kotlinx.coroutines.delay
 /**
  * Full media controls, opened by tapping [MediaMiniPlayer] (spec 4.4).
  *
- * Large artwork up top, the existing [MediaControlSection] unchanged below (title/artist/volume/
- * transport), and — only once [MediaPlaybackSnapshot.hasTimeline] is true — a full-width
- * [Slider] seek control with elapsed (`m:ss`) and remaining (`-m:ss`) labels above it.
+ * Large artwork up top, the title and artist directly below it, then the existing
+ * [MediaControlSection] (volume/transport) further down, and — only once
+ * [MediaPlaybackSnapshot.hasTimeline] is true — a full-width [Slider] seek control with elapsed
+ * (`m:ss`) and remaining (`-m:ss`) labels above it.
  *
  * `rememberBottomSheetState`, not the deprecated `rememberModalBottomSheetState`: material3
  * 1.5.0-alpha20+ unified the partial/full-expand states behind one API.
@@ -57,6 +61,18 @@ import kotlinx.coroutines.delay
  * elapsed label with the thumb, and releasing it fires [onSeek] with the target position. The
  * host confirms it — or doesn't — asynchronously; [onSeek]'s caller owns the optimistic-then-
  * revert bookkeeping, not this composable.
+ *
+ * TITLE AND ARTIST MOVED OUT OF THE CONTROLS CARD (RemEx-vtorl). [MediaControlSection] draws that
+ * card with the user's Remote Commands shape — a "Gem" hexagon today, any expressive shape in
+ * general — and that shape's slanted edges clip text pinned to its top/bottom edges. Text that
+ * must be readable does not live inside an expressive shape, so this composable renders the title
+ * and artist itself, full width, directly under the artwork, and passes `showNowPlaying = false`
+ * to [MediaControlSection] so the card no longer draws its own copy.
+ *
+ * @param shape Kept for API stability only. It no longer reaches [MediaControlSection] — the
+ *   controls card now always uses `MaterialTheme.shapes.extraLarge`, which does not clip the
+ *   volume hint the way an expressive shape did. The grid no longer hosts the media card, so the
+ *   user's shape choice is not lost anywhere it was still visible.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,6 +123,44 @@ fun MediaNowPlayingSheet(
                             modifier = Modifier.size(64.dp)
                     )
                 }
+            }
+
+            val statusWord =
+                    stringResource(
+                            when (playback.status) {
+                                MediaPlaybackStatus.PLAYING -> R.string.rc_media_state_playing
+                                MediaPlaybackStatus.PAUSED -> R.string.rc_media_state_paused
+                                MediaPlaybackStatus.STOPPED,
+                                MediaPlaybackStatus.NONE,
+                                MediaPlaybackStatus.UNKNOWN -> R.string.rc_media_state_idle
+                            }
+                    )
+
+            Text(
+                    text = playback.title ?: statusWord,
+                    style = MaterialTheme.typography.titleLargeEmphasized,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+            )
+
+            // ONE line with a marquee, not two-line ellipsis: an "Artist — Album - EP" reading is
+            // exactly the shape that used to be clipped mid-word by the shaped card's slanted
+            // bottom edge (RemEx-vtorl). Scrolling it keeps the whole string reachable instead of
+            // silently dropping the tail.
+            playback.artist?.let { artist ->
+                Text(
+                        text = artist,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .padding(horizontal = 24.dp)
+                                        .basicMarquee()
+                )
             }
 
             if (playback.hasTimeline) {
@@ -176,8 +230,9 @@ fun MediaNowPlayingSheet(
                     connected = connected,
                     inputSupported = inputSupported,
                     playback = playback,
-                    shape = shape,
-                    onSendKey = onSendKey
+                    shape = MaterialTheme.shapes.extraLarge,
+                    onSendKey = onSendKey,
+                    showNowPlaying = false
             )
         }
     }

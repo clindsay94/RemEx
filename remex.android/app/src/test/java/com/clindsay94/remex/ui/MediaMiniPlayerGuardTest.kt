@@ -228,11 +228,69 @@ class MediaMiniPlayerGuardTest {
         )
     }
 
+    @Test
+    fun `the sheet no longer draws now-playing text inside the shaped controls card`() {
+        val text = nowPlayingSheetSource()
+
+        val callAt = text.lastIndexOf("MediaControlSection(")
+        assertTrue("expected a MediaControlSection( call in the sheet", callAt >= 0)
+        val call = text.substring(callAt)
+
+        // The controls card's shape is the user's Remote Commands shape - a "Gem" hexagon today,
+        // any expressive shape in general - whose slanted edges clipped the title/artist pinned to
+        // its top edge and the volume hint pinned to its bottom (RemEx-vtorl). The sheet now draws
+        // that text itself and tells the card not to draw its own copy.
+        assertTrue(
+                "the sheet's MediaControlSection call must pass showNowPlaying = false so the card"
+                        + " does not draw its own clipped title/artist line",
+                call.contains("showNowPlaying = false")
+        )
+        assertTrue(
+                "the sheet's MediaControlSection call must use the fixed extraLarge shape, not the"
+                        + " user's expressive Remote Commands shape, so the volume hint stops"
+                        + " clipping",
+                call.contains("shape = MaterialTheme.shapes.extraLarge")
+        )
+    }
+
+    @Test
+    fun `the sheet renders its own title and artist, full width and outside the shaped card`() {
+        val text = nowPlayingSheetSource()
+
+        // The title must wrap to a second line rather than clip the way the shaped card's top edge
+        // used to, and the artist must scroll rather than be cut by the card's bottom edge.
+        assertTrue(
+                "the sheet's title Text must cap at 2 lines instead of clipping inside the card",
+                text.contains("maxLines = 2")
+        )
+        assertTrue(
+                "the artist line must scroll with basicMarquee() instead of being cut by the"
+                        + " card's shape",
+                text.contains("basicMarquee()")
+        )
+    }
+
+    @Test
+    fun `MediaControlSection accepts an opt-out for its own now-playing line`() {
+        val text = mediaControlSectionSource()
+
+        // The sheet is the one caller that needs this; every other call site keeps the default and
+        // gets the line exactly as before.
+        assertTrue(
+                "MediaControlSection must declare showNowPlaying: Boolean = true so the sheet can"
+                        + " render title/artist itself instead",
+                text.contains("showNowPlaying: Boolean = true")
+        )
+    }
+
     private fun miniPlayerSource(): String =
             readSource("java/com/clindsay94/remex/ui/components/MediaMiniPlayer.kt")
 
     private fun nowPlayingSheetSource(): String =
             readSource("java/com/clindsay94/remex/ui/components/MediaNowPlayingSheet.kt")
+
+    private fun mediaControlSectionSource(): String =
+            readSource("java/com/clindsay94/remex/ui/components/MediaControlSection.kt")
 
     private fun remoteControlScreenSource(): String =
             readSource("java/com/clindsay94/remex/ui/screens/RemoteControlScreen.kt")

@@ -119,6 +119,9 @@ private const val RepeatIntervalMs = 150L
  * @param playback What the PC reports it is playing. Drives the now-playing line and the play/pause
  *   face; it is NOT a third gate on the row, because not knowing what is playing is no reason to
  *   refuse to send a key.
+ * @param showNowPlaying Whether this card renders its own title/artist line (RemEx-vtorl). The
+ *   now-playing sheet draws that text itself, full-width and outside this card's expressive shape,
+ *   so it passes `false` here; every other caller keeps the default and gets the line as before.
  */
 @Composable
 fun MediaControlSection(
@@ -127,7 +130,8 @@ fun MediaControlSection(
         playback: MediaPlaybackSnapshot,
         shape: Shape,
         onSendKey: (Int) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        showNowPlaying: Boolean = true
 ) {
     val enabled = connected && inputSupported
     val playbackStatus = playback.status
@@ -136,7 +140,7 @@ fun MediaControlSection(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            NowPlayingLine(playback)
+            if (showNowPlaying) NowPlayingLine(playback)
 
             Row(
                     modifier = Modifier.fillMaxWidth(),
