@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The dashboard is on the Material type scale now. Every size on it comes from the shared
+  vocabulary instead of a number on the element, and the footer's hard-coded shadow is gone.
+  Nothing it does has changed. (RemEx-oszfm)
+
 - The phone-presence dot on the sidebar status button is a Material badge now, and it breathes
   gently while a phone is attached. It holds still when nothing is attached or when reduced motion
   is on. (RemEx-d7xj8)

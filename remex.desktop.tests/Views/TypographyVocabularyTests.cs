@@ -42,10 +42,12 @@ namespace Remex.Desktop.Tests.Views;
 public class TypographyVocabularyTests
 {
     /// <summary>
-    /// Inline <c>FontSize="N"</c> occurrences across <c>remex.desktop</c>, measured 2026-08-31.
-    /// LOWER THIS when a Phase 4 view bead sweeps a screen. Never raise it.
+    /// Inline <c>FontSize="N"</c> occurrences across <c>remex.desktop</c>, measured 2026-09-01 after
+    /// the RemEx-oszfm sweep of <c>HomeView.axaml</c> collapsed its 60 sized <c>TextBlock</c>s onto
+    /// the Theme type scale (518 - 60 = 458; the dashboard's one exception, the 280 splash glyph,
+    /// stays inline). LOWER THIS when a Phase 4 view bead sweeps a screen. Never raise it.
     /// </summary>
-    private const int InlineFontSizeBaseline = 518;
+    private const int InlineFontSizeBaseline = 458;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

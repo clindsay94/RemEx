@@ -240,18 +240,22 @@ public class HomeViewCharacterisationTests
     /// The colour literals this view is allowed to contain.
     /// </summary>
     /// <remarks>
-    /// ONE ENTRY: the footer status node's drop-shadow alpha at <c>HomeView.axaml:439</c>,
-    /// <c>BoxShadow="0 -8 32 0 #40000000"</c>. It is a 25% black shade rather than a hue, which is
-    /// why it was written as a literal — but it is still a literal, and under a light theme it is
-    /// the kind of thing that reads as a smudge. It is on the by-eye list in
-    /// <c>docs/DASHBOARD-CHARACTERISATION.md</c> §8 for that reason.
+    /// EMPTY, as of RemEx-oszfm. The one entry this used to carry — the footer status node's
+    /// drop-shadow alpha, <c>BoxShadow="0 -8 32 0 #40000000"</c> — is gone: the custom upward
+    /// <c>Style Selector="material|Card.footer-bar /template/ Border#PART_BackgroundBorder"</c> that
+    /// set it was deleted from <c>UserControl.Styles</c>, and the footer Card now reads on whatever
+    /// elevation the Card theme gives it by default, the same as every other Card on this view. The
+    /// Elevation ramp still only draws downward shadows and still cannot express the upward shadow
+    /// this footer wants — that limitation didn't go away, it just stopped being worth a literal.
     /// <para>
     /// AN EXACT SET, NOT AN EMPTINESS CHECK, because the first version of this assertion claimed the
     /// file had none and the document repeated the claim. Both were wrong, and the assertion could
-    /// not have discovered it: see the remark on <see cref="ColourLiterals"/>.
+    /// not have discovered it: see the remark on <see cref="ColourLiterals"/>. Now that the file
+    /// really has none, the exact-set form still pays for itself: a literal added later fails this
+    /// the same way it always would have.
     /// </para>
     /// </remarks>
-    private static readonly string[] AllowedColourLiterals = ["#40000000"];
+    private static readonly string[] AllowedColourLiterals = [];
 
     [Fact]
     public void TheDashboardStillHasNoHardcodedColoursBeyondTheOneItIsAllowed()
@@ -296,14 +300,14 @@ public class HomeViewCharacterisationTests
     [Fact]
     public void EveryControlThatNeedsAnAutomationNameStillHasOne()
     {
-        // Eighteen sites, not the eight the quick-launch test covers. THIRTEEN of them are
-        // icon-or-glyph controls whose caption is a child TextBlock rather than Content, so the
-        // automation name is the only thing a screen reader has: the 8 quick-launch tiles (:309–:351),
-        // the 3 link cards (:400, :411, :422), the workspace button (:248) and the activity clear
-        // button (:365). The other five are not that shape and are here anyway — the command-palette
-        // pill (:89) and the SystemStatus recheck (:133), fix (:187) and explain (:199) buttons carry
-        // a name alongside their visible text, and the radar core (:448) is an Ellipse with no
-        // caption at all, naming the presence state itself.
+        // Eighteen sites, not the eight the quick-launch test covers. SIXTEEN of them are controls
+        // whose caption is a child TextBlock rather than Content, so the automation name is the
+        // only thing a screen reader has: the 8 quick-launch tiles, the 3 link cards, the workspace
+        // button, the activity clear button, and (since RemEx-oszfm moved their labels onto the
+        // type scale) the SystemStatus recheck, fix and explain buttons. The other two are not that
+        // shape and are here anyway — the command-palette pill carries a name alongside its
+        // visible text, and the radar core is an Ellipse with no caption at all, naming the
+        // presence state itself.
         //
         // The earlier version of this comment enumerated seven controls, called it eighteen, and
         // claimed all eighteen were icon-or-glyph. Review caught it against §7 of the document, which
