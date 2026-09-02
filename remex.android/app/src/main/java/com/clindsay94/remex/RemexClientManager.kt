@@ -856,6 +856,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     MediaPlaybackSnapshot.parse(it, SystemClock.elapsedRealtime())
                 }
                         ?: return
+        // One line per envelope, on purpose: the host gate is meant to make these rare (a seek, a
+        // pause, a track change), and a stream of them once a second is the per-second broadcast
+        // spec 1.3 guards against. Counting this tag in logcat is how that is checked on a device.
+        Log.d(
+                "RemexManager",
+                "media_state: status=${snapshot.status} title=${snapshot.title} pos=${snapshot.positionMs} dur=${snapshot.durationMs} art=${snapshot.artworkId}"
+        )
         _mediaState.value = snapshot
         reconcileArtwork(snapshot)
     }
@@ -880,6 +887,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         }
         _mediaArtwork.value = null
         if (artworkCache.tryBeginRequest(id, SystemClock.elapsedRealtime())) {
+            Log.d("RemexManager", "media_artwork_request: $id")
             RemexCoreClient.RequestMediaArtwork(id)
         }
     }
@@ -903,6 +911,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 } else {
                     null
                 }
+        Log.d("RemexManager", "media_artwork: $id bytes=${base64?.length ?: 0}")
         if (base64 == null) {
             artworkCache.markEvicted(id)
             return
