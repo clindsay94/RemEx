@@ -27,6 +27,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private readonly PropertyChangedEventHandler _onConnectionChanged;
+    private readonly PropertyChangedEventHandler _onPresenceChanged;
     private bool _welcomeSplashStarted;
 
     /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
@@ -313,6 +314,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         var updated = current with { IsReducedMotion = value };
         _layoutService.RequestSave(updated);
         OnPropertyChanged(nameof(SuppressPaletteTransitions));
+        OnPropertyChanged(nameof(ShowPresencePulse));
     }
 
     /// <summary>
@@ -398,6 +400,16 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         };
         Connection.PropertyChanged += _onConnectionChanged;
 
+        // The presence dot's pulse (RemEx-d7xj8) depends on the phone-attached flag from the
+        // process-wide PhonePresenceMonitor singleton, not on anything this VM owns - re-raise
+        // ShowPresencePulse whenever it flips so the badge's .pulse class tracks it live.
+        _onPresenceChanged = (_, e) =>
+        {
+            if (e.PropertyName == nameof(PhonePresenceMonitor.IsPhoneAttached))
+                OnPropertyChanged(nameof(ShowPresencePulse));
+        };
+        Presence.PropertyChanged += _onPresenceChanged;
+
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
@@ -416,6 +428,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
 
     /// <summary>
+    /// True when the drawer-footer connection button's presence badge should pulse (RemEx-d7xj8):
+    /// only while a phone is actually attached, and never when the user prefers reduced motion.
+    /// </summary>
+    public bool ShowPresencePulse => Presence.IsPhoneAttached && !IsReducedMotion;
+
+    /// <summary>
     /// This PC's host name, for the drawer header identity block (RemEx-dnqws). The same value
     /// <c>PairingHandler</c> and <c>MdnsAdvertisingService</c> (both in <c>remex.agent</c>, not
     /// referenceable from here) already surface as host identity elsewhere - not new data, just this
@@ -430,6 +448,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
+        Presence.PropertyChanged -= _onPresenceChanged;
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();

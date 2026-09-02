@@ -716,10 +716,9 @@
                                         <!-- The dot carries NO AutomationProperties.Name (spec §7 / RemEx-x12a):
                                              the name belongs on the Button, which now identifies the whole
                                              control, not on a child that would double-announce it. -->
-                                        <Panel Grid.Column="0" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <material:Badged Grid.Column="0" Classes="presence" Classes.connected="{Binding Presence.IsPhoneAttached}" Classes.pulse="{Binding ShowPresencePulse}" BadgeDisplayContent="False" BadgeWidth="10" BadgeHeight="10" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <mi:MaterialIcon Kind="Cellphone" Width="22" Height="22" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                            <Ellipse Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}"/>
-                                        </Panel>
+                                        </material:Badged>
                                         <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="8,0,12,0" IsVisible="{Binding IsDrawerOpen}">
                                             <!-- PHONE PRESENCE IS THE HEADLINE, the loopback link is the detail
                                                  below it (RemEx-0z7w / RemEx-porg). Connection.IsConnected is the

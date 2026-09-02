@@ -1036,6 +1036,61 @@
             <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
 
+        <!-- ═══ PRESENCE BADGE ON THE DRAWER-FOOTER CONNECTION BUTTON (RemEx-d7xj8) ═══
+             Same red/green vocabulary as Ellipse.status-dot above, now expressed as a Material
+             Badged dot (BadgeDisplayContent="False" plus a fixed 10x10 size renders a plain dot,
+             no content). Placement is BottomRight here rather than the app-wide TopRight the base
+             `material|Badged` style sets, because this badge sits on a phone icon and BottomRight
+             is where a dot reads as "attached to the device" instead of as a notification count.
+
+             THE PULSE IS A CLASS-GATED Style.Animations, NOT MaterialAnimationAssist.
+             ContinuousAnimation. That assist's Changed handler only ever starts a new animation on
+             a non-null value - setting it back to null does not cancel the one already running
+             (verified against the upstream Material.Avalonia source), so it cannot express "pulse
+             stops when the phone disconnects or when reduced motion is on". A Style gated on
+             `.pulse` does stop cleanly: when ShellViewModel.ShowPresencePulse drops the class,
+             Avalonia tears the animation down along with everything else the style set. -->
+        <Style Selector="material|Badged.presence">
+            <Setter Property="BadgePlacement" Value="BottomRight"/>
+        </Style>
+        <!-- COLOUR AND CROSSFADE LIVE ON THE TEMPLATE'S Badge, NOT ON Badged.BadgeBackground. Two
+             separate reasons, both verified on the running app:
+             1. BadgeBackground never reaches the screen. Badge's own ControlTheme carries a
+                `[ColorMode=Error]` style (Badged.BadgeColorMode defaults to Error) that sets
+                Badge.Background to MaterialValidationErrorBrush at Style priority, which outranks
+                the template binding Badged uses to pass BadgeBackground down. Setting
+                BadgeBackground on Badged - to anything, even a literal Blue - draws the Material
+                error red regardless. Styling Badge.Background from here wins because app styles
+                apply after the control theme's nested ones.
+             2. Badged types BadgeBackground as the concrete `Brush`, and BrushTransition refuses
+                anything but IBrush: a BrushTransition declared against BadgeBackground throws
+                InvalidCastException while App.axaml is being populated, taking the process down
+                before a window exists. Badge.Background is a plain IBrush, so the same 400ms
+                crossfade the status dots use attaches there. -->
+        <Style Selector="material|Badged.presence /template/ material|Badge">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.4"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="material|Badged.presence.connected /template/ material|Badge">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="material|Badged.presence.pulse /template/ material|Badge">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6" IterationCount="Infinite" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.55"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
         <!-- The in-app toast (RemEx-5wc2) moved off Avalonia's WindowNotificationManager /
              NotificationCard onto a Material SnackbarHost in the shell (RemEx-uedna) - see
              ShellView.axaml's SnackbarHost and ShellView.axaml.cs's SnackbarToastSink. NotificationCard
@@ -1050,7 +1105,7 @@
 
              Every style that installs a chrome Transitions collection — `:is(Button).card`,
              `.primary`, `.secondary`, `.tertiary`, `.tile`, `.swatch`, `Ellipse.status-dot`,
-             `Ellipse.status-ring` — carries a class activator, so it resolves at
+             `Ellipse.status-ring`, `material|Badged.presence` — carries a class activator, so it resolves at
              BindingPriority.StyleTrigger. So do these. At equal priority Avalonia breaks the tie on
              declaration order, so a suppressor declared ABOVE them is simply overwritten by them and
              does nothing at all. These were first written next to the Window pair a thousand lines
@@ -1077,6 +1132,9 @@
             <Setter Property="Transitions" Value="{x:Null}"/>
         </Style>
         <Style Selector="Window.palette-transition-suppressed Ellipse">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed material|Badged.presence /template/ material|Badge">
             <Setter Property="Transitions" Value="{x:Null}"/>
         </Style>
     </Application.Styles>

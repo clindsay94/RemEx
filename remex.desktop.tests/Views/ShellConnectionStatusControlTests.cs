@@ -63,10 +63,28 @@ public class ShellConnectionStatusControlTests
     }
 
     [Fact]
-    public void TheDotStillTracksPhoneAttachment()
+    public void TheDotIsAPresenceBadgeThatTracksPhoneAttachment()
     {
+        // RemEx-d7xj8: the Panel-hosted Ellipse dot became a Material Badged badge. Placement/paint
+        // live in App.axaml's `material|Badged.presence` styles, not at the call site — this test
+        // only checks that the Badged carries the three bindings that drive it.
         ConnectionStatusButtonElement().Should().MatchRegex(
-            @"Classes=""status-dot""[^>]*Classes\.connected=""\{Binding Presence\.IsPhoneAttached\}""");
+            @"<material:Badged\b[^>]*Classes=""presence""[^>]*Classes\.connected=""\{Binding Presence\.IsPhoneAttached\}""[^>]*Classes\.pulse=""\{Binding ShowPresencePulse\}""[^>]*BadgeDisplayContent=""False""");
+    }
+
+    [Fact]
+    public void TheButtonNoLongerHostsAPanelEllipseDotOutsideTheFlyout()
+    {
+        // The old Panel/Ellipse dot moved into a Badged (RemEx-d7xj8). The flyout header keeps its
+        // own separate Ellipse dot — see the class doc comment — so this only checks the button's
+        // own content Grid (everything up to Button.Flyout), not the flyout body.
+        var buttonElement = ConnectionStatusButtonElement();
+        var flyoutIndex = buttonElement.IndexOf("<Button.Flyout>", StringComparison.Ordinal);
+        flyoutIndex.Should().BeGreaterThan(0, "the button has to declare a flyout");
+        var beforeFlyout = buttonElement[..flyoutIndex];
+
+        beforeFlyout.Should().NotContain("<Ellipse",
+            "the presence dot is a Badged now, not an Ellipse overlaid on a Panel");
     }
 
     // ─── Localization parity (spec §9): the 6 new keys exist, with matching placeholders, in all 9 files ───

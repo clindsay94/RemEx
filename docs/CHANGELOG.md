@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The phone-presence dot on the sidebar status button is a Material badge now, and it breathes
+  gently while a phone is attached. It holds still when nothing is attached or when reduced motion
+  is on. (RemEx-d7xj8)
+
 - **The connection indicator at the bottom of the sidebar is a real button now, with a details
   panel behind it.** It used to be a rounded pill with a coloured dot in it: no tooltip, no text
   when the sidebar was narrow, and nothing to click. It now shows a phone icon with the presence
