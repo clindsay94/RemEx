@@ -59,7 +59,7 @@ internal static class WindowsAppIconResolver
         var separator = aumid.IndexOf('!', StringComparison.Ordinal);
         return separator > 0
             ? await ResolvePackagedLogoAsync(aumid, aumid[..separator], ct)
-            : ResolveDesktopExecutableIcon(aumid);
+            : ResolveDesktopExecutableIcon(aumid, ct);
     }
 
     /// <summary>Reads a WinRT image stream into bytes, subject to the store's size cap.</summary>
@@ -156,7 +156,7 @@ internal static class WindowsAppIconResolver
     /// suffix covers every spelling that has actually shown up, and a miss costs a glyph rather than
     /// a wrong icon — there is no plausible way for this to match a DIFFERENT app.
     /// </remarks>
-    private static byte[]? ResolveDesktopExecutableIcon(string aumid)
+    private static byte[]? ResolveDesktopExecutableIcon(string aumid, CancellationToken ct)
     {
         var name = aumid.Trim();
 
@@ -190,6 +190,8 @@ internal static class WindowsAppIconResolver
         {
             foreach (var process in processes)
             {
+                ct.ThrowIfCancellationRequested();
+
                 if (!string.Equals(process.ProcessName, name, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;

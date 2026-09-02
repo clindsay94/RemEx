@@ -327,47 +327,26 @@ internal sealed class LinuxMediaSessionReader(ILogger<LinuxMediaSessionReader> l
     /// A microsecond count out of a variant, whatever numeric type the player chose to publish it as.
     /// </summary>
     /// <remarks>
-    /// FOUR ATTEMPTS BECAUSE MPRIS SAYS INT64 AND PLAYERS DISAGREE. The spec is unambiguous, and in
-    /// practice <c>mpris:length</c> arrives as uint64 from some players and as a double from others.
-    /// Insisting on the correct type would mean no progress bar at all for those, which is a worse
-    /// answer than accepting the number they sent.
+    /// SWITCHED ON <see cref="VariantValue.Type"/> RATHER THAN TRIED, because this runs twice per
+    /// player per poll tick (<c>mpris:length</c> and <c>Position</c>, 1 Hz): a player that publishes
+    /// either as a type other than int64 would otherwise cost thrown exceptions on every tick for the
+    /// life of the process. MPRIS SAYS INT64 AND PLAYERS DISAGREE — in practice <c>mpris:length</c>
+    /// arrives as uint64 from some players and as a double from others. Insisting on the correct type
+    /// would mean no progress bar at all for those, which is a worse answer than accepting the number
+    /// they sent.
     /// </remarks>
-    private static long? TryGetInt64(VariantValue value)
+    internal static long? TryGetInt64(VariantValue value) => value.Type switch
     {
-        try
-        {
-            return value.GetInt64();
-        }
-        catch (Exception)
-        {
-            // Fall through to the shapes players actually ship.
-        }
-
-        try
-        {
-            return (long)value.GetUInt64();
-        }
-        catch (Exception)
-        {
-        }
-
-        try
-        {
-            return value.GetInt32();
-        }
-        catch (Exception)
-        {
-        }
-
-        try
-        {
-            return (long)value.GetDouble();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
+        VariantValueType.Int64 => value.GetInt64(),
+        VariantValueType.UInt64 => (long)value.GetUInt64(),
+        VariantValueType.Int32 => value.GetInt32(),
+        VariantValueType.UInt32 => value.GetUInt32(),
+        VariantValueType.Int16 => value.GetInt16(),
+        VariantValueType.UInt16 => value.GetUInt16(),
+        VariantValueType.Byte => value.GetByte(),
+        VariantValueType.Double => (long)value.GetDouble(),
+        _ => null,
+    };
 
     /// <summary>
     /// Folds the winning reading into the anchor tracker and stamps the result onto the state.

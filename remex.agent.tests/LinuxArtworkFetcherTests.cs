@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Agent.Services.Media;
+using Tmds.DBus.Protocol;
 using Xunit;
 
 namespace Remex.Agent.Tests;
@@ -142,4 +143,37 @@ public class LinuxArtworkFetcherTests
 
         Assert.Null(await LinuxArtworkFetcher.ReadBoundedAsync(source, 1024, CancellationToken.None));
     }
+}
+
+/// <summary>
+/// Covers <see cref="LinuxMediaSessionReader.TryGetInt64"/>, the numeric-shape fallback that runs
+/// twice per player per poll tick for <c>mpris:length</c> and <c>Position</c> (RemEx-vtorl).
+/// </summary>
+/// <remarks>
+/// MPRIS SAYS INT64 AND PLAYERS DISAGREE — some publish <c>uint64</c>, others a <c>double</c>. The
+/// switch on <see cref="Tmds.DBus.Protocol.VariantValue.Type"/> must cover every shape a real player
+/// ships without throwing, because the previous try/catch chain cost real exceptions on every tick
+/// for a player that did not publish int64.
+/// </remarks>
+public class LinuxMediaSessionReaderTryGetInt64Tests
+{
+    [Fact]
+    public void Int64IsReadDirectly() =>
+        Assert.Equal(123456789L, LinuxMediaSessionReader.TryGetInt64((VariantValue)123456789L));
+
+    [Fact]
+    public void UInt64IsAccepted() =>
+        Assert.Equal(987654321L, LinuxMediaSessionReader.TryGetInt64((VariantValue)987654321UL));
+
+    [Fact]
+    public void Int32IsAccepted() =>
+        Assert.Equal(42L, LinuxMediaSessionReader.TryGetInt64((VariantValue)42));
+
+    [Fact]
+    public void DoubleIsTruncatedToLong() =>
+        Assert.Equal(1500L, LinuxMediaSessionReader.TryGetInt64((VariantValue)1500.75));
+
+    [Fact]
+    public void StringIsNotANumber() =>
+        Assert.Null(LinuxMediaSessionReader.TryGetInt64((VariantValue)"not-a-number"));
 }
