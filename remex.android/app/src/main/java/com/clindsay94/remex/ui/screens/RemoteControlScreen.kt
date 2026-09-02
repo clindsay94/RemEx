@@ -372,7 +372,9 @@ fun RemoteControlScreenContent(
         // UNKNOWN has no reading to dock a bar about (RemEx-nmvz6's reasoning applied to layout):
         // the whole stacking/occlusion story below is driven off this one flag rather than
         // repeating the status check at each of its three use sites.
-        val miniPlayerShown = uiState.playback.status != MediaPlaybackStatus.UNKNOWN
+        val miniPlayerShown =
+                uiState.playback.status != MediaPlaybackStatus.UNKNOWN &&
+                        uiState.playback.status != MediaPlaybackStatus.NONE
         val toolbarOcclusion = rememberFloatingToolbarOcclusion(miniPlayerShown)
         var sheetOpen by remember { mutableStateOf(false) }
 
@@ -664,9 +666,10 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
             icon = icon,
             backgroundColor = backgroundColor,
             contentColor = contentColor,
-            // Uniform now that the media section precedes Session; the zero-padding special case
-            // existed only because Session used to be the first band under the intro text.
-            topPadding = 16.dp
+            // Media left the grid entirely (RemEx-vtorl.5, it now docks on the nav bar), so Session
+            // is the first band again - restore the zero-padding special case rather than leaving
+            // an extra 16dp gap under the intro text that no longer has a reason to be there.
+            topPadding = if (category == CommandCategory.SESSION) 0.dp else 16.dp
     )
 }
 

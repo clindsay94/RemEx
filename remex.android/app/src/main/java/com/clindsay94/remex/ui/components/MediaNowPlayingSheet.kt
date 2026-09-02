@@ -91,7 +91,9 @@ fun MediaNowPlayingSheet(
                 ) {
                     Icon(
                             imageVector = Icons.Default.MusicNote,
-                            contentDescription = stringResource(R.string.rc_media_artwork),
+                            // Decorative: there is no art to claim here, and the title/artist text
+                            // already carries the meaning (RemEx-vtorl.5 review).
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(64.dp)
                     )

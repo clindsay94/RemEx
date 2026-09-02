@@ -24,6 +24,14 @@ class MediaMiniPlayerGuardTest {
                 "MediaMiniPlayer must gate its visibility on playback.status != UNKNOWN",
                 text.contains("playback.status != MediaPlaybackStatus.UNKNOWN")
         )
+
+        // NONE ("the PC answered, nothing is playing") must also be excluded - the handoff
+        // acceptance is "with nothing playing, the bar is absent", and a bar reading "Nothing
+        // playing" for a whole idle session is not that.
+        assertTrue(
+                "MediaMiniPlayer must also gate its visibility on playback.status != NONE",
+                text.contains("playback.status != MediaPlaybackStatus.NONE")
+        )
     }
 
     @Test
@@ -106,6 +114,22 @@ class MediaMiniPlayerGuardTest {
         assertTrue(
                 "the grid's CommandCard call must forward the computed occlusion",
                 text.contains("toolbarOcclusion = toolbarOcclusion,")
+        )
+    }
+
+    @Test
+    fun `RemoteControlScreen's miniPlayerShown agrees with MediaMiniPlayer's own gate`() {
+        val text = remoteControlScreenSource()
+
+        // Same reasoning as the mini-player's own gate above: both call sites must agree, or the
+        // toolbar/grid inset raises for a bar that isn't actually drawn (or vice versa).
+        assertTrue(
+                "miniPlayerShown must exclude UNKNOWN",
+                text.contains("uiState.playback.status != MediaPlaybackStatus.UNKNOWN")
+        )
+        assertTrue(
+                "miniPlayerShown must also exclude NONE",
+                text.contains("uiState.playback.status != MediaPlaybackStatus.NONE")
         )
     }
 

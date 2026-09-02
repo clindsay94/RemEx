@@ -73,9 +73,13 @@ fun MediaMiniPlayer(
 ) {
     // UNKNOWN has no reading to show a bar about - same reasoning as NowPlayingLine's early return
     // in MediaControlSection (RemEx-nmvz6): a bar with nothing to say would be a claim the phone
-    // cannot back up.
+    // cannot back up. NONE is a reading ("the PC answered, nothing is playing"), not an absence of
+    // one, but a docked bar reading "Nothing playing" for the whole session is not a claim worth
+    // making either - it is the "nothing playing" case the handoff acceptance means by "absent".
     AnimatedVisibility(
-            visible = playback.status != MediaPlaybackStatus.UNKNOWN,
+            visible =
+                    playback.status != MediaPlaybackStatus.UNKNOWN &&
+                            playback.status != MediaPlaybackStatus.NONE,
             enter =
                     slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) {
                         it
@@ -99,7 +103,7 @@ fun MediaMiniPlayer(
         }
 
         Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(MiniPlayerHeight),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 3.dp
         ) {
@@ -139,8 +143,10 @@ fun MediaMiniPlayer(
                         ) {
                             Icon(
                                     imageVector = Icons.Default.MusicNote,
-                                    contentDescription =
-                                            stringResource(R.string.rc_media_artwork),
+                                    // Decorative: there is no art to claim here, and the
+                                    // title/artist text already carries the meaning (RemEx-vtorl.5
+                                    // review).
+                                    contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
@@ -180,7 +186,7 @@ fun MediaMiniPlayer(
                 if (playback.hasTimeline) {
                     RemexLinearWavyProgress(
                             progress = progress ?: 0f,
-                            modifier = Modifier.fillMaxWidth().height(4.dp)
+                            modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
