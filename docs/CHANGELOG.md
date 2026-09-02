@@ -86,6 +86,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so anything else the app merged in alongside the theme vanished the first time you changed theme —
   never at startup, and with nothing logged. It removes exactly the theme it is replacing now, so
   the rest of the stack is left where it was. (RemEx-gcqw5)
+- **Tabbing onto the Live and Archived headers in Diagnostic Logs now shows the same accent focus
+  ring as everything else.** Every other control RemEx rings on keyboard focus — buttons, list
+  items, text boxes, checkboxes, sliders — draws a 2px ring in the current theme's accent. Tabs were
+  the one control left out, so keyboard focus landed on them looking different from every step
+  either side of it. They ring like the rest now, in whichever accent the active theme is using.
+  (RemEx-83zq1)
 
 - **The media and volume row on the phone's Remote Control screen went dead once you had opened
   Remote Desktop.** Not while streaming — after. Closing the Remote Desktop screen was enough, and

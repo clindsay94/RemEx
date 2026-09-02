@@ -66,6 +66,7 @@ public class FocusVisibleStyleGuardTests
     [
         "Button", "ToggleButton", "RepeatButton", "ListBoxItem",
         "TextBox", "ComboBox", "CheckBox", "RadioButton", "ToggleSwitch", "Slider",
+        "TabItem",
     ];
 
     [Fact]
@@ -91,6 +92,27 @@ public class FocusVisibleStyleGuardTests
     }
 
     [Fact]
+    public void TheTabItemRingIsOnTheControlBecauseMaterialsHeaderPresenterCarriesNoBorder()
+    {
+        // RemEx-83zq1. Material 3.19.0's TabItem template roots at Border#PART_RootBorder, which
+        // template-binds BorderBrush and BorderThickness; its PART_ContentPresenter sits three
+        // levels below that inside a RippleEffect and binds neither. The template form would have
+        // compiled, applied, and drawn nothing.
+        FocusStyles().Single(s => s.Control == "TabItem").Suffix.Trim().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void NoViewReplacesTheTabItemTemplateAndDropsTheBorderTheRingNeeds()
+    {
+        // The other half of the ListBoxItem lesson, held before it can bite: a control-level ring
+        // renders only through a border the effective template binds. Nothing in this repo replaces
+        // the TabItem template today, so Material's PART_RootBorder is what the ring reaches. If a
+        // view starts supplying one, it inherits the obligation — make this assert the two
+        // TemplateBindings the way the ListBoxItem test does rather than deleting it.
+        TemplateOverrides("TabItem").Should().BeEmpty();
+    }
+
+    [Fact]
     public void EveryRingUsesTheThemeAccentRatherThanALiteralColour()
     {
         // A literal survives the theme it was picked against and dies under the other three, and a
@@ -113,7 +135,7 @@ public class FocusVisibleStyleGuardTests
         // that supplies its own inherits the obligation. HomeView's pinned-sensor list is the case in
         // point - its template was a bare ContentPresenter, so the control-level ring reached
         // nothing there and only there.
-        var overrides = ListBoxItemTemplateOverrides().ToArray();
+        var overrides = TemplateOverrides("ListBoxItem").ToArray();
 
         overrides.Should().NotBeEmpty("HomeView replaces this template - if that stops being true, " +
                                       "delete this test rather than letting it pass vacuously");
@@ -165,7 +187,8 @@ public class FocusVisibleStyleGuardTests
     }
 
     /// <summary>
-    /// The root element of every ListBoxItem <c>Template</c> setter anywhere in the desktop project.
+    /// The root element of every <c>Template</c> setter for <paramref name="control"/> anywhere in
+    /// the desktop project.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -184,7 +207,7 @@ public class FocusVisibleStyleGuardTests
     /// today, and following the indirection is more machinery than the risk warrants.
     /// </para>
     /// </remarks>
-    private static IEnumerable<(string File, XElement Root)> ListBoxItemTemplateOverrides()
+    private static IEnumerable<(string File, XElement Root)> TemplateOverrides(string control)
     {
         var project = DesktopPath();
 
@@ -201,7 +224,7 @@ public class FocusVisibleStyleGuardTests
 
             foreach (var owner in XDocument.Load(markup).Descendants()
                          .Where(e => e.Name.LocalName is "Style" or "ControlTheme")
-                         .Where(TargetsListBoxItem))
+                         .Where(owner => Targets(owner, control)))
             {
                 var template = owner.Elements()
                     .Where(e => e.Name.LocalName == "Setter" && e.Attribute("Property")?.Value == "Template")
@@ -216,10 +239,10 @@ public class FocusVisibleStyleGuardTests
         }
     }
 
-    /// <summary>Whether a style or theme element applies to ListBoxItem.</summary>
-    private static bool TargetsListBoxItem(XElement owner) =>
+    /// <summary>Whether a style or theme element applies to <paramref name="control"/>.</summary>
+    private static bool Targets(XElement owner, string control) =>
         (owner.Attribute("Selector")?.Value ?? owner.Attribute("TargetType")?.Value ?? string.Empty)
-            .Contains("ListBoxItem", StringComparison.Ordinal);
+            .Contains(control, StringComparison.Ordinal);
 
     private static IEnumerable<XElement> Elements(string path, string localName) =>
         XDocument.Load(path).Descendants().Where(e => e.Name.LocalName == localName);
