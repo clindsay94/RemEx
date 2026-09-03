@@ -284,6 +284,8 @@ public class ShellNavListTests
                      "ListBoxItem.nav-item mi|MaterialIcon",
                      "ListBoxItem.nav-item:pointerover mi|MaterialIcon",
                      "ListBoxItem.nav-item:selected mi|MaterialIcon",
+                     "ListBoxItem.nav-item /template/ ripple|RippleEffect#PART_Ripple",
+                     "ListBoxItem.nav-item /template/ Border#PART_HoverEffect",
                  })
         {
             shell.Should().Contain($"Selector=\"{selector}\"",
@@ -291,5 +293,44 @@ public class ShellNavListTests
                 "theme itself, but the accent fill/foreground per state is this app's own style and " +
                 "has to name the selector that theme actually exposes");
         }
+    }
+
+    [Fact]
+    public void TheNavRipple_IsClippedToTheItemRadiusAndTintedFromThePalette()
+    {
+        var shell = ShellViewXaml();
+
+        shell.Should().Contain("xmlns:ripple=\"clr-namespace:Material.Ripple;assembly=Material.Ripple\"",
+            "the ripple/hover template-part selectors below need the ripple: xmlns in scope");
+
+        var rippleStyle = ExtractStyleBlock(shell,
+            "ListBoxItem.nav-item /template/ ripple|RippleEffect#PART_Ripple");
+        rippleStyle.Should().Contain("Property=\"CornerRadius\"").And.Contain("CornerRadiusSmall",
+            "the ripple must clip to the item's corner radius instead of flashing square");
+        rippleStyle.Should().Contain("Property=\"RippleFill\"").And.Contain("TextPrimaryBrush",
+            "the ripple should tint from the app palette, not Material's default body colour");
+
+        var hoverStyle = ExtractStyleBlock(shell,
+            "ListBoxItem.nav-item /template/ Border#PART_HoverEffect");
+        hoverStyle.Should().Contain("Property=\"CornerRadius\"").And.Contain("CornerRadiusSmall");
+        hoverStyle.Should().NotContain("Property=\"Opacity\"",
+            "Material's own :pointerover/:selected opacities on the hover state layer must keep winning");
+        hoverStyle.Should().NotContain("Property=\"Background\"",
+            "only the radius is this app's concern here; the fill stays Material's");
+    }
+
+    /// <summary>
+    /// Pulls the &lt;Style Selector="..."&gt;...&lt;/Style&gt; block for one selector out of the raw
+    /// XAML text, so assertions about what setters live INSIDE that block can't accidentally match a
+    /// setter that belongs to some other style elsewhere in the file.
+    /// </summary>
+    private static string ExtractStyleBlock(string xaml, string selector)
+    {
+        var marker = $"Selector=\"{selector}\"";
+        var start = xaml.IndexOf(marker, System.StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0, $"expected a Style with Selector=\"{selector}\"");
+        var end = xaml.IndexOf("</Style>", start, System.StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start, $"expected a closing </Style> after Selector=\"{selector}\"");
+        return xaml[start..end];
     }
 }

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The shell nav rail's ripple now fires from the pointer and clips to the item's rounded
+  corners, tinted from the app's own text colour instead of Material's default square body-colour
+  splash. (RemEx-x5zjy)
+
 - The Home footer presence halo and the Remote Desktop live-stream dot pulse now, matching the
   shell's presence badge: a class-gated pulse that follows real live state (phone attached / actively
   streaming) and stops with it, honouring reduced motion. Neither ran on an idle app before or after.

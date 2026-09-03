@@ -3,6 +3,7 @@
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:ripple="clr-namespace:Material.Ripple;assembly=Material.Ripple"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
@@ -113,6 +114,21 @@
         </Style>
         <Style Selector="ListBoxItem.nav-item:selected mi|MaterialIcon">
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- Material's ListBoxItem template binds CornerRadius only to its own PART_RootBorder
+             (Material.Styles 3.19.0 Resources/Themes/ListBoxItem.axaml:11-30); RippleEffect
+             clips using its own CornerRadius property, not the one on PART_RootBorder
+             (Material.Ripple RippleEffect.cs:160-176 passes it straight into RippleHandler), and
+             PART_HoverEffect gets no radius at all from the shared theme. Both are set explicitly
+             here so the ripple and the hover state layer stay inside this item's 8px corners
+             instead of flashing square past them. -->
+        <Style Selector="ListBoxItem.nav-item /template/ ripple|RippleEffect#PART_Ripple">
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="RippleFill" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ListBoxItem.nav-item /template/ Border#PART_HoverEffect">
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
         </Style>
 
         <!-- The "Settings family" divider inside NavList (RemEx-zi3ua HIGH fix). It carries
