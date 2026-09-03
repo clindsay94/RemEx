@@ -13,19 +13,24 @@
 -->
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     x:Class="Remex.Desktop.Views.PairingQrPanelView" x:DataType="vm:ConnectionViewModel">
     <StackPanel Spacing="16">
         <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{conv:Localize Home_QrCodeButton}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Content="✕" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+            <TextBlock Text="{conv:Localize Home_QrCodeButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
+                <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}"/>
+            </Button>
         </Grid>
 
         <!-- Deliberately a hardcoded White plate rather than a theme brush: a QR code needs a light
              quiet zone and high contrast against the dark modules to stay scannable, so this one
-             does not follow the theme (the same exemption the theme preview tiles carry). -->
-        <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
+             does not follow the theme (the same exemption the theme preview tiles carry). Chrome
+             differs by host (ConnectionView vs SettingsView), but both hosts are now Material
+             surfaces, so the plate's own quiet zone stays consistent between them. -->
+        <Border Background="White" Padding="16" CornerRadius="12" HorizontalAlignment="Center">
             <!-- 260, not the old 180 (RemEx-7ykyn, item 3): the plate is scanned from across a
                  desk by a phone that is also holding a camera steady, and 180 device-independent
                  pixels on a 4K panel is a small target. Square is kept explicitly — a QR stretched
@@ -33,6 +38,6 @@
             <Image Source="{Binding QrCodeImage}" Width="260" Height="260"/>
         </Border>
 
-        <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+        <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
     </StackPanel>
 </UserControl>

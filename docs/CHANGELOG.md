@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pairing's connection panel, QR panel and PIN panel move onto the Material type scale and icon
+  set: the connection status dot becomes a Badged presence indicator, the close glyphs become
+  MaterialIcons, and the PIN grows to a 48px letter-spaced face that stays readable across the
+  room; no binding, command or pairing gate changed. (RemEx-r8skw)
+
 - Remote Desktop's chrome (toolbar, connection/window panels, placeholder hint, error overlay,
   fullscreen overlay buttons, status bar) moves onto Material cards and the button and type
   vocabularies; the stream surface, its zoom/pan transforms and the cursor overlay are untouched.

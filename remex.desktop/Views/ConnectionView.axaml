@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:views="using:Remex.Desktop.Views"
@@ -10,34 +11,43 @@
 
             <!-- Header -->
             <StackPanel Spacing="4">
-                <TextBlock Text="{conv:Localize Conn_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="{conv:Localize Conn_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Classes="page-title" Text="{conv:Localize Conn_Header}"/>
+                <TextBlock Classes="page-subtitle" Text="{conv:Localize Conn_Subheader}"/>
             </StackPanel>
 
             <!-- Status + host address + connect/disconnect -->
             <material:Card Padding="24">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Ellipse AutomationProperties.Name="{Binding ConnectionStatusAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsConnected}">
-                        </Ellipse>
-                        <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <!-- Host-link binding is deliberate: this Badged is the connection status dot,
+                             not the phone-presence one (StatusDotPresenceBindingTests allow-list). -->
+                        <material:Badged Classes="presence" Classes.connected="{Binding IsConnected}" VerticalAlignment="Center" BadgeDisplayContent="False" BadgeWidth="12" BadgeHeight="12" AutomationProperties.Name="{Binding ConnectionStatusAccessibleName}">
+                            <mi:MaterialIcon Kind="Lan" Width="20" Height="20" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </material:Badged>
+                        <TextBlock Text="{Binding StatusText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Text="{conv:Localize Conn_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <TextBlock Text="{conv:Localize Conn_HostAddress}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center"/>
+                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center"/>
                             <Button Grid.Column="1" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
                         </Grid>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="{conv:Localize Btn_Connect}" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                        <Button Content="{conv:Localize Btn_Disconnect}" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Connect}">
+                            <TextBlock Text="{conv:Localize Btn_Connect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                        </Button>
+                        <Button Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Disconnect}">
+                            <TextBlock Text="{conv:Localize Btn_Disconnect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                        </Button>
                         <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3). A QR and a PIN are two ways to
                              read the same pairing session, and offering them as a choice made the
                              user pick before they knew which their phone could use. -->
-                        <Button Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding GenerateQrCodeCommand}" IsVisible="{Binding CanRevealPairingPin}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Command="{Binding GenerateQrCodeCommand}" IsVisible="{Binding CanRevealPairingPin}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{conv:Localize Home_PairPhoneTooltip}" AutomationProperties.Name="{conv:Localize Home_PairPhoneButton}">
+                            <TextBlock Text="{conv:Localize Home_PairPhoneButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </material:Card>
@@ -45,8 +55,8 @@
             <!-- Host info + latency -->
             <material:Card Padding="24" IsVisible="{Binding IsConnected}">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="{conv:Localize Conn_HostInfo}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                    <TextBlock Text="{Binding HostRuntimeSummary}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{conv:Localize Conn_HostInfo}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{Binding HostRuntimeSummary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     <Grid ColumnDefinitions="Auto,*">
                         <TextBlock Grid.Column="0" Text="{conv:Localize Conn_Latency}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
                         <TextBlock Grid.Column="1" Text="{Binding LatencyText}" Foreground="{DynamicResource TextPrimaryBrush}"/>

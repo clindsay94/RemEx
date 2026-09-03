@@ -7,6 +7,7 @@
 -->
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     x:Class="Remex.Desktop.Views.PairingPinPanelView" x:DataType="vm:ConnectionViewModel">
@@ -20,8 +21,10 @@
     </UserControl.Styles>
     <StackPanel Spacing="16">
         <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{conv:Localize Settings_PairingPinTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Content="✕" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+            <TextBlock Text="{conv:Localize Settings_PairingPinTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
+                <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}"/>
+            </Button>
         </Grid>
 
         <!-- Monospaced and widely letter-spaced because the user is reading these six digits off
@@ -30,14 +33,14 @@
              SELECTABLE (RemEx-7ykyn item 1). It was a plain TextBlock, so the one thing a person
              might reasonably want to do with a PIN on a PC — copy it, into a chat with whoever is
              holding the phone — was the one thing they could not do. -->
-        <Border Background="{DynamicResource CardBackgroundBrush}" Padding="20,16" CornerRadius="8" HorizontalAlignment="Center" IsVisible="{Binding !IsPairingPinExpired}">
+        <Border Background="{DynamicResource CardBackgroundBrush}" Padding="24,20" CornerRadius="12" HorizontalAlignment="Center" IsVisible="{Binding !IsPairingPinExpired}">
             <!-- NO AutomationProperties.Name HERE. Setting one on a content-bearing element REPLACES its
                  text for screen readers, so naming this "Copy PIN" would have announced that and never
                  the six digits — a PIN that is screen-only, expires in three minutes and cannot be
                  re-read would have become unusable non-visually, by the change meant to make it more
                  usable (review). Every other AutomationProperties.Name in this app is on a control
                  with no text of its own. -->
-            <SelectableTextBlock Text="{Binding ActivePairingPin}" FontFamily="Consolas" FontSize="42" FontWeight="Bold" LetterSpacing="8" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+            <SelectableTextBlock Text="{Binding ActivePairingPin}" FontFamily="Consolas, monospace" FontSize="48" FontWeight="Bold" LetterSpacing="12" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
         </Border>
 
         <!-- REPLACED, NOT GREYED OUT, and that is the decision rather than a style choice: an expired
@@ -45,19 +48,21 @@
              instead of the PC will type them. The visual treatment carries no information to the
              person actually doing the task, so the digits go and an action takes their place. -->
         <StackPanel Spacing="12" IsVisible="{Binding IsPairingPinExpired}">
-            <TextBlock Text="{conv:Localize Settings_PairingPinExpired}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock Text="{conv:Localize Settings_PairingPinExpired}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
             <!-- GenerateQrCodeCommand, NOT RevealPairingPinCommand (RemEx-7ykyn, item 3): now that both
                  panels open together, refreshing only the PIN would leave the QR beside it encoding the
                  session that just expired — a code that scans and pairs with nothing. -->
-            <Button Content="{conv:Localize Settings_PairingPinGetNew}" Command="{Binding GenerateQrCodeCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+            <Button Command="{Binding GenerateQrCodeCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Settings_PairingPinGetNew}">
+                <TextBlock Text="{conv:Localize Settings_PairingPinGetNew}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+            </Button>
         </StackPanel>
 
-        <TextBlock Text="{conv:Localize Settings_PairingPinHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !IsPairingPinExpired}"/>
+        <TextBlock Text="{conv:Localize Settings_PairingPinHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !IsPairingPinExpired}"/>
 
         <!-- The last-15-seconds warning is a COLOUR CHANGE ON THE SAME LINE, not a new element, so
              nothing moves under the pointer while the user is mid-type. The threshold comes from
              PairingPinCountdown and was chosen from the task — read six digits, type them into a
              phone — not from a round number. -->
-        <TextBlock Classes.expiring="{Binding IsPairingPinExpiringSoon}" Text="{Binding PairingPinExpiresInText}" FontSize="11" TextAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsPairingPinExpired}"/>
+        <TextBlock Classes.expiring="{Binding IsPairingPinExpiringSoon}" Text="{Binding PairingPinExpiresInText}" Theme="{StaticResource CaptionTextBlock}" TextAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsPairingPinExpired}"/>
     </StackPanel>
 </UserControl>
