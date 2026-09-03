@@ -66,7 +66,9 @@ public class TypographyVocabularyTests
     // GlyphText, TitleText, MessageText moved onto the type-scale ControlThemes).
     // Re-pinned by RemEx-tzl85 (TrayFlyoutWindow Material surface sweep): 165 -> 160 (5 sites).
     // Re-pinned by RemEx-ja246 (CommandPaletteWindow Material sweep): 160 -> 156 (4 sites).
-    private const int InlineFontSizeBaseline = 156;
+    // Re-pinned by RemEx-2m7fr (ConfirmationDialog + FileConsentDialog + RestorePromptWindow
+    // Material sweep): 156 -> 148 (7 sites here, plus the one RemEx-leatt dropped inside the slack).
+    private const int InlineFontSizeBaseline = 148;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

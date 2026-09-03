@@ -7,37 +7,30 @@
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource GlassBaseDarkBrush}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="32">
 
-    <Grid RowDefinitions="Auto,Auto,Auto" Margin="28,40,28,28">
+    <Grid RowDefinitions="Auto,Auto,Auto" Margin="24,40,24,24">
 
         <!-- Dialog title -->
         <TextBlock x:Name="TitleText"
                    Grid.Row="0"
-                   FontSize="16"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   Theme="{StaticResource Headline6TextBlock}"
                    TextWrapping="Wrap"
                    Margin="0,0,0,12"/>
 
         <!-- Descriptive message -->
         <TextBlock x:Name="MessageText"
                    Grid.Row="1"
-                   FontSize="13"
+                   Theme="{StaticResource Body2TextBlock}"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap"
                    Margin="0,0,0,28"/>
 
         <!-- Buttons: Cancel (left) | Confirm action (right) -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button x:Name="CancelBtn"
-                    Grid.Column="1"
                     Classes="tertiary"
-                    Foreground="{DynamicResource TextSecondaryBrush}"
-                    MinWidth="90"
-                    Margin="0,0,10,0"
                     Click="OnCancelClicked"/>
             <!-- The destructive confirm: a PRIMARY action that happens to be destructive, which
                  in the vocabulary is the two classes together rather than a bespoke red button
@@ -45,12 +38,9 @@
                  - its hover selector targeted an unnamed ContentPresenter as the background-
                  bearing template part, which is Fluent's shape, not Material's. -->
             <Button x:Name="ConfirmBtn"
-                    Grid.Column="2"
                     Classes="primary danger"
-                    MinWidth="130"
-                    Padding="16,10"
                     Click="OnConfirmClicked"/>
-        </Grid>
+        </StackPanel>
 
     </Grid>
 </Window>

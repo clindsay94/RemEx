@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The confirmation, file-consent and restore-snapshot prompts move onto the Material dialog
+  anatomy: titles pick up the Headline6 type scale, supporting text picks up Body2, and the
+  action rows become right-aligned button groups. Bindings, commands, key bindings and the
+  consent defaults are unchanged. (RemEx-2m7fr)
+
 - The pairing dialog moves onto the Material Card surface: the hand-styled Border is gone, the
   title picks up the Headline6 type scale, the instruction text picks up Body2, and the window
   extends under the drawn title bar to match the other Material dialogs. Behaviour, bindings and
