@@ -3,6 +3,7 @@
         xmlns:vm="using:Remex.Desktop.ViewModels"
         xmlns:local="clr-namespace:Remex.Desktop.Converters"
         xmlns:conv="clr-namespace:Remex.Desktop.Converters"
+        xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
         x:Class="Remex.Desktop.Views.SetAlertDialog"
         x:DataType="vm:SetAlertViewModel"
         Title="{local:Localize SetAlert_Title}"
@@ -18,16 +19,16 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="4">
-            <TextBlock Text="{local:Localize SetAlert_Header}" FontSize="11" FontWeight="SemiBold"
+            <TextBlock Text="{local:Localize SetAlert_Header}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <TextBlock Text="{Binding SensorName}" FontSize="18" FontWeight="Bold"
+            <TextBlock Text="{Binding SensorName}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold"
                        Foreground="{DynamicResource AccentPrimaryBrush}"
                        TextTrimming="CharacterEllipsis"/>
         </StackPanel>
 
         <!-- Threshold -->
         <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
-            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" FontSize="12"
+            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" Theme="{StaticResource CaptionTextBlock}"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <NumericUpDown Value="{Binding Threshold}" Increment="1"
                            Minimum="-99999" Maximum="99999"
@@ -37,9 +38,8 @@
 
         <!-- Direction -->
         <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,12">
-            <TextBlock Text="{local:Localize SetAlert_TriggerDirection}" FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Directions}" SelectedItem="{Binding Direction}"
+                      assists:ComboBoxAssist.Label="{local:Localize SetAlert_TriggerDirection}"
                       Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
@@ -51,9 +51,8 @@
 
         <!-- Severity -->
         <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,24">
-            <TextBlock Text="{local:Localize SetAlert_Severity}" FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Severities}" SelectedItem="{Binding Severity}"
+                      assists:ComboBoxAssist.Label="{local:Localize SetAlert_Severity}"
                       Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
@@ -66,14 +65,12 @@
         <!-- Buttons -->
         <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto,Auto">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Command="{Binding ClearAlertCommand}"
-                    Classes="tertiary" Foreground="{DynamicResource SystemErrorBrush}"
+                    Classes="tertiary danger"
                     MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"
                     Classes="tertiary" MinWidth="80" Margin="0,0,8,0"/>
             <Button Grid.Column="3" Content="{local:Localize SetAlert_SetAlertBtn}" Command="{Binding ConfirmCommand}"
-                    MinWidth="100" CornerRadius="8" Padding="16,10"
-                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"
-                    FontWeight="SemiBold" FontSize="13"/>
+                    Classes="primary" MinWidth="100"/>
         </Grid>
 
     </Grid>

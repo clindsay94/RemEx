@@ -5,7 +5,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:converters="using:Remex.Desktop.Converters"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450" x:Class="Remex.Desktop.Views.AddProgramWindow" x:DataType="vm:AddProgramViewModel" Title="{local:Localize AddProgram_Title}" Width="400" Height="450" WindowStartupLocation="CenterOwner" Background="{DynamicResource GlassBaseDarkBrush}" ExtendClientAreaToDecorationsHint="True">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia" mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450" x:Class="Remex.Desktop.Views.AddProgramWindow" x:DataType="vm:AddProgramViewModel" Title="{local:Localize AddProgram_Title}" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" Background="{DynamicResource GlassBaseDarkBrush}" ExtendClientAreaToDecorationsHint="True">
 
     <Window.Resources>
         <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
@@ -13,23 +15,20 @@
 
     <Grid RowDefinitions="Auto, *, Auto" Margin="24">
 
-        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_Header}" IsVisible="{Binding !IsEditMode}" FontFamily="{StaticResource Sixtyfour}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,24" />
-        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_EditTitle}" IsVisible="{Binding IsEditMode}" FontFamily="{StaticResource Sixtyfour}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,24" />
+        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_Header}" IsVisible="{Binding !IsEditMode}" FontFamily="{StaticResource Sixtyfour}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,24" />
+        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_EditTitle}" IsVisible="{Binding IsEditMode}" FontFamily="{StaticResource Sixtyfour}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,24" />
 
         <StackPanel Grid.Row="1" Spacing="16">
 
-            <TextBlock Text="{local:Localize AddProgram_ExePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
-            <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding TargetPath}" PlaceholderText="{local:Localize AddProgram_WatermarkPath}" Margin="0,0,8,0"/>
-                <Button Grid.Column="1" Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" />
-            </Grid>
+            <TextBox Text="{Binding TargetPath}" assists:TextFieldAssist.Label="{local:Localize AddProgram_ExePath}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkPath}" />
+            <Button Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" HorizontalAlignment="Left" />
 
-            <TextBlock Text="{local:Localize AddProgram_DisplayName}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
-            <TextBox Text="{Binding DisplayName}" PlaceholderText="{local:Localize AddProgram_WatermarkName}"/>
+            <TextBox Text="{Binding DisplayName}" assists:TextFieldAssist.Label="{local:Localize AddProgram_DisplayName}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkName}"/>
 
-            <TextBlock Text="{local:Localize AddProgram_AccentColor}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding HexColor}" PlaceholderText="{local:Localize AddProgram_WatermarkColor}" Margin="0,0,8,0"/>
+                <TextBox Grid.Column="0" Text="{Binding HexColor}" assists:TextFieldAssist.Label="{local:Localize AddProgram_AccentColor}"
+                         assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkColor}"
+                         Classes.invalid="{Binding !IsHexColorValid}" Margin="0,0,8,0"/>
                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="4">
                     <Border.Background>
                         <SolidColorBrush Color="{Binding ValidatedColor}" />
@@ -37,19 +36,21 @@
                 </Border>
             </Grid>
 
-            <TextBlock Text="{local:Localize AddProgram_IconPreview}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
+            <TextBlock Text="{local:Localize AddProgram_IconPreview}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" />
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <material:Card Width="64" Height="64" HorizontalAlignment="Left">
                     <Image Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </material:Card>
-                <Button Content="&#8635;" FontSize="18" Width="32" Height="32" Padding="0" VerticalAlignment="Center" Classes="tertiary" ToolTip.Tip="{local:Localize AddProgram_RefreshIcon}" AutomationProperties.Name="{local:Localize AddProgram_RefreshIcon}" Command="{Binding RefreshIconCommand}" />
+                <Button VerticalAlignment="Center" Classes="tertiary icon-button" ToolTip.Tip="{local:Localize AddProgram_RefreshIcon}" AutomationProperties.Name="{local:Localize AddProgram_RefreshIcon}" Command="{Binding RefreshIconCommand}">
+                    <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
+                </Button>
             </StackPanel>
 
         </StackPanel>
 
         <Grid Grid.Row="2" ColumnDefinitions="*, *" Margin="0,24,0,0">
             <Button Grid.Column="0" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}" HorizontalAlignment="Stretch" Margin="0,0,8,0" Classes="tertiary" />
-            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="tertiary" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" />
+            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="primary" />
         </Grid>
     </Grid>
 </Window>

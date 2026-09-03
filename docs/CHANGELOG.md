@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- SetAlertDialog, SecondMetricDialog and AddProgramWindow move onto the Material type scale,
+  button vocabulary and Card surface: floating labels replace the standalone field TextBlocks,
+  the refresh glyph becomes a MaterialIcon, and the hex-colour field now shows a visible invalid
+  state; no binding, command or persisted value changed. (RemEx-ckuox)
+
 - Pairing's connection panel, QR panel and PIN panel move onto the Material type scale and icon
   set: the connection status dot becomes a Badged presence indicator, the close glyphs become
   MaterialIcons, and the PIN grows to a 48px letter-spaced face that stays readable across the

@@ -60,7 +60,9 @@ public class TypographyVocabularyTests
     // and one TextBox stay inline).
     // Re-pinned by RemEx-r8skw (ConnectionView + PairingQrPanelView + PairingPinPanelView sweep):
     // 200 -> 184 (16 sites; the PIN panel's SelectableTextBlock stays inline).
-    private const int InlineFontSizeBaseline = 184;
+    // Re-pinned by RemEx-ckuox (SetAlertDialog + SecondMetricDialog + AddProgramWindow sweep):
+    // 184 -> 168 (16 sites; SetAlertDialog's NumericUpDown stays inline).
+    private const int InlineFontSizeBaseline = 168;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

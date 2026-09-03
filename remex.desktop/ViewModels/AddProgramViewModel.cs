@@ -30,6 +30,9 @@ public partial class AddProgramViewModel : ObservableObject
     private Avalonia.Media.Color _validatedColor;
 
     [ObservableProperty]
+    private bool _isHexColorValid = true;
+
+    [ObservableProperty]
     private string? _iconBase64;
 
     [ObservableProperty]
@@ -110,10 +113,12 @@ public partial class AddProgramViewModel : ObservableObject
         if (Avalonia.Media.Color.TryParse(HexColor, out var color))
         {
             ValidatedColor = color;
+            IsHexColorValid = true;
         }
         else
         {
             ValidatedColor = Avalonia.Media.Color.Parse(DefaultHexColor); // Default fallback
+            IsHexColorValid = false;
         }
     }
 
