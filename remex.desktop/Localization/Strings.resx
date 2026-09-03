@@ -3231,4 +3231,34 @@ You can change:
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Connection status</value>
   </data>
+  <data name="Custom_SharePaletteHeader" xml:space="preserve">
+    <value>Share palette</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>Copy as AXAML</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>Export as JSON</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>Import JSON</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>RemEx Palette</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Palette copied</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Paste it into any Avalonia ResourceDictionary.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Palette imported</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>Applied {0}, {1}.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>That file is not a RemEx palette.</value>
+  </data>
 </root>

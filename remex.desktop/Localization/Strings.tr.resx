@@ -3229,4 +3229,34 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Bağlantı durumu</value>
   </data>
+  <data name="Custom_SharePaletteHeader" xml:space="preserve">
+    <value>Paleti paylaş</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>AXAML olarak kopyala</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>JSON olarak dışa aktar</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>JSON içe aktar</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>RemEx Paleti</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Palet kopyalandı</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Herhangi bir Avalonia ResourceDictionary'sine yapıştırın.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Palet içe aktarıldı</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>{0}, {1} uygulandı.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Bu dosya bir RemEx paleti değil.</value>
+  </data>
 </root>

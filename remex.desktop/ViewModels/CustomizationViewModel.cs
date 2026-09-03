@@ -5,7 +5,9 @@ using Remex.Desktop.Models;
 using Remex.Core.Models;
 using System.Collections.ObjectModel;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using System.Text;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -351,6 +353,176 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         IsCustomAccentPickerOpen = false;
         CustomAccentHex = string.Empty;
+    }
+
+    // ═══════════════ Share palette (RemEx-a7uzb) ═══════════════
+    //
+    // Copy-as-AXAML and JSON export/import for the Palette Studio. The three seams below mirror
+    // SettingsViewModel's savefile picker seams (SettingsViewModel.cs:178-184) and
+    // DiagnosticLogsViewModel's clipboard seam — wired by the view via TopLevel so this view model
+    // stays testable without a running Avalonia.
+
+    /// <summary>Wired by the view to the window's clipboard. Used by <see cref="CopyPaletteAsAxamlCommand"/>.</summary>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
+
+    /// <summary>Wired by the view to a native "Save File" picker. Used by <see cref="ExportPaletteJsonCommand"/>.</summary>
+    public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickSaveFileAsync { get; set; }
+
+    /// <summary>Wired by the view to a native "Open File" picker. Used by <see cref="ImportPaletteJsonCommand"/>.</summary>
+    public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickOpenFileAsync { get; set; }
+
+    /// <summary>Builds the recipe for the palette currently painted, from the live-edited fields
+    /// rather than the last-saved profile — the studio always shares what is on screen.</summary>
+    private PaletteRecipe RecipeFromCurrent()
+    {
+        var mode = _themeModeChosenThisSession
+            ? _themeMode
+            : _layoutService.CurrentProfile.Customization.ThemeMode;
+        return new PaletteRecipe(
+            AccentColor,
+            SchemeVariant,
+            mode ?? ThemeModes.Dark,
+            ThemeContrast,
+            SeedHct.ChromaOf(AccentColor, _layoutService.CurrentProfile.Customization.ThemeSeedChroma));
+    }
+
+    /// <summary>Copies the current palette to the clipboard as a compilable Avalonia
+    /// <c>ResourceDictionary</c>. Silently returns when the view has not wired a clipboard.</summary>
+    [RelayCommand]
+    private async Task CopyPaletteAsAxamlAsync()
+    {
+        if (CopyToClipboardAsync is null) return;
+
+        try
+        {
+            var recipe = RecipeFromCurrent();
+            var isDark = !ThemeService.ResolveIsLight(
+                _layoutService.CurrentProfile.Customization,
+                SeedPresetCatalog.Resolve(SelectedPresetId),
+                ThemeService.TryGetOsIsLight());
+            var palette = DynamicColorGenerator.Generate(Color.Parse(AccentColor), SchemeVariant, isDark, ThemeContrast);
+
+            await CopyToClipboardAsync(PaletteExchange.ToAxaml(palette, recipe));
+
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Notification_PaletteCopied_Title"],
+                LocalizationService.Instance["Notification_PaletteCopied_Message"]);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Custom_CopyPaletteAxaml"],
+                string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    /// <summary>Exports the current palette's recipe as a <c>.remexpalette</c> JSON file.</summary>
+    [RelayCommand]
+    private async Task ExportPaletteJsonAsync()
+    {
+        if (PickSaveFileAsync is null) return;
+
+        try
+        {
+            var file = await PickSaveFileAsync(new FilePickerSaveOptions
+            {
+                Title = LocalizationService.Instance["Custom_ExportPaletteJson"],
+                SuggestedFileName = $"RemEx-palette-{DateTime.Now:yyyyMMdd}",
+                DefaultExtension = "remexpalette",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType(LocalizationService.Instance["Custom_PaletteFileType"])
+                    {
+                        Patterns = new[] { "*.remexpalette" },
+                    },
+                },
+            });
+
+            if (file is null) return;
+
+            await using (var stream = await file.OpenWriteAsync())
+            await using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+            {
+                await writer.WriteAsync(PaletteExchange.ToJson(RecipeFromCurrent()));
+            }
+
+            // A closed native dialog with nothing else happening is indistinguishable from
+            // cancel; say where the file went, the way copy and import announce themselves.
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Custom_ExportPaletteJson"],
+                file.Name);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Custom_ExportPaletteJson"],
+                string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    /// <summary>Imports a <c>.remexpalette</c> JSON file and applies it through the same setters the
+    /// UI uses, so ApplyAndSave/ThemeService repaint exactly as a manual edit would.</summary>
+    [RelayCommand]
+    private async Task ImportPaletteJsonAsync()
+    {
+        if (PickOpenFileAsync is null) return;
+
+        try
+        {
+            var files = await PickOpenFileAsync(new FilePickerOpenOptions
+            {
+                Title = LocalizationService.Instance["Custom_ImportPaletteJson"],
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType(LocalizationService.Instance["Custom_PaletteFileType"])
+                    {
+                        Patterns = new[] { "*.remexpalette" },
+                    },
+                },
+            });
+
+            if (files.Count == 0) return;
+
+            string json;
+            await using (var stream = await files[0].OpenReadAsync())
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
+                json = await reader.ReadToEndAsync();
+
+            if (!PaletteExchange.TryParseJson(json, out var recipe) || recipe is null)
+            {
+                NotificationService.Instance.Notify(
+                    NotificationImportance.Outcome,
+                    LocalizationService.Instance["Custom_ImportPaletteJson"],
+                    LocalizationService.Instance["Custom_PaletteImportInvalid"]);
+                return;
+            }
+
+            SelectSchemeVariant(recipe.Variant);
+            SetThemeMode(recipe.Mode);
+            ApplyAndSave();
+            ThemeContrast = recipe.Contrast;
+            AccentColor = recipe.Seed;
+            CommitSeedToRecents();
+
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Notification_PaletteImported_Title"],
+                string.Format(
+                    LocalizationService.Instance["Notification_PaletteImported_Message"],
+                    recipe.Seed, recipe.Variant));
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Custom_ImportPaletteJson"],
+                string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
     }
 
     public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService)

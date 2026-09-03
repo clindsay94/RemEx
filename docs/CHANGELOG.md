@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Palette Studio card can now copy the live palette as a compilable Avalonia
+  ResourceDictionary, and export/import its recipe as a `.remexpalette` JSON file, so a palette
+  can travel to a future session or hand off to the phone. A failed copy, export or import (a
+  locked clipboard, a read-only folder, a bad accent colour) now reports a toast instead of
+  crashing, and a rejected import toast no longer wears the "Palette imported" success title.
+  (RemEx-a7uzb)
+
 - The startup splash now fades into the shell instead of cutting away, and the first-run tutorial
   overlay is rebuilt on a Material card, the seeded palette and the app's button/typography
   vocabulary so both surfaces follow the user's chosen theme. (RemEx-72s7l)

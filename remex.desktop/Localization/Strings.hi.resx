@@ -3225,4 +3225,34 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>कनेक्शन स्थिति</value>
   </data>
+  <data name="Custom_SharePaletteHeader" xml:space="preserve">
+    <value>पैलेट साझा करें</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>AXAML के रूप में कॉपी करें</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>JSON के रूप में निर्यात करें</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>JSON आयात करें</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>RemEx पैलेट</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>पैलेट कॉपी हो गया</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>इसे किसी भी Avalonia ResourceDictionary में पेस्ट करें।</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>पैलेट आयात हुआ</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>{0}, {1} लागू किया गया।</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>वह फ़ाइल RemEx पैलेट नहीं है।</value>
+  </data>
 </root>

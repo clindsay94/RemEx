@@ -3226,4 +3226,34 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Стан підключення</value>
   </data>
+  <data name="Custom_SharePaletteHeader" xml:space="preserve">
+    <value>Поділитися палітрою</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>Копіювати як AXAML</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>Експортувати як JSON</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>Імпортувати JSON</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>Палітра RemEx</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Палітру скопійовано</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Вставте її в будь-який Avalonia ResourceDictionary.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Палітру імпортовано</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>Застосовано {0}, {1}.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Цей файл не є палітрою RemEx.</value>
+  </data>
 </root>

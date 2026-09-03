@@ -170,6 +170,19 @@
                     </ItemsControl>
                 </StackPanel>
 
+                <!-- Share palette (RemEx-a7uzb): copy the live palette as a compilable Avalonia
+                     ResourceDictionary, or export/import its recipe as JSON so a palette can travel
+                     to a future session or hand off to the phone. WrapPanel because the card is
+                     ~300px wide and three buttons do not fit one row. -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Custom_SharePaletteHeader}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                        <Button Classes="compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
+                        <Button Classes="compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
+                        <Button Classes="compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
+                    </WrapPanel>
+                </StackPanel>
+
                 <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
                 <!-- Both settings below have been persisted and honoured for a while with no way to

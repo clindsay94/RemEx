@@ -3226,4 +3226,34 @@ Możesz zmienić:
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Stan połączenia</value>
   </data>
+  <data name="Custom_SharePaletteHeader" xml:space="preserve">
+    <value>Udostępnij paletę</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>Kopiuj jako AXAML</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>Eksportuj jako JSON</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>Importuj JSON</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>Paleta RemEx</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Skopiowano paletę</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Wklej ją do dowolnego ResourceDictionary Avalonia.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Zaimportowano paletę</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>Zastosowano {0}, {1}.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Ten plik nie jest paletą RemEx.</value>
+  </data>
 </root>
