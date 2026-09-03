@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+        xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -16,18 +17,23 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="{local:Localize PairingDialogTitle}"
-        ExtendClientAreaToDecorationsHint="True">
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="32">
 
-    <Border Padding="24" Background="{DynamicResource CardBackgroundBrush}">
+    <material:Card Padding="24" Margin="12,40,12,12">
         <Grid RowDefinitions="Auto,*,Auto">
-            
-            <TextBlock Grid.Row="0" 
-                       Text="{local:Localize PairingDialogTitle}" 
-                       FontSize="20" FontWeight="SemiBold" 
+
+            <TextBlock Grid.Row="0"
+                       Text="{local:Localize PairingDialogTitle}"
+                       Theme="{StaticResource Headline6TextBlock}"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
                        Margin="0,0,0,16"/>
-            
+
             <StackPanel Grid.Row="1" Spacing="16" VerticalAlignment="Center">
                 <TextBlock Text="{local:Localize PairingDialogInstruction}"
+                           Theme="{StaticResource Body2TextBlock}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 
                 <!-- THE ERROR IS PART OF THE FIELD NOW, not a red line floating under it
@@ -43,6 +49,7 @@
                          MaxLength="6"
                          FontSize="24"
                          FontWeight="Bold"
+                         LetterSpacing="8"
                          HorizontalContentAlignment="Center"
                          IsEnabled="{Binding !IsBusy}"
                          assists:TextFieldAssist.Hints="{Binding ErrorText}"
@@ -71,7 +78,7 @@
                         IsEnabled="{Binding !IsBusy}"/>
             </StackPanel>
         </Grid>
-    </Border>
+    </material:Card>
     <!-- ESCAPE DISMISSES, AND IT IS ROUTED TO THE ACTION ALREADY WRITTEN AS THIS DIALOG'S CANCEL
          (RemEx-xxifk). Enter is deliberately NOT bound here: whether a default action is safe is a
          per-dialog question and stays on RemEx-df08. Escape carries none of that, because cancelling
