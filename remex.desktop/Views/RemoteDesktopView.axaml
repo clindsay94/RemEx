@@ -34,6 +34,25 @@
                 </Transitions>
             </Setter>
         </Style>
+
+        <!-- Live-stream dot pulse (RemEx-s19yc). CLASS-GATED Style.Animations, not the
+             MaterialAnimationAssist ContinuousAnimation attached property - that assist's Changed
+             handler cannot be stopped by clearing it back to null (bd memory: material-animation-
+             assist-cannot-be-stopped), which is unfit for a pulse that must stop when the stream
+             ends or reduced motion is on. Same 1.6s/Alternate/Infinite timing as App.axaml's
+             presence badge pulse. -->
+        <Style Selector="Border.live-dot.pulse">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6" IterationCount="Infinite" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.55"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
@@ -336,7 +355,7 @@
                     </TextBlock.Text>
                 </TextBlock>
                 <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}" TextTrimming="CharacterEllipsis"/>
-                <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4" IsVisible="{Binding IsStreaming}" Background="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4" IsVisible="{Binding IsStreaming}" Classes="live-dot" Classes.pulse="{Binding ShowStreamPulse}" Background="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </Grid>
         </material:Card>
     </Grid>

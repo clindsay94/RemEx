@@ -38,6 +38,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(SwitchDisplayCommand))]
     private bool _isStreaming;
 
+    /// <summary>
+    /// Whether the live-stream dot should pulse (RemEx-s19yc): only while actually streaming and
+    /// the user hasn't opted in to reduced motion. Notified both when streaming starts/stops and
+    /// when the shell's reduced-motion preference changes.
+    /// </summary>
+    public bool ShowStreamPulse => IsStreaming && !_shell.IsReducedMotion;
+
+    partial void OnIsStreamingChanged(bool value) => OnPropertyChanged(nameof(ShowStreamPulse));
+
     [ObservableProperty]
     private Bitmap? _currentFrame;
 
@@ -267,6 +276,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.Disconnected += OnDisconnected;
         Connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+        _shell.PropertyChanged += OnShellPropertyChanged;
 
         // Sync stream defaults from persisted Settings panel values.
         // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
@@ -1039,10 +1049,20 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Re-raises <see cref="ShowStreamPulse"/> when reduced motion is toggled mid-stream.</summary>
+    private void OnShellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellViewModel.IsReducedMotion))
+        {
+            OnPropertyChanged(nameof(ShowStreamPulse));
+        }
+    }
+
     public void Dispose()
     {
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+        _shell.PropertyChanged -= OnShellPropertyChanged;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;

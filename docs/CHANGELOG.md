@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Home footer presence halo and the Remote Desktop live-stream dot pulse now, matching the
+  shell's presence badge: a class-gated pulse that follows real live state (phone attached / actively
+  streaming) and stops with it, honouring reduced motion. Neither ran on an idle app before or after.
+  (RemEx-s19yc)
+
 - The confirmation, file-consent and restore-snapshot prompts move onto the Material dialog
   anatomy: titles pick up the Headline6 type scale, supporting text picks up Body2, and the
   action rows become right-aligned button groups. Bindings, commands, key bindings and the
