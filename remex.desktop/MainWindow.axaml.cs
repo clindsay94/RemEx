@@ -89,6 +89,13 @@ public partial class MainWindow : Window
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            // Every branch also sets TransparencyBackgroundFallback to the opaque palette surface
+            // (ThemeService overrides GlassBaseDark with palette.Surface, following the active
+            // seed on both a light and a dark palette). That fallback is what actually paints
+            // when the requested backdrop is unavailable (Win10, X11 without a compositor) - so
+            // it must never be left at whatever translucent value preceded this customization.
+            TransparencyBackgroundFallback = OpaqueSurfaceFallbackBrush();
+
             if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
@@ -113,15 +120,24 @@ public partial class MainWindow : Window
             {
                 // Gradient, Wallpaper, Solid, and all non-transparent modes.
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
-                // Follows the theme's own base rather than one hardcoded near-black, which was the
-                // same window colour on SolarFlare as on CyberNOC (RemEx-fy0a).
+                // Follows the theme's own base (ThemeService overrides GlassBaseDark with
+                // palette.Surface) rather than one hardcoded near-black, which was the same
+                // window colour on every seed (RemEx-fy0a).
                 // OpaqueColor: this branch has just disabled transparency, so the background must
-                // actually be opaque. GlassBaseDark carries alpha on two themes, and the brush form
-                // would have made a "non-transparent" window 63% transparent on BaseDarkGlass.
-                Background = new SolidColorBrush(ThemeResources.OpaqueColor(
-                    "GlassBaseDark", Color.FromRgb(0x0A, 0x0A, 0x10)));
+                // actually be opaque. GlassBaseDark carries alpha on some palettes, and the brush
+                // form would have made a "non-transparent" window partially transparent.
+                Background = OpaqueSurfaceFallbackBrush();
                 Opacity = 1.0;
             }
         });
     }
+
+    // Shared by every OnCustomizationApplied branch: an unavailable backdrop must fall back to
+    // the opaque palette surface, never a translucent pre-customization value (RemEx-l2yqy).
+    // Assigning the fallback in code makes it a LocalValue that outranks the XAML DynamicResource,
+    // so it only stays current because ThemeService.ApplyCustomizationCore both writes the
+    // GlassBaseDark overrides and raises CustomizationApplied. Move either one and a Win10 / X11
+    // window without a compositor keeps painting the previous seed's Surface after a theme switch.
+    private static SolidColorBrush OpaqueSurfaceFallbackBrush() =>
+        new(ThemeResources.OpaqueColor("GlassBaseDark", Color.FromRgb(0x0A, 0x0A, 0x10)));
 }

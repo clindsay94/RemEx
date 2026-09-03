@@ -4,12 +4,16 @@
      does not re-add it until SuppressPaletteTransitions next CHANGES value — meaning reduced motion
      silently stops suppressing until the user toggles the setting twice. Nothing throws
      (RemEx-zgtn1, review LOW). -->
+<!-- TransparencyBackgroundFallback binds GlassBaseDarkBrush rather than a hardcoded literal:
+     ThemeService.cs overrides GlassBaseDark/GlassBaseDarkBrush with palette.Surface (opaque),
+     so the fallback painted when no backdrop is available follows the active seed on both a
+     light and a dark palette instead of always going near-black (RemEx-l2yqy). -->
 <Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:Remex.Desktop.Views"
-    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen" Classes="palette-crossfade" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
+    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterScreen" Classes="palette-crossfade" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
 
     <!-- ═══ THE FIX FOR THE DEAD MICA/ACRYLIC BACKDROP (RemEx-c437b, root-caused 2026-08-26).
          Material.Avalonia's window-decorations theme laid an opaque MaterialPaperBrush underlay

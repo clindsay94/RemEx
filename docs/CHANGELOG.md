@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   vocabularies; the stream surface, its zoom/pan transforms and the cursor overlay are untouched.
   (RemEx-jttwu)
 
+- MainWindow's transparency fallback now follows the active palette instead of a hardcoded
+  near-black: it binds `GlassBaseDarkBrush`, and every backdrop-material branch sets an opaque
+  palette-derived fallback so an unavailable backdrop never paints a stale translucent colour.
+  Key bindings, LayoutTransform scaling and window chrome are unchanged. (RemEx-l2yqy)
+
 - Canvas moves onto the Material type scale, icon set and elevation ramp: undo/redo, sync and
   pin icons replace their glyph text, the coach-mark hint and shadowed surfaces use the shared
   elevation resources, and the staging drawer's two sensor lists share one item style instead of
