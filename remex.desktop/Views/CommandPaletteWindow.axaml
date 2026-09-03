@@ -4,19 +4,26 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Desktop.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Desktop.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="{local:Localize CommandPalette_Title}" Width="540" MaxHeight="480" SizeToContent="Height" WindowDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:mi="using:Material.Icons.Avalonia" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Desktop.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="{local:Localize CommandPalette_Title}" Width="540" MaxHeight="480" SizeToContent="Height" WindowDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding DismissCommand}" />
     </Window.KeyBindings>
 
-    <Border CornerRadius="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="0,0,0,8">
+    <Border x:Name="PaletteSurface" CornerRadius="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="0,0,0,8" Opacity="0" RenderTransformOrigin="50%,0%" RenderTransform="scale(0.98)">
+        <Border.Transitions>
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
+            </Transitions>
+        </Border.Transitions>
 
         <StackPanel>
 
             <!-- Search Box -->
             <Grid ColumnDefinitions="Auto, *" Margin="16,16,16,8">
-                <TextBlock Grid.Column="0" Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchText}" PlaceholderText="{local:Localize CommandPalette_SearchWatermark}" FontSize="15" CaretBrush="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
             </Grid>
 
@@ -34,8 +41,8 @@
                                      (RemEx-o9gd). A local value beats a style setter in Avalonia, so
                                      setting them inline would make the selected-state rules silently
                                      inert - which is exactly the failure this change fixes. -->
-                                <TextBlock Classes="palette-label" Text="{Binding Label}" FontSize="13" />
-                                <TextBlock Classes="palette-category" Text="{Binding Category}" FontSize="11" />
+                                <TextBlock Classes="palette-label" Text="{Binding Label}" Theme="{StaticResource Subtitle2TextBlock}" />
+                                <TextBlock Classes="palette-category" Text="{Binding Category}" Theme="{StaticResource CaptionTextBlock}" />
                             </StackPanel>
                         </Grid>
                     </DataTemplate>
@@ -147,7 +154,7 @@
             </ListBox>
 
             <!-- Empty state -->
-            <TextBlock x:Name="EmptyStateText" IsVisible="{Binding IsEmpty}" Text="{local:Localize CommandPalette_NoCommands}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" Margin="0,12,0,4" />
+            <TextBlock x:Name="EmptyStateText" IsVisible="{Binding IsEmpty}" Text="{local:Localize CommandPalette_NoCommands}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" Theme="{StaticResource CaptionTextBlock}" Margin="0,12,0,4" />
 
         </StackPanel>
     </Border>

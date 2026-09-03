@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The command palette moves onto the Material type scale and gains a sub-150ms open fade/scale:
+  the emoji search glyph becomes a Magnify MaterialIcon, the result rows and empty-state text
+  carry type-scale Themes, and the surface fades and scales in only after the search box has
+  already taken focus, so the first keystroke is never dropped behind the animation. (RemEx-ja246)
+
 - The tray flyout moves onto the Material type scale and presence vocabulary: the status-dot
   Ellipse becomes a `material:Badged` wrapping a Cellphone MaterialIcon, the literal close
   glyph becomes a MaterialIcon, and every TextBlock carries a type-scale Theme; positioning,

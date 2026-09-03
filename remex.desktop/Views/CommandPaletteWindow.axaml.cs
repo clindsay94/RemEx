@@ -47,6 +47,13 @@ public partial class CommandPaletteWindow : Window
         {
             tb.Focus();
         }
+
+        // Reveal the surface AFTER focus is set: focus first so the first keystroke lands before
+        // the composition-only open transition starts. Uses the XAML-compiler-generated
+        // strongly-typed field (not FindControl by name) so a rename or namescope regression is a
+        // compile error instead of a silently-invisible window (RemEx-ja246 fix round 2).
+        PaletteSurface.Opacity = 1;
+        PaletteSurface.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Identity;
     }
 
     private void OnDeactivated(object? sender, EventArgs e)
