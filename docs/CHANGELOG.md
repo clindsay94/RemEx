@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dashboard cards and the tray flyout/balloon windows now animate through the app's elevation
+  ramp instead of a fixed shadow: dashboard cards rise on hover, rise further while dragging,
+  and settle back over the same spring as the rest of the Card system; the tray windows share
+  the deepest step. `Button.card` also steps depth on pointer, keyboard focus and press.
+  (RemEx-la0rk)
+
+- Fixed: the tray flyout's elevated shadow was clipped into a hard rectangular band by the
+  window's own 12px margin, since the flyout is a transparent, undecorated window with no
+  extra room for a 48px blur. It now sits one step down the ramp with a margin sized to fit.
+  (RemEx-la0rk)
+
 - The Dashboard's six sections fade and rise in a short stagger on first paint each session,
   then settle in as a block on every later visit instead of repeating the entrance; reduced
   motion skips it outright. Ships as a reusable once-per-process gate so drawer nav and the

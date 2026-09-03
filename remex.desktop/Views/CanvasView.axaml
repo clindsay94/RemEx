@@ -46,7 +46,16 @@
             <Setter Property="ClipToBounds" Value="False"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
+                    <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
+                                    <BoxShadowsTransition.Easing>
+                                        <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
+                                    </BoxShadowsTransition.Easing>
+                                </BoxShadowsTransition>
+                            </Transitions>
+                        </Border.Transitions>
                         <Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
                             <!-- Resize grip -->
@@ -70,6 +79,18 @@
                     <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
+        </Style>
+
+        <!-- ═══ DraggableCard elevation steps (RemEx-la0rk) ═══ -->
+        <!-- :dragging is set last so a drag over a hovered/selected card still wins. -->
+        <Style Selector="ctrl|DraggableCard:pointerover /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+        <Style Selector="ctrl|DraggableCard.selected /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+        <Style Selector="ctrl|DraggableCard:dragging /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
         </Style>
 
         <!-- ═══ Toolbar buttons ═══ -->

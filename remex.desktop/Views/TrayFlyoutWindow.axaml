@@ -39,7 +39,12 @@
 
     <Panel>
 
-    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="0 8 28 0 #60000000">
+    <!-- Elevation2Shadow (blur 34, OffsetY 9 - ThemeService.cs:528), not Elevation3: this window
+         is transparent with no decorations, so the shadow extent has to fit inside Margin below or
+         it gets clipped by the window bounds into a hard band (RemEx-la0rk round 3). Margin 44 clears
+         blur+OffsetY=43. Elevation3's 48/12 would need Margin ~=60, which eats too much of the
+         320x240 MinWidth/MinHeight floor from TrayFlyoutGeometryValidator for the tile grid below. -->
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="{DynamicResource Elevation2Shadow}">
         <Grid RowDefinitions="Auto,Auto,*" Margin="16">
 
             <!-- Status strip. Doubles as the drag handle in pinned mode: this window has no system

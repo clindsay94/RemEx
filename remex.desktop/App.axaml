@@ -313,6 +313,19 @@
             <Setter Property="RenderTransform" Value="scale(0.98)"/>
         </Style>
 
+        <!-- .card pointer/focus/press elevation (RemEx-la0rk). Mirrors the .primary pattern:
+             ShadowAssist is safe here (unlike on Card/DraggableCard) because Button has no
+             competing BoxShadow style setter to be outranked. -->
+        <Style Selector=":is(Button).card">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth1"/>
+        </Style>
+        <Style Selector=":is(Button).card.interactive:pointerover">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth2"/>
+        </Style>
+        <Style Selector=":is(Button).card.interactive:pressed">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+        </Style>
+
         <!-- ═══════════════════════════════════════════════════════════════════════════════
              THE BUTTON VOCABULARY (RemEx-z7pnx). Documented in docs/BUTTON-VOCABULARY.md.
 

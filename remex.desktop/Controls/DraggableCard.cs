@@ -60,6 +60,18 @@ public class DraggableCard : ContentControl
         set => SetValue(IsDraggingProperty, value);
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Elevation: the :dragging pseudo-class drives the CanvasView shadow-depth selector
+        // (RemEx-la0rk). Drag behaviour itself (scale/opacity/BringToFront) is unchanged.
+        if (change.Property == IsDraggingProperty)
+        {
+            PseudoClasses.Set(":dragging", change.GetNewValue<bool>());
+        }
+    }
+
     public DraggableCard()
     {
         // Set up the scale/opacity transitions for visual drag feedback.
