@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The startup splash now fades into the shell instead of cutting away, and the first-run tutorial
+  overlay is rebuilt on a Material card, the seeded palette and the app's button/typography
+  vocabulary so both surfaces follow the user's chosen theme. (RemEx-72s7l)
+
 - Dashboard cards and the tray flyout/balloon windows now animate through the app's elevation
   ramp instead of a fixed shadow: dashboard cards rise on hover, rise further while dragging,
   and settle back over the same spring as the rest of the Card system; the tray windows share

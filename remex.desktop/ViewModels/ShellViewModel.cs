@@ -255,6 +255,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showWelcomeSplash = true;
 
+    /// <summary>
+    /// Keeps BootSplash mounted through its opacity crossfade into the shell (RemEx-72s7l).
+    /// ShowWelcomeSplash drives the fade-out itself; this stays true until the fade finishes
+    /// so IsVisible does not cut the control away mid-transition.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isWelcomeSplashMounted = true;
+
     /// <summary>Controls the first-run tutorial overlay visibility.</summary>
     [ObservableProperty]
     private bool _showTutorialOverlay;
@@ -499,6 +507,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             TutorialPageIndex = 0;
             ShowTutorialOverlay = true;
         }
+        _ = UnmountWelcomeSplashAsync();
+    }
+
+    /// <summary>
+    /// Keeps BootSplash mounted for the length of its 0.4s opacity crossfade (RemEx-72s7l),
+    /// then flips IsVisible off so the fade never gets cut short by the control disappearing.
+    /// </summary>
+    private async Task UnmountWelcomeSplashAsync()
+    {
+        await Task.Delay(450);
+        Dispatcher.UIThread.Post(() => IsWelcomeSplashMounted = false);
     }
 
     [RelayCommand]

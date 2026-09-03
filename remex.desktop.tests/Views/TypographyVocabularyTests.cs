@@ -68,7 +68,13 @@ public class TypographyVocabularyTests
     // Re-pinned by RemEx-ja246 (CommandPaletteWindow Material sweep): 160 -> 156 (4 sites).
     // Re-pinned by RemEx-2m7fr (ConfirmationDialog + FileConsentDialog + RestorePromptWindow
     // Material sweep): 156 -> 148 (7 sites here, plus the one RemEx-leatt dropped inside the slack).
-    private const int InlineFontSizeBaseline = 148;
+    // Re-pinned by RemEx-72s7l (ShellView tutorial overlay + splash handoff sweep): 148 -> 74
+    // (74 sites: 17 page titles onto Headline5TextBlock, 24 body paragraphs onto Body2TextBlock,
+    // 11 note/step captions onto CaptionTextBlock, plus the header Overline and the earlier sweeps'
+    // slack finally landing below the ratchet).
+    // Re-pinned by RemEx-72s7l (review round 2): 74 -> 73 (the tutorial "don't show again"
+    // checkbox label moved off inline FontSize="12" onto CaptionTextBlock).
+    private const int InlineFontSizeBaseline = 73;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

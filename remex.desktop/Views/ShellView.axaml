@@ -1153,171 +1153,191 @@
                                    SnackbarHorizontalAlignment="Right" SnackbarVerticalAlignment="Bottom"
                                    SnackbarMaxCounts="3"/>
 
-            <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══ -->
-            <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>
+            <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══
+                 RemEx-72s7l: IsVisible stays bound to IsWelcomeSplashMounted (not ShowWelcomeSplash)
+                 so the control survives the 0.4s opacity crossfade below - the tutorial overlay
+                 (ZIndex 998) mounts beneath the still-visible, fading splash, so its own appearance
+                 is hidden by the crossfade and there is no cut or colour jump. -->
+            <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding IsWelcomeSplashMounted}"
+                                       Opacity="{Binding ShowWelcomeSplash, Converter={x:Static conv:BoolToDoubleConverter.Instance}, ConverterParameter='1.0|0.0'}"
+                                       IsHitTestVisible="{Binding ShowWelcomeSplash}"
+                                       SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999">
+                <splash:SkiaSplashControl.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </splash:SkiaSplashControl.Transitions>
+            </splash:SkiaSplashControl>
 
             <!-- ═══ TUTORIAL OVERLAY (first-run or replay) ═══ -->
-            <Border Grid.RowSpan="2" IsVisible="{Binding ShowTutorialOverlay}" Background="{DynamicResource OverlayBackdropBrush}" ZIndex="998">
+            <Border Grid.RowSpan="2" IsVisible="{Binding ShowTutorialOverlay}" Background="{DynamicResource OverlayBackdropBrush}"
+                    Opacity="{Binding ShowTutorialOverlay, Converter={x:Static conv:BoolToDoubleConverter.Instance}, ConverterParameter='1.0|0.0'}"
+                    ZIndex="998">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Border.Transitions>
                 <Grid>
-                    <Border Width="520" MaxWidth="540" Padding="32,28" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <material:Card Classes="surface" Width="520" MaxWidth="540" Padding="32,28" CornerRadius="28" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel Spacing="16">
                             <!-- Header with Skip -->
                             <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="{conv:Localize Tutorial_Header}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Content="{conv:Localize Tutorial_Skip}" Command="{Binding TutorialSkipCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" FontWeight="SemiBold" Padding="8,4" CornerRadius="6" Cursor="Hand" BorderThickness="0" ToolTip.Tip="{conv:Localize Tutorial_SkipTooltip}"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Header}" Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Classes="tertiary compact" Content="{conv:Localize Tutorial_Skip}" Command="{Binding TutorialSkipCommand}" ToolTip.Tip="{conv:Localize Tutorial_SkipTooltip}"/>
                             </Grid>
 
                             <!-- Page 0: Welcome -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=0}">
-                                <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P0_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P0_Body}"/>
+                                <mi:MaterialIcon Kind="Monitor" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P0_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P0_Body}"/>
                             </StackPanel>
 
                             <!-- Page 1: How It Works -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=1}">
-                                <TextBlock Text="🔗" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P1_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Body1}"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Body2}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Diagram}"/>
+                                <mi:MaterialIcon Kind="LinkVariant" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P1_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Body2}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Diagram}"/>
                                 </Border>
                             </StackPanel>
 
                             <!-- Page 2: HWInfo Setup -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=2}">
-                                <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P4_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Body1}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P4_Steps}"/>
+                                <mi:MaterialIcon Kind="ChartLineVariant" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P4_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Body1}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P4_Steps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SystemWarningBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Warning}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemWarningBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Warning}"/>
                             </StackPanel>
 
                             <!-- Page 3: Sensors Overview -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=3}">
-                                <TextBlock Text="📡" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P5_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P5_Body1}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <mi:MaterialIcon Kind="AccessPoint" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P5_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P5_Body1}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <StackPanel Spacing="8">
-                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P5_HWInfo}"/>
-                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P5_BuiltIn}"/>
+                                        <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P5_HWInfo}"/>
+                                        <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P5_BuiltIn}"/>
                                     </StackPanel>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P5_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P5_Body2}"/>
                             </StackPanel>
 
                             <!-- Page 4: App Launcher -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}">
-                                <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P6_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P6_Body1}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P6_Steps}"/>
+                                <mi:MaterialIcon Kind="RocketLaunch" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P6_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P6_Body1}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P6_Steps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P6_Note}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P6_Note}"/>
                             </StackPanel>
 
                             <!-- Page 5: Network & Discovery -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=5}">
-                                <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P7_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body1}"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body2}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P7_IpSteps}"/>
+                                <mi:MaterialIcon Kind="Magnify" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P7_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body2}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P7_IpSteps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body3}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body3}"/>
                             </StackPanel>
 
                             <!-- Page 6: QR Code Pairing -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=6}">
-                                <TextBlock Text="📱" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P8_QR_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body1}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P8_QR_Steps}"/>
+                                <mi:MaterialIcon Kind="Cellphone" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P8_QR_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body1}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P8_QR_Steps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body2}"/>
                             </StackPanel>
 
                             <!-- Page 7: File Transfer -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=7}">
-                                <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P9_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body1}"/>
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P9_Steps}"/>
+                                <mi:MaterialIcon Kind="FolderOutline" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P9_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body1}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P9_Steps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body2}"/>
                             </StackPanel>
 
                             <!-- Page 8: Glossary Command Palette -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=8}">
-                                <TextBlock Text="⌨️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_CommandPalette_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_CommandPalette_Body}"/>
+                                <mi:MaterialIcon Kind="Keyboard" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_CommandPalette_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_CommandPalette_Body}"/>
                             </StackPanel>
 
                             <!-- Page 9: Glossary App Launcher -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}">
-                                <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_AppLauncher_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_AppLauncher_Body}"/>
+                                <mi:MaterialIcon Kind="RocketLaunch" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_AppLauncher_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_AppLauncher_Body}"/>
                             </StackPanel>
 
                             <!-- Page 10: Glossary Task Manager -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}">
-                                <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_TaskManager_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_TaskManager_Body}"/>
+                                <mi:MaterialIcon Kind="ClipboardList" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_TaskManager_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_TaskManager_Body}"/>
                             </StackPanel>
 
                             <!-- Page 11: Glossary Sensor Canvas -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=11}">
-                                <TextBlock Text="🌡️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Body}"/>
+                                <mi:MaterialIcon Kind="ThermometerLines" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Body}"/>
                             </StackPanel>
 
                             <!-- Page 12: Glossary File Transfer -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=12}">
-                                <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_FileTransfer_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_FileTransfer_Body}"/>
+                                <mi:MaterialIcon Kind="FolderOutline" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_FileTransfer_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_FileTransfer_Body}"/>
                             </StackPanel>
 
                             <!-- Page 13: Glossary Remote Desktop -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=13}">
-                                <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Body}"/>
+                                <mi:MaterialIcon Kind="RemoteTv" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Body}"/>
                             </StackPanel>
 
                             <!-- Page 14: Glossary Quick Settings -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=14}">
-                                <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_QuickSettings_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_QuickSettings_Body}"/>
+                                <mi:MaterialIcon Kind="Cog" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_QuickSettings_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_QuickSettings_Body}"/>
                             </StackPanel>
 
                             <!-- Page 15: Glossary Customization -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=15}">
-                                <TextBlock Text="🎨" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_Glossary_Customization_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_Customization_Body}"/>
+                                <mi:MaterialIcon Kind="Palette" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_Customization_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_Customization_Body}"/>
                             </StackPanel>
 
                             <!-- Page 16: You're All Set -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}">
-                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P10_Title}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body1}"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body2}"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Replay}"/>
+                                <mi:MaterialIcon Kind="PartyPopper" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P10_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Replay}"/>
                             </StackPanel>
 
                             <!-- Page indicator dots -->
@@ -1335,16 +1355,18 @@
                             </ItemsControl>
 
                             <!-- Don't Show Again checkbox -->
-                            <CheckBox IsChecked="{Binding DontShowTutorialAgain}" Content="{conv:Localize Tutorial_DontShowAgain}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                            <CheckBox IsChecked="{Binding DontShowTutorialAgain}" AutomationProperties.Name="{conv:Localize Tutorial_DontShowAgain}" Margin="0,8,0,0" HorizontalAlignment="Center">
+                                <TextBlock Text="{conv:Localize Tutorial_DontShowAgain}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </CheckBox>
 
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="0" Classes="secondary pill" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}"/>
+                                <Button Grid.Column="2" Classes="primary pill" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}"/>
+                                <Button Grid.Column="2" Classes="primary pill success" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}"/>
                             </Grid>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
                 </Grid>
             </Border>
 
