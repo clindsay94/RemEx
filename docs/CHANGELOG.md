@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The tray balloon restyles as a Material toast: the app-wide Card surface replaces the
+  hand-styled Border, and the severity glyph becomes a MaterialIcon resolved through the same
+  mapping the in-app snackbar uses, so an out-of-app notification and its in-app equivalent now
+  match; the throttle, dismiss timer and single-window reuse are unchanged. (RemEx-133ik)
+
 - SetAlertDialog, SecondMetricDialog and AddProgramWindow move onto the Material type scale,
   button vocabulary and Card surface: floating labels replace the standalone field TextBlocks,
   the refresh glyph becomes a MaterialIcon, and the hex-colour field now shows a visible invalid

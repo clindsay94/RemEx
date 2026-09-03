@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
+using Material.Icons;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Logging;
@@ -30,6 +32,11 @@ namespace Remex.Desktop.Views;
 /// It is positioned like <see cref="TrayFlyoutWindow"/> and shown without activation, so it never
 /// steals focus from whatever the user is actually doing.
 /// </para>
+/// <para>
+/// The surface is the app-wide Material <c>Card</c>, and the severity glyph and its colour come
+/// from <c>SnackbarSeverityMapping</c> — the same mapping the in-app snackbar renders with
+/// (RemEx-uedna), so an out-of-app balloon and its in-app equivalent read as one visual language.
+/// </para>
 /// </remarks>
 public partial class TrayBalloonWindow : Window
 {
@@ -50,7 +57,7 @@ public partial class TrayBalloonWindow : Window
 
     // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
     // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves AccentStripe,
-    // GlyphText, TitleText and MessageText null (RemEx-wdqx). This one was the least likely to be
+    // GlyphIcon, TitleText and MessageText null (RemEx-wdqx). This one was the least likely to be
     // noticed: the fields are read when a balloon is SHOWN, not when the window is constructed, so
     // the failure waits for the first tray notification rather than arriving at startup.
 
@@ -69,12 +76,9 @@ public partial class TrayBalloonWindow : Window
         Title = title;
         TitleText.Text = title;
         MessageText.Text = message;
-        GlyphText.Text = importance switch
-        {
-            NotificationImportance.Problem => "⚠",
-            NotificationImportance.Outcome => "✔",
-            _ => "ℹ",
-        };
+        var (icon, brushKey) = SnackbarSeverityMapping.For(importance);
+        GlyphIcon.Kind = icon;
+        GlyphIcon.Foreground = ThemeResources.Brush(brushKey, Brushes.White);
 
         if (isProblem)
             AccentStripe.Classes.Add("problem");

@@ -62,7 +62,9 @@ public class TypographyVocabularyTests
     // 200 -> 184 (16 sites; the PIN panel's SelectableTextBlock stays inline).
     // Re-pinned by RemEx-ckuox (SetAlertDialog + SecondMetricDialog + AddProgramWindow sweep):
     // 184 -> 168 (16 sites; SetAlertDialog's NumericUpDown stays inline).
-    private const int InlineFontSizeBaseline = 168;
+    // Re-pinned by RemEx-133ik (TrayBalloonWindow Material toast restyle): 168 -> 165 (3 sites:
+    // GlyphText, TitleText, MessageText moved onto the type-scale ControlThemes).
+    private const int InlineFontSizeBaseline = 165;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be
