@@ -56,7 +56,9 @@ public class TypographyVocabularyTests
     // Re-pinned by RemEx-ygit2 (TaskManagerView sweep): 298 -> 289.
     // Re-pinned by RemEx-o2fee (AppLauncherView sweep): 289 -> 283.
     // Re-pinned by RemEx-evw7y (CanvasView sweep): 283 -> 240 (43 sites; its two TextBoxes stay inline).
-    private const int InlineFontSizeBaseline = 240;
+    // Re-pinned by RemEx-jttwu (RemoteDesktopView sweep): 240 -> 200 (40 sites; its two ComboBoxes
+    // and one TextBox stay inline).
+    private const int InlineFontSizeBaseline = 200;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

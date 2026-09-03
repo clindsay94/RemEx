@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Remote Desktop's chrome (toolbar, connection/window panels, placeholder hint, error overlay,
+  fullscreen overlay buttons, status bar) moves onto Material cards and the button and type
+  vocabularies; the stream surface, its zoom/pan transforms and the cursor overlay are untouched.
+  (RemEx-jttwu)
+
 - Canvas moves onto the Material type scale, icon set and elevation ramp: undo/redo, sync and
   pin icons replace their glyph text, the coach-mark hint and shadowed surfaces use the shared
   elevation resources, and the staging drawer's two sensor lists share one item style instead of
