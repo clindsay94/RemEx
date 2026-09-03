@@ -55,11 +55,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -69,11 +69,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -83,11 +83,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -97,11 +97,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -111,11 +111,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -125,11 +125,11 @@
                 <Animation Duration="0:0:0.175" Delay="0:0:0.125" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
                         <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>

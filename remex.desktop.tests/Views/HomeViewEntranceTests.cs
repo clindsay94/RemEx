@@ -27,6 +27,14 @@ public class HomeViewEntranceTests
             @"StackPanel#DashboardSections\.entrance > :is\(Control\):nth-child\((\d)\)");
         count.Should().Be(6);
 
+        // Avalonia has no keyframe animator for RenderTransform itself; the first cut of this
+        // bead animated it and every launch died in Animation.InterpretKeyframes before first
+        // paint (RemEx-qolhg). Keyframes must target the transform sub-property instead.
+        Home().Should().NotMatchRegex(@"<KeyFrame[\s\S]*?Property=""RenderTransform""",
+            "keyframe setters must animate TranslateTransform.Y, never RenderTransform");
+        Count(Home(), @"Property=""TranslateTransform\.Y""").Should().Be(12,
+            "each of the six entrance animations sets TranslateTransform.Y at 0% and 100%");
+
         for (var n = 1; n <= 6; n++)
         {
             Home().Should().Contain(
