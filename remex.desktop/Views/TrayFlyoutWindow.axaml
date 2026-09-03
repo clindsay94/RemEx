@@ -1,6 +1,7 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
@@ -27,7 +28,7 @@
                                  Width="18" Height="18"
                                  HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding Label}"
-                           FontSize="10" FontWeight="Bold"
+                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold"
                            HorizontalAlignment="Center"
                            TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -42,25 +43,29 @@
         <Grid RowDefinitions="Auto,Auto,*" Margin="16">
 
             <!-- Status strip. Doubles as the drag handle in pinned mode: this window has no system
-                 title bar, so without PointerPressed here a pinned window could not be moved. -->
+                 title bar, so without PointerPressed here a pinned window could not be moved.
+                 The material:Badged below is the presence indicator. -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto"
                   PointerPressed="OnHeaderPressed"
                   Background="Transparent"
                   AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Header}">
 
-                <Ellipse Grid.Column="0" Width="10" Height="10" Margin="0,0,10,0"
-                         VerticalAlignment="Center"
-                         Classes="status-dot"
-                         Classes.connected="{Binding Presence.IsPhoneAttached}"
-                         AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}"/>
+                <material:Badged Grid.Column="0" Classes="presence"
+                                  Classes.connected="{Binding Presence.IsPhoneAttached}"
+                                  BadgeDisplayContent="False" BadgeWidth="10" BadgeHeight="10"
+                                  Margin="0,0,12,0" VerticalAlignment="Center"
+                                  AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}">
+                    <mi:MaterialIcon Kind="Cellphone" Width="18" Height="18"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </material:Badged>
 
                 <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Presence.PresenceText}"
-                               FontSize="13" FontWeight="SemiBold"
+                               Theme="{StaticResource Subtitle2TextBlock}" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <TextBlock Text="{Binding Connection.StatusText}"
-                               FontSize="10"
+                               Theme="{StaticResource OverlineTextBlock}"
                                TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
@@ -82,8 +87,9 @@
                 </ToggleButton>
 
                 <Button Grid.Column="4" Classes="tertiary icon-button compact" Click="OnCloseFlyout"
-                        Content="&#x2715;"
-                        AutomationProperties.Name="{local:Localize A11y_Close}"/>
+                        AutomationProperties.Name="{local:Localize A11y_Close}">
+                    <mi:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                </Button>
             </Grid>
 
             <!-- Sensor strip, directly under the status line rather than along the bottom edge
@@ -110,10 +116,10 @@
                         <DataTemplate x:DataType="vm:SensorViewModel">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Name}"
-                                           FontSize="9" FontWeight="Black" LetterSpacing="1"
+                                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Black" LetterSpacing="1"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextMutedBrush}"/>
-                                <TextBlock FontSize="12" FontWeight="Bold"
+                                <TextBlock Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"
                                            VerticalAlignment="Center"
                                            FontFamily="{StaticResource JetBrainsMono}"
                                            Foreground="{DynamicResource TextPrimaryBrush}">

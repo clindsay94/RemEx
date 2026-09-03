@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The tray flyout moves onto the Material type scale and presence vocabulary: the status-dot
+  Ellipse becomes a `material:Badged` wrapping a Cellphone MaterialIcon, the literal close
+  glyph becomes a MaterialIcon, and every TextBlock carries a type-scale Theme; positioning,
+  pin/resize and dismiss-on-focus-loss behaviour are unchanged. (RemEx-tzl85)
+
 - The tray balloon restyles as a Material toast: the app-wide Card surface replaces the
   hand-styled Border, and the severity glyph becomes a MaterialIcon resolved through the same
   mapping the in-app snackbar uses, so an out-of-app notification and its in-app equivalent now
