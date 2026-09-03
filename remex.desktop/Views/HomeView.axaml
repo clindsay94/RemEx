@@ -43,11 +43,103 @@
             </Style.Animations>
         </Style>
 
+        <!-- Dashboard first-paint entrance (RemEx-dnfq0). Opacity + translateY only, so nothing is
+             ever hidden or hit-test-suppressed - interactivity is never delayed. The class is added
+             by HomeView.axaml.cs only when StaggeredEntrance.ShouldPlay says this is the first visit
+             this process and reduced motion is off. Budget: max Delay (125ms, N=6) + Duration (175ms)
+             = 300ms, the bead's ceiling. FillMode=Backward holds each child's 0% keyframe (Opacity 0)
+             until its own Delay elapses, so a later-staggered child does not flash at full opacity
+             before its turn. -->
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(1)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(2)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(3)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(4)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(5)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(6)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.125" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="RenderTransform" Value="translateY(12px)"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="RenderTransform" Value="translateY(0px)"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto">
     <ScrollViewer Grid.Row="0" Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="40,32,40,40" Spacing="48">
+        <StackPanel Name="DashboardSections" Margin="40,32,40,40" Spacing="48">
 
             <!-- ═══ WELCOME HERO ═══ -->
             <Grid>

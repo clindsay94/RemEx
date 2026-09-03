@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Dashboard's six sections fade and rise in a short stagger on first paint each session,
+  then settle in as a block on every later visit instead of repeating the entrance; reduced
+  motion skips it outright. Ships as a reusable once-per-process gate so drawer nav and the
+  other views can pick it up next. (RemEx-dnfq0)
+
 - The shell nav rail's ripple now fires from the pointer and clips to the item's rounded
   corners, tinted from the app's own text colour instead of Material's default square body-colour
   splash. (RemEx-x5zjy)

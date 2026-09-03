@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -9,6 +11,22 @@ public partial class HomeView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => ConfigureViewModel();
+    }
+
+    /// <summary>
+    /// Arms the dashboard's first-paint entrance (RemEx-dnfq0). Attachment, not the constructor,
+    /// because DataContext is not yet set when the control is constructed (CanvasView.axaml.cs:148
+    /// precedent) - by attachment time the DataContextChanged handler above has already run.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is HomeViewModel vm
+            && StaggeredEntrance.ShouldPlay(nameof(HomeView), vm.Shell.IsReducedMotion))
+        {
+            DashboardSections.Classes.Add(StaggeredEntrance.Class);
+        }
     }
 
     /// <summary>
