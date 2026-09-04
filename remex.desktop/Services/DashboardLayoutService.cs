@@ -162,6 +162,49 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
     }
 
+    /// <summary>How many times a read of an existing profile retries after a transient I/O failure.</summary>
+    private const int TransientReadAttempts = 3;
+
+    /// <summary>Delay between transient-read retries.</summary>
+    private const int TransientReadRetryDelayMs = 75;
+
+    /// <summary>
+    /// Reads and deserializes an existing profile file, retrying a bounded number of times on an
+    /// <see cref="IOException"/> before letting one propagate to <see cref="LoadAsync"/>'s catch block.
+    /// </summary>
+    /// <remarks>
+    /// A SHARING VIOLATION IS NOT "THE FILE IS MISSING OR CORRUPT" (RemEx-8y3qy), and treating it as
+    /// one was the actual clobber. <see cref="LoadAsync"/>'s catch block cannot tell those apart - any
+    /// exception, including a momentary lock held by another reader or writer (the auto-snapshot, a
+    /// savefile import, antivirus), made it substitute an all-default <see cref="DashboardProfile"/>
+    /// for <see cref="CurrentProfile"/>. That default then looked like the user's real profile to
+    /// every read-modify-write save in the app - a tutorial dismissal, a reduced-motion toggle, a
+    /// telemetry-driven sensor restore - and the very next one of those persisted it over the real
+    /// customization inside the 2-second debounce. Retrying here means a lock that clears within a
+    /// couple of hundred milliseconds, which is the ordinary case for the sharing violations above,
+    /// never reaches that catch block at all.
+    /// <para>
+    /// ONLY <see cref="IOException"/> RETRIES. A malformed-JSON read throws <see cref="JsonException"/>,
+    /// which is not transient - retrying it wastes the same quarter-second three times over and still
+    /// fails, so it falls straight through to the existing corrupt-file rename instead.
+    /// </para>
+    /// </remarks>
+    internal static async Task<DashboardProfile?> ReadExistingProfileAsync(string filePath)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(filePath);
+                return JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions);
+            }
+            catch (IOException) when (attempt < TransientReadAttempts)
+            {
+                await Task.Delay(TransientReadRetryDelayMs);
+            }
+        }
+    }
+
     /// <inheritdoc />
     public async Task<DashboardProfile> LoadAsync()
     {
@@ -180,9 +223,10 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             {
                 // MIGRATED BEFORE THE THEME SERVICE SEES IT, not after (RemEx-dbkzy), and through
                 // the shared reader so this is not a second opinion about what a file on disk means.
-                var json = await File.ReadAllTextAsync(_filePath);
+                // RETRIED ON A TRANSIENT I/O FAILURE, not just attempted once (RemEx-8y3qy) - see
+                // ReadExistingProfileAsync for why.
                 profile = MigrateProfile(
-                    JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions) ?? new DashboardProfile(),
+                    await ReadExistingProfileAsync(_filePath) ?? new DashboardProfile(),
                     out outcome)!;
             }
 
