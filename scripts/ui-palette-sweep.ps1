@@ -168,6 +168,10 @@ if ($DryRun) {
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 $profilePath = Join-Path $env:LOCALAPPDATA 'Remex\dashboard_layout.json'
 $backupPath = "$profilePath.sweep-backup"
+$tempProfilePath = "$profilePath.sweeptmp"
+# A temp left by a killed run is only ever a partial write; nothing else detects it, so it is
+# removed here before anything is read (RemEx-8q7de review round 2, LOW).
+if (Test-Path -LiteralPath $tempProfilePath) { Remove-Item -LiteralPath $tempProfilePath -Force }
 
 if (Test-Path $backupPath) {
     throw "A backup already exists at '$backupPath' - a previous sweep run died before restoring it. THAT is the real profile. Restore it to '$profilePath' by hand (or delete the backup once you've confirmed it isn't needed) before running the sweep again."
@@ -232,13 +236,21 @@ try {
         # UTF-8 no BOM (matching DashboardLayoutService.JsonOptions' own contract for this file),
         # written to a temp sibling and moved into place (RemEx-8q7de round 2, HIGH). A relaunched
         # host was already stopped -NoRelaunch above, but writing this file is still not something
-        # to do non-atomically: Move-Item within the same volume is a rename, so any reader only
-        # ever sees the old complete file or the new complete one, never a torn read that
-        # DashboardLayoutService.ReadAndMigrate would treat as corrupt and rename to .bak.
+        # to do non-atomically: File.Move with overwrite is the documented atomic replace on the
+        # same volume (MoveFileEx REPLACE_EXISTING; Move-Item -Force is not guaranteed to be a
+        # single rename), so any reader only ever sees the old complete file or the new complete
+        # one, never a torn read that DashboardLayoutService would treat as corrupt and rename to
+        # .bak. The finally keeps a throw between write and move from orphaning the temp.
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-        $tempProfilePath = "$profilePath.sweeptmp"
-        [System.IO.File]::WriteAllText($tempProfilePath, ($profileJson | ConvertTo-Json -Depth 20), $utf8NoBom)
-        Move-Item -Path $tempProfilePath -Destination $profilePath -Force
+        try {
+            [System.IO.File]::WriteAllText($tempProfilePath, ($profileJson | ConvertTo-Json -Depth 20), $utf8NoBom)
+            [System.IO.File]::Move($tempProfilePath, $profilePath, $true)
+        }
+        finally {
+            if (Test-Path -LiteralPath $tempProfilePath) {
+                Remove-Item -LiteralPath $tempProfilePath -Force -ErrorAction SilentlyContinue
+            }
+        }
 
         foreach ($view in $Script:Views) {
             & $hotReloadScript -Start -NoBuild -AppArgs "--view $view" | Out-Null

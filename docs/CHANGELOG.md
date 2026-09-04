@@ -651,6 +651,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- UI verification no longer means "check all four themes": `scripts/ui-palette-sweep.ps1` drives
+  the real profile file through a default plus three adversarial seeds, light and dark, two
+  contrast levels, and captures every screen per cell through a new `--view <Name>` launch
+  argument instead of injected keystrokes. The ledger in `docs/UI-PALETTE-SWEEP.md` starts with
+  every cell marked not run; the run itself is the full verification pass. (RemEx-8q7de)
 - Removed the dashboard view model's unused connection-pulse flag; the presence halo has followed
   the phone-presence signal since the halo work, so the flag sat on the wrong axis with no
   binding. (RemEx-alwfa.4)

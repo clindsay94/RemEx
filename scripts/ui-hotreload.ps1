@@ -67,7 +67,15 @@ function Stop-Remex {
         # needed, with a generous ceiling so a process that ignores -Force does not hang the caller
         # forever.
         foreach ($proc in $p) {
-            try { $proc.WaitForExit(10000) | Out-Null } catch { <# already gone #> }
+            $exited = $true
+            try { $exited = $proc.WaitForExit(10000) } catch { <# already gone #> }
+            if (-not $exited) {
+                # A host that outlives the ceiling is NOT stopped. The caller's next line touches
+                # the profile or the build output, so continuing would race a live app; the
+                # palette sweep in particular would then restore its backup over a file the host
+                # is still writing (RemEx-8q7de review round 2, MEDIUM).
+                throw "Remex process $($proc.Id) did not exit within 10 s of Stop-Process; refusing to continue."
+            }
         }
     }
 }
