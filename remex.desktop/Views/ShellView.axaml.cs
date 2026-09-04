@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using Material.Styles.Controls;
@@ -62,6 +63,19 @@ public partial class ShellView : UserControl
     private DispatcherTimer? _pageHostWatchdog;
     private ListBox? _navList;
 
+    // RemEx-ddk6b: overlay focus management. _drawerContentRoot/_settingsSideSheet are the two
+    // overlays' focus scopes (KeyboardNavigation.TabNavigation="Cycle" traps Tab inside each in
+    // XAML); _drawerToggle/_gearFab/_settingsSheetCloseButton are focus targets - the fallback
+    // restore target and, for the sheet, the move-in target. _drawerInvoker/_sheetInvoker hold
+    // whatever had focus right before each overlay opened, so OnOverlayToggled can give it back.
+    private Border? _drawerContentRoot;
+    private Button? _drawerToggle;
+    private FloatingButton? _gearFab;
+    private SideSheet? _settingsSideSheet;
+    private Button? _settingsSheetCloseButton;
+    private IInputElement? _drawerInvoker;
+    private IInputElement? _sheetInvoker;
+
     public ShellView()
     {
         InitializeComponent();
@@ -102,6 +116,11 @@ public partial class ShellView : UserControl
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
         _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
         _navList = this.FindControl<ListBox>("NavList");
+        _drawerContentRoot = this.FindControl<Border>("DrawerContentRoot");
+        _drawerToggle = this.FindControl<Button>("DrawerToggle");
+        _gearFab = this.FindControl<FloatingButton>("GearFab");
+        _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
+        _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
 
         // The XAML sets a plain CrossFade to keep the designer honest; the guarded equivalent is
         // installed here before the first navigation can reach either host. Sequencing keeps the main
@@ -236,6 +255,11 @@ public partial class ShellView : UserControl
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
         _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
         _navList = this.FindControl<ListBox>("NavList");
+        _drawerContentRoot = this.FindControl<Border>("DrawerContentRoot");
+        _drawerToggle = this.FindControl<Button>("DrawerToggle");
+        _gearFab = this.FindControl<FloatingButton>("GearFab");
+        _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
+        _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
 
         if (_pageHost != null)
         {
@@ -422,11 +446,72 @@ public partial class ShellView : UserControl
         }
     }
 
+    /// <summary>
+    /// Moves focus into the drawer or the Personalize side sheet when it opens, and hands it back
+    /// when it closes (RemEx-ddk6b). Shared by both overlays from <see cref="OnViewModelPropertyChanged"/>
+    /// - <paramref name="overlayRoot"/>, <paramref name="invoker"/>, <paramref name="firstTarget"/> and
+    /// <paramref name="fallback"/> are the only things that differ between them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The move-in is POSTED, not called synchronously: <paramref name="overlayRoot"/> is not laid
+    /// out the instant the bound property flips - the slide animation and its content are still
+    /// coming together - so focusing <paramref name="firstTarget"/> synchronously would often find
+    /// nothing focusable there yet.
+    /// </para>
+    /// <para>
+    /// The restore path never steals focus from a page. It only reassigns focus when the currently
+    /// focused element is null or sits inside the overlay that just closed
+    /// (<c>Visual.IsVisualAncestorOf</c>) - <c>RemoteDesktopView</c> calls
+    /// <c>this.Focus()</c> on itself, and that has to survive some OTHER overlay closing untouched.
+    /// The restored target is <paramref name="invoker"/> only while it is still effectively visible
+    /// (a nav destination can navigate the invoker off screen while the overlay is up); otherwise
+    /// <paramref name="fallback"/>.
+    /// </para>
+    /// <para>
+    /// Ordering note: <c>ShellViewModel.OnIsDrawerOpenChanged</c>/<c>OnIsSettingsPanelOpenChanged</c>
+    /// close whichever overlay is not the one just opened, and they do it from inside the OPENING
+    /// property's own generated setter - before that setter raises its own <c>PropertyChanged</c>.
+    /// So opening the drawer while the sheet is open runs the closing sheet's synchronous restore
+    /// FIRST (nested inside the drawer's PropertyChanged.Invoke), and only then reaches the drawer's
+    /// own branch below, which captures whatever the restore just focused as the new invoker. The
+    /// drawer's posted move-in still wins once it runs, so what lands on screen is correct either
+    /// way; this only affects what the two invoker fields see in between.
+    /// </para>
+    /// </remarks>
+    private void OnOverlayToggled(
+        bool opened,
+        Visual overlayRoot,
+        ref IInputElement? invoker,
+        Func<IInputElement?> firstTarget,
+        IInputElement? fallback)
+    {
+        var focusManager = TopLevel.GetTopLevel(this)?.FocusManager;
+
+        if (opened)
+        {
+            invoker = focusManager?.GetFocusedElement();
+            Dispatcher.UIThread.Post(() => (firstTarget() as InputElement)?.Focus(NavigationMethod.Directional));
+            return;
+        }
+
+        var focused = focusManager?.GetFocusedElement();
+        var focusIsInsideClosingOverlay = focused is Visual focusedVisual && overlayRoot.IsVisualAncestorOf(focusedVisual);
+
+        if (focused == null || focusIsInsideClosingOverlay)
+        {
+            var restoreTarget = invoker is Visual { IsEffectivelyVisible: true } ? invoker : fallback;
+            (restoreTarget as InputElement)?.Focus(NavigationMethod.Unspecified);
+        }
+
+        invoker = null;
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // IsSettingsPanelOpen no longer needs a handler here (RemEx-zrlze) - it is bound straight to
-        // material:SideSheet's own SideSheetOpened, which drives the slide/scrim itself instead of a
-        // hand-toggled "open" class.
+        // IsSettingsPanelOpen needs no handler here for the slide/scrim itself (RemEx-zrlze) - that
+        // is bound straight to material:SideSheet's own SideSheetOpened instead of a hand-toggled
+        // "open" class. It does need the focus-management branch further down (RemEx-ddk6b).
 
         if (e.PropertyName == nameof(ShellViewModel.CurrentView) && sender is ShellViewModel navVm)
         {
@@ -447,7 +532,33 @@ public partial class ShellView : UserControl
         {
             ResyncNavListSelection();
             if (sender is ShellViewModel drawerVm)
+            {
                 ArmNavEntranceOnFirstOpen(drawerVm);
+
+                if (_drawerContentRoot != null)
+                {
+                    OnOverlayToggled(
+                        drawerVm.IsDrawerOpen,
+                        _drawerContentRoot,
+                        ref _drawerInvoker,
+                        () => _navList?.SelectedItem as ListBoxItem ?? _navList?.Items.OfType<ListBoxItem>().FirstOrDefault(),
+                        _drawerToggle);
+                }
+            }
+        }
+
+        // RemEx-ddk6b: the Personalize side sheet gets the same open/trap/restore focus handling as
+        // the drawer above - see OnOverlayToggled's remarks for why this and the IsDrawerOpen branch
+        // can each observe the OTHER overlay's synchronous restore before their own runs.
+        if (e.PropertyName == nameof(ShellViewModel.IsSettingsPanelOpen) &&
+            sender is ShellViewModel sheetVm && _settingsSideSheet != null)
+        {
+            OnOverlayToggled(
+                sheetVm.IsSettingsPanelOpen,
+                _settingsSideSheet,
+                ref _sheetInvoker,
+                () => _settingsSheetCloseButton,
+                _gearFab);
         }
 
         // The direction only raises a notification when it actually changes, which is correct here:

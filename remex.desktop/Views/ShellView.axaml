@@ -609,8 +609,11 @@
                          screen — so those gates went with it (RemEx-q3mle). They were not merely
                          redundant: IsDrawerOpen flips at the START of the 300ms close animation, so
                          the labels blinked out while the panel was still sliding away. -->
-                    <!-- Wrapper retained as a plain container; its IsDesktop gate was always true (RemEx-f167). -->
-                    <Border>
+                    <!-- Wrapper retained as a plain container; its IsDesktop gate was always true (RemEx-f167).
+                         Name + TabNavigation="Cycle" (RemEx-ddk6b): this is the drawer's focus scope - the
+                         root ShellView.OnOverlayToggled uses both to find what is inside the drawer (via
+                         IsVisualAncestorOf) and to trap Tab within it while the overlay is up. -->
+                    <Border Name="DrawerContentRoot" KeyboardNavigation.TabNavigation="Cycle">
                         <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0">
                             <!-- Bold gradient rail: theme-accent bleeds from the top over a semi-opaque glass base -->
                             <Border.Background>
@@ -1132,6 +1135,7 @@
                  painting nothing. -->
             <material:SideSheet Grid.Row="0" Grid.RowSpan="3" Name="SettingsSideSheet"
                                  Background="Transparent"
+                                 KeyboardNavigation.TabNavigation="Cycle"
                                  SideSheetOpened="{Binding IsSettingsPanelOpen, Mode=TwoWay}"
                                  SideSheetDirection="Right"
                                  SideSheetWidth="440"
@@ -1146,7 +1150,7 @@
                                 <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
                                 <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                             </StackPanel>
-                            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
                                 <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                             </Button>
                         </Grid>
