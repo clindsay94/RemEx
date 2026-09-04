@@ -222,6 +222,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The tray flyout's pin button now has a tooltip in every language ("Pin this window" / "Unpin
+  this window" were translated long ago but never wired up), and the FAQ answer about changing
+  how RemEx looks no longer describes four themes that no longer exist. (RemEx-ldv7r)
 - The PC app could forget your personalization a few seconds after launch: if the saved layout
   file was momentarily locked while starting up, the app quietly started from defaults and the
   next routine save wrote those defaults over your real settings, so the theme changed by itself.
