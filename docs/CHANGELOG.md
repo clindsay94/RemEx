@@ -217,6 +217,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pressing a row in the command palette flashed a square ripple under its rounded corners, and
+  tapping a tray notification gave no press feedback at all. Both now ripple the way the rest of
+  the app does, in the theme's own colours. (RemEx-alwfa.3)
 - Text fields with a floating label (the Add Program window, the log search box) drew their
   outline straight through the label once the field held a value. The label now sits in a proper
   gap in the border, the way Material outlined fields do. Fields without a label are unchanged.

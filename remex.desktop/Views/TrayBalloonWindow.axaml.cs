@@ -45,7 +45,15 @@ public partial class TrayBalloonWindow : Window
     private static readonly TimeSpan OutcomeDuration = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan ProblemDuration = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// How long the balloon lingers after a press so the ripple (RemEx-alwfa.3) gets a frame to draw.
+    /// Calling <c>Hide()</c> in the same dispatcher turn as PointerPressed tears the window down
+    /// before anything is composited, which made the ripple a no-op (review of RemEx-alwfa.3).
+    /// </summary>
+    private static readonly TimeSpan PressSettleDuration = TimeSpan.FromMilliseconds(180);
+
     private readonly DispatcherTimer _dismissTimer;
+    private IDisposable? _pendingHide;
 
     public TrayBalloonWindow()
     {
@@ -85,6 +93,10 @@ public partial class TrayBalloonWindow : Window
         else
             AccentStripe.Classes.Remove("problem");
 
+        // A press-settle hide still pending from the previous balloon must not take this one down.
+        _pendingHide?.Dispose();
+        _pendingHide = null;
+
         PositionAtTray();
         Show();
 
@@ -112,22 +124,31 @@ public partial class TrayBalloonWindow : Window
             screen.WorkingArea, Width, Height, screen.Scaling, marginLogical: 8);
     }
 
-    private void OnDismissTick(object? sender, EventArgs e)
-    {
-        _dismissTimer.Stop();
-        Hide();
-    }
+    private void OnDismissTick(object? sender, EventArgs e) => HideNow();
 
     private void OnBalloonPressed(object? sender, PointerPressedEventArgs e)
     {
         _dismissTimer.Stop();
-        Hide();
 
+        // The main window comes up straight away; the balloon itself stays one ripple beat (it is
+        // Topmost, so it remains visible over the main window for that beat) and then hides. A
+        // Present() during the beat cancels the pending hide so it cannot take the new balloon down.
         App.BringMainWindowToFront();
+
+        _pendingHide?.Dispose();
+        _pendingHide = DispatcherTimer.RunOnce(() =>
+        {
+            _pendingHide = null;
+            Hide();
+        }, PressSettleDuration);
     }
 
-    private void OnCloseBalloon(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnCloseBalloon(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => HideNow();
+
+    private void HideNow()
     {
+        _pendingHide?.Dispose();
+        _pendingHide = null;
         _dismissTimer.Stop();
         Hide();
     }

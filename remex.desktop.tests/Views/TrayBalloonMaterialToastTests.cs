@@ -94,4 +94,33 @@ public class TrayBalloonMaterialToastTests
     [Fact]
     public void Axaml_tints_the_balloon_ripple_from_the_app_palette_not_materials_default()
         => Assert.Contains("RippleFill=\"{DynamicResource TextPrimaryBrush}\"", AxamlText());
+
+    /// <summary>
+    /// Review of RemEx-alwfa.3: a ripple started by PointerPressed never draws if the same handler
+    /// hides the window synchronously, because nothing is composited before the dispatcher turn
+    /// ends. The press handler must schedule the hide, and a new Present() must cancel a pending one
+    /// so it cannot take the next balloon down.
+    /// </summary>
+    [Fact]
+    public void CodeBehind_lets_the_press_ripple_draw_before_hiding_the_balloon()
+    {
+        var code = CodeBehindText();
+        var pressBody = MethodBody(code, "OnBalloonPressed");
+
+        var scheduled = pressBody.IndexOf("DispatcherTimer.RunOnce(", StringComparison.Ordinal);
+        var hidden = pressBody.IndexOf("Hide()", StringComparison.Ordinal);
+        Assert.True(scheduled >= 0, "the press handler schedules the hide through DispatcherTimer.RunOnce");
+        Assert.True(hidden > scheduled, "Hide() may only appear inside the scheduled callback, never before it");
+
+        Assert.Contains("_pendingHide?.Dispose()", MethodBody(code, "Present"));
+    }
+
+    private static string MethodBody(string code, string methodName)
+    {
+        var start = code.IndexOf($"void {methodName}(", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"{methodName} exists in the code-behind");
+        var end = code.IndexOf("\n    }", start, StringComparison.Ordinal);
+        Assert.True(end > start, $"{methodName} has a block body to inspect");
+        return code[start..end];
+    }
 }
