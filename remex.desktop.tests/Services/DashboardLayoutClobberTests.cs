@@ -208,6 +208,52 @@ public class DashboardLayoutClobberTests
     }
 
     [Fact]
+    public async Task SaveAsync_WritesThroughEvenWhileTheLoadedProfileIsAFallback()
+    {
+        // THE HIGH FINDING FROM ROUND 2's REVIEW. RemexSavefileService.ImportDashboardLayoutAsync
+        // calls SaveAsync(profile) then LoadAsync(). Round 2's guard also covered SaveAsync, so a
+        // fallback profile in memory silently swallowed the import: SaveAsync no-opped, the following
+        // LoadAsync then succeeded (nothing on disk had changed), cleared the flag, and the import
+        // reported success while the file was still whatever was there before the import ran. SaveAsync
+        // carries an explicit, real profile handed to it by its caller - never one built from
+        // CurrentProfile - so it must always write, and it must leave the flag clear afterwards.
+        using var service = new DashboardLayoutService(new ThemeService());
+        var stale = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var staleProfile = new DashboardProfile { Customization = stale, Language = "stale" };
+        await File.WriteAllTextAsync(service.FilePathForTests,
+            JsonSerializer.Serialize(staleProfile, DashboardLayoutService.JsonOptions));
+
+        // Fail a load (lock held for every attempt) so the fallback flag gets set.
+        var block = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
+        try
+        {
+            await service.LoadAsyncForTests(onReadAttemptFailed: static _ => { });
+        }
+        finally
+        {
+            block.Dispose();
+        }
+        service.LoadFailureWarning.Should().NotBeNull("anti-vacuity: the load must have actually failed");
+        service.ProfileIsFallbackForTests.Should().BeTrue(
+            "anti-vacuity: the flag must actually be set for this test to mean anything");
+
+        // Exactly RemexSavefileService.ImportDashboardLayoutAsync's shape: an explicit save of a
+        // profile that has nothing to do with CurrentProfile, while the fallback flag is set.
+        var imported = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var importedProfile = new DashboardProfile { Customization = imported, Language = "imported" };
+        var expectedBytes = JsonSerializer.Serialize(importedProfile, DashboardLayoutService.JsonOptions);
+
+        await service.SaveAsync(importedProfile);
+
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(expectedBytes,
+            "SaveAsync must write the profile it was explicitly given, byte for byte - not be silently "
+            + "swallowed because a stale fallback flag happens to be set");
+        service.ProfileIsFallbackForTests.Should().BeFalse(
+            "an explicit save carries a real profile - it must clear the fallback flag, not leave it set "
+            + "for the next caller to trip over");
+    }
+
+    [Fact]
     public async Task AfterASubsequentSuccessfulLoad_TheFallbackFlagClearsAndSavesResume()
     {
         using var service = new DashboardLayoutService(new ThemeService());
