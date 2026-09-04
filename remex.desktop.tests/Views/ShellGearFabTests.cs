@@ -76,11 +76,16 @@ namespace Remex.Desktop.Tests.Views;
 /// <c>:pointerover</c> on its own.
 /// </para>
 /// <para>
-/// ROUND 2, THE INVISIBLE RIPPLE (LOW). <c>assists:ButtonAssist.ClickFeedbackColor</c> defaults to
-/// <c>#000000</c> (confirmed against Material.Avalonia 3.19.0's own <c>Assists/ButtonAssist.cs</c> —
-/// <c>RippleFill</c> is a <c>TemplateBinding</c> to this exact property), which reads as a
-/// near-invisible dark smudge on the dark accents CyberNOC/BaseDarkGlass already use for
-/// AccentPrimary. <see cref="TheGearFab_InvertsItsRippleColorWithTheTheme"/> pins the fix: a local
+/// ROUND 2, THE INVISIBLE RIPPLE (LOW, corrected RemEx-alwfa.3). <c>assists:ButtonAssist.ClickFeedbackColor</c>
+/// defaults to <c>#000000</c> at 26% opacity, but that default is NOT declared in
+/// <c>Assists/ButtonAssist.cs</c> — that class only registers ClickFeedbackColorProperty with no
+/// default of its own. The literal lives in <c>Controls/FloatingButton.axaml</c>'s own ControlTheme
+/// (which sets it directly and binds the ripple's opacity to its own ButtonPressedOpacity resource,
+/// 0.26) — FloatingButton's own choice, not a shared one: <c>Resources/Themes/Button.axaml</c>'s
+/// MaterialButtonBase instead binds the same property to the control's own Foreground, so only the
+/// FAB hardcodes a literal. That literal reads as a near-invisible dark smudge on the dark accents
+/// CyberNOC/BaseDarkGlass already use for AccentPrimary.
+/// <see cref="TheGearFab_InvertsItsRippleColorWithTheTheme"/> pins the fix: a local
 /// value pointed at AccentForegroundBrush, the same inversion the icon and the shadow already use.
 /// </para>
 /// <para>
@@ -219,10 +224,11 @@ public class ShellGearFabTests
     [Fact]
     public void TheGearFab_InvertsItsRippleColorWithTheTheme()
     {
-        // Review round 2, LOW. The theme's own #000000 ripple at 26% opacity is nearly invisible on
-        // the dark accents CyberNOC/BaseDarkGlass already use for AccentPrimary — a local value
-        // beats the theme's own default (also a local value, per Assists/ButtonAssist.cs) regardless
-        // of tier.
+        // Review round 2, LOW (corrected RemEx-alwfa.3). FloatingButton.axaml's own ControlTheme
+        // hardcodes ClickFeedbackColor="#000000" at 26% ripple opacity - nearly invisible on the
+        // dark accents CyberNOC/BaseDarkGlass already use for AccentPrimary. A local value here
+        // beats that theme default regardless of tier. (Not Assists/ButtonAssist.cs — that class
+        // carries no default at all; see the type doc comment above.)
         var fab = GearFabOpenTag();
         fab.Should().MatchRegex(@"assists:ButtonAssist\.ClickFeedbackColor=""\{DynamicResource AccentForegroundBrush\}""",
             "the ripple has to invert with the theme the same way the icon and the shadow do, or it stays a near-invisible dark smudge on the dark accents");

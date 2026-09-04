@@ -67,4 +67,31 @@ public class TrayBalloonMaterialToastTests
     [Fact]
     public void CodeBehind_still_drives_dismissal_with_the_dispatcher_timer()
         => Assert.Contains("DispatcherTimer", CodeBehindText());
+
+    /// <summary>
+    /// RemEx-alwfa.3 (ripple audit follow-up). The balloon body was a plain <c>StackPanel</c> with
+    /// a <c>PointerPressed</c> handler and Cursor="Hand" — no ripple mechanism at all, since
+    /// StackPanel is not a themed control. <c>ripple:RippleEffect</c> now wraps that body directly.
+    /// </summary>
+    [Fact]
+    public void Axaml_declares_the_material_ripple_namespace()
+        => Assert.Contains("xmlns:ripple=\"clr-namespace:Material.Ripple;assembly=Material.Ripple\"", AxamlText());
+
+    [Fact]
+    public void Axaml_wraps_the_balloon_body_in_a_ripple_effect_carrying_the_press_handler()
+    {
+        var xaml = AxamlText();
+        Assert.Contains("<ripple:RippleEffect", xaml);
+
+        // On the SAME element, not merely present somewhere in the file: the ripple wrapper has to
+        // be what actually receives the press, not a StackPanel that still floats unwired beside it.
+        var rippleOpenTag = xaml[xaml.IndexOf("<ripple:RippleEffect", StringComparison.Ordinal)..];
+        rippleOpenTag = rippleOpenTag[..(rippleOpenTag.IndexOf('>') + 1)];
+        Assert.Contains("PointerPressed=\"OnBalloonPressed\"", rippleOpenTag);
+        Assert.Contains("Cursor=\"Hand\"", rippleOpenTag);
+    }
+
+    [Fact]
+    public void Axaml_tints_the_balloon_ripple_from_the_app_palette_not_materials_default()
+        => Assert.Contains("RippleFill=\"{DynamicResource TextPrimaryBrush}\"", AxamlText());
 }

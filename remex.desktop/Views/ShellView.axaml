@@ -131,6 +131,17 @@
             <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
         </Style>
 
+        <!-- RemEx-alwfa.3: the base ControlTheme's template (same ListBoxItem.axaml above) also
+             carries a Border#PART_BehaviourEffect sibling with no CornerRadius. Checked against
+             the shared theme's own Style blocks, not just its presence in the template: that part
+             is declared with Background=MaterialBodyBrush and Opacity=0, and no Style in
+             ListBoxItem.axaml (nor anything in this app) ever raises its Opacity above 0 - only
+             PART_HoverEffect's Opacity moves, on :pointerover/:focus-visible/:selected. So
+             PART_BehaviourEffect never paints anything in this theme version and gets no radius
+             setter here; giving one to a part that never renders would be a no-op dressed up as a
+             fix. If a future Material bump starts driving its Opacity, this comment is the flag to
+             add the matching CornerRadiusSmall setter alongside the two above. -->
+
         <!-- The "Settings family" divider inside NavList (RemEx-zi3ua HIGH fix). It carries
              Focusable="False"/IsHitTestVisible="False" in the XAML, not Classes="nav-item" — that
              already keeps it out of selection and ripple; this style only strips the base Material
@@ -1075,11 +1086,21 @@
                  lift/press feedback instead, below, because nothing in FloatingButton's own theme
                  sets that property at any priority, so there is nothing for an app Style to lose to.
 
-                 assists:ButtonAssist.ClickFeedbackColor is a local value too (review round 2, LOW):
-                 the theme's own default (#000000 at 26% opacity, confirmed against
-                 Material.Avalonia 3.19.0's own Assists/ButtonAssist.cs — RippleFill is a
-                 TemplateBinding to this exact property) reads as a near-invisible dark smudge on
-                 the dark accents CyberNOC/BaseDarkGlass already use for AccentPrimary. Pointed at
+                 assists:ButtonAssist.ClickFeedbackColor is a local value too (review round 2, LOW,
+                 corrected RemEx-alwfa.3): the #000000-at-26%-opacity default does NOT come from
+                 Assists/ButtonAssist.cs — that class (checked against Material.Avalonia 3.19.0's
+                 own source) only declares ClickFeedbackColorProperty as an attached property with
+                 no default value of its own. The literal lives in THIS control's own ControlTheme
+                 instead: Material.Avalonia 3.19.0's Controls/FloatingButton.axaml sets
+                 assists:ButtonAssist.ClickFeedbackColor="#000000" directly and binds the ripple's
+                 RippleOpacity to its own ButtonPressedOpacity resource (0.26) - both confirmed
+                 against that file, not the assist class. This is FloatingButton's own choice, not
+                 a shared one: MaterialButtonBase's Button.axaml (the theme every other Button in
+                 this app resolves against) instead binds the same property to
+                 "{Binding $self.Foreground}", so an ordinary Button's ripple already follows its
+                 own Foreground with no override needed - only the FAB hardcodes a literal, and
+                 only the FAB reads as a near-invisible dark smudge on the dark accents
+                 CyberNOC/BaseDarkGlass already use for AccentPrimary. Pointed at
                  AccentForegroundBrush instead, the ripple inverts with the theme the same way the
                  icon and the shadow do.
 

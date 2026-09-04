@@ -161,6 +161,51 @@ public class CommandPaletteSelectionFillTests
         => Regex.Matches(palette, @"<Style Selector=""[^""]*/template/[^""]*"">.*?</Style>",
             RegexOptions.Singleline);
 
+    /// <summary>
+    /// RemEx-alwfa.3 (ripple audit follow-up). This file's own <c>ListBoxItem</c> style sets a real
+    /// CornerRadius (6) — the same defect shape x5zjy fixed on the nav rail: Material's ListBoxItem
+    /// template binds CornerRadius only to PART_RootBorder, RippleEffect clips using its own
+    /// CornerRadius property (default 0), and PART_HoverEffect gets no radius from the shared theme
+    /// at all — so without an explicit part-level override, a press or hover on this row flashes
+    /// square past its 6px rounded corners.
+    /// </summary>
+    [Fact]
+    public void TheRowRipple_IsClippedToTheItemRadiusAndTintedFromThePalette()
+    {
+        var palette = PaletteWindow();
+
+        palette.Should().Contain("xmlns:ripple=\"clr-namespace:Material.Ripple;assembly=Material.Ripple\"",
+            "the ripple/hover template-part selectors below need the ripple: xmlns in scope");
+
+        var rippleStyle = ExtractStyleBlock(palette, "ListBoxItem /template/ ripple|RippleEffect#PART_Ripple");
+        rippleStyle.Should().Contain("Property=\"CornerRadius\" Value=\"6\"",
+            "the ripple must clip to this row's corner radius instead of flashing square");
+        rippleStyle.Should().Contain("Property=\"RippleFill\"").And.Contain("TextPrimaryBrush",
+            "the ripple should tint from the app palette, not Material's default MaterialBodyBrush");
+
+        var hoverStyle = ExtractStyleBlock(palette, "ListBoxItem /template/ Border#PART_HoverEffect");
+        hoverStyle.Should().Contain("Property=\"CornerRadius\" Value=\"6\"",
+            "the hover state layer must clip to the same radius as the ripple and the row");
+    }
+
+    /// <summary>
+    /// Pulls the &lt;Style Selector="..."&gt;...&lt;/Style&gt; block for one selector out of the raw
+    /// XAML text, matching <c>ShellNavListTests.ExtractStyleBlock</c>'s shape so an assertion about a
+    /// setter INSIDE a block can't accidentally match a setter belonging to a different style — this
+    /// file has two distinct <c>/template/ Border#PART_HoverEffect</c> selectors (the pre-existing
+    /// selected-veil override above and the new corner-radius override), so the marker has to be the
+    /// full selector text, not just the part name.
+    /// </summary>
+    private static string ExtractStyleBlock(string xaml, string selector)
+    {
+        var marker = $"Selector=\"{selector}\"";
+        var start = xaml.IndexOf(marker, StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0, $"expected a Style with Selector=\"{selector}\"");
+        var end = xaml.IndexOf("</Style>", start, StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start, $"expected a closing </Style> after Selector=\"{selector}\"");
+        return xaml[start..end];
+    }
+
     /// <summary>Reads a centrally managed package version, ignoring comment nodes.</summary>
     /// <remarks>
     /// Parsed rather than regexed for the reason <c>MaterialPackagePinTests</c> documents: this repo

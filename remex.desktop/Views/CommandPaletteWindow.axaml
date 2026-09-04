@@ -5,7 +5,8 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Desktop.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
-    xmlns:mi="using:Material.Icons.Avalonia" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Desktop.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="{local:Localize CommandPalette_Title}" Width="540" MaxHeight="480" SizeToContent="Height" WindowDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
+    xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:ripple="clr-namespace:Material.Ripple;assembly=Material.Ripple" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Desktop.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="{local:Localize CommandPalette_Title}" Width="540" MaxHeight="480" SizeToContent="Height" WindowDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding DismissCommand}" />
@@ -78,6 +79,28 @@
                         <Setter Property="Padding" Value="10,6" />
                         <Setter Property="Cursor" Value="Hand" />
                     </Style>
+
+                    <!-- RemEx-alwfa.3 (ripple audit follow-up): this row sets a real CornerRadius
+                         above (6, unlike the ShellView nav rail's DynamicResource token, matching
+                         this file's existing preference for plain literals), which is exactly the
+                         shape of defect x5zjy fixed on the nav rail - Material's ListBoxItem
+                         template binds CornerRadius only to PART_RootBorder (Material.Styles
+                         3.19.0 Resources/Themes/ListBoxItem.axaml), while RippleEffect clips by its
+                         own CornerRadius property (default 0) and PART_HoverEffect gets no radius
+                         from the shared theme at all. Without these, a press or hover on this row
+                         would flash square past the 6px rounded corners. RippleFill is also
+                         overridden from Material's own MaterialBodyBrush default to this app's
+                         TextPrimaryBrush, same reasoning and same token as the nav rail fix, so the
+                         ripple reads correctly against all four PC themes rather than whatever
+                         MaterialBodyBrush happens to resolve to. -->
+                    <Style Selector="ListBoxItem /template/ ripple|RippleEffect#PART_Ripple">
+                        <Setter Property="CornerRadius" Value="6" />
+                        <Setter Property="RippleFill" Value="{DynamicResource TextPrimaryBrush}" />
+                    </Style>
+                    <Style Selector="ListBoxItem /template/ Border#PART_HoverEffect">
+                        <Setter Property="CornerRadius" Value="6" />
+                    </Style>
+
                     <!-- BOTH FILLS GO ON THE CONTROL (RemEx-f51fa, corrected by RemEx-3ule6). These
                          two selectors used to read `/template/ ContentPresenter`, which was right
                          for Fluent 12.1.1: Fluent set its OWN :pointerover and :selected Backgrounds

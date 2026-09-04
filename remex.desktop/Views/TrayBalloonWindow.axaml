@@ -2,6 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:ripple="clr-namespace:Material.Ripple;assembly=Material.Ripple"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayBalloonWindow"
     Width="360" Height="132" CanResize="False" Focusable="False" ShowActivated="False" ShowInTaskbar="False"
     Topmost="True" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" WindowDecorations="None">
@@ -26,15 +27,22 @@
                               VerticalAlignment="Center"/>
 
             <!-- Pressing the body opens the main window, which is the only useful thing a balloon
-                 can offer: it appears precisely when the window is not on screen. -->
-            <StackPanel Grid.Column="2" Background="Transparent" Spacing="4"
-                        Margin="12,16,8,16" VerticalAlignment="Center" Cursor="Hand"
-                        PointerPressed="OnBalloonPressed">
-                <TextBlock x:Name="TitleText" Theme="{StaticResource Subtitle2TextBlock}"
-                           Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="MessageText" Theme="{StaticResource Body2TextBlock}" TextWrapping="Wrap" MaxLines="2"
-                           Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-            </StackPanel>
+                 can offer: it appears precisely when the window is not on screen. RippleEffect
+                 wraps the body directly (RemEx-alwfa.3) rather than reaching for a Button/ListBoxItem
+                 template - this StackPanel is a plain content column, not a themed control, so it had
+                 no ripple mechanism at all. No explicit CornerRadius is needed on the ripple: this
+                 column sits inset from the surrounding material:Card's own rounded corners (columns 0/1
+                 come first), so a square ripple never reaches a rounded edge - unlike the nav-item/
+                 CommandPalette fixes, there is no mismatch to correct here. -->
+            <ripple:RippleEffect Grid.Column="2" RippleFill="{DynamicResource TextPrimaryBrush}"
+                                  Cursor="Hand" PointerPressed="OnBalloonPressed">
+                <StackPanel Background="Transparent" Spacing="4" Margin="12,16,8,16" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" Theme="{StaticResource Subtitle2TextBlock}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="MessageText" Theme="{StaticResource Body2TextBlock}" TextWrapping="Wrap" MaxLines="2"
+                               Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </ripple:RippleEffect>
 
             <Button Grid.Column="3" Classes="tertiary icon-button compact" Click="OnCloseBalloon"
                     AutomationProperties.Name="{local:Localize A11y_Close}">
