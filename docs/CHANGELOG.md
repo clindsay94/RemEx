@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The PC's confirmation prompts, the file-consent prompt and the restore-layout prompt are now
+  built on Material.Avalonia's dialog builders through one shared path instead of three
+  hand-written windows. They stay separate windows, so a prompt can still appear while the main
+  window is tucked away in the tray, and Escape on the file-consent prompt still means deny.
+  (RemEx-x6a70.3)
+
 - The PC's pairing dialog now stays open while the PIN is checked and says whether pairing
   succeeded or failed, instead of closing the moment you press Pair and leaving the answer to
   the status line. A failed check still needs a fresh pairing attempt, because the client's

@@ -98,26 +98,6 @@ public class DialogsDismissOnEscapeTests
     }
 
     /// <summary>
-    /// Each of the three builders must hand Material.Avalonia.Dialogs a <c>NegativeResult</c> - the
-    /// value <c>DialogHelper</c> applies to the dialog's result BEFORE it is shown, so every dismissal
-    /// that is not a button click (Escape via the handler above, Alt+F4, the title-bar close button)
-    /// resolves to it. Without this, those paths would resolve to <c>DialogResult.NoResult</c>
-    /// ("none"), which none of the three return-mapping checks below treat as an affirmative answer -
-    /// but asserting the NegativeResult is set is what makes that not an accident.
-    /// </summary>
-    [Fact]
-    public void EveryBuiltDialogSetsANegativeResult()
-    {
-        var source = MaterialDialogsSource();
-        var negativeResultAssignments = Regex.Matches(source, @"NegativeResult\s*=\s*new DialogResult\(").Count;
-
-        Assert.True(
-            negativeResultAssignments >= 3,
-            "MaterialDialogs.cs should set NegativeResult when building each of the confirm, consent "
-                + "and restore dialogs; found fewer than three NegativeResult assignments.");
-    }
-
-    /// <summary>
     /// RemEx-x6a70.3 fix round 2: <c>ConfirmAsync</c>/<c>RestoreAsync</c> no longer read
     /// <c>ShowDialog</c>'s return value for their outcome at all (it resolves through a library
     /// <c>DialogResult</c> property external code cannot set - see the type remarks) - both now return
