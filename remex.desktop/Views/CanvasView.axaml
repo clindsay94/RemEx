@@ -323,23 +323,26 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Viewbox>
 
-                                                <!-- Dual Metric legend: colour key mapping each line to its sensor. -->
+                                                <!-- Dual Metric legend: colour key mapping each line to its sensor. The plate is the
+                                                     per-sensor theme's CardBackground (dark by default), so its text follows the
+                                                     sensor theme too, same as the value badges above — a palette text brush can be
+                                                     dark-on-dark on a light seed (RemEx-1ufoa.2). -->
                                                 <Border IsVisible="{Binding Sensor.IsDualMetric}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
                                                         CornerRadius="5" Padding="6,4"
                                                         Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}">
                                                     <StackPanel Spacing="3">
                                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding Sensor.HasSecondary}">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
