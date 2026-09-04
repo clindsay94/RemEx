@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   motion turns it off, and it never delays anything from being clickable. (RemEx-alwfa.2)
 - The navigation drawer's items settle in one after another the first time you open the drawer in
   a session. Same reduced-motion switch, same once-per-session rule. (RemEx-alwfa.2)
+- Keyboard users: opening the navigation drawer or the Personalize sheet now moves focus into it,
+  Tab stays inside while it is open, and closing it hands focus back to where you were. Nothing
+  changes if you were working in a page when it closed. (RemEx-ddk6b)
 
 - Card buttons on the PC (the dashboard's quick-launch tiles and link tiles) now lift on keyboard
   focus exactly as they do on hover, so keyboard users see the same elevation step pointer users

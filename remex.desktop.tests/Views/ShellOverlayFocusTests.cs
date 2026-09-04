@@ -34,9 +34,16 @@ public class ShellOverlayFocusTests
     {
         var xaml = WithoutXmlComments(ShellMarkup());
 
-        Assert.Matches(
-            new Regex(@"<Border\s+Name=""DrawerContentRoot""\s+KeyboardNavigation\.TabNavigation=""Cycle"""),
-            xaml);
+        // Open-tag scan rather than an attribute-order regex, so reordering the attributes
+        // (no behaviour change) cannot fail this guard (review, LOW).
+        var tagStart = xaml.IndexOf(@"Name=""DrawerContentRoot""", StringComparison.Ordinal);
+        Assert.True(tagStart >= 0, "ShellView.axaml no longer names the drawer content root");
+        var openStart = xaml.LastIndexOf("<Border", tagStart, StringComparison.Ordinal);
+        var openEnd = xaml.IndexOf('>', tagStart);
+        Assert.True(openStart >= 0 && openEnd > openStart, "DrawerContentRoot is not a Border opening tag");
+        var openTag = xaml[openStart..openEnd];
+
+        Assert.Contains(@"KeyboardNavigation.TabNavigation=""Cycle""", openTag, StringComparison.Ordinal);
     }
 
     [Fact]

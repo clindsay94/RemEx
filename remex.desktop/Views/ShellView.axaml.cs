@@ -491,7 +491,14 @@ public partial class ShellView : UserControl
         if (opened)
         {
             invoker = focusManager?.GetFocusedElement();
-            Dispatcher.UIThread.Post(() => (firstTarget() as InputElement)?.Focus(NavigationMethod.Directional));
+            // Posted because the overlay's content is not laid out synchronously on open. The
+            // callback re-checks the overlay is still showing: an open-then-close inside one
+            // dispatcher turn would otherwise pull focus into a closed drawer (review, MEDIUM).
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!overlayRoot.IsEffectivelyVisible) return;
+                (firstTarget() as InputElement)?.Focus(NavigationMethod.Directional);
+            });
             return;
         }
 
