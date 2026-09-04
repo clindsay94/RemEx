@@ -157,10 +157,19 @@ public class ElevationStateTests
             "Button.card.interactive should raise to Depth2 on pointerover");
         pressedIndex.Should().BeGreaterThan(-1,
             "Button.card.interactive should settle to Depth0 on pressed");
-        // No focus-visible depth rule yet: FocusVisibleStyleGuardTests enumerates every
-        // :focus-visible style as a focus ring and pins their count, so the keyboard step of the
-        // elevation ramp needs that guard re-pinned first. Tracked as RemEx-alwfa.5; do not add a
-        // guard here that forbids it.
+
+        // RemEx-alwfa.5: keyboard focus gets the same lift as pointer hover. Declared after
+        // pointerover and before pressed so a press while focused still drops to Depth0.
+        var focusVisibleIndex = text.IndexOf(
+            "Selector=\":is(Button).card.interactive:focus-visible\">\n            <Setter Property=\"assists:ShadowAssist.ShadowDepth\" Value=\"Depth2\"",
+            StringComparison.Ordinal);
+
+        focusVisibleIndex.Should().BeGreaterThan(-1,
+            "Button.card.interactive should raise to the same depth on keyboard focus as it does on pointerover");
+        focusVisibleIndex.Should().BeGreaterThan(pointeroverIndex,
+            "the focus-visible elevation step must be declared after pointerover");
+        focusVisibleIndex.Should().BeLessThan(pressedIndex,
+            "the focus-visible elevation step must be declared before pressed, so a press while focused still drops to Depth0");
     }
 
     private static string ReadView(string fileName)

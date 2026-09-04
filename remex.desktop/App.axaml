@@ -327,6 +327,11 @@
         <Style Selector=":is(Button).card.interactive:pointerover">
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth2"/>
         </Style>
+        <!-- Keyboard users get the same lift pointer users get on hover (RemEx-alwfa.5). Declared
+             after pointerover and before pressed so a press while focused still drops to Depth0. -->
+        <Style Selector=":is(Button).card.interactive:focus-visible">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth2"/>
+        </Style>
         <Style Selector=":is(Button).card.interactive:pressed">
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
         </Style>

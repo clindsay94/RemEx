@@ -117,6 +117,46 @@ public class FocusVisibleStyleGuardTests
     }
 
     [Fact]
+    public void TheFocusVisibleElevationStepsAreNotCountedAsRings()
+    {
+        // RemEx-alwfa.5. A ShadowAssist-only :focus-visible style is a depth step on the .card
+        // elevation ramp, not a focus ring - FocusStyles() must not count it or
+        // EveryInteractiveControlStillHasAFocusRing would fail every time a card button picks up
+        // its keyboard elevation step. This is the positive half of that exclusion: prove the
+        // excluded style still exists and still says what it should, so the skip in FocusStyles()
+        // can't quietly start hiding a real ring instead.
+        var elevationStyles = ElevationFocusStyles().ToArray();
+
+        elevationStyles.Should().NotBeEmpty(
+            "a ShadowAssist-only :focus-visible elevation step should exist for card buttons");
+
+        foreach (var style in elevationStyles)
+        {
+            style.Control.Should().Contain(".card.interactive",
+                "the elevation focus-visible step targets card buttons, not every focusable control");
+        }
+
+        // Read the pointerover depth from App.axaml rather than hardcoding "Depth2" twice, so the
+        // two rules can't silently drift apart.
+        var pointeroverDepth = Elements(DesktopPath("App.axaml"), "Style")
+            .Where(s => s.Attribute("Selector")?.Value == ":is(Button).card.interactive:pointerover")
+            .SelectMany(s => s.Elements().Where(e => e.Name.LocalName == "Setter"))
+            .Where(e => e.Attribute("Property")?.Value == "assists:ShadowAssist.ShadowDepth")
+            .Select(e => e.Attribute("Value")?.Value)
+            .FirstOrDefault();
+
+        pointeroverDepth.Should().NotBeNullOrEmpty(
+            "the pointerover rule must set a ShadowAssist depth for the focus-visible step to match");
+
+        foreach (var style in elevationStyles)
+        {
+            style.Setters.Should().Contain(
+                s => s.Property == "assists:ShadowAssist.ShadowDepth" && s.Value == pointeroverDepth,
+                $"{style.Control} focus-visible elevation should lift to the same depth as pointerover");
+        }
+    }
+
+    [Fact]
     public void EveryRingUsesTheThemeAccentRatherThanALiteralColour()
     {
         // A literal survives the theme it was picked against and dies under the other three, and a
@@ -162,7 +202,9 @@ public class FocusVisibleStyleGuardTests
     }
 
     /// <summary>
-    /// Every <c>:focus-visible</c> style in <c>App.axaml</c>.
+    /// Every <c>:focus-visible</c> style in <c>App.axaml</c> that is a focus RING - i.e. not a
+    /// ShadowAssist-only elevation step (RemEx-alwfa.5). See <see cref="ElevationFocusStyles"/> for
+    /// the excluded half.
     /// </summary>
     /// <remarks>
     /// Parsed as XML rather than matched with a regex, so a style that has been commented out stops
@@ -170,7 +212,21 @@ public class FocusVisibleStyleGuardTests
     /// "commented it out while debugging a layout shift and forgot to put it back" is the likeliest
     /// way one of these disappears.
     /// </remarks>
-    private static IEnumerable<FocusStyle> FocusStyles()
+    private static IEnumerable<FocusStyle> FocusStyles() => AllFocusVisibleStyles().Where(s => !IsElevationStep(s));
+
+    /// <summary>
+    /// The <c>:focus-visible</c> styles excluded from <see cref="FocusStyles"/> because every setter
+    /// they carry targets <c>assists:ShadowAssist.*</c> - a keyboard step on an elevation ramp
+    /// (RemEx-alwfa.5's <c>:is(Button).card.interactive:focus-visible</c>), not a ring drawn with
+    /// <c>BorderBrush</c>/<c>BorderThickness</c>.
+    /// </summary>
+    private static IEnumerable<FocusStyle> ElevationFocusStyles() => AllFocusVisibleStyles().Where(IsElevationStep);
+
+    private static bool IsElevationStep(FocusStyle style) =>
+        style.Setters.Count > 0 &&
+        style.Setters.All(s => s.Property?.StartsWith("assists:ShadowAssist.", StringComparison.Ordinal) == true);
+
+    private static IEnumerable<FocusStyle> AllFocusVisibleStyles()
     {
         foreach (var style in Elements(DesktopPath("App.axaml"), "Style"))
         {
