@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
@@ -35,6 +36,9 @@ public class DialogsDismissOnEscapeTests
 
     private static string MaterialDialogsSource() =>
         File.ReadAllText(Path.Combine(ViewsDirectory(), "MaterialDialogs.cs"));
+
+    private static string ReadView(string fileName) =>
+        File.ReadAllText(Path.Combine(ViewsDirectory(), fileName));
 
     public static TheoryData<string> Dialogs =>
     [
@@ -113,55 +117,58 @@ public class DialogsDismissOnEscapeTests
                 + "and restore dialogs; found fewer than three NegativeResult assignments.");
     }
 
+    /// <summary>
+    /// RemEx-x6a70.3 fix round 2: <c>ConfirmAsync</c>/<c>RestoreAsync</c> no longer read
+    /// <c>ShowDialog</c>'s return value for their outcome at all (it resolves through a library
+    /// <c>DialogResult</c> property external code cannot set - see the type remarks) - both now return
+    /// <c>MaterialDialogs.Resolve(content.ResultTask)</c>, the pure helper unit-tested directly in
+    /// <c>MaterialDialogsTests</c>. THE MUTATION THIS GUARDS: reverting either builder to read
+    /// <c>result?.GetResult</c> would silently reintroduce reading a value nothing can ever write.
+    /// </summary>
     [Fact]
-    public void ConfirmAsyncOnlyReturnsTrueOnTheConfirmResult()
-    {
-        // THE MUTATION THIS GUARDS: returning true on CancelResult (or on the raw result string being
-        // non-null) would make Escape/Alt+F4/the close button - all of which resolve to CancelResult
-        // - read as a confirmed destructive action instead of a declined one.
-        var source = MaterialDialogsSource();
-
-        Assert.Contains(
-            "return result?.GetResult == ConfirmResult;",
-            source,
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RestoreAsyncOnlyReturnsTrueOnItsPositiveResult()
+    public void ConfirmAndRestoreResolveThroughTheContentsResultTask()
     {
         var source = MaterialDialogsSource();
 
-        Assert.Contains(
-            "return result?.GetResult == RestoreResult;",
-            source,
-            StringComparison.Ordinal);
+        var resolveCalls = Regex.Matches(source, @"return Resolve\(content\.ResultTask\);").Count;
+        Assert.True(
+            resolveCalls >= 2,
+            "ConfirmAsync and RestoreAsync should both `return Resolve(content.ResultTask);`; found "
+                + "fewer than two such returns.");
+
+        Assert.DoesNotContain("result?.GetResult", source, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// THE ONE DIALOG WHERE THE TARGET MATTERS AS MUCH AS THE BINDING. Deny is fail-closed; a
+    /// keyboard dismissal that granted an incoming file would be a security regression wearing a
+    /// convenience feature. FileConsentDialog.axaml is gone (RemEx-x6a70.3 moved it onto
+    /// MaterialDialogs.FileConsentAsync), so this scans that.
+    /// </summary>
+    /// <remarks>
+    /// Fix round 2 dropped <c>MapConsent</c> - Deny/Allow are real buttons in
+    /// <c>FileConsentContent</c> now, bound straight to <c>FileConsentDialogViewModel.DenyCommand</c>/
+    /// <c>AllowCommand</c>, so there is no library result string left to translate. The fail-closed
+    /// contract MapConsent used to express now lives in
+    /// <see cref="Remex.Desktop.ViewModels.FileConsentDialogViewModel.ResolveAsDeny"/>
+    /// (unit-tested directly in <c>FileConsentDialogViewModelTests</c>) - this guards that
+    /// <c>FileConsentAsync</c> actually calls it for the window-closed-without-a-decision path.
+    /// </remarks>
     [Fact]
     public void TheFileConsentDialogsEscapeDeniesRatherThanAccepts()
     {
-        // THE ONE DIALOG WHERE THE TARGET MATTERS AS MUCH AS THE BINDING. Deny is fail-closed; a
-        // keyboard dismissal that granted an incoming file would be a security regression wearing a
-        // convenience feature. FileConsentDialog.axaml is gone (RemEx-x6a70.3 moved it onto
-        // MaterialDialogs.FileConsentAsync / MaterialDialogs.MapConsent), so this now scans that.
         var source = MaterialDialogsSource();
 
-        // The consent dialog's NegativeResult must be the deny value, not the allow one.
+        // The consent dialog's NegativeResult must still be the deny value, not the allow one.
         Assert.Contains(
             "NegativeResult = new DialogResult(ConsentDenyResult),",
             source,
             StringComparison.Ordinal);
 
-        // And MapConsent must grant on that exact allow value and nothing else - see
-        // MaterialDialogsTests for the table-driven version of this (null/none/cancel/deny all deny).
-        var mapConsent = Regex.Match(
-            source,
-            @"internal static FileConsentDecision MapConsent\(string\? result, bool remember\) =>(?<body>.*?);",
-            RegexOptions.Singleline);
-        Assert.True(mapConsent.Success, "MapConsent was renamed or restructured");
-        Assert.Contains("result == ConsentAllowResult", mapConsent.Groups["body"].Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("ConsentDenyResult ==", mapConsent.Groups["body"].Value, StringComparison.Ordinal);
+        // And the window closing without a button click (Escape included) must fail closed through
+        // the view model's own deny resolution, not a fresh decision built from a result string.
+        Assert.Contains("vm.ResolveAsDeny();", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("MapConsent", source, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -190,12 +197,35 @@ public class DialogsDismissOnEscapeTests
             "ConfirmAsync, FileConsentAsync and RestoreAsync should all build through CreateCustomDialog; "
                 + "found fewer CreateCustomDialog( calls than that.");
 
-        Assert.Contains("Content = new DialogContent(title, message)", source, StringComparison.Ordinal);
-        var dialogContentUses = Regex.Matches(source, @"Content = new DialogContent\(").Count;
+        var dialogContentUses = Regex.Matches(source, @"new DialogContent\(").Count;
         Assert.True(
             dialogContentUses >= 2,
             "Both ConfirmAsync and RestoreAsync should build their content as `new DialogContent(...)`; "
                 + "found fewer than that.");
+    }
+
+    /// <summary>
+    /// RemEx-x6a70.3 fix round 2's actual button-vocabulary fix, pinned at the exact call sites so a
+    /// mutation cannot pass by matching only the loose per-file checks below.
+    /// INJECTION B THIS CATCHES: swapping ConfirmAsync's action button from "primary danger" to
+    /// "secondary" (or any other class) breaks the first literal below; swapping RestoreAsync's
+    /// "primary" the same way breaks the regex (anchored so "primary danger" cannot satisfy it either).
+    /// </summary>
+    [Fact]
+    public void ConfirmPassesPrimaryDangerAndRestorePassesPrimaryToDialogContent()
+    {
+        var source = MaterialDialogsSource();
+
+        Assert.Contains(
+            "new DialogContent(title, message, loc[\"Btn_Cancel\"], confirmText, \"primary danger\")",
+            source,
+            StringComparison.Ordinal);
+
+        Assert.Matches(
+            new Regex(
+                @"new DialogContent\(\s*loc\[""Restore_PromptTitle""\].*?loc\[""Restore_Skip""\],\s*loc\[""Restore_Accept""\],\s*""primary""\);",
+                RegexOptions.Singleline),
+            source);
     }
 
     /// <summary>
@@ -222,55 +252,87 @@ public class DialogsDismissOnEscapeTests
     }
 
     /// <summary>
-    /// The library still has no builder-level way to hand a rendered button this app's
-    /// primary/secondary/danger Classes (see the type remarks' fix-round-1 note) - the accepted
-    /// fallback is the exact library <c>DialogButtons</c> already used, with <c>IsNegative</c> marking
-    /// the cancel/skip/deny side of each pair. This guards that marking stays in place rather than
-    /// silently dropping back to unmarked buttons.
+    /// RemEx-x6a70.3 fix round 2's route: the library gets no <c>DialogButtons</c> of its own for any
+    /// of the three prompts (it has no builder-level way to hand a rendered button this app's Classes
+    /// vocabulary - see the type remarks) - every visible button is a real RemEx <c>Button</c> living
+    /// in the content control instead. Anti-regression: also asserts no <c>new DialogButton {</c>
+    /// construction remains, so nobody can quietly go back to the library-button fallback fix round 1
+    /// used without this test noticing.
     /// </summary>
     [Fact]
-    public void EveryNegativeDialogButtonIsMarkedIsNegative()
+    public void NoBuiltDialogHandsTheLibraryAnyDialogButtons()
     {
         var source = MaterialDialogsSource();
 
-        var isNegativeButtons = Regex.Matches(source, @"IsNegative = true").Count;
+        var emptyDialogButtons = Regex.Matches(source, @"DialogButtons\s*=\s*Array\.Empty<DialogButton>\(\),").Count;
         Assert.True(
-            isNegativeButtons >= 3,
-            "ConfirmAsync's Cancel, RestoreAsync's Skip and FileConsentAsync's Deny should each set "
-                + "IsNegative = true on their DialogButton; found fewer than three.");
+            emptyDialogButtons >= 3,
+            "ConfirmAsync, FileConsentAsync and RestoreAsync should each pass an empty DialogButtons "
+                + "array; found fewer than three such assignments.");
+
+        Assert.DoesNotContain("new DialogButton {", source, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// Pins each button's own <c>Result</c> constant to its own button, not just that a constant of
-    /// the right shape exists somewhere in the file. The regex checks above (e.g. "at least three
-    /// IsNegative = true") pass just as well if a negative button were quietly wired to the POSITIVE
-    /// result constant instead of its own - that would not show up until Cancel/Skip/Deny started
-    /// resolving to the confirm/restore/allow outcome. This is the guard that actually catches it.
+    /// Guards the wiring inside <c>DialogContent</c>'s own code-behind: its Cancel button must resolve
+    /// its outcome to <c>false</c> and its action button to <c>true</c>. INJECTION A THIS CATCHES:
+    /// making Cancel complete the outcome with <c>true</c> would make Escape's sibling - a literal
+    /// click on Cancel - read as if the user had confirmed/accepted.
     /// </summary>
     [Fact]
-    public void EachDialogButtonIsWiredToItsOwnResultConstant()
+    public void DialogContentResolvesCancelFalseAndActionTrue()
     {
-        var source = MaterialDialogsSource();
+        var cs = ReadView("DialogContent.axaml.cs");
 
-        Assert.Contains(
-            "new DialogButton { Result = CancelResult, Content = loc[\"Btn_Cancel\"], IsNegative = true }",
-            source, StringComparison.Ordinal);
-        Assert.Contains(
-            "new DialogButton { Result = ConfirmResult, Content = confirmText, IsPositive = true }",
-            source, StringComparison.Ordinal);
+        Assert.Matches(
+            new Regex(@"OnCancelClick\([^)]*\)\s*=>\s*Resolve\(false\);"),
+            cs);
+        Assert.Matches(
+            new Regex(@"OnActionClick\([^)]*\)\s*=>\s*Resolve\(true\);"),
+            cs);
+    }
 
-        Assert.Contains(
-            "new DialogButton { Result = SkipResult, Content = loc[\"Restore_Skip\"], IsNegative = true }",
-            source, StringComparison.Ordinal);
-        Assert.Contains(
-            "new DialogButton { Result = RestoreResult, Content = loc[\"Restore_Accept\"], IsPositive = true }",
-            source, StringComparison.Ordinal);
+    /// <summary>
+    /// The button-vocabulary requirement itself, parsed from the actual XAML attribute values (not a
+    /// substring match, which a stray comment could also satisfy) - see docs/BUTTON-VOCABULARY.md.
+    /// <c>DialogContent</c>'s Cancel is always "secondary" in markup; its action button's classes vary
+    /// by caller and are covered instead by
+    /// <see cref="ConfirmPassesPrimaryDangerAndRestorePassesPrimaryToDialogContent"/>.
+    /// <c>FileConsentContent</c>'s Deny/Allow are fixed, so both are asserted here, each still bound to
+    /// the view model's own command.
+    /// </summary>
+    [Fact]
+    public void ContentControlsCarryTheVocabularyClassesOnTheRightButtons()
+    {
+        var dialogContentButtons = ParseButtons(ReadView("DialogContent.axaml"));
+        var cancelButton = Assert.Single(dialogContentButtons, b => b.Name == "CancelButton");
+        Assert.Equal("secondary", cancelButton.Classes);
 
-        Assert.Contains(
-            "new DialogButton { Result = ConsentDenyResult, Content = loc[\"FileConsent_Deny\"], IsNegative = true }",
-            source, StringComparison.Ordinal);
-        Assert.Contains(
-            "new DialogButton { Result = ConsentAllowResult, Content = loc[\"FileConsent_Allow\"], IsPositive = true }",
-            source, StringComparison.Ordinal);
+        var consentButtons = ParseButtons(ReadView("FileConsentContent.axaml"));
+        var deny = Assert.Single(consentButtons, b => b.Command == "DenyCommand");
+        var allow = Assert.Single(consentButtons, b => b.Command == "AllowCommand");
+        Assert.Equal("secondary", deny.Classes);
+        Assert.Equal("primary", allow.Classes);
+    }
+
+    private static List<(string? Name, string? Classes, string? Command)> ParseButtons(string xaml)
+    {
+        var doc = XDocument.Parse(xaml);
+        return doc.Descendants()
+            .Where(e => e.Name.LocalName == "Button")
+            .Select(e => (
+                Name: e.Attributes().FirstOrDefault(a => a.Name.LocalName == "Name")?.Value,
+                Classes: e.Attributes().FirstOrDefault(a => a.Name.LocalName == "Classes")?.Value,
+                Command: ExtractBindingPath(e.Attributes().FirstOrDefault(a => a.Name.LocalName == "Command")?.Value)))
+            .ToList();
+    }
+
+    private static string? ExtractBindingPath(string? bindingMarkup)
+    {
+        if (bindingMarkup is null)
+            return null;
+
+        var match = Regex.Match(bindingMarkup, @"\{Binding\s+([A-Za-z0-9_]+)\s*\}");
+        return match.Success ? match.Groups[1].Value : null;
     }
 }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Material.Dialog;
 using Remex.Core.Services.FileTransfer;
 using Remex.Desktop.Services;
@@ -32,30 +33,34 @@ namespace Remex.Desktop.Views;
 /// that — a plain <c>window.Close()</c> — from this helper, not by patching the library.
 /// </para>
 /// <para>
-/// FIX ROUND 1 (RemEx-x6a70.3): the first pass left two regressions against the RemEx-2m7fr dialogs
-/// this replaced. <see cref="ConfirmAsync"/> and <see cref="RestoreAsync"/> now build through
+/// FIX ROUND 1: the first pass left two regressions against the RemEx-2m7fr dialogs this replaced.
+/// <see cref="ConfirmAsync"/> and <see cref="RestoreAsync"/> now build through
 /// <see cref="DialogHelper.CreateCustomDialog"/> with <see cref="DialogContent"/> instead of
 /// <see cref="DialogHelper.CreateAlertDialog"/>'s <c>ContentHeader</c>/<c>SupportingText</c>, because
 /// <c>AlertDialog</c>'s <c>SupportingText</c> TextBlock has no <c>TextWrapping</c> set and clips a
 /// long message instead of wrapping it - moving to a custom content control sidesteps that TextBlock
 /// entirely rather than trying to patch it. The second regression - the confirm/deny/restore actions
 /// rendering as indistinguishable flat text instead of this app's primary/secondary/danger button
-/// vocabulary - is NOT fixed here. It was investigated by decompiling
-/// Material.Avalonia.Dialogs 3.19.0 (net8.0, ilspycmd): <c>DialogWindowBase&lt;TWindow,TResult&gt;.Procedure</c>
-/// resolves <c>ShowDialog</c>'s result from <c>_window.GetResult()</c> on the window's <c>Closed</c>
-/// event, which reads <c>(DataContext as ...ViewModel)?.DialogResult</c> - a property with an
-/// <c>internal</c> setter, only ever written by the library's own <c>ObsoleteDialogButtonViewModel</c>
-/// command handler. The object passed to <c>Window.Close(object)</c> is never read by that path, and
-/// external code cannot set <c>DialogResult</c> itself, so a custom button in this dialog's content
-/// has no way to produce a result <c>ShowDialog</c> would see. <c>DialogButton</c> also carries no
-/// <c>Classes</c> property - only <c>IsPositive</c>/<c>IsNegative</c> - so there is no builder-level
-/// way to hand a library-rendered button this app's <c>primary</c>/<c>secondary</c>/<c>danger</c>
-/// Classes either. Every builder below still hands Material.Avalonia its own <c>DialogButtons</c> for
-/// the actions, exactly as before, now with <c>IsNegative</c> set on the cancel/skip/deny button too -
-/// <c>DialogHelper.CreateObsoleteButtonArray</c> does not currently read it (only <c>IsPositive</c> is
-/// copied onto the button view model), so it has no visible effect against 3.19.0, but it records the
-/// intent for whenever that changes rather than silently relying on an undocumented gap. Only the
-/// wrapping is fixed in this round.
+/// vocabulary - was investigated but not fixed in that round.
+/// </para>
+/// <para>
+/// FIX ROUND 2 (RemEx-x6a70.3): that investigation (decompiling Material.Avalonia.Dialogs 3.19.0,
+/// net8.0, ilspycmd) found <c>DialogWindowBase&lt;TWindow,TResult&gt;.Procedure</c> resolves
+/// <c>ShowDialog</c>'s result from <c>_window.GetResult()</c> on the window's <c>Closed</c> event,
+/// which reads <c>(DataContext as ...ViewModel)?.DialogResult</c> - a property with an <c>internal</c>
+/// setter, only ever written by the library's own <c>ObsoleteDialogButtonViewModel</c> command
+/// handler. <c>DialogButton</c> also carries no <c>Classes</c> property - only
+/// <c>IsPositive</c>/<c>IsNegative</c> - so there is no builder-level way to hand a library-rendered
+/// button this app's Classes vocabulary either. The route out is not to hand the library any buttons
+/// at all: every builder below passes <c>DialogButtons = Array.Empty&lt;DialogButton&gt;()</c>, and the
+/// real RemEx <c>Button</c>s wearing <c>primary</c>/<c>secondary</c>/<c>danger</c> live inside the
+/// content control instead (<see cref="DialogContent"/>, <see cref="FileConsentContent"/>). Neither
+/// <see cref="ConfirmAsync"/> nor <see cref="RestoreAsync"/> reads <c>ShowDialog</c>'s return value for
+/// the outcome any more - it would still resolve through the unreachable library <c>DialogResult</c>
+/// property above - they resolve through <see cref="DialogContent.ResultTask"/> instead, via
+/// <see cref="Resolve"/>. <see cref="FileConsentAsync"/> already resolved through
+/// <see cref="FileConsentDialogViewModel.ResultTask"/>, so that path needed no equivalent change -
+/// only its Deny/Allow buttons moved into <see cref="FileConsentContent"/>.
 /// </para>
 /// </remarks>
 internal static class MaterialDialogs
@@ -71,44 +76,39 @@ internal static class MaterialDialogs
     internal static async Task<bool> ConfirmAsync(Window owner, string title, string message, string confirmText)
     {
         var loc = LocalizationService.Instance;
+        var content = new DialogContent(title, message, loc["Btn_Cancel"], confirmText, "primary danger");
 
         var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
             WindowTitle = loc["Dialog_ConfirmTitle"],
-            Content = new DialogContent(title, message),
+            Content = content,
             Width = 440,
             StartupLocation = WindowStartupLocation.CenterOwner,
             NegativeResult = new DialogResult(CancelResult),
-            DialogButtons = new[]
-            {
-                new DialogButton { Result = CancelResult, Content = loc["Btn_Cancel"], IsNegative = true },
-                new DialogButton { Result = ConfirmResult, Content = confirmText, IsPositive = true },
-            },
+            DialogButtons = Array.Empty<DialogButton>(),
         });
 
         AttachEscapeDismiss(dialog.GetWindow());
-        var result = await dialog.ShowDialog(owner);
-        return result?.GetResult == ConfirmResult;
+        await dialog.ShowDialog(owner);
+        return Resolve(content.ResultTask);
     }
 
     /// <summary>
     /// Builds and shows the file-sharing consent prompt that replaced <c>FileConsentDialog</c>.
     /// Content is <see cref="FileConsentContent"/>, a plain UserControl bound to
-    /// <paramref name="vm"/> so its message, detail and "remember" checkbox keep their exact
-    /// bindings from before. The dialog's own Deny/Allow buttons resolve, on close, into the same
-    /// <see cref="FileConsentDialogViewModel.AllowCommand"/> / <see cref="FileConsentDialogViewModel.DenyCommand"/>
-    /// the view model already exposed, so the decision logic itself never moved.
+    /// <paramref name="vm"/> so its message, detail, "remember" checkbox and Deny/Allow buttons keep
+    /// their exact bindings from before (RemEx-x6a70.3 fix round 2 moved Deny/Allow into the content
+    /// itself, wearing this app's secondary/primary vocabulary, still bound straight to
+    /// <see cref="FileConsentDialogViewModel.AllowCommand"/> / <see cref="FileConsentDialogViewModel.DenyCommand"/> -
+    /// the decision logic itself never moved). This helper does not build a decision from a result
+    /// string any more; it only watches <see cref="FileConsentDialogViewModel.ResultTask"/> and closes
+    /// the window once that resolves, the same pattern <c>PairingDialog.axaml.cs</c> uses.
     /// </summary>
     /// <param name="owner">
     /// The dialog's parent window, or <c>null</c> to show it unparented — mirrors the
     /// non-desktop-lifetime branch <c>App.axaml.cs</c> already had, where no <see cref="Window"/>
     /// exists to own it.
     /// </param>
-    /// <remarks>
-    /// Deny/Allow are still Material.Avalonia's own <c>DialogButtons</c>, not this app's
-    /// primary/secondary vocabulary - see the type remarks' fix-round-1 note on why a builder-level
-    /// button restyle is not possible against 3.19.0.
-    /// </remarks>
     internal static async Task<FileConsentDecision> FileConsentAsync(Window? owner, FileConsentDialogViewModel vm)
     {
         var loc = LocalizationService.Instance;
@@ -120,37 +120,27 @@ internal static class MaterialDialogs
             Width = 440,
             StartupLocation = WindowStartupLocation.CenterOwner,
             NegativeResult = new DialogResult(ConsentDenyResult),
-            DialogButtons = new[]
-            {
-                new DialogButton { Result = ConsentDenyResult, Content = loc["FileConsent_Deny"], IsNegative = true },
-                new DialogButton { Result = ConsentAllowResult, Content = loc["FileConsent_Allow"], IsPositive = true },
-            },
+            DialogButtons = Array.Empty<DialogButton>(),
         });
 
-        AttachEscapeDismiss(dialog.GetWindow());
-        var result = owner is not null ? await dialog.ShowDialog(owner) : await dialog.Show();
+        var window = dialog.GetWindow();
+        AttachEscapeDismiss(window);
 
-        // ROUTE THROUGH THE VM'S OWN COMMANDS, NOT A FRESH DECISION HERE. AllowCommand/DenyCommand
-        // are the one place "Allow + the Remember checkbox becomes a FileConsentDecision" is decided
-        // (RemEx-2m7fr pinned those lines unchanged) - this only picks which of the two to run.
-        if (MapConsent(result?.GetResult, vm.Remember).Granted)
-            vm.AllowCommand.Execute(null);
+        // Deny/Allow live in FileConsentContent now and resolve vm.ResultTask directly - this just
+        // closes the window once that happens, instead of reading a library button's result string.
+        _ = vm.ResultTask.ContinueWith(_ => Dispatcher.UIThread.Post(window.Close));
+
+        if (owner is not null)
+            await dialog.ShowDialog(owner);
         else
-            vm.DenyCommand.Execute(null);
+            await dialog.Show();
+
+        // The window can also close without a decision (Escape/Alt+F4/the title-bar close button) -
+        // ResolveAsDeny is a no-op if Allow/Deny already resolved it, and fail-closed otherwise.
+        vm.ResolveAsDeny();
 
         return await vm.ResultTask;
     }
-
-    /// <summary>
-    /// Pure allow/deny routing for the consent dialog's result string. <c>"allow"</c> is the only
-    /// value that grants; everything else - <c>"deny"</c>, <c>null</c>, <c>"none"</c>, a stray
-    /// <c>"cancel"</c> - denies. Fail-closed by construction rather than by enumerating every bad
-    /// value.
-    /// </summary>
-    internal static FileConsentDecision MapConsent(string? result, bool remember) =>
-        result == ConsentAllowResult
-            ? new FileConsentDecision(Granted: true, Remember: remember)
-            : new FileConsentDecision(Granted: false, Remember: false);
 
     /// <summary>
     /// Builds and shows the first-run restore prompt that replaced <c>RestorePromptWindow</c>, deriving
@@ -162,28 +152,29 @@ internal static class MaterialDialogs
         var loc = LocalizationService.Instance;
         var timestamp = TryParseSnapshotTimestamp(snapshotPath) ?? SafeGetLastWriteTimeUtc(snapshotPath);
 
+        var content = new DialogContent(
+            loc["Restore_PromptTitle"],
+            string.Format(
+                CultureInfo.CurrentCulture,
+                loc["Restore_PromptMessage"],
+                timestamp.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)),
+            loc["Restore_Skip"],
+            loc["Restore_Accept"],
+            "primary");
+
         var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
             WindowTitle = loc["Restore_PromptTitle"],
-            Content = new DialogContent(
-                loc["Restore_PromptTitle"],
-                string.Format(
-                    CultureInfo.CurrentCulture,
-                    loc["Restore_PromptMessage"],
-                    timestamp.ToLocalTime().ToString("g", CultureInfo.CurrentCulture))),
+            Content = content,
             Width = 460,
             StartupLocation = WindowStartupLocation.CenterOwner,
             NegativeResult = new DialogResult(SkipResult),
-            DialogButtons = new[]
-            {
-                new DialogButton { Result = SkipResult, Content = loc["Restore_Skip"], IsNegative = true },
-                new DialogButton { Result = RestoreResult, Content = loc["Restore_Accept"], IsPositive = true },
-            },
+            DialogButtons = Array.Empty<DialogButton>(),
         });
 
         AttachEscapeDismiss(dialog.GetWindow());
-        var result = await dialog.ShowDialog(owner);
-        return result?.GetResult == RestoreResult;
+        await dialog.ShowDialog(owner);
+        return Resolve(content.ResultTask);
     }
 
     private static DateTime SafeGetLastWriteTimeUtc(string path)
@@ -212,10 +203,9 @@ internal static class MaterialDialogs
 
     /// <summary>
     /// Adds the one thing a builder-created dialog window does not already have: Escape closing it.
-    /// Every other dismissal path (Alt+F4, the title-bar close button) already resolves to the
-    /// negative result set at build time - see the type remarks. Closing the window here does not
-    /// set a result itself; it relies on that negative result never having been overwritten, which
-    /// holds because overwriting it requires a button click.
+    /// Closing the window here does not itself decide an outcome - <see cref="Resolve"/> and
+    /// <see cref="FileConsentDialogViewModel.ResolveAsDeny"/> already treat a window that closed
+    /// without a button click as a decline, so this only has to make Escape actually close it.
     /// </summary>
     private static void AttachEscapeDismiss(Window window)
     {
@@ -228,4 +218,13 @@ internal static class MaterialDialogs
             }
         };
     }
+
+    /// <summary>
+    /// Resolves <see cref="ConfirmAsync"/>/<see cref="RestoreAsync"/>'s outcome from
+    /// <see cref="DialogContent.ResultTask"/>: <c>true</c> only if a button click completed it, and
+    /// <c>false</c> for every other way the window can have closed (Escape, Alt+F4, the title-bar
+    /// close button all leave it incomplete). A pure function over the task rather than inline in each
+    /// caller so it can be unit-tested without an Avalonia window.
+    /// </summary>
+    internal static bool Resolve(Task<bool> completion) => completion.IsCompletedSuccessfully && completion.Result;
 }

@@ -3,24 +3,36 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="392"
-             x:Class="Remex.Desktop.Views.DialogContent"
-             x:CompileBindings="False">
+             x:Class="Remex.Desktop.Views.DialogContent">
 
     <!-- Title + wrapped message for the simple confirm/restore prompts. No view model - both
          MaterialDialogs.ConfirmAsync and RestoreAsync only ever have a title and message string, so
          the two TextBlocks below are named and set directly in code-behind, the same pattern the
          Window subclasses this replaced used (ConfirmationDialog.axaml.cs, RestorePromptWindow.axaml.cs).
-         MaxWidth on the message is the actual fix (RemEx-x6a70.3 fix round 1): Material.Avalonia's own
-         AlertDialog renders its SupportingText in a TextBlock with no TextWrapping set at all, which
-         clips a message longer than the dialog's width instead of wrapping it - that control is not
-         used here at all, so its inability to wrap cannot leak into this dialog. -->
-    <StackPanel Spacing="6" Margin="24,24,24,0">
-        <TextBlock x:Name="HeaderText"
-                   Theme="{StaticResource Headline6TextBlock}"/>
-        <TextBlock x:Name="MessageTextBlock"
-                   Theme="{StaticResource Body2TextBlock}"
-                   Foreground="{DynamicResource TextSecondaryBrush}"
-                   TextWrapping="Wrap"
-                   MaxWidth="440"/>
+         MaxWidth on the message is the fix round 1 fix: Material.Avalonia's own AlertDialog renders its
+         SupportingText in a TextBlock with no TextWrapping set at all, which clips a message longer
+         than the dialog's width instead of wrapping it - that control is not used here at all, so its
+         inability to wrap cannot leak into this dialog.
+
+         RemEx-x6a70.3 fix round 2: the button row below is real RemEx Buttons, not Material.Avalonia's
+         DialogButtons - MaterialDialogs.cs hands CustomDialogBuilderParams an empty DialogButtons array
+         so the library renders no button of its own (see that file's type remarks for why a
+         library-rendered button cannot carry this app's Classes vocabulary against 3.19.0). Cancel is
+         always "secondary"; ActionButton's Classes are supplied by the caller through the constructor
+         below - ConfirmAsync passes "primary danger", RestoreAsync passes "primary". -->
+    <StackPanel Spacing="18" Margin="24,24,24,24">
+        <StackPanel Spacing="6">
+            <TextBlock x:Name="HeaderText"
+                       Theme="{StaticResource Headline6TextBlock}"/>
+            <TextBlock x:Name="MessageTextBlock"
+                       Theme="{StaticResource Body2TextBlock}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       MaxWidth="440"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="CancelButton" Classes="secondary" Click="OnCancelClick"/>
+            <Button x:Name="ActionButton" Click="OnActionClick"/>
+        </StackPanel>
     </StackPanel>
 </UserControl>

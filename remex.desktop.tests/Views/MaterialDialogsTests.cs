@@ -1,51 +1,56 @@
+using System.Threading.Tasks;
 using Remex.Desktop.Views;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Table-driven coverage for <see cref="MaterialDialogs.MapConsent"/>, the one pure function
-/// extracted from RemEx-x6a70.3's collapse of ConfirmationDialog/FileConsentDialog/RestorePromptWindow
-/// onto Material.Avalonia.Dialogs. Everything else in <c>MaterialDialogs.cs</c> either builds a
-/// <see cref="Avalonia.Controls.Window"/> (untestable without a headless Avalonia harness, which this
-/// repo does not have - see <c>DialogsDismissOnEscapeTests</c>'s source-scan approach) or is a
-/// one-line equality check already covered there.
+/// Unit coverage for <see cref="MaterialDialogs.Resolve"/>, the pure function
+/// <see cref="MaterialDialogs.ConfirmAsync"/>/<see cref="MaterialDialogs.RestoreAsync"/> use to turn
+/// <see cref="Remex.Desktop.Views.DialogContent.ResultTask"/> into their boolean outcome - extracted so
+/// the "closes without a button defaults to declined" contract can be tested directly, without an
+/// Avalonia window (this repo has no headless render harness - see
+/// <c>DialogsDismissOnEscapeTests</c>'s source-scan approach for everything else in
+/// <c>MaterialDialogs.cs</c>).
 /// </summary>
+/// <remarks>
+/// RemEx-x6a70.3 fix round 2 replaced this file's previous subject, <c>MaterialDialogs.MapConsent</c>:
+/// that function translated a Material.Avalonia.Dialogs library button's result string into a
+/// <c>FileConsentDecision</c>, and it has no callers left once Deny/Allow became real buttons bound
+/// straight to <see cref="Remex.Desktop.ViewModels.FileConsentDialogViewModel.DenyCommand"/>/
+/// <c>AllowCommand</c> - there is no library result string left to translate. Its fail-closed guarantee
+/// is still covered, just by a different, more direct test:
+/// <c>FileConsentDialogViewModelTests.ResolveAsDeny_WhenDismissed_ResolvesDenied</c>.
+/// </remarks>
 public class MaterialDialogsTests
 {
-    public static TheoryData<string?, bool, bool, bool> ConsentResults => new()
+    [Fact]
+    public void Resolve_TaskCompletedTrue_ReturnsTrue()
     {
-        // result,   remember, expectedGranted, expectedRemember
-        { "allow", true, true, true },
-        { "allow", false, true, false },
-        { "deny", true, false, false },
-        { "deny", false, false, false },
-        { null, true, false, false },
-        { "none", true, false, false },
-        { "cancel", true, false, false },
-        { "ALLOW", true, false, false }, // case-sensitive on purpose - no silent widening of the allow set
-        { "", true, false, false },
-    };
+        var tcs = new TaskCompletionSource<bool>();
+        tcs.SetResult(true);
 
-    [Theory]
-    [MemberData(nameof(ConsentResults))]
-    public void MapConsent_OnlyGrantsOnTheExactAllowResult(
-        string? result, bool remember, bool expectedGranted, bool expectedRemember)
-    {
-        var decision = MaterialDialogs.MapConsent(result, remember);
-
-        Assert.Equal(expectedGranted, decision.Granted);
-        Assert.Equal(expectedRemember, decision.Remember);
+        Assert.True(MaterialDialogs.Resolve(tcs.Task));
     }
 
     [Fact]
-    public void MapConsent_DenyIgnoresRememberEvenWhenTrue()
+    public void Resolve_TaskCompletedFalse_ReturnsFalse()
     {
-        // Remember only ever applies to a grant (RemEx-2m7fr's original Deny() command hard-codes
-        // Remember: false regardless of the checkbox) - a denied request must never be remembered.
-        var decision = MaterialDialogs.MapConsent("deny", remember: true);
+        var tcs = new TaskCompletionSource<bool>();
+        tcs.SetResult(false);
 
-        Assert.False(decision.Granted);
-        Assert.False(decision.Remember);
+        Assert.False(MaterialDialogs.Resolve(tcs.Task));
+    }
+
+    [Fact]
+    public void Resolve_TaskNeverCompleted_DefaultsToFalse()
+    {
+        // THE CASE THIS EXISTS FOR: the window closed some other way (Escape, Alt+F4, the title-bar
+        // close button) without either DialogContent button ever being clicked, so ResultTask is left
+        // incomplete rather than faulted or cancelled. Resolve must treat that as a decline, not throw
+        // or block - it never awaits the task, only inspects whether it already finished.
+        var tcs = new TaskCompletionSource<bool>();
+
+        Assert.False(MaterialDialogs.Resolve(tcs.Task));
     }
 }
