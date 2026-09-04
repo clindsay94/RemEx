@@ -52,9 +52,15 @@ public class ViewEntranceTests
 
         // Avalonia has no keyframe animator for RenderTransform itself; animating it crashes at
         // startup in Animation.InterpretKeyframes before first paint (RemEx-qolhg). Keyframes must
-        // target the transform sub-property instead.
-        xaml.Should().NotMatchRegex(@"<KeyFrame[\s\S]*?Property=""RenderTransform""",
-            "keyframe setters must animate TranslateTransform.Y, never RenderTransform");
+        // target the transform sub-property instead. Scoped to this container's entrance style
+        // blocks: a file-wide "<KeyFrame ... RenderTransform" scan would trip on an unrelated
+        // RenderTransform setter (AppLauncherView's drag scale) the moment it moved below the
+        // first keyframe (review of RemEx-alwfa.2).
+        foreach (Match block in EntranceStyleBlocks(xaml, containerName))
+        {
+            block.Value.Should().NotContain("Property=\"RenderTransform\"",
+                "keyframe setters must animate TranslateTransform.Y, never RenderTransform");
+        }
 
         Regex.Matches(xaml, @"Property=""TranslateTransform\.Y""").Count.Should().Be(expected * 2,
             "each entrance animation sets TranslateTransform.Y at 0% and 100%");
@@ -70,8 +76,7 @@ public class ViewEntranceTests
         // Scoped to this container's own style blocks (rather than a file-wide Duration/Delay
         // scan) so an unrelated Duration+Delay pair elsewhere in the same file cannot be
         // miscounted as one of this container's entrance animations.
-        var blockPattern = $@"StackPanel#{containerName}\.entrance > :is\(Control\):nth-child\(\d+\)"">[\s\S]*?</Style>";
-        var blocks = Regex.Matches(xaml, blockPattern);
+        var blocks = EntranceStyleBlocks(xaml, containerName);
         blocks.Count.Should().Be(expected, "one Animation per nth-child style");
 
         var maxTotalMs = 0;
@@ -102,9 +107,18 @@ public class ViewEntranceTests
         code.Should().Contain("vm.Shell.IsReducedMotion");
         code.Should().Contain("OnAttachedToVisualTree");
         code.Should().Contain($"{containerName}.Classes.Add(StaggeredEntrance.Class)");
-        code.Should().Contain($"nameof({viewFile})",
+        code.Should().MatchRegex($@"StaggeredEntrance\.ShouldPlay\(nameof\({viewFile}\),",
             "the once-per-process gate key must be this view's own name, or it would share a slot with another view's gate");
     }
+
+    /// <summary>
+    /// The container's own entrance style blocks, from the nth-child selector to its closing
+    /// tag. Both the RenderTransform guard and the budget check iterate these rather than the
+    /// whole file, so unrelated styles elsewhere in the view cannot be miscounted or mis-flagged.
+    /// </summary>
+    private static MatchCollection EntranceStyleBlocks(string xaml, string containerName)
+        => Regex.Matches(xaml,
+            $@"StackPanel#{containerName}\.entrance > :is\(Control\):nth-child\(\d+\)"">[\s\S]*?</Style>");
 
     private static int NormaliseToMilliseconds(string fractionalSecondsDigits)
     {
