@@ -471,7 +471,7 @@
                                 <DataTemplate x:DataType="services:ActivityEntry">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,9">
                                         <Border Grid.Column="0" Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GlassBaseDarkBrush}" Margin="0,0,14,0">
-                                            <TextBlock Text="{Binding Glyph}" Theme="{StaticResource Body1TextBlock}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <mi:MaterialIcon Kind="{Binding Kind, Converter={x:Static conv:ActivityKindToIconKindConverter.Instance}}" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <TextBlock Grid.Column="1" Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="12,0,4,0"/>

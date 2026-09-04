@@ -49,9 +49,10 @@ public enum ActivityKind
 
 /// <summary>
 /// One entry in the Home recent-activity feed. Only <see cref="Kind"/>, <see cref="Detail"/> and
-/// <see cref="TimestampLocal"/> are persisted; the glyph and description are computed live from the
-/// current UI culture so a language switch relabels existing history correctly (the same lazy-read
-/// approach <c>FileTransferQueueItem</c> uses for its state labels).
+/// <see cref="TimestampLocal"/> are persisted; the description is computed live from the current UI
+/// culture so a language switch relabels existing history correctly (the same lazy-read approach
+/// <c>FileTransferQueueItem</c> uses for its state labels). The leading icon shown for
+/// <see cref="Kind"/> is resolved in XAML via <c>ActivityKindToIconKindConverter</c>, not here.
 /// </summary>
 public sealed class ActivityEntry
 {
@@ -61,21 +62,6 @@ public sealed class ActivityEntry
     public string Detail { get; set; } = string.Empty;
 
     public DateTime TimestampLocal { get; set; }
-
-    /// <summary>Emoji glyph shown at the leading edge of the row.</summary>
-    [JsonIgnore]
-    public string Glyph => Kind switch
-    {
-        ActivityKind.FileReceived => "\U0001F4E5",   // 📥
-        ActivityKind.FileSent => "\U0001F4E4",       // 📤
-        ActivityKind.FileUploaded => "⬆️", // ⬆️
-        ActivityKind.FileDownloaded => "⬇️", // ⬇️
-        ActivityKind.AppLaunched => "\U0001F680",    // 🚀
-        ActivityKind.CommandRun => "⚡",         // ⚡
-        ActivityKind.DeviceConnected => "\U0001F4F1", // 📱
-        ActivityKind.DeviceDisconnected => "📴", // 📴
-        _ => "•",                               // •
-    };
 
     /// <summary>Localized one-line description, e.g. "Sent report.pdf to phone".</summary>
     [JsonIgnore]
