@@ -54,13 +54,17 @@ public class DeviceActivityDetailTests
         Assert.Contains("DeviceConnected", kinds);
         Assert.Contains("DeviceDisconnected", kinds);
 
-        // And it has a glyph of its own: the fallback bullet would make it indistinguishable from
-        // every other unrecognised kind in the feed.
-        var connected = new Remex.Desktop.Services.ActivityEntry
-        { Kind = Remex.Desktop.Services.ActivityKind.DeviceConnected }.Glyph;
-        var disconnected = new Remex.Desktop.Services.ActivityEntry
-        { Kind = Remex.Desktop.Services.ActivityKind.DeviceDisconnected }.Glyph;
+        // And it has an icon of its own: the fallback would make it indistinguishable from every
+        // other unrecognised kind in the feed. The row icon comes from the kind through
+        // ActivityKindToIconKindConverter since RemEx-1ufoa.4 (it used to be an emoji Glyph).
+        var converter = Remex.Desktop.Converters.ActivityKindToIconKindConverter.Instance;
+        var connected = converter.Convert(
+            Remex.Desktop.Services.ActivityKind.DeviceConnected, typeof(object), null,
+            System.Globalization.CultureInfo.InvariantCulture);
+        var disconnected = converter.Convert(
+            Remex.Desktop.Services.ActivityKind.DeviceDisconnected, typeof(object), null,
+            System.Globalization.CultureInfo.InvariantCulture);
         Assert.NotEqual(connected, disconnected);
-        Assert.NotEqual("•", disconnected);
+        Assert.NotEqual(Material.Icons.MaterialIconKind.CircleSmall, disconnected);
     }
 }

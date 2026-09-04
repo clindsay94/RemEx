@@ -56,22 +56,38 @@ public class HomeViewGlyphTests
     [Fact]
     public void ActivityEntryTemplate_DrawsItsIconThroughTheActivityKindConverter()
     {
-        var icons = ParseMaterialIcons();
-        icons.Should().NotBeEmpty("a query that matches nothing asserts nothing");
+        // Walk from the ActivityEntry DataTemplate itself, not the whole file: an icon bound
+        // through the converter anywhere else in HomeView must not stand in for the row icon
+        // (reviewer LOW on RemEx-1ufoa.4 slice 2).
+        var templates = System.Xml.Linq.XDocument.Parse(ReadHomeView())
+            .Descendants(System.Xml.Linq.XName.Get("DataTemplate", AvaloniaNamespace))
+            .Where(t => t.Attribute(System.Xml.Linq.XName.Get("DataType", XamlNamespace))?.Value
+                == "services:ActivityEntry")
+            .ToList();
+        templates.Should().ContainSingle("HomeView has exactly one Recent Activity row template");
 
-        var boundThroughConverter = icons
-            .Select(i => i.Attribute("Kind")?.Value)
-            .Where(v => v is not null)
-            .Any(v => v!.Contains("Binding Kind", StringComparison.Ordinal)
-                && v.Contains("ActivityKindToIconKindConverter", StringComparison.Ordinal));
+        var icons = templates[0]
+            .Descendants(System.Xml.Linq.XName.Get("MaterialIcon", MaterialIconsNamespace))
+            .ToList();
+        icons.Should().ContainSingle("the row template draws exactly one MaterialIcon");
 
-        boundThroughConverter.Should().BeTrue(
+        // Whitespace-normalised so a reformat to '{Binding  Kind' or '{Binding Path=Kind' still
+        // matches; the two things that matter are the source property and the converter.
+        var kind = System.Text.RegularExpressions.Regex.Replace(
+            icons[0].Attribute("Kind")?.Value ?? string.Empty, @"\s+", " ");
+        kind.Should().StartWith("{Binding ", "the row icon's Kind must be a binding, not a literal");
+        kind.Should().MatchRegex(@"\{Binding (Path=)?Kind[,}]", "the binding source must be the entry's Kind");
+        kind.Should().Contain("ActivityKindToIconKindConverter",
             "the Recent Activity row's MaterialIcon.Kind must bind through ActivityKindToIconKindConverter");
     }
 
+    private const string AvaloniaNamespace = "https://github.com/avaloniaui";
+    private const string XamlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+    private const string MaterialIconsNamespace = "using:Material.Icons.Avalonia";
+
     private static List<System.Xml.Linq.XElement> ParseMaterialIcons()
         => System.Xml.Linq.XDocument.Parse(ReadHomeView())
-            .Descendants(System.Xml.Linq.XName.Get("MaterialIcon", "using:Material.Icons.Avalonia"))
+            .Descendants(System.Xml.Linq.XName.Get("MaterialIcon", MaterialIconsNamespace))
             .ToList();
 
     private static string ReadHomeView()

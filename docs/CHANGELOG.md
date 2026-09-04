@@ -188,6 +188,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The three link tiles at the bottom of the PC dashboard (GitHub, Google Play, HWiNFO), the
+  empty Recent Activity card and every Recent Activity row drew their icons as emoji text, which
+  rendered in whatever the system emoji font felt like. They are Material icons now, sized and
+  coloured like the rest of the dashboard, and each activity row's icon follows its kind (file
+  sent or received, app launched, command run, phone connected or disconnected). (RemEx-1ufoa.4)
 - The Personalize side sheet on the PC titled itself with its own class name instead of
   "Personalize". The Material side sheet wraps whatever header you give it in a text template, so
   a header that is already a control has to opt out of that template.
