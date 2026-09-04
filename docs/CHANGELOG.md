@@ -188,6 +188,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Below about 1400px of window width the Remote Desktop toolbar drew its title straight over
+  the Display label, and the Low/High captions under the Quality slider sat on top of the slider
+  thumb. The title now steps aside when there is no room for it and the captions sit clear of the
+  thumb; the toolbar still scrolls sideways when it has to. (RemEx-1ufoa.3)
 - On a light palette, the colour-key legend on a dual-metric sensor card was dark text on a dark
   plate. The legend and the second value's unit label now take their text colour from the sensor's
   own theme, the same way the value badges on that plate already did, so they read on any seed.
