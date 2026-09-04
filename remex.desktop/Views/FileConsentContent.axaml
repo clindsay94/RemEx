@@ -22,7 +22,8 @@
             <TextBlock Text="{Binding Message}"
                        Theme="{StaticResource Body2TextBlock}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
-                       TextWrapping="Wrap"/>
+                       TextWrapping="Wrap"
+                       MaxWidth="440"/>
         </StackPanel>
 
         <Border IsVisible="{Binding HasDetail}"

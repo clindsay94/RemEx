@@ -163,4 +163,114 @@ public class DialogsDismissOnEscapeTests
         Assert.Contains("result == ConsentAllowResult", mapConsent.Groups["body"].Value, StringComparison.Ordinal);
         Assert.DoesNotContain("ConsentDenyResult ==", mapConsent.Groups["body"].Value, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// RemEx-x6a70.3 fix round 1: <c>ConfirmAsync</c> and <c>RestoreAsync</c> clipped their message
+    /// instead of wrapping it, because <c>CreateAlertDialog</c>'s <c>SupportingText</c> TextBlock has
+    /// no <c>TextWrapping</c> set. Both now build through <c>CreateCustomDialog</c> with
+    /// <c>DialogContent</c> instead - this guards that they stay off <c>CreateAlertDialog</c> and off
+    /// setting <c>ContentHeader</c>/<c>SupportingText</c> (the non-wrapping path), so nobody can revert
+    /// the fix by switching the builder back without the wrap guard below also failing.
+    /// </summary>
+    [Fact]
+    public void ConfirmAndRestoreBuildThroughCreateCustomDialogNotCreateAlertDialog()
+    {
+        var source = MaterialDialogsSource();
+
+        // Substring checks against the raw source rather than a stripped-comments version would also
+        // trip on this very doc comment naming the builder it moved away from, so match the actual
+        // invocation/assignment shapes instead of the bare words.
+        Assert.DoesNotContain("DialogHelper.CreateAlertDialog(", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContentHeader =", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("SupportingText =", source, StringComparison.Ordinal);
+
+        var createCustomDialogCalls = Regex.Matches(source, @"DialogHelper\.CreateCustomDialog\(").Count;
+        Assert.True(
+            createCustomDialogCalls >= 3,
+            "ConfirmAsync, FileConsentAsync and RestoreAsync should all build through CreateCustomDialog; "
+                + "found fewer CreateCustomDialog( calls than that.");
+
+        Assert.Contains("Content = new DialogContent(title, message)", source, StringComparison.Ordinal);
+        var dialogContentUses = Regex.Matches(source, @"Content = new DialogContent\(").Count;
+        Assert.True(
+            dialogContentUses >= 2,
+            "Both ConfirmAsync and RestoreAsync should build their content as `new DialogContent(...)`; "
+                + "found fewer than that.");
+    }
+
+    /// <summary>
+    /// The actual wrap fix, guarded at the source that renders the message: <c>DialogContent</c> (the
+    /// content <c>ConfirmAsync</c>/<c>RestoreAsync</c> build) and <c>FileConsentContent</c> (the content
+    /// <c>FileConsentAsync</c> builds) must both set <c>TextWrapping="Wrap"</c> on their message
+    /// TextBlock, or a long message clips at the window edge again - the exact regression this fix
+    /// round exists for. Anti-vacuity: also assert each markup file actually contains a message
+    /// TextBlock at all, so a rewrite that deletes the TextBlock instead of un-wrapping it does not
+    /// pass by having nothing left to check.
+    /// </summary>
+    [Theory]
+    [InlineData("DialogContent.axaml")]
+    [InlineData("FileConsentContent.axaml")]
+    public void DialogContentMessageWraps(string markupFile)
+    {
+        var path = Path.Combine(ViewsDirectory(), markupFile);
+        Assert.True(File.Exists(path), $"{markupFile} moved or was renamed");
+
+        var xaml = File.ReadAllText(path);
+
+        Assert.Contains("<TextBlock", xaml, StringComparison.Ordinal);
+        Assert.Contains("TextWrapping=\"Wrap\"", xaml, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The library still has no builder-level way to hand a rendered button this app's
+    /// primary/secondary/danger Classes (see the type remarks' fix-round-1 note) - the accepted
+    /// fallback is the exact library <c>DialogButtons</c> already used, with <c>IsNegative</c> marking
+    /// the cancel/skip/deny side of each pair. This guards that marking stays in place rather than
+    /// silently dropping back to unmarked buttons.
+    /// </summary>
+    [Fact]
+    public void EveryNegativeDialogButtonIsMarkedIsNegative()
+    {
+        var source = MaterialDialogsSource();
+
+        var isNegativeButtons = Regex.Matches(source, @"IsNegative = true").Count;
+        Assert.True(
+            isNegativeButtons >= 3,
+            "ConfirmAsync's Cancel, RestoreAsync's Skip and FileConsentAsync's Deny should each set "
+                + "IsNegative = true on their DialogButton; found fewer than three.");
+    }
+
+    /// <summary>
+    /// Pins each button's own <c>Result</c> constant to its own button, not just that a constant of
+    /// the right shape exists somewhere in the file. The regex checks above (e.g. "at least three
+    /// IsNegative = true") pass just as well if a negative button were quietly wired to the POSITIVE
+    /// result constant instead of its own - that would not show up until Cancel/Skip/Deny started
+    /// resolving to the confirm/restore/allow outcome. This is the guard that actually catches it.
+    /// </summary>
+    [Fact]
+    public void EachDialogButtonIsWiredToItsOwnResultConstant()
+    {
+        var source = MaterialDialogsSource();
+
+        Assert.Contains(
+            "new DialogButton { Result = CancelResult, Content = loc[\"Btn_Cancel\"], IsNegative = true }",
+            source, StringComparison.Ordinal);
+        Assert.Contains(
+            "new DialogButton { Result = ConfirmResult, Content = confirmText, IsPositive = true }",
+            source, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "new DialogButton { Result = SkipResult, Content = loc[\"Restore_Skip\"], IsNegative = true }",
+            source, StringComparison.Ordinal);
+        Assert.Contains(
+            "new DialogButton { Result = RestoreResult, Content = loc[\"Restore_Accept\"], IsPositive = true }",
+            source, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "new DialogButton { Result = ConsentDenyResult, Content = loc[\"FileConsent_Deny\"], IsNegative = true }",
+            source, StringComparison.Ordinal);
+        Assert.Contains(
+            "new DialogButton { Result = ConsentAllowResult, Content = loc[\"FileConsent_Allow\"], IsPositive = true }",
+            source, StringComparison.Ordinal);
+    }
 }

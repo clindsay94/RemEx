@@ -31,6 +31,32 @@ namespace Remex.Desktop.Views;
 /// <see cref="Window"/> does not bind it to Close, so <see cref="AttachEscapeDismiss"/> adds exactly
 /// that — a plain <c>window.Close()</c> — from this helper, not by patching the library.
 /// </para>
+/// <para>
+/// FIX ROUND 1 (RemEx-x6a70.3): the first pass left two regressions against the RemEx-2m7fr dialogs
+/// this replaced. <see cref="ConfirmAsync"/> and <see cref="RestoreAsync"/> now build through
+/// <see cref="DialogHelper.CreateCustomDialog"/> with <see cref="DialogContent"/> instead of
+/// <see cref="DialogHelper.CreateAlertDialog"/>'s <c>ContentHeader</c>/<c>SupportingText</c>, because
+/// <c>AlertDialog</c>'s <c>SupportingText</c> TextBlock has no <c>TextWrapping</c> set and clips a
+/// long message instead of wrapping it - moving to a custom content control sidesteps that TextBlock
+/// entirely rather than trying to patch it. The second regression - the confirm/deny/restore actions
+/// rendering as indistinguishable flat text instead of this app's primary/secondary/danger button
+/// vocabulary - is NOT fixed here. It was investigated by decompiling
+/// Material.Avalonia.Dialogs 3.19.0 (net8.0, ilspycmd): <c>DialogWindowBase&lt;TWindow,TResult&gt;.Procedure</c>
+/// resolves <c>ShowDialog</c>'s result from <c>_window.GetResult()</c> on the window's <c>Closed</c>
+/// event, which reads <c>(DataContext as ...ViewModel)?.DialogResult</c> - a property with an
+/// <c>internal</c> setter, only ever written by the library's own <c>ObsoleteDialogButtonViewModel</c>
+/// command handler. The object passed to <c>Window.Close(object)</c> is never read by that path, and
+/// external code cannot set <c>DialogResult</c> itself, so a custom button in this dialog's content
+/// has no way to produce a result <c>ShowDialog</c> would see. <c>DialogButton</c> also carries no
+/// <c>Classes</c> property - only <c>IsPositive</c>/<c>IsNegative</c> - so there is no builder-level
+/// way to hand a library-rendered button this app's <c>primary</c>/<c>secondary</c>/<c>danger</c>
+/// Classes either. Every builder below still hands Material.Avalonia its own <c>DialogButtons</c> for
+/// the actions, exactly as before, now with <c>IsNegative</c> set on the cancel/skip/deny button too -
+/// <c>DialogHelper.CreateObsoleteButtonArray</c> does not currently read it (only <c>IsPositive</c> is
+/// copied onto the button view model), so it has no visible effect against 3.19.0, but it records the
+/// intent for whenever that changes rather than silently relying on an undocumented gap. Only the
+/// wrapping is fixed in this round.
+/// </para>
 /// </remarks>
 internal static class MaterialDialogs
 {
@@ -46,17 +72,16 @@ internal static class MaterialDialogs
     {
         var loc = LocalizationService.Instance;
 
-        var dialog = DialogHelper.CreateAlertDialog(new AlertDialogBuilderParams
+        var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
             WindowTitle = loc["Dialog_ConfirmTitle"],
-            ContentHeader = title,
-            SupportingText = message,
+            Content = new DialogContent(title, message),
             Width = 440,
             StartupLocation = WindowStartupLocation.CenterOwner,
             NegativeResult = new DialogResult(CancelResult),
             DialogButtons = new[]
             {
-                new DialogButton { Result = CancelResult, Content = loc["Btn_Cancel"] },
+                new DialogButton { Result = CancelResult, Content = loc["Btn_Cancel"], IsNegative = true },
                 new DialogButton { Result = ConfirmResult, Content = confirmText, IsPositive = true },
             },
         });
@@ -79,6 +104,11 @@ internal static class MaterialDialogs
     /// non-desktop-lifetime branch <c>App.axaml.cs</c> already had, where no <see cref="Window"/>
     /// exists to own it.
     /// </param>
+    /// <remarks>
+    /// Deny/Allow are still Material.Avalonia's own <c>DialogButtons</c>, not this app's
+    /// primary/secondary vocabulary - see the type remarks' fix-round-1 note on why a builder-level
+    /// button restyle is not possible against 3.19.0.
+    /// </remarks>
     internal static async Task<FileConsentDecision> FileConsentAsync(Window? owner, FileConsentDialogViewModel vm)
     {
         var loc = LocalizationService.Instance;
@@ -92,7 +122,7 @@ internal static class MaterialDialogs
             NegativeResult = new DialogResult(ConsentDenyResult),
             DialogButtons = new[]
             {
-                new DialogButton { Result = ConsentDenyResult, Content = loc["FileConsent_Deny"] },
+                new DialogButton { Result = ConsentDenyResult, Content = loc["FileConsent_Deny"], IsNegative = true },
                 new DialogButton { Result = ConsentAllowResult, Content = loc["FileConsent_Allow"], IsPositive = true },
             },
         });
@@ -132,20 +162,21 @@ internal static class MaterialDialogs
         var loc = LocalizationService.Instance;
         var timestamp = TryParseSnapshotTimestamp(snapshotPath) ?? SafeGetLastWriteTimeUtc(snapshotPath);
 
-        var dialog = DialogHelper.CreateAlertDialog(new AlertDialogBuilderParams
+        var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
             WindowTitle = loc["Restore_PromptTitle"],
-            ContentHeader = loc["Restore_PromptTitle"],
-            SupportingText = string.Format(
-                CultureInfo.CurrentCulture,
-                loc["Restore_PromptMessage"],
-                timestamp.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)),
+            Content = new DialogContent(
+                loc["Restore_PromptTitle"],
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    loc["Restore_PromptMessage"],
+                    timestamp.ToLocalTime().ToString("g", CultureInfo.CurrentCulture))),
             Width = 460,
             StartupLocation = WindowStartupLocation.CenterOwner,
             NegativeResult = new DialogResult(SkipResult),
             DialogButtons = new[]
             {
-                new DialogButton { Result = SkipResult, Content = loc["Restore_Skip"] },
+                new DialogButton { Result = SkipResult, Content = loc["Restore_Skip"], IsNegative = true },
                 new DialogButton { Result = RestoreResult, Content = loc["Restore_Accept"], IsPositive = true },
             },
         });

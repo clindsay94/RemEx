@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="392"
+             x:Class="Remex.Desktop.Views.DialogContent"
+             x:CompileBindings="False">
+
+    <!-- Title + wrapped message for the simple confirm/restore prompts. No view model - both
+         MaterialDialogs.ConfirmAsync and RestoreAsync only ever have a title and message string, so
+         the two TextBlocks below are named and set directly in code-behind, the same pattern the
+         Window subclasses this replaced used (ConfirmationDialog.axaml.cs, RestorePromptWindow.axaml.cs).
+         MaxWidth on the message is the actual fix (RemEx-x6a70.3 fix round 1): Material.Avalonia's own
+         AlertDialog renders its SupportingText in a TextBlock with no TextWrapping set at all, which
+         clips a message longer than the dialog's width instead of wrapping it - that control is not
+         used here at all, so its inability to wrap cannot leak into this dialog. -->
+    <StackPanel Spacing="6" Margin="24,24,24,0">
+        <TextBlock x:Name="HeaderText"
+                   Theme="{StaticResource Headline6TextBlock}"/>
+        <TextBlock x:Name="MessageTextBlock"
+                   Theme="{StaticResource Body2TextBlock}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   TextWrapping="Wrap"
+                   MaxWidth="440"/>
+    </StackPanel>
+</UserControl>
