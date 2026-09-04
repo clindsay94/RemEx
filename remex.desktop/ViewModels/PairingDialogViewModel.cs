@@ -5,19 +5,35 @@ using Remex.Desktop.Services;
 namespace Remex.Desktop.ViewModels;
 
 /// <summary>
+/// Outcome of a <see cref="PairingDialogViewModel"/> run. <see cref="Paired"/> means
+/// <c>CompletePairingAsync</c> returned true and the caller should persist the pin. <see cref="Failed"/>
+/// means the PIN was checked and rejected (or the check threw) and the user closed the dialog on that
+/// terminal state. <see cref="Cancelled"/> means the dialog closed before any definitive PIN result —
+/// Cancel/Escape before or during an attempt, or the owning connection's token firing.
+/// </summary>
+public enum PairingDialogResult
+{
+    Paired,
+    Failed,
+    Cancelled
+}
+
+/// <summary>
 /// View-model for the pairing PIN dialog (RemEx-x6a70.1). The dialog used to hand the PIN back and
 /// close immediately, before it was even checked — the outcome only ever showed up on
 /// <c>ConnectionViewModel</c>'s status line, one control away from where the user was looking. This
 /// version stays open across the whole verification: it owns the call to <c>CompletePairingAsync</c>
-/// itself (via <see cref="_completePairing"/>), shows busy / failure / success inline, and lets the
-/// user correct a mistyped PIN and resubmit without the caller re-running the handshake.
+/// itself (via <see cref="_completePairing"/>), and shows busy / terminal-failure / success inline.
 /// </summary>
 /// <remarks>
-/// A retry is safe because <c>PairingClient.CompletePairingAsync</c> verifies the PIN LOCALLY first —
-/// it HMACs the PIN with the already-derived session key and compares against the response's
-/// <c>PinHmacBase64</c> — and returns false with no network traffic on a mismatch. Only a correct PIN
-/// causes it to send the ack. The client keypair persists across calls, so calling it again with the
-/// same <c>response</c> and a corrected PIN is valid (see <c>PairingClient.cs</c>, not touched here).
+/// There is no in-dialog retry. <c>PairingClient.CompletePairingAsync</c> has an unconditional
+/// <c>finally</c> (<c>PairingClient.cs:163-171</c>) that disposes the client's ECDH keypair and zeroes
+/// the session key on every exit path, including a local PIN-mismatch <c>return false</c>. A second
+/// call on the same <c>PairingClient</c> instance hits the <c>_clientEcdh == null</c> guard
+/// (<c>PairingClient.cs:85</c>) and fails instantly, regardless of what PIN is typed. So a false (or
+/// thrown) result here is terminal: the dialog reports the failure and waits for the user to close it.
+/// A real retry needs a fresh <c>StartPairingAsync</c> handshake, which may re-mint the PIN — that is a
+/// change to Remex.Core (shared, NativeAOT, also used by the Android client), not this bead.
 /// </remarks>
 public partial class PairingDialogViewModel : ObservableObject
 {
@@ -26,7 +42,7 @@ public partial class PairingDialogViewModel : ObservableObject
     private readonly Func<string, CancellationToken, Task<bool>> _completePairing;
     private readonly CancellationToken _cancellation;
     private readonly TimeSpan _successHold;
-    private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<PairingDialogResult> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenRegistration _cancellationRegistration;
 
     [ObservableProperty]
@@ -47,13 +63,21 @@ public partial class PairingDialogViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     private bool _isSucceeded;
 
-    /// <summary>Whether the PIN field and Pair button should accept input right now — false while a
-    /// verification is in flight, and false again after success (there is nothing left to edit).</summary>
-    public bool CanEdit => !IsBusy && !IsSucceeded;
+    /// <summary>True once the PIN has been checked and rejected (or the check threw). Terminal: there
+    /// is no retry (see the class remarks), so the dialog stays open showing the failure until the user
+    /// closes it via Cancel/Escape.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
+    private bool _isFailed;
 
-    /// <summary>True = paired. False = cancelled, aborted by an error the user gave up correcting, or
-    /// completed because the connection attempt that owns this dialog timed out / was cancelled.</summary>
-    public Task<bool> ResultTask => _tcs.Task;
+    /// <summary>Whether the PIN field and Pair button should accept input right now — false while a
+    /// verification is in flight, false after success (nothing left to edit), and false after a
+    /// terminal failure (no retry; see the class remarks).</summary>
+    public bool CanEdit => !IsBusy && !IsSucceeded && !IsFailed;
+
+    /// <summary>Terminal outcome of this dialog run. See <see cref="PairingDialogResult"/>.</summary>
+    public Task<PairingDialogResult> ResultTask => _tcs.Task;
 
     public PairingDialogViewModel(
         Func<string, CancellationToken, Task<bool>> completePairing,
@@ -67,8 +91,10 @@ public partial class PairingDialogViewModel : ObservableObject
         // The dialog is owned by ConnectionViewModel.ConnectAsync's linked cancellation token. If that
         // connection attempt times out or is cancelled while the user is still looking at the PIN box,
         // the dialog has to close itself rather than sit open forever waiting for a Submit that no
-        // longer matters.
-        _cancellationRegistration = cancellation.Register(() => _tcs.TrySetResult(false));
+        // longer matters. A token firing after the delegate already succeeded still reports Paired —
+        // the pairing itself is done, only the caller's wait timed out.
+        _cancellationRegistration = cancellation.Register(
+            () => _tcs.TrySetResult(IsSucceeded ? PairingDialogResult.Paired : PairingDialogResult.Cancelled));
         _tcs.Task.ContinueWith(
             _ => _cancellationRegistration.Dispose(),
             CancellationToken.None,
@@ -79,6 +105,14 @@ public partial class PairingDialogViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanEdit))]
     private async Task SubmitAsync()
     {
+        // CanExecute gates the bound button, but ExecuteAsync can be invoked directly (tests, or a
+        // stale command reference), so re-check here: a terminal failure/success must never re-enter
+        // and call _completePairing a second time — see the class remarks on why a retry can't work.
+        if (!CanEdit)
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(PinInput) || PinInput.Length != 6)
         {
             ErrorText = LocalizationService.Instance["Pairing_InvalidPin"] ?? "PIN must be 6 digits.";
@@ -95,14 +129,18 @@ public partial class PairingDialogViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            _tcs.TrySetResult(false);
+            IsBusy = false;
+            _tcs.TrySetResult(PairingDialogResult.Cancelled);
             return;
         }
         catch (Exception)
         {
             IsBusy = false;
+            IsFailed = true;
             ErrorText = LocalizationService.Instance["Status_PairingFailed"]
                 ?? "Pairing failed. Check the PIN on the PC";
+            // Terminal: see the class remarks. There is no retry, the PIN box stays read-only via
+            // CanEdit, and the dialog waits for the user to close it (Cancel/Escape).
             return;
         }
 
@@ -119,21 +157,26 @@ public partial class PairingDialogViewModel : ObservableObject
                 // The caller is already tearing the connection down; the pairing itself still
                 // succeeded, so the dialog still reports success rather than a cancellation.
             }
-            _tcs.TrySetResult(true);
+            _tcs.TrySetResult(PairingDialogResult.Paired);
         }
         else
         {
             IsBusy = false;
+            IsFailed = true;
             ErrorText = LocalizationService.Instance["Status_PairingFailed"]
                 ?? "Pairing failed. Check the PIN on the PC";
-            // PinInput is left in place so the user can correct it and press Pair again — the next
-            // Submit calls _completePairing again rather than restarting the connection.
+            // Terminal: see the class remarks. There is no retry, the PIN box stays read-only via
+            // CanEdit, and the dialog waits for the user to close it (Cancel/Escape).
         }
     }
 
     [RelayCommand]
     private void Cancel()
     {
-        _tcs.TrySetResult(false);
+        _tcs.TrySetResult(IsSucceeded
+            ? PairingDialogResult.Paired
+            : IsFailed
+                ? PairingDialogResult.Failed
+                : PairingDialogResult.Cancelled);
     }
 }

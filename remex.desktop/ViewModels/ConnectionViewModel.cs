@@ -1144,12 +1144,17 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     return;
                 }
 
-                var paired = await PairWithDialogAsync(pairingClient, response, linkedCts.Token);
-                if (!paired)
+                var pairingResult = await PairWithDialogAsync(pairingClient, response, linkedCts.Token);
+                switch (pairingResult)
                 {
-                    StatusText = LocalizationService.Instance["Status_PairingCancelled"];
-                    Cleanup();
-                    return;
+                    case Remex.Desktop.ViewModels.PairingDialogResult.Failed:
+                        StatusText = LocalizationService.Instance["Status_PairingFailed"];
+                        Cleanup();
+                        return;
+                    case Remex.Desktop.ViewModels.PairingDialogResult.Cancelled:
+                        StatusText = LocalizationService.Instance["Status_PairingCancelled"];
+                        Cleanup();
+                        return;
                 }
 
                 // Pairing successful, save the SPKI hash!
@@ -2066,12 +2071,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// <see cref="Remex.Desktop.ViewModels.PairingDialogViewModel.ResultTask"/> (RemEx-x6a70.1). The
     /// dialog owns the whole verify/retry loop now — this method only reports the final true/false.
     /// </summary>
-    private async Task<bool> PairWithDialogAsync(
+    private async Task<Remex.Desktop.ViewModels.PairingDialogResult> PairWithDialogAsync(
         Remex.Core.Native.PairingClient pairingClient,
         Remex.Core.Models.PairingResponse response,
         CancellationToken cancellationToken)
     {
-        bool result = false;
+        var result = Remex.Desktop.ViewModels.PairingDialogResult.Cancelled;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var dialog = new Remex.Desktop.Views.PairingDialog
@@ -2086,14 +2091,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             {
                 if (desktop.MainWindow != null)
                 {
-                    result = await dialog.ShowDialog<bool>(desktop.MainWindow);
+                    result = await dialog.ShowDialog<Remex.Desktop.ViewModels.PairingDialogResult>(desktop.MainWindow);
                     return;
                 }
             }
             // Fallback when no owner window is available — a single-view (non-window) lifetime, or
             // a null ShellViewModel / MainWindow. Not reachable in practice: this UI only runs as
             // the PC's classic desktop app, where a MainWindow is always present by the time pairing
-            // is requested. If it ever were taken, the method reports pairing as not completed.
+            // is requested. If it ever were taken, the method reports pairing as cancelled.
         });
         return result;
     }

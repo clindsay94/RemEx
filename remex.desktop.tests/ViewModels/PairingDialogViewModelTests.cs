@@ -11,15 +11,19 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// <summary>
 /// RemEx-x6a70.1: the dialog used to hand the PIN back and close immediately, before it was even
 /// checked. It now owns the call to <c>CompletePairingAsync</c> (injected here as
-/// <c>completePairing</c>) and stays open across busy / failure / retry / success, closing itself
-/// only on success, Cancel, or the owning connection attempt's cancellation.
+/// <c>completePairing</c>) and stays open across busy / terminal-failure / success, closing itself
+/// only when the user closes it (Cancel/Escape) or the owning connection attempt's cancellation
+/// fires. Fix round 1: a failed PIN is TERMINAL, not retryable (see the view-model's class remarks
+/// for why — <c>PairingClient.CompletePairingAsync</c>'s unconditional <c>finally</c> disposes the
+/// keypair on every exit path, so a second call always fails regardless of the PIN typed).
 /// </summary>
 public class PairingDialogViewModelTests
 {
     private static PairingDialogViewModel Vm(
         Func<string, CancellationToken, Task<bool>> completePairing,
-        CancellationToken cancellation = default) =>
-        new(completePairing, cancellation, successHold: TimeSpan.Zero);
+        CancellationToken cancellation = default,
+        TimeSpan? successHold = null) =>
+        new(completePairing, cancellation, successHold ?? TimeSpan.Zero);
 
     [Fact]
     public void Submit_WithInvalidPin_SetsErrorAndDoesNotCallDelegate()
@@ -56,7 +60,7 @@ public class PairingDialogViewModelTests
     }
 
     [Fact]
-    public async Task Submit_WhenDelegateSucceeds_GoesThroughSucceededThenResolvesTrue()
+    public async Task Submit_WhenDelegateSucceeds_GoesThroughSucceededThenResolvesPaired()
     {
         var vm = Vm((_, _) => Task.FromResult(true));
         vm.PinInput = "123456";
@@ -66,49 +70,112 @@ public class PairingDialogViewModelTests
         vm.IsSucceeded.Should().BeTrue();
         vm.IsBusy.Should().BeFalse();
         vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
-        (await vm.ResultTask).Should().BeTrue();
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Paired);
     }
 
     [Fact]
-    public async Task Submit_WhenDelegateFails_ShowsErrorAndLeavesResultPendingForRetry()
+    public async Task Submit_WhenDelegateFails_IsTerminal_SecondSubmitIsNoOpAndCancelResolvesFailed()
     {
         var callCount = 0;
         var vm = Vm((_, _) =>
         {
             callCount++;
-            return Task.FromResult(callCount > 1); // fails first, succeeds on retry
+            return Task.FromResult(false);
         });
         vm.PinInput = "111111";
 
         await vm.SubmitCommand.ExecuteAsync(null);
 
+        vm.IsFailed.Should().BeTrue();
+        vm.CanEdit.Should().BeFalse("a terminal failure has no retry — see the view-model's class remarks");
         vm.ErrorText.Should().Be(LocalizationService.Instance["Status_PairingFailed"]);
-        vm.IsBusy.Should().BeFalse();
-        vm.ResultTask.IsCompleted.Should().BeFalse("a failed PIN lets the user correct it, it doesn't close the dialog");
+        vm.SubmitCommand.CanExecute(null).Should().BeFalse("the Pair button must not accept another attempt");
+        vm.ResultTask.IsCompleted.Should().BeFalse("a failure alone doesn't close the dialog; the user closes it");
 
-        // The user corrects the PIN and presses Pair again — the delegate is called again, not the
-        // whole connection attempt restarted.
+        // A second Submit is gated by CanExecute (RelayCommand.ExecuteAsync honors it), so this must
+        // be a no-op rather than a second handshake attempt against an already-torn-down PairingClient.
         vm.PinInput = "222222";
         await vm.SubmitCommand.ExecuteAsync(null);
 
-        callCount.Should().Be(2);
-        vm.IsSucceeded.Should().BeTrue();
-        (await vm.ResultTask).Should().BeTrue();
+        callCount.Should().Be(1, "the failed PIN check is terminal; retrying calls a PairingClient " +
+            "whose keypair was already disposed by CompletePairingAsync's finally block");
+
+        vm.CancelCommand.Execute(null);
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Failed);
     }
 
     [Fact]
-    public async Task Cancel_ResolvesResultFalse()
+    public async Task Cancel_DuringSuccessHold_ResolvesPaired()
+    {
+        var vm = Vm((_, _) => Task.FromResult(true), successHold: TimeSpan.FromMilliseconds(200));
+        vm.PinInput = "123456";
+
+        var submitTask = vm.SubmitCommand.ExecuteAsync(null);
+        while (!vm.IsSucceeded)
+        {
+            await Task.Delay(5);
+        }
+
+        // Escape/Cancel during the success hold must not discard an already-completed pairing.
+        vm.CancelCommand.Execute(null);
+        await submitTask;
+
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Paired);
+    }
+
+    [Fact]
+    public async Task TokenCancellation_DuringSuccessHold_ResolvesPaired()
+    {
+        using var cts = new CancellationTokenSource();
+        var vm = Vm((_, _) => Task.FromResult(true), cts.Token, TimeSpan.FromMilliseconds(200));
+        vm.PinInput = "123456";
+
+        var submitTask = vm.SubmitCommand.ExecuteAsync(null);
+        while (!vm.IsSucceeded)
+        {
+            await Task.Delay(5);
+        }
+
+        cts.Cancel();
+        await submitTask;
+
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Paired,
+            "the pairing itself succeeded before the owning connection attempt's token fired");
+    }
+
+    [Fact]
+    public async Task TokenCancellation_WhileBusy_ResolvesCancelled_WithIsBusyFalse()
+    {
+        using var cts = new CancellationTokenSource();
+        var vm = Vm(async (_, ct) => { await Task.Delay(Timeout.Infinite, ct); return false; }, cts.Token);
+        vm.PinInput = "123456";
+
+        var submitTask = vm.SubmitCommand.ExecuteAsync(null);
+        while (!vm.IsBusy)
+        {
+            await Task.Delay(5);
+        }
+
+        cts.Cancel();
+        await submitTask;
+
+        vm.IsBusy.Should().BeFalse();
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Cancelled);
+    }
+
+    [Fact]
+    public async Task Cancel_BeforeAnyAttempt_ResolvesCancelled()
     {
         var vm = Vm((_, _) => Task.FromResult(true));
 
         vm.CancelCommand.Execute(null);
 
         vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
-        (await vm.ResultTask).Should().BeFalse();
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Cancelled);
     }
 
     [Fact]
-    public async Task AlreadyCancelledToken_ResolvesResultFalse()
+    public async Task AlreadyCancelledToken_ResolvesCancelled()
     {
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -116,11 +183,11 @@ public class PairingDialogViewModelTests
         var vm = Vm((_, _) => Task.FromResult(true), cts.Token);
 
         vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
-        (await vm.ResultTask).Should().BeFalse();
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Cancelled);
     }
 
     [Fact]
-    public async Task Submit_WhenDelegateThrows_SetsErrorAndLeavesResultPending()
+    public async Task Submit_WhenDelegateThrows_IsTerminal()
     {
         var vm = Vm((_, _) => throw new InvalidOperationException("boom"));
         vm.PinInput = "123456";
@@ -129,7 +196,12 @@ public class PairingDialogViewModelTests
 
         vm.ErrorText.Should().Be(LocalizationService.Instance["Status_PairingFailed"]);
         vm.IsBusy.Should().BeFalse();
+        vm.IsFailed.Should().BeTrue();
+        vm.CanEdit.Should().BeFalse();
         vm.ResultTask.IsCompleted.Should().BeFalse();
+
+        vm.CancelCommand.Execute(null);
+        (await vm.ResultTask).Should().Be(PairingDialogResult.Failed);
     }
 
     [Fact]

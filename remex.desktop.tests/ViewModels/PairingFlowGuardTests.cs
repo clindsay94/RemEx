@@ -29,7 +29,10 @@ public class PairingFlowGuardTests
             "the pairing dialog — not called again directly alongside it");
 
         var callIndex = matches[0].Index;
-        var methodStart = source.LastIndexOf("private async Task<bool> PairWithDialogAsync(", callIndex, StringComparison.Ordinal);
+        var methodStart = source.LastIndexOf(
+            "private async Task<Remex.Desktop.ViewModels.PairingDialogResult> PairWithDialogAsync(",
+            callIndex,
+            StringComparison.Ordinal);
         methodStart.Should().BeGreaterThanOrEqualTo(0,
             "the one CompletePairingAsync call must live inside PairWithDialogAsync");
     }
@@ -42,6 +45,23 @@ public class PairingFlowGuardTests
         source.Should().NotContain("PromptForPinAsync",
             "the old string?-returning prompt was replaced by PairWithDialogAsync, which owns the " +
             "whole verify/retry loop instead of handing a bare PIN back to the caller");
+    }
+
+    [Fact]
+    public void PairWithDialogAsync_MapsFailedAndCancelledToTheirDistinctStatusStrings()
+    {
+        var source = ConnectionViewModelSource();
+
+        var switchStart = source.IndexOf("switch (pairingResult)", StringComparison.Ordinal);
+        switchStart.Should().BeGreaterThanOrEqualTo(0,
+            "PairWithDialogAsync's result must be dispatched on PairingDialogResult, not a bare bool");
+        var switchEnd = source.IndexOf("_isPairedWithCurrentHost = true;", switchStart, StringComparison.Ordinal);
+        var switchBody = source.Substring(switchStart, switchEnd - switchStart);
+
+        switchBody.Should().Contain("PairingDialogResult.Failed").And.Contain("Status_PairingFailed",
+            "a rejected PIN must report Status_PairingFailed, distinct from a user cancellation");
+        switchBody.Should().Contain("PairingDialogResult.Cancelled").And.Contain("Status_PairingCancelled",
+            "Cancel/Escape or a timed-out token must report Status_PairingCancelled, not the failure string");
     }
 
     [Fact]

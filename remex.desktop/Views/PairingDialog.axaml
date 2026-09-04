@@ -78,6 +78,17 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
+
+                <!-- RemEx-x6a70.1 fix round 1: a failed PIN is now terminal (no retry — see
+                     PairingDialogViewModel's class remarks), and the TextBox goes IsEnabled=False via
+                     CanEdit at that point. A disabled TextBox does not reliably show
+                     TextFieldAssist.Hints, so the failure needs its own visible text rather than
+                     relying on the field's helper slot alone. -->
+                <TextBlock Text="{local:Localize Status_PairingFailed}"
+                           Theme="{StaticResource Body2TextBlock}"
+                           Foreground="{DynamicResource SystemErrorBrush}"
+                           IsVisible="{Binding IsFailed}"
+                           TextWrapping="Wrap"/>
             </StackPanel>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
