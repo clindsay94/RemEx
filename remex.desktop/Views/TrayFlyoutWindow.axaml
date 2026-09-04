@@ -87,6 +87,7 @@
                 <ToggleButton Grid.Column="3" Classes="tertiary icon-button compact"
                               IsChecked="{Binding IsPinned, Mode=OneWay}"
                               Click="OnTogglePin"
+                              ToolTip.Tip="{Binding PinTooltip}"
                               AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Pin}">
                     <mi:MaterialIcon Kind="Pin" Width="14" Height="14"/>
                 </ToggleButton>

@@ -58,7 +58,7 @@ public sealed record TrayTile
 /// whose label implies the phone is being controlled.
 /// </para>
 /// </remarks>
-public sealed partial class TrayFlyoutViewModel : ObservableObject
+public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly HomeViewModel _home;
@@ -80,6 +80,17 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPinned;
 
+    /// <summary>
+    /// The literal key for <see cref="PinTooltip"/>. Tray_Pin / Tray_Unpin were translated into
+    /// all nine locales in 689b61b but never bound to anything, so the pin toggle had no tooltip
+    /// in any language until this property wired them up.
+    /// </summary>
+    public static string PinTooltipKey(bool isPinned) => isPinned ? "Tray_Unpin" : "Tray_Pin";
+
+    public string PinTooltip => LocalizationService.Instance[PinTooltipKey(IsPinned)];
+
+    partial void OnIsPinnedChanged(bool value) => OnPropertyChanged(nameof(PinTooltip));
+
     [ObservableProperty]
     private IReadOnlyList<TrayTile> _tiles = [];
 
@@ -98,9 +109,6 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
         // PhonePresenceMonitor and the tray menu subscribe for the same reason.
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
 
-        // Neither unsubscribe is needed: this view model is a singleton (App.axaml.cs) and both
-        // publishers are process-lifetime singletons too. That stops being true if the registration
-        // is ever changed to AddTransient.
         RebuildTiles();
     }
 
@@ -110,6 +118,21 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
         _home.RefreshPinnedSensors();
         Presence.Refresh();
         RebuildTiles();
+    }
+
+    /// <summary>
+    /// Detaches both subscriptions above. This view model is registered with
+    /// <c>AddSingleton</c> (App.axaml.cs), so in practice the standard DI container calls this once,
+    /// at process shutdown, when it disposes its singletons — there is no earlier point in this
+    /// view model's life where detaching would be correct. It exists now (rather than the previous
+    /// "neither unsubscribe is needed" reasoning) because <see cref="PinTooltip"/> made this the
+    /// first computed property here that <c>LocalizedPropertyRefreshTests</c> can see, and that test
+    /// requires a matching <c>-=</c> in the file regardless of the singleton's actual lifetime.
+    /// </summary>
+    public void Dispose()
+    {
+        Presence.PropertyChanged -= OnPresenceChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
     }
 
     private void OnPresenceChanged(object? sender, PropertyChangedEventArgs e)
@@ -184,6 +207,8 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
                 HasSubmenu = true,
             },
         ];
+
+        OnPropertyChanged(nameof(PinTooltip));
     }
 
     [RelayCommand]
