@@ -40,9 +40,30 @@
                                 <!-- Foreground and Opacity come from the styles below, NOT from here
                                      (RemEx-o9gd). A local value beats a style setter in Avalonia, so
                                      setting them inline would make the selected-state rules silently
-                                     inert - which is exactly the failure this change fixes. -->
-                                <TextBlock Classes="palette-label" Text="{Binding Label}" Theme="{StaticResource Subtitle2TextBlock}" />
-                                <TextBlock Classes="palette-category" Text="{Binding Category}" Theme="{StaticResource CaptionTextBlock}" />
+                                     inert - which is exactly the failure this change fixes.
+
+                                     Inlines (not Text) so the matched substring can render bold
+                                     (RemEx-x6a70.2). The MultiBinding's second Binding reaches past
+                                     this row's own DataContext (a CommandPaletteEntry) to the live
+                                     search query on the window's view model via the named
+                                     ResultsList element, whose DataContext is inherited from the
+                                     window rather than the per-row template. -->
+                                <TextBlock Classes="palette-label" Theme="{StaticResource Subtitle2TextBlock}">
+                                    <TextBlock.Inlines>
+                                        <MultiBinding Converter="{x:Static local:MatchHighlightConverter.Instance}">
+                                            <Binding Path="Label" />
+                                            <Binding Path="#ResultsList.((vm:CommandPaletteViewModel)DataContext).SearchText" />
+                                        </MultiBinding>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
+                                <TextBlock Classes="palette-category" Theme="{StaticResource CaptionTextBlock}">
+                                    <TextBlock.Inlines>
+                                        <MultiBinding Converter="{x:Static local:MatchHighlightConverter.Instance}">
+                                            <Binding Path="Category" />
+                                            <Binding Path="#ResultsList.((vm:CommandPaletteViewModel)DataContext).SearchText" />
+                                        </MultiBinding>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
                             </StackPanel>
                         </Grid>
                     </DataTemplate>

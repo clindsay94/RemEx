@@ -1,6 +1,8 @@
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
 
@@ -60,16 +62,29 @@ public class CommandPaletteMaterialSurfaceTests
     [Fact]
     public void RowLabelAndCategoryCarryNoInlineForegroundOrOpacity()
     {
+        // Parsed-element rather than regex (RemEx-x6a70.2): the two row TextBlocks stopped being
+        // self-closing once their text moved from a plain Text= binding to a MultiBinding on
+        // Inlines (so the matched substring can render bold), which the old
+        // `<TextBlock ...[^/]*/>` regex could never match. XDocument keeps the same intent -
+        // no inline Foreground/Opacity on either row TextBlock - without depending on the tag
+        // staying self-closing.
         var xaml = PaletteWindowXaml();
+        var doc = XDocument.Parse(xaml);
+        XNamespace ns = "https://github.com/avaloniaui";
 
-        var label = Regex.Match(xaml, @"<TextBlock Classes=""palette-label""[^/]*/>").Value;
-        var category = Regex.Match(xaml, @"<TextBlock Classes=""palette-category""[^/]*/>").Value;
+        var label = doc.Descendants(ns + "TextBlock")
+            .FirstOrDefault(e => (string?)e.Attribute("Classes") == "palette-label");
+        var category = doc.Descendants(ns + "TextBlock")
+            .FirstOrDefault(e => (string?)e.Attribute("Classes") == "palette-category");
 
-        label.Should().NotBeEmpty();
-        category.Should().NotBeEmpty();
-        label.Should().NotContain("Foreground=").And.NotContain("Opacity=",
+        label.Should().NotBeNull("the palette-label TextBlock must still exist");
+        category.Should().NotBeNull("the palette-category TextBlock must still exist");
+
+        label!.Attribute("Foreground").Should().BeNull(
             "the row's Foreground/Opacity must come from the ListBox.Styles selectors, not inline (RemEx-o9gd)");
-        category.Should().NotContain("Foreground=").And.NotContain("Opacity=");
+        label.Attribute("Opacity").Should().BeNull();
+        category!.Attribute("Foreground").Should().BeNull();
+        category.Attribute("Opacity").Should().BeNull();
     }
 
     [Fact]
