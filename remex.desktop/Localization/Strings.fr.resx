@@ -2912,7 +2912,7 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Comment changer l'apparence de RemEx ?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Utilisez le bouton « Personnaliser l’apparence » pour ouvrir le panneau Personnaliser.
+    <value>Utilisez le bouton « Personnaliser l'apparence » pour ouvrir le panneau Personnaliser.
 
 Vous pouvez modifier :
 • La couleur de base de votre palette : choisissez-la sur la roue chromatique, saisissez un code hexadécimal, alignez-la sur l’accentuation de Windows, ou prélevez-la depuis votre fond d’écran

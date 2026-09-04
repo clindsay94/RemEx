@@ -2912,7 +2912,7 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
     <value>Como mudo a aparência do RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Use o botão "Personalize appearance" para abrir o painel Personalizar.
+    <value>Use o botão "Personalizar aparência" para abrir o painel Personalizar.
 
 Você pode mudar:
 • A cor-base (seed) da sua paleta — escolha na roda de cores, digite um código hex, combine com o destaque do Windows ou extraia do seu papel de parede

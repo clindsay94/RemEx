@@ -2916,7 +2916,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>RemEx'in görünümünü nasıl değiştiririm?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Personalize panelini açmak için "Personalize appearance" düğmesini kullanın.
+    <value>Kişiselleştir panelini açmak için "Görünümü kişiselleştir" düğmesini kullanın.
 
 Şunları değiştirebilirsiniz:
 • Paletinizin tohum (seed) rengi — renk çarkından seçin, hex kodu girin, Windows vurgu renginizle eşleştirin veya duvar kağıdınızdan alın

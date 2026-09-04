@@ -2915,7 +2915,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Bagaimana cara mengubah tampilan RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Gunakan tombol "Personalize appearance" untuk membuka panel Personalize.
+    <value>Gunakan tombol "Personalisasi tampilan" untuk membuka panel Personalisasi.
 
 Anda dapat mengubah:
 • Warna dasar (seed) palet Anda — pilih dari roda warna, ketik kode hex, samakan dengan warna aksen Windows, atau ambil dari wallpaper Anda

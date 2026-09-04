@@ -2913,7 +2913,7 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Jak zmienić wygląd RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Użyj przycisku „Personalize appearance”, aby otworzyć panel Personalizacji.
+    <value>Użyj przycisku „Personalizuj wygląd”, aby otworzyć panel Personalizacji.
 
 Możesz zmienić:
 • Kolor bazowy (seed) swojej palety — wybierz go z koła kolorów, wpisz kod hex, dopasuj do akcentu systemu Windows lub pobierz z tapety
