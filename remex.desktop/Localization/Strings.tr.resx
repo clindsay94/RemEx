@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>ANA SAYFA</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ÇALIŞMA ALANI</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Canlı Bakış</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Kılavuzu tekrar görmek ister misiniz?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX CANLI</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Ana Pencereyi Göster</value>
   </data>
@@ -2928,11 +2919,12 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>Personalize panelini açmak için "Personalize appearance" düğmesini kullanın.
 
 Şunları değiştirebilirsiniz:
-• Tema (CyberNOC, Monolith, SolarFlare veya BaseDarkGlass)
-• Vurgu rengi ve palet
-• Kart köşe yarıçapı ve biçimi
-• Yazı tipi ve boyutu
-• Kart saydamlığı
+• Paletinizin tohum (seed) rengi — renk çarkından seçin, hex kodu girin, Windows vurgu renginizle eşleştirin veya duvar kağıdınızdan alın
+• Açık, koyu veya sistem modu ile kontrast
+• Şema varyantı ve arka plan materyali
+• Köşe yarıçapı, cam saydamlığı ve parlama gücü
+• Açılış ekranı stili
+• Sayfa başlığı ve içerik yazı tipleri ile arayüz ölçeği
 • Uygulama dili — Windows veya Linux dilinizden bağımsız olarak</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3162,9 +3154,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Yeni PIN al</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>PIN kopyala</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Yeniden adlandır</value>

@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>होम</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>वर्कस्पेस</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>लाइव ग्लेंस</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>क्या आपको फिर से वॉकथ्रू देखने की आवश्यकता है?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>रेमेक्स लाइव</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>मुख्य विंडो दिखाएं</value>
   </data>
@@ -2924,11 +2915,12 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>«Personalize appearance» बटन से Personalize पैनल खोलें।
 
 आप बदल सकते हैं:
-• थीम (CyberNOC, Monolith, SolarFlare या BaseDarkGlass)
-• एक्सेंट रंग और पैलेट
-• कार्ड के कोनों की त्रिज्या और आकार
-• फ़ॉन्ट और उसका आकार
-• कार्ड की अपारदर्शिता
+• अपने पैलेट का सीड रंग — इसे कलर व्हील से चुनें, हेक्स कोड टाइप करें, Windows के एक्सेंट से मिलाएं, या अपने वॉलपेपर से लें
+• लाइट, डार्क या सिस्टम मोड, और कंट्रास्ट
+• स्कीम वेरिएंट और बैकग्राउंड मटीरियल
+• कोनों की त्रिज्या, ग्लास की अपारदर्शिता और ग्लो की तीव्रता
+• स्प्लैश स्क्रीन का स्टाइल
+• पेज टाइटल और कंटेंट के फ़ॉन्ट, और UI स्केल
 • ऐप की भाषा, आपके Windows या Linux की भाषा से अलग</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3158,9 +3150,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>नया पिन प्राप्त करें</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>पिन कॉपी करें</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>नाम बदलें</value>

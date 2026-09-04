@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>BERANDA</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>RUANG KERJA</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Kilasan Langsung</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Perlu melihat panduan lagi?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX LANGSUNG</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Tampilkan Jendela Utama</value>
   </data>
@@ -2927,11 +2918,12 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Gunakan tombol "Personalize appearance" untuk membuka panel Personalize.
 
 Anda dapat mengubah:
-• Tema (CyberNOC, Monolith, SolarFlare, atau BaseDarkGlass)
-• Warna aksen dan palet
-• Radius dan bentuk sudut kartu
-• Jenis dan ukuran huruf
-• Keburaman kartu
+• Warna dasar (seed) palet Anda — pilih dari roda warna, ketik kode hex, samakan dengan warna aksen Windows, atau ambil dari wallpaper Anda
+• Mode terang, gelap, atau mengikuti sistem, serta kontras
+• Varian skema dan material latar belakang
+• Radius sudut, opasitas kaca, dan kekuatan glow
+• Gaya splash screen
+• Jenis huruf judul halaman dan konten, serta skala UI
 • Bahasa aplikasi, terpisah dari bahasa Windows atau Linux Anda</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3161,9 +3153,6 @@ Anda dapat mengubah:
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Dapatkan PIN baru</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>Salin PIN</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Ganti nama</value>

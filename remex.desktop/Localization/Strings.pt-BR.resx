@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>INÍCIO</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ÁREA DE TRABALHO</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Visão Rápida</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Precisa ver o guia passo a passo novamente?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX EM TEMPO REAL</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Mostrar janela principal</value>
   </data>
@@ -2924,11 +2915,12 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
     <value>Use o botão "Personalize appearance" para abrir o painel Personalizar.
 
 Você pode mudar:
-• O tema (CyberNOC, Monolith, SolarFlare ou BaseDarkGlass)
-• A cor de destaque e a paleta
-• O raio e o formato dos cantos dos cartões
-• A fonte e o tamanho dela
-• A opacidade dos cartões
+• A cor-base (seed) da sua paleta — escolha na roda de cores, digite um código hex, combine com o destaque do Windows ou extraia do seu papel de parede
+• O modo claro, escuro ou do sistema, e o contraste
+• A variante do esquema e o material de fundo
+• O raio dos cantos, a opacidade do vidro e a intensidade do brilho
+• O estilo da tela de splash
+• As fontes do título da página e do conteúdo, e a escala da interface
 • O idioma do aplicativo, independentemente do Windows ou Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3158,9 +3150,6 @@ Você pode mudar:
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Obter um novo PIN</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>Copiar PIN</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Renomear</value>

@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>ГОЛОВНА</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ПРОСТІР</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Швидкий перегляд</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Потрібно переглянути інструкцію знову?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX НАЖИВО</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Показати головне вікно</value>
   </data>
@@ -2925,11 +2916,12 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Скористайтеся кнопкою «Personalize appearance», щоб відкрити панель Personalize.
 
 Можна змінити:
-• Тему (CyberNOC, Monolith, SolarFlare або BaseDarkGlass)
-• Акцентний колір і палітру
-• Радіус і форму кутів карток
-• Шрифт і його розмір
-• Прозорість карток
+• Базовий (seed) колір палітри — виберіть його на колірному колі, введіть hex-код, узгодьте з акцентом Windows або візьміть із шпалер
+• Світлий, темний чи системний режим і контраст
+• Варіант схеми та матеріал тла
+• Радіус кутів, прозорість скла та інтенсивність світіння
+• Стиль екрана заставки
+• Шрифти заголовка сторінки та вмісту, а також масштаб інтерфейсу
 • Мову застосунку — незалежно від мови Windows чи Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3159,9 +3151,6 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Отримати новий PIN-код</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>Копіювати PIN-код</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Перейменувати</value>

@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>INICIO</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ÁREA DE TRABAJO</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Vistazo en Vivo</value>
   </data>
@@ -1910,9 +1904,6 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>¿Necesita ver el tutorial de nuevo?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX EN VIVO</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Mostrar ventana principal</value>
   </data>
@@ -2938,11 +2929,12 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
     <value>Usa el botón «Personalizar apariencia» para abrir el panel Personalizar.
 
 Puedes cambiar:
-• El tema (CyberNOC, Monolith, SolarFlare o BaseDarkGlass)
-• El color de acento y la paleta
-• El radio y la forma de las esquinas de las tarjetas
-• La tipografía y su tamaño
-• La opacidad de las tarjetas
+• El color base de tu paleta: elígelo en la rueda de colores, escribe un código hexadecimal, iguálalo con el acento de Windows o tómalo de tu fondo de pantalla
+• El modo claro, oscuro o del sistema, y el contraste
+• La variante del esquema y el material de fondo
+• El radio de las esquinas, la opacidad del cristal y la intensidad del resplandor
+• El estilo de la pantalla de bienvenida
+• Las tipografías del título de página y del contenido, y la escala de la interfaz
 • El idioma de la aplicación, independientemente del de Windows o Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3172,9 +3164,6 @@ Puedes cambiar:
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Obtener un PIN nuevo</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>Copiar PIN</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Cambiar nombre</value>

@@ -300,12 +300,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>ACCUEIL</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ESPACE DE TRAVAIL</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Aperçu en direct</value>
   </data>
@@ -1904,9 +1898,6 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Besoin de revoir le guide ?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX EN DIRECT</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Afficher la fenêtre principale</value>
   </data>
@@ -2921,15 +2912,16 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Comment changer l'apparence de RemEx ?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Utilisez le bouton « Personnaliser l'apparence » pour ouvrir le panneau Personnaliser.
+    <value>Utilisez le bouton « Personnaliser l’apparence » pour ouvrir le panneau Personnaliser.
 
-Vous pouvez modifier :
-• Le thème (CyberNOC, Monolith, SolarFlare ou BaseDarkGlass)
-• La couleur d'accentuation et la palette
-• Le rayon et la forme des coins des cartes
-• La police et sa taille
-• L'opacité des cartes
-• La langue de l'application, indépendamment de celle de Windows ou Linux</value>
+Vous pouvez modifier :
+• La couleur de base de votre palette : choisissez-la sur la roue chromatique, saisissez un code hexadécimal, alignez-la sur l’accentuation de Windows, ou prélevez-la depuis votre fond d’écran
+• Le mode clair, sombre ou système, et le contraste
+• La variante du jeu de couleurs et le matériau d’arrière-plan
+• Le rayon des coins, l’opacité du verre et l’intensité de la lueur
+• Le style de l’écran de démarrage
+• Les polices du titre de page et du contenu, ainsi que l’échelle de l’interface
+• La langue de l’application, indépendamment de celle de Windows ou Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
     <value>Puis-je revoir le tutoriel ?</value>
@@ -3158,9 +3150,6 @@ Vous pouvez modifier :
   </data>
   <data name="Settings_PairingPinGetNew" xml:space="preserve">
     <value>Obtenir un nouveau code</value>
-  </data>
-  <data name="A11y_CopyPairingPin" xml:space="preserve">
-    <value>Copier le code</value>
   </data>
   <data name="Settings_PairedDeviceRename" xml:space="preserve">
     <value>Renommer</value>
