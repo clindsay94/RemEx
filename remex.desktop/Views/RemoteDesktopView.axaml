@@ -68,8 +68,14 @@
                     </StackPanel>
 
                     <!-- Center: Title -->
-                    <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{local:Localize RemoteDesktop_Header}" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                    <!-- Below ~1400px the settings cluster (Column 2) and this Auto-shrunk star column
+                         touch with zero gutter, so at 1200px the title's own text runs straight into
+                         "Display" with no space between them (measured, RemEx-1ufoa.3). Margin gives
+                         both neighbours breathing room; ClipToBounds + TextTrimming fail closed if a
+                         narrower window or longer localization ever squeezes this column below the
+                         title's natural width. -->
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0" ClipToBounds="True">
+                        <TextBlock Text="{local:Localize RemoteDesktop_Header}" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <!-- Right: Settings -->
@@ -105,7 +111,10 @@
                         <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
                         <TextBlock Text="{local:Localize RemoteDesktop_Quality}" Foreground="{DynamicResource TextMutedBrush}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
-                        <StackPanel Spacing="1" VerticalAlignment="Center">
+                        <!-- Spacing="1" left the round Material thumb (measured ~20px tall, centred
+                             on the slider's own 6px track box) overlapping the Low/High captions by
+                             ~5-6px at both ends of travel (RemEx-1ufoa.3). 8 clears it with headroom. -->
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
                             <Slider Minimum="10" Maximum="100" SmallChange="5" LargeChange="10" Value="{Binding Quality}" Width="80" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize RemoteDesktop_Quality}"/>
                             <Grid ColumnDefinitions="*,*" Width="80">
                                 <TextBlock Text="{local:Localize RemoteDesktop_Low}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
