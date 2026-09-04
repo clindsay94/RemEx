@@ -46,7 +46,7 @@ public class CanvasLegendContrastTests
         var ns = doc.Root!.GetDefaultNamespace();
 
         var legendBorders = doc.Descendants(ns + "Border")
-            .Where(b => (string?)b.Attribute("IsVisible") == "{Binding Sensor.IsDualMetric}")
+            .Where(b => Normalize((string?)b.Attribute("IsVisible")) == "{Binding Sensor.IsDualMetric}")
             .ToArray();
 
         legendBorders.Should().ContainSingle(

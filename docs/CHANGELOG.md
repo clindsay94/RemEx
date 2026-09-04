@@ -188,6 +188,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On a light palette, the colour-key legend on a dual-metric sensor card was dark text on a dark
+  plate. The legend and the second value's unit label now take their text colour from the sensor's
+  own theme, the same way the value badges on that plate already did, so they read on any seed.
+  (RemEx-1ufoa.2)
 - The three link tiles at the bottom of the PC dashboard (GitHub, Google Play, HWiNFO), the
   empty Recent Activity card and every Recent Activity row drew their icons as emoji text, which
   rendered in whatever the system emoji font felt like. They are Material icons now, sized and
