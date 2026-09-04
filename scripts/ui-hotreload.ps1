@@ -20,6 +20,7 @@
 
 .EXAMPLE
     pwsh scripts/ui-hotreload.ps1 -Start
+    pwsh scripts/ui-hotreload.ps1 -Start -AppArgs '--view Settings'
     pwsh scripts/ui-hotreload.ps1 -Stop
 #>
 [CmdletBinding(DefaultParameterSetName = 'Status')]
@@ -29,7 +30,12 @@ param(
     [Parameter(ParameterSetName = 'Status')][switch]$Status,
 
     # Skip the build and just launch what is already in artifacts/bin.
-    [Parameter(ParameterSetName = 'Start')][switch]$NoBuild
+    [Parameter(ParameterSetName = 'Start')][switch]$NoBuild,
+
+    # Extra args to pass straight through to Remex.Agent.exe (e.g. '--view Settings'), used by
+    # scripts/ui-palette-sweep.ps1 (RemEx-8q7de) to open a specific view without sending keystrokes
+    # to a running host.
+    [Parameter(ParameterSetName = 'Start')][string]$AppArgs
 )
 
 $ErrorActionPreference = 'Stop'
@@ -66,7 +72,12 @@ if ($Start) {
     }
     if (-not (Test-Path $debugExe)) { throw "Debug host not found at $debugExe - run without -NoBuild." }
 
-    Start-Process $debugExe -WorkingDirectory (Split-Path -Parent $debugExe)
+    if ($AppArgs) {
+        Start-Process $debugExe -WorkingDirectory (Split-Path -Parent $debugExe) -ArgumentList $AppArgs
+    }
+    else {
+        Start-Process $debugExe -WorkingDirectory (Split-Path -Parent $debugExe)
+    }
     Start-Sleep -Seconds 12
 
     if (-not (Get-RemexProcess)) { throw 'Debug host exited during startup.' }

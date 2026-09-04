@@ -214,6 +214,19 @@ public partial class App : Application
             var viewModel = Services.GetRequiredService<ShellViewModel>();
             viewModel.NavigateToHome();
 
+            // --view <Name> (RemEx-8q7de): opens a specific view at startup for the palette sweep
+            // script, which launches the host once per cell x view rather than sending keystrokes
+            // through a running one (SendKeys navigation is banned — no InvokePattern on the nav
+            // list items for UI Automation to click instead). An unrecognised name just stays on
+            // Home with a log line; it is not a reason to fail startup.
+            var launchArgs = (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Args;
+            var requestedView = StartupViewArgument.ExtractRequestedViewName(launchArgs);
+            if (requestedView != null && !StartupViewArgument.TryApply(launchArgs, viewModel))
+            {
+                InMemoryLogSink.Append(LogLevel.Warning, "App",
+                    $"--view '{requestedView}' is not a recognised view name; staying on Home", null);
+            }
+
             if (OverrideHostPort.HasValue)
             {
                 viewModel.Connection.HostAddress = $"wss://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
