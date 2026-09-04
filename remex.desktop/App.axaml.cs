@@ -313,7 +313,7 @@ public partial class App : Application
                         mainWindow.Show();
                     }
 
-                    var shouldRestore = await RestorePromptWindow.ShowAsync(mainWindow, snapshotPath);
+                    var shouldRestore = await MaterialDialogs.RestoreAsync(mainWindow, snapshotPath);
                     if (shouldRestore)
                     {
                         await using var stream = File.OpenRead(snapshotPath);
@@ -360,7 +360,6 @@ public partial class App : Application
         try
         {
             var vm = new FileConsentDialogViewModel(prompt.Request);
-            var dialog = new FileConsentDialog { DataContext = vm };
 
             Remex.Core.Services.FileTransfer.FileConsentDecision decision;
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is { } owner)
@@ -386,12 +385,11 @@ public partial class App : Application
                 // that class of bug has one place to be fixed.
                 BringMainWindowToFront();
 
-                decision = await dialog.ShowDialog<Remex.Core.Services.FileTransfer.FileConsentDecision>(owner);
+                decision = await MaterialDialogs.FileConsentAsync(owner, vm);
             }
             else
             {
-                dialog.Show();
-                decision = await vm.ResultTask;
+                decision = await MaterialDialogs.FileConsentAsync(owner: null, vm);
             }
 
             service.ResolveConsent(prompt.Request.ConsentId, decision.Granted, decision.Remember);

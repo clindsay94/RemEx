@@ -23,8 +23,8 @@ namespace Remex.Desktop.Views;
 internal static class ConfirmationDialogHost
 {
     /// <summary>
-    /// Builds a confirmation delegate that shows a modal <see cref="ConfirmationDialog"/> owned by
-    /// <paramref name="owner"/>'s window.
+    /// Builds a confirmation delegate that shows a modal confirm/cancel dialog (built through
+    /// <see cref="MaterialDialogs.ConfirmAsync"/>) owned by <paramref name="owner"/>'s window.
     /// </summary>
     /// <param name="owner">The control whose top-level window parents the dialog.</param>
     internal static Func<string, string, string, Task<bool>> For(Control owner)
@@ -50,8 +50,7 @@ internal static class ConfirmationDialogHost
                 return false;
             }
 
-            var dialog = new ConfirmationDialog(title, message, confirmText);
-            return await dialog.ShowDialog<bool>(parentWindow);
+            return await MaterialDialogs.ConfirmAsync(parentWindow, title, message, confirmText);
         };
     }
 }
