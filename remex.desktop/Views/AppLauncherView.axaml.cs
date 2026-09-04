@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Remex.Core.Models;
+using Remex.Desktop.Controls;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
@@ -59,6 +60,22 @@ public partial class AppLauncherView : UserControl
     // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves LauncherGrid null.
     // This file happened to survive it by reaching the control through FindControl<T> instead of the
     // generated field, so it was latent rather than live (RemEx-wdqx). Both now work.
+
+    /// <summary>
+    /// Arms this view's first-paint entrance (RemEx-alwfa.2), reusing the dashboard's once-per-
+    /// process gate (RemEx-dnfq0). Attachment, not the constructor, because DataContext is not yet
+    /// set when the control is constructed.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is AppLauncherViewModel vm
+            && StaggeredEntrance.ShouldPlay(nameof(AppLauncherView), vm.Shell.IsReducedMotion))
+        {
+            LauncherSections.Classes.Add(StaggeredEntrance.Class);
+        }
+    }
 
     private void OnFileDragOver(object? sender, DragEventArgs e)
     {

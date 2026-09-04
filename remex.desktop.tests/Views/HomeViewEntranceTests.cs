@@ -23,21 +23,30 @@ public class HomeViewEntranceTests
     [Fact]
     public void ExactlySixEntranceNthChildStylesExist()
     {
-        var count = Count(Home(),
+        var xaml = Home();
+
+        // Retargeted to the container's ACTUAL direct-child count (parsed XAML) rather than a
+        // bare hardcoded 6, per review of this bead — see XamlContainerHelper. The literal 6
+        // stays as a sanity pin: if DashboardSections ever grows or shrinks a section, this line
+        // is what forces that to be a deliberate edit here rather than a silent drift.
+        var expectedFromMarkup = XamlContainerHelper.CountDirectChildren(xaml, "DashboardSections");
+        expectedFromMarkup.Should().Be(6);
+
+        var count = Count(xaml,
             @"StackPanel#DashboardSections\.entrance > :is\(Control\):nth-child\((\d)\)");
-        count.Should().Be(6);
+        count.Should().Be(expectedFromMarkup);
 
         // Avalonia has no keyframe animator for RenderTransform itself; the first cut of this
         // bead animated it and every launch died in Animation.InterpretKeyframes before first
         // paint (RemEx-qolhg). Keyframes must target the transform sub-property instead.
-        Home().Should().NotMatchRegex(@"<KeyFrame[\s\S]*?Property=""RenderTransform""",
+        xaml.Should().NotMatchRegex(@"<KeyFrame[\s\S]*?Property=""RenderTransform""",
             "keyframe setters must animate TranslateTransform.Y, never RenderTransform");
-        Count(Home(), @"Property=""TranslateTransform\.Y""").Should().Be(12,
-            "each of the six entrance animations sets TranslateTransform.Y at 0% and 100%");
+        Count(xaml, @"Property=""TranslateTransform\.Y""").Should().Be(expectedFromMarkup * 2,
+            "each entrance animation sets TranslateTransform.Y at 0% and 100%");
 
-        for (var n = 1; n <= 6; n++)
+        for (var n = 1; n <= expectedFromMarkup; n++)
         {
-            Home().Should().Contain(
+            xaml.Should().Contain(
                 $"StackPanel#DashboardSections.entrance > :is(Control):nth-child({n})");
         }
     }

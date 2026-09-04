@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 using Remex.Core.Models;
 
@@ -11,6 +13,22 @@ public partial class SettingsView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => ConfigureViewModel();
+    }
+
+    /// <summary>
+    /// Arms this view's first-paint entrance (RemEx-alwfa.2), reusing the dashboard's once-per-
+    /// process gate (RemEx-dnfq0). Attachment, not the constructor, because DataContext is not yet
+    /// set when the control is constructed.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is SettingsViewModel vm
+            && StaggeredEntrance.ShouldPlay(nameof(SettingsView), vm.Shell.IsReducedMotion))
+        {
+            SettingsSections.Classes.Add(StaggeredEntrance.Class);
+        }
     }
 
     private void OnConnectionHistorySelected(object? sender, SelectionChangedEventArgs e)

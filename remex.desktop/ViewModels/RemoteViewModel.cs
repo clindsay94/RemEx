@@ -18,6 +18,10 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
 
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>Exposes ShellViewModel so the view's code-behind can gate the entrance animation on
+    /// reduced motion (RemEx-alwfa.2), same pattern as HomeViewModel.Shell.</summary>
+    public ShellViewModel Shell => _shell;
+
     /// <summary>This PC's primary MAC address, shown so the user can enter it into the phone app for Wake-on-LAN.</summary>
     [ObservableProperty]
     private string _hostMacAddress = string.Empty;

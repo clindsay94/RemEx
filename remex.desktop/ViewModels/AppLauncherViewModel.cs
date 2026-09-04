@@ -21,6 +21,10 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>Exposes ShellViewModel so the view's code-behind can gate the entrance animation on
+    /// reduced motion (RemEx-alwfa.2), same pattern as HomeViewModel.Shell.</summary>
+    public ShellViewModel Shell => _shell;
+
     [ObservableProperty]
     private ObservableCollection<AppEntry> _launchers = new();
 

@@ -567,6 +567,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Live connection view-model — bound directly from the Connection settings card.</summary>
     public ConnectionViewModel Connection => _connection;
 
+    /// <summary>Exposes ShellViewModel so the view's code-behind can gate the entrance animation on
+    /// reduced motion (RemEx-alwfa.2), same pattern as HomeViewModel.Shell.</summary>
+    public ShellViewModel Shell => _shell;
+
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
         // SetCulture raises "Item", "Item[]" and "" in sequence, so an unguarded handler runs three

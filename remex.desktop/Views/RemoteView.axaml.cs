@@ -1,8 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
 // Avalonia 12 moved SetTextAsync off IClipboard onto ClipboardExtensions in this namespace
 // (RemEx-jcma3). The interface now speaks IDataTransfer; the text convenience is an extension.
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
+using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -14,6 +16,22 @@ public partial class RemoteView : UserControl
     public RemoteView()
     {
         InitializeComponent();
+    }
+
+    /// <summary>
+    /// Arms this view's first-paint entrance (RemEx-alwfa.2), reusing the dashboard's once-per-
+    /// process gate (RemEx-dnfq0). Attachment, not the constructor, because DataContext is not yet
+    /// set when the control is constructed.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is RemoteViewModel vm
+            && StaggeredEntrance.ShouldPlay(nameof(RemoteView), vm.Shell.IsReducedMotion))
+        {
+            RemoteSections.Classes.Add(StaggeredEntrance.Class);
+        }
     }
 
     protected override void OnDataContextChanged(EventArgs e)
