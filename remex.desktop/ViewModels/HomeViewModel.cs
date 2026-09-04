@@ -16,7 +16,6 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly System.ComponentModel.PropertyChangedEventHandler _onConnectionChanged;
-    private readonly System.ComponentModel.PropertyChangedEventHandler _onShellChanged;
     private readonly Action<TelemetryPayload> _onTelemetry;
     private readonly NotifyCollectionChangedEventHandler _onActivityChanged;
 
@@ -33,12 +32,6 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     /// <summary>Exposes ShellViewModel so AXAML can bind to shell-level preferences.</summary>
     public ShellViewModel Shell => _shell;
-
-    /// <summary>
-    /// True when the connection status dot should display its pulse animation:
-    /// only when actually connected and the user hasn't opted in to reduced motion.
-    /// </summary>
-    public bool ShowConnectionPulse => Connection.IsConnected && !_shell.IsReducedMotion;
 
     /// <summary>Pinned sensor summaries displayed in the UniformGrid.</summary>
     public ObservableCollection<SensorViewModel> PinnedSensors { get; } = new();
@@ -94,24 +87,15 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         // is what a missing host looks like.
         _ = SystemStatus.RefreshAsync();
 
-        // Re-compute ShowConnectionPulse whenever either dependency changes; blank the stats
-        // strip the instant the link drops so it never shows stale numbers.
+        // Blank the stats strip the instant the link drops so it never shows stale numbers. The
+        // presence halo follows Shell.ShowPresencePulse (RemEx-s19yc), not the connection axis, so
+        // nothing here recomputes a pulse any more (RemEx-alwfa.4).
         _onConnectionChanged = (_, e) =>
         {
-            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
-            {
-                OnPropertyChanged(nameof(ShowConnectionPulse));
-                if (!Connection.IsConnected)
-                    UpdateStats(null);
-            }
-        };
-        _onShellChanged = (_, e) =>
-        {
-            if (e.PropertyName == nameof(ShellViewModel.IsReducedMotion))
-                OnPropertyChanged(nameof(ShowConnectionPulse));
+            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && !Connection.IsConnected)
+                UpdateStats(null);
         };
         Connection.PropertyChanged += _onConnectionChanged;
-        _shell.PropertyChanged += _onShellChanged;
 
         // Drive the always-on stats strip from the existing ~1 Hz telemetry stream (already
         // marshalled to the UI thread by ConnectionViewModel — no extra timer needed).
@@ -256,7 +240,6 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     {
         SystemStatus.Dispose();
         Connection.PropertyChanged -= _onConnectionChanged;
-        _shell.PropertyChanged -= _onShellChanged;
         Connection.TelemetryReceived -= _onTelemetry;
         ActivityService.Instance.Recent.CollectionChanged -= _onActivityChanged;
     }

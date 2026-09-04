@@ -634,6 +634,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- Removed the dashboard view model's unused connection-pulse flag; the presence halo has followed
+  the phone-presence signal since the halo work, so the flag sat on the wrong axis with no
+  binding. (RemEx-alwfa.4)
+
 - **Every Android navigation destination is a type now, not a string.** The whole graph ran on
   route strings — `"pairing/{host}/{port}"` with a `navArgument` block and silent `?: ""` /
   `?: 5005` fallbacks that RemEx-667p spent eleven tests refusing, and seventeen constant routes
