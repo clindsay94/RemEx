@@ -35,63 +35,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- ═══ DraggableCard chrome ═══ -->
-        <!-- Stays a local Style, not a ControlTheme, until RemEx-9iz00.3: it carries the resize-thumb
-             hit-test template and there is no headless render to verify a template move against. -->
-        <Style Selector="ctrl|DraggableCard">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="ClipToBounds" Value="False"/>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
-                        <Border.Transitions>
-                            <Transitions>
-                                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                                    <BoxShadowsTransition.Easing>
-                                        <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
-                                    </BoxShadowsTransition.Easing>
-                                </BoxShadowsTransition>
-                            </Transitions>
-                        </Border.Transitions>
-                        <Grid>
-                            <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
-                            <!-- Resize grip -->
-                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
-                                <Thumb.Template>
-                                    <ControlTemplate>
-                                        <Canvas Width="12" Height="12" Margin="2">
-                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                        </Canvas>
-                                    </ControlTemplate>
-                                </Thumb.Template>
-                            </Thumb>
-                        </Grid>
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-
-        <!-- ═══ DraggableCard elevation steps (RemEx-la0rk) ═══ -->
-        <!-- :dragging is set last so a drag over a hovered/selected card still wins. -->
-        <Style Selector="ctrl|DraggableCard:pointerover /template/ Border#PART_SurfaceBorder">
-            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
-        </Style>
-        <Style Selector="ctrl|DraggableCard.selected /template/ Border#PART_SurfaceBorder">
-            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
-        </Style>
-        <Style Selector="ctrl|DraggableCard:dragging /template/ Border#PART_SurfaceBorder">
-            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
-        </Style>
+        <!-- ═══ DraggableCard chrome + elevation ramp ═══ -->
+        <!-- Moved to a ControlTheme at Themes/Shared/DraggableCard.axaml, merged from App.axaml (RemEx-9iz00.3). -->
 
         <!-- ═══ Toolbar buttons ═══ -->
 

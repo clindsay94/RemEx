@@ -12,6 +12,11 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Remex.Desktop/Themes/BaseDarkGlass.axaml"/>
+                <!-- DraggableCard's ControlTheme (RemEx-9iz00.3). A merged Themes/ include, not a
+                     base theme file, so SwapBaseTheme (RemEx-gcqw5) leaves it alone on every
+                     preset switch — the same guarantee Themes/Chrome/WindowChrome.axaml already
+                     relies on. -->
+                <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/DraggableCard.axaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Typography -->

@@ -51,9 +51,19 @@ public class ElevationStateTests
     }
 
     [Fact]
+    public void DraggableCardThemeFileDoesNotDeclareALiteralBoxShadowOutsideAComment()
+    {
+        // The chrome moved out of Views/CanvasView.axaml into Themes/Shared/DraggableCard.axaml
+        // (RemEx-9iz00.3), so the grep above no longer sees it — this pins the same rule there.
+        var text = StripXmlComments(ReadDraggableCardTheme());
+        LiteralBoxShadow.IsMatch(text).Should().BeFalse(
+            "Themes/Shared/DraggableCard.axaml should ride the Elevation ramp, not a hard-coded BoxShadow literal");
+    }
+
+    [Fact]
     public void DraggableCardTemplateBorderBindsElevation1AndCarriesABoxShadowsTransition()
     {
-        var text = ReadView("CanvasView.axaml");
+        var text = ReadDraggableCardTheme();
 
         text.Should().Contain(
             "Name=\"PART_SurfaceBorder\"",
@@ -69,12 +79,12 @@ public class ElevationStateTests
     [Fact]
     public void DraggingSelectorIsDeclaredAfterPointeroverSoDragWins()
     {
-        var text = ReadView("CanvasView.axaml");
+        var text = ReadDraggableCardTheme();
 
         var pointerOverIndex = text.IndexOf(
-            "ctrl|DraggableCard:pointerover /template/ Border#PART_SurfaceBorder", StringComparison.Ordinal);
+            "^:pointerover /template/ Border#PART_SurfaceBorder", StringComparison.Ordinal);
         var draggingIndex = text.IndexOf(
-            "ctrl|DraggableCard:dragging /template/ Border#PART_SurfaceBorder", StringComparison.Ordinal);
+            "^:dragging /template/ Border#PART_SurfaceBorder", StringComparison.Ordinal);
 
         pointerOverIndex.Should().BeGreaterThan(-1, "the pointerover elevation step must exist");
         draggingIndex.Should().BeGreaterThan(-1, "the dragging elevation step must exist");
@@ -155,6 +165,9 @@ public class ElevationStateTests
 
     private static string ReadView(string fileName)
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", fileName));
+
+    private static string ReadDraggableCardTheme()
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Themes", "Shared", "DraggableCard.axaml"));
 
     private static string StripXmlComments(string xaml)
         => Regex.Replace(xaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);

@@ -1,0 +1,82 @@
+<!-- ═══ DraggableCard CHROME (RemEx-9iz00.3), moved out of CanvasView.axaml's local
+     UserControl.Styles into an app-scoped ControlTheme. This survived only as a local Style until
+     now because it carries the resize-thumb hit-test template and there was no headless render to
+     verify a template move against; RemEx-gcqw5 fixed the reason a merged Themes/ include could not
+     be trusted across a theme switch (SwapBaseTheme now removes only the four base theme files by
+     exact source string, so this include rides out every preset swap the way
+     Themes/Chrome/WindowChrome.axaml already does), which is what makes the move safe now.
+
+     WHAT LIVES HERE: the DraggableCard resting paint (Background/CornerRadius/BorderBrush/
+     BorderThickness/ClipToBounds), its Template (PART_SurfaceBorder > Grid > ContentPresenter +
+     PART_ResizeThumb), its Transitions, and the elevation ramp from RemEx-la0rk
+     (:pointerover / .selected / :dragging stepping PART_SurfaceBorder's BoxShadow), carried here as
+     nested `^`-selector styles inside the ControlTheme.
+
+     WHAT STAYS IN CanvasView.axaml: `.selected` and `.alert-active` — those are view-state styles
+     (BorderBrush/BorderThickness/DropShadowEffect glow) that belong to the dashboard's selection and
+     alert-flash behaviour, not to the control's own chrome.
+
+     ShadowAssist is deliberately NOT used on DraggableCard, same reasoning as the Card ControlTheme
+     in App.axaml: ShadowAssist writes BoxShadow as a local value, which outranks every style setter
+     below and would freeze the elevation ramp at whatever ShadowAssist last set. Every brush stays a
+     DynamicResource; no hard-coded colours; no FontSize. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ctrl="using:Remex.Desktop.Controls"
+                     xmlns:conv="using:Remex.Desktop.Converters">
+
+    <ControlTheme x:Key="{x:Type ctrl:DraggableCard}" TargetType="ctrl:DraggableCard">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ClipToBounds" Value="False"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
+                                <BoxShadowsTransition.Easing>
+                                    <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
+                                </BoxShadowsTransition.Easing>
+                            </BoxShadowsTransition>
+                        </Transitions>
+                    </Border.Transitions>
+                    <Grid>
+                        <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
+                        <!-- Resize grip -->
+                        <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
+                            <Thumb.Template>
+                                <ControlTemplate>
+                                    <Canvas Width="12" Height="12" Margin="2">
+                                        <Line StartPoint="8,12" EndPoint="12,8" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                        <Line StartPoint="4,12" EndPoint="12,4" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                        <Line StartPoint="0,12" EndPoint="12,0" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                    </Canvas>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
+
+        <!-- ═══ DraggableCard elevation steps (RemEx-la0rk) ═══ -->
+        <!-- :dragging is set last so a drag over a hovered/selected card still wins. -->
+        <Style Selector="^:pointerover /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+        <Style Selector="^.selected /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+        <Style Selector="^:dragging /template/ Border#PART_SurfaceBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>
