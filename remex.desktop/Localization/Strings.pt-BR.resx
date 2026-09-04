@@ -348,13 +348,13 @@
     <value>Sensores ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ Cancelar</value>
+    <value>Cancelar</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Desconectar</value>
+    <value>Desconectar</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Conectar</value>
@@ -1176,13 +1176,13 @@ Linux: ip addr  ou  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Tipo de Gráfico</value>
+    <value>Tipo de Gráfico</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 Bloquear PC</value>
+    <value>Bloquear PC</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 Reiniciar para UEFI</value>
+    <value>Reiniciar para UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
     <value>Alternar Fixar no Início</value>

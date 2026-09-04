@@ -348,13 +348,13 @@
     <value>Sensor ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ Batal</value>
+    <value>Batal</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Putuskan</value>
+    <value>Putuskan</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Hubungkan</value>
@@ -1176,13 +1176,13 @@ Linux: ip addr  atau  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Jenis Grafik</value>
+    <value>Jenis Grafik</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 Kunci PC</value>
+    <value>Kunci PC</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 Reboot ke UEFI</value>
+    <value>Reboot ke UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
     <value>Alihkan Sematkan ke Beranda</value>

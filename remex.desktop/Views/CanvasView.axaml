@@ -175,17 +175,59 @@
                                     <ctrl:DraggableCard.ContextMenu>
                                         <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
                                             <MenuItem Header="{local:Localize Canvas_GraphType}">
-                                                <MenuItem Header="{local:Localize Canvas_GraphSmart}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphLine}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphGauge}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphRing}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Ring"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphLed}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="LedMeter"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphGlow}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="GlowArea"/>
-                                                <MenuItem Header="{local:Localize Canvas_GraphDual}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="DualMetric"/>
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="ChartBoxOutline" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
+                                                <MenuItem Header="{local:Localize Canvas_GraphSmart}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="AutoAwesome" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphLine}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="ChartLine" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphGauge}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="Gauge" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphRing}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Ring">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphLed}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="LedMeter">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="DotsGrid" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphGlow}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="GlowArea">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="ShimmerOutline" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="{local:Localize Canvas_GraphDual}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="DualMetric">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="ChartMultiline" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
                                             </MenuItem>
-                                            <MenuItem Header="{local:Localize Canvas_SecondMetric}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).ChooseSecondMetricCommand}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{local:Localize Canvas_SecondMetric}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).ChooseSecondMetricCommand}" CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="ChartTimelineVariant" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
                                             <MenuItem Header="{local:Localize Canvas_ColorPreset}">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="PaletteOutline" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_Default}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_MagentaCyan}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_SmokeGold}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
@@ -195,8 +237,16 @@
                                                 <MenuItem Header="{local:Localize Canvas_Preset_NeonPurple}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Neon Purple"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_Monochrome}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Monochrome"/>
                                             </MenuItem>
-                                            <MenuItem Header="{local:Localize Canvas_Rename}" Command="{Binding Sensor.BeginRenameCommand}"/>
-                                            <MenuItem Header="{local:Localize Canvas_ShowValueOverlay}" ToggleType="CheckBox" IsChecked="{Binding Sensor.ShowValueOverlay, Mode=TwoWay}"/>
+                                            <MenuItem Header="{local:Localize Canvas_Rename}" Command="{Binding Sensor.BeginRenameCommand}">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="RenameBox" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{local:Localize Canvas_ShowValueOverlay}" ToggleType="CheckBox" IsChecked="{Binding Sensor.ShowValueOverlay, Mode=TwoWay}">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="Numeric" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
                                             <Separator/>
                                             <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding TogglePinToHomeCommand}">
                                                 <MenuItem.Icon>
@@ -204,7 +254,11 @@
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <Separator/>
-                                            <MenuItem Header="{local:Localize Canvas_SetAlert}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{local:Localize Canvas_SetAlert}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="BellAlertOutline" Width="16" Height="16"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
 
                                         </ContextMenu>
                                     </ctrl:DraggableCard.ContextMenu>

@@ -348,13 +348,13 @@
     <value>Capteurs ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ Annuler</value>
+    <value>Annuler</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Déconnecter</value>
+    <value>Déconnecter</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Connecter</value>
@@ -1176,13 +1176,13 @@ Linux : ip addr  ou  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Type de graphique</value>
+    <value>Type de graphique</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 Verrouiller le PC</value>
+    <value>Verrouiller le PC</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 Redémarrer vers UEFI</value>
+    <value>Redémarrer vers UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
     <value>Épingler/Désépingler de l'Accueil</value>

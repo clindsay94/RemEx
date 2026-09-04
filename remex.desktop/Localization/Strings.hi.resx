@@ -348,13 +348,13 @@
     <value>सेंसर ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 पिंग</value>
+    <value>पिंग</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ रद्द करें</value>
+    <value>रद्द करें</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ डिसकनेक्ट</value>
+    <value>डिसकनेक्ट</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ कनेक्ट</value>
@@ -1176,13 +1176,13 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 ग्राफ़ प्रकार</value>
+    <value>ग्राफ़ प्रकार</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 पीसी लॉक करें</value>
+    <value>पीसी लॉक करें</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI में रीबूट करें</value>
+    <value>UEFI में रीबूट करें</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
     <value>होम पर पिन टॉगल करें</value>
