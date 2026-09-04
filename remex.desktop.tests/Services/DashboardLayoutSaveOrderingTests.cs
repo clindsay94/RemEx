@@ -127,7 +127,10 @@ public class DashboardLayoutSaveOrderingTests
 
         var wait = body.Value.IndexOf("_gate.WaitAsync()", StringComparison.Ordinal);
         var check = body.Value.IndexOf("IsSuperseded(", StringComparison.Ordinal);
-        var write = body.Value.IndexOf("File.WriteAllTextAsync", StringComparison.Ordinal);
+        // WriteProfileAtomicallyAsync, not a raw File.WriteAllTextAsync, since RemEx-8y3qy round 2 -
+        // the write itself moved behind an atomic temp-file-then-move so a concurrent reader can
+        // never observe a partial file. Still the one place the bytes actually leave this method.
+        var write = body.Value.IndexOf("WriteProfileAtomicallyAsync(", StringComparison.Ordinal);
 
         wait.Should().BeGreaterOrEqualTo(0);
         check.Should().BeGreaterOrEqualTo(0, "the staleness check has to exist to be positioned");

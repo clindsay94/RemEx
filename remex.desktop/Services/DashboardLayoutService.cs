@@ -131,6 +131,27 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </summary>
     public bool ProfileFileMissingOnLoad { get; private set; }
 
+    /// <summary>
+    /// Set when the most recent load could not read an EXISTING profile file, so
+    /// <see cref="CurrentProfile"/> is a fabricated default rather than the user's real one
+    /// (RemEx-8y3qy round 2). Left false on a genuinely fresh install
+    /// (<see cref="ProfileFileMissingOnLoad"/>) — a brand-new user has no real profile to protect, and
+    /// refusing their first saves would just be a second bug.
+    /// </summary>
+    /// <remarks>
+    /// GUARDS <see cref="RequestSave"/> AND <see cref="SaveInternalAsync"/>, both. Every
+    /// read-modify-write save in the app (<c>ShellViewModel.CompleteTutorial</c>/
+    /// <c>OnIsReducedMotionChanged</c>, <c>CanvasDashboardViewModel.TriggerSave</c>/
+    /// <c>DismissCoachMark</c>) builds its new profile from <see cref="CurrentProfile"/> with no way
+    /// to tell "this is the real, freshly-loaded profile" from "this is the fallback default" — so
+    /// while this flag is set, any of them would persist the fabricated default over whatever the
+    /// user actually had saved. Refusing the write here costs the user only the single change they
+    /// just made in THIS session; letting it through would have cost them the entire saved profile.
+    /// The flag clears the moment a load actually succeeds, so ordinary saving resumes as soon as the
+    /// file is readable again.
+    /// </remarks>
+    private volatile bool _profileIsFallback;
+
     /// <summary>Raised after a profile is successfully written to disk by <see cref="SaveInternalAsync"/> (i.e. after <see cref="SaveAsync"/> or a flushed <see cref="RequestSave"/>).</summary>
     public event Action? ProfileSaved;
 
@@ -189,7 +210,15 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// fails, so it falls straight through to the existing corrupt-file rename instead.
     /// </para>
     /// </remarks>
-    internal static async Task<DashboardProfile?> ReadExistingProfileAsync(string filePath)
+    /// <param name="onAttemptFailed">
+    /// TEST SEAM ONLY (RemEx-8y3qy round 2). Invoked synchronously with the attempt number right
+    /// after that attempt hits an <see cref="IOException"/>, before the retry delay. Production never
+    /// passes one; a test can use it to release a deliberately-held lock at the exact moment the first
+    /// attempt is known to have failed, which makes the contention AND its resolution deterministic
+    /// instead of racing a fixed delay against the retry loop.
+    /// </param>
+    internal static async Task<DashboardProfile?> ReadExistingProfileAsync(
+        string filePath, Action<int>? onAttemptFailed = null)
     {
         for (var attempt = 1; ; attempt++)
         {
@@ -200,13 +229,25 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             }
             catch (IOException) when (attempt < TransientReadAttempts)
             {
+                onAttemptFailed?.Invoke(attempt);
                 await Task.Delay(TransientReadRetryDelayMs);
             }
         }
     }
 
     /// <inheritdoc />
-    public async Task<DashboardProfile> LoadAsync()
+    public Task<DashboardProfile> LoadAsync() => LoadAsyncCore(onReadAttemptFailed: null);
+
+    /// <summary>
+    /// TEST SEAM ONLY (RemEx-8y3qy round 2). Runs the real <see cref="LoadAsync"/> path with
+    /// <see cref="ReadExistingProfileAsync"/>'s attempt-observed callback wired through, so a test can
+    /// release a deliberately-held lock at an exact, known point in the retry loop instead of racing a
+    /// fixed delay against it.
+    /// </summary>
+    internal Task<DashboardProfile> LoadAsyncForTests(Action<int> onReadAttemptFailed) =>
+        LoadAsyncCore(onReadAttemptFailed);
+
+    private async Task<DashboardProfile> LoadAsyncCore(Action<int>? onReadAttemptFailed)
     {
         await _gate.WaitAsync();
         try
@@ -226,7 +267,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                 // RETRIED ON A TRANSIENT I/O FAILURE, not just attempted once (RemEx-8y3qy) - see
                 // ReadExistingProfileAsync for why.
                 profile = MigrateProfile(
-                    await ReadExistingProfileAsync(_filePath) ?? new DashboardProfile(),
+                    await ReadExistingProfileAsync(_filePath, onReadAttemptFailed) ?? new DashboardProfile(),
                     out outcome)!;
             }
 
@@ -244,6 +285,15 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             _themeService.ApplyCustomization(profile.Customization);
 
             CurrentProfile = profile;
+
+            // A LOAD THAT JUST SUCCEEDED MEANS CurrentProfile IS TRUSTWORTHY AGAIN (RemEx-8y3qy
+            // round 2). Cleared before the possible RequestSave below - a migrating profile arriving
+            // right after a prior failed load must not have its own write-back blocked by that
+            // failure's flag. LoadFailureWarning is stale-state of the same shape: leaving a prior
+            // failure's message in place after a load that just succeeded would tell the user their
+            // layout could not be loaded when it plainly just was.
+            _profileIsFallback = false;
+            LoadFailureWarning = null;
 
             // A MIGRATION THAT IS NEVER WRITTEN BACK IS NOT A MIGRATION, IT IS A RE-DERIVATION
             // (review finding). Nothing else persists the stamp except the Palette Studio's save, so
@@ -272,8 +322,15 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         {
             Debug.WriteLine($"[RemexLayout] Failed to load profile from '{_filePath}': {ex.Message}");
 
-            // Rename the corrupt file so it isn't loaded again, but is preserved for diagnostics.
-            if (File.Exists(_filePath))
+            // ONLY MALFORMED CONTENT GETS QUARANTINED (RemEx-8y3qy round 2). Every exception used to
+            // rename the file to .bak, but an IOException or UnauthorizedAccessException says nothing
+            // about what is IN the file - only that this read could not get a clean look at it.
+            // Renaming a file this method never actually examined out from under its own user is a
+            // second, unrelated data loss on top of whatever caused the read to fail. A JsonException
+            // is different: those bytes WERE read successfully and do not parse, so quarantining them
+            // for diagnostics while falling back is still the right call.
+            var existed = !ProfileFileMissingOnLoad;
+            if (existed && ex is JsonException)
             {
                 try
                 {
@@ -296,6 +353,14 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             var profile = MigrateProfile(new DashboardProfile(), out _)!;
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
+
+            // A FABRICATED PROFILE MUST NOT LOOK SAVE-WORTHY (RemEx-8y3qy round 2). `existed` is
+            // exactly "this was not a fresh install": a brand-new user has no real profile to protect
+            // and still needs their first save to work, but anyone else just had their real
+            // customization replaced with defaults in memory only - RequestSave and SaveInternalAsync
+            // must refuse to write that over the file until a load actually succeeds.
+            _profileIsFallback = existed;
+
             return profile;
         }
         finally
@@ -344,6 +409,18 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </summary>
     public void RequestSave(DashboardProfile profile)
     {
+        // A FALLBACK PROFILE MUST NEVER BE THE BASE OF A SAVE (RemEx-8y3qy round 2). Every caller
+        // here built `profile` as `CurrentProfile with { ... }`; while _profileIsFallback is set,
+        // CurrentProfile is a fabricated default rather than what the user actually saved, and
+        // queueing it would persist that default over the real file once the debounce fires. See the
+        // field's doc comment for the loss this trades away.
+        if (_profileIsFallback)
+        {
+            Trace.TraceWarning(
+                "DashboardLayoutService.RequestSave: refusing to queue a save - the loaded profile is a fallback default, not the user's real one");
+            return;
+        }
+
         CurrentProfile = profile;
 
         lock (_saveQueueLock)
@@ -403,6 +480,52 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     internal static bool IsSuperseded(long? captured, long current) =>
         captured is { } c && current != c;
 
+    /// <summary>
+    /// Writes a profile to <paramref name="filePath"/> without ever exposing a reader to a partial
+    /// file (RemEx-8y3qy round 2).
+    /// </summary>
+    /// <remarks>
+    /// SERIALIZING STRAIGHT INTO THE DESTINATION — the previous behaviour — opens it with
+    /// <see cref="FileShare.Read"/>, so a concurrent reader (another instance's <see cref="LoadAsync"/>,
+    /// or <c>App.axaml.cs</c>'s own <c>ReadAndMigrate</c>) can observe a truncated write mid-flight and
+    /// get a <see cref="JsonException"/> — which used to read as "corrupt" and quarantine a perfectly
+    /// good profile (the very failure mode <see cref="ReadExistingProfileAsync"/> exists to survive).
+    /// Writing to a sibling temp file first and moving it into place is atomic on the same volume: a
+    /// reader either sees the old complete file or the new complete one, never a partial one.
+    /// </remarks>
+    private static async Task WriteProfileAtomicallyAsync(string filePath, DashboardProfile profile)
+    {
+        var tempPath = filePath + ".tmp";
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(profile, JsonOptions));
+            File.Move(tempPath, filePath, overwrite: true);
+        }
+        catch
+        {
+            // Best-effort: do not leave a partial .tmp behind for the NEXT save to trip a reader over.
+            // The failure itself is the caller's to log and swallow, as it already does.
+            try { File.Delete(tempPath); } catch { /* diagnostics only; the write failure is what matters */ }
+            throw;
+        }
+    }
+
+    /// <summary>Synchronous twin of <see cref="WriteProfileAtomicallyAsync"/>, for <see cref="Dispose"/> — which cannot await.</summary>
+    private static void WriteProfileAtomically(string filePath, DashboardProfile profile)
+    {
+        var tempPath = filePath + ".tmp";
+        try
+        {
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(profile, JsonOptions));
+            File.Move(tempPath, filePath, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(tempPath); } catch { /* diagnostics only; the write failure is what matters */ }
+            throw;
+        }
+    }
+
     private async Task SaveInternalAsync(DashboardProfile profile, long? generation)
     {
         // THE WAIT IS INSIDE THE TRY. It was outside, so an ObjectDisposedException from a gate
@@ -416,13 +539,24 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             await _gate.WaitAsync();
             acquired = true;
 
+            // A SECOND, DEFENSE-IN-DEPTH CHECK (RemEx-8y3qy round 2). RequestSave already refuses to
+            // queue while _profileIsFallback is set, but a direct SaveAsync reaches here without going
+            // through RequestSave at all, and a write that was ALREADY queued before the flag flipped
+            // could still be sitting in _pendingProfile when it does. Either way, the gate is where
+            // the answer is checked last, same as the supersede check just below it.
+            if (_profileIsFallback)
+            {
+                Trace.TraceWarning(
+                    "DashboardLayoutService.SaveInternalAsync: refusing to write - the loaded profile is a fallback default, not the user's real one");
+                return;
+            }
+
             // SUPERSEDED WHILE IT WAITED. Re-checked here rather than before the wait, because the
             // gate is where the ordering is actually decided - SemaphoreSlim does not release FIFO,
             // so two correctly sequenced waiters can still land out of order.
             if (IsSuperseded(generation, Volatile.Read(ref _saveGeneration))) return;
 
-            var json = JsonSerializer.Serialize(profile, JsonOptions);
-            await File.WriteAllTextAsync(_filePath, json);
+            await WriteProfileAtomicallyAsync(_filePath, profile);
 
             ProfileSaved?.Invoke();
         }
@@ -470,7 +604,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         {
             try
             {
-                File.WriteAllText(_filePath, JsonSerializer.Serialize(dropped, JsonOptions));
+                // ATOMIC HERE TOO (RemEx-8y3qy round 2) - see WriteProfileAtomically. A reader racing
+                // process shutdown deserves the same guarantee a normal debounced save gives it.
+                WriteProfileAtomically(_filePath, dropped);
             }
             catch (Exception ex)
             {

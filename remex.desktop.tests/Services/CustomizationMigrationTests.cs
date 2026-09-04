@@ -438,9 +438,13 @@ public class CustomizationMigrationTests
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "Services", "DashboardLayoutService.cs"));
 
-        var body = Regex.Match(source, @"public async Task<DashboardProfile> LoadAsync\(\).*?\n    \}",
+        // LoadAsyncCore, not LoadAsync itself (RemEx-8y3qy round 2). The public LoadAsync() became a
+        // one-line forward to LoadAsyncCore so a test could plumb ReadExistingProfileAsync's
+        // attempt-observed callback through for a deterministic lock-release seam - the write-back
+        // logic this guard actually checks lives in the core method now.
+        var body = Regex.Match(source, @"private async Task<DashboardProfile> LoadAsyncCore\(.*?\n    \}",
             RegexOptions.Singleline);
-        body.Success.Should().BeTrue("LoadAsync moved or changed shape - this guard cannot see it");
+        body.Success.Should().BeTrue("LoadAsyncCore moved or changed shape - this guard cannot see it");
 
         body.Value.Should().MatchRegex(@"if \(outcome\.Changed[^)]*\)\s*RequestSave\(",
             "a migration nobody writes back is a re-derivation: the repaired seed stays corrupt on "

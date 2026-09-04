@@ -219,6 +219,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The PC app could forget your personalization a few seconds after launch: if the saved layout
+  file was momentarily locked while starting up, the app quietly started from defaults and the
+  next routine save wrote those defaults over your real settings, so the theme changed by itself.
+  The startup read now retries briefly instead of giving up. (RemEx-8y3qy)
 - Pressing a row in the command palette flashed a square ripple under its rounded corners, and
   tapping a tray notification gave no press feedback at all. Both now ripple the way the rest of
   the app does, in the theme's own colours. (RemEx-alwfa.3)

@@ -85,7 +85,10 @@ public class DashboardLayoutClobberTests
     public async Task ReadExistingProfileAsync_RetriesThroughATransientSharingViolation()
     {
         // Isolates the retry helper itself: a sharing violation that clears while the retry loop is
-        // still running must not be reported at all.
+        // still running must not be reported at all. Deterministic (RemEx-w7ei was a flake from doing
+        // this with a fixed Task.Delay release instead): the lock is released from inside
+        // onAttemptFailed, at the exact moment the first attempt is known to have failed, so
+        // contention is guaranteed and so is the release before the next attempt.
         using var service = new DashboardLayoutService(new ThemeService());
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
 
@@ -93,17 +96,19 @@ public class DashboardLayoutClobberTests
             JsonSerializer.Serialize(new DashboardProfile { Customization = real }, DashboardLayoutService.JsonOptions));
 
         var block = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
+        var observedAttempts = new List<int>();
 
-        // Released well inside the retry window (three attempts, 75ms apart - see
-        // DashboardLayoutService.TransientReadRetryDelayMs) so the first attempt is the one that hits
-        // the violation and a later one is the one that succeeds, rather than the lock never actually
-        // being contended.
-        var releaseShortly = Task.Delay(20).ContinueWith(_ => block.Dispose());
+        var profile = await DashboardLayoutService.ReadExistingProfileAsync(service.FilePathForTests, attempt =>
+        {
+            observedAttempts.Add(attempt);
+            if (attempt == 1) block.Dispose();
+        });
 
-        var profile = await DashboardLayoutService.ReadExistingProfileAsync(service.FilePathForTests);
-        await releaseShortly;
-
-        profile.Should().NotBeNull("a sharing violation that clears quickly must not read as a missing profile");
+        observedAttempts.Should().Equal(new[] { 1 },
+            "the lock must still have been held for exactly the first attempt - otherwise this test "
+            + "proves nothing about the retry, or the release never mattered");
+        profile.Should().NotBeNull(
+            "a sharing violation that clears before the retries are exhausted must not read as a missing profile");
         AssertSameCustomization(real, profile!.Customization,
             "a transient sharing violation must not lose any field of the profile it eventually reads");
     }
@@ -111,15 +116,15 @@ public class DashboardLayoutClobberTests
     [Fact]
     public async Task ATransientReadFailureFollowedByAnyCurrentProfileSave_MustNotClobberTheRealFile()
     {
-        // THIS IS THE REPRODUCTION FOR RemEx-8y3qy, end to end. A real, fully-populated profile is on
-        // disk. The file is made transiently unreadable (a sharing violation, exactly like a
-        // concurrent reader/writer would cause) for a few milliseconds — short enough that
-        // ReadExistingProfileAsync's retry clears it, which is the ordinary case for the sharing
-        // violations this guards (the auto-snapshot, a savefile import, antivirus). Before the fix,
-        // ANY read failure — transient or not — made LoadAsync substitute an all-default
-        // DashboardProfile as CurrentProfile, and the very next read-modify-write save anywhere in the
-        // app (ShellViewModel.CompleteTutorial's shape, reproduced below) persisted that default over
-        // the real file.
+        // THIS IS THE REPRODUCTION FOR RemEx-8y3qy, end to end, through the real LoadAsync path.
+        // Deterministic for the same reason as the test above: LoadAsyncForTests plumbs the same
+        // attempt-observed callback through to ReadExistingProfileAsync, so the lock is released the
+        // instant the first attempt is known to have failed rather than after a guessed delay.
+        //
+        // Before the fix, ANY read failure - transient or not - made LoadAsync substitute an
+        // all-default DashboardProfile as CurrentProfile, and the very next read-modify-write save
+        // anywhere in the app (ShellViewModel.CompleteTutorial's shape, reproduced below) persisted
+        // that default over the real file.
         using var service = new DashboardLayoutService(new ThemeService());
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
@@ -128,11 +133,15 @@ public class DashboardLayoutClobberTests
             JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions));
 
         var block = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
-        var releaseShortly = Task.Delay(20).ContinueWith(_ => block.Dispose());
+        var observedAttempts = new List<int>();
 
-        var loaded = await service.LoadAsync();
-        await releaseShortly;
+        var loaded = await service.LoadAsyncForTests(attempt =>
+        {
+            observedAttempts.Add(attempt);
+            if (attempt == 1) block.Dispose();
+        });
 
+        observedAttempts.Should().Equal(new[] { 1 }, "anti-vacuity: the lock must actually have been contended once");
         service.LoadFailureWarning.Should().BeNull(
             "a sharing violation that clears within the retry window must not surface as a load failure");
         AssertSameCustomization(real, loaded.Customization,
@@ -153,6 +162,117 @@ public class DashboardLayoutClobberTests
         AssertSameCustomization(real, onDiskAfter.Customization,
             "every customization field the user had saved must survive a transient read failure "
             + "followed by an unrelated field change");
+    }
+
+    [Fact]
+    public async Task AReadFailureThatOutlivesTheRetries_SuppressesTheNextSaveInsteadOfClobbering()
+    {
+        // THE RESIDUAL CLOBBER, PINNED. When the lock does NOT clear within the retry window,
+        // LoadAsync still has nothing trustworthy to build CurrentProfile from and falls back to
+        // defaults exactly as it always has (LoadFailureWarning gets set, unchanged behaviour) - but
+        // unlike before the fallback profile must not be usable as the base of a save.
+        // RequestSave/SaveInternalAsync now refuse to write while the internal fallback flag is set,
+        // so the user loses only whatever they change in THIS session (nothing is written at all)
+        // rather than losing the entire saved profile to a silent overwrite.
+        using var service = new DashboardLayoutService(new ThemeService());
+        var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
+        var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
+        await File.WriteAllTextAsync(service.FilePathForTests, originalBytes);
+
+        var block = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
+        DashboardProfile loaded;
+        try
+        {
+            // Never released during the read - the callback is a no-op, so every attempt sees the
+            // same held lock and the read genuinely, permanently fails for this call.
+            loaded = await service.LoadAsyncForTests(onReadAttemptFailed: static _ => { });
+        }
+        finally
+        {
+            block.Dispose();
+        }
+
+        service.LoadFailureWarning.Should().NotBeNull(
+            "the lock was held for every attempt, so this load must have genuinely failed");
+        loaded.Customization.BackgroundMaterial.Should().Be("Mica",
+            "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults");
+
+        // Exactly ShellViewModel.CompleteTutorial's shape.
+        service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
+        await service.FlushAsync();
+
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "a save built on a fallback profile must be refused entirely, byte for byte - not partially "
+            + "applied and not persisted at all");
+    }
+
+    [Fact]
+    public async Task AfterASubsequentSuccessfulLoad_TheFallbackFlagClearsAndSavesResume()
+    {
+        using var service = new DashboardLayoutService(new ThemeService());
+        var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
+        var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
+        await File.WriteAllTextAsync(service.FilePathForTests, originalBytes);
+
+        // First load genuinely fails (the lock is held for every attempt), which sets the fallback flag.
+        var block = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
+        try
+        {
+            await service.LoadAsyncForTests(onReadAttemptFailed: static _ => { });
+        }
+        finally
+        {
+            block.Dispose();
+        }
+        service.LoadFailureWarning.Should().NotBeNull("anti-vacuity: the first load must have actually failed");
+
+        // A save attempted while still in the fallback state is refused - proven the same way the
+        // test above proves it.
+        service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
+        await service.FlushAsync();
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "anti-vacuity: the save while still in fallback must have actually been refused");
+
+        // The lock is gone now, so a fresh load succeeds and must clear the flag.
+        var reloaded = await service.LoadAsync();
+        service.LoadFailureWarning.Should().BeNull("this load has nothing left to fail on");
+        AssertSameCustomization(real, reloaded.Customization, "the second, successful load must read the real profile back");
+
+        // And saving must actually work again.
+        service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
+        await service.FlushAsync();
+
+        var onDiskAfter = JsonSerializer.Deserialize<DashboardProfile>(
+            await File.ReadAllTextAsync(service.FilePathForTests), DashboardLayoutService.JsonOptions)!;
+        onDiskAfter.HasCompletedTutorial.Should().BeTrue("once the profile has loaded successfully, saving must resume");
+        AssertSameCustomization(real, onDiskAfter.Customization,
+            "the profile the user had saved before the failure must still be there once saving resumes");
+    }
+
+    [Fact]
+    public async Task FlushAsync_WritesAtomically_NoTempFileSurvivesAndContentIsComplete()
+    {
+        // Not a genuine concurrent-torn-write reproduction (that needs real cross-process timing,
+        // which is not a deterministic test) - but the atomic move itself is directly checkable: a
+        // successful save must leave nothing behind at the sibling .tmp path, and what lands at the
+        // real path must be the complete, valid profile rather than whatever File.WriteAllTextAsync
+        // happened to have flushed when a reader looked.
+        using var service = new DashboardLayoutService(new ThemeService());
+        await service.LoadAsync(); // establishes a real (non-fallback) baseline; nothing on disk yet
+
+        var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        service.RequestSave(service.CurrentProfile with { Customization = real, Language = "atomic-write-test" });
+        await service.FlushAsync();
+
+        File.Exists(service.FilePathForTests + ".tmp").Should().BeFalse(
+            "the atomic write must move the temp file into place rather than leave it behind");
+
+        var onDisk = JsonSerializer.Deserialize<DashboardProfile>(
+            await File.ReadAllTextAsync(service.FilePathForTests), DashboardLayoutService.JsonOptions)!;
+        onDisk.Language.Should().Be("atomic-write-test");
+        AssertSameCustomization(real, onDisk.Customization, "the atomically-written file must be complete, not truncated");
     }
 
     /// <summary>
