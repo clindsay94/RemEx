@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using Avalonia.Controls;
+using Avalonia.Markup.Xaml.Styling;
 using FluentAssertions;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
@@ -45,7 +48,11 @@ public class DraggableCardControlThemeTests
             "the surface border must keep its name for the elevation selectors and DraggableCard.cs to find");
         text.Should().Contain("Name=\"PART_ResizeThumb\"",
             "the resize thumb must keep its name for DraggableCard.OnApplyTemplate to find");
-        text.Should().Contain("CornerRadiusToMarginConverter",
+        // The whole binding, not just the converter name: dropping the TemplatedParent source
+        // still compiles and silently zeroes the content inset.
+        text.Should().Contain(
+            "Margin=\"{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, "
+            + "Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}\"",
             "the ContentPresenter must still inset itself from the card's own corner radius");
     }
 
@@ -64,8 +71,16 @@ public class DraggableCardControlThemeTests
     {
         var text = ReadCanvasView();
 
-        text.Should().NotContain("Property=\"Template\"",
-            "the DraggableCard template moved to the ControlTheme; CanvasView should not set one");
+        // Scoped to the DraggableCard styles that remain (.selected / .alert-active), so an
+        // unrelated Template setter elsewhere in the view cannot trip this guard.
+        var draggableCardStyles = Regex.Matches(
+                text, @"<Style Selector=""ctrl\|DraggableCard[^""]*"">.*?</Style>", RegexOptions.Singleline)
+            .Select(m => m.Value)
+            .ToList();
+        draggableCardStyles.Should().NotBeEmpty(
+            "CanvasView still owns the .selected and .alert-active state styles for DraggableCard");
+        draggableCardStyles.Should().OnlyContain(style => !style.Contains("Property=\"Template\""),
+            "the DraggableCard template moved to the ControlTheme; no CanvasView style may set one");
         text.Should().NotContain("PART_SurfaceBorder",
             "PART_SurfaceBorder now lives only in the ControlTheme");
         text.Should().NotContain("PART_ResizeThumb",
@@ -73,18 +88,34 @@ public class DraggableCardControlThemeTests
     }
 
     [Fact]
-    public void DraggableCardThemeIncludeIsNotMistakableForABaseThemeFile()
+    public void DraggableCardThemeIncludeSurvivesAThemeSwitchAcrossEveryPreset()
     {
         // Same guard ThemeSwapMergedDictionaryTests applies to Themes/Chrome/WindowChrome.axaml
         // (RemEx-gcqw5): a merged Themes/ include survives SwapBaseTheme only because its source
         // string is not one of the four base theme files, not because of the folder it sits in.
-        var baseThemeSources = Enum.GetValues<AppTheme>()
-            .Select(theme => ThemeService.BaseThemeUri(theme).OriginalString)
-            .ToArray();
-        baseThemeSources.Should().NotBeEmpty("AppTheme must have at least one preset to compare against");
+        // Exercised through SwapBaseTheme itself, in the shape App.axaml declares (base theme
+        // first, this include after it), so a predicate widened back to a folder prefix fails
+        // here rather than only in a name comparison.
+        var themeUri = new Uri(ThemeAvaresSource);
+        var draggableCardTheme = new ResourceInclude(themeUri) { Source = themeUri };
+        var startupUri = ThemeService.BaseThemeUri(AppTheme.Dynamic);
+        var resources = new ResourceDictionary();
+        resources.MergedDictionaries.Add(new ResourceInclude(startupUri) { Source = startupUri });
+        resources.MergedDictionaries.Add(draggableCardTheme);
 
-        baseThemeSources.Should().NotContain(ThemeAvaresSource,
-            "the DraggableCard theme include must not collide with any base theme file source");
+        var presets = Enum.GetValues<AppTheme>();
+        presets.Should().NotBeEmpty("AppTheme must have at least one preset to cycle through");
+
+        IResourceProvider? tracked = null;
+        foreach (var theme in presets)
+        {
+            tracked = ThemeService.SwapBaseTheme(
+                resources.MergedDictionaries, tracked, ThemeService.BaseThemeUri(theme));
+
+            resources.MergedDictionaries.Should().Contain(draggableCardTheme,
+                $"switching to {theme} replaces the base theme and must leave the DraggableCard "
+                + "ControlTheme merged, or every dashboard card loses its template on the first switch");
+        }
     }
 
     private static string ReadThemeFile()

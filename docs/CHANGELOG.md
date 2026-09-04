@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The sensor-canvas card chrome (surface, border, resize grip and the hover/selected/drag
+  elevation steps) now lives in its own control theme under `Themes/Shared` instead of a local
+  style block inside the Sensors view, so the card looks and behaves the same wherever it is
+  hosted. Nothing changes on screen. (RemEx-9iz00.3)
+
 - The Palette Studio card can now copy the live palette as a compilable Avalonia
   ResourceDictionary, and export/import its recipe as a `.remexpalette` JSON file, so a palette
   can travel to a future session or hand off to the phone. A failed copy, export or import (a
