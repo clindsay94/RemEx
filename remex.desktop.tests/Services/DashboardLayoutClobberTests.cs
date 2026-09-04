@@ -254,6 +254,51 @@ public class DashboardLayoutClobberTests
     }
 
     [Fact]
+    public async Task SaveAsync_SurfacesAMoveFailureToItsCaller()
+    {
+        // THE HIGH FINDING FROM ROUND 3's RE-REVIEW. SaveInternalAsync used to swallow every
+        // exception unconditionally, so a failed explicit save was invisible to its caller.
+        // RemexSavefileService.ImportDashboardLayoutAsync awaits SaveAsync, then immediately calls
+        // LoadAsync and reports the import applied once LoadAsync returns - if SaveAsync's own
+        // failure never surfaces, that LoadAsync succeeds against the file the save never actually
+        // reached, and the import reports success while nothing was written. A save that cannot land
+        // after every retry must throw, so its caller's existing catch does the right thing.
+        using var service = new DashboardLayoutService(new ThemeService());
+        var original = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var originalProfile = new DashboardProfile { Customization = original, Language = "original" };
+        var originalBytes = JsonSerializer.Serialize(originalProfile, DashboardLayoutService.JsonOptions);
+        await File.WriteAllTextAsync(service.FilePathForTests, originalBytes);
+
+        var attempted = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var attemptedProfile = new DashboardProfile { Customization = attempted, Language = "attempted" };
+
+        // Held for the WHOLE call, unlike the retry tests above - every attempt's File.Move onto this
+        // destination must fail with a sharing violation, since a FileShare.None handle grants no
+        // delete access and this handle never releases until the save has already given up.
+        //
+        // UnauthorizedAccessException, NOT IOException - measured, not assumed. File.Move onto a
+        // destination held open without FileShare.Delete throws UnauthorizedAccessException on
+        // Windows (MoveFileEx maps ERROR_ACCESS_DENIED to it), which is exactly why
+        // IsTransientMoveFailure in the production code checks for both types rather than only the
+        // one a locked READ throws.
+        using (new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Func<Task> act = () => service.SaveAsync(attemptedProfile);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>(
+                "an explicit save that could not land after every retry must surface that to its "
+                + "caller, not report success against a file it never actually reached");
+        }
+
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "a failed move must never have touched the real file - the write-then-move split exists "
+            + "exactly so a failure this far in cannot corrupt it");
+        Directory.GetFiles(
+                Path.GetDirectoryName(service.FilePathForTests)!,
+                Path.GetFileName(service.FilePathForTests) + ".*.tmp")
+            .Should().BeEmpty("a failed write must clean up its own temp file rather than leave it behind");
+    }
+
+    [Fact]
     public async Task AfterASubsequentSuccessfulLoad_TheFallbackFlagClearsAndSavesResume()
     {
         using var service = new DashboardLayoutService(new ThemeService());
@@ -312,8 +357,13 @@ public class DashboardLayoutClobberTests
         service.RequestSave(service.CurrentProfile with { Customization = real, Language = "atomic-write-test" });
         await service.FlushAsync();
 
-        File.Exists(service.FilePathForTests + ".tmp").Should().BeFalse(
-            "the atomic write must move the temp file into place rather than leave it behind");
+        // The temp name carries a per-call GUID now (RemEx-8y3qy round 4), not the fixed
+        // "<file>.tmp" it used to - so the leftover check has to match the pattern rather than one
+        // literal path.
+        Directory.GetFiles(
+                Path.GetDirectoryName(service.FilePathForTests)!,
+                Path.GetFileName(service.FilePathForTests) + ".*.tmp")
+            .Should().BeEmpty("the atomic write must move the temp file into place rather than leave it behind");
 
         var onDisk = JsonSerializer.Deserialize<DashboardProfile>(
             await File.ReadAllTextAsync(service.FilePathForTests), DashboardLayoutService.JsonOptions)!;

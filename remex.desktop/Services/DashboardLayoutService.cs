@@ -141,8 +141,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// refusing their first saves would just be a second bug.
     /// </summary>
     /// <remarks>
-    /// GUARDS <see cref="RequestSave"/> AND THE DEBOUNCED CALL INTO <see cref="SaveInternalAsync"/> -
-    /// not <see cref="SaveAsync"/> (RemEx-8y3qy round 3). Every read-modify-write save reachable
+    /// GUARDS <see cref="RequestSave"/>, THE DEBOUNCED CALL INTO <see cref="SaveInternalAsync"/>, AND
+    /// <see cref="Dispose"/>'s drain of a still-queued write - not <see cref="SaveAsync"/>
+    /// (RemEx-8y3qy round 3 and 4). Every read-modify-write save reachable
     /// through <see cref="RequestSave"/> (<c>ShellViewModel.CompleteTutorial</c>/
     /// <c>OnIsReducedMotionChanged</c>, <c>CanvasDashboardViewModel.TriggerSave</c>/
     /// <c>DismissCoachMark</c>) builds its new profile from <see cref="CurrentProfile"/> with no way
@@ -517,6 +518,23 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         captured is { } c && current != c;
 
     /// <summary>
+    /// Whether an exception from <see cref="File.Move(string, string, bool)"/> looks like the kind of
+    /// contention <see cref="WriteProfileAtomicallyAsync"/>/<see cref="WriteProfileAtomically"/> retry,
+    /// rather than a genuine failure worth giving up on immediately.
+    /// </summary>
+    /// <remarks>
+    /// BOTH EXCEPTION TYPES, MEASURED RATHER THAN GUESSED (round 4 finding). The natural assumption is
+    /// that a locked destination throws <see cref="IOException"/>, the same as a locked read - but a
+    /// <c>Move</c> onto a destination held open without <see cref="FileShare.Delete"/> throws
+    /// <see cref="UnauthorizedAccessException"/> on Windows instead (<c>MoveFileEx</c> maps
+    /// <c>ERROR_ACCESS_DENIED</c> to it), confirmed by <c>SaveAsync_SurfacesAMoveFailureToItsCaller</c>
+    /// reproducing it deterministically. Retrying only <see cref="IOException"/>, as the read does,
+    /// would have meant this exact contention shape never actually retried at all.
+    /// </remarks>
+    private static bool IsTransientMoveFailure(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException;
+
+    /// <summary>
     /// Writes a profile to <paramref name="filePath"/> without ever exposing a reader to a partial or
     /// unflushed file (RemEx-8y3qy round 2 and 3).
     /// </summary>
@@ -533,18 +551,33 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// needs Windows to grant delete access to the destination, and <see cref="ReadExistingProfileAsync"/>
     /// (via <c>File.ReadAllTextAsync</c>) opens it with <see cref="FileShare.Read"/> only
     /// — no <see cref="FileShare.Delete"/> — so a reader that is mid-read at the exact moment of the
-    /// move can make the move itself throw. Retried the same way the read is, for the same reason: the
-    /// contention is expected to clear within a couple of hundred milliseconds.
+    /// move can make the move itself throw (see <see cref="IsTransientMoveFailure"/> for which
+    /// exception type that actually is). Retried the same way the read is, for the same reason: the
+    /// contention is expected to clear within a couple of hundred milliseconds. A failure that survives
+    /// every retry propagates to the caller (round 4, HIGH finding) rather than being swallowed - see
+    /// <see cref="SaveInternalAsync"/>.
     /// </para>
     /// <para>
-    /// FLUSHED TO DISK BEFORE THE MOVE, not merely to the OS write cache. A move that lands ahead of the
-    /// write actually reaching disk would let a power loss surface a short file under the real name —
-    /// exactly the corruption the temp-file-then-move was meant to rule out.
+    /// FLUSHED TO DISK BEFORE THE MOVE, not merely to the OS write cache. <c>Stream.FlushAsync</c> only
+    /// reaches the OS's own buffers - it was tried first and did not actually keep this promise
+    /// (round 4 finding) - so both paths call the synchronous <c>Flush(flushToDisk: true)</c> instead,
+    /// which is the only overload that asks the OS to commit to the physical device. The profile is a
+    /// few KB; the synchronous call costs nothing worth avoiding. Without it, a move landing ahead of
+    /// the write actually reaching disk would let a power loss surface a short file under the real name
+    /// — exactly the corruption the temp-file-then-move was meant to rule out.
+    /// </para>
+    /// <para>
+    /// THE TEMP NAME IS UNIQUE PER CALL, not a fixed <c>filePath + ".tmp"</c> (round 4 finding). Every
+    /// instance of this service pointed at the same file used to share one temp path, so instance B's
+    /// <see cref="FileMode.Create"/>/<see cref="FileShare.None"/> on that SAME name could hold it locked
+    /// across the whole of instance A's retry window - a second, avoidable source of exactly the
+    /// sharing-violation contention the retry above exists to survive. A GUID in the name means two
+    /// concurrent writers, in this process or another, never touch the same temp file at all.
     /// </para>
     /// </remarks>
     private async Task WriteProfileAtomicallyAsync(string filePath, DashboardProfile profile)
     {
-        var tempPath = filePath + ".tmp";
+        var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         var json = JsonSerializer.Serialize(profile, JsonOptions);
 
         for (var attempt = 1; ; attempt++)
@@ -556,13 +589,13 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                 {
                     await writer.WriteAsync(json);
                     await writer.FlushAsync();
-                    await stream.FlushAsync();
+                    stream.Flush(flushToDisk: true);
                 }
 
                 File.Move(tempPath, filePath, overwrite: true);
                 return;
             }
-            catch (IOException) when (attempt < TransientIoAttempts)
+            catch (Exception ex) when (IsTransientMoveFailure(ex) && attempt < TransientIoAttempts)
             {
                 await Task.Delay(TransientIoRetryDelayMs);
             }
@@ -582,7 +615,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <summary>Synchronous twin of <see cref="WriteProfileAtomicallyAsync"/>, for <see cref="Dispose"/> — which cannot await.</summary>
     private void WriteProfileAtomically(string filePath, DashboardProfile profile)
     {
-        var tempPath = filePath + ".tmp";
+        var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         var json = JsonSerializer.Serialize(profile, JsonOptions);
 
         for (var attempt = 1; ; attempt++)
@@ -600,7 +633,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                 File.Move(tempPath, filePath, overwrite: true);
                 return;
             }
-            catch (IOException) when (attempt < TransientIoAttempts)
+            catch (Exception ex) when (IsTransientMoveFailure(ex) && attempt < TransientIoAttempts)
             {
                 // Dispose cannot await. This runs once, at process shutdown, so a short blocking
                 // sleep here costs nothing a flush wouldn't have cost anyway.
@@ -669,6 +702,17 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // reading _saveGeneration) - genuinely unexpected, hence the higher level, and still
             // logged rather than silently swallowed either way.
             _logger.LogError(ex, "DashboardLayoutService: error saving profile to '{FilePath}'", _filePath);
+
+            // AN EXPLICIT SAVE MUST SURFACE ITS OWN FAILURE (RemEx-8y3qy round 4, HIGH finding).
+            // generation is null only for SaveAsync's direct writes, and its only caller today -
+            // RemexSavefileService.ImportDashboardLayoutAsync - awaits it, then immediately calls
+            // LoadAsync and reports the import applied once LoadAsync returns. Swallowing the
+            // exception here let that LoadAsync succeed against the UNCHANGED file and the import
+            // report success while nothing had actually been written - the exact silent failure this
+            // bead exists to kill, one hop further down than round 3 caught. The debounced path
+            // (generation is not null) keeps swallowing on purpose: nobody awaits FlushAsync's result,
+            // and the next card move or setting change requeues the same content anyway.
+            if (generation is null) throw;
         }
         finally
         {
@@ -700,15 +744,30 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         // FlushAsync before shutdown, and this is the backstop for the ones that do not.
         if (dropped is not null)
         {
-            try
+            // SAME GUARD AS RequestSave AND THE DEBOUNCED SaveInternalAsync CALL (RemEx-8y3qy round 4,
+            // LOW finding). This drain was previously safe only because RequestSave refuses to queue
+            // while _profileIsFallback is set, so `dropped` should never be fallback-derived - but that
+            // was an invariant this method assumed rather than one it enforced, and the same queued-
+            // before-the-flag-flipped race SaveInternalAsync guards against applies here too. Checked
+            // explicitly so Dispose does not have to keep being the one caller that trusts it.
+            if (_profileIsFallback)
             {
-                // ATOMIC HERE TOO (RemEx-8y3qy round 2) - see WriteProfileAtomically. A reader racing
-                // process shutdown deserves the same guarantee a normal debounced save gives it.
-                WriteProfileAtomically(_filePath, dropped);
+                _logger.LogWarning(
+                    "DashboardLayoutService: refusing to drain a queued save on Dispose - the loaded profile is a fallback default, not the user's real one");
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine($"[RemexPersistence] ERROR draining the save queue on dispose: {ex.Message}");
+                try
+                {
+                    // ATOMIC HERE TOO (RemEx-8y3qy round 2) - see WriteProfileAtomically. A reader
+                    // racing process shutdown deserves the same guarantee a normal debounced save gives
+                    // it.
+                    WriteProfileAtomically(_filePath, dropped);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[RemexPersistence] ERROR draining the save queue on dispose: {ex.Message}");
+                }
             }
         }
 
