@@ -22,6 +22,7 @@
     pwsh scripts/ui-hotreload.ps1 -Start
     pwsh scripts/ui-hotreload.ps1 -Start -AppArgs '--view Settings'
     pwsh scripts/ui-hotreload.ps1 -Stop
+    pwsh scripts/ui-hotreload.ps1 -Stop -NoRelaunch
 #>
 [CmdletBinding(DefaultParameterSetName = 'Status')]
 param(
@@ -35,7 +36,15 @@ param(
     # Extra args to pass straight through to Remex.Agent.exe (e.g. '--view Settings'), used by
     # scripts/ui-palette-sweep.ps1 (RemEx-8q7de) to open a specific view without sending keystrokes
     # to a running host.
-    [Parameter(ParameterSetName = 'Start')][string]$AppArgs
+    [Parameter(ParameterSetName = 'Start')][string]$AppArgs,
+
+    # Stop without relaunching the installed Release build (RemEx-8q7de round 2). -Stop's default
+    # behaviour is exactly wrong for a caller that is about to run ANOTHER host in a moment (the
+    # palette sweep, cell to cell and view to view): the relaunched Release host would auto-connect
+    # and read/write dashboard_layout.json while the caller still owns it. Every -Stop the sweep
+    # issues carries this; the one at the very end of a run does not, so the machine is left the way
+    # -Stop has always left it.
+    [Parameter(ParameterSetName = 'Stop')][switch]$NoRelaunch
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,7 +60,15 @@ function Stop-Remex {
     $p = Get-RemexProcess
     if ($p) {
         $p | Stop-Process -Force
-        Start-Sleep -Milliseconds 900
+        # WAIT ON THE ACTUAL PROCESS HANDLE, NOT A FIXED SLEEP (RemEx-8q7de round 2). A flat
+        # 900ms either under-waits on a loaded machine - leaving the old process still holding its
+        # file handles and DLL locks when the caller's very next line reads or writes the profile
+        # or rebuilds - or over-waits everywhere else. WaitForExit blocks only as long as actually
+        # needed, with a generous ceiling so a process that ignores -Force does not hang the caller
+        # forever.
+        foreach ($proc in $p) {
+            try { $proc.WaitForExit(10000) | Out-Null } catch { <# already gone #> }
+        }
     }
 }
 
@@ -90,6 +107,12 @@ if ($Start) {
 
 if ($Stop) {
     Stop-Remex
+
+    if ($NoRelaunch) {
+        Write-Host 'Stopped. Not relaunching (-NoRelaunch).' -ForegroundColor Cyan
+        return
+    }
+
     if (Test-Path $installedExe) {
         Start-Process $installedExe
         Write-Host "Restored the installed Release build: $installedExe" -ForegroundColor Green

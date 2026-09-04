@@ -58,6 +58,7 @@
     pwsh scripts/ui-palette-sweep.ps1 -Cells Default,Chroma-Dark-C1
     pwsh scripts/ui-palette-sweep.ps1
 #>
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string]$Out = (Join-Path $env:TEMP ('remex-ui\sweep-{0:yyyyMMdd-HHmmss}\' -f (Get-Date))),
@@ -71,12 +72,18 @@ $ErrorActionPreference = 'Stop'
 
 # UI Automation (ui-snapshot.ps1) is Windows-only. Exit cleanly rather than fail everywhere else,
 # same convention as the rest of the ui-*.ps1 family.
-if (-not $IsWindows) {
+#
+# [System.Runtime.InteropServices.RuntimeInformation], NOT $IsWindows (RemEx-8q7de round 2):
+# $IsWindows does not exist before PowerShell 6, so under Windows PowerShell 5.1 - which
+# `powershell.exe -File` reaches for by default even ON Windows - the variable is $null, "-not
+# $null" is true, and this script reported "Windows-only, exiting cleanly" with exit 0 on the one
+# platform it is actually meant to run on. The #Requires above already refuses 5.1 outright; this
+# check is what actually decides Windows vs. not, on any version that gets past it.
+if (-not [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
     Write-Warning 'ui-palette-sweep.ps1 drives UI Automation, which is Windows-only. Exiting cleanly.'
     exit 0
 }
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
 $hotReloadScript = Join-Path $PSScriptRoot 'ui-hotreload.ps1'
 $snapshotScript = Join-Path $PSScriptRoot 'ui-snapshot.ps1'
 
@@ -130,10 +137,13 @@ if ($Cells) {
     if ($unknown) {
         throw "Unknown cell id(s): $($unknown -join ', '). Run -ListCells to see valid ids."
     }
-    $selected = $Script:CellMatrix | Where-Object { $Cells -contains $_.Id }
+    # @(...) forces an array even when exactly one cell matches — PowerShell unwraps a
+    # single-item pipeline result to the bare object, which would make $selected.Count report
+    # the CELL'S OWN key count instead of "1" (e.g. -Cells Default alone reported "6 cell(s)").
+    $selected = @($Script:CellMatrix | Where-Object { $Cells -contains $_.Id })
 }
 else {
-    $selected = $Script:CellMatrix
+    $selected = @($Script:CellMatrix)
 }
 
 if ($DryRun) {
@@ -167,6 +177,22 @@ if (-not (Test-Path $profilePath)) {
     throw "No profile found at '$profilePath' - nothing to sweep against. Launch RemEx once to create one."
 }
 
+# Fails loudly instead of silently restoring/relaunching over a host that could still be reading
+# or writing the profile (RemEx-8q7de round 2, CRITICAL). Every -Stop the loop below issues
+# carries -NoRelaunch, so by the time control reaches `finally` nothing should be alive - if
+# something is, that is exactly the bug this exists to catch rather than paper over.
+function Assert-NoRemexProcessAlive([string]$When) {
+    $alive = Get-Process -Name 'Remex.Agent', 'Remex.Desktop' -ErrorAction SilentlyContinue
+    if ($alive) {
+        $names = ($alive | ForEach-Object { "$($_.ProcessName) (pid $($_.Id))" }) -join ', '
+        throw "REFUSING TO CONTINUE: a Remex process is still alive $When - $names. The sweep must never restore or relaunch while a host could still be touching the profile."
+    }
+}
+
+# Remembered so the ORIGINAL state is what gets put back, not an assumption. If nothing was
+# running before the sweep started, nothing should be running after it either.
+$wasRunningBeforeSweep = [bool](Get-Process -Name Remex.Agent -ErrorAction SilentlyContinue)
+
 $outDir = Split-Path -Parent $Out
 if ($outDir -and -not (Test-Path $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
@@ -182,8 +208,10 @@ try {
         Write-Host "── Cell $($cell.Id) ──" -ForegroundColor Yellow
 
         # Stop BEFORE every profile write, same reasoning as ui-hotreload's own -Start: a running
-        # host holds its own idea of the profile and can save over ours mid-sweep.
-        & $hotReloadScript -Stop | Out-Null
+        # host holds its own idea of the profile and can save over ours mid-sweep. -NoRelaunch:
+        # the sweep is about to start ANOTHER host in a moment, so relaunching the installed
+        # Release build here would just hand it the file we are mid-write on (RemEx-8q7de round 2).
+        & $hotReloadScript -Stop -NoRelaunch | Out-Null
 
         $profileJson = Get-Content -Raw -Path $profilePath | ConvertFrom-Json
         if (-not $profileJson.PSObject.Properties['customization']) {
@@ -201,9 +229,16 @@ try {
         $customization | Add-Member -NotePropertyName 'themeSeedChroma' -NotePropertyValue 48.0                -Force
         $customization | Add-Member -NotePropertyName 'themeMode'       -NotePropertyValue $cell.Mode          -Force
 
-        # UTF-8 no BOM, matching DashboardLayoutService.JsonOptions' own contract for this file.
+        # UTF-8 no BOM (matching DashboardLayoutService.JsonOptions' own contract for this file),
+        # written to a temp sibling and moved into place (RemEx-8q7de round 2, HIGH). A relaunched
+        # host was already stopped -NoRelaunch above, but writing this file is still not something
+        # to do non-atomically: Move-Item within the same volume is a rename, so any reader only
+        # ever sees the old complete file or the new complete one, never a torn read that
+        # DashboardLayoutService.ReadAndMigrate would treat as corrupt and rename to .bak.
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-        [System.IO.File]::WriteAllText($profilePath, ($profileJson | ConvertTo-Json -Depth 20), $utf8NoBom)
+        $tempProfilePath = "$profilePath.sweeptmp"
+        [System.IO.File]::WriteAllText($tempProfilePath, ($profileJson | ConvertTo-Json -Depth 20), $utf8NoBom)
+        Move-Item -Path $tempProfilePath -Destination $profilePath -Force
 
         foreach ($view in $Script:Views) {
             & $hotReloadScript -Start -NoBuild -AppArgs "--view $view" | Out-Null
@@ -224,7 +259,9 @@ try {
 
             $index.Add([pscustomobject]@{ Cell = $cell.Id; View = $view; Screenshot = $shotPath; Finding = 'not run' })
 
-            & $hotReloadScript -Stop | Out-Null
+            # -NoRelaunch here too - see the pre-write -Stop above. Every stop inside this loop
+            # must leave nothing running; only the very last stop, after the loop, may relaunch.
+            & $hotReloadScript -Stop -NoRelaunch | Out-Null
         }
 
         foreach ($view in $Script:ManualViews) {
@@ -233,11 +270,27 @@ try {
     }
 }
 finally {
+    # A live host reading or writing the profile at the moment of restore is exactly the bug this
+    # whole safety net exists to prevent (RemEx-8q7de round 2, CRITICAL) - fail loudly rather than
+    # restore underneath it.
+    Assert-NoRemexProcessAlive 'immediately before restoring the profile'
+
     # Restore FIRST, delete the backup only once the restore itself has succeeded — a Remove-Item
     # ahead of a failed Copy-Item would delete the only remaining copy of the real profile.
     Copy-Item -Path $backupPath -Destination $profilePath -Force
     Remove-Item -Path $backupPath
     Write-Host "Restored '$profilePath' from backup." -ForegroundColor Cyan
+
+    Assert-NoRemexProcessAlive 'immediately after restoring the profile'
+
+    # Put the machine back exactly how the sweep found it: relaunch the installed Release build
+    # ONLY if one was already running before the sweep began, and only now that the real profile
+    # is safely back on disk. Every -Stop during the sweep used -NoRelaunch, so this is the one
+    # normal (relaunching) -Stop path in the whole run.
+    if ($wasRunningBeforeSweep) {
+        & $hotReloadScript -Stop | Out-Null
+        Write-Host 'Relaunched the installed Release build (it was running before the sweep began).' -ForegroundColor Cyan
+    }
 }
 
 $indexPath = "{0}index.md" -f $Out
