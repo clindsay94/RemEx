@@ -107,18 +107,22 @@ public class PairingDialogViewModelTests
     [Fact]
     public async Task Cancel_DuringSuccessHold_ResolvesPaired()
     {
-        var vm = Vm((_, _) => Task.FromResult(true), successHold: TimeSpan.FromMilliseconds(200));
+        // A hold far longer than the test can wait, so the only way ResultTask completes here is
+        // through the Cancel path under test; a short hold could expire first on a loaded runner and
+        // let the normal path satisfy the assertion without the race ever being exercised.
+        var vm = Vm((_, _) => Task.FromResult(true), successHold: TimeSpan.FromSeconds(30));
         vm.PinInput = "123456";
 
-        var submitTask = vm.SubmitCommand.ExecuteAsync(null);
+        _ = vm.SubmitCommand.ExecuteAsync(null);
         while (!vm.IsSucceeded)
         {
             await Task.Delay(5);
         }
 
+        vm.ResultTask.IsCompleted.Should().BeFalse("the hold has not elapsed, so nothing has resolved yet");
+
         // Escape/Cancel during the success hold must not discard an already-completed pairing.
         vm.CancelCommand.Execute(null);
-        await submitTask;
 
         (await vm.ResultTask).Should().Be(PairingDialogResult.Paired);
     }
@@ -127,7 +131,8 @@ public class PairingDialogViewModelTests
     public async Task TokenCancellation_DuringSuccessHold_ResolvesPaired()
     {
         using var cts = new CancellationTokenSource();
-        var vm = Vm((_, _) => Task.FromResult(true), cts.Token, TimeSpan.FromMilliseconds(200));
+        // Same reasoning as the Cancel test above: only the token can end this hold in time.
+        var vm = Vm((_, _) => Task.FromResult(true), cts.Token, TimeSpan.FromSeconds(30));
         vm.PinInput = "123456";
 
         var submitTask = vm.SubmitCommand.ExecuteAsync(null);
@@ -135,6 +140,8 @@ public class PairingDialogViewModelTests
         {
             await Task.Delay(5);
         }
+
+        vm.ResultTask.IsCompleted.Should().BeFalse("the hold has not elapsed, so nothing has resolved yet");
 
         cts.Cancel();
         await submitTask;

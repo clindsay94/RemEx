@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The PC's pairing dialog now stays open while the PIN is checked, says whether pairing
-  succeeded or failed, and lets you correct a mistyped PIN without starting the connection over.
-  Cancel still works at every stage, and a connection timeout closes it. (RemEx-x6a70.1)
+- The PC's pairing dialog now stays open while the PIN is checked and says whether pairing
+  succeeded or failed, instead of closing the moment you press Pair and leaving the answer to
+  the status line. A failed check still needs a fresh pairing attempt, because the client's
+  handshake keys are discarded after each check. Cancel works at every stage and a connection
+  timeout closes the dialog. (RemEx-x6a70.1)
 
 - The command palette on the PC now shows which part of each result matched what you typed: the
   matching characters in the label and category are bold, and the rest stays regular.
