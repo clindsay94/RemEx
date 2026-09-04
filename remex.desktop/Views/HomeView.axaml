@@ -485,7 +485,7 @@
                 <!-- Empty state -->
                 <material:Card Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                        <TextBlock Text="🗒" Theme="{StaticResource Headline5TextBlock}" HorizontalAlignment="Center" Opacity="0.7"/>
+                        <mi:MaterialIcon Kind="NoteText" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" Width="28" Height="28" HorizontalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Home_NoRecentActivity}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
                     </StackPanel>
                 </material:Card>
@@ -496,7 +496,7 @@
                 <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource CardBackgroundHoverBrush}" Margin="0,0,14,0">
-                            <TextBlock Text="🐙" Theme="{StaticResource Headline6TextBlock}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <mi:MaterialIcon Kind="Github" Foreground="{DynamicResource TextPrimaryBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock Text="{local:Localize Home_GitHubCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -507,7 +507,7 @@
                 <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemSuccessBackgroundBrush}" Margin="0,0,14,0">
-                            <TextBlock Text="▶" Theme="{StaticResource Headline6TextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <mi:MaterialIcon Kind="GooglePlay" Foreground="{DynamicResource SystemSuccessBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock Text="{local:Localize Home_PlayStoreCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -518,7 +518,7 @@
                 <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemWarningBackgroundBrush}" Margin="0,0,14,0">
-                            <TextBlock Text="🌡️" Theme="{StaticResource Headline6TextBlock}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <mi:MaterialIcon Kind="Thermometer" Foreground="{DynamicResource SystemWarningBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock Text="{local:Localize Home_HwInfoCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
