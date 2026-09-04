@@ -676,6 +676,9 @@
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN must be exactly 6 digits.</value>
   </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Paired</value>
+  </data>
 
   
   <data name="Wol_EnterMac" xml:space="preserve">

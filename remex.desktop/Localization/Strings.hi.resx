@@ -631,6 +631,9 @@
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>पिन ठीक 6 अंकों का होना चाहिए।</value>
   </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>युग्मित</value>
+  </data>
 
   
   <data name="Wol_EnterMac" xml:space="preserve">

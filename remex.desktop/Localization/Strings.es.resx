@@ -631,6 +631,9 @@
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>El PIN debe tener exactamente 6 dígitos.</value>
   </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Emparejado</value>
+  </data>
 
   
   <data name="Wol_EnterMac" xml:space="preserve">

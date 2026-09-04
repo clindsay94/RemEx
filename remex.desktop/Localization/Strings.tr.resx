@@ -631,6 +631,9 @@
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN tam olarak 6 haneli olmalıdır.</value>
   </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Eşleştirildi</value>
+  </data>
 
   
   <data name="Wol_EnterMac" xml:space="preserve">

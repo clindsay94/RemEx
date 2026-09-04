@@ -1144,18 +1144,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     return;
                 }
 
-                var pin = await PromptForPinAsync();
-                if (string.IsNullOrEmpty(pin))
+                var paired = await PairWithDialogAsync(pairingClient, response, linkedCts.Token);
+                if (!paired)
                 {
                     StatusText = LocalizationService.Instance["Status_PairingCancelled"];
-                    Cleanup();
-                    return;
-                }
-
-                var success = await pairingClient.CompletePairingAsync(pin, response, linkedCts.Token);
-                if (!success)
-                {
-                    StatusText = LocalizationService.Instance["Status_PairingFailed"];
                     Cleanup();
                     return;
                 }
@@ -2069,14 +2061,24 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         return socket;
     }
 
-    private async Task<string?> PromptForPinAsync()
+    /// <summary>
+    /// Opens the pairing dialog and hands it the local delegate that verifies a PIN, then awaits its
+    /// <see cref="Remex.Desktop.ViewModels.PairingDialogViewModel.ResultTask"/> (RemEx-x6a70.1). The
+    /// dialog owns the whole verify/retry loop now — this method only reports the final true/false.
+    /// </summary>
+    private async Task<bool> PairWithDialogAsync(
+        Remex.Core.Native.PairingClient pairingClient,
+        Remex.Core.Models.PairingResponse response,
+        CancellationToken cancellationToken)
     {
-        string? result = null;
+        bool result = false;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var dialog = new Remex.Desktop.Views.PairingDialog
             {
-                DataContext = new Remex.Desktop.ViewModels.PairingDialogViewModel()
+                DataContext = new Remex.Desktop.ViewModels.PairingDialogViewModel(
+                    (pin, ct) => pairingClient.CompletePairingAsync(pin, response, ct),
+                    cancellationToken)
             };
 
             var shell = App.Services.GetService<Remex.Desktop.ViewModels.ShellViewModel>(); // optional service
@@ -2084,14 +2086,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             {
                 if (desktop.MainWindow != null)
                 {
-                    result = await dialog.ShowDialog<string?>(desktop.MainWindow);
+                    result = await dialog.ShowDialog<bool>(desktop.MainWindow);
                     return;
                 }
             }
             // Fallback when no owner window is available — a single-view (non-window) lifetime, or
             // a null ShellViewModel / MainWindow. Not reachable in practice: this UI only runs as
-            // the PC's classic desktop app, where a MainWindow is always present by the time a PIN
-            // is requested. If it ever were taken, the method returns a null PIN.
+            // the PC's classic desktop app, where a MainWindow is always present by the time pairing
+            // is requested. If it ever were taken, the method reports pairing as not completed.
         });
         return result;
     }
