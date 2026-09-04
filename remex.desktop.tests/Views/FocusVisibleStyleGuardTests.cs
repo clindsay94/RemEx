@@ -143,7 +143,9 @@ public class FocusVisibleStyleGuardTests
             .SelectMany(s => s.Elements().Where(e => e.Name.LocalName == "Setter"))
             .Where(e => e.Attribute("Property")?.Value == "assists:ShadowAssist.ShadowDepth")
             .Select(e => e.Attribute("Value")?.Value)
-            .FirstOrDefault();
+            // Two styles share this selector in App.axaml; Avalonia applies the later one, so the
+            // effective depth is the LAST setter, not the first.
+            .LastOrDefault();
 
         pointeroverDepth.Should().NotBeNullOrEmpty(
             "the pointerover rule must set a ShadowAssist depth for the focus-visible step to match");

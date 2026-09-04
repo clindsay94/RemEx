@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Card buttons on the PC (the dashboard's quick-launch tiles and link tiles) now lift on keyboard
+  focus exactly as they do on hover, so keyboard users see the same elevation step pointer users
+  get. (RemEx-alwfa.5)
+
 - The PC's confirmation prompts, the file-consent prompt and the restore-layout prompt are now
   built on Material.Avalonia's dialog builders through one shared path instead of three
   hand-written windows. They stay separate windows, so a prompt can still appear while the main
