@@ -29,7 +29,7 @@ public class CanvasMenuGlyphTests
     [Fact]
     public void NoCanvasStringInAnyLocale_StartsWithASymbolOrEmojiPrefix()
     {
-        var files = ResxFiles();
+        var files = ResxFiles().ToList();
         files.Should().HaveCount(9, "RemEx ships Strings.resx plus 8 translated locales");
 
         var offenders = new List<string>();
@@ -45,8 +45,10 @@ public class CanvasMenuGlyphTests
             canvasEntries.Count.Should().BeGreaterOrEqualTo(20,
                 $"{Path.GetFileName(file)} should carry the full Canvas_* key set; a low count means the parse missed entries");
 
-            foreach (var (key, value) in canvasEntries)
+            foreach (var (key, rawValue) in canvasEntries)
             {
+                // Leading whitespace would otherwise hide a prefix at index 1 (" 📡 Ping").
+                var value = rawValue.TrimStart();
                 if (value.Length == 0)
                     continue;
 
@@ -73,7 +75,15 @@ public class CanvasMenuGlyphTests
         var path = Path.Combine(RepoRoot(), "remex.desktop", "Views", "CanvasView.axaml");
         var doc = XDocument.Load(path);
 
-        var menuItems = doc.Descendants(XName.Get("MenuItem", Avalonia))
+        var allMenuItems = doc.Descendants(XName.Get("MenuItem", Avalonia)).ToList();
+
+        // A literal Header would slip past the key-based filter below and escape the icon check
+        // (the localization gate catches the literal, but not the missing icon).
+        allMenuItems.Where(mi => HeaderKey(mi) is null)
+            .Select(mi => mi.Attribute("Header")?.Value ?? "(no Header)")
+            .Should().BeEmpty("every CanvasView MenuItem localizes its Header through {local:Localize}");
+
+        var menuItems = allMenuItems
             .Where(mi => HeaderKey(mi) is { } key && !key.StartsWith("Canvas_Preset_", StringComparison.Ordinal))
             .ToList();
 

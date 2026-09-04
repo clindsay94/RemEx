@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The sensor card's right-click menu on the PC draws a Material icon on every item (graph types,
+  second metric, colour presets header, rename, value overlay, alert), and the Ping, Cancel,
+  Disconnect, Graph Type, Lock PC and Reboot to UEFI labels no longer carry an emoji in front of
+  the icon their buttons already show. All nine languages. (RemEx-1ufoa.1)
+
 - The sensor-canvas card chrome (surface, border, resize grip and the hover/selected/drag
   elevation steps) now lives in its own control theme under `Themes/Shared` instead of a local
   style block inside the Sensors view, so the card looks and behaves the same wherever it is
