@@ -31,8 +31,13 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// quietly widened.
 /// </para>
 /// </remarks>
-public class PairedDeviceRenameTests
+public class PairedDeviceRenameTests : IDisposable
 {
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy) — see NewSettingsViewModel's own comment for why.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
     [Fact]
     public void TypingANameAndApplyingItReachesTheWriter()
     {
@@ -143,10 +148,10 @@ public class PairedDeviceRenameTests
     private static PairedDeviceRow Row(string id, string? name = null)
         => new(id, DeviceName: null, NameOverride: name, null, null, IsOnline: false);
 
-    private static SettingsViewModel NewSettingsViewModel()
+    private SettingsViewModel NewSettingsViewModel()
     {
         var savefile = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            _layoutService = new DashboardLayoutService(new ThemeService()),
             Mock.Of<ILauncherStorageService>(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());

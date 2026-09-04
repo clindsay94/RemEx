@@ -33,8 +33,13 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// the cheapest thing that would have caught it.
 /// </para>
 /// </remarks>
-public class PairedDeviceCardTests
+public class PairedDeviceCardTests : IDisposable
 {
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy) — see NewSettingsViewModel's own comment for why.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     // ── The card has to be reachable at all ────────────────────────────────────
@@ -207,10 +212,10 @@ public class PairedDeviceCardTests
     /// the same shape DestructiveActionFailClosedTests.CreateSettings uses, and for the same reason:
     /// layoutService, shell and fileTransferRootSettings are stored and never touched on this path.
     /// </remarks>
-    private static SettingsViewModel NewSettingsViewModel()
+    private SettingsViewModel NewSettingsViewModel()
     {
         var savefile = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            _layoutService = new DashboardLayoutService(new ThemeService()),
             Mock.Of<ILauncherStorageService>(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());

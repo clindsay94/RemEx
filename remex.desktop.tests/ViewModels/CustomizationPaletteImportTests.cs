@@ -16,12 +16,24 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// path (<c>ImportPaletteJsonAsync</c>) is exactly where the wrong-title rejection defect lived, and
 /// <c>PaletteExchangeTests</c> only covers the static serializer, never the ViewModel that drives it.
 /// </summary>
-public class CustomizationPaletteImportTests
+public class CustomizationPaletteImportTests : IDisposable
 {
-    private static CustomizationViewModel MakeVm()
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy). Every DashboardLayoutService in this assembly
+    // shares one redirected dashboard_layout.json (build/TestHostStateRedirect.cs is per-ASSEMBLY,
+    // not per-test), and unlike the SettingsViewModel-harness tests elsewhere, THIS one is genuinely
+    // exercised: the import path under test calls CustomizationViewModel.ApplyAndSave, which calls
+    // RequestSave and arms a real 2s debounce timer. Left undisposed, that timer can fire mid-way
+    // through a LATER, unrelated test and write over whatever that test just wrote or is about to
+    // read - exactly the cross-test hazard this bead's own reproduction tests depend on not
+    // happening.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
+    private CustomizationViewModel MakeVm()
     {
         var theme = new ThemeService { PostToUiThread = action => action() };
-        var layout = new DashboardLayoutService(theme);
+        var layout = _layoutService = new DashboardLayoutService(theme);
         // ShellViewModel is never touched by the import path (only IsReducedMotion,
         // IsPaletteDragging and NavigateBack read _shell, none of which import reaches).
         return new CustomizationViewModel(null!, layout, theme);

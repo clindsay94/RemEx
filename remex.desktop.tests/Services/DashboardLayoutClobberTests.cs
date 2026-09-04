@@ -42,12 +42,35 @@ namespace Remex.Desktop.Tests.Services;
 /// because most fields quietly went back to their C# defaults.
 /// </para>
 /// </remarks>
-public class DashboardLayoutClobberTests
+public class DashboardLayoutClobberTests : IDisposable
 {
+    // OWN TEMP DIRECTORY, PER TEST INSTANCE, NOT THE SHARED REDIRECTED FILE (RemEx-8y3qy). Every
+    // DashboardLayoutService built through the public constructor across the WHOLE test assembly
+    // shares one redirected dashboard_layout.json (build/TestHostStateRedirect.cs is per-ASSEMBLY,
+    // not per-test) - and this class's whole reason to exist is deliberately locking and racing that
+    // file. An undisposed service anywhere else in the assembly, or simply two tests here running
+    // back to back, can leave a debounce timer armed that fires a write between another test's write
+    // and its read - which is exactly the flake the gate hit on
+    // ReadExistingProfileAsync_RetriesThroughATransientSharingViolation while the changed code was
+    // unrelated (resx + a tray flyout VM). xUnit constructs a new instance of this class per test
+    // method and calls Dispose after it, so a fresh directory here is a fresh directory per test,
+    // with no risk of two tests in this class colliding with each other either.
+    private readonly string _tempDirectory =
+        Path.Combine(Path.GetTempPath(), "remex-dashboard-layout-clobber-" + Guid.NewGuid().ToString("N"));
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_tempDirectory, recursive: true); } catch { /* best-effort cleanup */ }
+    }
+
+    /// <summary>A service pointed at this test's own, private profile file via the internal test seam.</summary>
+    private DashboardLayoutService NewService() =>
+        new(Path.Combine(_tempDirectory, "dashboard_layout.json"), new ThemeService());
+
     [Fact]
     public async Task LoadAsyncRoundTripsEveryCustomizationField_WhenSchemaIsAlreadyCurrent()
     {
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var expected = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
 
         await File.WriteAllTextAsync(
@@ -67,7 +90,7 @@ public class DashboardLayoutClobberTests
         // survive untouched. Schema 0 is deliberately excluded here: FromPreSeedEngine intentionally
         // rewrites AccentColor/SchemeVariant/UseLightPalette/ThemeContrast from the preset catalogue,
         // which is correct behaviour, not the bug this class is about.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var onDisk = BuildNonDefaultSettings(schemaVersion: 1) with { ThemeMode = null };
 
         await File.WriteAllTextAsync(
@@ -89,7 +112,7 @@ public class DashboardLayoutClobberTests
         // this with a fixed Task.Delay release instead): the lock is released from inside
         // onAttemptFailed, at the exact moment the first attempt is known to have failed, so
         // contention is guaranteed and so is the release before the next attempt.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
 
         await File.WriteAllTextAsync(service.FilePathForTests,
@@ -125,7 +148,7 @@ public class DashboardLayoutClobberTests
         // all-default DashboardProfile as CurrentProfile, and the very next read-modify-write save
         // anywhere in the app (ShellViewModel.CompleteTutorial's shape, reproduced below) persisted
         // that default over the real file.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
 
@@ -174,7 +197,7 @@ public class DashboardLayoutClobberTests
         // RequestSave/SaveInternalAsync now refuse to write while the internal fallback flag is set,
         // so the user loses only whatever they change in THIS session (nothing is written at all)
         // rather than losing the entire saved profile to a silent overwrite.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
         var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
@@ -217,7 +240,7 @@ public class DashboardLayoutClobberTests
         // reported success while the file was still whatever was there before the import ran. SaveAsync
         // carries an explicit, real profile handed to it by its caller - never one built from
         // CurrentProfile - so it must always write, and it must leave the flag clear afterwards.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var stale = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var staleProfile = new DashboardProfile { Customization = stale, Language = "stale" };
         await File.WriteAllTextAsync(service.FilePathForTests,
@@ -263,7 +286,7 @@ public class DashboardLayoutClobberTests
         // failure never surfaces, that LoadAsync succeeds against the file the save never actually
         // reached, and the import reports success while nothing was written. A save that cannot land
         // after every retry must throw, so its caller's existing catch does the right thing.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var original = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var originalProfile = new DashboardProfile { Customization = original, Language = "original" };
         var originalBytes = JsonSerializer.Serialize(originalProfile, DashboardLayoutService.JsonOptions);
@@ -324,7 +347,7 @@ public class DashboardLayoutClobberTests
         // throws - correctly - but with the flag left cleared, the very next unrelated RequestSave (the
         // next card drag) would sail past its own guard and persist the still-fabricated CurrentProfile
         // over the real file. A failed recovery attempt must leave exactly the protection it found.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
         var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
@@ -380,7 +403,7 @@ public class DashboardLayoutClobberTests
         // writers never contend on the same temp file, but it also means a crash between creating one
         // and cleaning it up (or before either runs) leaves it behind forever, since nothing else ever
         // revisits that name. LoadAsync now sweeps them.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
         var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
@@ -406,7 +429,7 @@ public class DashboardLayoutClobberTests
     [Fact]
     public async Task AfterASubsequentSuccessfulLoad_TheFallbackFlagClearsAndSavesResume()
     {
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
         var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
@@ -455,7 +478,7 @@ public class DashboardLayoutClobberTests
         // successful save must leave nothing behind at the sibling .tmp path, and what lands at the
         // real path must be the complete, valid profile rather than whatever File.WriteAllTextAsync
         // happened to have flushed when a reader looked.
-        using var service = new DashboardLayoutService(new ThemeService());
+        using var service = NewService();
         await service.LoadAsync(); // establishes a real (non-fallback) baseline; nothing on disk yet
 
         var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);

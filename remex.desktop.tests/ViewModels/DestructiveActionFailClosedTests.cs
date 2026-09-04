@@ -37,8 +37,18 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// outlive the test. The property under test is the pattern's, not this ViewModel's.
 /// </para>
 /// </remarks>
-public class DestructiveActionFailClosedTests
+public class DestructiveActionFailClosedTests : IDisposable
 {
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy) — every DashboardLayoutService in this assembly
+    // shares one redirected dashboard_layout.json (build/TestHostStateRedirect.cs is per-ASSEMBLY,
+    // not per-test), and an undisposed instance can leave a debounce timer armed past this test's own
+    // lifetime that later fires a write into another test's read. This one is never RequestSave'd in
+    // practice (see CreateSettings' own comment), but disposing costs nothing and does not depend on
+    // that staying true.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
     /// <summary>
     /// Builds a ViewModel holding one log entry. Entries are appended BEFORE construction on
     /// purpose: appending afterwards raises <c>LogAdded</c>, whose handler posts to Avalonia's UI
@@ -475,13 +485,13 @@ public class DestructiveActionFailClosedTests
     // SavedStatus, which makes "did we get past the guard" observable while performing no real
     // write. That is the same shape as the Kill Process site above, where the observable is the
     // failure of a re-verification rather than a completed kill.
-    private static SettingsViewModel CreateSettings()
+    private SettingsViewModel CreateSettings()
     {
         // savefileService is the only Guard.NotNull'd dependency, so it is the only one built for
         // real; layoutService, shell and fileTransferRootSettings are stored, never dereferenced
         // during construction.
         var savefile = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            _layoutService = new DashboardLayoutService(new ThemeService()),
             new FakeLauncherStorage(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());
@@ -666,7 +676,7 @@ public class DestructiveActionFailClosedTests
     /// locator, which finds nothing in a test run, so without it every case returns at the same early
     /// guard and the positive control proves nothing.
     /// </remarks>
-    private static (SettingsViewModel Vm, FileTrustDeviceItem Device) SettingsWithTrustedDevice()
+    private (SettingsViewModel Vm, FileTrustDeviceItem Device) SettingsWithTrustedDevice()
     {
         var vm = CreateSettings();
         vm.FileTrustServiceForTests = new RevokeRecordingTrustService();
@@ -684,7 +694,7 @@ public class DestructiveActionFailClosedTests
     /// the operator's actual sharing configuration. The assertions are therefore on the collection,
     /// which is the revocation itself; persisting it is a separate concern with its own error path.
     /// </remarks>
-    private static (SettingsViewModel Vm, FileTransferSharedRootItem Root) SettingsWithSharedRoot()
+    private (SettingsViewModel Vm, FileTransferSharedRootItem Root) SettingsWithSharedRoot()
     {
         var vm = CreateSettings();
         var root = new FileTransferSharedRootItem("root-1", "Documents", Path.GetTempPath(), isWritable: true);

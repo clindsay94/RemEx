@@ -193,11 +193,34 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     internal string FilePathForTests => _filePath;
 
     public DashboardLayoutService(ThemeService themeService, ILogger<DashboardLayoutService>? logger = null)
+        : this(DefaultFilePath, themeService, logger)
+    {
+    }
+
+    /// <summary>
+    /// TEST SEAM ONLY (RemEx-8y3qy). Every real caller goes through the public constructor above,
+    /// which always resolves <see cref="DefaultFilePath"/> - this overload changes nothing about
+    /// production behaviour, it only lets a test point an instance at a file OTHER instances in the
+    /// same test assembly are not also touching.
+    /// </summary>
+    /// <remarks>
+    /// THE SHARED REDIRECTED FILE IS A REAL CROSS-TEST HAZARD, not a hypothetical one.
+    /// <c>build/TestHostStateRedirect.cs</c> redirects <see cref="RemexDataPaths.PerUserDirectory"/>
+    /// once per ASSEMBLY, not once per test, so every <see cref="DashboardLayoutService"/> the whole
+    /// test run constructs through the public constructor shares one
+    /// <c>dashboard_layout.json</c>. A test that arms a debounce timer (directly, or indirectly
+    /// through a ViewModel) and does not flush or dispose before returning can have that timer fire
+    /// during a LATER, unrelated test and write over whatever that test just wrote or is about to
+    /// read. <c>DashboardLayoutClobberTests</c> depends on nothing else touching its file at all
+    /// while it runs, so it uses this overload with its own private temp directory instead of
+    /// fighting for exclusive use of the one every other test in the assembly shares.
+    /// </remarks>
+    internal DashboardLayoutService(string filePath, ThemeService themeService, ILogger<DashboardLayoutService>? logger = null)
     {
         _themeService = themeService;
         _logger = logger ?? NullLogger<DashboardLayoutService>.Instance;
 
-        _filePath = DefaultFilePath;
+        _filePath = filePath;
 
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
     }

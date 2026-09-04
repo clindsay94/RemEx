@@ -39,8 +39,13 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// failures are silent and there is no headless render here.
 /// </para>
 /// </remarks>
-public class FileTrustDisplayNameTests
+public class FileTrustDisplayNameTests : IDisposable
 {
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy) — see NewSettingsViewModel's own comment for why.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
     // ── The bug itself ─────────────────────────────────────────────────────────
 
     [Fact]
@@ -233,17 +238,21 @@ public class FileTrustDisplayNameTests
     /// headless, so the list would stay empty and every assertion here would pass vacuously against
     /// index 0 of nothing. This is the same method the loader calls.
     /// </remarks>
-    private static SettingsViewModel SettingsWithTrustRecords(params FileTrustRecord[] records)
+    private SettingsViewModel SettingsWithTrustRecords(params FileTrustRecord[] records)
     {
         var vm = NewSettingsViewModel();
         vm.ReplaceTrustedDevices(records);
         return vm;
     }
 
-    private static SettingsViewModel NewSettingsViewModel()
+    private SettingsViewModel NewSettingsViewModel()
     {
+        // savefileService is the only Guard.NotNull'd dependency, so it is the only one built for
+        // real; layoutService, shell and fileTransferRootSettings are stored, never dereferenced by
+        // the display-name path this file tests. Disposed in Dispose() regardless (RemEx-8y3qy) — see
+        // the class field's comment.
         var savefile = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            _layoutService = new DashboardLayoutService(new ThemeService()),
             Mock.Of<ILauncherStorageService>(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());

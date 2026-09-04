@@ -27,8 +27,13 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// This is the only action on the card that cannot be undone — the phone must pair again with a new
 /// PIN, because the credential is gone. So the interesting tests are the ones about NOT doing it.
 /// </remarks>
-public class PairedDeviceUnpairTests
+public class PairedDeviceUnpairTests : IDisposable
 {
+    // DISPOSED IN Dispose() BELOW (RemEx-8y3qy) — see NewSettingsViewModel's own comment for why.
+    private DashboardLayoutService? _layoutService;
+
+    public void Dispose() => _layoutService?.Dispose();
+
     [Fact]
     public async Task ConfirmingActuallyRevokes()
     {
@@ -267,10 +272,10 @@ public class PairedDeviceUnpairTests
     private static PairedDeviceRow Row(string id, string? name = null)
         => new(id, DeviceName: null, NameOverride: name, null, null, IsOnline: false);
 
-    private static SettingsViewModel NewSettingsViewModel()
+    private SettingsViewModel NewSettingsViewModel()
     {
         var savefile = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            _layoutService = new DashboardLayoutService(new ThemeService()),
             Mock.Of<ILauncherStorageService>(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());

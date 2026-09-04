@@ -103,7 +103,12 @@ public sealed class HostStateRedirectionTests
     [Fact]
     public void DashboardLayout_ConstructedService_UsesTheRedirectedFile()
     {
-        var service = new DashboardLayoutService(new ThemeService());
+        // DISPOSED (RemEx-8y3qy): every DashboardLayoutService in this assembly shares one
+        // redirected dashboard_layout.json (build/TestHostStateRedirect.cs is per-ASSEMBLY, not
+        // per-test); an undisposed instance can leave a debounce timer armed past this test's own
+        // lifetime. Nothing here ever calls RequestSave, so none is actually armed - but disposing
+        // costs nothing and does not depend on that staying true.
+        using var service = new DashboardLayoutService(new ThemeService());
 
         AssertRedirected(service.FilePathForTests, "A constructed dashboard layout service");
     }
@@ -119,8 +124,11 @@ public sealed class HostStateRedirectionTests
     [Fact]
     public void Backups_ConstructedService_IsRedirected()
     {
+        // DISPOSED (RemEx-8y3qy) - see DashboardLayout_ConstructedService_UsesTheRedirectedFile's
+        // own comment above for why.
+        using var layoutService = new DashboardLayoutService(new ThemeService());
         var service = new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            layoutService,
             Mock.Of<ILauncherStorageService>(),
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());
