@@ -25,6 +25,11 @@ public class FloatingLabelNotchTests
 {
     private const string AvaloniaNs = "https://github.com/avaloniaui";
 
+    /// <summary>The clr-namespace every view maps (as <c>assists</c>) for TextFieldAssist; the
+    /// scan keys on this URI so a different prefix in a future view is still covered.</summary>
+    private static readonly XNamespace TextFieldAssistNs =
+        "clr-namespace:Material.Styles.Assists;assembly=Material.Styles";
+
     [Fact]
     public void EveryLabelledTextBoxCarriesTheOutlineClassAndUsesFloatingPlaceholder()
     {
@@ -41,13 +46,9 @@ public class FloatingLabelNotchTests
                 continue;
             }
 
-            var assistsNs = root.GetNamespaceOfPrefix("assists");
-            if (assistsNs is null)
-            {
-                continue;
-            }
-
-            var labelAttrName = assistsNs + "TextFieldAssist.Label";
+            // Keyed to the namespace, not to the "assists" prefix: a view that maps the same
+            // clr-namespace under another prefix must still be scanned (reviewer MEDIUM).
+            var labelAttrName = TextFieldAssistNs + "TextFieldAssist.Label";
 
             foreach (var textBox in doc.Descendants(XName.Get("TextBox", AvaloniaNs)))
             {
@@ -59,9 +60,10 @@ public class FloatingLabelNotchTests
                 labelledCount++;
 
                 var classes = (textBox.Attribute("Classes")?.Value ?? string.Empty)
-                    .Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                    .Split((char[]?)null, System.StringSplitOptions.RemoveEmptyEntries);
                 var hasOutlineClass = classes.Contains("outline");
-                var usesFloatingPlaceholder = textBox.Attribute("UseFloatingPlaceholder")?.Value == "True";
+                var usesFloatingPlaceholder =
+                    bool.TryParse(textBox.Attribute("UseFloatingPlaceholder")?.Value, out var flag) && flag;
 
                 if (!hasOutlineClass || !usesFloatingPlaceholder)
                 {
@@ -89,9 +91,9 @@ public class FloatingLabelNotchTests
     public void SharedTextBoxStyleDoesNotSetUseFloatingPlaceholderAppWide()
     {
         // Pins the deliberate decision (App.axaml comment above the TextBox style, RemEx-x6a70.4):
-        // setting UseFloatingPlaceholder globally would re-margin PART_TextContainer on every
-        // unlabelled field too (upstream TextBox.axaml:411), so each labelled call site opts in
-        // for itself instead.
+        // setting UseFloatingPlaceholder globally would set VerticalAlignment=Center on
+        // PART_TextContainer for every unlabelled field too (upstream TextBox.axaml:411-413), so
+        // each labelled call site opts in for itself instead.
         var app = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml"));
 
         var style = Regex.Match(app, @"<Style Selector=""TextBox"">.*?</Style>", RegexOptions.Singleline);

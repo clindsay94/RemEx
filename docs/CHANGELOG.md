@@ -193,6 +193,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Text fields with a floating label (the Add Program window, the log search box) drew their
+  outline straight through the label once the field held a value. The label now sits in a proper
+  gap in the border, the way Material outlined fields do. Fields without a label are unchanged.
+  (RemEx-x6a70.4)
 - Below about 1400px of window width the Remote Desktop toolbar drew its title straight over
   the Display label, and the Low/High captions under the Quality slider sat on top of the slider
   thumb. The title now steps aside when there is no room for it and the captions sit clear of the

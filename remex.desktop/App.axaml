@@ -751,8 +751,9 @@
              TextBox.axaml, tag 3.19.0, lines 184-195), keyed to the selector
              "TextBox.outline[UseFloatingPlaceholder=True] /template/ Border#PART_BackgroundTextField".
              Setting UseFloatingPlaceholder app-wide was rejected on purpose: the same template
-             (line 411) re-margins PART_TextContainer under that same property whenever it is True,
-             which would shift every unlabelled field in fifteen views along with the labelled ones.
+             (lines 411-413) sets VerticalAlignment=Center on Panel#PART_TextContainer under that
+             same property whenever it is True, which would move the text in every unlabelled field
+             in fifteen views along with the labelled ones.
              So a labelled TextBox must carry BOTH Classes="outline" and UseFloatingPlaceholder="True"
              at its own call site - neither one alone satisfies the selector above, and the notch
              will not appear without both. -->
