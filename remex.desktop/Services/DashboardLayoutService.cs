@@ -279,6 +279,10 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             DashboardProfile profile;
             MigrationOutcome outcome;
 
+            // ORPHANED TEMP FILES ARE SWEPT ONCE PER LOAD (RemEx-8y3qy round 5, LOW finding). See
+            // SweepStaleTempFiles for why they can exist at all and why sweeping here is safe.
+            SweepStaleTempFiles();
+
             ProfileFileMissingOnLoad = !File.Exists(_filePath);
             if (ProfileFileMissingOnLoad)
             {
@@ -394,7 +398,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     }
 
     /// <inheritdoc />
-    public Task SaveAsync(DashboardProfile profile)
+    public async Task SaveAsync(DashboardProfile profile)
     {
         // A DIRECT SAVE SUPERSEDES A QUEUED ONE, BY DEFINITION - and until this line it did not.
         // SaveInternalAsync wrote the file and left _pendingProfile armed, so a debounced write
@@ -416,13 +420,40 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         // Cleared here, before the write, rather than left for LoadAsync to clear afterwards: nothing
         // between this line and the following LoadAsync should be able to read a stale "still failed"
         // state as true.
+        //
+        // CAPTURED FIRST AND RESTORED ON FAILURE (RemEx-8y3qy round 5, HIGH finding). Round 4 made a
+        // failed write rethrow instead of being swallowed - but this clear ran unconditionally before
+        // that write even started, so a save that then failed left the flag cleared against a
+        // CurrentProfile that was NEVER actually confirmed good. Scenario: a startup load fails on a
+        // locked-but-intact file (flag true); the user imports a savefile to recover; that import's own
+        // write also cannot land (a longer-lived lock, a full disk) and throws - correctly, per round
+        // 4 - but with the flag left cleared, the very next unrelated RequestSave (the next card drag)
+        // would sail past its own guard and persist the still-fabricated CurrentProfile over the real
+        // file. Restoring both in the catch means a failed recovery attempt leaves exactly the
+        // protection it found, not less of it.
+        var wasFallback = _profileIsFallback;
+        var previousWarning = LoadFailureWarning;
+
         _profileIsFallback = false;
         LoadFailureWarning = null;
 
-        // NO GENERATION: a direct save is the caller's explicit instruction and always writes. Only
-        // the debounced path can be superseded, because only it represents an intention the user has
-        // already moved on from.
-        return SaveInternalAsync(profile, generation: null);
+        try
+        {
+            // NO GENERATION: a direct save is the caller's explicit instruction and always writes.
+            // Only the debounced path can be superseded, because only it represents an intention the
+            // user has already moved on from.
+            await SaveInternalAsync(profile, generation: null);
+        }
+        catch
+        {
+            // THE WRITE DID NOT LAND, so nothing about CurrentProfile's trustworthiness changed -
+            // SaveInternalAsync never assigns it, and a rethrown exception here (round 4's own fix)
+            // means the file did not change either. Restoring the captured state leaves the next
+            // unrelated save exactly as guarded as it was before this call started.
+            _profileIsFallback = wasFallback;
+            LoadFailureWarning = previousWarning;
+            throw;
+        }
     }
 
     /// <summary>
@@ -533,6 +564,57 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </remarks>
     private static bool IsTransientMoveFailure(Exception ex) =>
         ex is IOException or UnauthorizedAccessException;
+
+    /// <summary>
+    /// Deletes orphaned per-call temp files a crash left behind mid-write (RemEx-8y3qy round 5, LOW
+    /// finding).
+    /// </summary>
+    /// <remarks>
+    /// THE GUID IN THE TEMP NAME (round 4) MEANS NOTHING BUT A CRASH LEAVES ONE BEHIND. Both
+    /// <see cref="WriteProfileAtomicallyAsync"/> and <see cref="WriteProfileAtomically"/> already
+    /// delete their own temp file on any failure they observe - the gap is the process dying between
+    /// creating it and reaching that cleanup, or before either runs at all, which nothing else ever
+    /// revisits. Swept once per load rather than once per process so a leftover from a PREVIOUS run of
+    /// the app is caught too, not only ones from earlier in this one.
+    /// <para>
+    /// GLOB-SCOPED, DELIBERATELY, AND NOTHING ELSE. Matches only "&lt;profile file name&gt;.*.tmp" in
+    /// the profile's own directory - never another file in that folder, and never anything outside it.
+    /// A per-file failure (the ordinary shape: another instance's write is genuinely still in flight,
+    /// using its own fresh GUID) is swallowed and logged at Debug rather than surfaced - sweeping old
+    /// wreckage is a courtesy, not a load-time correctness requirement, and must never itself be a
+    /// reason the app cannot start.
+    /// </para>
+    /// </remarks>
+    private void SweepStaleTempFiles()
+    {
+        var directory = Path.GetDirectoryName(_filePath);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return;
+
+        string[] staleFiles;
+        try
+        {
+            staleFiles = Directory.GetFiles(directory, Path.GetFileName(_filePath) + ".*.tmp");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RemexLayout] Could not enumerate stale temp files in '{directory}': {ex.Message}");
+            return;
+        }
+
+        foreach (var stale in staleFiles)
+        {
+            try
+            {
+                File.Delete(stale);
+            }
+            catch (Exception ex)
+            {
+                // Ordinary case: another instance's write is genuinely still in flight with its own
+                // fresh GUID temp name - leave it alone rather than fail the load over housekeeping.
+                Debug.WriteLine($"[RemexLayout] Could not delete stale temp file '{stale}': {ex.Message}");
+            }
+        }
+    }
 
     /// <summary>
     /// Writes a profile to <paramref name="filePath"/> without ever exposing a reader to a partial or

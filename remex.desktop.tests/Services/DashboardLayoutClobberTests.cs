@@ -299,6 +299,96 @@ public class DashboardLayoutClobberTests
     }
 
     [Fact]
+    public async Task SaveAsync_RestoresTheFallbackFlagWhenItsWriteFailsEntirely()
+    {
+        // THE HIGH FINDING FROM ROUND 4's RE-REVIEW. SaveAsync clears _profileIsFallback and
+        // LoadFailureWarning BEFORE writing, and round 4 made a failed write rethrow - but nothing
+        // restored the cleared state when that write then failed. Scenario: a startup load fails on a
+        // locked-but-intact file (flag true, CurrentProfile fabricated); the user imports a savefile to
+        // recover; the import's own SaveAsync also cannot land (a longer-lived lock, a full disk) and
+        // throws - correctly - but with the flag left cleared, the very next unrelated RequestSave (the
+        // next card drag) would sail past its own guard and persist the still-fabricated CurrentProfile
+        // over the real file. A failed recovery attempt must leave exactly the protection it found.
+        using var service = new DashboardLayoutService(new ThemeService());
+        var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
+        var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
+        await File.WriteAllTextAsync(service.FilePathForTests, originalBytes);
+
+        // Put the service into a genuine fallback state (lock held for every retry attempt).
+        var loadBlock = new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None);
+        try
+        {
+            await service.LoadAsyncForTests(onReadAttemptFailed: static _ => { });
+        }
+        finally
+        {
+            loadBlock.Dispose();
+        }
+        service.LoadFailureWarning.Should().NotBeNull("anti-vacuity: the load must have actually failed");
+        service.ProfileIsFallbackForTests.Should().BeTrue(
+            "anti-vacuity: the flag must actually be set for this test to mean anything");
+        var warningWhileFallback = service.LoadFailureWarning;
+
+        // An explicit save (the import shape) that ALSO cannot land, because the destination is
+        // locked for this entire call too.
+        var attempted = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var attemptedProfile = new DashboardProfile { Customization = attempted, Language = "attempted" };
+
+        using (new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Func<Task> act = () => service.SaveAsync(attemptedProfile);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>(
+                "a save that could not land after every retry must still surface, exactly as it does "
+                + "when the profile wasn't already a fallback");
+        }
+
+        service.ProfileIsFallbackForTests.Should().BeTrue(
+            "the flag must be restored, not left cleared, when the explicit save it was cleared for "
+            + "never actually landed");
+        service.LoadFailureWarning.Should().Be(warningWhileFallback,
+            "the warning must be restored too, not left null as if the profile had loaded successfully");
+
+        // With the flag restored, an unrelated read-modify-write save must still be refused.
+        service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
+        await service.FlushAsync();
+
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "the real file must stay byte-identical - a failed recovery attempt must not have quietly "
+            + "cleared the way for the next unrelated save to clobber it");
+    }
+
+    [Fact]
+    public async Task LoadAsync_SweepsStaleTempFilesButLeavesTheRealFileAlone()
+    {
+        // THE LOW FINDING FROM ROUND 4's RE-REVIEW. The per-call GUID temp name (round 4) means two
+        // writers never contend on the same temp file, but it also means a crash between creating one
+        // and cleaning it up (or before either runs) leaves it behind forever, since nothing else ever
+        // revisits that name. LoadAsync now sweeps them.
+        using var service = new DashboardLayoutService(new ThemeService());
+        var real = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
+        var realProfile = new DashboardProfile { Customization = real, Language = "de-DE" };
+        var originalBytes = JsonSerializer.Serialize(realProfile, DashboardLayoutService.JsonOptions);
+        await File.WriteAllTextAsync(service.FilePathForTests, originalBytes);
+
+        var directory = Path.GetDirectoryName(service.FilePathForTests)!;
+        var fileName = Path.GetFileName(service.FilePathForTests);
+        var stale1 = Path.Combine(directory, fileName + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        var stale2 = Path.Combine(directory, fileName + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        await File.WriteAllTextAsync(stale1, "leftover from a crash");
+        await File.WriteAllTextAsync(stale2, "leftover from a different crash");
+
+        var loaded = await service.LoadAsync();
+
+        File.Exists(stale1).Should().BeFalse(
+            "a startup sweep must reap orphaned temp files a crash left behind mid-write");
+        File.Exists(stale2).Should().BeFalse("...and every one of them, not just the first");
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "the sweep must only ever touch the *.tmp glob - the real file must be untouched");
+        AssertSameCustomization(real, loaded.Customization, "the load itself must proceed normally alongside the sweep");
+    }
+
+    [Fact]
     public async Task AfterASubsequentSuccessfulLoad_TheFallbackFlagClearsAndSavesResume()
     {
         using var service = new DashboardLayoutService(new ThemeService());
