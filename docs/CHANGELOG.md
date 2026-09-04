@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Remote, Settings and App Launcher screens on the PC now fade and settle in section by
   section the first time you open each one in a session, the same way the dashboard does. Reduced
   motion turns it off, and it never delays anything from being clickable. (RemEx-alwfa.2)
+- The navigation drawer's items settle in one after another the first time you open the drawer in
+  a session. Same reduced-motion switch, same once-per-session rule. (RemEx-alwfa.2)
 
 - Card buttons on the PC (the dashboard's quick-launch tiles and link tiles) now lift on keyboard
   focus exactly as they do on hover, so keyboard users see the same elevation step pointer users

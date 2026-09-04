@@ -69,24 +69,28 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
-    /// Arms the drawer nav's first-paint entrance (RemEx-alwfa.2 slice 2), same gate as
-    /// HomeView's dashboard (RemEx-dnfq0).
+    /// Arms the drawer nav's entrance (RemEx-alwfa.2 slice 2) the first time the drawer opens,
+    /// same gate as HomeView's dashboard (RemEx-dnfq0).
     /// </summary>
     /// <remarks>
+    /// Armed on the first OPEN rather than in <c>OnAttachedToVisualTree</c>: the overlay drawer is
+    /// closed at launch (RemEx-q3mle), so an entrance started at attach would play inside the
+    /// closed drawer where nobody sees it and consume the once-per-process slot for nothing
+    /// (gate review of 77ba309). Called from the <c>IsDrawerOpen</c> branch of
+    /// <see cref="OnViewModelPropertyChanged"/>; the gate itself makes every later open a no-op.
+    /// Known edge (review of 77ba309, LOW): a view model whose drawer is ALREADY open when it is
+    /// assigned raises no IsDrawerOpen change, so that first open never arms. Unreachable today -
+    /// IsDrawerOpen defaults to false and nothing opens it before the view is up - and the
+    /// entrance simply plays on the next open. The stagger runs alongside the pane's own 300 ms
+    /// slide rather than after it: delaying the class would let the items paint at full opacity
+    /// and then snap to 0 when FillMode="Backward" lands, which reads far worse than overlap.
     /// The gate key is the literal "ShellNav", not <c>nameof(ShellView)</c> - ShellView has no
     /// section stack of its own to animate, and a distinct literal key keeps this slot from ever
-    /// being shared with a future per-view gate that happens to use the class name. NavList is
-    /// looked up by name here rather than through <see cref="_navList"/>, because that field is
-    /// only assigned in <see cref="OnLoaded"/>, which Avalonia raises after
-    /// <c>OnAttachedToVisualTree</c> - the same attach-before-load ordering HomeView's own
-    /// comment on this method documents.
+    /// being shared with a future per-view gate that happens to use the class name.
     /// </remarks>
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    private void ArmNavEntranceOnFirstOpen(ShellViewModel vm)
     {
-        base.OnAttachedToVisualTree(e);
-
-        if (DataContext is ShellViewModel vm
-            && StaggeredEntrance.ShouldPlay("ShellNav", vm.IsReducedMotion))
+        if (vm.IsDrawerOpen && StaggeredEntrance.ShouldPlay("ShellNav", vm.IsReducedMotion))
         {
             this.FindControl<ListBox>("NavList")?.Classes.Add(StaggeredEntrance.Class);
         }
@@ -442,6 +446,8 @@ public partial class ShellView : UserControl
         if (e.PropertyName == nameof(ShellViewModel.IsDrawerOpen))
         {
             ResyncNavListSelection();
+            if (sender is ShellViewModel drawerVm)
+                ArmNavEntranceOnFirstOpen(drawerVm);
         }
 
         // The direction only raises a notification when it actually changes, which is correct here:

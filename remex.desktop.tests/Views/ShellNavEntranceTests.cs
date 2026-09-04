@@ -93,11 +93,21 @@ public class ShellNavEntranceTests
         code.Should().Contain("vm.IsReducedMotion");
         code.Should().NotContain("vm.Shell.IsReducedMotion");
 
-        code.Should().Contain("OnAttachedToVisualTree");
+        // The drawer is closed at launch (RemEx-q3mle), so the entrance must be armed on the
+        // first OPEN, not at attach - at attach it would play inside the closed drawer and burn
+        // the once-per-process slot unseen (gate review of 77ba309). The arming method must check
+        // IsDrawerOpen and be called from the IsDrawerOpen property-changed branch.
+        code.Should().Contain("private void ArmNavEntranceOnFirstOpen(ShellViewModel vm)");
+        code.Should().MatchRegex(@"if \(vm\.IsDrawerOpen && StaggeredEntrance\.ShouldPlay\(""ShellNav"",");
+        code.Should().MatchRegex(
+            @"nameof\(ShellViewModel\.IsDrawerOpen\)\)[\s\S]{0,400}ArmNavEntranceOnFirstOpen\(",
+            "the IsDrawerOpen branch must arm the entrance");
+        AttachOverrideBody(code).Should().NotContain("ShouldPlay",
+            "arming at attach plays inside the closed drawer");
         code.Should().Contain($"{ContainerName}\")?.Classes.Add(StaggeredEntrance.Class)");
 
         // The gate key is the literal "ShellNav", not nameof(ShellView) - see the remark on
-        // ShellView.axaml.cs's OnAttachedToVisualTree for why a distinct literal was chosen.
+        // ShellView.axaml.cs's ArmNavEntranceOnFirstOpen for why a distinct literal was chosen.
         code.Should().MatchRegex(@"StaggeredEntrance\.ShouldPlay\(""ShellNav"",",
             "the once-per-process gate key must be a key distinct from any per-view nameof(...) slot");
     }
@@ -121,6 +131,19 @@ public class ShellNavEntranceTests
 
     private static string Markup()
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml"));
+
+    /// <summary>
+    /// The body of an <c>OnAttachedToVisualTree</c> override if the code-behind has one, else
+    /// empty. Read to the method's closing brace at class-member indent, so the guard covers the
+    /// whole override rather than a fixed character window (review of 77ba309, LOW).
+    /// </summary>
+    private static string AttachOverrideBody(string code)
+    {
+        var start = code.IndexOf("override void OnAttachedToVisualTree(", StringComparison.Ordinal);
+        if (start < 0) return string.Empty;
+        var end = code.IndexOf("\n    }", start, StringComparison.Ordinal);
+        return end < 0 ? code[start..] : code[start..end];
+    }
 
     private static string CodeBehind()
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml.cs"));
