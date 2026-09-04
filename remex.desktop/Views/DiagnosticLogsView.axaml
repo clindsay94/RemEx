@@ -31,7 +31,7 @@
                         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_VerbosityFilter}" MinWidth="200" VerticalAlignment="Center" Margin="0,0,16,8"/>
                             <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" assists:ComboBoxAssist.Label="{local:Localize Logs_Preset}" MinWidth="185" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                            <TextBox Text="{Binding SearchText}" assists:TextFieldAssist.Label="{local:Localize Logs_SearchWatermark}" MinWidth="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <TextBox Text="{Binding SearchText}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Logs_SearchWatermark}" MinWidth="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
                             <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_CaptureLevel}" MinWidth="120" VerticalAlignment="Center" Margin="0,0,0,8" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
                         </WrapPanel>
 

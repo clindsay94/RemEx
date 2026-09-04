@@ -20,13 +20,13 @@
 
         <StackPanel Grid.Row="1" Spacing="16">
 
-            <TextBox Text="{Binding TargetPath}" assists:TextFieldAssist.Label="{local:Localize AddProgram_ExePath}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkPath}" />
+            <TextBox Text="{Binding TargetPath}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize AddProgram_ExePath}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkPath}" />
             <Button Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" HorizontalAlignment="Left" />
 
-            <TextBox Text="{Binding DisplayName}" assists:TextFieldAssist.Label="{local:Localize AddProgram_DisplayName}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkName}"/>
+            <TextBox Text="{Binding DisplayName}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize AddProgram_DisplayName}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkName}"/>
 
             <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding HexColor}" assists:TextFieldAssist.Label="{local:Localize AddProgram_AccentColor}"
+                <TextBox Grid.Column="0" Text="{Binding HexColor}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize AddProgram_AccentColor}"
                          assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkColor}"
                          Classes.invalid="{Binding !IsHexColorValid}" Margin="0,0,8,0"/>
                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="4">

@@ -745,10 +745,17 @@
              template has no Padding TemplateBinding at all, so every Padding on a TextBox in this
              app was decoration with no effect. Spacing inside the field belongs to the theme.
 
-             FLOATING LABELS ARE NOT WIRED YET. TextFieldAssist.Label would put the label inside
-             the field's border, which means deleting the separate label TextBlock next to it and
-             rechecking each form's vertical rhythm - fifteen views, and the bead itself says not
-             to assume a drop-in. Split to RemEx-5w9ws.1, which the Phase 4 view beads carry. -->
+             FLOATING LABELS ARE NOT APPLIED HERE (RemEx-x6a70.4). Material's notch - the gap the
+             outline cuts behind a floated label so the border does not run through the text - is a
+             Style embedded in MaterialTextBox's own template (Material.Styles/Resources/Themes/
+             TextBox.axaml, tag 3.19.0, lines 184-195), keyed to the selector
+             "TextBox.outline[UseFloatingPlaceholder=True] /template/ Border#PART_BackgroundTextField".
+             Setting UseFloatingPlaceholder app-wide was rejected on purpose: the same template
+             (line 411) re-margins PART_TextContainer under that same property whenever it is True,
+             which would shift every unlabelled field in fifteen views along with the labelled ones.
+             So a labelled TextBox must carry BOTH Classes="outline" and UseFloatingPlaceholder="True"
+             at its own call site - neither one alone satisfies the selector above, and the notch
+             will not appear without both. -->
         <Style Selector="TextBox">
             <Setter Property="Theme" Value="{DynamicResource OutlineTextBox}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
