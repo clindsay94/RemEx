@@ -88,6 +88,28 @@ public class MatchHighlightConverterTests
     }
 
     [Fact]
+    public void MatchBoundary_NeverSplitsACombiningMarkFromItsBase()
+    {
+        // Decomposed "Ménu": M, e, COMBINING ACUTE ACCENT, n, u. A query of "me" matches the first
+        // two UTF-16 units, but the bold run must carry the accent with its base character or the
+        // accent starts the next run and shapes onto a dotted circle.
+        var segments = MatchHighlightConverter.Segment("Me\u0301nu", "me");
+
+        segments.Should().Equal(("Me\u0301", true), ("nu", false));
+        string.Concat(segments.Select(s => s.Text)).Should().Be("Me\u0301nu");
+    }
+
+    [Fact]
+    public void MatchBoundary_SnapsDownToTheGraphemeStartToo()
+    {
+        // The query lands on the combining mark's base when the match begins inside a grapheme
+        // (a query of "\u0301n" against the same text): the bold run must start at the "e".
+        var segments = MatchHighlightConverter.Segment("Me\u0301nu", "\u0301n");
+
+        segments.Should().Equal(("M", false), ("e\u0301n", true), ("u", false));
+    }
+
+    [Fact]
     public void OverlappingOccurrences_AreNonOverlapping()
     {
         // "aa" occurs at index 0-1 and 1-2 in "aaa", but a match consumes its characters before the
@@ -146,7 +168,7 @@ public class MatchHighlightConverterTests
     }
 
     [Fact]
-    public void Convert_NeverSetsForegroundOrOpacityOnAnyRun()
+    public void Convert_NeverSetsForegroundOrFontSizeOnAnyRun()
     {
         var result = MatchHighlightConverter.Instance.Convert(
             new object?[] { "Sensors", "sen" }, typeof(InlineCollection), null, Culture);

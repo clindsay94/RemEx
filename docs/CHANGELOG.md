@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The PC's pairing dialog now stays open while the PIN is checked, says whether pairing
+  succeeded or failed, and lets you correct a mistyped PIN without starting the connection over.
+  Cancel still works at every stage, and a connection timeout closes it. (RemEx-x6a70.1)
+
+- The command palette on the PC now shows which part of each result matched what you typed: the
+  matching characters in the label and category are bold, and the rest stays regular.
+  (RemEx-x6a70.2)
+
 - The sensor card's right-click menu on the PC draws a Material icon on every item (graph types,
   second metric, colour presets header, rename, value overlay, alert), and the Ping, Cancel,
   Disconnect, Graph Type, Lock PC and Reboot to UEFI labels no longer carry an emoji in front of

@@ -74,6 +74,12 @@ public sealed class MatchHighlightConverter : IMultiValueConverter
         if (string.IsNullOrEmpty(trimmedQuery))
             return new[] { (text, false) };
 
+        // Match boundaries are UTF-16 indices; a Run boundary that splits a base character from a
+        // following combining mark (a decomposed "é" in a localized label) would shape the mark
+        // onto a dotted circle at the start of the next run. Snap every boundary outward to the
+        // text-element (grapheme) boundaries so a run never starts mid-grapheme.
+        var elementStarts = StringInfo.ParseCombiningCharacters(text);
+
         var segments = new List<(string Text, bool IsMatch)>();
         var index = 0;
         while (index < text.Length)
@@ -85,13 +91,39 @@ public sealed class MatchHighlightConverter : IMultiValueConverter
                 break;
             }
 
-            if (matchIndex > index)
-                segments.Add((text[index..matchIndex], false));
+            var matchStart = SnapDown(elementStarts, matchIndex);
+            var matchEnd = SnapUp(elementStarts, matchIndex + trimmedQuery.Length, text.Length);
+            if (matchStart < index)
+                matchStart = index;
 
-            segments.Add((text.Substring(matchIndex, trimmedQuery.Length), true));
-            index = matchIndex + trimmedQuery.Length;
+            if (matchStart > index)
+                segments.Add((text[index..matchStart], false));
+
+            segments.Add((text[matchStart..matchEnd], true));
+            index = matchEnd;
         }
 
         return segments;
+    }
+
+    /// <summary>The largest text-element start that is at or before <paramref name="index"/>.</summary>
+    private static int SnapDown(int[] elementStarts, int index)
+    {
+        var at = Array.BinarySearch(elementStarts, index);
+        return at >= 0 ? elementStarts[at] : elementStarts[~at - 1];
+    }
+
+    /// <summary>The smallest text-element start at or after <paramref name="index"/>, or the end of the text.</summary>
+    private static int SnapUp(int[] elementStarts, int index, int textLength)
+    {
+        if (index >= textLength)
+            return textLength;
+
+        var at = Array.BinarySearch(elementStarts, index);
+        if (at >= 0)
+            return elementStarts[at];
+
+        var next = ~at;
+        return next < elementStarts.Length ? elementStarts[next] : textLength;
     }
 }

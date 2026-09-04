@@ -48,7 +48,10 @@
                                      search query on the window's view model via the named
                                      ResultsList element, whose DataContext is inherited from the
                                      window rather than the per-row template. -->
-                                <TextBlock Classes="palette-label" Theme="{StaticResource Subtitle2TextBlock}">
+                                <!-- AutomationProperties.Name: with Text unset, the TextBlock's UIA peer has no
+                                     name to derive, so a screen reader would announce the row with no label.
+                                     The Inlines carry the visible text; this carries the spoken one. -->
+                                <TextBlock Classes="palette-label" Theme="{StaticResource Subtitle2TextBlock}" AutomationProperties.Name="{Binding Label}">
                                     <TextBlock.Inlines>
                                         <MultiBinding Converter="{x:Static local:MatchHighlightConverter.Instance}">
                                             <Binding Path="Label" />
@@ -56,7 +59,7 @@
                                         </MultiBinding>
                                     </TextBlock.Inlines>
                                 </TextBlock>
-                                <TextBlock Classes="palette-category" Theme="{StaticResource CaptionTextBlock}">
+                                <TextBlock Classes="palette-category" Theme="{StaticResource CaptionTextBlock}" AutomationProperties.Name="{Binding Category}">
                                     <TextBlock.Inlines>
                                         <MultiBinding Converter="{x:Static local:MatchHighlightConverter.Instance}">
                                             <Binding Path="Category" />
