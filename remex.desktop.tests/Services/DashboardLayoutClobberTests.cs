@@ -292,10 +292,25 @@ public class DashboardLayoutClobberTests
         (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
             "a failed move must never have touched the real file - the write-then-move split exists "
             + "exactly so a failure this far in cannot corrupt it");
-        Directory.GetFiles(
-                Path.GetDirectoryName(service.FilePathForTests)!,
-                Path.GetFileName(service.FilePathForTests) + ".*.tmp")
-            .Should().BeEmpty("a failed write must clean up its own temp file rather than leave it behind");
+
+        // THE REAL GUARANTEE, NOT JUST THE HAPPY PATH (round 6 finding). A bare "no .tmp remains"
+        // assertion here is exactly what flaked once against the gate's own contention (an antivirus
+        // scan briefly holding the fresh temp file can outlast even TryDeleteTempFileAsync's own
+        // retries). What must actually hold: EITHER the write's own cleanup already removed it, OR
+        // the next load's sweep finishes the job - and the real file must be untouched either way.
+        var directory = Path.GetDirectoryName(service.FilePathForTests)!;
+        var tempGlob = Path.GetFileName(service.FilePathForTests) + ".*.tmp";
+
+        if (Directory.GetFiles(directory, tempGlob).Length > 0)
+        {
+            await service.LoadAsync();
+            Directory.GetFiles(directory, tempGlob).Should().BeEmpty(
+                "whatever the failed write's own cleanup could not remove under contention, the next "
+                + "load's sweep must - nothing should be left to accumulate forever");
+        }
+
+        (await File.ReadAllTextAsync(service.FilePathForTests)).Should().Be(originalBytes,
+            "the real file must still be untouched after the sweep, whichever cleanup path actually ran");
     }
 
     [Fact]

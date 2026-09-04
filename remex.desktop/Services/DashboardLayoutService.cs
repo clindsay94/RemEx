@@ -584,6 +584,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// wreckage is a courtesy, not a load-time correctness requirement, and must never itself be a
     /// reason the app cannot start.
     /// </para>
+    /// <para>
+    /// "LEAVE IT ALONE ON FAILURE" IS A WINDOWS-SHAPED ASSUMPTION (round 6 review note). On Windows a
+    /// delete against another instance's in-flight temp genuinely fails, which is why swallowing it
+    /// here is safe. <c>File.Delete</c> on Linux unlinks the directory entry out from under an open
+    /// handle without complaint - the other instance's own write keeps going, but its later
+    /// <c>File.Move</c> onto that now-vanished path fails and logs. Rare (both writers would need the
+    /// exact same GUID collision odds aside, or this sweep would need to run mid-write, which it only
+    /// does at load time) and already surfaced through that instance's own Warning log, so left as a
+    /// known platform difference rather than a reason to change the sweep's behaviour.
+    /// </para>
     /// </remarks>
     private void SweepStaleTempFiles()
     {
@@ -685,7 +695,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             {
                 // Best-effort: do not leave a partial .tmp behind for the NEXT save to trip a reader
                 // over. The write itself failed - that is what LogWarning below reports.
-                try { File.Delete(tempPath); } catch { /* diagnostics only; the write failure is what matters */ }
+                await TryDeleteTempFileAsync(tempPath);
                 _logger.LogWarning(ex,
                     "DashboardLayoutService: failed to save the dashboard profile to '{FilePath}' after {Attempts} attempt(s)",
                     filePath, attempt);
@@ -723,11 +733,71 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             }
             catch (Exception ex)
             {
-                try { File.Delete(tempPath); } catch { /* diagnostics only; the write failure is what matters */ }
+                TryDeleteTempFile(tempPath);
                 _logger.LogWarning(ex,
                     "DashboardLayoutService: failed to drain the save queue to '{FilePath}' on Dispose after {Attempts} attempt(s)",
                     filePath, attempt);
                 throw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Deletes a temp file left behind by a write that failed, retrying briefly on the same
+    /// contention <see cref="IsTransientMoveFailure"/> already names (RemEx-8y3qy round 6, gate
+    /// flake). This was a bare <c>try { File.Delete(tempPath); } catch { }</c> - fine for a genuine
+    /// leftover, but a single missed attempt against a transient hold (an antivirus scan of a
+    /// freshly-created file is the ordinary shape on Windows) left the temp behind with nothing
+    /// logging why, which is exactly what made <c>SaveAsync_SurfacesAMoveFailureToItsCaller</c> flake
+    /// once in the gate's full run while passing every time in isolation. A final failure logs at
+    /// Debug rather than Warning - the write's OWN failure is already logged at Warning by the caller,
+    /// and <see cref="SweepStaleTempFiles"/> is the backstop for whatever this could not clean up.
+    /// </summary>
+    private async Task TryDeleteTempFileAsync(string tempPath)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Delete(tempPath);
+                return;
+            }
+            catch (Exception ex) when (IsTransientMoveFailure(ex) && attempt < TransientIoAttempts)
+            {
+                await Task.Delay(TransientIoRetryDelayMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex,
+                    "DashboardLayoutService: could not delete temp file '{TempPath}' after {Attempts} attempt(s); the next load's sweep will retry",
+                    tempPath, attempt);
+                return;
+            }
+        }
+    }
+
+    /// <summary>Synchronous twin of <see cref="TryDeleteTempFileAsync"/>, for <see cref="Dispose"/> — which cannot await.</summary>
+    private void TryDeleteTempFile(string tempPath)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Delete(tempPath);
+                return;
+            }
+            catch (Exception ex) when (IsTransientMoveFailure(ex) && attempt < TransientIoAttempts)
+            {
+                // Dispose cannot await - see WriteProfileAtomically's own retry for why a short
+                // blocking sleep is acceptable here.
+                Thread.Sleep(TransientIoRetryDelayMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex,
+                    "DashboardLayoutService: could not delete temp file '{TempPath}' after {Attempts} attempt(s); the next load's sweep will retry",
+                    tempPath, attempt);
+                return;
             }
         }
     }
