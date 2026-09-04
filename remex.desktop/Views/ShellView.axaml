@@ -292,6 +292,165 @@
         <Style Selector="material|NavigationDrawer /template/ Border#PART_LeftDrawerBorder">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
+
+        <!-- ═══ Drawer nav entrance (RemEx-alwfa.2 slice 2) ═══
+             Same StaggeredEntrance gate as HomeView's dashboard (RemEx-dnfq0) and the Remote/
+             Settings/App Launcher sections (RemEx-alwfa.2 slice 1): Opacity + TranslateTransform.Y
+             only, never RenderTransform (RemEx-qolhg crash guard), FillMode=Backward so a
+             later-staggered item does not flash at full opacity before its turn, and gated once per
+             process by ShellView.axaml.cs's OnAttachedToVisualTree so re-navigating never replays it.
+
+             NavList has ten direct ListBoxItem children (nine destinations plus the non-interactive
+             nav-divider at index 8), so one nth-child style per child at a 20ms step keeps the last
+             item's Delay+Duration at 180ms+120ms = 300ms, the bead's ceiling. ListBoxItems are
+             logical children of the ListBox but visual children of its ItemsPanel; Avalonia's
+             :nth-child counts against the ItemsControl's own children and the '>' combinator walks
+             the LOGICAL parent, so this selector reaches them directly with no descendant combinator
+             needed (confirmed on screen - see the RemEx-alwfa.2 slice 2 eyes pass).
+
+             Opacity dropping to 0 during the animation does not disable hit-testing or the ripple/
+             hover template parts underneath - same as every other StaggeredEntrance consumer - so no
+             nav item is ever unclickable while it settles in. -->
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(1)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(2)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.020" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(3)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.040" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(4)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.060" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(5)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.080" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(6)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(7)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.120" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(8)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.140" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(9)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.160" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(10)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.180" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
 
     <ctrl:DashboardBackgroundControl>

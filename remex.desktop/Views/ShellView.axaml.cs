@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -11,6 +12,7 @@ using Material.Icons;
 using Material.Icons.Avalonia;
 using Material.Styles.Controls;
 using Material.Styles.Models;
+using Remex.Desktop.Controls;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
@@ -64,6 +66,30 @@ public partial class ShellView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+    }
+
+    /// <summary>
+    /// Arms the drawer nav's first-paint entrance (RemEx-alwfa.2 slice 2), same gate as
+    /// HomeView's dashboard (RemEx-dnfq0).
+    /// </summary>
+    /// <remarks>
+    /// The gate key is the literal "ShellNav", not <c>nameof(ShellView)</c> - ShellView has no
+    /// section stack of its own to animate, and a distinct literal key keeps this slot from ever
+    /// being shared with a future per-view gate that happens to use the class name. NavList is
+    /// looked up by name here rather than through <see cref="_navList"/>, because that field is
+    /// only assigned in <see cref="OnLoaded"/>, which Avalonia raises after
+    /// <c>OnAttachedToVisualTree</c> - the same attach-before-load ordering HomeView's own
+    /// comment on this method documents.
+    /// </remarks>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is ShellViewModel vm
+            && StaggeredEntrance.ShouldPlay("ShellNav", vm.IsReducedMotion))
+        {
+            this.FindControl<ListBox>("NavList")?.Classes.Add(StaggeredEntrance.Class);
+        }
     }
 
     protected override void OnLoaded(Avalonia.Interactivity.RoutedEventArgs e)
