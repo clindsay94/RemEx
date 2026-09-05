@@ -105,6 +105,9 @@ public class ColorSourceCoordinatorTests : IDisposable
         var onDiskBefore = await File.ReadAllTextAsync(layout.FilePathForTests);
 
         coordinator.Apply("#123456");
+        // Flush BEFORE reading the file back: RequestSave is debounced, so without this a wrongly
+        // queued save would not have reached disk yet and the on-disk assertion could not fail.
+        await layout.FlushAsync();
 
         layout.CurrentProfile.Should().Be(before,
             $"a {colorSource} source must not let a Windows-accent change touch the profile");
@@ -158,6 +161,7 @@ public class ColorSourceCoordinatorTests : IDisposable
         var onDiskBefore = await File.ReadAllTextAsync(layout.FilePathForTests);
 
         coordinator.Apply("#FF0O00");
+        await layout.FlushAsync(); // same reason as above: let a wrongly queued save land before looking
 
         layout.CurrentProfile.Should().Be(before, "an unparseable hex must leave the profile untouched");
         (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Be(onDiskBefore,
