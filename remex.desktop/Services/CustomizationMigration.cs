@@ -33,7 +33,8 @@ public static class CustomizationMigration
     /// value on disk is the only record of what a profile has already been through.
     /// History: 1 = the seed engine (RemEx-dbkzy), 2 = tri-state ThemeMode (RemEx-zk5bc),
     /// 3 = the personalization sheet: colour source, wallpaper, saved palettes (RemEx-ddynd),
-    /// 4 = Mica retired from the background-mode picker (RemEx-8twk0.6).
+    /// 4 = Mica retired from the background-mode picker (RemEx-8twk0.6); the same arm also flips a
+    ///     persisted RemexCommand splash to CosmicZoom, the new default (RemEx-8twk0.9).
     /// </remarks>
     public const int CurrentSchemaVersion = 4;
 
