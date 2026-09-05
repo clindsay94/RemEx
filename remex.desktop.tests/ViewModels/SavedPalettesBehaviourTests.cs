@@ -166,4 +166,24 @@ public class SavedPalettesBehaviourTests : IDisposable
 
         vm.AccentColor.Should().Be(clampedSeed);
     }
+
+    /// <summary>
+    /// Gate item (RemEx-8twk0.8 fix round, addendum): <c>OnSeedChromaChanged</c> re-enters the setter
+    /// with a clamped value rather than letting <see cref="CustomizationViewModel.SeedChroma"/> report
+    /// a number outside the wheel's own range while only the Vibrancy slider pins visually at
+    /// <see cref="SeedHct.MaxChroma"/>.
+    /// </summary>
+    [Theory]
+    [InlineData(200.0, SeedHct.MaxChroma)]
+    [InlineData(-5.0, 0.0)]
+    [InlineData(60.0, 60.0)]
+    public void SeedChromaClampsToTheWheelsRangeAtTheSource(double requested, double expected)
+    {
+        var vm = MakeVm();
+        vm.AccentColor = "#6C4CFF";
+
+        vm.SeedChroma = requested;
+
+        vm.SeedChroma.Should().Be(expected);
+    }
 }

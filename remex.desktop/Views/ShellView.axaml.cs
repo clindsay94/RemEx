@@ -188,8 +188,8 @@ public partial class ShellView : UserControl
             NotificationService.Instance.InApp = new SnackbarToastSink();
         }
 
-        var bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
-        if (bootSplash != null && !_bootSplashHooked)
+        _bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
+        if (_bootSplash != null && !_bootSplashHooked)
         {
             // Guarded because OnLoaded runs again on every reattach to the visual tree. Unguarded,
             // each reattach added another SequenceCompleted handler and OnBootSequenceCompleted then
@@ -197,14 +197,21 @@ public partial class ShellView : UserControl
             // elsewhere in this file's neighbours.
             _bootSplashHooked = true;
 
-            bootSplash.SequenceCompleted += () =>
+            _bootSplash.SequenceCompleted += () =>
             {
                 if (DataContext is ShellViewModel vm2)
                     vm2.OnBootSequenceCompleted();
             };
 
+            // Covers the common case where DataContext is already assigned by the time _bootSplash is
+            // found. RemEx-8twk0.8 fix round, MEDIUM: this used to be the ONLY place this subscription
+            // was attempted, gated behind the same _bootSplashHooked latch as everything above - so a
+            // DataContext that arrived after this OnLoaded pass left Preview a permanent silent no-op,
+            // exactly like RequestPageView's dual-hook comment below (OnDataContextChanged) describes
+            // for PageHost.Content. OnDataContextChanged now mirrors that: it (re)subscribes for every
+            // VM change from here on, so a DataContext arriving later is no longer missed.
             if (DataContext is ShellViewModel splashOwner)
-                splashOwner.SplashReplayRequested += bootSplash.Restart;
+                splashOwner.SplashReplayRequested += _bootSplash.Restart;
 
             // SkiaSplashControl.Dispose detaches the DispatcherTimer's Tick handler, without which the
             // timer keeps a strong reference back into the control forever. It must be called on FINAL
@@ -215,11 +222,20 @@ public partial class ShellView : UserControl
             // control genuinely will not come back. (RemEx-wcte: the Dispose existed but nothing called
             // it, which made the fix dead code.)
             if (TopLevel.GetTopLevel(this) is Window owner)
-                owner.Closed += (_, _) => bootSplash.Dispose();
+                owner.Closed += (_, _) =>
+                {
+                    // RemEx-8twk0.8 fix round, LOW: unsubscribed on final teardown rather than left for
+                    // the VM's own Dispose() to null out alone - the VM may outlive this view briefly,
+                    // or may never be Disposed in some hosting path, so both ends let go independently.
+                    if (DataContext is ShellViewModel currentVm)
+                        currentVm.SplashReplayRequested -= _bootSplash.Restart;
+                    _bootSplash.Dispose();
+                };
         }
     }
 
     private bool _bootSplashHooked;
+    private Controls.Splash.SkiaSplashControl? _bootSplash;
     private bool _toastHostInstalled;
     private bool _pageHostSequenced;
 
@@ -429,12 +445,22 @@ public partial class ShellView : UserControl
         if (_previousVm != null)
         {
             _previousVm.PropertyChanged -= OnViewModelPropertyChanged;
+
+            // RemEx-8twk0.8 fix round, MEDIUM/LOW: mirrors the RequestPageView dual-hook below so a
+            // DataContext that arrives (or changes) after OnLoaded's own hook attempt is still wired
+            // up, and so the previous VM's SplashReplayRequested is let go on every VM change - not
+            // just at final teardown.
+            if (_bootSplash != null)
+                _previousVm.SplashReplayRequested -= _bootSplash.Restart;
         }
 
         if (DataContext is ShellViewModel vm)
         {
             vm.PropertyChanged += OnViewModelPropertyChanged;
             _previousVm = vm;
+
+            if (_bootSplash != null)
+                vm.SplashReplayRequested += _bootSplash.Restart;
 
             // Seeded here as well as in OnLoaded because PageHost.Content is no longer bound. The
             // binding used to make the order of "attach" and "assign the DataContext" irrelevant;

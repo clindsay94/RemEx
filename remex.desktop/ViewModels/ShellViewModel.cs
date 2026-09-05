@@ -268,11 +268,21 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>The view restarts the mounted SkiaSplashControl when this fires (Preview on the sheet).</summary>
     public event Action? SplashReplayRequested;
 
+    /// <summary>
+    /// Set while a Preview-triggered replay is in flight (RemEx-8twk0.8 fix round, HIGH). The replay's
+    /// completion goes through the same <see cref="OnBootSequenceCompleted"/> path as the first boot,
+    /// so without this flag a fresh profile that dismissed the first-run tutorial without persisting
+    /// (Escape -&gt; <see cref="DismissOverlays"/>) would have the full onboarding overlay raised again
+    /// on top of the Personalize sheet. See <see cref="ResolveBootCompletion"/>.
+    /// </summary>
+    private bool _isSplashPreview;
+
     /// <summary>Mounts the splash again and asks the view to restart it. Completion goes through the
-    /// same <see cref="OnBootSequenceCompleted"/> path as the first run; the tutorial gate there
-    /// stays false for anyone who has completed it.</summary>
+    /// same <see cref="OnBootSequenceCompleted"/> path as the first run; <see cref="ResolveBootCompletion"/>
+    /// short-circuits the tutorial gate there while a preview is in flight.</summary>
     public void ReplayWelcomeSplash()
     {
+        _isSplashPreview = true;
         IsWelcomeSplashMounted = true;
         ShowWelcomeSplash = true;
         SplashReplayRequested?.Invoke();
@@ -630,6 +640,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         Connection.PropertyChanged -= _onConnectionChanged;
         Presence.PropertyChanged -= _onPresenceChanged;
 
+        // Nulled rather than left for the view to unsubscribe alone (RemEx-8twk0.8 fix round, LOW) -
+        // same pattern as ThemeService.CustomizationApplied - so a view that outlives Dispose() (or a
+        // subscription this VM cannot see) cannot keep firing Restart against a torn-down splash.
+        SplashReplayRequested = null;
+
         // No frame can still be compositing against this bitmap once the shell itself is going
         // away, so — unlike the live swap in LoadWallpaperAsync — disposing it inline here is safe.
         // The generation bump makes a decode that completes after this point discard its bitmap
@@ -682,13 +697,58 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void OnBootSequenceCompleted()
     {
         ShowWelcomeSplash = false;
+
+        var action = ResolveBootCompletion(
+            _isSplashPreview,
+            _layoutService.CurrentProfile?.HasCompletedTutorial ?? false);
+        _isSplashPreview = false;
+
+        if (action == BootCompletionAction.UnmountOnly)
+        {
+            _ = UnmountWelcomeSplashAsync();
+            return;
+        }
+
         // Show tutorial on first run after the splash fades
-        if (!(_layoutService.CurrentProfile?.HasCompletedTutorial ?? false))
+        if (action == BootCompletionAction.ShowTutorial)
         {
             TutorialPageIndex = 0;
             ShowTutorialOverlay = true;
         }
         _ = UnmountWelcomeSplashAsync();
+    }
+
+    /// <summary>
+    /// What <see cref="OnBootSequenceCompleted"/> should do once the splash finishes. Public (not
+    /// internal, unlike <see cref="ResolveBootCompletion"/> itself) only because a public xUnit
+    /// [Theory] method cannot take an internal-typed parameter (CS0051) even under InternalsVisibleTo -
+    /// the enum carries no logic worth hiding, so this is the cheaper fix over making the test
+    /// non-public.
+    /// </summary>
+    public enum BootCompletionAction
+    {
+        /// <summary>A Preview replay finished; unmount the splash and never raise onboarding.</summary>
+        UnmountOnly,
+
+        /// <summary>A genuine first run; raise the first-run tutorial overlay.</summary>
+        ShowTutorial,
+
+        /// <summary>A genuine (non-preview) boot for a profile that already completed the tutorial.</summary>
+        Normal,
+    }
+
+    /// <summary>
+    /// Pure decision seam for <see cref="OnBootSequenceCompleted"/> (RemEx-8twk0.8 fix round, HIGH).
+    /// <see cref="ShellViewModel"/> cannot be constructed headlessly for a unit test - it needs the
+    /// full DI graph and a pumped dispatcher - so the branch that actually matters is extracted here
+    /// where <c>SplashPreviewCompletionTests</c> can pin it directly.
+    /// </summary>
+    internal static BootCompletionAction ResolveBootCompletion(bool isSplashPreview, bool hasCompletedTutorial)
+    {
+        if (isSplashPreview)
+            return BootCompletionAction.UnmountOnly;
+
+        return hasCompletedTutorial ? BootCompletionAction.Normal : BootCompletionAction.ShowTutorial;
     }
 
     /// <summary>
