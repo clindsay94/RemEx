@@ -118,6 +118,38 @@ public class PerfBaselineScriptTests
             "with fewer than 2 launches there is no warm sample left to take a median/p90 of, so the script must refuse rather than silently produce a meaningless summary");
     }
 
+    [Fact]
+    public void TakesASteadyStateSampleInAdditionToTheSettleSample()
+    {
+        var text = ScriptText();
+        text.Should().MatchRegex(@"\[int\]\$SteadySeconds\s*=\s*20",
+            "a second, later memory sample must be configurable via -SteadySeconds, defaulting to 20 seconds");
+        text.Should().MatchRegex(@"\$SteadySeconds\s+-lt\s+\$SettleSeconds",
+            "the steady sample must be validated to occur no earlier than the settle sample");
+        text.Should().Contain("Steady",
+            "the per-launch sample must record a distinct steady-state reading alongside the original settle-time one");
+    }
+
+    [Fact]
+    public void RecordsEstablishedTcpConnectionsPerSample()
+    {
+        var text = ScriptText();
+        text.Should().MatchRegex(@"Get-NetTCPConnection\s+-OwningProcess\s+\$ProcessId\s+-State\s+Established",
+            "each sample must record established TCP connections owned by the process as a proxy for a live phone session");
+        text.Should().Contain("return -1",
+            "a failure to query connections must degrade to a -1 sentinel, not fail the whole run");
+    }
+
+    [Fact]
+    public void LabelsTheWarmColumnAsMaxWhenTheWarmSampleIsSmall()
+    {
+        var text = ScriptText();
+        text.Should().MatchRegex(@"\$warm\.Count\s+-lt\s+10",
+            "the summary must switch the warm P90 column's label when there are fewer than 10 warm samples, since a 90th percentile of a small sample is really just the max");
+        text.Should().Contain("warm max",
+            "the low-sample-count label must read 'warm max' rather than implying a percentile the sample size can't support");
+    }
+
     /// <summary>The body of the top-level <c>finally { ... }</c> block.</summary>
     private static string FinallyBlockBody()
     {

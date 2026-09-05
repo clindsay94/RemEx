@@ -1,6 +1,8 @@
 # Measurement: cold-start time and memory, before vs after the Material work (RemEx-gtwk8)
 
-**Status:** automated part done. Numbers recorded below. Stream frame pacing and dashboard
+**Status:** automated part done. Numbers recorded below. The Run 1 memory regression is now
+**confirmed** by a reversed-order, 12-launch, steady-state Run 2 (see [2b](#2b-run-2---confirmation-pass-remex-3sju52)) —
+RemEx-3sju5.2 stays open for the fix. Stream frame pacing and dashboard
 frame cost stay a manual pass on Connor's device (RemEx-bmuji) — see [Manual](#manual) below.
 
 ---
@@ -91,6 +93,82 @@ memory within 10% is noise. Anything outside that is a real change.
   the launch times and can touch working set through shared image pages, but not private bytes.
   A reverse-order run (`-Refs @('HEAD','main')`) is cheap and should precede any fix on
   RemEx-3sju5.2.
+
+## 2b. Run 2 - confirmation pass (RemEx-3sju5.2)
+
+Per the Gate's confirmation protocol (RemEx-3sju5.2 notes, 2026-09-04): reverse the ref order,
+raise `-Launches` to 12 (11 warm samples instead of 6, so "Warm P90" is an honest percentile
+rather than a max), add a second, later memory sample at steady state, and record established TCP
+connections per sample as a live-session proxy. `scripts/perf-baseline.ps1` now takes both samples
+per launch (`-SettleSeconds 8`, `-SteadySeconds 20`) and records
+`Get-NetTCPConnection -OwningProcess <pid> -State Established` (count, or `-1` if the query itself
+errors) alongside each one.
+
+```
+pwsh scripts/perf-baseline.ps1 -Refs @('HEAD','main') -Launches 12
+```
+
+`HEAD` = `eac94df` (tip of `v2.5-board-drain` at measurement time - several more Material/UI beads
+landed on top of the `34341bb` measured in Run 1: palette AXAML/JSON export, the splash-to-shell
+crossfade, and the tutorial's Material vocabulary, among others). `main` = `b528ff1`, unchanged.
+`HEAD` was measured **first** this time (`main` second), the opposite of Run 1, specifically to
+separate the launch-time improvement from the OS-file-cache-order effect flagged in Run 1's
+caveats. Raw data: `%TEMP%\remex-ui\perf-20260904-195152\perf-HEAD.json` / `perf-main.json`.
+
+| Ref | Commit | Cold Start (ms) | Warm Median (ms) | Warm P90 (ms) | Working Set @Settle (MB) | Private @Settle (MB) | Handles @Settle | Conn @Settle | Working Set @Steady (MB) | Private @Steady (MB) | Handles @Steady | Conn @Steady |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| HEAD | eac94df | 2216 | 1513 | 1646 | 395.2 | 511.0 | 1665 | -1 | 398.2 | 490.7 | 1687 | -1 |
+| main | b528ff1 | 3964 | 2191 | 2413 | 331.7 | 312.2 | 1582 | -1 | 331.8 | 311.8 | 1567 | -1 |
+
+11 warm samples per ref (`-Launches 12`) clears the "10 or more" bar from
+`scripts/perf-baseline.ps1`'s label switch, so the header reads **"Warm P90"**, not "warm max" -
+this is a real 90th percentile this time, not the slowest-of-six max Run 1's table showed.
+
+**Verdict against the same thresholds (memory 10%, time 15%): CONFIRMED, and worse than Run 1
+measured.**
+
+- **Private bytes (the trustworthy number - immune to file-cache order): +63.7% at settle
+  (312.2 -> 511.0 MB), +57.4% at steady state (311.8 -> 490.7 MB).** Both far exceed the 10%
+  threshold, and both exceed Run 1's +22.9% by a wide margin. Confirmed regression.
+- **Working set (soft - shared image pages, can include uncollected gen0/gen1): +19.1% at settle
+  (331.7 -> 395.2 MB), +20.0% at steady state (331.8 -> 398.2 MB).** Also outside the 10% band and
+  corroborates private bytes' direction, though its own magnitude is not conclusive on its own
+  (Run 1's caveat about it being soft still applies).
+- **Handles: +5.2% at settle (1582 -> 1665), +7.7% at steady state (1567 -> 1687).** Both within
+  the 10% noise threshold, consistent with Run 1's +6.2% - handle count is not part of the
+  regression.
+- **Steady-state (20 s) does not show the growth resolving.** Working set and private both stay
+  within a few MB of the 8 s settle sample for both refs (HEAD: 395.2->398.2 MB set, 511.0->490.7
+  MB private; main: 331.7->331.8 MB set, 312.2->311.8 MB private) - private even drops slightly
+  by steady state on both refs. This rules out "it's just uncollected garbage that clears up
+  shortly after launch": the gap is retained footprint, not a transient GC lag.
+- **Connections: -1 at every sample, both refs, both settle and steady.** `Get-NetTCPConnection`
+  with `-State Established` throws a non-terminating "no matching connection" error (converted to
+  terminating by `-ErrorAction Stop`, caught, returned as `-1`) when there are none - no phone was
+  paired/connected during this automated run, on either ref, at either sample. Because the value
+  is identical across both refs and both samples, connection state does **not** invalidate this
+  comparison (the caveat in Run 1 was that a *differing* count would); it just means this run
+  cannot yet be used to price an active-session cost.
+- **Launch time is now confirmed as a real improvement, not a cache-order artifact.** Run 1
+  measured `main` first / `HEAD` second (`HEAD` benefited from a warm file cache); this run
+  reverses that (`HEAD` first / `main` second, so `main` gets the cache advantage this time) and
+  `HEAD` is still faster in both directions: cold -44.1% (3964 -> 2216 ms), warm median -30.9%
+  (2191 -> 1513 ms), warm P90 -31.8% (2413 -> 1646 ms). This closes the open question from Run 1's
+  caveats; the launch-time win belongs to `RemEx-gtwk8`, already closed, not this bead.
+
+**First suspects for the private-bytes growth, and how to profile them** (not fixed in this bead):
+Material.Avalonia's styles/`ControlTheme` resource dictionary is loaded once at startup and is
+large enough by itself to plausibly account for tens of MB, but the growth from Run 1 (+69 MB
+private) to Run 2 (+199 MB private) tracks the extra Material-vocabulary work landed in between -
+the splash-to-shell crossfade and its assets, the tutorial's Material rewrite, and the
+palette AXAML/JSON export/import feature (RemEx-a7uzb) which can hold parsed palette/theme data
+resident. The animated dashboard background/aurora mesh and its ripple/elevation visuals remain a
+suspect too, especially since the regression does not resolve by the 20 s steady sample. To
+profile: take a `dotnet-gcdump` or ETW heap snapshot of the installed `Remex.Agent.exe` at the 20 s
+mark on both refs and diff retained object graphs by type - resource dictionaries and any bitmap
+brushes should show up as large, distinct allocations if they are the cause; if the dump instead
+shows many small, similar-sized objects it points at the palette import/export data structures or
+the animated background's per-frame state instead.
 
 ## 3. Machine context
 

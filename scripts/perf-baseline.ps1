@@ -50,6 +50,11 @@
 .PARAMETER SettleSeconds
     Seconds to let the host sit idle after its window appears, before sampling memory. Default: 8.
 
+.PARAMETER SteadySeconds
+    Seconds after the window appears to take a SECOND, later memory sample (in addition to the
+    SettleSeconds one), so a slow post-startup climb shows up instead of being hidden by an early
+    sample. Must be >= SettleSeconds. Default: 20.
+
 .PARAMETER Out
     Output directory for the per-ref JSON and the combined summary. Default:
     $env:TEMP\remex-ui\perf-<timestamp>\ (same $env:TEMP\remex-ui root as ui-snapshot.ps1).
@@ -65,6 +70,7 @@ param(
     [string[]]$Refs = @('main', 'HEAD'),
     [int]$Launches = 7,
     [int]$SettleSeconds = 8,
+    [int]$SteadySeconds = 20,
     [string]$Out = (Join-Path $env:TEMP ("remex-ui\perf-{0:yyyyMMdd-HHmmss}" -f (Get-Date)))
 )
 
@@ -80,6 +86,11 @@ if (-not [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([Syst
 
 if ($Launches -lt 2) {
     Write-Error "-Launches must be >= 2 (launch 1 is the cold start; launches 2..N are the warm sample). Got: $Launches"
+    exit 1
+}
+
+if ($SteadySeconds -lt $SettleSeconds) {
+    Write-Error "-SteadySeconds ($SteadySeconds) must be >= -SettleSeconds ($SettleSeconds) - the steady sample is taken later in the same launch, not instead of the settle one."
     exit 1
 }
 
@@ -138,21 +149,55 @@ function Wait-RemexWindow {
         'not retry blindly past a blocked launch.'
 }
 
+# Established TCP connections owned by $ProcessId, as a proxy for "a phone session is up" (the app
+# auto-connects to the paired phone on every launch, and a live session in one ref's sample and not
+# the other's can move tens of megabytes - see docs/PERF-BASELINE.md Caveats). Read-only, and any
+# failure (process gone, permissions, no matching rows) degrades to -1 rather than throwing, since
+# this is a diagnostic annotation on a memory sample, not something worth failing the run over.
+function Get-EstablishedConnectionCount {
+    param([int]$ProcessId)
+    try {
+        return @(Get-NetTCPConnection -OwningProcess $ProcessId -State Established -ErrorAction Stop).Count
+    } catch {
+        return -1
+    }
+}
+
 # One full launch/measure/stop cycle. The caller decides whether this is the cold sample (index 0)
-# or a warm one.
+# or a warm one. Takes TWO memory samples per launch: one at $SettleSeconds (the original sample)
+# and a later one at $SteadySeconds, so a slow post-startup climb (uncollected gen0/gen1, or a
+# background animation still allocating) shows up instead of being hidden by an early sample.
 function Measure-RemexLaunch {
-    param([int]$SettleSeconds)
+    param([int]$SettleSeconds, [int]$SteadySeconds)
     Stop-RemexHost
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $proc = Start-Process -FilePath $ExePath -PassThru
     $timeToWindowMs = Wait-RemexWindow -ProcessId $proc.Id
+
     Start-Sleep -Seconds $SettleSeconds
     $proc.Refresh()
+    $settleWorkingSetMB = [Math]::Round($proc.WorkingSet64 / 1MB, 1)
+    $settlePrivateMB = [Math]::Round($proc.PrivateMemorySize64 / 1MB, 1)
+    $settleHandles = $proc.HandleCount
+    $settleConnections = Get-EstablishedConnectionCount -ProcessId $proc.Id
+
+    $remainingSeconds = [Math]::Max(0, $SteadySeconds - $SettleSeconds)
+    if ($remainingSeconds -gt 0) { Start-Sleep -Seconds $remainingSeconds }
+    $proc.Refresh()
+    $steady = [PSCustomObject]@{
+        WorkingSetMB = [Math]::Round($proc.WorkingSet64 / 1MB, 1)
+        PrivateMB    = [Math]::Round($proc.PrivateMemorySize64 / 1MB, 1)
+        Handles      = $proc.HandleCount
+        Connections  = Get-EstablishedConnectionCount -ProcessId $proc.Id
+    }
+
     $sample = [PSCustomObject]@{
         TimeToWindowMs = $timeToWindowMs
-        WorkingSetMB   = [Math]::Round($proc.WorkingSet64 / 1MB, 1)
-        PrivateMB      = [Math]::Round($proc.PrivateMemorySize64 / 1MB, 1)
-        Handles        = $proc.HandleCount
+        WorkingSetMB   = $settleWorkingSetMB
+        PrivateMB      = $settlePrivateMB
+        Handles        = $settleHandles
+        Connections    = $settleConnections
+        Steady         = $steady
     }
     Stop-RemexHost
     return $sample
@@ -224,11 +269,12 @@ try {
         Invoke-UpdateLocalInstall -ScriptPath $wtScript -InstallDirParam $InstallDir
         $deploySw.Stop()
 
-        Write-Host "Measuring $Launches launch(es) (1 cold + $($Launches - 1) warm)..." -ForegroundColor Cyan
+        Write-Host "Measuring $Launches launch(es) (1 cold + $($Launches - 1) warm), settle ${SettleSeconds}s + steady ${SteadySeconds}s..." -ForegroundColor Cyan
         $samples = @()
         for ($i = 1; $i -le $Launches; $i++) {
-            $sample = Measure-RemexLaunch -SettleSeconds $SettleSeconds
-            Write-Host ("  launch {0}/{1}: {2} ms to window, {3} MB working set" -f $i, $Launches, $sample.TimeToWindowMs, $sample.WorkingSetMB) -ForegroundColor DarkGray
+            $sample = Measure-RemexLaunch -SettleSeconds $SettleSeconds -SteadySeconds $SteadySeconds
+            Write-Host ("  launch {0}/{1}: {2} ms to window, {3} MB working set (settle, {4} conn), {5} MB working set (steady, {6} conn)" -f `
+                    $i, $Launches, $sample.TimeToWindowMs, $sample.WorkingSetMB, $sample.Connections, $sample.Steady.WorkingSetMB, $sample.Steady.Connections) -ForegroundColor DarkGray
             $samples += $sample
         }
 
@@ -238,18 +284,34 @@ try {
         $warmWorkingSet = @($warm | ForEach-Object { [double]$_.WorkingSetMB })
         $warmPrivate = @($warm | ForEach-Object { [double]$_.PrivateMB })
         $warmHandles = @($warm | ForEach-Object { [double]$_.Handles })
+        $warmConnections = @($warm | ForEach-Object { [double]$_.Connections })
+        $warmSteadyWorkingSet = @($warm | ForEach-Object { [double]$_.Steady.WorkingSetMB })
+        $warmSteadyPrivate = @($warm | ForEach-Object { [double]$_.Steady.PrivateMB })
+        $warmSteadyHandles = @($warm | ForEach-Object { [double]$_.Steady.Handles })
+        $warmSteadyConnections = @($warm | ForEach-Object { [double]$_.Steady.Connections })
+
+        # With the default 7 launches there are only 6 warm samples, and a "90th percentile" of 6
+        # values is really just the max - see docs/PERF-BASELINE.md Caveats. Label the column
+        # honestly instead of implying a percentile the sample size can't support.
+        $warmP90Label = if ($warm.Count -lt 10) { 'warm max' } else { 'Warm P90' }
 
         $refResult = [PSCustomObject]@{
-            Ref                 = $ref
-            CommitHash          = $commitHash
-            PublishDurationMs   = [Math]::Round($deploySw.Elapsed.TotalMilliseconds, 0)
-            ColdStartMs         = $cold.TimeToWindowMs
-            WarmMedianMs        = Get-Percentile $warmTimes 50
-            WarmP90Ms           = Get-Percentile $warmTimes 90
-            WorkingSetMedianMB  = Get-Percentile $warmWorkingSet 50
-            PrivateMedianMB     = Get-Percentile $warmPrivate 50
-            HandlesMedian       = Get-Percentile $warmHandles 50
-            Samples             = $samples
+            Ref                       = $ref
+            CommitHash                = $commitHash
+            PublishDurationMs         = [Math]::Round($deploySw.Elapsed.TotalMilliseconds, 0)
+            ColdStartMs               = $cold.TimeToWindowMs
+            WarmMedianMs              = Get-Percentile $warmTimes 50
+            WarmP90Ms                 = Get-Percentile $warmTimes 90
+            WarmP90Label              = $warmP90Label
+            WorkingSetMedianMB        = Get-Percentile $warmWorkingSet 50
+            PrivateMedianMB           = Get-Percentile $warmPrivate 50
+            HandlesMedian             = Get-Percentile $warmHandles 50
+            ConnectionsMedian         = Get-Percentile $warmConnections 50
+            SteadyWorkingSetMedianMB  = Get-Percentile $warmSteadyWorkingSet 50
+            SteadyPrivateMedianMB     = Get-Percentile $warmSteadyPrivate 50
+            SteadyHandlesMedian       = Get-Percentile $warmSteadyHandles 50
+            SteadyConnectionsMedian   = Get-Percentile $warmSteadyConnections 50
+            Samples                   = $samples
         }
         $results.Add($refResult)
 
@@ -259,14 +321,17 @@ try {
         Write-Host "Wrote $refJsonPath" -ForegroundColor DarkGray
     }
 
-    # Deterministic column order.
+    # Deterministic column order. All rows in one run share the same -Launches, so the warm
+    # P90/max label is the same for every row - take it from the first result.
+    $warmColumnLabel = if ($results.Count -gt 0) { $results[0].WarmP90Label } else { 'Warm P90' }
     $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add('| Ref | Commit | Cold Start (ms) | Warm Median (ms) | Warm P90 (ms) | Working Set (MB) | Private (MB) | Handles |')
-    $lines.Add('|---|---|---|---|---|---|---|---|')
+    $lines.Add(('| Ref | Commit | Cold Start (ms) | Warm Median (ms) | {0} (ms) | Working Set @Settle (MB) | Private @Settle (MB) | Handles @Settle | Conn @Settle | Working Set @Steady (MB) | Private @Steady (MB) | Handles @Steady | Conn @Steady |' -f $warmColumnLabel))
+    $lines.Add('|---|---|---|---|---|---|---|---|---|---|---|---|---|')
     foreach ($r in $results) {
-        $lines.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} |' -f `
+        $lines.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} |' -f `
                     $r.Ref, $r.CommitHash.Substring(0, 7), $r.ColdStartMs, $r.WarmMedianMs, $r.WarmP90Ms, `
-                    $r.WorkingSetMedianMB, $r.PrivateMedianMB, $r.HandlesMedian))
+                    $r.WorkingSetMedianMB, $r.PrivateMedianMB, $r.HandlesMedian, $r.ConnectionsMedian, `
+                    $r.SteadyWorkingSetMedianMB, $r.SteadyPrivateMedianMB, $r.SteadyHandlesMedian, $r.SteadyConnectionsMedian))
     }
     $summaryPath = Join-Path $Out 'perf-summary.md'
     [System.IO.File]::WriteAllText($summaryPath, ($lines -join "`n") + "`n")
