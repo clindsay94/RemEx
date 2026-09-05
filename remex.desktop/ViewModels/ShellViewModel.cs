@@ -507,6 +507,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Solid for the session, one snackbar per failing path, the setting untouched.</summary>
     private void FailWallpaper(Remex.Core.Models.CustomizationSettings settings, string? path)
     {
+        // A failure supersedes whatever decode is still in flight. Without this, switching to an
+        // Image source whose copy is missing while the desktop picture is still decoding would let
+        // that decode land afterwards, publish the desktop picture, and clear the failure — the
+        // silent substitution WallpaperBackdrop.ResolvePath exists to forbid.
+        _wallpaperLoadGeneration++;
+        _wallpaperPathLoading = null;
+
         EffectiveBackgroundType = "Solid";
         var key = path ?? $"{settings.WallpaperSource}|{settings.WallpaperImagePath}";
         if (string.Equals(key, _wallpaperPathFailed, StringComparison.OrdinalIgnoreCase)) return;
@@ -612,6 +619,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // No frame can still be compositing against this bitmap once the shell itself is going
         // away, so — unlike the live swap in LoadWallpaperAsync — disposing it inline here is safe.
+        // The generation bump makes a decode that completes after this point discard its bitmap
+        // instead of republishing one nothing would ever dispose.
+        _wallpaperLoadGeneration++;
+        _wallpaperPathLoading = null;
         WallpaperBitmap?.Dispose();
         WallpaperBitmap = null;
 
