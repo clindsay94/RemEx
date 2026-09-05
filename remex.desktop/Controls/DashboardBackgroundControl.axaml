@@ -166,7 +166,7 @@
 
                         <Rectangle Name="AuroraLayer3" Opacity="0.30" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="50%,8%" RadiusX="0.95" RadiusY="0.91">
+                                <RadialGradientBrush Center="50%,8%" RadiusX="0.83" RadiusY="0.68">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraTertiary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>

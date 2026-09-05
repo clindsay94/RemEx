@@ -11,16 +11,30 @@ namespace Remex.Desktop.Tests.Controls;
 
 /// <summary>
 /// The Aurora mesh in <c>DashboardBackgroundControl.axaml</c> (RemEx-ddynd): its own mode value,
-/// blobs half again as large and visibly bolder than the old Wallpaper-named mesh, colours from
-/// the seed-derived Aurora resources, and reduced motion FREEZING the mesh at its first keyframe
-/// rather than hiding it. Source-text, because this test project has no headless render.
+/// every blob half again as large as ITS OWN former self and visibly bolder than the old
+/// Wallpaper-named mesh, the big/medium/small hierarchy intact, colours from the seed-derived
+/// Aurora resources, and reduced motion FREEZING the mesh at its first keyframe rather than
+/// hiding it. Source-text, because this test project has no headless render.
 /// </summary>
 public class AuroraMeshTests
 {
     private const string Avalonia = "https://github.com/avaloniaui";
 
-    // The old mesh's numbers, so "up by half" is a measurement against something.
-    private const double OldMaxRadiusX = 0.70, OldMaxRadiusY = 0.75;
+    // The old mesh's numbers, so "up by half" is a measurement against something. PER LAYER, not
+    // against the old largest blob: the spec asks each blob to be half again as large as ITS OWN
+    // former self, which is also what keeps the big/medium/small hierarchy intact. Measuring every
+    // layer against the old maximum let AuroraLayer3 be inflated to near-full-window and still pass.
+    private static readonly (double X, double Y) OldLayer1Radius = (0.65, 0.75);
+    private static readonly (double X, double Y) OldLayer2Radius = (0.70, 0.60);
+    private static readonly (double X, double Y) OldLayer3Radius = (0.55, 0.45);
+
+    private static (string Name, (double X, double Y) OldRadius)[] OldRadiiInDocumentOrder() => new[]
+    {
+        ("AuroraLayer1", OldLayer1Radius),
+        ("AuroraLayer2", OldLayer2Radius),
+        ("AuroraLayer3", OldLayer3Radius),
+    };
+
     private const double OldPeakOpacityLayer1 = 0.70, OldPeakOpacityLayer2 = 0.55, OldPeakOpacityLayer3 = 0.42;
 
     private static XElement AuroraPanel()
@@ -50,16 +64,43 @@ public class AuroraMeshTests
         var layers = Layers();
         layers.Should().HaveCount(3);
 
-        foreach (var layer in layers)
+        var expected = OldRadiiInDocumentOrder();
+        layers.Select(l => l.Attribute("Name")!.Value).Should().Equal(expected.Select(e => e.Name),
+            "each layer is paired with its own former radius by x:Name in document order");
+
+        foreach (var (layer, (name, old)) in layers.Zip(expected))
         {
-            var brush = layer.Descendants(XName.Get("RadialGradientBrush", Avalonia)).Single();
-            double.Parse(brush.Attribute("RadiusX")!.Value, CultureInfo.InvariantCulture)
-                .Should().BeGreaterOrEqualTo(OldMaxRadiusX * 1.5 * 0.9,
-                    "the spec asks for blob radius up by half, measured against the old largest blob");
-            double.Parse(brush.Attribute("RadiusY")!.Value, CultureInfo.InvariantCulture)
-                .Should().BeGreaterOrEqualTo(OldMaxRadiusY * 1.5 * 0.8);
+            double.Parse(RadiusAttribute(layer, "RadiusX"), CultureInfo.InvariantCulture)
+                .Should().BeGreaterOrEqualTo(old.X * 1.5 * 0.9,
+                    $"{name}'s blob radius is up by half, measured against that layer's own former radius");
+            double.Parse(RadiusAttribute(layer, "RadiusY"), CultureInfo.InvariantCulture)
+                .Should().BeGreaterOrEqualTo(old.Y * 1.5 * 0.8,
+                    $"{name}'s blob radius is up by half, measured against that layer's own former radius");
         }
     }
+
+    /// <summary>
+    /// Growing every blob is not the same as growing them into each other. The first cut of the
+    /// growth test above measured all three against the OLD LARGEST blob, so inflating AuroraLayer3
+    /// to near-full-window passed it — and flattened the mesh into three overlapping discs of the
+    /// same size instead of the big/medium/small stack the spec draws. Nothing renders in this
+    /// assembly, so the ordering has to be pinned in the numbers themselves.
+    /// </summary>
+    [Fact]
+    public void TheThreeBlobsKeepTheirBigMediumSmallHierarchy()
+    {
+        var radii = Layers().ToDictionary(
+            l => l.Attribute("Name")!.Value,
+            l => double.Parse(RadiusAttribute(l, "RadiusX"), CultureInfo.InvariantCulture));
+
+        radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer1"],
+            "the third blob is the small one; equal-sized blobs read as one flat wash, not a mesh");
+        radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer2"],
+            "the third blob is the small one; equal-sized blobs read as one flat wash, not a mesh");
+    }
+
+    private static string RadiusAttribute(XElement layer, string attribute) =>
+        layer.Descendants(XName.Get("RadialGradientBrush", Avalonia)).Single().Attribute(attribute)!.Value;
 
     [Fact]
     public void PeakOpacitiesReadOnADarkSurfaceAtAGlance()
