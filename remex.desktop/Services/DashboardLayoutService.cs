@@ -49,6 +49,24 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         return outcome.Changed ? profile with { Customization = migrated } : profile;
     }
 
+    /// <summary>
+    /// A profile with nothing to migrate: stamped straight at <see cref="CustomizationMigration.CurrentSchemaVersion"/>
+    /// rather than run through <see cref="MigrateProfile"/>.
+    /// </summary>
+    /// <remarks>
+    /// NEVER PASS A FABRICATED <c>new DashboardProfile()</c> THROUGH <see cref="MigrateProfile"/>
+    /// (RemEx-8twk0.1 review). <c>Migrate</c> exists to translate an OLD FILE's values forward; its
+    /// schema-3 arm unconditionally sets <c>ColorSource</c> to <c>Custom</c> for anything it touches,
+    /// because a value already on disk was chosen by hand or by a preset. A profile that never had a
+    /// file has nothing to translate - the schema-0 record default IS the spec's fresh-install answer
+    /// (<c>WindowsAccent</c>) - so running it through the arm anyway silently reassigned every new
+    /// user's colour source and made the Windows-accent-follow feature unreachable from a clean
+    /// install. Used for every "there is no real profile" case: file missing, a read that returned
+    /// null without throwing, and the exception fallback.
+    /// </remarks>
+    private static DashboardProfile FreshProfile() =>
+        new() { Customization = new CustomizationSettings { SchemaVersion = CustomizationMigration.CurrentSchemaVersion } };
+
     /// <summary>What <see cref="MigrateProfile"/> had to do.</summary>
     /// <param name="Changed">
     /// Whether the record was rewritten. False means it was already current, and the caller has
@@ -309,7 +327,11 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             ProfileFileMissingOnLoad = !File.Exists(_filePath);
             if (ProfileFileMissingOnLoad)
             {
-                profile = MigrateProfile(new DashboardProfile(), out outcome)!;
+                // A FRESH INSTALL IS STAMPED, NOT MIGRATED (RemEx-8twk0.1 review) - see FreshProfile.
+                // Still routed through MigrateProfile: FreshProfile() is already at
+                // CurrentSchemaVersion, so Migrate's own early-return makes this a true no-op while
+                // keeping every ApplyCustomization call in this method behind an actual migration call.
+                profile = MigrateProfile(FreshProfile(), out outcome)!;
             }
             else
             {
@@ -317,9 +339,14 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                 // the shared reader so this is not a second opinion about what a file on disk means.
                 // RETRIED ON A TRANSIENT I/O FAILURE, not just attempted once (RemEx-8y3qy) - see
                 // ReadExistingProfileAsync for why.
-                profile = MigrateProfile(
-                    await ReadExistingProfileAsync(_filePath, onReadAttemptFailed) ?? new DashboardProfile(),
-                    out outcome)!;
+                var existing = await ReadExistingProfileAsync(_filePath, onReadAttemptFailed);
+
+                // The file existed but read back as null (e.g. a literal "null" on disk) - there is
+                // still nothing real to migrate, so this is the same case as a missing file: stamp
+                // rather than translate (RemEx-8twk0.1 review).
+                profile = existing is null
+                    ? MigrateProfile(FreshProfile(), out outcome)!
+                    : MigrateProfile(existing, out outcome)!;
             }
 
             // ONCE PER LOAD, HERE, RATHER THAN ON EVERY APPLY. ThemeService warns about an unusable
@@ -397,11 +424,12 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
             LoadFailureWarning = $"Dashboard layout could not be loaded ({ex.GetType().Name}). Defaults have been applied.";
 
-            // Migrated even though it is brand new, so the fresh profile is stamped current and the
-            // next save does not read as schema 0. A default profile migrates to itself; what would
-            // not survive is skipping the stamp, because the migration would then re-run against a
-            // record that had already been written by this build.
-            var profile = MigrateProfile(new DashboardProfile(), out _)!;
+            // Stamped current rather than translated (RemEx-8twk0.1 review) - see FreshProfile - so
+            // the next save does not read as schema 0 and does not silently reassign ColorSource away
+            // from the spec's fresh-install default. Still routed through MigrateProfile: FreshProfile()
+            // is already current, so this is a genuine no-op that also keeps the ApplyCustomization
+            // below behind an actual migration call.
+            var profile = MigrateProfile(FreshProfile(), out _)!;
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
 

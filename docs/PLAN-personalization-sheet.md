@@ -86,9 +86,12 @@ Every task's requirements implicitly include this section.
 - **Two transient states are deliberate.** Task 1 lands the schema-3 migration while the record's
   `BackgroundMaterial` default stays `Mica` (Task 4 flips it to `Aurora` when Aurora can render)
   and `SplashStyle` stays `RemexCommand` (Task 9 flips it). A profile *created* on a developer
-  machine between those tasks is stamped schema 3 with the old defaults and is never migrated —
-  only a dev box running an interim build sees this; every profile that existed before Task 1 goes
-  through the arm exactly once.
+  machine between those tasks is created at `CustomizationMigration.CurrentSchemaVersion` directly
+  (`DashboardLayoutService.FreshProfile`, RemEx-8twk0.1) rather than run through `Migrate`, so it
+  keeps the record's own defaults and is never migrated — only a dev box running an interim build
+  sees this; every profile that existed before Task 1 goes through the arm exactly once.
+  `DashboardLayoutClobberTests.AFreshInstallStartsOnTheWindowsAccentSourceRatherThanMigratingToCustom`
+  pins it: a fresh install must persist `ColorSource: WindowsAccent`, not the arm's `Custom`.
 - **`SavedPalette` and the `CustomAccentColors` migration land in Task 1**, not Task 7, because
   the spec requires the whole 2-to-3 arm in one `with` expression and the reflection round-trip
   needs the record type on day one. Task 7 is the saved-palettes UI, apply/save/delete, and the

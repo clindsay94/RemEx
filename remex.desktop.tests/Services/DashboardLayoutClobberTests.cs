@@ -112,6 +112,52 @@ public class DashboardLayoutClobberTests : IDisposable
     }
 
     [Fact]
+    public async Task AFreshInstallStartsOnTheWindowsAccentSourceRatherThanMigratingToCustom()
+    {
+        // RemEx-8twk0.1 review (HIGH): a brand-new DashboardProfile has SchemaVersion 0, and running
+        // it through CustomizationMigration.Migrate ran it through arm 3, which unconditionally forces
+        // ColorSource to Custom - making the spec's actual fresh-install default (WindowsAccent, SPEC
+        // section 4/9) and the whole accent-follow feature unreachable for every new user. A fresh
+        // install must be STAMPED at the current schema, never migrated: there is nothing on disk to
+        // translate.
+        using var service = NewService();
+
+        var loaded = await service.LoadAsync();
+
+        loaded.Customization.ColorSource.Should().Be(ColorSources.WindowsAccent,
+            "a brand-new profile chose nothing yet; the record default is the actual answer");
+        loaded.Customization.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+
+        service.RequestSave(loaded);
+        await service.FlushAsync();
+
+        var onDisk = await File.ReadAllTextAsync(service.FilePathForTests);
+        onDisk.Should().Contain("\"colorSource\": \"WindowsAccent\"",
+            "the persisted file must carry the real default, not the migration's Custom rewrite");
+        onDisk.Should().Contain($"\"schemaVersion\": {CustomizationMigration.CurrentSchemaVersion}");
+    }
+
+    [Fact]
+    public async Task ASchemaTwoFileFromDiskStillMigratesToTheCustomSource()
+    {
+        // The other half of the fix: a REAL schema-2 file (something on disk, chosen by hand or by a
+        // preset) must still go through arm 3 and land on Custom - only fabricated in-memory defaults
+        // are exempted, not real files.
+        using var service = NewService();
+        var onDisk = new CustomizationSettings { SchemaVersion = 2, AccentColor = "#00F3FF" };
+
+        await File.WriteAllTextAsync(
+            service.FilePathForTests,
+            JsonSerializer.Serialize(new DashboardProfile { Customization = onDisk }, DashboardLayoutService.JsonOptions));
+
+        var loaded = await service.LoadAsync();
+
+        loaded.Customization.ColorSource.Should().Be(ColorSources.Custom,
+            "a profile that actually came from disk had its seed chosen by hand or by a preset");
+        loaded.Customization.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
     public async Task ReadExistingProfileAsync_RetriesThroughATransientSharingViolation()
     {
         // Isolates the retry helper itself: a sharing violation that clears while the retry loop is
@@ -225,10 +271,10 @@ public class DashboardLayoutClobberTests : IDisposable
 
         service.LoadFailureWarning.Should().NotBeNull(
             "the lock was held for every attempt, so this load must have genuinely failed");
-        loaded.Customization.BackgroundMaterial.Should().Be("Wallpaper",
-            "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults and "
-            + "migrates them, and the schema-3 arm now turns the still-Mica record default into "
-            + "Wallpaper unconditionally (RemEx-z94c7), even for this internal fallback profile");
+        loaded.Customization.BackgroundMaterial.Should().Be("Mica",
+            "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults, and "
+            + "RemEx-8twk0.1's fix stamps rather than migrates a fabricated fallback profile, so the "
+            + "still-Mica record default is untouched here too");
 
         // Exactly ShellViewModel.CompleteTutorial's shape.
         service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
