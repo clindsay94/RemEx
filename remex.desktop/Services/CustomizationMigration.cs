@@ -162,6 +162,12 @@ public static class CustomizationMigration
     /// alone. <see cref="CustomizationSettings.WallpaperSource"/> is left untouched: a schema-3
     /// profile already carries the record default (<see cref="WallpaperSources.Desktop"/>) there,
     /// since nothing before this task ever wrote anything else for a Mica profile.
+    /// <para>
+    /// The same gap applies to the splash default (RemEx-8twk0.9): every fresh install in that
+    /// same window wrote <c>SplashStyle="RemexCommand"</c> explicitly at schema 3, past the 2→3
+    /// arm's flip, so this arm mirrors that arm's rule rather than the model default alone
+    /// reaching those files.
+    /// </para>
     /// </remarks>
     private static CustomizationSettings FromSchemaThree(CustomizationSettings settings)
     {
@@ -171,6 +177,9 @@ public static class CustomizationMigration
         {
             BackgroundMaterial = wasMica ? "Wallpaper" : settings.BackgroundMaterial,
             WallpaperBlur = wasMica ? 0.9 : settings.WallpaperBlur,
+            SplashStyle = string.Equals(settings.SplashStyle, "RemexCommand", StringComparison.Ordinal)
+                ? "CosmicZoom"
+                : settings.SplashStyle,
         };
     }
 

@@ -360,7 +360,7 @@ public record CustomizationSettings
 
     /// <summary>Selected splash screen animation sequence style.</summary>
     [JsonPropertyName("splashStyle")]
-    public string SplashStyle { get; init; } = "RemexCommand";
+    public string SplashStyle { get; init; } = "CosmicZoom";
 
     /// <summary>Font family for page-title headers (an avares URI for a bundled font, or a system font name).</summary>
     [JsonPropertyName("pageTitleFont")]

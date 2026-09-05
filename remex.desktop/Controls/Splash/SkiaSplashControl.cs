@@ -23,7 +23,7 @@ namespace Remex.Desktop.Controls.Splash;
 public sealed class SkiaSplashControl : Control, IDisposable
 {
     public static readonly StyledProperty<string> SplashStyleProperty =
-        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "RemexCommand");
+        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "CosmicZoom");
 
     public string SplashStyle
     {
@@ -38,7 +38,7 @@ public sealed class SkiaSplashControl : Control, IDisposable
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = new();
-    private ISplashVariant _variant = new RemexCommandVariant();
+    private ISplashVariant _variant = new CosmicZoomVariant();
     private double _elapsed;
     private double _lastDt;
     private bool _completed;

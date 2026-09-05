@@ -305,6 +305,40 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
+    public void ASchemaThreeRemexCommandProfileBecomesCosmicZoom()
+    {
+        // Fresh installs between task 1 and task 4 wrote SplashStyle="RemexCommand" explicitly at
+        // schema 3, past the 2->3 arm's flip, so a second arm is required here too.
+        var migrated = CustomizationMigration.Migrate(SchemaThree() with { SplashStyle = "RemexCommand" }, out _);
+
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ASchemaThreePongProfileKeepsPongApartFromTheStamp()
+    {
+        var before = SchemaThree() with { SplashStyle = "Pong" };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
+            "only the old default is flipped; a choice is a choice");
+    }
+
+    [Fact]
+    public void ASchemaThreeMicaAndRemexCommandProfileGetsBothMappingsInOnePass()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaThree() with { BackgroundMaterial = "Mica", SplashStyle = "RemexCommand" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper");
+        migrated.WallpaperBlur.Should().Be(0.9);
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
     public void ASchemaFourProfileIsUntouched()
     {
         var current = SchemaTwo() with
