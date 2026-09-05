@@ -81,6 +81,52 @@ public class CustomizationPaletteImportTests : IDisposable
         vm.ThemeContrast.Should().Be(recipe.Contrast);
     }
 
+    /// <summary>
+    /// Pins MEDIUM 2 (RemEx-8twk0.7 review): <c>RecipeFromCurrent</c> (the export path) already
+    /// stores the seed's achieved chroma via <c>SeedHct.ChromaOf</c>, so re-importing that recipe
+    /// into the same seed's hue/tone must reproduce it byte-for-byte, not the HCT reconstruction
+    /// <see cref="ImportingExportedJsonAppliesAllFourFields"/> pins for an arbitrary external
+    /// recipe whose vibrancy does not already match the seed.
+    /// </summary>
+    [Fact]
+    public async Task ExportingThenImportingReproducesTheSeedExactly()
+    {
+        var vm = MakeVm();
+        vm.AccentColor = "#6C4CFF";
+
+        var recipe = vm.RecipeFromCurrent();
+        var json = PaletteExchange.ToJson(recipe);
+
+        vm.AccentColor = "#112233"; // move away from the seed before importing it back
+        vm.PickOpenFileAsync = PickReturning(json);
+        await vm.ImportPaletteJsonCommand.ExecuteAsync(null);
+
+        vm.AccentColor.Should().Be(recipe.Seed);
+        vm.SchemeVariant.Should().Be(recipe.Variant);
+        vm.ThemeContrast.Should().Be(recipe.Contrast);
+        vm.ColorSource.Should().Be(recipe.ColorSource);
+    }
+
+    /// <summary>Same identity as above, for a seed whose vibrancy was dragged past what its
+    /// hue/tone can hold — RecipeFromCurrent's <c>ChromaOf</c> call is what makes this an identity
+    /// rather than a second HCT reconstruction on import.</summary>
+    [Fact]
+    public async Task ExportingAClampedSeedThenImportingReproducesItExactly()
+    {
+        var vm = MakeVm();
+        vm.AccentColor = "#6C4CFF";
+        vm.SeedChroma = 200; // beyond what this hue/tone can reach in sRGB
+
+        var recipe = vm.RecipeFromCurrent();
+        var json = PaletteExchange.ToJson(recipe);
+
+        vm.AccentColor = "#112233";
+        vm.PickOpenFileAsync = PickReturning(json);
+        await vm.ImportPaletteJsonCommand.ExecuteAsync(null);
+
+        vm.AccentColor.Should().Be(recipe.Seed);
+    }
+
     private sealed class RecordingSink : IInAppNotificationSink
     {
         public (NotificationImportance Importance, string Title, string Message)? Shown;

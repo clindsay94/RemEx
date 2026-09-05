@@ -371,7 +371,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     /// <summary>Builds the recipe for the palette currently painted, from the live-edited fields
     /// rather than the last-saved profile — the studio always shares what is on screen.</summary>
-    private PaletteRecipe RecipeFromCurrent()
+    /// <remarks>
+    /// Internal, not private (visible to Remex.Desktop.Tests via InternalsVisibleTo) — a test needs
+    /// the same recipe the export button would produce, to pin the export/import seed identity
+    /// without going through a real file picker for the export half (RemEx-8twk0.7 fix round).
+    /// </remarks>
+    internal PaletteRecipe RecipeFromCurrent()
     {
         var mode = _themeModeChosenThisSession
             ? _themeMode
@@ -667,6 +672,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
             RefreshPresetPreviews(onlyVarying: true);
             RefreshSchemeVariantStrips();
+            // Same double-placement as the two lines above, and for the same reason: this covers an
+            // OS light/dark flip or a hardware-accent sync, neither of which calls ApplyAndSave, so
+            // its own tail call (below, in ApplyAndSave) never runs for them. The two calls DO both
+            // fire for an ApplyAndSave-driven change too (ApplyCustomization posts to the UI thread,
+            // so this one lands a tick later there, or synchronously wherever PostToUiThread is
+            // wired to run inline) — a second cheap repaint, not a correctness issue, and removing
+            // either one reopens the gap the other exists to close (RemEx-8twk0.7 review LOW 2).
             RefreshSavedPaletteTiles();
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
@@ -739,12 +751,30 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         Name = name,
         ColorSource = ColorSource,
         Seed = AccentColor,
-        Vibrancy = SeedChroma,
+        // THE SEED'S OWN CHROMA, not the slider's requested one — same reasoning and the same call
+        // as RecipeFromCurrent's export path. Most hue/tone pairs cannot reach high chroma in sRGB,
+        // so a request of 120 can land on a colour of 60; storing the request would mean applying
+        // this tile later re-pushes 120 through HCT and reconstructs the swatch instead of
+        // reproducing it exactly. ApplySavedPalette only short-circuits to the stored seed when the
+        // stored vibrancy already equals the seed's own chroma — the two paths must agree.
+        Vibrancy = SeedHct.ChromaOf(AccentColor, SeedChroma),
         Contrast = Math.Clamp(ThemeContrast, -1.0, 1.0),
         Strategy = SchemeVariant,
     };
 
-    private string NextDefaultPaletteName() => SavedPalette.DefaultNamePrefix + (SavedPalettes.Count + 1);
+    /// <summary>
+    /// The smallest "Palette N" (N &gt;= 1) not already in use, not <c>Count + 1</c> — deleting a
+    /// middle tile and saving again must fill the gap it left, not collide with a tile whose number
+    /// still exists (e.g. delete "Palette 2" of three, blank-save should land "Palette 2" again,
+    /// not a second "Palette 3").
+    /// </summary>
+    private string NextDefaultPaletteName()
+    {
+        var used = SavedPalettes.Select(t => t.Record.Name).ToHashSet(StringComparer.Ordinal);
+        var n = 1;
+        while (used.Contains(SavedPalette.DefaultNamePrefix + n)) n++;
+        return SavedPalette.DefaultNamePrefix + n;
+    }
 
     [RelayCommand]
     private void SaveCurrentPalette()
