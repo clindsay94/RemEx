@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
+using Remex.Core.Services;
 using System.Collections.ObjectModel;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -539,6 +540,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _accentColor = settings.AccentColor;
         _schemeVariant = SchemeVariants.Normalize(settings.SchemeVariant);
         _canvasBackgroundType = settings.BackgroundMaterial;
+        _wallpaperSource = settings.WallpaperSource;
+        _wallpaperBlur = Math.Clamp(settings.WallpaperBlur, 0.0, 1.0);
+        _wallpaperImagePath = settings.WallpaperImagePath;
+
+        // Desktop wallpaper only where the registry can be read (Windows); Pick an image everywhere.
+        if (OperatingSystem.IsWindows()) AvailableWallpaperSources.Add(WallpaperSources.Desktop);
+        AvailableWallpaperSources.Add(WallpaperSources.Image);
+        if (!AvailableWallpaperSources.Contains(_wallpaperSource)) _wallpaperSource = WallpaperSources.Image;
+
         _syncWithHardware = settings.SyncWithHardware;
         _themeMode = settings.ThemeMode;
         _themeContrast = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
@@ -726,6 +736,73 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _canvasBackgroundType;
 
+    /// <summary>A <see cref="WallpaperSources"/> value. Persisted.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsImageWallpaperSource))]
+    private string _wallpaperSource = WallpaperSources.Desktop;
+
+    /// <summary>Desktop wallpaper only where the registry can be read (Windows); Pick an image everywhere.</summary>
+    public ObservableCollection<string> AvailableWallpaperSources { get; } = new();
+
+    public bool IsImageWallpaperSource => WallpaperSource == WallpaperSources.Image;
+
+    /// <summary>0 to 1; the shell maps it to a blur radius. Persisted.</summary>
+    [ObservableProperty]
+    private double _wallpaperBlur = 0.6;
+
+    /// <summary>The app-owned copy's path, carried and replaced by <see cref="PickWallpaperImageAsync"/>.</summary>
+    private string? _wallpaperImagePath;
+
+    public bool IsWallpaperBackgroundSelected => CanvasBackgroundType == "Wallpaper";
+
+    /// <summary>Glass and Wallpaper are the two modes the window-opacity slider shapes.</summary>
+    public bool IsWindowOpacityRelevant => CanvasBackgroundType is "Glass" or "Wallpaper";
+
+    partial void OnWallpaperSourceChanged(string value) => ApplyAndSave();
+
+    partial void OnWallpaperBlurChanged(double value) => ApplyAndSave();
+
+    /// <summary>Pick an image: copy it under the per-user directory, downscaled; on failure keep the
+    /// previous image, say so, and write nothing (spec section 9).</summary>
+    [RelayCommand]
+    private async Task PickWallpaperImageAsync()
+    {
+        if (PickOpenFileAsync is null) return;
+
+        var files = await PickOpenFileAsync(new FilePickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Custom_ChooseWallpaperImage"],
+            AllowMultiple = false,
+            FileTypeFilter = new[] { FilePickerFileTypes.ImageAll },
+        });
+        if (files.Count == 0) return;
+
+        var source = files[0].TryGetLocalPath();
+        if (source is null) return;
+
+        var directory = WallpaperImageStore.DirectoryFor(RemexDataPaths.PerUserDirectory);
+        var (ok, copy) = await Task.Run(() =>
+        {
+            var success = WallpaperImageStore.TryCopyDownscaled(source, directory, out var path);
+            return (success, path);
+        });
+
+        if (!ok || copy is null)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Custom_ChooseWallpaperImage"],
+                LocalizationService.Instance["Custom_WallpaperImageCopyFailed"]);
+            return;
+        }
+
+        var previous = _wallpaperImagePath;
+        _wallpaperImagePath = copy;
+        WallpaperSource = WallpaperSources.Image;   // saves through OnWallpaperSourceChanged
+        if (WallpaperSource == WallpaperSources.Image && previous != copy) ApplyAndSave(); // the setter is a no-op when already Image
+        WallpaperImageStore.TryDeleteCopy(previous, directory);
+    }
+
     [ObservableProperty]
     private bool _syncWithHardware;
 
@@ -854,6 +931,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     partial void OnCanvasBackgroundTypeChanged(string value)
     {
         OnPropertyChanged(nameof(IsGlassModeSelected));
+        OnPropertyChanged(nameof(IsWallpaperBackgroundSelected));
+        OnPropertyChanged(nameof(IsWindowOpacityRelevant));
         ApplyAndSave();
     }
 
@@ -969,9 +1048,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // with the view model's own live value as the sheet gains the control for it.
             ColorSource = ColorSource,
             WallpaperSeedIndex = WallpaperSeedIndex,
-            WallpaperSource = carried.WallpaperSource,
-            WallpaperImagePath = carried.WallpaperImagePath,
-            WallpaperBlur = carried.WallpaperBlur,
+            WallpaperSource = WallpaperSource,
+            WallpaperImagePath = _wallpaperImagePath,
+            WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = carried.SavedPalettes,
         };
 

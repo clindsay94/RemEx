@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -367,6 +369,105 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
 
+    /// <summary>The decoded wallpaper for the Wallpaper background mode, or null. Decoded once per
+    /// path change on a worker thread and cached here; the blur is an Effect on the Image, so
+    /// nothing re-renders per frame (spec section 9).</summary>
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _wallpaperBitmap;
+
+    /// <summary><c>WallpaperBlur</c> mapped through <see cref="WallpaperBackdrop.BlurRadiusFor"/>.</summary>
+    [ObservableProperty]
+    private double _wallpaperBlurRadius;
+
+    /// <summary>
+    /// What the background control renders THIS SESSION: the setting, except that a Wallpaper
+    /// mode whose file cannot be read renders Solid while the setting stays Wallpaper so the
+    /// person can pick again (spec section 6).
+    /// </summary>
+    [ObservableProperty]
+    private string _effectiveBackgroundType = "Aurora";
+
+    private string? _wallpaperPathLoaded;
+    private string? _wallpaperPathFailed;
+
+    /// <summary>Re-resolves the wallpaper for <paramref name="settings"/>. UI thread.</summary>
+    private void RefreshWallpaperBackdrop(Remex.Core.Models.CustomizationSettings settings)
+    {
+        WallpaperBlurRadius = WallpaperBackdrop.BlurRadiusFor(settings.WallpaperBlur);
+
+        if (settings.BackgroundMaterial != "Wallpaper")
+        {
+            EffectiveBackgroundType = settings.BackgroundMaterial;
+            return;
+        }
+
+        var path = WallpaperBackdrop.ResolvePath(settings, SystemSeedSources.TryGetWallpaperPath);
+        if (path is null)
+        {
+            FailWallpaper(settings, path: null);
+            return;
+        }
+
+        if (string.Equals(path, _wallpaperPathLoaded, StringComparison.OrdinalIgnoreCase) && WallpaperBitmap is not null)
+        {
+            EffectiveBackgroundType = "Wallpaper";
+            return;
+        }
+
+        _ = LoadWallpaperAsync(settings, path);
+    }
+
+    private async Task LoadWallpaperAsync(Remex.Core.Models.CustomizationSettings settings, string path)
+    {
+        var bitmap = await Task.Run(() =>
+        {
+            try
+            {
+                using var codec = SkiaSharp.SKCodec.Create(path);
+                if (codec is null) return null;
+                using var stream = File.OpenRead(path);
+                // A 4K desktop wallpaper is decoded at most 2560 wide; a picked image is already that size.
+                return codec.Info.Width > WallpaperImageStore.MaxEdge
+                    ? Avalonia.Media.Imaging.Bitmap.DecodeToWidth(stream, WallpaperImageStore.MaxEdge)
+                    : new Avalonia.Media.Imaging.Bitmap(stream);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Wallpaper backdrop: could not decode '{path}' — {ex.Message}");
+                return null;
+            }
+        });
+
+        // The setting may have moved on while decoding; only the current one is honoured.
+        if (Customization.BackgroundMaterial != "Wallpaper") { bitmap?.Dispose(); return; }
+
+        if (bitmap is null)
+        {
+            FailWallpaper(settings, path);
+            return;
+        }
+
+        var previous = WallpaperBitmap;
+        WallpaperBitmap = bitmap;
+        _wallpaperPathLoaded = path;
+        _wallpaperPathFailed = null;
+        EffectiveBackgroundType = "Wallpaper";
+        previous?.Dispose();
+    }
+
+    /// <summary>Solid for the session, one snackbar per failing path, the setting untouched.</summary>
+    private void FailWallpaper(Remex.Core.Models.CustomizationSettings settings, string? path)
+    {
+        EffectiveBackgroundType = "Solid";
+        var key = path ?? $"{settings.WallpaperSource}|{settings.WallpaperImagePath}";
+        if (string.Equals(key, _wallpaperPathFailed, StringComparison.OrdinalIgnoreCase)) return;
+        _wallpaperPathFailed = key;
+        NotificationService.Instance.Notify(
+            NotificationImportance.Outcome,
+            LocalizationService.Instance["Custom_BgType_Wallpaper"],
+            LocalizationService.Instance["Custom_WallpaperUnavailable"]);
+    }
+
     public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, HardwareThemeService hardwareThemeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = Guard.NotNull(layoutService);
@@ -380,12 +481,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         {
             Customization = settings;
             _hardwareThemeService.SetEnabled(settings.SyncWithHardware);
+            RefreshWallpaperBackdrop(settings);
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
             _hardwareThemeService.SetEnabled(Customization.SyncWithHardware);
+            RefreshWallpaperBackdrop(Customization);
         }
 
 

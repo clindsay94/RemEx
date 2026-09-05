@@ -3256,4 +3256,25 @@ Vous pouvez modifier :
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Aurore</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Source du fond d'écran</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Fond d'écran du bureau</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Choisir une image</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Choisir l'image…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Flou</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>L'image du fond d'écran n'a pas pu être chargée ; un fond uni est affiché pour l'instant. Choisissez une autre image pour réessayer.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Cette image n'a pas pu être copiée ; la précédente est conservée.</value>
+  </data>
 </root>

@@ -3256,4 +3256,25 @@ Você pode mudar:
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Aurora boreal</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Origem do papel de parede</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Papel de parede da área de trabalho</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Escolher uma imagem</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Escolher imagem…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Desfoque</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Não foi possível carregar a imagem do papel de parede, então um fundo sólido está sendo exibido por enquanto. Escolha outra imagem para tentar novamente.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Não foi possível copiar essa imagem, então a anterior foi mantida.</value>
+  </data>
 </root>

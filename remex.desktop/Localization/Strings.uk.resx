@@ -3257,4 +3257,25 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Сяйво</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Джерело шпалер</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Шпалери робочого столу</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Вибрати зображення</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Вибрати файл…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Розмиття</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Не вдалося завантажити зображення шпалер, тому поки що показано суцільний фон. Виберіть інше зображення, щоб спробувати ще раз.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Не вдалося скопіювати це зображення, тому збережено попереднє.</value>
+  </data>
 </root>

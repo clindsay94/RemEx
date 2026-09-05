@@ -3259,4 +3259,25 @@ Anda dapat mengubah:
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Cahaya aurora</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Sumber wallpaper</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Wallpaper desktop</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Pilih gambar</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Pilih berkas gambar…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Buram</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Gambar wallpaper tidak dapat dimuat, jadi latar belakang polos ditampilkan untuk saat ini. Pilih gambar lain untuk mencoba lagi.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Gambar itu tidak dapat disalin, jadi gambar sebelumnya tetap dipakai.</value>
+  </data>
 </root>

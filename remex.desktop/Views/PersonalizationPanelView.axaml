@@ -330,7 +330,36 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                 </Grid>
-                <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsGlassModeSelected}">
+                <!-- Wallpaper mode's own controls (RemEx-ddynd): where the picture comes from, and how
+                     blurred it is. Same PrefixedLabelConverter pattern as the mode picker above. -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsWallpaperBackgroundSelected}">
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="{local:Localize Custom_WallpaperSource}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding WallpaperSource}" ItemsSource="{Binding AvailableWallpaperSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_WallpaperSource}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_WallpaperSource_">
+                                                <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                <Binding/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <Button Classes="compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="{local:Localize Custom_WallpaperBlur}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.2" Value="{Binding WallpaperBlur}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_WallpaperBlur}"/>
+                            <TextBlock Text="{Binding WallpaperBlur, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+                <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsWindowOpacityRelevant}">
                     <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_AppWindowOpacity}"/>

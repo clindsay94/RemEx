@@ -3256,4 +3256,25 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>ऑरोरा</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>वॉलपेपर स्रोत</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>डेस्कटॉप वॉलपेपर</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>एक छवि चुनें</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>छवि चुनें…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>धुंधलापन</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>वॉलपेपर छवि लोड नहीं हो सकी, इसलिए अभी एक ठोस पृष्ठभूमि दिखाई जा रही है। फिर से प्रयास करने के लिए दूसरी छवि चुनें।</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>उस छवि की प्रतिलिपि नहीं बनाई जा सकी, इसलिए पिछली छवि रखी गई है।</value>
+  </data>
 </root>

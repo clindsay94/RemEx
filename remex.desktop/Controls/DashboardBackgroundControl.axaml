@@ -85,12 +85,12 @@
 
                          Both transitions come off the .palette-bg-gradient-base class above, where
                          the suppressor can reach them. -->
-                    <Rectangle Classes="palette-bg-gradient-base" IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8"/>
+                    <Rectangle Classes="palette-bg-gradient-base" IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8"/>
                     <!-- Animated opacity pulse — suppressed when reduced motion is on -->
                     <Rectangle Classes="palette-bg" Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
                         <Rectangle.IsVisible>
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
+                                <Binding Path="EffectiveBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
                                 <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
                             </MultiBinding>
                         </Rectangle.IsVisible>
@@ -121,7 +121,7 @@
                          its first keyframe; the animation lives on a class bound to the inverse of
                          IsReducedMotion, so removing the class stops the animation and the property
                          falls back to that static value. AuroraMeshTests pins the pairing. -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAurora}}">
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAurora}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
                         <Rectangle Name="AuroraLayer1" Opacity="0.55" Classes.aurora-animated="{Binding !IsReducedMotion}">
@@ -184,22 +184,33 @@
                         </Rectangle>
                     </Panel>
 
+                    <!-- ═══ Wallpaper Mode — the real desktop wallpaper or a picked image (RemEx-ddynd) ═══
+                         The bitmap is decoded once per path change (ShellViewModel) and blurred by an
+                         Effect on the Image — nothing here animates, so the blur is not re-rendered per
+                         frame. The surface veil sits over it at the WINDOW opacity, the same knob Glass
+                         mode uses for "how much shows through", so text keeps its contrast. -->
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
+                        <Image Source="{Binding WallpaperBitmap}" Stretch="UniformToFill"
+                               Effect="{Binding WallpaperBlurRadius, Converter={x:Static converters:BlurRadiusToEffectConverter.Instance}}" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.AppWindowOpacity}" />
+                    </Panel>
+
                     <!-- ═══ TINTS OVER OS BACKDROPS COMPENSATE FOR AN OPAQUE BRUSH (RemEx-c437b).
-                         These three panels sit over a TRANSPARENT window whose real surface is the
-                         OS backdrop (Mica / Acrylic / bare desktop). They were authored when
-                         GlassBaseDark was #A00A0A10 — alpha 0xA0, 63% — so a bare Fill already let
-                         the backdrop through. ThemeService now overrides GlassBaseDark with the
-                         HCT-solved Surface at full alpha (26 files consume it; its opacity is not
-                         this control's to change), which silently turned these tints into opaque
-                         sheets: Mica went 63%→100% and the backdrop vanished. Each Rectangle
-                         therefore carries the old EFFECTIVE opacity as a ceiling. Mica and Acrylic
-                         (RemEx-mmrgc) scale that ceiling by Customization.GlassOpacity via
-                         MultiplyConverter, so Card Opacity's "Clear" leaves the backdrop nearly bare
-                         and "Frosted" reproduces the old fixed value — Glass's tint stays a fixed
-                         literal below. Solid mode is the one mode whose sheet is opaque on purpose. -->
+                         These panels sit over a TRANSPARENT window whose real surface is the OS
+                         backdrop (Acrylic / bare desktop). They were authored when GlassBaseDark
+                         was #A00A0A10 — alpha 0xA0, 63% — so a bare Fill already let the backdrop
+                         through. ThemeService now overrides GlassBaseDark with the HCT-solved
+                         Surface at full alpha (26 files consume it; its opacity is not this
+                         control's to change), which silently turned these tints into opaque sheets:
+                         Acrylic went 63%→100% and the backdrop vanished. Each Rectangle therefore
+                         carries the old EFFECTIVE opacity as a ceiling. Acrylic (RemEx-mmrgc) scales
+                         that ceiling by Customization.GlassOpacity via MultiplyConverter, so Card
+                         Opacity's "Clear" leaves the backdrop nearly bare and "Frosted" reproduces
+                         the old fixed value — Glass's tint stays a fixed literal below. Solid mode
+                         is the one mode whose sheet is opaque on purpose. -->
 
                     <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
                         <!-- Veil scales with Card Opacity: GlassOpacity × 0.25 ceiling (RemEx-mmrgc).
                              Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.25. -->
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.25, FallbackValue=0.0, TargetNullValue=0.0}" />
@@ -211,7 +222,7 @@
                     </Panel>
 
                     <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
                         <!-- Veil scales with Card Opacity: GlassOpacity × 0.30 ceiling (RemEx-mmrgc).
                              Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.30. -->
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.30, FallbackValue=0.0, TargetNullValue=0.0}" />
@@ -221,7 +232,7 @@
                     <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
                     <!-- The window itself is transparent; this panel adds only a subtle frosted tint
                  so UI elements remain readable when the desktop shows behind the window. -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
                         <!-- 0.25 × the old 0.63 brush alpha ≈ 0.16 -->
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.16" />
                         <!-- Very light accent tint to tint the frost toward the theme color -->
@@ -229,7 +240,7 @@
                     </Panel>
 
                     <!-- ═══ Solid Mode — Surface base + accent tint from color picker ═══ -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
                         <!-- Accent tint driven by Glass Opacity slider so color picker affects the result -->
                         <Rectangle Classes="palette-bg" Opacity="{Binding Customization.GlassOpacity}" Fill="{DynamicResource AccentPrimaryBrush}" />

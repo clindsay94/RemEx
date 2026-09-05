@@ -3260,4 +3260,25 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Aurora ışığı</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Duvar kağıdı kaynağı</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Masaüstü duvar kağıdı</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Bir görsel seç</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Görsel seç…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Bulanıklık</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Duvar kağıdı görseli yüklenemedi, bu yüzden şimdilik düz bir arka plan gösteriliyor. Yeniden denemek için başka bir görsel seçin.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Bu görsel kopyalanamadı, bu yüzden öncekisi korundu.</value>
+  </data>
 </root>

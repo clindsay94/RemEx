@@ -147,7 +147,7 @@ public static class SystemSeedSources
     /// The registry names the ORIGINAL file; the transcoded copy under the Themes folder is the
     /// fallback because a slideshow or a since-deleted original still leaves one behind.
     /// </remarks>
-    private static string? TryGetWallpaperPath()
+    internal static string? TryGetWallpaperPath()
     {
         if (!OperatingSystem.IsWindows()) return null;
 

@@ -3262,4 +3262,25 @@ You can change:
   <data name="Custom_BgType_Aurora" xml:space="preserve">
     <value>Aurora</value>
   </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Wallpaper source</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Desktop wallpaper</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Pick an image</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Choose image…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Blur</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>The wallpaper image could not be loaded, so a solid background is shown for now. Pick another image to try again.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>That image could not be copied, so the previous one is kept.</value>
+  </data>
 </root>
