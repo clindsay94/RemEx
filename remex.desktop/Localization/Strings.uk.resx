@@ -3254,4 +3254,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_Scheme_Monochrome" xml:space="preserve">
     <value>Монохромна</value>
   </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Сяйво</value>
+  </data>
 </root>

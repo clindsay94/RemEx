@@ -351,9 +351,9 @@ public record CustomizationSettings
     [JsonPropertyName("themeMode")]
     public string? ThemeMode { get; init; }
 
-    /// <summary>Requested window or surface material treatment.</summary>
+    /// <summary>Requested background treatment: Aurora (default), Wallpaper, Acrylic, Glass, Gradient or Solid. The desktop resolves anything else at load.</summary>
     [JsonPropertyName("canvasBackgroundType")]
-    public string BackgroundMaterial { get; init; } = "Mica";
+    public string BackgroundMaterial { get; init; } = "Aurora";
 
     /// <summary>When true, the UI accent color attempts to sync with physical hardware (OpenRGB/FanControl).</summary>
     public bool SyncWithHardware { get; init; } = false;

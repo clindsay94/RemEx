@@ -3257,4 +3257,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_Scheme_Monochrome" xml:space="preserve">
     <value>Tek renkli</value>
   </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Aurora ışığı</value>
+  </data>
 </root>

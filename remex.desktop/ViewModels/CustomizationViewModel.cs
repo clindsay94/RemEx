@@ -662,6 +662,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private void RefreshBackgroundTypes()
     {
         AvailableBackgroundTypes.Clear();
+        AvailableBackgroundTypes.Add("Aurora");
+        AvailableBackgroundTypes.Add("Wallpaper");
         if (OperatingSystem.IsWindows())
         {
             AvailableBackgroundTypes.Add("Mica");
@@ -672,14 +674,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             AvailableBackgroundTypes.Add("Glass"); // Linux Mica-like alternative
         }
         AvailableBackgroundTypes.Add("Gradient");
-        AvailableBackgroundTypes.Add("Wallpaper");
         AvailableBackgroundTypes.Add("Solid");
 
-        // Fallback if current type is not available (e.g. switching from Windows to Linux)
+        // A mode this platform cannot offer resolves to the default for the session.
         if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))
-        {
-            CanvasBackgroundType = OperatingSystem.IsLinux() ? "Glass" : "Gradient";
-        }
+            CanvasBackgroundType = "Aurora";
     }
 
     /// <summary>

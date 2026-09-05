@@ -372,6 +372,14 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("AccentHoverBrush", new SolidColorBrush(palette.Secondary));
         SetResourceOverrideInternal("AccentPressed", palette.Tertiary);
         SetResourceOverrideInternal("AccentPressedBrush", new SolidColorBrush(palette.Tertiary));
+
+        // The Aurora mesh's own set, following the SAME light/dark answer the palette does, so
+        // System mode flips it with the OS (spec section 6).
+        var aurora = DynamicColorGenerator.AuroraColors(accentColor, SchemeVariants.Normalize(settings.SchemeVariant), isLightTheme);
+        SetResourceOverrideInternal("AuroraPrimary", aurora.Primary);
+        SetResourceOverrideInternal("AuroraSecondary", aurora.Secondary);
+        SetResourceOverrideInternal("AuroraTertiary", aurora.Tertiary);
+
         SetResourceOverrideInternal("GlassBaseDark", palette.Surface);
         SetResourceOverrideInternal("GlassBaseDarkBrush", new SolidColorBrush(palette.Surface));
         SetResourceOverrideInternal("GlassBaseMedium", palette.SurfaceVariant);

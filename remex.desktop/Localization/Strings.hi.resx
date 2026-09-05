@@ -3253,4 +3253,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_Scheme_Monochrome" xml:space="preserve">
     <value>एकवर्णी</value>
   </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>ऑरोरा</value>
+  </data>
 </root>

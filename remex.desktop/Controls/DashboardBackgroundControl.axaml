@@ -110,107 +110,73 @@
                         </Rectangle.Styles>
                     </Rectangle>
 
-                    <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══
-                         Each aurora RadialGradientBrush is exactly two DynamicResource stops: the
-                         accent tone at Offset 0, and the Surface base (GlassBaseDark — same brush as
-                         the base rectangle below) at Offset 1. Because the base rectangle underneath
-                         is filled with that same Surface color, an opaque Surface end stop composited
-                         at the layer's animated Opacity is invisible against it — the glow fades to
-                         nothing with no alpha interpolation toward black, which is what makes this
-                         look right on both dark and light palettes. No OpacityMask is used to fade the
-                         edges further: each one would be an extra full-window SaveLayer. -->
-                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
-                        <!-- Surface base layer -->
+                    <!-- ═══ Aurora Mode — the animated mesh (RemEx-ddynd) ═══
+                         Three radial blobs, each two DynamicResource stops: an Aurora tone at
+                         Offset 0 (tone 30 of its ramp on a dark surface, tone 90 on a light one —
+                         ThemeService picks the set with the same ResolveIsLight answer the palette
+                         uses) and the Surface base (GlassBaseDark, the same brush as the base
+                         rectangle) at Offset 1, so the glow fades to nothing against it.
+
+                         REDUCED MOTION FREEZES, IT DOES NOT HIDE. Each layer's static Opacity IS
+                         its first keyframe; the animation lives on a class bound to the inverse of
+                         IsReducedMotion, so removing the class stops the animation and the property
+                         falls back to that static value. AuroraMeshTests pins the pairing. -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAurora}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
-                        <!-- Animated aurora layer 1 — primary accent glow -->
-                        <Rectangle Name="AuroraLayer1">
-                            <Rectangle.IsVisible>
-                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
-                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                                </MultiBinding>
-                            </Rectangle.IsVisible>
+                        <Rectangle Name="AuroraLayer1" Opacity="0.55" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="25%,35%" RadiusX="0.65" RadiusY="0.75">
-                                    <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
+                                <RadialGradientBrush Center="25%,35%" RadiusX="0.98" RadiusY="1.13">
+                                    <GradientStop Offset="0" Color="{DynamicResource AuroraPrimary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer1">
+                                <Style Selector="Rectangle#AuroraLayer1.aurora-animated">
                                     <Style.Animations>
                                         <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
-                                            <KeyFrame KeyTime="0:0:0">
-                                                <Setter Property="Opacity" Value="0.40"/>
-                                            </KeyFrame>
-                                            <KeyFrame KeyTime="0:0:4">
-                                                <Setter Property="Opacity" Value="0.70"/>
-                                            </KeyFrame>
-                                            <KeyFrame KeyTime="0:0:8">
-                                                <Setter Property="Opacity" Value="0.45"/>
-                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.55"/></KeyFrame>
+                                            <KeyFrame KeyTime="0:0:4"><Setter Property="Opacity" Value="0.90"/></KeyFrame>
+                                            <KeyFrame KeyTime="0:0:8"><Setter Property="Opacity" Value="0.60"/></KeyFrame>
                                         </Animation>
                                     </Style.Animations>
                                 </Style>
                             </Rectangle.Styles>
                         </Rectangle>
-                        <!-- Animated aurora layer 2 — secondary accent sweep -->
-                        <Rectangle Name="AuroraLayer2">
-                            <Rectangle.IsVisible>
-                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
-                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                                </MultiBinding>
-                            </Rectangle.IsVisible>
+
+                        <Rectangle Name="AuroraLayer2" Opacity="0.42" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="72%,65%" RadiusX="0.70" RadiusY="0.60">
-                                    <GradientStop Offset="0" Color="{DynamicResource AccentHover}" />
+                                <RadialGradientBrush Center="72%,65%" RadiusX="1.05" RadiusY="0.90">
+                                    <GradientStop Offset="0" Color="{DynamicResource AuroraSecondary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer2">
+                                <Style Selector="Rectangle#AuroraLayer2.aurora-animated">
                                     <Style.Animations>
                                         <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
-                                            <KeyFrame KeyTime="0:0:0">
-                                                <Setter Property="Opacity" Value="0.28"/>
-                                            </KeyFrame>
-                                            <KeyFrame KeyTime="0:0:6">
-                                                <Setter Property="Opacity" Value="0.55"/>
-                                            </KeyFrame>
-                                            <KeyFrame KeyTime="0:0:12">
-                                                <Setter Property="Opacity" Value="0.22"/>
-                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.42"/></KeyFrame>
+                                            <KeyFrame KeyTime="0:0:6"><Setter Property="Opacity" Value="0.80"/></KeyFrame>
+                                            <KeyFrame KeyTime="0:0:12"><Setter Property="Opacity" Value="0.35"/></KeyFrame>
                                         </Animation>
                                     </Style.Animations>
                                 </Style>
                             </Rectangle.Styles>
                         </Rectangle>
-                        <!-- Accent glow top-center -->
-                        <Rectangle Name="AuroraLayer3">
-                            <Rectangle.IsVisible>
-                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
-                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                                </MultiBinding>
-                            </Rectangle.IsVisible>
+
+                        <Rectangle Name="AuroraLayer3" Opacity="0.30" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="50%,8%" RadiusX="0.55" RadiusY="0.45">
-                                    <GradientStop Offset="0" Color="{DynamicResource AccentPressed}" />
+                                <RadialGradientBrush Center="50%,8%" RadiusX="0.95" RadiusY="0.91">
+                                    <GradientStop Offset="0" Color="{DynamicResource AuroraTertiary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer3">
+                                <Style Selector="Rectangle#AuroraLayer3.aurora-animated">
                                     <Style.Animations>
                                         <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
-                                            <KeyFrame KeyTime="0:0:0">
-                                                <Setter Property="Opacity" Value="0.18"/>
-                                            </KeyFrame>
-                                            <KeyFrame KeyTime="0:0:15">
-                                                <Setter Property="Opacity" Value="0.42"/>
-                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.30"/></KeyFrame>
+                                            <KeyFrame KeyTime="0:0:15"><Setter Property="Opacity" Value="0.65"/></KeyFrame>
                                         </Animation>
                                     </Style.Animations>
                                 </Style>

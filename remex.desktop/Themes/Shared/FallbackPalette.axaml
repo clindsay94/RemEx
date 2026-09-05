@@ -41,6 +41,12 @@
     <Color x:Key="AccentHover">#826AFF</Color>
     <Color x:Key="AccentPressed">#543BD9</Color>
 
+    <!-- Aurora mesh set (RemEx-ddynd): overridden from the seed on every apply; these are the
+         tone-30 values of the default seed so the first frame is not transparent. -->
+    <Color x:Key="AuroraPrimary">#3F2E9E</Color>
+    <Color x:Key="AuroraSecondary">#463F6E</Color>
+    <Color x:Key="AuroraTertiary">#6B3A5C</Color>
+
     <!-- Functional Colors -->
     <Color x:Key="SystemSuccess">#22C55E</Color>
     <Color x:Key="SystemError">#F43F5E</Color>

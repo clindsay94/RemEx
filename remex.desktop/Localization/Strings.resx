@@ -3259,4 +3259,7 @@ You can change:
   <data name="Custom_Scheme_Monochrome" xml:space="preserve">
     <value>Monochrome</value>
   </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Aurora</value>
+  </data>
 </root>

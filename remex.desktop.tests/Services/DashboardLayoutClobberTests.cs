@@ -22,7 +22,7 @@ namespace Remex.Desktop.Tests.Services;
 /// <para>
 /// THE MECHANISM: <see cref="DashboardLayoutService.CurrentProfile"/> starts life as a bare
 /// <c>new DashboardProfile()</c> (all-default <c>CustomizationSettings</c>, including
-/// <c>BackgroundMaterial = "Mica"</c>) and is only replaced once <see cref="DashboardLayoutService.LoadAsync"/>
+/// <c>BackgroundMaterial = "Aurora"</c>) and is only replaced once <see cref="DashboardLayoutService.LoadAsync"/>
 /// finishes reading the real file. Several view models persist incremental changes with a
 /// read-modify-write over exactly that property — <c>var updated = _layoutService.CurrentProfile with
 /// { SomeField = x }; _layoutService.RequestSave(updated);</c> (<c>ShellViewModel.OnIsReducedMotionChanged</c>,
@@ -271,10 +271,10 @@ public class DashboardLayoutClobberTests : IDisposable
 
         service.LoadFailureWarning.Should().NotBeNull(
             "the lock was held for every attempt, so this load must have genuinely failed");
-        loaded.Customization.BackgroundMaterial.Should().Be("Mica",
+        loaded.Customization.BackgroundMaterial.Should().Be("Aurora",
             "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults, and "
             + "RemEx-8twk0.1's fix stamps rather than migrates a fabricated fallback profile, so the "
-            + "still-Mica record default is untouched here too");
+            + "still-Aurora record default is untouched here too");
 
         // Exactly ShellViewModel.CompleteTutorial's shape.
         service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });

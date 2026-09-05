@@ -3253,4 +3253,7 @@ Você pode mudar:
   <data name="Custom_Scheme_Monochrome" xml:space="preserve">
     <value>Monocromático</value>
   </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Aurora boreal</value>
+  </data>
 </root>

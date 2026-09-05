@@ -203,6 +203,25 @@ public static class DynamicColorGenerator
     private static IReadOnlyList<(int Tone, Color Color)> RampFor(TonalPalette palette) =>
         RampTones.Select(tone => ((int)tone, ToColor(palette[tone]))).ToList();
 
+    /// <summary>The three blob colours the Aurora background mesh paints with.</summary>
+    public record AuroraSet(Color Primary, Color Secondary, Color Tertiary);
+
+    /// <summary>
+    /// Aurora's colours straight off the tonal ramp (spec section 6): the primary, secondary and
+    /// tertiary palettes at tone 30 over a dark surface, tone 90 over a light one — the same
+    /// tones Material's containers sit at, so the mesh reads as part of the palette rather than
+    /// as chrome laid over it. Contrast does not apply: these are raw tones, not role pairs.
+    /// </summary>
+    public static AuroraSet AuroraColors(Color seed, string variant, bool isLight)
+    {
+        var ramps = GenerateTonalRamps(seed, variant);
+        var tone = isLight ? 90 : 30;
+        return new AuroraSet(
+            Primary:   ramps.Primary.First(t => t.Tone == tone).Color,
+            Secondary: ramps.Secondary.First(t => t.Tone == tone).Color,
+            Tertiary:  ramps.Tertiary.First(t => t.Tone == tone).Color);
+    }
+
     /// <summary>The library style behind a strategy name. Neutral AND Monochrome both start from
     /// Spritz; Monochrome then has its chroma removed in <see cref="SeedCoreFor"/>.</summary>
     private static Style StyleFor(string variant) => variant switch
