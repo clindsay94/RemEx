@@ -493,8 +493,8 @@ control traffic.
 
 ### An unset property is not a neutral property (INVARIANT)
 
-`remex.desktop/Views/ShellView.axaml:859` — `material:SideSheet#SettingsSideSheet` **must** carry
-`Background="Transparent"`.
+`remex.desktop/Views/ShellView.axaml:1136-1137` — `material:SideSheet#SettingsSideSheet` **must**
+carry `Background="Transparent"`.
 
 The sheet spans the whole shell (`Grid.Row="0" Grid.RowSpan="3"`) and is declared *after* the app
 bar, the drawer and the page host. `Background` template-binds to `PART_RootBorder`, which wraps the
@@ -505,7 +505,7 @@ than the 440px panel. That much was already known, and the guard written for it 
 That guard shipped a blank app (RemEx-b8dxy, P0). **Absent is not the same as transparent**: with the
 attribute gone, Material.Avalonia 3.19.0's `ControlTheme` default reaches the same
 `PART_RootBorder`, and that default is an opaque `MaterialPaperBrush` — a dead-flat `#303030`, the
-same brush `MainWindow.axaml:9` and `Themes/Chrome/WindowChrome.axaml:7` already had to neutralise
+same brush `MainWindow.axaml:19` and `Themes/Chrome/WindowChrome.axaml:7` already had to neutralise
 for the window decorations. The *closed* sheet therefore covered the app bar, the drawer and the
 page host. Measured on the live window: uniform `#FF303030` everywhere except the gear FAB and the
 snackbar host, which are the only siblings declared later.
@@ -521,8 +521,123 @@ click-to-dismiss. Same reason `WindowChrome.axaml:37`'s `PART_TitleBar` is `Tran
 
 **The general rule for every Material.Avalonia template-part override:** before concluding a
 property should be *absent*, check what the theme puts there in your absence. This is the same trap
-as the scrim's priority bug (`ShellView.axaml:142`) on a different axis — there the override lost to
-an activated selector, here the absence lost to a plain default.
+as the scrim's priority bug (`ShellView.axaml:162-176`) on a different axis — there the override lost
+to an activated selector, here the absence lost to a plain default.
+
+### `RenderTransform` is not a keyframe-animatable property (INVARIANT)
+
+`remex.desktop/Views/HomeView.axaml:58-76` — the six staggered entrance keyframe `Style.Animations`
+blocks animate `TranslateTransform.Y`, never `RenderTransform` itself.
+
+Avalonia has no keyframe animator registered for `RenderTransform` (a `TransformOperations` value).
+The first cut of this bead animated it directly and crashed inside `Animation.InterpretKeyframes` on
+the very first launch of `HomeView` — a P0 (RemEx-qolhg): the app never reached a usable window, with
+no exception surfaced anywhere useful. `TranslateTransform.Y` is a plain `double` property with a
+registered animator, and keyframes on it produce the identical visual slide.
+`HomeViewEntranceTests.cs:30-34` pins the `nth-child` style count against the actual parsed XAML (so a
+section added to or removed from `DashboardSections` forces a deliberate edit here) and documents the
+crash so nobody re-tries the `RenderTransform` shortcut.
+
+### Palette-transition suppression must carry an activator AND be declared after the crossfade
+
+`remex.desktop/App.axaml:199` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1163-
+1176` (the "chrome drag suppression … MUST STAY LAST" block) — RemEx-zgtn1.
+
+Avalonia's `StyleInstance.GetPriority` returns `StyleTrigger` for any style carrying a class activator
+and `Style` otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. A suppression selector with
+no activator loses to an activated crossfade style no matter where it is declared; two selectors that
+both carry an activator tie at `StyleTrigger`, and the LATER declaration then wins. The chrome-
+transition suppressor was originally written next to the `Window` pair near the top of `App.axaml` —
+it looked correct, and a test asserting only that it existed stayed green — while being completely
+inert, because every chrome style it needed to outrank (`.card`, `.primary`, `Ellipse.status-dot`, …)
+is declared later and carries the same activator tier. Under reduced motion this meant chrome colour
+transitions kept animating with the setting supposedly off. `PaletteTransitionSuppressionTests.cs:68`
+(`SuppressionOutranksTheCrossfade_ByCarryingAnActivatorAndComingLast`) asserts both conditions —
+activator present, declared last — precisely because a fully green suite shipped this regression the
+first time. Any new style that installs a `Transitions` collection on a class RemEx suppresses must be
+added ABOVE this block, never after it.
+
+### Theme switch removes only the tracked base-theme dictionary, never the whole `Themes/` folder
+
+`remex.desktop/Services/ThemeService.cs:600-632` (`ThemeDictionaryPrefix`, `BaseThemeSources`,
+`SwapBaseTheme`) — RemEx-gcqw5.
+
+A theme switch may remove exactly the base-theme file it is replacing (matched against the literal set
+of base-theme URIs), never anything else living under `Themes/` — that folder also holds
+`Chrome/WindowChrome.axaml` (merged by `MainWindow.axaml`) and `Shared/FallbackPalette.axaml`. An
+earlier version cleared every merged dictionary that was not the override dictionary: it did swap the
+theme, but it also dropped `WindowChrome` and `FallbackPalette` on the FIRST switch, never at startup,
+with no exception and no log line. `ThemeSwapMergedDictionaryTests.cs`'s
+`ANonThemeMergedDictionarySurvivesAFullSwitchAcrossEveryPreset` (:85) asserts a non-theme
+dictionary, `WindowChrome`, and the live customization overrides all survive a full cycle through
+every preset, and that a key inside the surviving dictionary still resolves through its parent — the
+earlier bug left the dictionary in the list but emptied, which a bare "is it still present" assertion
+would not have caught.
+
+### Profile writes to disk must be atomic, and a fallback profile must never be persisted
+
+`remex.desktop/Services/DashboardLayoutService.cs` — `LoadAsyncCore` (:297), `SaveAsync` (:424),
+`WriteProfileAtomicallyAsync` (:693); `DashboardLayoutClobberTests.cs` — RemEx-8y3qy.
+
+A profile write goes to a temp sibling file, `Flush(true)`s it, then `File.Move`s it over the real
+path with retry, because `File.Move` onto a locked destination throws `UnauthorizedAccessException` on
+Windows and a bare overwrite can race a reader. `LoadAsyncCore` never persists a fallback profile it
+had to synthesise from a failed read — writing one back would make a transient read failure permanent.
+`SaveAsync` rethrows on failure rather than swallowing it, so a caller cannot mistake a silently-failed
+save for a successful one. The observed failure: the theme reverted to defaults seconds after launch,
+because an earlier path treated a fallback load as good enough to save over the real profile.
+
+### `ui-hotreload.ps1 -Stop` relaunches the installed Release host unless `-NoRelaunch`
+
+`scripts/ui-hotreload.ps1` (`Stop-Remex`) and `scripts/ui-palette-sweep.ps1` — RemEx-8q7de review.
+
+The default behaviour of `-Stop` is to bring the installed Release host back up, because that is the
+right default for a developer stopping hot-reload to look at something and then wanting their app
+back. Any script that stops the host to touch **per-user state** underneath it — a profile file, a
+palette override — must pass `-NoRelaunch` and wait for the process to actually exit before writing,
+or the relaunching host can read or overwrite the file out from under the script mid-write. The sweep
+script's own early draft did not: without `-NoRelaunch`, it would have written an adversarial palette
+cell and then had the relaunched host immediately load and re-save the user's *real* profile over it,
+racing the sweep's own restore-from-backup step in `finally`.
+
+### The overlay drawer is closed at launch — anything armed "at attach" inside it runs unseen
+
+`remex.desktop/Views/ShellView.axaml.cs` — `ArmNavEntranceOnFirstOpen` (:105);
+`remex.desktop.tests/Views/ShellNavEntranceTests.cs` — RemEx-alwfa.2 slice 2.
+
+The nav entrance animation is a once-per-process effect, and the drawer is not open when `ShellView`
+attaches. Arming the effect at attach time burns the one-shot while the drawer is still closed, so it
+never plays for the user at all — the once-per-process slot was spent on an audience of nobody. The
+fix arms it on the FIRST transition of `IsDrawerOpen` to `true` instead. This also means a
+`FillMode="Backward"` entrance style cannot be delay-armed after the fact without a visible flash:
+`FillMode="Backward"` holds the 0% keyframe until its `Delay` elapses, but only from the moment the
+animation is attached — arm it late and the control has already been sitting at its *post*-animation
+state, so attaching then produces a visible snap back to the 0% frame before it re-animates forward.
+
+### A posted focus move-in must re-check the overlay is still effectively visible before landing
+
+`remex.desktop/Views/ShellView.axaml.cs` — `OnOverlayToggled` (:482);
+`remex.desktop.tests/Views/ShellOverlayFocusTests.cs` — RemEx-ddk6b.
+
+Focus restoration on an overlay closing is posted (`Dispatcher.UIThread.Post`), so by the time it runs
+the overlay it was meant for may have been reopened, replaced by another overlay, or the window may
+have moved on entirely. The posted callback re-checks that the overlay it captured focus for is still
+the effectively-visible one before acting. Restoring focus on close is scoped just as narrowly: only
+when the current focus is `null` or still inside the overlay that is closing — never by unconditionally
+restoring the last-remembered control, which could steal focus away from `RemoteDesktopView` if the
+user had already clicked into it while the overlay was mid-close.
+
+### A ripple started in `PointerPressed` never draws if the same handler hides the window synchronously
+
+`remex.desktop/Views/TrayBalloonWindow.axaml.cs` — `PressSettleDuration` (:53);
+`remex.desktop.tests/Views/TrayBalloonMaterialToastTests.cs` — RemEx-alwfa.3 review.
+
+Material's ripple effect is scheduled to draw on a later compositor frame, not synchronously inside
+`PointerPressed`. A handler that hides or closes the window in the same `PointerPressed` callback tears
+down the visual tree before that frame happens, so the ripple that was supposed to give click feedback
+never appears — the interaction reads as unresponsive even though the click itself worked.
+`PressSettleDuration` (180ms) delays the window's hide until after the ripple has had a chance to draw
+and settle, so the click still visibly registers before the window goes away.
 
 ---
 

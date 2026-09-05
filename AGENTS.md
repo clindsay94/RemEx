@@ -136,9 +136,34 @@ than one that admits it produced nothing.
 
 Do not apply one platform's axes to the other.
 
-- **PC only (`remex.desktop` / `remex.agent`)** — the four named themes **CyberNOC, Monolith,
-  SolarFlare, BaseDarkGlass**. Each has distinct contrast ratios and background treatments; a change
-  that looks right in one can break another. **These four do not exist on Android.**
+- **PC only (`remex.desktop` / `remex.agent`)** — one seed colour (`CustomizationSettings.AccentColor`)
+  crossed with `SchemeVariant` (7 values — TonalSpot, Vibrant, Expressive, Rainbow, FruitSalad,
+  Content, Spritz), `ThemeMode` (`Light`/`Dark`/`System`), and `ThemeContrast` (-1.0 to 1.0), generated
+  into a full palette by `DynamicColorGenerator`. `SeedPresetCatalog.All`
+  (`remex.desktop/Models/SeedPreset.cs`) ships starting points — **BaseDarkGlass** (the default),
+  **CyberNOC**, **SolarFlare**, **Monolith**, Daybreak, Voltage, Sorbet, and **Dynamic** (the user's
+  own seed; never overwritten) — but a preset is data fed into the same generator any custom colour
+  goes through, not a separate palette. **There is no finite set of themes left to check.** Verify per
+  `docs/UI-PALETTE-SWEEP.md` / `bd show RemEx-8q7de`: the default preset plus three adversarial seeds
+  (Chalk near-white, Ink near-black, Chroma max-chroma), each crossed with light/dark mode and
+  contrast 0.0/1.0 — 13 cells, defined once as data in `scripts/ui-palette-sweep.ps1` (`-ListCells` to
+  read them, `-DryRun` to print the plan without touching anything). Launch a specific view with the
+  `--view <Name>` argument (`StartupViewArgument`, `remex.desktop/Services/StartupViewArgument.cs`)
+  and capture eyes-on with `.claude/skills/ui-verify/SKILL.md` / `scripts/ui-snapshot.ps1` — **never**
+  inject OS keystrokes, `Tab`, or focus changes from a script or agent to drive this; the `--view`
+  argument and UIA `InvokePattern` on RemEx's own Buttons are the only levers. Also check the type and
+  button vocabularies (`docs/TYPOGRAPHY-VOCABULARY.md`, `docs/BUTTON-VOCABULARY.md`) and do not let
+  `TypographyVocabularyTests`'s inline-font-size baseline (73, with 40 of slack) drift upward.
+
+  The ~50 legacy resource keys views bind to (`TextPrimaryBrush`, `AccentPrimaryBrush`,
+  `CardBackgroundBrush`, `SystemErrorBrush`, …) are not dead weight — they are the PC palette's role
+  contract. `ThemeService.ApplyCustomization` (`remex.desktop/Services/ThemeService.cs`) writes every
+  one of them from the generated M3 palette on each customization pass, `ThemeKeyCoverageTests` fails
+  if any key in a theme file stops being covered by it, and roughly 800 `DynamicResource` sites across
+  the 32 views bind to them. Never add a hex literal or a new resource key straight into a
+  `Themes/*.axaml` preset file — the one fallback is `Themes/Shared/FallbackPalette.axaml`; a new
+  colour need goes into `FallbackPalette.axaml` and `ThemeService.ApplyCustomization`, with the
+  coverage tests enforcing it. **None of these presets exist on Android**, named or otherwise.
 - **Android only (`remex.android`)** — Material 3 dynamic theming, no named themes. `RemExTheme`
   (`ui/theme/Theme.kt`) resolves a scheme from three mutually exclusive sources, and a change must
   hold up under all three: a **custom seed**
@@ -341,7 +366,7 @@ in production. `ClipboardValidation` was a fifth; RemEx-hgqs wired it and it is 
 The mechanism is the same every time. A bead is split into "the logic" and "the surface". The logic
 half is the pleasant one — pure, testable, mutation-verifiable — so it lands first with a good test
 count and a signed-off decision record. The surface half is the awkward one: axaml, view models, nine
-resx files, four themes. It goes back on the board and sits there.
+resx files, seed presets. It goes back on the board and sits there.
 
 **That reads as progress while the user gets nothing**, and the tests give a false impression of
 coverage because the code they cover is unreachable. Worse, every one of those four had something

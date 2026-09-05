@@ -297,14 +297,13 @@ Build output is consolidated under a single repo‑root `artifacts/` folder. Det
 
 RemEx is meant to look as good as it performs — for technical and non‑technical users alike.
 
-**Four glassmorphic themes**, each with distinct contrast and background treatments:
-
-| Theme | Vibe |
-|---|---|
-| **CyberNOC** | Neon network‑operations‑center energy |
-| **Monolith** | Quiet, focused, monochrome |
-| **SolarFlare** | Warm gold‑orange gradients |
-| **BaseDarkGlass** | Clean dark‑glass baseline |
+**A generated seed palette**, not a fixed set of themes: pick any accent colour and the whole UI is
+painted from it. Cross that seed with a scheme variant (7 — TonalSpot, Vibrant, Expressive, Rainbow,
+FruitSalad, Content, Spritz), light/dark/system mode, and a contrast slider, and you get a palette
+that is yours rather than one of a handful of presets. For a starting point, the gallery ships eight
+presets built the same way — **BaseDarkGlass** (default), **CyberNOC**, **SolarFlare**, **Monolith**,
+Daybreak, Voltage, Sorbet, and Dynamic (keeps whatever you already built) — and a palette you land on
+can be exported to a file and imported back or shared.
 
 **Eight languages**, switchable live without a restart. Every user‑facing string flows through the localization system — no hardcoded English.
 

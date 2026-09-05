@@ -24,10 +24,10 @@ can still change the outcome.
 ### What the review gate does NOT cover
 
 The reviewer reads diffs. It can confirm a hard snap became a spring with the right motion token.
-It **cannot** tell you the spring feels right, or that a change holds up across all four themes
-(CyberNOC, Monolith, SolarFlare, BaseDarkGlass) — that is a visual property no diff review
-establishes. This loop delivers M3 *correctness*. Aesthetic judgement and four-theme verification
-still require a human looking at the running app, or a screenshot pass afterward.
+It **cannot** tell you the spring feels right, or that a change holds up under monochrome, contrast
+1.0, or a dynamic-color device — that is a visual property no diff review establishes. This loop
+delivers M3 *correctness*. Aesthetic judgement and Android-axis verification still require a human
+looking at the running app, or a screenshot pass afterward.
 
 ---
 
@@ -122,9 +122,10 @@ disk: git history on this branch, and the beads tracker. Trust those, not your i
   good translation, still add the key to every file using the English text as a placeholder AND
   file a bead labelled `i18n` to translate it properly. Locale key-set parity is currently PERFECT
   on both platforms (Android 759 keys, PC 1034) — do not be the iteration that breaks it.
-- **Theme safety — ANDROID AXES ONLY.** This queue is Android. The four named themes (CyberNOC,
-  Monolith, SolarFlare, BaseDarkGlass) are **PC-only and do not exist in `remex.android`** — ignore
-  any bead text or instinct telling you to verify against them. Android's real axes, per
+- **Theme safety — ANDROID AXES ONLY.** This queue is Android. PC uses seed presets
+  (`SeedPresetCatalog`, e.g. BaseDarkGlass, CyberNOC, SolarFlare, Monolith), **not named themes, and
+  none of it exists in `remex.android`** — ignore any bead text or instinct telling you to verify
+  against PC presets. Android's real axes, per
   `ui/theme/Theme.kt`, are: light/dark; the three scheme sources (custom seed, dynamic color on
   API 31+, and the static `DarkColorScheme`/`LightColorScheme` fallback on API < 31 or dynamic-off);
   `themeStyle` (7 values incl. monochrome); and `themeContrast` (0.0–1.0). Use color-scheme roles,

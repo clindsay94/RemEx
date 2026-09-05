@@ -433,9 +433,11 @@ No bead is off the table, including ones touching security-critical or protocol 
   locale variants (es, fr, hi, in, pl, pt-rBR, tr, uk). PC: `Localization/Strings.resx` + its 8
   variants. Run `./scripts/check-localization.ps1` after any string change. If you cannot produce
   a good translation, add the key everywhere with English placeholder text AND file an `i18n` bead.
-- **Theme safety — per platform.** PC changes: hold up across CyberNOC, Monolith, SolarFlare,
-  BaseDarkGlass (no hardcoded colors; use theme resources). Android changes: the four PC themes DO
-  NOT EXIST there — the real axes are light/dark × scheme source (seed / dynamic ≥API 31 / static
+- **Theme safety — per platform.** PC changes: hold up across the palette sweep — the default seed
+  preset plus three adversarial seeds (near-white, near-black, max-chroma), each crossed with
+  light/dark and contrast 0.0/1.0 (`docs/UI-PALETTE-SWEEP.md`, `scripts/ui-palette-sweep.ps1
+  -ListCells`); no hardcoded colors, use theme resources. Named presets are PC-only and DO NOT EXIST
+  on Android — the real Android axes are light/dark × scheme source (seed / dynamic ≥API 31 / static
   fallback) × 7 `themeStyle` values incl. monochrome × contrast 0.0–1.0. Color-scheme roles only;
   a literal that survives the default scheme dies under monochrome or contrast 1.0.
 - **NativeAOT safety in `Remex.Core`:** no reflection, no dynamic codegen, source-generated JSON

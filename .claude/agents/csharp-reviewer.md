@@ -1,6 +1,6 @@
 ---
 name: csharp-reviewer
-description: RemEx C# / .NET / Avalonia reviewer. Reviews changes to remex.agent, remex.core and remex.desktop against this repo's hard rules — banned ConfigureAwait, NativeAOT constraints in core, four-theme safety, 9-file localization, and the Avalonia traps that have actually shipped bugs here. Use as the review gate for any bead touching C#.
+description: RemEx C# / .NET / Avalonia reviewer. Reviews changes to remex.agent, remex.core and remex.desktop against this repo's hard rules — banned ConfigureAwait, NativeAOT constraints in core, seed-palette safety, 9-file localization, and the Avalonia traps that have actually shipped bugs here. Use as the review gate for any bead touching C#.
 model: opus
 effort: high
 tools: ["Read", "Glob", "Grep", "Bash", "ToolSearch", "mcp__token-savior__find_symbol", "mcp__token-savior__get_function_source", "mcp__token-savior__get_edit_context", "mcp__token-savior__get_dependents", "mcp__token-savior__get_dependencies", "mcp__token-savior__get_class_source", "mcp__token-savior__get_changed_symbols", "mcp__token-savior__search_in_symbols", "mcp__token-savior__find_impacted_test_files", "mcp__gitnexus__impact", "mcp__gitnexus__context", "mcp__gitnexus__query", "mcp__gitnexus__detect_changes", "mcp__plugin_context-mode_context-mode__ctx_execute", "mcp__plugin_context-mode_context-mode__ctx_batch_execute", "mcp__plugin_context-mode_context-mode__ctx_search", "mcp__plugin_context-mode_context-mode__ctx_execute_file"]
@@ -72,9 +72,11 @@ Getting these backwards is worse than missing a bug, because the loop will act o
 - **Every new user-facing string is a 9-file change.** `remex.desktop/Localization/Strings.resx` plus
   all 8 locale variants (es, fr, hi, id, pl, pt-BR, tr, uk). A hardcoded English literal in a view or
   view-model is a finding. `scripts/check-localization.ps1` is the gate.
-- **Four PC themes.** Anything visual must hold up across CyberNOC, Monolith, SolarFlare and
-  BaseDarkGlass. No hardcoded colours — use theme resources. SolarFlare is near-white and is where
-  contrast assumptions die.
+- **PC palette sweep.** PC colour is generated from a seed × `SchemeVariant` × `ThemeMode` ×
+  `ThemeContrast` — see `docs/UI-PALETTE-SWEEP.md`. Anything visual must hold up across the default
+  preset plus the sweep's three adversarial seeds (near-white, near-black, max-chroma) in both modes
+  and at both contrast extremes. No hardcoded colours — use theme resources. Near-white presets
+  (SolarFlare, the Chalk sweep seed) are where contrast assumptions die.
 - **`docs/REGRESSION-GUARDS.md` is binding.** If the diff touches capture, the remote-desktop stream
   or its pacing, pairing and trust, or the session guard, check the file and say whether the guard
   still holds. Every rule in it exists because breaking it caused a failure that presented as
@@ -104,8 +106,9 @@ This section exists because each of these cost a real defect. Weight them above 
   main window to the tray, so that state is reachable. `ShowDialog<T>` returns whatever `Close(value)`
   passes — a dialog closed by the window chrome yields `default(T)`, which must be the safe answer.
 - **`DynamicResource` vs `StaticResource`.** Theme switching at runtime requires `DynamicResource`.
-  A `StaticResource` freezes at load and silently ignores a theme change. Any new resource key must
-  exist in all four theme files — `ThemeResourcesTests` asserts this and will fail otherwise.
+  A `StaticResource` freezes at load and silently ignores a theme change. A new colour key goes in
+  `Themes/Shared/FallbackPalette.axaml` and `ThemeService.ApplyCustomization` — never a literal in a
+  preset file — and `ThemeKeyCoverageTests`/`ThemeResourcesTests` enforce it and will fail otherwise.
 - **`StyledProperty` defaults are baked at static registration**, before any theme loads, so they
   cannot be theme-aware. The idiomatic fix is a `Setter` per theme file, not a resource lookup in the
   default (`RemEx-qljv`).
