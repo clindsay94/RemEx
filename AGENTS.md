@@ -160,7 +160,7 @@ Do not apply one platform's axes to the other.
   contract. `ThemeService.ApplyCustomization` (`remex.desktop/Services/ThemeService.cs`) writes every
   one of them from the generated M3 palette on each customization pass, `ThemeKeyCoverageTests` fails
   if any key in a theme file stops being covered by it, and roughly 800 `DynamicResource` sites across
-  the 32 views bind to them. Never add a hex literal or a new resource key straight into a
+  the 24 views bind to them. Never add a hex literal or a new resource key straight into a
   `Themes/*.axaml` preset file — the one fallback is `Themes/Shared/FallbackPalette.axaml`; a new
   colour need goes into `FallbackPalette.axaml` and `ThemeService.ApplyCustomization`, with the
   coverage tests enforcing it. **None of these presets exist on Android**, named or otherwise.

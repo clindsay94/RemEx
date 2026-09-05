@@ -526,7 +526,7 @@ to an activated selector, here the absence lost to a plain default.
 
 ### `RenderTransform` is not a keyframe-animatable property (INVARIANT)
 
-`remex.desktop/Views/HomeView.axaml:58-76` — the six staggered entrance keyframe `Style.Animations`
+`remex.desktop/Views/HomeView.axaml:53-137` — the six staggered entrance keyframe `Style.Animations`
 blocks animate `TranslateTransform.Y`, never `RenderTransform` itself.
 
 Avalonia has no keyframe animator registered for `RenderTransform` (a `TransformOperations` value).
@@ -534,7 +534,7 @@ The first cut of this bead animated it directly and crashed inside `Animation.In
 the very first launch of `HomeView` — a P0 (RemEx-qolhg): the app never reached a usable window, with
 no exception surfaced anywhere useful. `TranslateTransform.Y` is a plain `double` property with a
 registered animator, and keyframes on it produce the identical visual slide.
-`HomeViewEntranceTests.cs:30-34` pins the `nth-child` style count against the actual parsed XAML (so a
+`HomeViewEntranceTests.cs:33-61` pins the `nth-child` style count against the actual parsed XAML (so a
 section added to or removed from `DashboardSections` forces a deliberate edit here) and documents the
 crash so nobody re-tries the `RenderTransform` shortcut.
 
@@ -559,8 +559,7 @@ added ABOVE this block, never after it.
 
 ### Theme switch removes only the tracked base-theme dictionary, never the whole `Themes/` folder
 
-`remex.desktop/Services/ThemeService.cs:600-632` (`ThemeDictionaryPrefix`, `BaseThemeSources`,
-`SwapBaseTheme`) — RemEx-gcqw5.
+`remex.desktop/Services/ThemeService.cs:600-660` (`ThemeDictionaryPrefix`, `BaseThemeSources`, `SwapBaseTheme`) — RemEx-gcqw5.
 
 A theme switch may remove exactly the base-theme file it is replacing (matched against the literal set
 of base-theme URIs), never anything else living under `Themes/` — that folder also holds

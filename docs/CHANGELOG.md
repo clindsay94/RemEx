@@ -657,6 +657,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- The written rules caught up with the seed palette: the PC verification axis in `AGENTS.md` is the
+  palette sweep, `docs/REGRESSION-GUARDS.md` gained eight guards for failures fixed the hard way
+  this week (atomic profile saves, the hot-reload stop that relaunches the Release host, the
+  closed-at-launch drawer, overlay focus, ripple timing, keyframe targets, transition ordering,
+  theme-swap scope), and README, the reviewer agent and the loop procedures stop calling the
+  presets themes. The legacy palette role keys are documented as the permanent bridge. (RemEx-bf4hu)
 - UI verification no longer means "check all four themes": `scripts/ui-palette-sweep.ps1` drives
   the real profile file through a default plus three adversarial seeds, light and dark, two
   contrast levels, and captures every screen per cell through a new `--view <Name>` launch

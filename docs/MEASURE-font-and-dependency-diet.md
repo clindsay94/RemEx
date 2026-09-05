@@ -83,7 +83,8 @@ change is **a visual diff on every user's existing customization** — the app w
 itself in slightly different colours after an update, with no changelog entry a user could connect to
 what they are seeing.
 
-If it is ever upgraded, it needs a before/after palette comparison across the four themes as part of
+If it is ever upgraded, it needs a before/after comparison across the palette sweep
+(`docs/UI-PALETTE-SWEEP.md`: default preset plus three adversarial seeds, light and dark) as part of
 the change, not as a follow-up. That is the real cost, and it is much larger than the one-file blast
 radius suggests.
 

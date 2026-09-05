@@ -141,10 +141,13 @@ with `--defer +14d` and a note; do NOT attempt them:
   file a bead labelled `i18n` to translate it properly. When REMOVING keys (orphan-purge beads),
   remove from ALL 9 files so key-set parity survives. Do not be the iteration that breaks parity.
 - **Theme safety — per platform, do not mix the axes.**
-  - PC (`remex.desktop`): four named themes — CyberNOC, Monolith, SolarFlare, BaseDarkGlass. Use
-    theme resources/tokens, never hardcoded colors. You cannot visually verify themes in this loop;
-    correctness = every color you touch resolves through a theme resource that exists in all four.
-  - Android: the four PC themes DO NOT EXIST here. Real axes per `ui/theme/Theme.kt`: light/dark ×
+  - PC (`remex.desktop`): one seed-driven palette (seed x scheme variant x light/dark/system x
+    contrast); the old theme names survive only as presets in `SeedPresetCatalog`. Use the palette
+    role keys (`TextPrimaryBrush` and friends, written by `ThemeService.ApplyCustomization`), never
+    hardcoded colors. You cannot visually verify palettes in this loop; correctness = every color you
+    touch resolves through a role key that `ThemeKeyCoverageTests` pins, and the eyes-on axis is the
+    palette sweep (`docs/UI-PALETTE-SWEEP.md`).
+  - Android: named PC themes DO NOT EXIST here. Real axes per `ui/theme/Theme.kt`: light/dark ×
     scheme source (custom seed / dynamic color API 31+ / static fallback) × themeStyle (7 values
     incl. monochrome) × themeContrast (0.0–1.0). Use color-scheme roles, never literals — a literal
     that looks fine on the default scheme fails under monochrome or contrast 1.0.
