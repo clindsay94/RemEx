@@ -1,8 +1,10 @@
 # Measurement: cold-start time and memory, before vs after the Material work (RemEx-gtwk8)
 
-**Status:** automated part done. Numbers recorded below. The Run 1 memory regression is now
-**confirmed** by a reversed-order, 12-launch, steady-state Run 2 (see [2b](#2b-run-2---confirmation-pass-remex-3sju52)) —
-RemEx-3sju5.2 stays open for the fix. Stream frame pacing and dashboard
+**Status:** automated part done. Numbers recorded below. A reversed-order, 12-launch, steady-state
+Run 2 (see [2b](#2b-run-2---confirmation-pass-remex-3sju52)) found the Run 1 memory regression
+**likely but not yet confirmed** — a session-dependent confound has not been ruled out; see 2b for
+the hypothesis, the protocol-compatibility check, and the next run needed to settle it.
+RemEx-3sju5.2 stays open. Stream frame pacing and dashboard
 frame cost stay a manual pass on Connor's device (RemEx-bmuji) — see [Manual](#manual) below.
 
 ---
@@ -100,9 +102,18 @@ Per the Gate's confirmation protocol (RemEx-3sju5.2 notes, 2026-09-04): reverse 
 raise `-Launches` to 12 (11 warm samples instead of 6, so "Warm P90" is an honest percentile
 rather than a max), add a second, later memory sample at steady state, and record established TCP
 connections per sample as a live-session proxy. `scripts/perf-baseline.ps1` now takes both samples
-per launch (`-SettleSeconds 8`, `-SteadySeconds 20`) and records
-`Get-NetTCPConnection -OwningProcess <pid> -State Established` (count, or `-1` if the query itself
-errors) alongside each one.
+per launch (`-SettleSeconds 8`, `-SteadySeconds 20`).
+
+**Correction (2026-09-04, post-Run-2 review):** the connection count as originally implemented
+called `Get-NetTCPConnection`, which - like `Get-ScheduledTask` - goes through the NetTCPIP
+module's CIM proxy, and this script already loads `UIAutomationClient`/`UIAutomationTypes`
+in-process for the window poll. That combination breaks CIM for the rest of the process's life
+(bd memory `uiautomation-breaks-scheduledtasks-in-process`), so **every "-1" recorded below means
+the query failed, not that zero connections were established.** The table below is left as
+originally recorded (it is what the run actually produced), but nothing in it should be read as
+"no phone was connected." The script now shells out to `netstat.exe -ano -p TCP` instead (an
+external process, no CIM involved) and reports an unresolvable count as `unknown`, never `-1`, so
+a future run's connection column can actually be trusted.
 
 ```
 pwsh scripts/perf-baseline.ps1 -Refs @('HEAD','main') -Launches 12
@@ -117,58 +128,108 @@ caveats. Raw data: `%TEMP%\remex-ui\perf-20260904-195152\perf-HEAD.json` / `perf
 
 | Ref | Commit | Cold Start (ms) | Warm Median (ms) | Warm P90 (ms) | Working Set @Settle (MB) | Private @Settle (MB) | Handles @Settle | Conn @Settle | Working Set @Steady (MB) | Private @Steady (MB) | Handles @Steady | Conn @Steady |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| HEAD | eac94df | 2216 | 1513 | 1646 | 395.2 | 511.0 | 1665 | -1 | 398.2 | 490.7 | 1687 | -1 |
-| main | b528ff1 | 3964 | 2191 | 2413 | 331.7 | 312.2 | 1582 | -1 | 331.8 | 311.8 | 1567 | -1 |
+| HEAD | eac94df | 2216 | 1513 | 1646 | 395.2 | 511.0 | 1665 | -1 (unknown, see correction above) | 398.2 | 490.7 | 1687 | -1 (unknown) |
+| main | b528ff1 | 3964 | 2191 | 2413 | 331.7 | 312.2 | 1582 | -1 (unknown) | 331.8 | 311.8 | 1567 | -1 (unknown) |
 
 11 warm samples per ref (`-Launches 12`) clears the "10 or more" bar from
 `scripts/perf-baseline.ps1`'s label switch, so the header reads **"Warm P90"**, not "warm max" -
 this is a real 90th percentile this time, not the slowest-of-six max Run 1's table showed.
 
-**Verdict against the same thresholds (memory 10%, time 15%): CONFIRMED, and worse than Run 1
-measured.**
+**Verdict against the same thresholds (memory 10%, time 15%): LIKELY, NOT YET CONFIRMED.** The
+direction (HEAD's private bytes higher than main's) held across two independent runs, but the
+*size* of the gap is not stable in a way the known code differences explain, and connection state
+during both runs is genuinely unknown (see correction above) rather than "no session" as an
+earlier draft of this section incorrectly stated - so a session-dependent confound has not been
+ruled out.
 
-- **Private bytes (the trustworthy number - immune to file-cache order): +63.7% at settle
-  (312.2 -> 511.0 MB), +57.4% at steady state (311.8 -> 490.7 MB).** Both far exceed the 10%
-  threshold, and both exceed Run 1's +22.9% by a wide margin. Confirmed regression.
-- **Working set (soft - shared image pages, can include uncollected gen0/gen1): +19.1% at settle
-  (331.7 -> 395.2 MB), +20.0% at steady state (331.8 -> 398.2 MB).** Also outside the 10% band and
-  corroborates private bytes' direction, though its own magnitude is not conclusive on its own
-  (Run 1's caveat about it being soft still applies).
-- **Handles: +5.2% at settle (1582 -> 1665), +7.7% at steady state (1567 -> 1687).** Both within
-  the 10% noise threshold, consistent with Run 1's +6.2% - handle count is not part of the
-  regression.
-- **Steady-state (20 s) does not show the growth resolving.** Working set and private both stay
-  within a few MB of the 8 s settle sample for both refs (HEAD: 395.2->398.2 MB set, 511.0->490.7
-  MB private; main: 331.7->331.8 MB set, 312.2->311.8 MB private) - private even drops slightly
-  by steady state on both refs. This rules out "it's just uncollected garbage that clears up
-  shortly after launch": the gap is retained footprint, not a transient GC lag.
-- **Connections: -1 at every sample, both refs, both settle and steady.** `Get-NetTCPConnection`
-  with `-State Established` throws a non-terminating "no matching connection" error (converted to
-  terminating by `-ErrorAction Stop`, caught, returned as `-1`) when there are none - no phone was
-  paired/connected during this automated run, on either ref, at either sample. Because the value
-  is identical across both refs and both samples, connection state does **not** invalidate this
-  comparison (the caveat in Run 1 was that a *differing* count would); it just means this run
-  cannot yet be used to price an active-session cost.
-- **Launch time is now confirmed as a real improvement, not a cache-order artifact.** Run 1
-  measured `main` first / `HEAD` second (`HEAD` benefited from a warm file cache); this run
-  reverses that (`HEAD` first / `main` second, so `main` gets the cache advantage this time) and
-  `HEAD` is still faster in both directions: cold -44.1% (3964 -> 2216 ms), warm median -30.9%
-  (2191 -> 1513 ms), warm P90 -31.8% (2413 -> 1646 ms). This closes the open question from Run 1's
-  caveats; the launch-time win belongs to `RemEx-gtwk8`, already closed, not this bead.
+- **Private bytes rose in both runs, but by very different amounts, all on HEAD's side.** Run 1:
+  main 302.5 -> HEAD (34341bb) 371.7 MB, +22.9%. Run 2: main 312.2 -> HEAD (eac94df) 511.0 MB,
+  +63.7% at settle. `main`'s own number barely moved between runs (302.5 -> 312.2 MB, +3.2%, inside
+  noise) while `HEAD`'s moved by +139.3 MB between two `HEAD` commits (`34341bb` -> `eac94df`) that
+  add UI-only work (palette export/import, splash crossfade, tutorial Material vocabulary) with no
+  obvious reason to cost that much resident private memory on their own. A swing that large,
+  concentrated entirely on one side, with no code difference of matching size, is exactly the
+  signature of a confound the two runs didn't hold constant - not proof the code itself grew by
+  139 MB.
+- **Hypothesis: the paired phone connects to `HEAD` but not to the pre-Material `main` build**
+  (a protocol or version mismatch), so `HEAD`'s runs were measured with a live session and `main`'s
+  without, and the live-session cost is what's actually being measured as "the Material
+  regression." Checked from the code, read-only:
+  - `git diff main..HEAD --stat -- remex.core` shows a large diff (50 files, +5547/-325) across
+    months of unrelated feature work, so a version mismatch is plausible on its face.
+  - `git grep -niE "ProtocolVersion|protocol_version|MinSupported"` and a direct read of
+    `remex.core/Messages/ProtocolVersionPolicy.cs` on both refs shows **`Minimum = 2`,
+    `Current = 3`, `BinaryFileTransferMinimum = 3` are identical on `main` and `HEAD`.** Every
+    other RemexMessage.cs field added between the two refs is commented as "additive and optional,
+    no protocolVersion bump" (checked by reading the surrounding diff context, not just the grep
+    hits). **Conclusion: `main` and `HEAD` advertise and accept the same protocol-version range, so
+    they should be equally able to pair with and talk to the same Android app.** The specific
+    "protocol/version mismatch" mechanism is not supported by the code. If a session-dependent
+    asymmetry is real, something other than the protocol-version gate explains why one side had a
+    session and the other didn't (e.g. simply which build happened to be running when Connor's
+    phone last reconnected, independent of any incompatibility) - or the private-bytes gap is not
+    session-related at all and the working hypothesis is wrong.
+  - **Current connection state, checked right now (read-only, via a fresh `pwsh` child running
+    `netstat.exe -ano -p TCP`, no relaunch):** the installed host (currently `HEAD`, redeployed by
+    Run 2's own `finally` block and already running) **does have one ESTABLISHED connection**
+    (`10.0.0.3:5005 <-> 10.0.0.2:51632`). This confirms a phone does routinely connect to a `HEAD`
+    build in normal use; it says nothing about whether a session was up during either run's actual
+    8-20 s measurement windows, since `Measure-RemexLaunch` calls `Stop-RemexHost` before every
+    launch and a phone's own reconnect timing is unknown relative to the settle/steady samples.
+- **Working set (soft): +19.1% at settle, +20.0% at steady state**, corroborating private bytes'
+  direction but not conclusive alone (Run 1's caveat about it being soft still applies).
+- **Handles: +5.2% at settle, +7.7% at steady state.** Within the 10% noise threshold both runs -
+  handle count is not part of whatever this is.
+- **Steady-state (20 s) does not show the growth resolving** - working set and private both stay
+  within a few MB of the 8 s settle sample for both refs, ruling out "it's just uncollected garbage
+  that clears up shortly after launch." Whatever is holding the memory, it isn't a transient GC lag
+  - it's either retained code-driven footprint or a retained session artifact.
+- **Launch time is confirmed as a real improvement, independent of this verdict.** Run 1 measured
+  `main` first / `HEAD` second (cache advantage to `HEAD`); this run reverses that (`HEAD` first /
+  `main` second, cache advantage to `main` instead) and `HEAD` is still faster in both directions:
+  cold -44.1%, warm median -30.9%, warm P90 -31.8%. This belongs to `RemEx-gtwk8`, already closed,
+  not this bead.
 
-**First suspects for the private-bytes growth, and how to profile them** (not fixed in this bead):
-Material.Avalonia's styles/`ControlTheme` resource dictionary is loaded once at startup and is
-large enough by itself to plausibly account for tens of MB, but the growth from Run 1 (+69 MB
-private) to Run 2 (+199 MB private) tracks the extra Material-vocabulary work landed in between -
-the splash-to-shell crossfade and its assets, the tutorial's Material rewrite, and the
-palette AXAML/JSON export/import feature (RemEx-a7uzb) which can hold parsed palette/theme data
-resident. The animated dashboard background/aurora mesh and its ripple/elevation visuals remain a
-suspect too, especially since the regression does not resolve by the 20 s steady sample. To
-profile: take a `dotnet-gcdump` or ETW heap snapshot of the installed `Remex.Agent.exe` at the 20 s
-mark on both refs and diff retained object graphs by type - resource dictionaries and any bitmap
-brushes should show up as large, distinct allocations if they are the cause; if the dump instead
-shows many small, similar-sized objects it points at the palette import/export data structures or
-the animated background's per-frame state instead.
+**Suspects for the private-bytes growth, in priority order, and how to profile them** (not fixed
+in this bead). Session-dependent causes come first because the run-to-run instability above points
+at something that isn't simply "more code loaded":
+
+1. **A live phone session's per-connection cost** - stream frame buffers, the telemetry
+   broadcaster, decoder-side state, and any per-connection queues are all allocated only once a
+   phone is connected, and none of that is exercised by a cold/warm launch with no phone attached.
+   If `main` happened to run its 12 launches with no session and `HEAD` happened to pick one up
+   partway through (even on a few of the 11 warm launches), that alone could produce an unstable,
+   HEAD-concentrated private-bytes swing of this shape. Test by running the phone deliberately
+   connected and idle for one ref and disconnected for another (see next run below) and diffing.
+2. **Material.Avalonia's styles/`ControlTheme` resource dictionary**, loaded once at startup - a
+   real, code-driven cost, but a fixed one that should be stable run-to-run, which the +69 MB (Run
+   1) vs +139 MB (Run 2, on top of Run 1's HEAD number) delta argues against being the whole story.
+3. **The animated dashboard background/aurora mesh and ripple/elevation visuals** (RemEx-bmuji) -
+   plausible if it holds more live allocations the longer the shell has been open, though the flat
+   settle-to-steady numbers argue against ongoing growth specifically.
+4. **The palette AXAML/JSON export/import feature (RemEx-a7uzb)** and other UI-only work landed
+   between the two `HEAD` commits - only relevant if it holds parsed palette/theme data resident
+   even when the feature isn't actively used.
+
+To profile #1 specifically: take a `dotnet-gcdump` or ETW heap snapshot of the installed
+`Remex.Agent.exe` at the 20 s mark with a phone connected and idle vs. disconnected, on the same
+`HEAD` build, and diff retained object graphs by type - stream/decoder/telemetry objects appearing
+only in the connected snapshot would confirm #1 before touching Material at all. For #2-4, snapshot
+both refs with connection state pinned identical (see next run) and diff by type; resource
+dictionaries and bitmap brushes point at #2, many small similar-sized objects point at #3 or #4.
+
+**Next run (not executed in this bead - needs Connor's go-ahead before relaunching the host
+again):**
+
+```
+pwsh scripts/perf-baseline.ps1 -Refs @('main','HEAD') -Launches 12
+```
+
+run with the phone paired and left idle on the dashboard for the whole run (so the now-fixed
+connection count is non-zero and roughly equal across every launch of both refs, ruling the
+confound in or out directly instead of guessing from a `-1`/`unknown` column), **plus** one
+`HEAD`-only run with the phone deliberately disconnected throughout, so the connected-vs-not
+delta can be priced on its own before attributing anything to Material.
 
 ## 3. Machine context
 

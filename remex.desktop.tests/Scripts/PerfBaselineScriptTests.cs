@@ -131,13 +131,29 @@ public class PerfBaselineScriptTests
     }
 
     [Fact]
-    public void RecordsEstablishedTcpConnectionsPerSample()
+    public void RecordsEstablishedTcpConnectionsPerSampleWithoutCim()
     {
         var text = ScriptText();
-        text.Should().MatchRegex(@"Get-NetTCPConnection\s+-OwningProcess\s+\$ProcessId\s+-State\s+Established",
-            "each sample must record established TCP connections owned by the process as a proxy for a live phone session");
-        text.Should().Contain("return -1",
-            "a failure to query connections must degrade to a -1 sentinel, not fail the whole run");
+        text.Should().NotMatchRegex(@"[^#\r\n]*Get-NetTCPConnection\s+-OwningProcess",
+            "Get-NetTCPConnection goes through the NetTCPIP module's CIM proxy - the same native loader that " +
+            "UIAutomationClient/UIAutomationTypes permanently breaks in-process (bd memory uiautomation-breaks-scheduledtasks-in-process). " +
+            "Connection counting must not invoke it directly from this process (mentioning it in a comment, to explain why not, is fine).");
+        text.Should().MatchRegex(@"netstat\.exe\s+-ano\s+-p\s+TCP",
+            "connection counting must shell out to netstat.exe (an external process, no CIM involved) rather than an in-process CIM cmdlet");
+        text.Should().Contain("ESTABLISHED",
+            "the netstat output must be filtered to established connections for the target process");
+    }
+
+    [Fact]
+    public void UnknownConnectionCountIsNullNotASentinelNumber()
+    {
+        var text = ScriptText();
+        text.Should().NotMatch("*return -1*",
+            "a failure to determine the connection count must never be represented as -1 - a reader could mistake that for a real (impossible) count or for zero");
+        text.Should().MatchRegex(@"return\s+\$null",
+            "a failure to query connections must return $null so it is visibly 'unknown', not folded into a number");
+        text.Should().Contain("'unknown'",
+            "the summary/log output must render an unknown connection count as the word 'unknown', not a blank or a numeric sentinel");
     }
 
     [Fact]

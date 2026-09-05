@@ -151,16 +151,40 @@ function Wait-RemexWindow {
 
 # Established TCP connections owned by $ProcessId, as a proxy for "a phone session is up" (the app
 # auto-connects to the paired phone on every launch, and a live session in one ref's sample and not
-# the other's can move tens of megabytes - see docs/PERF-BASELINE.md Caveats). Read-only, and any
-# failure (process gone, permissions, no matching rows) degrades to -1 rather than throwing, since
-# this is a diagnostic annotation on a memory sample, not something worth failing the run over.
+# the other's can move tens of megabytes - see docs/PERF-BASELINE.md Caveats). Deliberately does
+# NOT call Get-NetTCPConnection: that cmdlet goes through the NetTCPIP module's CIM (WMI) proxy,
+# the exact same native loader that Get-ScheduledTask uses, and this script already loads
+# UIAutomationClient/UIAutomationTypes in-process for the window poll above - the same combination
+# that permanently breaks CIM for the rest of the process's life (bd memory
+# uiautomation-breaks-scheduledtasks-in-process; see also Invoke-UpdateLocalInstall's comment).
+# netstat.exe is an external process with no CIM involved at all, so it sidesteps the conflict
+# entirely instead of paying for a fresh pwsh.exe child on every sample. Returns $null - not a
+# sentinel count like -1 - when the query itself could not be answered, so a genuine "zero
+# established connections" is never confused with "the count is unknown".
 function Get-EstablishedConnectionCount {
     param([int]$ProcessId)
     try {
-        return @(Get-NetTCPConnection -OwningProcess $ProcessId -State Established -ErrorAction Stop).Count
+        $lines = & netstat.exe -ano -p TCP 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $lines) { return $null }
+        $count = 0
+        foreach ($line in $lines) {
+            $fields = ($line.Trim() -split '\s+')
+            if ($fields.Count -ge 5 -and $fields[0] -eq 'TCP' -and $fields[3] -eq 'ESTABLISHED' -and $fields[4] -eq "$ProcessId") {
+                $count++
+            }
+        }
+        return $count
     } catch {
-        return -1
+        return $null
     }
+}
+
+# Renders a connection count for display: an actual count if we have one, otherwise "unknown"
+# rather than a blank or a misleading 0/-1.
+function Format-ConnectionCount {
+    param($Value)
+    if ($null -eq $Value) { return 'unknown' }
+    return "$Value"
 }
 
 # One full launch/measure/stop cycle. The caller decides whether this is the cold sample (index 0)
@@ -209,6 +233,20 @@ function Get-Percentile {
     $idx = [Math]::Ceiling($Percentile / 100.0 * $sorted.Count) - 1
     $idx = [Math]::Max(0, [Math]::Min($sorted.Count - 1, [int]$idx))
     return $sorted[$idx]
+}
+
+# Median of a set of connection-count samples, any of which may be $null (the query could not be
+# answered for that sample - see Get-EstablishedConnectionCount). [double]$null silently becomes
+# 0 in PowerShell, which is exactly the "unknown read as zero" bug this function exists to avoid:
+# if ANY sample in the set is unknown, the whole median is reported as 'unknown' rather than
+# quietly averaging in a false zero.
+function Get-ConnectionMedian {
+    param([object[]]$Values)
+    foreach ($v in $Values) {
+        if ($null -eq $v) { return 'unknown' }
+    }
+    $doubles = @($Values | ForEach-Object { [double]$_ })
+    return [string](Get-Percentile $doubles 50)
 }
 
 function ConvertTo-SafeFileName {
@@ -274,7 +312,8 @@ try {
         for ($i = 1; $i -le $Launches; $i++) {
             $sample = Measure-RemexLaunch -SettleSeconds $SettleSeconds -SteadySeconds $SteadySeconds
             Write-Host ("  launch {0}/{1}: {2} ms to window, {3} MB working set (settle, {4} conn), {5} MB working set (steady, {6} conn)" -f `
-                    $i, $Launches, $sample.TimeToWindowMs, $sample.WorkingSetMB, $sample.Connections, $sample.Steady.WorkingSetMB, $sample.Steady.Connections) -ForegroundColor DarkGray
+                    $i, $Launches, $sample.TimeToWindowMs, $sample.WorkingSetMB, (Format-ConnectionCount $sample.Connections), `
+                    $sample.Steady.WorkingSetMB, (Format-ConnectionCount $sample.Steady.Connections)) -ForegroundColor DarkGray
             $samples += $sample
         }
 
@@ -284,11 +323,11 @@ try {
         $warmWorkingSet = @($warm | ForEach-Object { [double]$_.WorkingSetMB })
         $warmPrivate = @($warm | ForEach-Object { [double]$_.PrivateMB })
         $warmHandles = @($warm | ForEach-Object { [double]$_.Handles })
-        $warmConnections = @($warm | ForEach-Object { [double]$_.Connections })
+        $warmConnections = @($warm | ForEach-Object { $_.Connections })
         $warmSteadyWorkingSet = @($warm | ForEach-Object { [double]$_.Steady.WorkingSetMB })
         $warmSteadyPrivate = @($warm | ForEach-Object { [double]$_.Steady.PrivateMB })
         $warmSteadyHandles = @($warm | ForEach-Object { [double]$_.Steady.Handles })
-        $warmSteadyConnections = @($warm | ForEach-Object { [double]$_.Steady.Connections })
+        $warmSteadyConnections = @($warm | ForEach-Object { $_.Steady.Connections })
 
         # With the default 7 launches there are only 6 warm samples, and a "90th percentile" of 6
         # values is really just the max - see docs/PERF-BASELINE.md Caveats. Label the column
@@ -306,11 +345,11 @@ try {
             WorkingSetMedianMB        = Get-Percentile $warmWorkingSet 50
             PrivateMedianMB           = Get-Percentile $warmPrivate 50
             HandlesMedian             = Get-Percentile $warmHandles 50
-            ConnectionsMedian         = Get-Percentile $warmConnections 50
+            ConnectionsMedian         = Get-ConnectionMedian $warmConnections
             SteadyWorkingSetMedianMB  = Get-Percentile $warmSteadyWorkingSet 50
             SteadyPrivateMedianMB     = Get-Percentile $warmSteadyPrivate 50
             SteadyHandlesMedian       = Get-Percentile $warmSteadyHandles 50
-            SteadyConnectionsMedian   = Get-Percentile $warmSteadyConnections 50
+            SteadyConnectionsMedian   = Get-ConnectionMedian $warmSteadyConnections
             Samples                   = $samples
         }
         $results.Add($refResult)
