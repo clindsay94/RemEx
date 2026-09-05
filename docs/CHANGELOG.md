@@ -657,6 +657,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- `scripts/perf-baseline.ps1` measures cold start, warm launches and memory for any two git refs by
+  deploying each through the normal local install and relaunching the installed host, and
+  `docs/PERF-BASELINE.md` records the first run: launch time improved against the pre-Material
+  build, memory grew by roughly a fifth, and that growth has its own bead. (RemEx-gtwk8)
 - The written rules caught up with the seed palette: the PC verification axis in `AGENTS.md` is the
   palette sweep, `docs/REGRESSION-GUARDS.md` gained eight guards for failures fixed the hard way
   this week (atomic profile saves, the hot-reload stop that relaunches the Release host, the

@@ -75,6 +75,23 @@ memory within 10% is noise. Anything outside that is a real change.
   resource dictionary loaded at startup, plus the dashboard's animated background/elevation/
   staggered entrance (RemEx-bmuji) holding more allocations live once the shell is up.
 
+### Caveats on reading the table
+
+- **Warm P90 is the slowest warm launch, not a percentile.** With the default seven launches
+  there are six warm samples, and the P90 index lands on the last one. Treat the column as
+  "warm max" until a run uses `-Launches 12` or more.
+- **Memory is sampled eight seconds after the window appears, with no forced collection and no
+  steady-state check.** The Material build runs an animated dashboard background that the
+  pre-Material build does not, so part of the working-set growth can be uncollected gen0/gen1
+  rather than retained footprint. Private bytes is the number to trust; working set is soft.
+- **Connection state was not recorded.** The app auto-connects to the paired phone on every
+  launch, so a live session in one ref's run and not the other's can move tens of megabytes.
+  The next run should record whether a session was up at each sample.
+- **Order.** `main` ran first and `HEAD` second, so `HEAD` had a warmer file cache; this flatters
+  the launch times and can touch working set through shared image pages, but not private bytes.
+  A reverse-order run (`-Refs @('HEAD','main')`) is cheap and should precede any fix on
+  RemEx-3sju5.2.
+
 ## 3. Machine context
 
 - CPU: AMD Ryzen 7 9800X3D (8 cores / 16 logical)
