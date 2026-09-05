@@ -31,6 +31,7 @@ public static class StartupViewArgument
     /// <summary>
     /// Every name <c>--view</c> accepts, in <c>Ctrl+D1..D7</c> / <c>Ctrl+OemComma</c> / (no
     /// binding) order, mapped to the <see cref="ShellViewModel"/> navigation call that opens it.
+    /// Personalize opens the settings side sheet.
     /// </summary>
     public static readonly IReadOnlyDictionary<string, Action<ShellViewModel>> Navigators =
         new Dictionary<string, Action<ShellViewModel>>(StringComparer.OrdinalIgnoreCase)
@@ -44,6 +45,7 @@ public static class StartupViewArgument
             ["Logs"] = vm => vm.NavigateToDiagnosticLogs(),
             ["Settings"] = vm => vm.NavigateToSettings(),
             ["About"] = vm => vm.NavigateToAbout(),
+            ["Personalize"] = vm => vm.NavigateToCustomization(),
         };
 
     /// <summary>

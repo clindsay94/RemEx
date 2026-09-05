@@ -3298,4 +3298,52 @@ You can change:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Palette name</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>COLOUR</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>MODE</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>LOOK</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>BEHAVIOUR</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>SAVED PALETTES</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Windows accent</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Wallpaper</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Current Windows accent colour</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Vibrancy</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strategy</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Sample card</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Cards and text will look like this.</value>
+  </data>
 </root>

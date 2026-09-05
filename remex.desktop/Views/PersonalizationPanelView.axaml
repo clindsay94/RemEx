@@ -7,197 +7,42 @@
     xmlns:controls="using:Remex.Desktop.Controls"
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
-    <UserControl.Styles>
-        <!-- The hover ring was literal White, which is invisible against SolarFlare's near-white
-             surface - so on that theme there was no hover feedback at all. TextPrimaryBrush is the
-             one key guaranteed to contrast with its own theme's background (RemEx-fy0a). -->
-    </UserControl.Styles>
-
     <StackPanel Spacing="20">
 
-        <!-- ═══ Section 1: Presets ═══ -->
-        <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-        <!-- THE GALLERY PREVIEWS ITSELF (RemEx-2gjwn). This was five hand-authored tiles whose
-             swatch colours were literals - #050505 and #00F3FF for CyberNOC, and so on - copied
-             from resource dictionaries that no longer exist. Every colour below now comes out of
-             DynamicColorGenerator run on the preset's own seed and variant, which is the same call
-             clicking the tile makes, so a tile cannot show a colour the app will not paint.
-
-             THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
-             Personalize drawer at roughly 300px. Five columns was already tight for four presets
-             and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
-             narrower than the word "Daybreak" at any legible size. Three gives ~92px and three
-             rows, which the drawer scrolls. -->
-        <ItemsControl ItemsSource="{Binding ThemePresets}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <UniformGrid Columns="3"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
-                    <Button Classes="tile" Margin="4" Padding="0"
-                            AutomationProperties.Name="{Binding DisplayName}"
-                            Classes.selected="{Binding IsSelected}"
-                            Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
-                            CommandParameter="{Binding Id}">
-                        <!-- The card is painted in the preset's OWN surface/outline, and the label in
-                             its OWN on-surface, so the tile doubles as the contrast check: a preset
-                             whose text is unreadable against its surface looks unreadable here. -->
-                        <Border Background="{Binding SurfaceBrush}"
-                                BorderBrush="{Binding OutlineBrush}"
-                                BorderThickness="1"
-                                CornerRadius="{Binding PreviewCornerRadius}"
-                                Padding="6,8">
-                            <StackPanel Spacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                    <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
-                                    <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
-                                    <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <TextBlock Text="{Binding DisplayName}" FontSize="10" FontWeight="Bold"
-                                           TextAlignment="Center" TextWrapping="Wrap"
-                                           Foreground="{Binding OnSurfaceBrush}"/>
-                            </StackPanel>
-                        </Border>
-                    </Button>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-
-        <!-- The person's own palettes (RemEx-ddynd, spec section 7): whole recipes, painted like the
-             presets above from their OWN seed and strategy. Presets have no delete; these do. -->
-        <StackPanel Spacing="8">
-            <TextBlock Text="{local:Localize Custom_UserPalettes}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-            <ItemsControl ItemsSource="{Binding SavedPalettes}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="3"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
-                        <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
-                            <StackPanel Spacing="6">
-                                <Button Classes="tile" Padding="0" Background="Transparent"
-                                        AutomationProperties.Name="{Binding Name}"
-                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
-                                        CommandParameter="{Binding}">
-                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                        <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
-                                        <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
-                                        <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" TextAlignment="Center"
-                                         Foreground="{Binding OnSurfaceBrush}"
-                                         AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
-                                <Button Classes="compact" Content="✕" HorizontalAlignment="Center" Padding="6,0"
-                                        ToolTip.Tip="{local:Localize Custom_DeletePalette}" AutomationProperties.Name="{local:Localize Custom_DeletePalette}"
-                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).DeleteSavedPaletteCommand}"
-                                        CommandParameter="{Binding}"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Text="{Binding NewPaletteName, Mode=TwoWay}" PlaceholderText="{local:Localize Custom_PaletteNamePlaceholder}" AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
-                <Button Grid.Column="1" Classes="compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
-            </Grid>
-        </StackPanel>
-
-        <!-- ═══ Section 2: Palette Studio ═══ -->
-        <!-- The whole palette comes out of one seed, so this is where the seed is chosen. The wheel
-             and the three sliders are two views of the same HCT triple: the wheel carries hue and
-             chroma, which are the axes a disc can show, and tone is the one it cannot. -->
+        <!-- ═══ Card 1: Colour (spec section 3) ═══ One seed, one path: pick where it comes from,
+             shape it, pick the mapping strategy, and see it previewed — Android's own flow, brought
+             to the desktop sheet. -->
         <material:Card Padding="20">
             <StackPanel Spacing="16">
-                <TextBlock Text="{local:Localize Custom_PaletteStudio}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                <TextBlock Text="{local:Localize Custom_SectionColor}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                <!-- STACKED, NOT SIDE BY SIDE, AND THAT IS A MEASUREMENT. This panel is hosted in the
-                     Personalize drawer, which is about 300px wide - a 176px wheel beside a column of
-                     labelled sliders left roughly 110px for the sliders, and the seed row's own
-                     label/box/button/swatch overflowed it outright, clipping the label to "See". The
-                     wheel is square and does not benefit from the extra width; the sliders do. -->
-                <controls:HctColorWheel Width="176" Height="176" HorizontalAlignment="Center"
-                    Hue="{Binding SeedHue, Mode=TwoWay}"
-                    Chroma="{Binding SeedChroma, Mode=TwoWay}"
-                    Tone="{Binding SeedTone, Mode=TwoWay}"
-                    IsDragging="{Binding IsSeedDragging, Mode=OneWayToSource}"
-                    SeedCommitted="OnSeedCommitted"
-                    AutomationProperties.Name="{local:Localize Custom_SeedWheel}"
-                    ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>
-
-                <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="360" SmallChange="1" LargeChange="15" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
-                        <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <TextBlock Text="{local:Localize Custom_SeedChroma}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="120" SmallChange="1" LargeChange="10" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedChroma}"/>
-                        <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <TextBlock Text="{local:Localize Custom_SeedTone}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding SeedTone}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedTone}"/>
-                        <TextBlock Grid.Column="2" Text="{Binding SeedTone, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </Grid>
-                </StackPanel>
-
-                <!-- The same hex machinery the "+" swatch flyout uses, so there is one validator and
-                     one writer rather than two that can disagree. The current seed is the
-                     placeholder, which keeps the box empty and unambiguous instead of fighting the
-                     sliders for ownership of its text. -->
-                <StackPanel Spacing="6">
-                    <TextBlock Text="{local:Localize Custom_SeedHex}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                        <TextBox Text="{Binding CustomAccentHex}" PlaceholderText="{Binding AccentColor}" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" AutomationProperties.Name="{local:Localize Custom_SeedHex}">
-                            <TextBox.KeyBindings>
-                                <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
-                            </TextBox.KeyBindings>
-                        </TextBox>
-                        <Button Grid.Column="1" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
-                        <Border Grid.Column="2" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
-                    </Grid>
-                </StackPanel>
-
-                <StackPanel Spacing="6" IsVisible="{Binding HasRecentSeeds}">
-                    <TextBlock Text="{local:Localize Custom_RecentSeeds}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
-                    <ItemsControl ItemsSource="{Binding CustomAccentColors}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <!-- WRAPPING, BECAUSE EIGHT SWATCHES DO NOT FIT ON ONE ROW HERE. A
-                                     horizontal StackPanel would push the last of them out past the
-                                     drawer's edge, where they are unreachable rather than merely ugly. -->
-                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                <Grid ColumnDefinitions="*,2*">
+                    <TextBlock Text="{local:Localize Custom_ColorSource}" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding ColorSource}" ItemsSource="{Binding AvailableColorSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_ColorSource}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_Source_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+
+                <!-- Windows accent: the raw registry colour, as read. -->
+                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsWindowsAccentSource}">
+                    <Border x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding SourceAccentHex}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding SourceAccentHex}" AutomationProperties.Name="{local:Localize Custom_CurrentWindowsAccent}"/>
+                    <TextBlock Text="{Binding SourceAccentHex}" VerticalAlignment="Center" FontFamily="Consolas, monospace" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
 
-                <!-- Seeds from this PC (RemEx-rdzet): the Windows accent, and the wallpaper's top
-                     colours — Android's Material You trick pointed at the desktop. The whole
-                     section is ABSENT off Windows rather than disabled: there is no Linux accent
-                     registry, so a disabled button would promise what no click could deliver. -->
-                <StackPanel Spacing="6" IsVisible="{Binding IsSystemSeedAvailable}">
-                    <TextBlock Text="{local:Localize Custom_SystemSeedHeader}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="{local:Localize Custom_MatchWindowsAccent}" Command="{Binding MatchWindowsAccentCommand}" FontSize="12" Padding="10,5" CornerRadius="6"/>
-                        <Button Content="{local:Localize Custom_SeedFromWallpaper}" Command="{Binding SeedFromWallpaperCommand}" FontSize="12" Padding="10,5" CornerRadius="6"/>
-                    </StackPanel>
-                    <!-- The runners-up. Extraction is a guess; the row is how a wrong first guess
-                         costs one click instead of an undo hunt. Same swatch template as the
-                         recent-seeds row above. -->
+                <!-- Wallpaper: the extracted candidates, best first. -->
+                <StackPanel Spacing="6" IsVisible="{Binding IsWallpaperSource}">
+                    <Button Classes="compact" Content="{local:Localize Custom_RefreshWallpaperSeeds}" Command="{Binding RefreshWallpaperSeedsCommand}" AutomationProperties.Name="{local:Localize Custom_RefreshWallpaperSeeds}"/>
                     <ItemsControl ItemsSource="{Binding WallpaperSeedCandidates}" IsVisible="{Binding HasWallpaperSeedCandidates}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -212,36 +57,62 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- Share palette (RemEx-a7uzb): copy the live palette as a compilable Avalonia
-                     ResourceDictionary, or export/import its recipe as JSON so a palette can travel
-                     to a future session or hand off to the phone. WrapPanel because the card is
-                     ~300px wide and three buttons do not fit one row. -->
-                <StackPanel Spacing="6">
-                    <TextBlock Text="{local:Localize Custom_SharePaletteHeader}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                    <WrapPanel ItemSpacing="8" LineSpacing="8">
-                        <Button Classes="compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
-                        <Button Classes="compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
-                        <Button Classes="compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
-                    </WrapPanel>
+                <!-- Custom: the wheel, hex box and recent-seeds row — the person picks all three axes. -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsCustomSource}">
+                    <controls:HctColorWheel Width="176" Height="176" HorizontalAlignment="Center"
+                        Hue="{Binding SeedHue, Mode=TwoWay}"
+                        Chroma="{Binding SeedChroma, Mode=TwoWay}"
+                        Tone="{Binding SeedTone, Mode=TwoWay}"
+                        IsDragging="{Binding IsSeedDragging, Mode=OneWayToSource}"
+                        SeedCommitted="OnSeedCommitted"
+                        AutomationProperties.Name="{local:Localize Custom_SeedWheel}"
+                        ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>
+
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="52"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="360" SmallChange="1" LargeChange="15" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{local:Localize Custom_SeedHex}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding CustomAccentHex}" PlaceholderText="{Binding AccentColor}" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" AutomationProperties.Name="{local:Localize Custom_SeedHex}">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
+                                </TextBox.KeyBindings>
+                            </TextBox>
+                            <Button Grid.Column="1" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
+                            <Border Grid.Column="2" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6" IsVisible="{Binding HasRecentSeeds}">
+                        <TextBlock Text="{local:Localize Custom_RecentSeeds}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <ItemsControl ItemsSource="{Binding CustomAccentColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <!-- WRAPPING, BECAUSE EIGHT SWATCHES DO NOT FIT ON ONE ROW HERE. A
+                                         horizontal StackPanel would push the last of them out past the
+                                         drawer's edge, where they are unreachable rather than merely ugly. -->
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
 
-                <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
-
-                <!-- Both settings below have been persisted and honoured for a while with no way to
-                     reach them except by hand-editing the profile JSON (RemEx-5u0vy). -->
-                <Grid ColumnDefinitions="*,2*">
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{local:Localize Custom_BaseMode}" FontSize="14" FontWeight="SemiBold"/>
-                        <TextBlock Text="{local:Localize Custom_BaseModeDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <!-- ITEM ORDER IS THE CONTRACT with CustomizationViewModel.ThemeModeToIndex:
-                         0 Light, 1 Dark, 2 System. Reordering here silently remaps every saved
-                         choice (RemEx-zk5bc). -->
-                    <ComboBox Grid.Column="1" SelectedIndex="{Binding ThemeModeIndex}" HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="{local:Localize Custom_BaseMode}">
-                        <ComboBoxItem Content="{local:Localize Custom_ModeLight}"/>
-                        <ComboBoxItem Content="{local:Localize Custom_ModeDark}"/>
-                        <ComboBoxItem Content="{local:Localize Custom_ModeSystem}"/>
-                    </ComboBox>
+                <!-- Vibrancy: the seed's chroma. Every source keeps this slider — it is the one axis
+                     none of the three sources supply. -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <TextBlock Text="{local:Localize Custom_Vibrancy}" VerticalAlignment="Center" MinWidth="52"/>
+                    <Slider Grid.Column="1" Minimum="0" Maximum="120" SmallChange="1" LargeChange="10" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_Vibrancy}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContrastTooltip}">
@@ -257,165 +128,15 @@
                         <TextBlock Text="{Binding ThemeContrast, StringFormat={}{0:F1}}" VerticalAlignment="Center" MinWidth="32" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </Grid>
-            </StackPanel>
-        </material:Card>
 
-        <!-- ═══ Section 3: Advanced Overrides ═══ -->
-        <material:Card Padding="20">
-            <StackPanel Spacing="20">
-                <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
-                    <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
-                            <Grid ColumnDefinitions="*,*" Width="160">
-                                <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                            </Grid>
-                        </StackPanel>
-                        <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
-
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
-                    <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding GlassOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}" AutomationProperties.Name="{local:Localize Custom_GlassOpacity}"/>
-                            <Grid ColumnDefinitions="*,*" Width="160">
-                                <TextBlock Text="{local:Localize Custom_Clear}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                            </Grid>
-                        </StackPanel>
-                        <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
-
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_NeonGlowTooltip}">
-                    <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0" Maximum="30" SmallChange="1" LargeChange="5" Value="{Binding GlowStrength}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_GlowStrength}"/>
-                            <Grid ColumnDefinitions="*,*" Width="160">
-                                <TextBlock Text="{local:Localize Custom_GlowNone}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_GlowIntense}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                            </Grid>
-                        </StackPanel>
-                        <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
-
-                <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
-
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_SelectColorPaletteTooltip}">
-                    <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Classes="swatch compact" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectNeonVioletTooltip}"/>
-                        <Button Classes="swatch compact" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCyberCyanTooltip}"/>
-                        <Button Classes="swatch compact" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectHotPinkTooltip}"/>
-                        <Button Classes="swatch compact" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectSolarGoldTooltip}"/>
-                        <Button Classes="swatch compact" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
-                        <Button Classes="swatch compact" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
-
-                        <ItemsControl ItemsSource="{Binding CustomAccentColors}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="8"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Button Width="24" Height="24" CornerRadius="12" Padding="0" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextMutedBrush}" FontSize="14" Content="+" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Command="{Binding OpenCustomAccentPickerCommand}" ToolTip.Tip="{local:Localize Custom_AddCustomColorTooltip}">
-                            <Button.Flyout>
-                                <Flyout IsOpen="{Binding IsCustomAccentPickerOpen}" Placement="Bottom">
-                                    <StackPanel Spacing="8" Width="180" Margin="4">
-                                        <TextBlock Text="{local:Localize Custom_CustomAccentColorTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBox Text="{Binding CustomAccentHex}" PlaceholderText="#RRGGBB" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                                            <Button Content="{local:Localize Btn_Cancel}" Command="{Binding CloseCustomAccentPickerCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="8,4" FontSize="12" CornerRadius="6"/>
-                                            <Button Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="8,4" FontSize="12" FontWeight="SemiBold" CornerRadius="6"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
-        </material:Card>
-
-        <!-- ═══ Section 4: Atmosphere ═══ -->
-        <material:Card Padding="20">
-            <StackPanel Spacing="16">
-                <TextBlock Text="{local:Localize Custom_Atmosphere}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                <Grid ColumnDefinitions="*,2*">
-                    <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:CompileBindings="False">
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_BgType_">
-                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                            <Binding/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </Grid>
-                <!-- Wallpaper mode's own controls (RemEx-ddynd): where the picture comes from, and how
-                     blurred it is. Same PrefixedLabelConverter pattern as the mode picker above. -->
-                <StackPanel Spacing="10" IsVisible="{Binding IsWallpaperBackgroundSelected}">
-                    <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="{local:Localize Custom_WallpaperSource}" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Column="1" SelectedItem="{Binding WallpaperSource}" ItemsSource="{Binding AvailableWallpaperSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_WallpaperSource}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:CompileBindings="False">
-                                    <TextBlock>
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_WallpaperSource_">
-                                                <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
-                                                <Binding/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
-                    <Button Classes="compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
-                    <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="{local:Localize Custom_WallpaperBlur}" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.2" Value="{Binding WallpaperBlur}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_WallpaperBlur}"/>
-                            <TextBlock Text="{Binding WallpaperBlur, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-                <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsWindowOpacityRelevant}">
-                    <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_AppWindowOpacity}"/>
-                        <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
-                <!-- THE ROW PREVIEWS ITSELF, same reason as the preset gallery above (RemEx-lrxyo):
+                <!-- THE ROW PREVIEWS ITSELF, same reason as the preset gallery below (RemEx-lrxyo):
                      the ComboBox this replaced showed the SAME text for every entry regardless of
                      what a variant actually looked like on the user's own seed. Each strip is
                      DynamicColorGenerator.Generate run with that strip's OWN variant against the
                      live seed/mode/contrast, so a strip cannot show a colour a click would not
                      produce. -->
                 <StackPanel Spacing="8">
-                    <TextBlock Text="{local:Localize Custom_SchemeVariant}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="{local:Localize Custom_Strategy}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <ItemsControl ItemsSource="{Binding SchemeVariantStrips}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -465,17 +186,16 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- ═══ Tonal ramp preview ═══ The scale itself, not just the roles a scheme mapper
-                     picked off it, and the resolved role pairs shown as text-on-background so a
-                     contrast problem (what the slider above the fold exists to fix) is visible at a
-                     glance instead of inferred from separate swatches. -->
+                <!-- ═══ Preview ═══ The tonal ramp itself, then a live sample card so the palette's
+                     effect on real content — not just swatches — is visible at a glance. -->
                 <StackPanel Spacing="8">
-                    <TextBlock Text="{local:Localize Custom_TonalRamp}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="{local:Localize Custom_Preview}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <StackPanel Spacing="6">
                         <!-- One Grid per palette: a fixed label column plus the eleven-tone row. The
                              DataTemplate is shared by copy rather than by a resource key, matching how
                              the rest of this view templates ItemsControl rows - see the file header
-                             note on Presets above for why the colours themselves are never literals. -->
+                             note on Presets in the Saved palettes card for why the colours themselves
+                             are never literals. -->
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                             <TextBlock Text="{local:Localize Custom_TonalRamp_Primary}" Theme="{StaticResource CaptionTextBlock}"
                                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
@@ -566,17 +286,198 @@
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </StackPanel>
-                </StackPanel>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">
-                    <TextBlock Text="{local:Localize Custom_SplashScreen}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding SplashStyle}" ItemsSource="{Binding AvailableSplashStyles}" HorizontalAlignment="Left" Width="160">
+                    <!-- The sample card: the same TonalRamp brushes applied to actual content (a
+                         title, body text, a button) rather than isolated swatches — cards and text
+                         will look exactly like this once Apply is pressed. -->
+                    <Border Name="SampleCard" Background="{Binding TonalRamp.SurfaceBrush}" CornerRadius="{Binding SampleCardCornerRadius}" Opacity="{Binding AppWindowOpacity}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{local:Localize Custom_SampleCardTitle}" FontWeight="SemiBold" Foreground="{Binding TonalRamp.OnSurfaceBrush}"/>
+                            <TextBlock Text="{local:Localize Custom_SampleCardBody}" FontSize="12" TextWrapping="Wrap" Foreground="{Binding TonalRamp.OnSurfaceBrush}"/>
+                            <Border Background="{Binding TonalRamp.PrimaryBrush}" CornerRadius="{Binding SampleCardCornerRadius}" Padding="10,5" HorizontalAlignment="Left">
+                                <TextBlock Text="{local:Localize Btn_Apply}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding TonalRamp.OnPrimaryBrush}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </material:Card>
+
+        <!-- ═══ Card 2: Mode ═══ -->
+        <material:Card Padding="20">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Custom_SectionMode}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                <!-- Both settings below have been persisted and honoured for a while with no way to
+                     reach them except by hand-editing the profile JSON (RemEx-5u0vy). -->
+                <Grid ColumnDefinitions="*,2*">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{local:Localize Custom_BaseMode}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{local:Localize Custom_BaseModeDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <!-- ITEM ORDER IS THE CONTRACT with CustomizationViewModel.ThemeModeToIndex:
+                         0 Light, 1 Dark, 2 System. Reordering here silently remaps every saved
+                         choice (RemEx-zk5bc). -->
+                    <ComboBox Grid.Column="1" SelectedIndex="{Binding ThemeModeIndex}" HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="{local:Localize Custom_BaseMode}">
+                        <ComboBoxItem Content="{local:Localize Custom_ModeLight}"/>
+                        <ComboBoxItem Content="{local:Localize Custom_ModeDark}"/>
+                        <ComboBoxItem Content="{local:Localize Custom_ModeSystem}"/>
+                    </ComboBox>
+                </Grid>
+            </StackPanel>
+        </material:Card>
+
+        <!-- ═══ Card 3: Look ═══ -->
+        <material:Card Padding="20">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Custom_SectionLook}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                <Grid ColumnDefinitions="*,2*">
+                    <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
-                                <TextBlock Text="{Binding Converter={x:Static local:SplashStyleLabelConverter.Instance}}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_BgType_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+                </Grid>
+                <!-- Wallpaper mode's own controls (RemEx-ddynd): where the picture comes from, and how
+                     blurred it is. Same PrefixedLabelConverter pattern as the mode picker above. -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsWallpaperBackgroundSelected}">
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="{local:Localize Custom_WallpaperSource}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding WallpaperSource}" ItemsSource="{Binding AvailableWallpaperSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_WallpaperSource}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_WallpaperSource_">
+                                                <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                <Binding/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <Button Classes="compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="{local:Localize Custom_WallpaperBlur}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.2" Value="{Binding WallpaperBlur}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_WallpaperBlur}"/>
+                            <TextBlock Text="{Binding WallpaperBlur, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+                <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsWindowOpacityRelevant}">
+                    <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                        <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_AppWindowOpacity}"/>
+                        <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </material:Card>
+
+        <!-- ═══ Section 4: Fine-tuning ═══ Geometry and typography, folded into an expander rather
+             than a card — these are overrides most people never open, not a daily-use section. -->
+        <Expander Header="{local:Localize Custom_AdvancedTuning}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <StackPanel Spacing="20" Margin="0,12,0,0">
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
+                    <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
+                            <Grid ColumnDefinitions="*,*" Width="160">
+                                <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
+                    <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding GlassOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}" AutomationProperties.Name="{local:Localize Custom_GlassOpacity}"/>
+                            <Grid ColumnDefinitions="*,*" Width="160">
+                                <TextBlock Text="{local:Localize Custom_Clear}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_NeonGlowTooltip}">
+                    <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <Slider Minimum="0" Maximum="30" SmallChange="1" LargeChange="5" Value="{Binding GlowStrength}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_GlowStrength}"/>
+                            <Grid ColumnDefinitions="*,*" Width="160">
+                                <TextBlock Text="{local:Localize Custom_GlowNone}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="1" Text="{local:Localize Custom_GlowIntense}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
+
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_PageTitleFontTip}">
+                    <TextBlock Text="{local:Localize Custom_PageTitleFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedPageTitleFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContentFontTip}">
+                    <TextBlock Text="{local:Localize Custom_ContentFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedBodyFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
+                    <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
+                        <Slider Minimum="0.85" Maximum="1.3" SmallChange="0.05" LargeChange="0.1" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" TickPlacement="BottomRight" IsSnapToTickEnabled="True" AutomationProperties.Name="{local:Localize Custom_UiScale}"/>
+                        <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Shown only when a chosen font can't be loaded on this machine; the app falls back safely. -->
+                <!-- Warning colours come from the theme, not literals: the amber pair below was
+                     mixed for a dark glass background and washes out on SolarFlare, whose surface
+                     is near-white. Both keys exist in all four themes (RemEx-fy0a). -->
+                <Border Background="{DynamicResource SystemWarningBackgroundBrush}" BorderBrush="{DynamicResource SystemWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
+                    <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                </Border>
+            </StackPanel>
+        </Expander>
+
+        <!-- ═══ Card 5: Behaviour ═══ -->
+        <material:Card Padding="20">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Custom_SectionBehaviour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">
+                    <TextBlock Text="{local:Localize Custom_SplashScreen}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <ComboBox SelectedItem="{Binding SplashStyle}" ItemsSource="{Binding AvailableSplashStyles}" HorizontalAlignment="Left" Width="160">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                    <TextBlock Text="{Binding Converter={x:Static local:SplashStyleLabelConverter.Instance}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Classes="compact" Content="{local:Localize Custom_Preview}" Command="{Binding PreviewSplashCommand}" AutomationProperties.Name="{local:Localize Custom_Preview}"/>
+                    </StackPanel>
                 </Grid>
 
                 <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
@@ -601,33 +502,112 @@
             </StackPanel>
         </material:Card>
 
-        <!-- ═══ Section 5: Typography ═══ -->
+        <!-- ═══ Card 6: Saved palettes ═══ -->
         <material:Card Padding="20">
             <StackPanel Spacing="16">
-                <TextBlock Text="{local:Localize Custom_Typography}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_PageTitleFontTip}">
-                    <TextBlock Text="{local:Localize Custom_PageTitleFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedPageTitleFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
-                </Grid>
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContentFontTip}">
-                    <TextBlock Text="{local:Localize Custom_ContentFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedBodyFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
-                </Grid>
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
-                    <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
-                        <Slider Minimum="0.85" Maximum="1.3" SmallChange="0.05" LargeChange="0.1" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" TickPlacement="BottomRight" IsSnapToTickEnabled="True" AutomationProperties.Name="{local:Localize Custom_UiScale}"/>
-                        <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
+                <TextBlock Text="{local:Localize Custom_SectionSavedPalettes}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                <!-- Shown only when a chosen font can't be loaded on this machine; the app falls back safely. -->
-                <!-- Warning colours come from the theme, not literals: the amber pair below was
-                     mixed for a dark glass background and washes out on SolarFlare, whose surface
-                     is near-white. Both keys exist in all four themes (RemEx-fy0a). -->
-                <Border Background="{DynamicResource SystemWarningBackgroundBrush}" BorderBrush="{DynamicResource SystemWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
-                    <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                </Border>
+                <!-- THE GALLERY PREVIEWS ITSELF (RemEx-2gjwn). This was five hand-authored tiles whose
+                     swatch colours were literals - #050505 and #00F3FF for CyberNOC, and so on - copied
+                     from resource dictionaries that no longer exist. Every colour below now comes out of
+                     DynamicColorGenerator run on the preset's own seed and variant, which is the same call
+                     clicking the tile makes, so a tile cannot show a colour the app will not paint.
+
+                     THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
+                     Personalize drawer at roughly 300px. Five columns was already tight for four presets
+                     and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
+                     narrower than the word "Daybreak" at any legible size. Three gives ~92px and three
+                     rows, which the drawer scrolls. -->
+                <TextBlock Text="{local:Localize Custom_BuiltInPresets}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                <ItemsControl ItemsSource="{Binding ThemePresets}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
+                            <Button Classes="tile" Margin="4" Padding="0"
+                                    AutomationProperties.Name="{Binding DisplayName}"
+                                    Classes.selected="{Binding IsSelected}"
+                                    Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
+                                    CommandParameter="{Binding Id}">
+                                <!-- The card is painted in the preset's OWN surface/outline, and the label in
+                                     its OWN on-surface, so the tile doubles as the contrast check: a preset
+                                     whose text is unreadable against its surface looks unreadable here. -->
+                                <Border Background="{Binding SurfaceBrush}"
+                                        BorderBrush="{Binding OutlineBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="{Binding PreviewCornerRadius}"
+                                        Padding="6,8">
+                                    <StackPanel Spacing="6">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                            <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
+                                            <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
+                                            <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="10" FontWeight="Bold"
+                                                   TextAlignment="Center" TextWrapping="Wrap"
+                                                   Foreground="{Binding OnSurfaceBrush}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- The person's own palettes (RemEx-ddynd, spec section 7): whole recipes, painted like the
+                     presets above from their OWN seed and strategy. Presets have no delete; these do. -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{local:Localize Custom_UserPalettes}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <ItemsControl ItemsSource="{Binding SavedPalettes}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
+                                <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
+                                    <StackPanel Spacing="6">
+                                        <Button Classes="tile" Padding="0" Background="Transparent"
+                                                AutomationProperties.Name="{Binding Name}"
+                                                Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                                <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
+                                                <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
+                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" TextAlignment="Center"
+                                                 Foreground="{Binding OnSurfaceBrush}"
+                                                 AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                                        <Button Classes="compact" Content="✕" HorizontalAlignment="Center" Padding="6,0"
+                                                ToolTip.Tip="{local:Localize Custom_DeletePalette}" AutomationProperties.Name="{local:Localize Custom_DeletePalette}"
+                                                Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).DeleteSavedPaletteCommand}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox Text="{Binding NewPaletteName, Mode=TwoWay}" PlaceholderText="{local:Localize Custom_PaletteNamePlaceholder}" AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                        <Button Grid.Column="1" Classes="compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Share palette (RemEx-a7uzb): copy the live palette as a compilable Avalonia
+                     ResourceDictionary, or export/import its recipe as JSON so a palette can travel
+                     to a future session or hand off to the phone. WrapPanel because the card is
+                     ~300px wide and three buttons do not fit one row. Copy as AXAML is a shipped
+                     RemEx-a7uzb feature the spec does not retire; Import and Export are the spec's. -->
+                <WrapPanel ItemSpacing="8" LineSpacing="8">
+                    <Button Classes="compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
+                    <Button Classes="compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
+                    <Button Classes="compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
+                </WrapPanel>
             </StackPanel>
         </material:Card>
 

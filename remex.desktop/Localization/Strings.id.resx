@@ -3295,4 +3295,52 @@ Anda dapat mengubah:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nama palet</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>WARNA</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>MODE TAMPILAN</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>TAMPILAN</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>PERILAKU</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>PALET TERSIMPAN</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Sumber</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Aksen Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Gambar latar</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Kustom</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Warna aksen Windows saat ini</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Segarkan</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Kecerahan</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strategi</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Pratinjau</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Kartu contoh</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Kartu dan teks akan terlihat seperti ini.</value>
+  </data>
 </root>

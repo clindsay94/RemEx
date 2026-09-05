@@ -3292,4 +3292,52 @@ Vous pouvez modifier :
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nom de la palette</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>COULEUR</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>MODE CLAIR OU SOMBRE</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>APPARENCE</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>COMPORTEMENT</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>PALETTES ENREGISTRÉES</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Origine</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Couleur d'accentuation Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Fond d'écran</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Personnalisée</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Couleur d'accentuation Windows actuelle</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Vivacité</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Stratégie</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Carte d'exemple</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Les cartes et le texte ressembleront à ceci.</value>
+  </data>
 </root>

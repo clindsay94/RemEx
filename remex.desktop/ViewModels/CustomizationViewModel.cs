@@ -5,6 +5,7 @@ using Remex.Desktop.Models;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using System.Collections.ObjectModel;
+using Avalonia;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -214,7 +215,17 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnSeedHueChanged(double value) => PushSeedToAccent();
 
-    partial void OnSeedChromaChanged(double value) => PushSeedToAccent();
+    partial void OnSeedChromaChanged(double value)
+    {
+        // A programmatic write (a saved palette, a preset) can hand this a value outside the wheel's
+        // own range; only SeedHct.ToColor clamped it downstream, so the VM kept reporting the
+        // unclamped number while the Vibrancy slider itself pinned at MaxChroma (RemEx-8twk0.8 gate
+        // addendum). Re-entering the setter with the clamped value keeps this the one place that
+        // clamps, rather than adding a second clamp at every call site.
+        var clamped = Math.Clamp(value, 0, SeedHct.MaxChroma);
+        if (clamped != value) { SeedChroma = clamped; return; }
+        PushSeedToAccent();
+    }
 
     partial void OnSeedToneChanged(double value) => PushSeedToAccent();
 
@@ -844,6 +855,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _cornerRadius;
 
+    /// <summary>The sample card's corners: the live slider value, capped like the preset tiles are.</summary>
+    public CornerRadius SampleCardCornerRadius => new(Math.Clamp(CornerRadius, 0, 24));
+
     [ObservableProperty]
     private double _remoteCardCornerRadius;
 
@@ -946,6 +960,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         "RemexCommand", "CosmicZoom", "Pong"
     };
 
+    /// <summary>Plays the selected splash over the shell (spec section 8).</summary>
+    [RelayCommand]
+    private void PreviewSplash() => _shell.ReplayWelcomeSplash();
+
     /// <summary>Available header fonts (bundled display fonts + installed system fonts).</summary>
     public ObservableCollection<FontOption> AvailableFonts { get; } = new(SystemFontService.GetHeaderFonts());
 
@@ -1008,6 +1026,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     }
     partial void OnCornerRadiusChanged(double value)
     {
+        OnPropertyChanged(nameof(SampleCardCornerRadius));
         if (_isSnapping || _isApplyingPreset) { ApplyAndSave(); return; }
         var snap = FindSnap(value, CardSnapPoints);
         if (snap.HasValue)

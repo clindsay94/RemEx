@@ -203,6 +203,9 @@ public partial class ShellView : UserControl
                     vm2.OnBootSequenceCompleted();
             };
 
+            if (DataContext is ShellViewModel splashOwner)
+                splashOwner.SplashReplayRequested += bootSplash.Restart;
+
             // SkiaSplashControl.Dispose detaches the DispatcherTimer's Tick handler, without which the
             // timer keeps a strong reference back into the control forever. It must be called on FINAL
             // teardown only: OnDetachedFromVisualTree deliberately calls Stop() and not Dispose(),

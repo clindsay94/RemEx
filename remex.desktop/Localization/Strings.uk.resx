@@ -3293,4 +3293,52 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Назва палітри</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>КОЛІР</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>РЕЖИМ</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>ВИГЛЯД</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>ПОВЕДІНКА</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>ЗБЕРЕЖЕНІ ПАЛІТРИ</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Джерело</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Акцент Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Шпалери</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Власний</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Поточний колір акценту Windows</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Насиченість</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Стратегія</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Попередній перегляд</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Зразок картки</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Картки й текст виглядатимуть так.</value>
+  </data>
 </root>

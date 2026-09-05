@@ -3296,4 +3296,52 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Palet adı</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>RENK</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>MOD</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>GÖRÜNÜM</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>DAVRANIŞ</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>KAYITLI PALETLER</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Kaynak</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Windows vurgu rengi</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Duvar kağıdı</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Özel</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Geçerli Windows vurgu rengi</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Canlılık</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strateji</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Önizleme</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Örnek kart</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Kartlar ve metin böyle görünecek.</value>
+  </data>
 </root>

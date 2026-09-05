@@ -65,15 +65,16 @@ public class StartupViewArgumentTests
     }
 
     /// <summary>
-    /// Ctrl+D1..D7 / Ctrl+OemComma order (MainWindow.axaml:34-53), plus About which has no
-    /// keybinding at all. RemoteDesktop is deliberately absent — it stays a manual sweep cell.
+    /// Ctrl+D1..D7 / Ctrl+OemComma order (MainWindow.axaml:34-53), plus About and Personalize, which
+    /// have no keybinding of their own. RemoteDesktop is deliberately absent — it stays a manual
+    /// sweep cell.
     /// </summary>
     [Fact]
-    public void Navigators_CoversExactlyTheNineScriptableViews()
+    public void Navigators_CoversExactlyTheTenScriptableViews()
     {
         var expected = new[]
         {
-            "Home", "Sensors", "Commands", "Launcher", "Processes", "Files", "Logs", "Settings", "About",
+            "Home", "Sensors", "Commands", "Launcher", "Processes", "Files", "Logs", "Settings", "About", "Personalize",
         };
 
         StartupViewArgument.Navigators.Keys.Should().BeEquivalentTo(expected);
@@ -120,6 +121,7 @@ public class StartupViewArgumentTests
     [InlineData("Logs", "NavigateToDiagnosticLogs")]
     [InlineData("Settings", "NavigateToSettings")]
     [InlineData("About", "NavigateToAbout")]
+    [InlineData("Personalize", "NavigateToCustomization")]
     public void Navigators_BindsEachNameToItsDocumentedShellViewModelMethod(string viewName, string methodName)
     {
         var pattern = $@"\[\s*""{Regex.Escape(viewName)}""\s*\]\s*=\s*vm\s*=>\s*vm\.{Regex.Escape(methodName)}\(\)";

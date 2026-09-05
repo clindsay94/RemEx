@@ -26,7 +26,6 @@ public class PaletteStudioWiringTests
     [InlineData("ThemeModeIndex")]
     [InlineData("SeedHue")]
     [InlineData("SeedChroma")]
-    [InlineData("SeedTone")]
     public void EverySettingTheStudioOwnsIsBoundToAControlThatCanWriteIt(string property)
     {
         var markup = PanelMarkup();
@@ -70,7 +69,10 @@ public class PaletteStudioWiringTests
         // the same [^>] bound the slider loop below already uses.
         studio.Should().MatchRegex(@"<controls:HctColorWheel[^>]*AutomationProperties\.Name=");
 
-        foreach (var axis in new[] { "SeedHue", "SeedChroma", "SeedTone", "ThemeContrast" })
+        // SeedTone dropped (RemEx-8twk0.8): the sheet's Tone slider is gone — the wheel is the only
+        // control that still carries tone (spec section 3) — so it is no longer reachable as a
+        // slider at all, mouse or keyboard.
+        foreach (var axis in new[] { "SeedHue", "SeedChroma", "ThemeContrast" })
         {
             studio.Should().MatchRegex($@"<Slider[^>]*\{{Binding {axis}\}}[^>]*AutomationProperties\.Name=",
                 "the {0} slider needs a name, so the keyboard path through the studio is announced", axis);
@@ -145,7 +147,7 @@ public class PaletteStudioWiringTests
         var markup = PanelMarkup();
 
         markup.Length.Should().BeGreaterThan(2000);
-        markup.Should().Contain("Custom_PaletteStudio");
+        markup.Should().Contain("Custom_SectionColor");
         StudioSection(markup).Length.Should().BeGreaterThan(500);
         ApplyAndSaveInitializer().Length.Should().BeGreaterThan(200);
 
@@ -165,13 +167,16 @@ public class PaletteStudioWiringTests
     private static string ViewModelSource() => File.ReadAllText(Path.Combine(RepoRoot(),
         "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
 
-    /// <summary>The Palette Studio card, from its header to the start of the next section comment.</summary>
+    /// <summary>
+    /// The seed's card — Colour, since RemEx-8twk0.8 folded the old standalone Palette Studio
+    /// section into it — from its header to the next card's header.
+    /// </summary>
     private static string StudioSection(string markup)
     {
-        var start = markup.IndexOf("Section 2: Palette Studio", StringComparison.Ordinal);
-        start.Should().BeGreaterThanOrEqualTo(0, "the studio's section comment is how this test finds it");
+        var start = markup.IndexOf("Custom_SectionColor", StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0, "the colour card's header is how this test finds it");
 
-        var end = markup.IndexOf("Section 3:", start, StringComparison.Ordinal);
+        var end = markup.IndexOf("Custom_SectionMode", start, StringComparison.Ordinal);
         return end < 0 ? markup[start..] : markup[start..end];
     }
 

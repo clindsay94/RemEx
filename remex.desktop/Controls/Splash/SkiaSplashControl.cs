@@ -93,6 +93,19 @@ public sealed class SkiaSplashControl : Control, IDisposable
         _stopwatch.Stop();
     }
 
+    /// <summary>Plays the current <see cref="SplashStyle"/> from the start while attached — the sheet's Preview.</summary>
+    public void Restart()
+    {
+        _variant = CreateVariant(SplashStyle);
+        _elapsed = 0;
+        _completed = false;
+        _skipping = false;
+        _skipElapsed = 0;
+        _stopwatch.Restart();
+        _timer.Start();
+        InvalidateVisual();
+    }
+
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);

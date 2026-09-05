@@ -3293,4 +3293,52 @@ Możesz zmienić:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nazwa palety</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>KOLOR</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>TRYB</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>WYGLĄD</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>ZACHOWANIE</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>ZAPISANE PALETY</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Źródło</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Akcent Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Tapeta</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Własny</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Bieżący kolor akcentu Windows</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Odśwież</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Żywość</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strategia</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Przykładowa karta</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Karty i tekst będą wyglądać tak.</value>
+  </data>
 </root>

@@ -265,6 +265,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isWelcomeSplashMounted = true;
 
+    /// <summary>The view restarts the mounted SkiaSplashControl when this fires (Preview on the sheet).</summary>
+    public event Action? SplashReplayRequested;
+
+    /// <summary>Mounts the splash again and asks the view to restart it. Completion goes through the
+    /// same <see cref="OnBootSequenceCompleted"/> path as the first run; the tutorial gate there
+    /// stays false for anyone who has completed it.</summary>
+    public void ReplayWelcomeSplash()
+    {
+        IsWelcomeSplashMounted = true;
+        ShowWelcomeSplash = true;
+        SplashReplayRequested?.Invoke();
+    }
+
     /// <summary>Controls the first-run tutorial overlay visibility.</summary>
     [ObservableProperty]
     private bool _showTutorialOverlay;

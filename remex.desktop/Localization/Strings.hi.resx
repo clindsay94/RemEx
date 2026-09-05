@@ -3292,4 +3292,52 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>पैलेट का नाम</value>
   </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>रंग</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>मोड</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>रूप</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>व्यवहार</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>सहेजे गए पैलेट</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>स्रोत</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Windows एक्सेंट</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>वॉलपेपर</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>कस्टम</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>वर्तमान Windows एक्सेंट रंग</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>रीफ़्रेश करें</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>जीवंतता</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>रणनीति</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>पूर्वावलोकन</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>नमूना कार्ड</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>कार्ड और टेक्स्ट ऐसे दिखेंगे।</value>
+  </data>
 </root>

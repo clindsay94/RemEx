@@ -71,6 +71,7 @@ The nine scriptable views, in `Ctrl+D1..D7` / `Ctrl+OemComma` / (no binding) ord
 | `Logs` | Diagnostic logs |
 | `Settings` | Settings panel |
 | `About` | About page |
+| `Personalize` | The Personalize side sheet over Home |
 
 `RemoteDesktop` has no `--view` entry and is not swept: it needs a connected phone to show
 anything meaningful, so it stays a **manual** verification cell — check it by hand against at
