@@ -89,14 +89,18 @@ public class AuroraMeshTests
     [Fact]
     public void TheThreeBlobsKeepTheirBigMediumSmallHierarchy()
     {
-        var radii = Layers().ToDictionary(
-            l => l.Attribute("Name")!.Value,
-            l => double.Parse(RadiusAttribute(l, "RadiusX"), CultureInfo.InvariantCulture));
+        // Both axes: a blob can be "smaller" on X and still swallow the others on Y.
+        foreach (var axis in new[] { "RadiusX", "RadiusY" })
+        {
+            var radii = Layers().ToDictionary(
+                l => l.Attribute("Name")!.Value,
+                l => double.Parse(RadiusAttribute(l, axis), CultureInfo.InvariantCulture));
 
-        radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer1"],
-            "the third blob is the small one; equal-sized blobs read as one flat wash, not a mesh");
-        radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer2"],
-            "the third blob is the small one; equal-sized blobs read as one flat wash, not a mesh");
+            radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer1"],
+                $"the third blob is the small one on {axis}; equal-sized blobs read as one flat wash, not a mesh");
+            radii["AuroraLayer3"].Should().BeLessThan(radii["AuroraLayer2"],
+                $"the third blob is the small one on {axis}; equal-sized blobs read as one flat wash, not a mesh");
+        }
     }
 
     private static string RadiusAttribute(XElement layer, string attribute) =>
