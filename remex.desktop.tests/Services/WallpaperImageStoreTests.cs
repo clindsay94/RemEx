@@ -93,4 +93,66 @@ public class WallpaperImageStoreTests : IDisposable
         WallpaperImageStore.DirectoryFor(@"C:\Users\x\AppData\Local\RemEx")
             .Should().Be(Path.Combine(@"C:\Users\x\AppData\Local\RemEx", "wallpapers"));
     }
+
+    [Fact]
+    public void ATrailingSeparatorOnTheDirectoryArgumentDoesNotStopADeleteInsideTheFolder()
+    {
+        // Ordinal string equality without normalization would treat "wallpapers" and
+        // "wallpapers\" as different folders and silently skip the delete (RemEx-8twk0.5).
+        Directory.CreateDirectory(_dir);
+        var copy = Path.Combine(_dir, "wallpaper-x.png");
+        File.WriteAllBytes(copy, new byte[] { 1, 2, 3 });
+
+        WallpaperImageStore.TryDeleteCopy(copy, _dir + Path.DirectorySeparatorChar);
+
+        File.Exists(copy).Should().BeFalse("a trailing separator on the directory argument must not stop the match");
+    }
+
+    [Fact]
+    public void ACopyPathThatDiffersOnlyByCasingIsDeletedOnWindowsAndKeptElsewhere()
+    {
+        // Windows folders are case-insensitive so a casing difference is still "the same folder"
+        // there; POSIX folders are not, so on Linux/macOS that really is a different directory and
+        // the file must be left alone. Reverting the comparison to a raw `==` makes this fail on
+        // Windows, because `==` is always case-sensitive regardless of OS.
+        Directory.CreateDirectory(_dir);
+        var copy = Path.Combine(_dir, "wallpaper-y.png");
+        File.WriteAllBytes(copy, new byte[] { 1, 2, 3 });
+
+        WallpaperImageStore.TryDeleteCopy(copy, _dir.ToUpperInvariant());
+
+        var expectDeleted = OperatingSystem.IsWindows();
+        File.Exists(copy).Should().Be(!expectDeleted,
+            expectDeleted
+                ? "Windows folder names are case-insensitive, so this is the same folder"
+                : "this OS treats differently-cased paths as different folders, so the file is outside and must survive");
+    }
+
+    [Fact]
+    public void APathOutsideTheFolderIsNeverDeletedEvenViaATraversalThatLandsThere()
+    {
+        var outsideDir = Path.Combine(Path.GetTempPath(), $"remex-wpstore-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outsideDir);
+        try
+        {
+            var outsideFile = Path.Combine(outsideDir, "not-mine.png");
+            File.WriteAllBytes(outsideFile, new byte[] { 1, 2, 3 });
+
+            WallpaperImageStore.TryDeleteCopy(outsideFile, _dir);
+            File.Exists(outsideFile).Should().BeTrue("a file outside the wallpapers folder must never be deleted");
+
+            // A path that starts under _dir but escapes it via "..", landing back on the same
+            // outside file: GetFullPath collapses the traversal before the comparison, so this
+            // must be judged on where it actually lands, not on the string containing _dir.
+            var traversal = Path.Combine(_dir, "..", Path.GetFileName(outsideDir), "not-mine.png");
+            Action act = () => WallpaperImageStore.TryDeleteCopy(traversal, _dir);
+
+            act.Should().NotThrow();
+            File.Exists(outsideFile).Should().BeTrue("a '..' traversal that resolves outside the folder must not be deleted either");
+        }
+        finally
+        {
+            Directory.Delete(outsideDir, recursive: true);
+        }
+    }
 }

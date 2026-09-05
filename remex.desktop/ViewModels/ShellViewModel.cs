@@ -390,6 +390,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private string? _wallpaperPathLoaded;
     private string? _wallpaperPathFailed;
 
+    /// <summary>The path a decode is currently in flight for, or null. Guards against launching a
+    /// second decode of the same path (e.g. a blur-only tick while the first decode is still
+    /// running) — see <see cref="_wallpaperLoadGeneration"/> for the companion staleness guard.</summary>
+    private string? _wallpaperPathLoading;
+
+    /// <summary>Bumped every time a NEW decode is launched. A completing <see cref="LoadWallpaperAsync"/>
+    /// compares its captured generation against this field and discards its result if it no longer
+    /// matches — the only way to tell a stale decode from the winning one when two can be in flight
+    /// at once (RemEx-8twk0.5): dragging the blur slider before the first decode lands, or switching
+    /// background material while a slow decode is still running.</summary>
+    private int _wallpaperLoadGeneration;
+
     /// <summary>Re-resolves the wallpaper for <paramref name="settings"/>. UI thread.</summary>
     private void RefreshWallpaperBackdrop(Remex.Core.Models.CustomizationSettings settings)
     {
@@ -414,10 +426,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _ = LoadWallpaperAsync(settings, path);
+        if (string.Equals(path, _wallpaperPathLoading, StringComparison.OrdinalIgnoreCase))
+        {
+            // Already decoding this exact path (e.g. the blur slider ticking while the first
+            // decode is still running) — do not launch a duplicate decode for it.
+            return;
+        }
+
+        _wallpaperPathLoading = path;
+        var generation = ++_wallpaperLoadGeneration;
+        _ = LoadWallpaperAsync(settings, path, generation);
     }
 
-    private async Task LoadWallpaperAsync(Remex.Core.Models.CustomizationSettings settings, string path)
+    private async Task LoadWallpaperAsync(Remex.Core.Models.CustomizationSettings settings, string path, int generation)
     {
         var bitmap = await Task.Run(() =>
         {
@@ -438,21 +459,49 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             }
         });
 
-        // The setting may have moved on while decoding; only the current one is honoured.
-        if (Customization.BackgroundMaterial != "Wallpaper") { bitmap?.Dispose(); return; }
-
-        if (bitmap is null)
+        try
         {
-            FailWallpaper(settings, path);
-            return;
-        }
+            if (generation != _wallpaperLoadGeneration)
+            {
+                // Superseded by a newer request before this decode finished — the newer load owns
+                // WallpaperBitmap (or is still loading it) now, so this result is discarded
+                // untouched, including the in-flight/loaded/failed path bookkeeping below.
+                bitmap?.Dispose();
+                return;
+            }
 
-        var previous = WallpaperBitmap;
-        WallpaperBitmap = bitmap;
-        _wallpaperPathLoaded = path;
-        _wallpaperPathFailed = null;
-        EffectiveBackgroundType = "Wallpaper";
-        previous?.Dispose();
+            if (string.Equals(_wallpaperPathLoading, path, StringComparison.OrdinalIgnoreCase))
+                _wallpaperPathLoading = null;
+
+            // The setting may have moved on while decoding; only the current one is honoured.
+            if (Customization.BackgroundMaterial != "Wallpaper") { bitmap?.Dispose(); return; }
+
+            if (bitmap is null)
+            {
+                FailWallpaper(settings, path);
+                return;
+            }
+
+            var previous = WallpaperBitmap;
+            WallpaperBitmap = bitmap;
+            _wallpaperPathLoaded = path;
+            _wallpaperPathFailed = null;
+            EffectiveBackgroundType = "Wallpaper";
+
+            // Deferred, not synchronous: the Image control may still be compositing a frame that
+            // references `previous` this tick, so disposing it inline can hand the renderer an
+            // already-disposed bitmap (RemEx-8twk0.5).
+            if (previous is not null)
+                Dispatcher.UIThread.Post(() => previous.Dispose(), DispatcherPriority.Background);
+        }
+        catch (Exception ex)
+        {
+            // Everything above the decode itself (property setters, localization lookups, the
+            // notification call inside FailWallpaper) can throw; unguarded, that faults this
+            // fire-and-forget task unobserved. The decode failure path above still reaches
+            // FailWallpaper — this only guards what happens after.
+            System.Diagnostics.Trace.TraceWarning($"Wallpaper backdrop: post-decode handling failed for '{path}' — {ex.Message}");
+        }
     }
 
     /// <summary>Solid for the session, one snackbar per failing path, the setting untouched.</summary>
@@ -560,6 +609,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
         Presence.PropertyChanged -= _onPresenceChanged;
+
+        // No frame can still be compositing against this bitmap once the shell itself is going
+        // away, so — unlike the live swap in LoadWallpaperAsync — disposing it inline here is safe.
+        WallpaperBitmap?.Dispose();
+        WallpaperBitmap = null;
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();

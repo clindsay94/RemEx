@@ -796,10 +796,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             return;
         }
 
+        var wasImage = WallpaperSource == WallpaperSources.Image;
         var previous = _wallpaperImagePath;
         _wallpaperImagePath = copy;
-        WallpaperSource = WallpaperSources.Image;   // saves through OnWallpaperSourceChanged
-        if (WallpaperSource == WallpaperSources.Image && previous != copy) ApplyAndSave(); // the setter is a no-op when already Image
+        WallpaperSource = WallpaperSources.Image;   // saves through OnWallpaperSourceChanged when the source actually changes
+        if (wasImage && previous != copy) ApplyAndSave(); // already Image: the setter is a no-op, so save explicitly here
         WallpaperImageStore.TryDeleteCopy(previous, directory);
     }
 

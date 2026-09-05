@@ -62,7 +62,17 @@ public static class WallpaperImageStore
         if (string.IsNullOrWhiteSpace(copyPath)) return;
         try
         {
-            if (Path.GetDirectoryName(Path.GetFullPath(copyPath)) == Path.GetFullPath(directory) && File.Exists(copyPath))
+            // Full paths, trailing separators trimmed, so a same-folder path that merely differs
+            // in casing or a trailing slash still resolves as "inside" (RemEx-8twk0.5). GetFullPath
+            // also collapses any ".." traversal before the comparison, so a path that only reaches
+            // this folder via a parent reference is judged on where it actually lands.
+            var copyDir = Path.GetDirectoryName(Path.GetFullPath(copyPath))?
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var targetDir = Path.GetFullPath(directory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+            if (copyDir is not null && string.Equals(copyDir, targetDir, comparison) && File.Exists(copyPath))
                 File.Delete(copyPath);
         }
         catch (Exception ex)
