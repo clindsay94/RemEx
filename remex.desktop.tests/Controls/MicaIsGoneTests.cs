@@ -19,6 +19,7 @@ public class MicaIsGoneTests
     [InlineData("remex.desktop/Controls/DashboardBackgroundControl.axaml")]
     [InlineData("remex.desktop/MainWindow.axaml.cs")]
     [InlineData("remex.desktop/MainWindow.axaml")]
+    [InlineData("remex.desktop/Views/TrayBalloonWindow.axaml")]
     public void NoMicaLiteralSurvivesInTheBackgroundModePlumbing(string relativePath)
     {
         var text = File.ReadAllText(Path.Combine(RepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar)));

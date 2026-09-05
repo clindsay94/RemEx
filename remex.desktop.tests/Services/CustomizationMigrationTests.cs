@@ -25,6 +25,19 @@ namespace Remex.Desktop.Tests.Services;
 public class CustomizationMigrationTests
 {
     /// <summary>
+    /// Every other assertion here is relative to <see cref="CustomizationMigration.CurrentSchemaVersion"/>,
+    /// so a bump would keep the suite green. The number is pinned on purpose: schema 4 is the arm
+    /// that retired Mica (RemEx-8twk0.6), and the splash-default flip (RemEx-8twk0.9) EXTENDS that
+    /// arm rather than adding a schema 5, because 4 never ships between the two tasks. Move this
+    /// number only with a new arm and a reason.
+    /// </summary>
+    [Fact]
+    public void TheCurrentSchemaIsFourUntilANewArmSaysOtherwise()
+    {
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(4);
+    }
+
+    /// <summary>
     /// A profile exactly as 2.4.0 wrote it: a theme NAME, the seed its preset arm saved, and none
     /// of the keys that did not exist yet.
     /// </summary>

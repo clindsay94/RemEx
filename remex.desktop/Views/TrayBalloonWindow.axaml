@@ -5,7 +5,7 @@
     xmlns:ripple="clr-namespace:Material.Ripple;assembly=Material.Ripple"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayBalloonWindow"
     Width="360" Height="132" CanResize="False" Focusable="False" ShowActivated="False" ShowInTaskbar="False"
-    Topmost="True" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" WindowDecorations="None">
+    Topmost="True" Background="Transparent" TransparencyLevelHint="AcrylicBlur, None" WindowDecorations="None">
 
     <Window.Styles>
         <!-- The stripe carries the importance. Colour comes from the theme's own system brushes, so
