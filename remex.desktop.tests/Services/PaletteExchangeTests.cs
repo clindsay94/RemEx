@@ -65,12 +65,17 @@ public class PaletteExchangeTests
         recipe.Should().BeNull();
     }
 
-    [Fact]
-    public void TryParseJson_RejectsUnknownVariant()
+    [Theory]
+    [InlineData("Spritz", "Neutral")]
+    [InlineData("Content", "TonalSpot")]
+    [InlineData("Bogus", "TonalSpot")]
+    public void TryParseJson_NormalisesRetiredAndUnknownVariants(string stored, string expected)
     {
-        var json = PaletteExchange.ToJson(SampleRecipe()).Replace("Vibrant", "Psychedelic");
-        PaletteExchange.TryParseJson(json, out var recipe).Should().BeFalse();
-        recipe.Should().BeNull();
+        var json = PaletteExchange.ToJson(new PaletteRecipe("#FF00F3FF", stored, ThemeModes_Dark, 0.0, 40.0));
+
+        PaletteExchange.TryParseJson(json, out var parsed).Should().BeTrue(
+            "an older file imports with the section-4 migration rules rather than being refused");
+        parsed!.Variant.Should().Be(expected);
     }
 
     [Fact]

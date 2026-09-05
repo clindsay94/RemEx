@@ -77,7 +77,7 @@ public static class SeedPresetCatalog
         // that already names one of these renders identically apart from the variant, which the
         // presets never used to write at all. Each variant below is the one that reproduces the
         // retired dictionary's character: hard cyan on near-black wants Vibrant, graphite wants
-        // Spritz (the low-chroma style), and the two that were always ordinary stay on TonalSpot.
+        // Neutral (the low-chroma style), and the two that were always ordinary stay on TonalSpot.
         //
         // The ids read Cyber-NOC / Solar-Flare / Monolith / BaseDarkGlass; the names read Neon,
         // Ember, Slate, Glass. Deliberate — see the Id remarks above.
@@ -96,13 +96,13 @@ public static class SeedPresetCatalog
             CornerRadius: 24, RemoteCardCornerRadius: 48, GlowStrength: 2, GlassOpacity: 0.8),
 
         new("Monolith", "Custom_PresetSlate", AppTheme.Monolith,
-            Seed: "#0A84FF", SchemeVariant: "Spritz", IsLight: false, Contrast: 0.0,
+            Seed: "#0A84FF", SchemeVariant: "Neutral", IsLight: false, Contrast: 0.0,
             CornerRadius: 8, RemoteCardCornerRadius: 12, GlowStrength: 0, GlassOpacity: 1.0),
 
         // ── The ones only worth shipping now that generation is free ──────────────────────────
         // None of these could have existed as a hand-authored dictionary; each is one seed plus a
         // variant. Daybreak is the light mode the app never actually had (SolarFlare is light, but
-        // it is amber-on-cream, not neutral). Voltage is what Expressive is for. Sorbet is Spritz
+        // it is amber-on-cream, not neutral). Voltage is what Expressive is for. Sorbet is Neutral
         // in light mode, which is the only way to get pastel out of a generator that derives
         // everything from one hue.
 
@@ -115,7 +115,7 @@ public static class SeedPresetCatalog
             CornerRadius: 20, RemoteCardCornerRadius: 28, GlowStrength: 8, GlassOpacity: 0.12),
 
         new("Sorbet", "Custom_PresetSorbet", AppTheme.BaseDarkGlass,
-            Seed: "#FF9E80", SchemeVariant: "Spritz", IsLight: true, Contrast: 0.0,
+            Seed: "#FF9E80", SchemeVariant: "Neutral", IsLight: true, Contrast: 0.0,
             CornerRadius: 28, RemoteCardCornerRadius: 36, GlowStrength: 1, GlassOpacity: 0.5),
 
         // ── The user's own ────────────────────────────────────────────────────────────────────

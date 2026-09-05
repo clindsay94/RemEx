@@ -3248,4 +3248,10 @@ Możesz zmienić:
   <data name="Custom_PaletteImportInvalid" xml:space="preserve">
     <value>Ten plik nie jest paletą RemEx.</value>
   </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Neutralny</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Monochromatyczny</value>
+  </data>
 </root>

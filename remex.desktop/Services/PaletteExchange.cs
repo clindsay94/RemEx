@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Avalonia.Media;
 using Remex.Core.Models;
+using Remex.Desktop.Models;
 
 namespace Remex.Desktop.Services;
 
@@ -28,12 +29,6 @@ public static class PaletteExchange
     /// <summary>Bumped only if the recipe shape changes in a way an older reader could not parse.</summary>
     private const int FormatVersion = 1;
 
-    /// <summary>The seven scheme variants <c>CustomizationViewModel.AvailableSchemeVariants</c> offers.</summary>
-    private static readonly string[] ValidVariants =
-    {
-        "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
-    };
-
     /// <summary>The three modes <c>ThemeModes</c> defines.</summary>
     private static readonly string[] ValidModes = { ThemeModes.Light, ThemeModes.Dark, ThemeModes.System };
 
@@ -56,8 +51,10 @@ public static class PaletteExchange
 
     /// <summary>
     /// Parses a <c>.remexpalette</c> JSON payload. Returns false — never throws — for malformed
-    /// JSON, a missing/unparseable seed, an unknown variant, or an unknown mode, so callers can
-    /// show one "not a RemEx palette" toast instead of catching several exception types.
+    /// JSON, a missing/unparseable seed, or an unknown mode, so callers can show one "not a RemEx
+    /// palette" toast instead of catching several exception types. A variant outside
+    /// <see cref="SchemeVariants.All"/> is not a reason to refuse the file: it normalises to Tonal
+    /// Spot exactly as an old profile's <c>SchemeVariant</c> does.
     /// </summary>
     public static bool TryParseJson(string json, out PaletteRecipe? recipe)
     {
@@ -76,11 +73,10 @@ public static class PaletteExchange
         if (dto is null) return false;
         if (string.IsNullOrWhiteSpace(dto.Seed)) return false;
         if (dto.Seed.Length is not (7 or 9) || !Color.TryParse(dto.Seed, out _)) return false;
-        if (Array.IndexOf(ValidVariants, dto.Variant) < 0) return false;
         if (Array.IndexOf(ValidModes, dto.Mode) < 0) return false;
 
         var contrast = Math.Clamp(dto.Contrast, -1.0, 1.0);
-        recipe = new PaletteRecipe(dto.Seed, dto.Variant, dto.Mode, contrast, dto.SeedChroma);
+        recipe = new PaletteRecipe(dto.Seed, SchemeVariants.Normalize(dto.Variant), dto.Mode, contrast, dto.SeedChroma);
         return true;
     }
 

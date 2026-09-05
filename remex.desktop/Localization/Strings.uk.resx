@@ -3248,4 +3248,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_PaletteImportInvalid" xml:space="preserve">
     <value>Цей файл не є палітрою RemEx.</value>
   </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Нейтральна</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Монохромна</value>
+  </data>
 </root>

@@ -8,6 +8,7 @@ using Avalonia.Media;
 using MaterialColorUtilities.Palettes;
 using MaterialColorUtilities.Schemes;
 using FluentAssertions;
+using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Xunit;
 
@@ -46,10 +47,7 @@ public class SeedPaletteTests
         Color.Parse("#8B0000"),   // dark red — collides with the error role
     };
 
-    private static readonly string[] Variants =
-    {
-        "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz",
-    };
+    private static readonly IReadOnlyList<string> Variants = SchemeVariants.All;
 
     /// <summary>Every (foreground, background) pair the generator is responsible for.</summary>
     private static IEnumerable<(string Name, Color Fg, Color Bg)> Pairs(DynamicColorGenerator.M3Palette p)
@@ -251,8 +249,8 @@ public class SeedPaletteTests
                     seen[fingerprint] = variant;
                 }
 
-                seen.Should().HaveCount(Variants.Length,
-                    $"all {Variants.Length} variants have to be distinguishable for seed {seed}");
+                seen.Should().HaveCount(Variants.Count,
+                    $"all {Variants.Count} variants have to be distinguishable for seed {seed}");
             }
         }
     }

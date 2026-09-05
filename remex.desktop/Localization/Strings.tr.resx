@@ -3251,4 +3251,10 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_PaletteImportInvalid" xml:space="preserve">
     <value>Bu dosya bir RemEx paleti değil.</value>
   </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Nötr</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Tek renkli</value>
+  </data>
 </root>

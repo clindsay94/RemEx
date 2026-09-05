@@ -1,9 +1,11 @@
 using Avalonia.Media;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MaterialColorUtilities.ColorAppearance;
 using MaterialColorUtilities.Palettes;
 using MaterialColorUtilities.Schemes;
+using Remex.Desktop.Models;
 
 namespace Remex.Desktop.Services;
 
@@ -82,15 +84,23 @@ public static class DynamicColorGenerator
     public static M3Palette Generate(Color seed, string variant = "TonalSpot", bool isDark = true, double contrast = 0.0)
     {
         var style = StyleFor(variant);
-        var core = CoreFor(ToArgb(seed), style);
+        var core = SeedCoreFor(ToArgb(seed), variant);
         var scheme = MapScheme(core, isDark);
 
         // Success and warning are separate schemes, not roles carved out of the user's seed: a
         // semantic colour that drifts with the accent stops being semantic. Same style, same mode,
         // same contrast — so they track the rest of the palette in every way except hue.
-        var successCore = CoreFor(SuccessSeed, style);
+        //
+        // MONOCHROME IS THE ONE EXCEPTION. Its whole job is to strip chroma from the user's own
+        // accent; it must not also grey out "connected" and "warning". Every other style already
+        // leaves success/warning visibly green/amber (Style.Spritz — Neutral's style — still keeps
+        // ~12 chroma), so only Monochrome swaps to Style.TonalSpot for these two semantic cores.
+        var semanticStyle = string.Equals(variant, SchemeVariants.Monochrome, StringComparison.Ordinal)
+            ? Style.TonalSpot
+            : style;
+        var successCore = CoreFor(SuccessSeed, semanticStyle);
         var successScheme = MapScheme(successCore, isDark);
-        var warningCore = CoreFor(WarningSeed, style);
+        var warningCore = CoreFor(WarningSeed, semanticStyle);
         var warningScheme = MapScheme(warningCore, isDark);
 
         var primary = ToColor(scheme.Primary);
@@ -154,8 +164,8 @@ public static class DynamicColorGenerator
             // END STAYS NEUTRAL on purpose: ThemeService takes the dark scrim from BackgroundEnd,
             // and a scrim's job is to darken what is behind it, not to tint it.
             //
-            // Styles whose palettes carry no chroma at all (Spritz) lose the hue axis and are
-            // carried by tone alone, which is why the spacing has to stand on its own.
+            // Styles whose palettes carry no chroma at all (Neutral, Monochrome) lose the hue axis
+            // and are carried by tone alone, which is why the spacing has to stand on its own.
             BackgroundStart:      ToColor(core.Primary [isDark ? 20u : 82u]),
             BackgroundMid:        ToColor(core.Tertiary[isDark ? 10u : 91u]),
             BackgroundEnd:        ToColor(core.Neutral [isDark ?  0u : 100u]));
@@ -181,8 +191,7 @@ public static class DynamicColorGenerator
     /// </summary>
     public static TonalRampSet GenerateTonalRamps(Color seed, string variant = "TonalSpot")
     {
-        var style = StyleFor(variant);
-        var core = CoreFor(ToArgb(seed), style);
+        var core = SeedCoreFor(ToArgb(seed), variant);
 
         return new TonalRampSet(
             Primary:   RampFor(core.Primary),
@@ -194,21 +203,44 @@ public static class DynamicColorGenerator
     private static IReadOnlyList<(int Tone, Color Color)> RampFor(TonalPalette palette) =>
         RampTones.Select(tone => ((int)tone, ToColor(palette[tone]))).ToList();
 
+    /// <summary>The library style behind a strategy name. Neutral AND Monochrome both start from
+    /// Spritz; Monochrome then has its chroma removed in <see cref="SeedCoreFor"/>.</summary>
     private static Style StyleFor(string variant) => variant switch
     {
-        "Vibrant"    => Style.Vibrant,
-        "Expressive" => Style.Expressive,
-        "Rainbow"    => Style.Rainbow,
-        "FruitSalad" => Style.FruitSalad,
-        "Content"    => Style.Content,
-        "Spritz"     => Style.Spritz,
-        _            => Style.TonalSpot,
+        SchemeVariants.Vibrant    => Style.Vibrant,
+        SchemeVariants.Expressive => Style.Expressive,
+        SchemeVariants.Rainbow    => Style.Rainbow,
+        SchemeVariants.FruitSalad => Style.FruitSalad,
+        SchemeVariants.Neutral    => Style.Spritz,
+        SchemeVariants.Monochrome => Style.Spritz,
+        _                         => Style.TonalSpot,
     };
 
+    /// <summary>A core palette for a SEMANTIC seed (success, warning): the library style only.</summary>
     private static CorePalette CoreFor(uint argb, Style style)
     {
         var core = new CorePalette();
         core.Fill(argb, style);
+        return core;
+    }
+
+    /// <summary>
+    /// A core palette for the USER'S seed. Monochrome is not a library style in 0.3.0, so it is
+    /// built here: every tonal palette except Error is re-created at chroma 0 on the seed's hue,
+    /// which is exactly what Android's <c>SchemeMonochrome</c> produces. Error stays red — a grey
+    /// error is not an error.
+    /// </summary>
+    private static CorePalette SeedCoreFor(uint argb, string variant)
+    {
+        var core = CoreFor(argb, StyleFor(variant));
+        if (!string.Equals(variant, SchemeVariants.Monochrome, StringComparison.Ordinal)) return core;
+
+        var hue = Hct.FromInt(argb).Hue;
+        core.Primary = TonalPalette.FromHueAndChroma(hue, 0);
+        core.Secondary = TonalPalette.FromHueAndChroma(hue, 0);
+        core.Tertiary = TonalPalette.FromHueAndChroma(hue, 0);
+        core.Neutral = TonalPalette.FromHueAndChroma(hue, 0);
+        core.NeutralVariant = TonalPalette.FromHueAndChroma(hue, 0);
         return core;
     }
 

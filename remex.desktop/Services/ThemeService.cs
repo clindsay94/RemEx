@@ -346,9 +346,13 @@ public class ThemeService : IDisposable
                 : Color.FromRgb(0x6C, 0x4C, 0xFF);
         }
 
+        // Normalised at the render boundary too, not only where the picker reads it: a profile at
+        // the current schema can still carry a retired name (hand-edited, or written by a path
+        // that skipped the 2→3 arm), and the engine's own fallback for "Spritz" is TonalSpot while
+        // the picker would highlight Neutral. One function decides what a persisted string means.
         var palette = DynamicColorGenerator.Generate(
             accentColor,
-            settings.SchemeVariant,
+            SchemeVariants.Normalize(settings.SchemeVariant),
             isDark: !isLightTheme,
             contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
 

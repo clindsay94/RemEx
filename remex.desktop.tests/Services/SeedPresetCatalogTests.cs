@@ -181,10 +181,7 @@ public class SeedPresetCatalogTests
     [Fact]
     public void EverySeedParsesAndEveryVariantIsRecognised()
     {
-        var known = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
-        };
+        var known = new HashSet<string>(SchemeVariants.All, StringComparer.Ordinal);
 
         foreach (var preset in SeedPresetCatalog.All)
         {

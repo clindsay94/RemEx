@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia.Media;
 using MaterialColorUtilities.ColorAppearance;
 using FluentAssertions;
+using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Xunit;
 
@@ -44,10 +45,12 @@ public class BackgroundGradientTests
         Color.Parse("#8B0000"),   // dark red
     };
 
-    private static readonly string[] Variants =
-    {
-        "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz",
-    };
+    /// <summary>
+    /// Every strategy the sheet offers, from the one list that defines them — so Neutral and
+    /// Monochrome, the two with no hue to lean on, are swept here instead of silently collapsing
+    /// onto TonalSpot through the engine's unknown-name fallback.
+    /// </summary>
+    private static readonly IReadOnlyList<string> Variants = SchemeVariants.All;
 
     /// <summary>
     /// The two stacked gradient layers in <c>DashboardBackgroundControl.axaml</c>: a base rectangle
@@ -119,9 +122,9 @@ public class BackgroundGradientTests
         // seed produces, so a Primary→Neutral→Neutral sweep can only ever change brightness.
         //
         // Asserted on TonalSpot, the default and the variant the four shipped themes correspond to.
-        // The other six are deliberately out of scope: Content and Spritz exist precisely to hold
-        // one hue (Content keeps the seed's own hue on every palette, Spritz drains chroma to near
-        // zero), so demanding a hue sweep of them would be demanding they stop being themselves.
+        // The other six are deliberately out of scope: Neutral and Monochrome exist precisely to
+        // have (almost) no hue to sweep — Neutral drains chroma to near zero, Monochrome to exactly
+        // zero — so demanding a hue sweep of them would be demanding they stop being themselves.
         // Their backdrops are carried by the tone assertion above.
         var failures = new List<string>();
 

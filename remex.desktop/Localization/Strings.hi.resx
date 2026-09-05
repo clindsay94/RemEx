@@ -3247,4 +3247,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_PaletteImportInvalid" xml:space="preserve">
     <value>वह फ़ाइल RemEx पैलेट नहीं है।</value>
   </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>तटस्थ</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>एकवर्णी</value>
+  </data>
 </root>

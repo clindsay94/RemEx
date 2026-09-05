@@ -116,7 +116,7 @@ public static class CustomizationMigration
     private static CustomizationSettings FromSchemaTwo(CustomizationSettings settings)
     {
         var wasMica = string.Equals(settings.BackgroundMaterial, "Mica", StringComparison.OrdinalIgnoreCase);
-        var variant = NormalizeVariant(settings.SchemeVariant);
+        var variant = SchemeVariants.Normalize(settings.SchemeVariant);
 
         var seeds = settings.CustomAccentColors ?? Array.Empty<string>();
         var palettes = new List<SavedPalette>(settings.SavedPalettes ?? Array.Empty<SavedPalette>());
@@ -147,15 +147,6 @@ public static class CustomizationMigration
             ColorSource = ColorSources.Custom,
         };
     }
-
-    /// <summary>Retired and unknown strategy names to the seven Android names. Replaced by
-    /// <c>SchemeVariants.Normalize</c> in Task 2; kept private here so Task 1 builds alone.</summary>
-    private static string NormalizeVariant(string? variant) => variant switch
-    {
-        "Spritz" => "Neutral",
-        "TonalSpot" or "Expressive" or "FruitSalad" or "Rainbow" or "Vibrant" or "Neutral" or "Monochrome" => variant,
-        _ => "TonalSpot",
-    };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

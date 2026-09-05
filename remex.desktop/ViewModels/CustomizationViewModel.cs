@@ -134,10 +134,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> AvailableBackgroundTypes { get; } = new();
 
-    public ObservableCollection<string> AvailableSchemeVariants { get; } = new()
-    {
-        "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
-    };
+    public ObservableCollection<string> AvailableSchemeVariants { get; } = new(SchemeVariants.All);
 
     /// <summary>
     /// The variant row: one strip per <see cref="AvailableSchemeVariants"/> entry, each painted from
@@ -540,7 +537,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _appWindowOpacity = settings.AppWindowOpacity;
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
-        _schemeVariant = settings.SchemeVariant;
+        _schemeVariant = SchemeVariants.Normalize(settings.SchemeVariant);
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
         _themeMode = settings.ThemeMode;
@@ -1053,16 +1050,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             matched |= strip.IsSelected;
         }
 
-        // An unrecognised variant string — a stale or hand-edited profile carrying, say,
-        // "Monochrome" — must still light up a strip (review LOW, RemEx-lrxyo).
-        // DynamicColorGenerator.StyleFor falls through to TonalSpot for anything it does not know,
-        // so the app IS rendering TonalSpot; leaving the row with nothing selected would show a
-        // picker that disagrees with the palette on screen. The old ComboBox had the same blank
-        // state, but the row is now the only affordance, so it is worth closing here.
+        // An unrecognised variant string assigned at runtime must still light up a strip (review
+        // LOW, RemEx-lrxyo). A persisted string is normalised at construction now
+        // (SchemeVariants.Normalize), so this fallback only fires for a value assigned at runtime
+        // rather than for anything that came off disk.
         if (!matched)
         {
             var fallback = SchemeVariantStrips.FirstOrDefault(
-                s => string.Equals(s.Variant, "TonalSpot", StringComparison.Ordinal));
+                s => string.Equals(s.Variant, SchemeVariants.TonalSpot, StringComparison.Ordinal));
             if (fallback is not null) fallback.IsSelected = true;
         }
     }

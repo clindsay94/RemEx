@@ -3253,4 +3253,10 @@ You can change:
   <data name="Custom_PaletteImportInvalid" xml:space="preserve">
     <value>That file is not a RemEx palette.</value>
   </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Neutral</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Monochrome</value>
+  </data>
 </root>
