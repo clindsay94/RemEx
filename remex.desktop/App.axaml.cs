@@ -70,6 +70,8 @@ public partial class App : Application
         });
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<HardwareThemeService>();
+        collection.AddSingleton(_ => new WindowsAccentWatcher(SystemSeedSources.TryGetWindowsAccent, TimeProvider.System));
+        collection.AddSingleton<ColorSourceCoordinator>();
         collection.AddSingleton<UpdateCheckService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();

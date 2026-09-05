@@ -11,6 +11,7 @@ namespace Remex.Desktop;
 public partial class MainWindow : Window
 {
     private ThemeService? _themeService;
+    private ColorSourceCoordinator? _colorSources;
 
     public MainWindow()
     {
@@ -47,6 +48,24 @@ public partial class MainWindow : Window
                 OnCustomizationApplied(settings);
             }
         }
+
+        _colorSources = App.Services.GetService<ColorSourceCoordinator>(); // optional, like the theme service
+        if (_colorSources is not null)
+        {
+            Opened += (_, _) =>
+            {
+                _colorSources.Start();
+                _colorSources.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
+            };
+            Activated += (_, _) => _colorSources.PollNow();
+        }
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsVisibleProperty || change.Property == WindowStateProperty)
+            _colorSources?.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

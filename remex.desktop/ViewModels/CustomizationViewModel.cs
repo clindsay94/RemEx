@@ -543,6 +543,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _themeMode = settings.ThemeMode;
         _themeContrast = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
 
+        _wallpaperSeedIndex = Math.Max(0, settings.WallpaperSeedIndex);
+
+        // Which sources this platform offers, then the stored choice resolved onto them without a
+        // save: a Windows profile opened on Linux runs on Custom for the session (spec section 9).
+        if (OperatingSystem.IsWindows())
+        {
+            AvailableColorSources.Add(ColorSources.WindowsAccent);
+            AvailableColorSources.Add(ColorSources.Wallpaper);
+        }
+        AvailableColorSources.Add(ColorSources.Custom);
+        _colorSource = AvailableColorSources.Contains(settings.ColorSource) ? settings.ColorSource : ColorSources.Custom;
+        if (_colorSource == ColorSources.WindowsAccent) _sourceAccentHex = SystemSeedSources.TryGetWindowsAccent();
+
         // THE PICKER HAS TO SHOW WHAT IS ACTUALLY PAINTED. Migration stamps ThemeMode on load, so
         // it is normally present; the fallback chain below is the hand-edited-null shape and
         // mirrors ThemeService.ResolveIsLight's legacy case deliberately — a picker that reads the
@@ -616,8 +629,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // tiles, which is why this line exists at all.
         // No Dispatcher.Post: CustomizationApplied is already raised inside one, so the collection
         // mutations below stay on the UI thread.
-        _onCustomizationApplied = _ =>
+        _onCustomizationApplied = applied =>
         {
+            // A seed the coordinator wrote (Windows accent changed) has to reach the wheel and the
+            // hex box, or the next slider nudge writes the old seed back over it. _isApplyingPreset
+            // short-circuits ApplyAndSave, so this is a sync, not a second save.
+            if (!IsCustomSource && !string.Equals(applied.AccentColor, AccentColor, StringComparison.OrdinalIgnoreCase))
+            {
+                _isApplyingPreset = true;
+                try { AccentColor = applied.AccentColor; }
+                finally { _isApplyingPreset = false; }
+            }
+            if (IsWindowsAccentSource) SourceAccentHex = SystemSeedSources.TryGetWindowsAccent();
+
             RefreshPresetPreviews(onlyVarying: true);
             RefreshSchemeVariantStrips();
         };
@@ -628,6 +652,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         // Surface any persisted font that no longer resolves on this machine.
         ValidateFonts();
+
+        // Repopulate the wallpaper candidates so the swatches show on open. AdoptSourceSeed saves
+        // only if the seed actually changes (PushSeedToAccent assigns AccentColor; the generated
+        // setter is a no-op for an equal string).
+        if (IsWallpaperSource) _ = RefreshWallpaperSeedsAsync();
     }
 
     private void RefreshBackgroundTypes()
@@ -939,8 +968,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             CustomAccentColors = CustomAccentColors.Take(MaxRecentSeeds).ToList(),
             // Task 1 carries these forward verbatim; Tasks 3, 5 and 7 replace each `carried.X`
             // with the view model's own live value as the sheet gains the control for it.
-            ColorSource = carried.ColorSource,
-            WallpaperSeedIndex = carried.WallpaperSeedIndex,
+            ColorSource = ColorSource,
+            WallpaperSeedIndex = WallpaperSeedIndex,
             WallpaperSource = carried.WallpaperSource,
             WallpaperImagePath = carried.WallpaperImagePath,
             WallpaperBlur = carried.WallpaperBlur,
@@ -1092,39 +1121,119 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Clicking a recently-used seed under the Custom source. The only seed setter left
+    /// on the sheet, and it lives inside the Custom source on purpose (spec section 1).</summary>
     [RelayCommand]
     private void SetAccent(string hex) => AccentColor = hex;
 
-    // ─── Seeds from the desktop itself (RemEx-rdzet) ─────────────────────────────────────────────
+    // ─── Colour source (RemEx-ddynd) ─────────────────────────────────────────────────────────────
+    //
+    // ONE SEED, ONE PATH. AccentColor stays the seed for every source; the source only decides who
+    // writes it. Windows accent and Wallpaper hand over a hue and a tone; the Vibrancy slider
+    // (SeedChroma) stays the chroma; PushSeedToAccent recombines the three exactly as a wheel drag
+    // does. Custom lets the person write all three.
 
-    /// <summary>Whether the "from this PC" seed sources exist on this platform.</summary>
-    /// <remarks>
-    /// The view hides the whole section on Linux — the acceptance is "absent or disabled rather
-    /// than failing", and absent is the honest one: there is no Linux accent registry to read, so
-    /// a disabled button would promise something no click could ever deliver.
-    /// </remarks>
+    /// <summary>A <see cref="ColorSources"/> value. Persisted; the picker binds it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWindowsAccentSource))]
+    [NotifyPropertyChangedFor(nameof(IsWallpaperSource))]
+    [NotifyPropertyChangedFor(nameof(IsCustomSource))]
+    private string _colorSource = ColorSources.Custom;
+
+    /// <summary>The sources this platform can offer, in picker order. Windows: all three; Linux: Custom only —
+    /// the seed extraction in SystemSeedSources is Windows-only (spec section 9).</summary>
+    public ObservableCollection<string> AvailableColorSources { get; } = new();
+
+    public bool IsWindowsAccentSource => ColorSource == ColorSources.WindowsAccent;
+    public bool IsWallpaperSource => ColorSource == ColorSources.Wallpaper;
+    public bool IsCustomSource => ColorSource == ColorSources.Custom;
+
+    /// <summary>The raw Windows accent as read from the registry, for the swatch. Null when unavailable.</summary>
+    [ObservableProperty]
+    private string? _sourceAccentHex;
+
+    /// <summary>Which extracted wallpaper candidate is in use. Persisted.</summary>
+    [ObservableProperty]
+    private int _wallpaperSeedIndex;
+
+    /// <summary>Whether the "from this PC" sources exist on this platform.</summary>
     public bool IsSystemSeedAvailable => OperatingSystem.IsWindows();
 
-    /// <summary>
-    /// The wallpaper's top seed candidates, best first, as hex strings for the same swatch
-    /// template the recent-seeds row uses. Plural on purpose: dominant-colour extraction is a
-    /// guess, so the studio offers the top few and the user picks.
-    /// </summary>
+    /// <summary>The wallpaper's top seed candidates, best first, as hex strings for the swatch template.</summary>
     public ObservableCollection<string> WallpaperSeedCandidates { get; } = new();
 
     public bool HasWallpaperSeedCandidates => WallpaperSeedCandidates.Count > 0;
 
-    [RelayCommand]
-    private void MatchWindowsAccent()
+    partial void OnColorSourceChanged(string value)
     {
-        // A missing accent (off-Windows callers are already hidden; a stripped-down Windows can
-        // still lack the key) leaves the current seed alone — a click that resets the palette to
-        // a fallback would be worse than one that does nothing.
-        if (SystemSeedSources.TryGetWindowsAccent() is { } hex) AccentColor = hex;
+        switch (value)
+        {
+            case ColorSources.WindowsAccent:
+                SourceAccentHex = SystemSeedSources.TryGetWindowsAccent();
+                // A missing accent (a stripped-down Windows can lack the key) leaves the seed alone
+                // and still records the choice, so the coordinator picks it up if the key appears.
+                if (SourceAccentHex is { } hex) AdoptSourceSeed(hex);
+                else ApplyAndSave();
+                break;
+            case ColorSources.Wallpaper:
+                _ = RefreshWallpaperSeedsAsync();
+                break;
+            default:
+                ApplyAndSave();
+                break;
+        }
     }
 
+    /// <summary>The stored index, or 0 when the candidate list no longer reaches it.</summary>
+    internal static int ResolveWallpaperSeedIndex(int stored, int count) =>
+        stored >= 0 && stored < count ? stored : 0;
+
+    /// <summary>
+    /// Takes hue and tone from a source colour, keeps the Vibrancy slider's chroma, and recombines
+    /// them into <see cref="AccentColor"/> through the same path a wheel drag uses.
+    /// </summary>
+    private void AdoptSourceSeed(string hex)
+    {
+        if (!Color.TryParse(hex, out var source)) return;
+
+        var (hue, _, tone) = SeedHct.FromColor(source);
+        _isSyncingSeed = true;
+        try
+        {
+            SeedHue = hue;
+            SeedTone = tone;
+        }
+        finally
+        {
+            _isSyncingSeed = false;
+        }
+
+        PushSeedToAccent();
+    }
+
+    /// <summary>The old "Match Windows accent" button and the picker both land here.</summary>
     [RelayCommand]
-    private async Task SeedFromWallpaperAsync()
+    private void MatchWindowsAccent() => ColorSource = ColorSources.WindowsAccent;
+
+    /// <summary>The old "Seed from wallpaper" button and the picker both land here.</summary>
+    [RelayCommand]
+    private void SeedFromWallpaper() => ColorSource = ColorSources.Wallpaper;
+
+    /// <summary>A candidate swatch click: remember which one, and adopt it.</summary>
+    [RelayCommand]
+    private void SelectWallpaperSeed(string hex)
+    {
+        var index = WallpaperSeedCandidates.IndexOf(hex);
+        if (index < 0) return;
+        WallpaperSeedIndex = index;
+        AdoptSourceSeed(hex);
+    }
+
+    /// <summary>Re-extracts the candidates (the Refresh action, and every switch to the Wallpaper source).</summary>
+    [RelayCommand]
+    private Task RefreshWallpaperSeeds() => RefreshWallpaperSeedsAsync();
+
+    private async Task RefreshWallpaperSeedsAsync()
     {
         // Decode + quantize + score is CPU-bound and a 4K wallpaper is a real file — off the UI
         // thread, the same rule the palette solve follows.
@@ -1134,9 +1243,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         foreach (var seed in seeds) WallpaperSeedCandidates.Add(seed);
         OnPropertyChanged(nameof(HasWallpaperSeedCandidates));
 
-        // The best guess applies immediately — the candidates row exists to recover from it being
-        // the WRONG guess, not to make the user click twice for the right one.
-        if (seeds.Count > 0) AccentColor = seeds[0];
+        // The list may be shorter than it was when the index was stored (the wallpaper changed):
+        // the first candidate is used and the index reset (spec section 5).
+        WallpaperSeedIndex = ResolveWallpaperSeedIndex(WallpaperSeedIndex, seeds.Count);
+        if (seeds.Count > 0 && IsWallpaperSource) AdoptSourceSeed(seeds[WallpaperSeedIndex]);
+        else if (IsWallpaperSource) ApplyAndSave();
     }
 
     [RelayCommand]

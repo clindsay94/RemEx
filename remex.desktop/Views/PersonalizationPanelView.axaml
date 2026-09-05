@@ -164,7 +164,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SelectWallpaperSeedCommand}" CommandParameter="{Binding}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
