@@ -381,7 +381,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             SchemeVariant,
             mode ?? ThemeModes.Dark,
             ThemeContrast,
-            SeedHct.ChromaOf(AccentColor, _layoutService.CurrentProfile.Customization.ThemeSeedChroma));
+            SeedHct.ChromaOf(AccentColor, _layoutService.CurrentProfile.Customization.ThemeSeedChroma),
+            ColorSource,
+            string.IsNullOrWhiteSpace(NewPaletteName) ? null : NewPaletteName.Trim());
     }
 
     /// <summary>Copies the current palette to the clipboard as a compilable Avalonia
@@ -500,12 +502,17 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            SelectSchemeVariant(recipe.Variant);
+            var tile = AddSavedPalette(new SavedPalette
+            {
+                Name = recipe.Name ?? NextDefaultPaletteName(),
+                ColorSource = recipe.ColorSource,
+                Seed = recipe.Seed,
+                Vibrancy = recipe.SeedChroma,
+                Contrast = recipe.Contrast,
+                Strategy = recipe.Variant,
+            });
             SetThemeMode(recipe.Mode);
-            ApplyAndSave();
-            ThemeContrast = recipe.Contrast;
-            AccentColor = recipe.Seed;
-            CommitSeedToRecents();
+            ApplySavedPalette(tile);   // saves; the mode rides the same save
 
             NotificationService.Instance.Notify(
                 NotificationImportance.Outcome,
@@ -615,6 +622,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         foreach (var preset in SeedPresetCatalog.All)
             ThemePresets.Add(new SeedPresetTileViewModel(preset));
 
+        // Same ordering reason as the gallery above — painted from the live settings, so built
+        // after the seed axes exist. AddSavedPalette calls CurrentIsLightPalette(), which reads
+        // _themeModeIndex — already set above.
+        foreach (var saved in settings.SavedPalettes ?? Array.Empty<SavedPalette>())
+            AddSavedPalette(saved);
+
         // Same ordering reason as the gallery above: built after the seed axes exist, since the
         // strips and the ramp are painted from the live settings.
         foreach (var variant in AvailableSchemeVariants)
@@ -654,6 +667,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
             RefreshPresetPreviews(onlyVarying: true);
             RefreshSchemeVariantStrips();
+            RefreshSavedPaletteTiles();
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
 
@@ -710,6 +724,92 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// The preset gallery, each tile painted in its own generated palette.
     /// </summary>
     public ObservableCollection<SeedPresetTileViewModel> ThemePresets { get; } = new();
+
+    // ─── Saved palettes (RemEx-ddynd, spec section 7) ────────────────────────────────────────────
+
+    /// <summary>The person's palettes, in saved order, after the built-in presets on the sheet.</summary>
+    public ObservableCollection<SavedPaletteTileViewModel> SavedPalettes { get; } = new();
+
+    /// <summary>The name "Save current" writes. Blank means "Palette N".</summary>
+    [ObservableProperty]
+    private string _newPaletteName = string.Empty;
+
+    private SavedPalette CurrentAsSavedPalette(string name) => new()
+    {
+        Name = name,
+        ColorSource = ColorSource,
+        Seed = AccentColor,
+        Vibrancy = SeedChroma,
+        Contrast = Math.Clamp(ThemeContrast, -1.0, 1.0),
+        Strategy = SchemeVariant,
+    };
+
+    private string NextDefaultPaletteName() => SavedPalette.DefaultNamePrefix + (SavedPalettes.Count + 1);
+
+    [RelayCommand]
+    private void SaveCurrentPalette()
+    {
+        var name = string.IsNullOrWhiteSpace(NewPaletteName) ? NextDefaultPaletteName() : NewPaletteName.Trim();
+        AddSavedPalette(CurrentAsSavedPalette(name));
+        NewPaletteName = string.Empty;
+        ApplyAndSave();
+    }
+
+    private SavedPaletteTileViewModel AddSavedPalette(SavedPalette palette)
+    {
+        var tile = new SavedPaletteTileViewModel(palette);
+        tile.Renamed += _ => ApplyAndSave();
+        tile.Refresh(CurrentIsLightPalette());
+        SavedPalettes.Add(tile);
+        return tile;
+    }
+
+    /// <summary>
+    /// Applying a palette sets the same fields a preset sets. A Custom palette becomes the Custom
+    /// source with that seed; a Windows-accent or Wallpaper palette re-selects that source, whose
+    /// handler adopts the live system colour shaped by the palette's vibrancy (spec section 7).
+    /// </summary>
+    [RelayCommand]
+    private void ApplySavedPalette(SavedPaletteTileViewModel tile)
+    {
+        var p = tile.Record;
+        _isApplyingPreset = true;
+        try
+        {
+            SchemeVariant = SchemeVariants.Normalize(p.Strategy);
+            ThemeContrast = Math.Clamp(p.Contrast, -1.0, 1.0);
+            AccentColor = p.Seed;      // syncs hue/chroma/tone from the seed
+            SeedChroma = p.Vibrancy;   // then the saved vibrancy re-shapes it (PushSeedToAccent)
+            ColorSource = p.ColorSource switch
+            {
+                ColorSources.WindowsAccent when AvailableColorSources.Contains(ColorSources.WindowsAccent) => ColorSources.WindowsAccent,
+                ColorSources.Wallpaper when AvailableColorSources.Contains(ColorSources.Wallpaper) => ColorSources.Wallpaper,
+                _ => ColorSources.Custom,
+            };
+        }
+        finally
+        {
+            _isApplyingPreset = false;
+        }
+
+        // ColorSource's own handler already adopted the system seed (or, for Wallpaper, started
+        // the async extraction, which saves when it lands); this is the one save for everything else.
+        ApplyAndSave();
+        CommitSeedToRecents();
+    }
+
+    [RelayCommand]
+    private void DeleteSavedPalette(SavedPaletteTileViewModel tile)
+    {
+        if (!SavedPalettes.Remove(tile)) return;
+        ApplyAndSave();
+    }
+
+    private void RefreshSavedPaletteTiles()
+    {
+        var liveIsLight = CurrentIsLightPalette();
+        foreach (var tile in SavedPalettes) tile.Refresh(liveIsLight);
+    }
 
     [ObservableProperty]
     private double _cornerRadius;
@@ -1051,7 +1151,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperSource = WallpaperSource,
             WallpaperImagePath = _wallpaperImagePath,
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
-            SavedPalettes = carried.SavedPalettes,
+            SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
         };
 
         // Update the current profile object
@@ -1065,6 +1165,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // than from four separate change handlers that would each have to remember to.
         RefreshPresetPreviews(onlyVarying: true);
         RefreshSchemeVariantStrips();
+        RefreshSavedPaletteTiles();
     }
 
     /// <summary>Clicking a variant strip is choosing a variant — the same live-apply path the old ComboBox used.</summary>
@@ -1095,7 +1196,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // THE NULLS ARE THE POINT, not an oversight. Dynamic declines to choose a seed, a
             // variant, a mode and a contrast, and "declines" has to mean the existing value survives
             // - a preset that means "my own colour" cannot be the one that overwrites it.
-            if (preset.Seed is { } seed) AccentColor = seed;
+            if (preset.Seed is { } seed) { ColorSource = ColorSources.Custom; AccentColor = seed; }
             if (preset.SchemeVariant is { } variant) SchemeVariant = variant;
             if (preset.IsLight is { } light) SetThemeMode(light ? ThemeModes.Light : ThemeModes.Dark);
             if (preset.Contrast is { } contrast) ThemeContrast = contrast;
@@ -1344,6 +1445,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         ThemePresets.Clear();
         foreach (var strip in SchemeVariantStrips) strip.Dispose();
         SchemeVariantStrips.Clear();
+        // Tiles hold no subscriptions to singletons; clearing just drops the Renamed handlers that
+        // close over this view model.
+        SavedPalettes.Clear();
         _themeService.CustomizationApplied -= _onCustomizationApplied;
     }
 }

@@ -3281,4 +3281,19 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
     <value>Bu görsel kopyalanamadı, bu yüzden öncekisi korundu.</value>
   </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Geçerli olanı kaydet</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Paletleriniz</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Yerleşik</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Paleti sil</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Palet adı</value>
+  </data>
 </root>

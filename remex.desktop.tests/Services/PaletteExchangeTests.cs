@@ -151,4 +151,47 @@ public class PaletteExchangeTests
             colorKeys.Should().Contain(referencedKey);
         }
     }
+
+    [Fact]
+    public void ToJson_TryParseJson_RoundTripsTheColourSourceAndName()
+    {
+        var recipe = new PaletteRecipe("#FF00F3FF", "Neutral", ThemeModes_Dark, 0.1, 30.0, ColorSource: "WindowsAccent", Name: "Office blue");
+
+        PaletteExchange.TryParseJson(PaletteExchange.ToJson(recipe), out var parsed).Should().BeTrue();
+
+        parsed!.ColorSource.Should().Be("WindowsAccent");
+        parsed.Name.Should().Be("Office blue");
+        parsed.Variant.Should().Be("Neutral");
+    }
+
+    [Fact]
+    public void AVersionOneFileWithoutTheNewFieldsImportsAsACustomUnnamedPalette()
+    {
+        // Exactly what RemEx-a7uzb wrote: no colorSource, no name, a variant name that is now retired.
+        const string v1 = """
+        {
+          "formatVersion": 1,
+          "seed": "#00F3FF",
+          "variant": "Spritz",
+          "mode": "Dark",
+          "contrast": 0.2,
+          "seedChroma": 40
+        }
+        """;
+
+        PaletteExchange.TryParseJson(v1, out var parsed).Should().BeTrue("an older file imports with the section-4 migration rules");
+
+        parsed!.ColorSource.Should().Be("Custom");
+        parsed.Name.Should().BeNull();
+        parsed.Variant.Should().Be("Neutral");
+    }
+
+    [Fact]
+    public void AnUnknownColourSourceImportsAsCustom()
+    {
+        var json = PaletteExchange.ToJson(new PaletteRecipe("#00F3FF", "Vibrant", ThemeModes_Dark, 0, 40, ColorSource: "Phone"));
+
+        PaletteExchange.TryParseJson(json, out var parsed).Should().BeTrue();
+        parsed!.ColorSource.Should().Be("Custom", "the phone source is a follow-up (spec section 12), not a value this build knows");
+    }
 }

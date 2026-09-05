@@ -65,6 +65,48 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
+        <!-- The person's own palettes (RemEx-ddynd, spec section 7): whole recipes, painted like the
+             presets above from their OWN seed and strategy. Presets have no delete; these do. -->
+        <StackPanel Spacing="8">
+            <TextBlock Text="{local:Localize Custom_UserPalettes}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+            <ItemsControl ItemsSource="{Binding SavedPalettes}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
+                        <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
+                            <StackPanel Spacing="6">
+                                <Button Classes="tile" Padding="0" Background="Transparent"
+                                        AutomationProperties.Name="{Binding Name}"
+                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                        <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
+                                        <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" TextAlignment="Center"
+                                         Foreground="{Binding OnSurfaceBrush}"
+                                         AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                                <Button Classes="compact" Content="✕" HorizontalAlignment="Center" Padding="6,0"
+                                        ToolTip.Tip="{local:Localize Custom_DeletePalette}" AutomationProperties.Name="{local:Localize Custom_DeletePalette}"
+                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).DeleteSavedPaletteCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding NewPaletteName, Mode=TwoWay}" PlaceholderText="{local:Localize Custom_PaletteNamePlaceholder}" AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                <Button Grid.Column="1" Classes="compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
+            </Grid>
+        </StackPanel>
+
         <!-- ═══ Section 2: Palette Studio ═══ -->
         <!-- The whole palette comes out of one seed, so this is where the seed is chosen. The wheel
              and the three sliders are two views of the same HCT triple: the wheel carries hue and

@@ -3278,4 +3278,19 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
     <value>Не вдалося скопіювати це зображення, тому збережено попереднє.</value>
   </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Зберегти поточну</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Ваші палітри</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Вбудовані</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Видалити палітру</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Назва палітри</value>
+  </data>
 </root>

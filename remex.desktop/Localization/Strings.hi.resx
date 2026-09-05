@@ -3277,4 +3277,19 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
     <value>उस छवि की प्रतिलिपि नहीं बनाई जा सकी, इसलिए पिछली छवि रखी गई है।</value>
   </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>वर्तमान सहेजें</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>आपके पैलेट</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>अंतर्निर्मित</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>पैलेट हटाएँ</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>पैलेट का नाम</value>
+  </data>
 </root>

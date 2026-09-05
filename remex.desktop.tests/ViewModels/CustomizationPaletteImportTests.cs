@@ -71,7 +71,12 @@ public class CustomizationPaletteImportTests : IDisposable
         vm.PickOpenFileAsync = PickReturning(json);
         await vm.ImportPaletteJsonCommand.ExecuteAsync(null);
 
-        vm.AccentColor.Should().Be(recipe.Seed);
+        // Import now applies the saved recipe through the same ApplySavedPalette path Save/Apply
+        // use (RemEx-8twk0.7, task 7): the seed's hue/tone come from the literal colour, then the
+        // saved vibrancy re-shapes the chroma (PushSeedToAccent), so the accent that lands is the
+        // HCT reconstruction rather than the literal hex byte-for-byte.
+        var (hue, _, tone) = SeedHct.FromColor(Avalonia.Media.Color.Parse(recipe.Seed));
+        vm.AccentColor.Should().Be(SeedHct.ToHex(hue, recipe.SeedChroma, tone));
         vm.SchemeVariant.Should().Be(recipe.Variant);
         vm.ThemeContrast.Should().Be(recipe.Contrast);
     }

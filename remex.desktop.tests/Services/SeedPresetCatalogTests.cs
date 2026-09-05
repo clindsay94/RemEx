@@ -263,11 +263,12 @@ public class SeedPresetCatalogTests
             "the gallery has to come from the catalog");
         axaml.Should().Contain("SelectThemeCommand");
 
-        // Exactly two tile templates, not two templates plus leftovers. The preset gallery and the
-        // scheme-variant strip row (RemEx-lrxyo) are both catalog/generator-driven galleries sharing
-        // the .tile role from RemEx-z7pnx; a third would be a hand-authored duplicate of one of them.
-        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(2,
-            "the preset gallery and the scheme-variant strip row are the only two tile templates");
+        // Exactly three tile templates, not three templates plus leftovers. The preset gallery, the
+        // scheme-variant strip row (RemEx-lrxyo) and the saved-palettes row (RemEx-ddynd) are all
+        // catalog/collection-driven galleries sharing the .tile role from RemEx-z7pnx; a fourth
+        // would be a hand-authored duplicate of one of them.
+        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(3,
+            "the preset gallery, the scheme-variant strip row and the saved-palettes row are the only three tile templates");
 
         // And no colour literal survives INSIDE either gallery. Scoped to the ItemsControls on
         // purpose: the accent quick-pick row further down the panel is literals by design — those

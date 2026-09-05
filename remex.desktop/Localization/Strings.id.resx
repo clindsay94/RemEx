@@ -3280,4 +3280,19 @@ Anda dapat mengubah:
   <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
     <value>Gambar itu tidak dapat disalin, jadi gambar sebelumnya tetap dipakai.</value>
   </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Simpan yang sekarang</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Palet Anda</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Bawaan</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Hapus palet</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Nama palet</value>
+  </data>
 </root>

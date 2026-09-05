@@ -3277,4 +3277,19 @@ Vous pouvez modifier :
   <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
     <value>Cette image n'a pas pu être copiée ; la précédente est conservée.</value>
   </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Enregistrer l'actuelle</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Vos palettes</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Intégrées</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Supprimer la palette</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Nom de la palette</value>
+  </data>
 </root>

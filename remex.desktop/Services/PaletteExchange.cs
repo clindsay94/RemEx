@@ -13,7 +13,9 @@ namespace Remex.Desktop.Services;
 /// transport for "share this palette", and feeds <see cref="PaletteExchange.ToAxaml"/> alongside a generated
 /// <see cref="DynamicColorGenerator.M3Palette"/>.
 /// </summary>
-public sealed record PaletteRecipe(string Seed, string Variant, string Mode, double Contrast, double SeedChroma);
+public sealed record PaletteRecipe(
+    string Seed, string Variant, string Mode, double Contrast, double SeedChroma,
+    string ColorSource = ColorSources.Custom, string? Name = null);
 
 /// <summary>
 /// Serializes a palette recipe to/from JSON, and renders a generated palette as a compilable
@@ -26,8 +28,10 @@ public sealed record PaletteRecipe(string Seed, string Variant, string Mode, dou
 /// </remarks>
 public static class PaletteExchange
 {
-    /// <summary>Bumped only if the recipe shape changes in a way an older reader could not parse.</summary>
-    private const int FormatVersion = 1;
+    /// <summary>Bumped only if the recipe shape changes in a way an older reader could not parse.
+    /// 2 (RemEx-ddynd): optional <c>colorSource</c> and <c>name</c>; a version-1 reader ignores
+    /// them, a version-1 file reads as Custom/unnamed.</summary>
+    private const int FormatVersion = 2;
 
     /// <summary>The three modes <c>ThemeModes</c> defines.</summary>
     private static readonly string[] ValidModes = { ThemeModes.Light, ThemeModes.Dark, ThemeModes.System };
@@ -39,13 +43,15 @@ public static class PaletteExchange
     };
 
     private sealed record PaletteRecipeDto(
-        int FormatVersion, string Seed, string Variant, string Mode, double Contrast, double SeedChroma);
+        int FormatVersion, string Seed, string Variant, string Mode, double Contrast, double SeedChroma,
+        string? ColorSource, string? Name);
 
     /// <summary>Serializes a recipe to the <c>.remexpalette</c> JSON shape (camelCase, indented, versioned).</summary>
     public static string ToJson(PaletteRecipe recipe)
     {
         var dto = new PaletteRecipeDto(
-            FormatVersion, recipe.Seed, recipe.Variant, recipe.Mode, recipe.Contrast, recipe.SeedChroma);
+            FormatVersion, recipe.Seed, recipe.Variant, recipe.Mode, recipe.Contrast, recipe.SeedChroma,
+            recipe.ColorSource, recipe.Name);
         return JsonSerializer.Serialize(dto, JsonOptions);
     }
 
@@ -76,7 +82,13 @@ public static class PaletteExchange
         if (Array.IndexOf(ValidModes, dto.Mode) < 0) return false;
 
         var contrast = Math.Clamp(dto.Contrast, -1.0, 1.0);
-        recipe = new PaletteRecipe(dto.Seed, SchemeVariants.Normalize(dto.Variant), dto.Mode, contrast, dto.SeedChroma);
+        var source = dto.ColorSource switch
+        {
+            ColorSources.WindowsAccent or ColorSources.Wallpaper or ColorSources.Custom => dto.ColorSource,
+            _ => ColorSources.Custom,
+        };
+        var name = string.IsNullOrWhiteSpace(dto.Name) ? null : dto.Name.Trim();
+        recipe = new PaletteRecipe(dto.Seed, SchemeVariants.Normalize(dto.Variant), dto.Mode, contrast, dto.SeedChroma, source, name);
         return true;
     }
 
