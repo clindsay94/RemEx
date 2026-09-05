@@ -17,9 +17,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // THE MICA/ACRYLIC BACKDROP DEPENDS ON THIS LINE (RemEx-c437b). Without it the window
+        // THE ACRYLIC BACKDROP DEPENDS ON THIS LINE (RemEx-c437b). Without it the window
         // keeps Material.Avalonia's decorations theme, whose underlay is an opaque sheet over the
-        // OS backdrop — the app then renders a flat surface while reporting that Mica is active.
+        // OS backdrop — the app then renders a flat surface while reporting that Acrylic is active.
         // Themes/Chrome/WindowChrome.axaml carries the diagnosis and why nothing lighter reaches it.
         // Assigned here rather than as a Window attribute because the theme arrives in a merged
         // resource dictionary, which only exists once InitializeComponent has run.
@@ -115,13 +115,7 @@ public partial class MainWindow : Window
             // it must never be left at whatever translucent value preceded this customization.
             TransparencyBackgroundFallback = OpaqueSurfaceFallbackBrush();
 
-            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica")
-            {
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
-                Background = Brushes.Transparent;
-                Opacity = 1.0;
-            }
-            else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
+            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;

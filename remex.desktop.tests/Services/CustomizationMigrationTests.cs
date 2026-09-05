@@ -230,7 +230,7 @@ public class CustomizationMigrationTests
         migrated.SavedPalettes.Should().ContainSingle(p => p.Seed == "#ABCDEF" && p.Strategy == "Neutral");
         migrated.CustomAccentColors.Should().BeEmpty();
         migrated.ColorSource.Should().Be(ColorSources.Custom);
-        migrated.SchemaVersion.Should().Be(3);
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
     }
 
     [Fact]
@@ -246,14 +246,60 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        after.Should().BeEquivalentTo(before with { SchemaVersion = 3, ColorSource = ColorSources.Custom },
+        after.Should().BeEquivalentTo(
+            before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion, ColorSource = ColorSources.Custom },
             "arm 3 rewrites only the fields the spec names");
     }
 
+    // ─── Arm 4: Mica leaves the picker (RemEx-8twk0.6) ─────────────────────────────────────────
+
+    private static CustomizationSettings SchemaThree() => SchemaTwo() with { SchemaVersion = 3 };
+
     [Fact]
-    public void ASchemaThreeProfileIsUntouched()
+    public void ASchemaThreeMicaProfileBecomesWallpaperAtHighBlur()
     {
-        var current = SchemaTwo() with { SchemaVersion = 3, BackgroundMaterial = "Mica", SplashStyle = "RemexCommand" };
+        var migrated = CustomizationMigration.Migrate(SchemaThree() with { BackgroundMaterial = "Mica" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper",
+            "Mica never rendered on this Avalonia build and every fresh install between task 1 and "
+            + "task 4 wrote it explicitly at schema 3, past arm 2->3 (RemEx-8twk0.6)");
+        migrated.WallpaperBlur.Should().Be(0.9);
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ASchemaThreeAuroraProfileIsByteIdenticalApartFromTheSchemaStamp()
+    {
+        var before = SchemaThree() with { BackgroundMaterial = "Aurora" };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion });
+    }
+
+    [Fact]
+    public void ASchemaThreeWallpaperProfileKeepsItsOwnBlur()
+    {
+        var before = SchemaThree() with
+        {
+            BackgroundMaterial = "Wallpaper", WallpaperSource = WallpaperSources.Image, WallpaperBlur = 0.3,
+        };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
+            "a non-Mica background at schema 3 must not have its blur touched by arm 3->4");
+    }
+
+    [Fact]
+    public void ASchemaFourProfileIsUntouched()
+    {
+        var current = SchemaTwo() with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            BackgroundMaterial = "Mica",
+            SplashStyle = "RemexCommand",
+        };
 
         CustomizationMigration.Migrate(current, out _).Should().BeSameAs(current,
             "a profile already at the current schema is returned as the same instance");

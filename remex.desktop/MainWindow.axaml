@@ -13,12 +13,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:Remex.Desktop.Views"
-    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterScreen" Classes="palette-crossfade" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
+    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterScreen" Classes="palette-crossfade" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
 
-    <!-- ═══ THE FIX FOR THE DEAD MICA/ACRYLIC BACKDROP (RemEx-c437b, root-caused 2026-08-26).
+    <!-- ═══ THE FIX FOR THE DEAD ACRYLIC BACKDROP (RemEx-c437b, root-caused 2026-08-26).
          Material.Avalonia's window-decorations theme laid an opaque MaterialPaperBrush underlay
-         between the OS backdrop and everything this app draws, so Mica and Acrylic were applied and
-         then covered — a dead-constant #303030 while ActualTransparencyLevel reported Mica. The full
+         between the OS backdrop and everything this app draws, so Acrylic was applied and
+         then covered — a dead-constant #303030 while ActualTransparencyLevel reported Acrylic. The full
          account, the five lighter fixes that were tried and measured inert, and the sync rules
          against the upstream file live in Themes/Chrome/WindowChrome.axaml. It is applied per-window in the
          constructor rather than as an attribute here: the theme is a resource in a merged

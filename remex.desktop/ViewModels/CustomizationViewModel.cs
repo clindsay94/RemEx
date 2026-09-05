@@ -676,7 +676,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         AvailableBackgroundTypes.Add("Wallpaper");
         if (OperatingSystem.IsWindows())
         {
-            AvailableBackgroundTypes.Add("Mica");
             AvailableBackgroundTypes.Add("Acrylic");
         }
         else if (OperatingSystem.IsLinux())

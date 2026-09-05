@@ -8,12 +8,12 @@ using Xunit;
 namespace Remex.Desktop.Tests.Controls;
 
 /// <summary>
-/// Guards the translucency of the Mica / Acrylic / Glass overlay tints in
+/// Guards the translucency of the Acrylic / Glass overlay tints in
 /// DashboardBackgroundControl (RemEx-c437b).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The Mica, Acrylic and Glass canvas modes sit over a TRANSPARENT window whose real surface is
+/// The Acrylic and Glass canvas modes sit over a TRANSPARENT window whose real surface is
 /// the OS backdrop — the overlay panels only tint it. GlassBaseDarkBrush is OPAQUE (ThemeService
 /// overrides it with the HCT-solved Surface at full alpha, and 26 files consume it), so a bare
 /// Fill here is a solid sheet: the backdrop vanishes with no exception, no log line, and no
@@ -29,12 +29,10 @@ namespace Remex.Desktop.Tests.Controls;
 /// Themes/Chrome/WindowChrome.axaml). With the underlay cleared the backdrop genuinely composites, and a
 /// 0.63 veil over Avalonia's already-dark Mica brush brings the wallpaper contribution back to
 /// ~1/255 — alive and invisible, which is indistinguishable from the bug the user reported.
-/// Measured 2026-08-26 after the fix: at 0.30 the Mica canvas shifts ~2.5/255 across a window
-/// move over a varied wallpaper, and Acrylic at 0.25 is unmistakable.
 /// </para>
 /// <para>
 /// Do not raise these to "restore" the older, heavier look without re-measuring; that is the exact
-/// change that made the feature look broken. Mica and Acrylic ARE now bound to GlassOpacity
+/// change that made the feature look broken. Acrylic IS now bound to GlassOpacity
 /// (RemEx-mmrgc) — but by SCALING, not raw binding: effective veil = GlassOpacity × ceiling
 /// (0.30 / 0.25), via MultiplyConverter. That preserves this same ceiling as a maximum, so
 /// "Frosted" (GlassOpacity = 1.0) reproduces exactly the old fixed value instead of going opaque;
@@ -76,7 +74,6 @@ public class DashboardBackdropTintTests
     }
 
     [Theory]
-    [InlineData("IsMica", 0.30)]
     [InlineData("IsAcrylic", 0.25)]
     public void TheBackdropTint_ScalesWithGlassOpacity(string modeConverter, double expectedCeiling)
     {

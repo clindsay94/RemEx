@@ -32,9 +32,10 @@ public static class CustomizationMigration
     /// Bump this ONLY together with a new migration arm, and never renumber an existing one — the
     /// value on disk is the only record of what a profile has already been through.
     /// History: 1 = the seed engine (RemEx-dbkzy), 2 = tri-state ThemeMode (RemEx-zk5bc),
-    /// 3 = the personalization sheet: colour source, wallpaper, saved palettes (RemEx-ddynd).
+    /// 3 = the personalization sheet: colour source, wallpaper, saved palettes (RemEx-ddynd),
+    /// 4 = Mica retired from the background-mode picker (RemEx-8twk0.6).
     /// </remarks>
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -78,6 +79,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 1) migrated = FromPreSeedEngine(migrated, ref warning);
         if (migrated.SchemaVersion < 2) migrated = StampThemeMode(migrated);
         if (migrated.SchemaVersion < 3) migrated = FromSchemaTwo(migrated);
+        if (migrated.SchemaVersion < 4) migrated = FromSchemaThree(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -145,6 +147,30 @@ public static class CustomizationMigration
             SavedPalettes = palettes,
             CustomAccentColors = Array.Empty<string>(),
             ColorSource = ColorSources.Custom,
+        };
+    }
+
+    /// <summary>
+    /// Schema 3 → 4: Mica leaves the background-mode picker (RemEx-8twk0.6). ONE <c>with</c>
+    /// EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// Mica never rendered on this Avalonia build, so this is the exact rule arm 2→3 already
+    /// applies to a schema-2 Mica profile — but every fresh install between ddc5658 (task 1) and
+    /// f007cd4 (task 4) wrote <c>BackgroundMaterial="Mica"</c> explicitly at schema 3, past that
+    /// arm, so a second arm is required rather than raising <see cref="CurrentSchemaVersion"/>
+    /// alone. <see cref="CustomizationSettings.WallpaperSource"/> is left untouched: a schema-3
+    /// profile already carries the record default (<see cref="WallpaperSources.Desktop"/>) there,
+    /// since nothing before this task ever wrote anything else for a Mica profile.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaThree(CustomizationSettings settings)
+    {
+        var wasMica = string.Equals(settings.BackgroundMaterial, "Mica", StringComparison.OrdinalIgnoreCase);
+
+        return settings with
+        {
+            BackgroundMaterial = wasMica ? "Wallpaper" : settings.BackgroundMaterial,
+            WallpaperBlur = wasMica ? 0.9 : settings.WallpaperBlur,
         };
     }
 

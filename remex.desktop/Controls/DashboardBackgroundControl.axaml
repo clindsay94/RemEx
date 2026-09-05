@@ -221,14 +221,6 @@
                         </Rectangle>
                     </Panel>
 
-                    <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
-                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
-                        <!-- Veil scales with Card Opacity: GlassOpacity × 0.30 ceiling (RemEx-mmrgc).
-                             Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.30. -->
-                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.30, FallbackValue=0.0, TargetNullValue=0.0}" />
-                        <Rectangle Classes="palette-bg" Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
-                    </Panel>
-
                     <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
                     <!-- The window itself is transparent; this panel adds only a subtle frosted tint
                  so UI elements remain readable when the desktop shows behind the window. -->

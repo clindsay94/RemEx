@@ -37,10 +37,6 @@ public static class StringMatchConverter
     public static readonly IValueConverter IsAurora =
         new StringEqualsConverter("Aurora");
 
-    /// <summary>Returns true when the bound string equals "Mica".</summary>
-    public static readonly IValueConverter IsMica =
-        new StringEqualsConverter("Mica");
-
     /// <summary>Returns true when the bound string equals "Acrylic".</summary>
     public static readonly IValueConverter IsAcrylic =
         new StringEqualsConverter("Acrylic");
