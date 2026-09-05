@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Avalonia.Media;
 using FluentAssertions;
 using Remex.Core.Models;
@@ -7,11 +10,37 @@ using Xunit;
 namespace Remex.Desktop.Tests.Services;
 
 /// <summary>
-/// The pure half of the coordinator: a source colour supplies hue and tone, the profile's own
-/// vibrancy supplies chroma, so the Vibrancy slider keeps shaping a seed the person cannot edit.
+/// The pure half of the coordinator (a source colour supplies hue and tone, the profile's own
+/// vibrancy supplies chroma, so the Vibrancy slider keeps shaping a seed the person cannot edit),
+/// and the source GATE itself (RemEx-8twk0.3 review, HIGH): before this class covered
+/// <c>Apply</c>, the method that actually decides whether a Windows-accent change touches the
+/// saved profile had zero coverage.
 /// </summary>
-public class ColorSourceCoordinatorTests
+/// <remarks>
+/// THE Apply TESTS BUILD REAL COLLABORATORS, not mocks: a <see cref="DashboardLayoutService"/>
+/// redirected to a private per-test temp directory, exactly like
+/// <see cref="DashboardLayoutClobberTests"/>; a <see cref="ThemeService"/> made headless the way
+/// <see cref="HardwareAccentInjectionTests"/> does; and a real <see cref="WindowsAccentWatcher"/>
+/// on the fake clock <see cref="ManualTimeProvider"/> shares with
+/// <see cref="WindowsAccentWatcherTests"/>. <c>Apply</c> never drives the watcher itself here, so
+/// its read function is never called — only <see cref="ColorSourceCoordinator.Apply"/> is under
+/// test.
+/// </remarks>
+public class ColorSourceCoordinatorTests : IDisposable
 {
+    // OWN TEMP DIRECTORY PER TEST, same reason as DashboardLayoutClobberTests: a
+    // DashboardLayoutService built through the public constructor shares the one
+    // assembly-redirected dashboard_layout.json, and the Apply tests below deliberately read that
+    // file's bytes off disk to prove a save was, or was not, queued. Unused by the pure
+    // ShapedBySource tests below, which never touch a DashboardLayoutService at all.
+    private readonly string _tempDirectory =
+        Path.Combine(Path.GetTempPath(), "remex-color-source-coordinator-" + Guid.NewGuid().ToString("N"));
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_tempDirectory, recursive: true); } catch { /* best-effort cleanup */ }
+    }
+
     [Fact]
     public void ShapedBySource_TakesHueAndToneFromTheSourceAndChromaFromTheProfile()
     {
@@ -43,5 +72,95 @@ public class ColorSourceCoordinatorTests
         var settings = new CustomizationSettings();
 
         ColorSourceCoordinator.ShapedBySource(settings, "#FF0O00").Should().BeSameAs(settings);
+    }
+
+    private async Task<(DashboardLayoutService Layout, ColorSourceCoordinator Coordinator)> BuildAsync()
+    {
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        var layout = new DashboardLayoutService(Path.Combine(_tempDirectory, "dashboard_layout.json"), theme);
+        await layout.LoadAsync();
+        var watcher = new WindowsAccentWatcher(() => null, new ManualTimeProvider());
+        var coordinator = new ColorSourceCoordinator(layout, theme, watcher);
+        return (layout, coordinator);
+    }
+
+    /// <summary>Sets the profile's colour source through the service's own save API, not by hand-editing JSON.</summary>
+    private static async Task SetColorSourceAsync(DashboardLayoutService layout, string colorSource)
+    {
+        layout.RequestSave(layout.CurrentProfile with
+        {
+            Customization = layout.CurrentProfile.Customization with { ColorSource = colorSource },
+        });
+        await layout.FlushAsync();
+    }
+
+    [Theory]
+    [InlineData(ColorSources.Custom)]
+    [InlineData(ColorSources.Wallpaper)]
+    public async Task Apply_LeavesTheProfileAloneWhenTheSourceIsNotTheWindowsAccent(string colorSource)
+    {
+        var (layout, coordinator) = await BuildAsync();
+        await SetColorSourceAsync(layout, colorSource);
+        var before = layout.CurrentProfile;
+        var onDiskBefore = await File.ReadAllTextAsync(layout.FilePathForTests);
+
+        coordinator.Apply("#123456");
+
+        layout.CurrentProfile.Should().Be(before,
+            $"a {colorSource} source must not let a Windows-accent change touch the profile");
+        (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Be(onDiskBefore,
+            "no save should have been queued");
+    }
+
+    [Fact]
+    public async Task Apply_WritesTheShapedSeedAndSavesWhenTheSourceIsTheWindowsAccent()
+    {
+        var (layout, coordinator) = await BuildAsync();
+        await SetColorSourceAsync(layout, ColorSources.WindowsAccent);
+        var settingsBeforeApply = layout.CurrentProfile.Customization;
+        var expectedShaped = ColorSourceCoordinator.ShapedBySource(settingsBeforeApply, "#0078D4");
+
+        coordinator.Apply("#0078D4");
+        await layout.FlushAsync();
+
+        layout.CurrentProfile.Customization.AccentColor.Should().Be(expectedShaped.AccentColor,
+            "the Windows accent must be shaped into the seed the same way ShapedBySource does");
+        (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Contain(expectedShaped.AccentColor,
+            "a shaped accent change must be saved to disk");
+    }
+
+    [Fact]
+    public async Task Apply_TheSameHexTwiceIsANoOpTheSecondTime()
+    {
+        var (layout, coordinator) = await BuildAsync();
+        await SetColorSourceAsync(layout, ColorSources.WindowsAccent);
+
+        coordinator.Apply("#0078D4");
+        await layout.FlushAsync();
+        var afterFirstApply = layout.CurrentProfile;
+        var onDiskAfterFirstApply = await File.ReadAllTextAsync(layout.FilePathForTests);
+
+        coordinator.Apply("#0078D4");
+        await layout.FlushAsync();
+
+        layout.CurrentProfile.Should().Be(afterFirstApply,
+            "the unchanged-accent short-circuit must make the second identical Apply a no-op");
+        (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Be(onDiskAfterFirstApply,
+            "no further save should have been queued for an identical accent");
+    }
+
+    [Fact]
+    public async Task Apply_AnUnparseableHexChangesNothing()
+    {
+        var (layout, coordinator) = await BuildAsync();
+        await SetColorSourceAsync(layout, ColorSources.WindowsAccent);
+        var before = layout.CurrentProfile;
+        var onDiskBefore = await File.ReadAllTextAsync(layout.FilePathForTests);
+
+        coordinator.Apply("#FF0O00");
+
+        layout.CurrentProfile.Should().Be(before, "an unparseable hex must leave the profile untouched");
+        (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Be(onDiskBefore,
+            "no save should have been queued for a hex ShapedBySource could not parse");
     }
 }

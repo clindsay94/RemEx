@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Remex.Desktop.Services;
 using Xunit;
@@ -15,63 +13,9 @@ namespace Remex.Desktop.Tests.Services;
 /// </summary>
 public class WindowsAccentWatcherTests
 {
-    /// <summary>Fires timer callbacks only when the test advances it. Synchronous, single-threaded.</summary>
-    private sealed class ManualTimeProvider : TimeProvider
-    {
-        private readonly List<ManualTimer> _timers = new();
-
-        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
-        {
-            var timer = new ManualTimer(callback, state, dueTime, period);
-            _timers.Add(timer);
-            return timer;
-        }
-
-        public void Advance(TimeSpan by)
-        {
-            foreach (var timer in _timers.ToArray()) timer.Advance(by);
-        }
-
-        private sealed class ManualTimer : ITimer
-        {
-            private readonly TimerCallback _callback;
-            private readonly object? _state;
-            private TimeSpan _due;
-            private TimeSpan _period;
-            private TimeSpan _elapsed;
-
-            public ManualTimer(TimerCallback callback, object? state, TimeSpan due, TimeSpan period)
-            {
-                _callback = callback; _state = state; _due = due; _period = period;
-            }
-
-            public bool Change(TimeSpan dueTime, TimeSpan period)
-            {
-                _due = dueTime; _period = period; _elapsed = TimeSpan.Zero;
-                return true;
-            }
-
-            public void Advance(TimeSpan by)
-            {
-                if (_due == Timeout.InfiniteTimeSpan) return;
-                _elapsed += by;
-                while (_due != Timeout.InfiniteTimeSpan && _elapsed >= _due)
-                {
-                    _elapsed -= _due;
-                    _callback(_state);
-                    if (_period == Timeout.InfiniteTimeSpan || _period == TimeSpan.Zero)
-                    {
-                        _due = Timeout.InfiniteTimeSpan;
-                        break;
-                    }
-                    _due = _period;
-                }
-            }
-
-            public void Dispose() => _due = Timeout.InfiniteTimeSpan;
-            public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
-        }
-    }
+    // ManualTimeProvider moved to its own shared file (RemEx-8twk0.3 review, HIGH finding
+    // follow-up): ColorSourceCoordinatorTests now needs the same fake clock to build a real
+    // WindowsAccentWatcher for ColorSourceCoordinator.Apply tests.
 
     private static (WindowsAccentWatcher Watcher, ManualTimeProvider Clock, List<string> Raised, Func<string?> Source) Build(string? initial)
     {
@@ -204,5 +148,30 @@ public class WindowsAccentWatcherTests
         clock.Advance(TimeSpan.FromSeconds(10));
 
         reads.Should().Be(0);
+    }
+
+    [Fact]
+    public void DisposeStopsAPendingPollFromRaising()
+    {
+        // RemEx-8twk0.3 review (LOW): an in-flight thread-pool callback must not still raise
+        // AccentChanged once Dispose() has run. Disposing the timer alone does not reproduce
+        // this — the fake timer simply stops firing, which would pass even without the fix —
+        // so this drives Poll() directly through PollNow(), exactly the way a callback already
+        // inside Poll() when Dispose() runs would still see the accent change.
+        var current = "#111111";
+        var clock = new ManualTimeProvider();
+        var watcher = new WindowsAccentWatcher(() => current, clock);
+        var raised = new List<string>();
+        watcher.AccentChanged += raised.Add;
+
+        watcher.Start();
+        watcher.SetVisible(true);
+        current = "#222222";
+        watcher.Dispose();
+
+        var act = () => watcher.PollNow();
+
+        act.Should().NotThrow("a poll racing Dispose must not throw");
+        raised.Should().BeEmpty("nothing should raise once the watcher has been disposed");
     }
 }

@@ -84,11 +84,20 @@ public sealed class WindowsAccentWatcher : IDisposable
 
     private void Poll()
     {
-        string? hex;
+        // THE REGISTRY READ HAPPENS OUTSIDE THE GATE (RemEx-8twk0.3 review, LOW). SetVisible(true)
+        // and PollNow() call this on the UI thread, so a pool-thread poll holding _gate across
+        // TryRead() could block the UI thread behind a registry read. The gate is only ever held
+        // long enough to check _running or to compare-and-update _last.
         lock (_gate)
         {
             if (!_running) return;
-            hex = TryRead();
+        }
+
+        var hex = TryRead();
+
+        lock (_gate)
+        {
+            if (!_running) return;
             if (hex is null || string.Equals(hex, _last, StringComparison.OrdinalIgnoreCase)) return;
             _last = hex;
         }
@@ -109,5 +118,12 @@ public sealed class WindowsAccentWatcher : IDisposable
         }
     }
 
-    public void Dispose() => _timer.Dispose();
+    public void Dispose()
+    {
+        // STOP RAISING BEFORE DISPOSING THE TIMER (RemEx-8twk0.3 review, LOW). An in-flight
+        // thread-pool callback can still be inside Poll() when Dispose() runs on the UI thread;
+        // without this, it could still see _running true and raise AccentChanged after disposal.
+        lock (_gate) { _running = false; }
+        _timer.Dispose();
+    }
 }
