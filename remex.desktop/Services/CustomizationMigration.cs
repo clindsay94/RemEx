@@ -31,9 +31,10 @@ public static class CustomizationMigration
     /// <remarks>
     /// Bump this ONLY together with a new migration arm, and never renumber an existing one — the
     /// value on disk is the only record of what a profile has already been through.
-    /// History: 1 = the seed engine (RemEx-dbkzy), 2 = tri-state ThemeMode (RemEx-zk5bc).
+    /// History: 1 = the seed engine (RemEx-dbkzy), 2 = tri-state ThemeMode (RemEx-zk5bc),
+    /// 3 = the personalization sheet: colour source, wallpaper, saved palettes (RemEx-ddynd).
     /// </remarks>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -76,6 +77,7 @@ public static class CustomizationMigration
         var migrated = settings;
         if (migrated.SchemaVersion < 1) migrated = FromPreSeedEngine(migrated, ref warning);
         if (migrated.SchemaVersion < 2) migrated = StampThemeMode(migrated);
+        if (migrated.SchemaVersion < 3) migrated = FromSchemaTwo(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -97,6 +99,63 @@ public static class CustomizationMigration
             {
                 ThemeMode = settings.UseLightPalette == true ? ThemeModes.Light : ThemeModes.Dark,
             };
+
+    /// <summary>
+    /// Schema 2 → 3: the personalization sheet (RemEx-ddynd, RemEx-z94c7). ONE <c>with</c>
+    /// EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// Mica never rendered on this Avalonia build, so a Mica profile becomes the real wallpaper,
+    /// heavily blurred — the closest thing to what the person thought they had. Spritz is what
+    /// Android calls Neutral; Content has no Android name and falls back to Tonal Spot, as does
+    /// anything outside the seven. The old splash default flips because the person who asked for
+    /// the new default is the person whose file holds the old one. Each saved swatch becomes a
+    /// whole palette carrying the file's current shaping inputs, and the swatch list is emptied.
+    /// A migrated file is on the Custom source: its seed was chosen by hand or by a preset.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaTwo(CustomizationSettings settings)
+    {
+        var wasMica = string.Equals(settings.BackgroundMaterial, "Mica", StringComparison.OrdinalIgnoreCase);
+        var variant = NormalizeVariant(settings.SchemeVariant);
+
+        var seeds = settings.CustomAccentColors ?? Array.Empty<string>();
+        var palettes = new List<SavedPalette>(settings.SavedPalettes ?? Array.Empty<SavedPalette>());
+        for (var i = 0; i < seeds.Count; i++)
+        {
+            palettes.Add(new SavedPalette
+            {
+                Name = SavedPalette.DefaultNamePrefix + (i + 1),
+                ColorSource = ColorSources.Custom,
+                Seed = seeds[i],
+                Vibrancy = settings.ThemeSeedChroma,
+                Contrast = settings.ThemeContrast,
+                Strategy = variant,
+            });
+        }
+
+        return settings with
+        {
+            BackgroundMaterial = wasMica ? "Wallpaper" : settings.BackgroundMaterial,
+            WallpaperSource = wasMica ? WallpaperSources.Desktop : settings.WallpaperSource,
+            WallpaperBlur = wasMica ? 0.9 : settings.WallpaperBlur,
+            SchemeVariant = variant,
+            SplashStyle = string.Equals(settings.SplashStyle, "RemexCommand", StringComparison.Ordinal)
+                ? "CosmicZoom"
+                : settings.SplashStyle,
+            SavedPalettes = palettes,
+            CustomAccentColors = Array.Empty<string>(),
+            ColorSource = ColorSources.Custom,
+        };
+    }
+
+    /// <summary>Retired and unknown strategy names to the seven Android names. Replaced by
+    /// <c>SchemeVariants.Normalize</c> in Task 2; kept private here so Task 1 builds alone.</summary>
+    private static string NormalizeVariant(string? variant) => variant switch
+    {
+        "Spritz" => "Neutral",
+        "TonalSpot" or "Expressive" or "FruitSalad" or "Rainbow" or "Vibrant" or "Neutral" or "Monochrome" => variant,
+        _ => "TonalSpot",
+    };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

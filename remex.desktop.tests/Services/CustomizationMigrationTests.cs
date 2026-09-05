@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -126,6 +127,136 @@ public class CustomizationMigrationTests
                 new CustomizationSettings { SchemaVersion = 1, UseLightPalette = useLight }, out _);
             migrated.ThemeMode.Should().NotBe(ThemeModes.System);
         }
+    }
+
+    // ─── Arm 3: the personalization sheet (RemEx-ddynd / RemEx-z94c7) ──────────────────────────
+
+    private static CustomizationSettings SchemaTwo() => new()
+    {
+        SchemaVersion = 2,
+        ThemeMode = ThemeModes.Dark,
+        AccentColor = "#00F3FF",
+        ThemeSeedChroma = 61.0,
+        ThemeContrast = 0.25,
+        SchemeVariant = "Vibrant",
+    };
+
+    [Fact]
+    public void AMicaProfileBecomesWallpaperOverTheDesktopAtHighBlur()
+    {
+        var migrated = CustomizationMigration.Migrate(SchemaTwo() with { BackgroundMaterial = "Mica" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper", "Mica never rendered on this Avalonia build (RemEx-z94c7)");
+        migrated.WallpaperSource.Should().Be(WallpaperSources.Desktop);
+        migrated.WallpaperBlur.Should().Be(0.9);
+    }
+
+    [Fact]
+    public void ANonMicaBackgroundKeepsItsOwnWallpaperFields()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaTwo() with { BackgroundMaterial = "Gradient", WallpaperBlur = 0.3, WallpaperSource = WallpaperSources.Image }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Gradient");
+        migrated.WallpaperBlur.Should().Be(0.3);
+        migrated.WallpaperSource.Should().Be(WallpaperSources.Image);
+    }
+
+    [Theory]
+    [InlineData("Spritz", "Neutral")]
+    [InlineData("Content", "TonalSpot")]
+    [InlineData("Fidelity", "TonalSpot")]
+    [InlineData("", "TonalSpot")]
+    [InlineData("Vibrant", "Vibrant")]
+    [InlineData("FruitSalad", "FruitSalad")]
+    public void RetiredAndUnknownVariantsNormaliseToTheSevenAndroidNames(string stored, string expected)
+    {
+        CustomizationMigration.Migrate(SchemaTwo() with { SchemeVariant = stored }, out _)
+            .SchemeVariant.Should().Be(expected);
+    }
+
+    [Fact]
+    public void TheOldSplashDefaultBecomesCosmicZoom()
+    {
+        CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "RemexCommand" }, out _)
+            .SplashStyle.Should().Be("CosmicZoom");
+        CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "Pong" }, out _)
+            .SplashStyle.Should().Be("Pong", "only the old default is flipped; a choice is a choice");
+    }
+
+    [Fact]
+    public void EachSavedSwatchBecomesANamedCustomPaletteAndTheSwatchListIsEmptied()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaTwo() with { CustomAccentColors = new[] { "#112233", "#445566" } }, out _);
+
+        migrated.CustomAccentColors.Should().BeEmpty("the swatches moved into SavedPalettes");
+        migrated.SavedPalettes.Should().HaveCount(2);
+        migrated.SavedPalettes[0].Should().Be(new SavedPalette
+        {
+            Name = "Palette 1", ColorSource = ColorSources.Custom, Seed = "#112233",
+            Vibrancy = 61.0, Contrast = 0.25, Strategy = "Vibrant",
+        });
+        migrated.SavedPalettes[1].Name.Should().Be("Palette 2");
+        migrated.SavedPalettes[1].Seed.Should().Be("#445566");
+    }
+
+    [Fact]
+    public void AMigratedProfileIsOnTheCustomSource()
+    {
+        // The file's seed was chosen by hand or by a preset; only a NEW profile starts on the
+        // Windows accent.
+        CustomizationMigration.Migrate(SchemaTwo(), out _).ColorSource.Should().Be(ColorSources.Custom);
+        new CustomizationSettings().ColorSource.Should().Be(ColorSources.WindowsAccent);
+    }
+
+    [Fact]
+    public void AProfileWithAllFourOldValuesAtOnceMigratesEveryOne()
+    {
+        var old = SchemaTwo() with
+        {
+            BackgroundMaterial = "Mica",
+            SchemeVariant = "Spritz",
+            SplashStyle = "RemexCommand",
+            CustomAccentColors = new[] { "#ABCDEF" },
+        };
+
+        var migrated = CustomizationMigration.Migrate(old, out var warning);
+
+        warning.Should().BeNull("nothing had to be repaired, only translated");
+        migrated.BackgroundMaterial.Should().Be("Wallpaper");
+        migrated.SchemeVariant.Should().Be("Neutral");
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SavedPalettes.Should().ContainSingle(p => p.Seed == "#ABCDEF" && p.Strategy == "Neutral");
+        migrated.CustomAccentColors.Should().BeEmpty();
+        migrated.ColorSource.Should().Be(ColorSources.Custom);
+        migrated.SchemaVersion.Should().Be(3);
+    }
+
+    [Fact]
+    public void ArmThreeDropsNoField()
+    {
+        // The RemEx-8y3qy guard: the arm is one `with` expression, so every field it does not
+        // name survives verbatim. Built by reflection so a field added next year is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 2) with
+        {
+            BackgroundMaterial = "Gradient", SchemeVariant = "Rainbow", SplashStyle = "Pong",
+            CustomAccentColors = Array.Empty<string>(), SavedPalettes = Array.Empty<SavedPalette>(),
+        };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with { SchemaVersion = 3, ColorSource = ColorSources.Custom },
+            "arm 3 rewrites only the fields the spec names");
+    }
+
+    [Fact]
+    public void ASchemaThreeProfileIsUntouched()
+    {
+        var current = SchemaTwo() with { SchemaVersion = 3, BackgroundMaterial = "Mica", SplashStyle = "RemexCommand" };
+
+        CustomizationMigration.Migrate(current, out _).Should().BeSameAs(current,
+            "a profile already at the current schema is returned as the same instance");
     }
 
     [Fact]

@@ -184,6 +184,58 @@ public static class ThemeModes
     public const string System = "System";
 }
 
+/// <summary>The values <see cref="CustomizationSettings.ColorSource"/> can carry.</summary>
+/// <remarks>String constants for the same reason as <see cref="ThemeModes"/>: the record tolerates
+/// unknown values by design, and the desktop resolves an unavailable source to Custom at load.</remarks>
+public static class ColorSources
+{
+    public const string WindowsAccent = "WindowsAccent";
+    public const string Wallpaper = "Wallpaper";
+    public const string Custom = "Custom";
+}
+
+/// <summary>The values <see cref="CustomizationSettings.WallpaperSource"/> can carry.</summary>
+public static class WallpaperSources
+{
+    public const string Desktop = "Desktop";
+    public const string Image = "Image";
+}
+
+/// <summary>
+/// A whole palette recipe the person chose to keep: where the seed came from, the seed itself, and
+/// the three shaping inputs. Applying one reproduces the palette; it is not the palette.
+/// </summary>
+public record SavedPalette
+{
+    /// <summary>The English prefix the 2→3 migration names converted swatches with ("Palette 1",
+    /// "Palette 2", …). Plain English on purpose: this assembly has no localisation, and the person
+    /// renames the palette on the sheet.</summary>
+    public const string DefaultNamePrefix = "Palette ";
+
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>A <see cref="ColorSources"/> value.</summary>
+    [JsonPropertyName("colorSource")]
+    public string ColorSource { get; init; } = ColorSources.Custom;
+
+    /// <summary>The seed hex, e.g. "#6C4CFF".</summary>
+    [JsonPropertyName("seed")]
+    public string Seed { get; init; } = "#6C4CFF";
+
+    /// <summary>The seed chroma (the Vibrancy slider).</summary>
+    [JsonPropertyName("vibrancy")]
+    public double Vibrancy { get; init; } = 48.0;
+
+    /// <summary>The contrast target, -1.0 to 1.0.</summary>
+    [JsonPropertyName("contrast")]
+    public double Contrast { get; init; }
+
+    /// <summary>One of the seven Android strategy names (the desktop normalises anything else).</summary>
+    [JsonPropertyName("strategy")]
+    public string Strategy { get; init; } = "TonalSpot";
+}
+
 /// <summary>
 /// Persisted visual customization parameters.
 /// </summary>
@@ -237,11 +289,37 @@ public record CustomizationSettings
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
 
-    /// <summary>User-defined custom accent colours (hex strings) saved via the colour picker.</summary>
+    /// <summary>Recently-used seeds (hex strings). Schema 3 converted the pre-existing entries into <see cref="SavedPalettes"/> and emptied this list once; the Custom source's recents row writes it again afterwards.</summary>
     public IReadOnlyList<string> CustomAccentColors { get; init; } = Array.Empty<string>();
 
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";
+
+    /// <summary>Who writes <see cref="AccentColor"/>: a <see cref="ColorSources"/> value. New
+    /// profiles start on the Windows accent; the desktop resolves an unavailable source (Linux) to
+    /// Custom without persisting it (RemEx-ddynd).</summary>
+    [JsonPropertyName("colorSource")]
+    public string ColorSource { get; init; } = ColorSources.WindowsAccent;
+
+    /// <summary>Which extracted wallpaper candidate was chosen. Out of range resets to 0 at load.</summary>
+    [JsonPropertyName("wallpaperSeedIndex")]
+    public int WallpaperSeedIndex { get; init; }
+
+    /// <summary>A <see cref="WallpaperSources"/> value: the desktop's own wallpaper, or a picked image.</summary>
+    [JsonPropertyName("wallpaperSource")]
+    public string WallpaperSource { get; init; } = WallpaperSources.Desktop;
+
+    /// <summary>Path of the APP-OWNED copy of a picked image, never the original file.</summary>
+    [JsonPropertyName("wallpaperImagePath")]
+    public string? WallpaperImagePath { get; init; }
+
+    /// <summary>Wallpaper blur, 0 to 1, mapped to a blur radius by the desktop.</summary>
+    [JsonPropertyName("wallpaperBlur")]
+    public double WallpaperBlur { get; init; } = 0.6;
+
+    /// <summary>The person's saved palettes, in the order they were saved.</summary>
+    [JsonPropertyName("savedPalettes")]
+    public IReadOnlyList<SavedPalette> SavedPalettes { get; init; } = Array.Empty<SavedPalette>();
 
     /// <summary>
     /// Whether the generated palette is a light one. <c>null</c> means "decide from

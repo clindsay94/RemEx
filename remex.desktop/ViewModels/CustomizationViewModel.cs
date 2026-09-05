@@ -939,7 +939,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             CardHeaderFontFamily = carried.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             UiScale = UiScale,
-            CustomAccentColors = CustomAccentColors.Take(MaxRecentSeeds).ToList()
+            CustomAccentColors = CustomAccentColors.Take(MaxRecentSeeds).ToList(),
+            // Task 1 carries these forward verbatim; Tasks 3, 5 and 7 replace each `carried.X`
+            // with the view model's own live value as the sheet gains the control for it.
+            ColorSource = carried.ColorSource,
+            WallpaperSeedIndex = carried.WallpaperSeedIndex,
+            WallpaperSource = carried.WallpaperSource,
+            WallpaperImagePath = carried.WallpaperImagePath,
+            WallpaperBlur = carried.WallpaperBlur,
+            SavedPalettes = carried.SavedPalettes,
         };
 
         // Update the current profile object

@@ -99,9 +99,16 @@ public class DashboardLayoutClobberTests : IDisposable
 
         var loaded = await service.LoadAsync();
 
+        // A schema-1 profile also runs arm 3 (schema 2 -> 3, RemEx-ddynd) on the way to current, which
+        // legitimately rewrites CustomAccentColors/SavedPalettes (swatches become named palettes),
+        // SchemeVariant (normalised to one of the seven Android names) and ColorSource (forced to
+        // Custom) - those are excluded here for the same reason ThemeMode is: this test isolates
+        // "fields no arm claims", not "every field is byte-identical".
         AssertSameCustomization(onDisk, loaded.Customization,
-            "the schema-1-to-2 migration only stamps ThemeMode; every other field must carry forward",
-            nameof(CustomizationSettings.ThemeMode), nameof(CustomizationSettings.SchemaVersion));
+            "the schema-1-to-3 migration only touches the fields its arms claim; every other field must carry forward",
+            nameof(CustomizationSettings.ThemeMode), nameof(CustomizationSettings.SchemaVersion),
+            nameof(CustomizationSettings.CustomAccentColors), nameof(CustomizationSettings.SavedPalettes),
+            nameof(CustomizationSettings.SchemeVariant), nameof(CustomizationSettings.ColorSource));
     }
 
     [Fact]
@@ -218,8 +225,10 @@ public class DashboardLayoutClobberTests : IDisposable
 
         service.LoadFailureWarning.Should().NotBeNull(
             "the lock was held for every attempt, so this load must have genuinely failed");
-        loaded.Customization.BackgroundMaterial.Should().Be("Mica",
-            "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults");
+        loaded.Customization.BackgroundMaterial.Should().Be("Wallpaper",
+            "LoadAsync's existing fallback behaviour is unchanged - it still substitutes defaults and "
+            + "migrates them, and the schema-3 arm now turns the still-Mica record default into "
+            + "Wallpaper unconditionally (RemEx-z94c7), even for this internal fallback profile");
 
         // Exactly ShellViewModel.CompleteTutorial's shape.
         service.RequestSave(service.CurrentProfile with { HasCompletedTutorial = true });
@@ -525,6 +534,11 @@ public class DashboardLayoutClobberTests : IDisposable
                 var t when t == typeof(bool) => !(bool)current!,
                 var t when t == typeof(bool?) => current is null ? true : !(bool)current,
                 var t when t == typeof(IReadOnlyList<string>) => new List<string> { "#112233", "#445566" },
+                var t when t == typeof(int) => 7,
+                var t when t == typeof(IReadOnlyList<SavedPalette>) => new List<SavedPalette>
+                {
+                    new() { Name = "nondefault", ColorSource = ColorSources.Wallpaper, Seed = "#778899", Vibrancy = 33.0, Contrast = 0.5, Strategy = "Rainbow" },
+                },
                 _ => throw new NotSupportedException(
                     $"CustomizationSettings.{prop.Name} has an unhandled type {prop.PropertyType} - "
                     + "extend this builder rather than skipping the field silently."),
@@ -556,6 +570,10 @@ public class DashboardLayoutClobberTests : IDisposable
             if (expectedValue is IReadOnlyList<string> expectedList && actualValue is IReadOnlyList<string> actualList)
             {
                 actualList.Should().Equal(expectedList, because + $" (property: {prop.Name})");
+            }
+            else if (expectedValue is IReadOnlyList<SavedPalette> expectedPalettes && actualValue is IReadOnlyList<SavedPalette> actualPalettes)
+            {
+                actualPalettes.Should().Equal(expectedPalettes, because + $" (property: {prop.Name})");
             }
             else
             {

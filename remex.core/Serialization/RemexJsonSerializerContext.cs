@@ -57,6 +57,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(CommandRequest))]
 [JsonSerializable(typeof(CommandResponse))]
 [JsonSerializable(typeof(PairingPinInfo))]
+[JsonSerializable(typeof(SavedPalette))]
 [JsonSerializable(typeof(CustomizationSettings))]
 [JsonSerializable(typeof(DashboardProfile))]
 [JsonSerializable(typeof(DesktopConfig))]
