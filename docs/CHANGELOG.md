@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Developer-facing: the board-drain procedure now documents the second stale-assembly trap
+  (rebuilding only the dependency leaves the test project's output directory holding the old
+  DLL, so a `--no-build` test run passes with the defect present) and tells the loop to rebuild
+  the test project instead; its header no longer points at an overlay file that was never
+  committed. (RemEx-wr14z)
 - **The Personalize sheet on the PC now works the way the phone's colour flow does.** Colour comes
   from a source first — your Windows accent (the default, followed live within two seconds of a
   change), your wallpaper, or a colour you pick on the wheel — then Vibrancy and Contrast shape it,
