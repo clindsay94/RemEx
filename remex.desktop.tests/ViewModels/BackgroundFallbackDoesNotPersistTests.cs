@@ -97,4 +97,31 @@ public class BackgroundFallbackDoesNotPersistTests : IDisposable
         _layoutService!.CurrentProfile.Customization.BackgroundMaterial.Should().Be("Wallpaper",
             "a genuine pick after the fallback must persist exactly like any other pick");
     }
+
+    /// <summary>
+    /// RemEx-k7891 follow-up (Opus review, MEDIUM). <c>_suppressPersist</c> alone only guards the
+    /// fallback's OWN suppressed <c>ApplyAndSave</c> call — but the live <c>CanvasBackgroundType</c>
+    /// stays "Aurora" afterwards, so the very NEXT save from ANY OTHER property must not persist
+    /// that displayed fallback over the profile's real, unsupported-here material either.
+    /// <c>SyncWithHardware</c> is the cheapest property in this class whose setter ends in
+    /// <c>ApplyAndSave</c> and touches nothing else under test.
+    /// </summary>
+    [Fact]
+    public void UnrelatedSaveAfterTheFallback_StillPreservesTheOriginalMaterial()
+    {
+        var (vm, _) = MakeVmWithMaterial(UnsupportedMaterial);
+        vm.CanvasBackgroundType.Should().Be("Aurora"); // the session-only fallback from construction
+
+        vm.SyncWithHardware = !vm.SyncWithHardware; // an unrelated nudge, not a background-mode pick
+
+        _layoutService!.CurrentProfile.Customization.BackgroundMaterial.Should().Be(UnsupportedMaterial,
+            "an unrelated save must not persist the displayed fallback over the profile's real, " +
+            "unsupported-here material");
+
+        // The stash must still clear on a genuine pick, same as the positive control above.
+        vm.CanvasBackgroundType = "Wallpaper";
+
+        _layoutService.CurrentProfile.Customization.BackgroundMaterial.Should().Be("Wallpaper",
+            "a real pick after an unrelated save must still persist exactly like any other pick");
+    }
 }

@@ -148,8 +148,11 @@ public class CustomizationSettingsRoundTripTests
         var source = File.ReadAllText(Path.Combine(RepoRoot(),
             "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
 
+        // Anchored on the METHOD, not just "return new CustomizationSettings" (RemEx-k7891 review
+        // LOW): that phrase alone is not unique to this one call site forever, and a second one
+        // added elsewhere in the file would silently rescope this test to the wrong initializer.
         var match = Regex.Match(source,
-            @"return new CustomizationSettings\s*\{(.*?)\n        \};",
+            @"private CustomizationSettings BuildCurrentSettings\(\)\s*\{.*?return new CustomizationSettings\s*\{(.*?)\n        \};",
             RegexOptions.Singleline);
 
         match.Success.Should().BeTrue(

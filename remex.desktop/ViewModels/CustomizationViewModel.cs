@@ -37,6 +37,29 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// </remarks>
     private bool _suppressPersist;
 
+    /// <summary>
+    /// Whether <see cref="CanvasBackgroundType"/> is currently showing
+    /// <see cref="RefreshBackgroundTypes"/>'s session-only platform fallback rather than the
+    /// profile's real choice.
+    /// </summary>
+    /// <remarks>
+    /// RemEx-k7891 FOLLOW-UP (Opus review, MEDIUM). <see cref="_suppressPersist"/> alone only
+    /// guards the fallback's OWN call into <see cref="ApplyAndSave"/> — but the live
+    /// <c>CanvasBackgroundType</c> stays "Aurora" afterwards, so the very NEXT save from ANY other
+    /// property (a hardware-accent sync, an unrelated slider) would persist that displayed fallback
+    /// over the real, unsupported-here material unless <see cref="ApplyAndSave"/> substitutes
+    /// <see cref="_unsupportedPersistedMaterial"/> back in while this flag is set. A genuine pick
+    /// through the picker clears both — see <see cref="OnCanvasBackgroundTypeChanged(string)"/>.
+    /// </remarks>
+    private bool _isBackgroundFallbackActive;
+
+    /// <summary>
+    /// The real, persisted <c>BackgroundMaterial</c> stashed away while
+    /// <see cref="_isBackgroundFallbackActive"/> is set — including <c>null</c>, the hand-edited
+    /// missing-field shape. See that field's remarks for why this exists.
+    /// </summary>
+    private string? _unsupportedPersistedMaterial;
+
     /// <summary>Held so <see cref="Dispose"/> can detach it — the theme service outlives this VM.</summary>
     private Action<CustomizationSettings>? _onCustomizationApplied;
 
@@ -747,6 +770,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // directly outside the constructor: CommunityToolkit.Mvvm's generator forbids it, MVVMTK0034.)
         if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))
         {
+            // STASHED BEFORE THE ASSIGNMENT BELOW OVERWRITES IT (RemEx-k7891 follow-up, MEDIUM). The
+            // live CanvasBackgroundType reads "Aurora" from here on, but the profile's real choice —
+            // possibly null — has to keep reaching ApplyAndSave for every OTHER save this session,
+            // not just this one suppressed call. See _isBackgroundFallbackActive's remarks.
+            _isBackgroundFallbackActive = true;
+            _unsupportedPersistedMaterial = CanvasBackgroundType;
+
             _suppressPersist = true;
             try { CanvasBackgroundType = "Aurora"; }
             finally { _suppressPersist = false; }
@@ -1108,6 +1138,18 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsGlassModeSelected));
         OnPropertyChanged(nameof(IsWallpaperBackgroundSelected));
         OnPropertyChanged(nameof(IsWindowOpacityRelevant));
+
+        // A GENUINE PICK CLEARS THE STASHED FALLBACK (RemEx-k7891 follow-up). _suppressPersist is
+        // only ever true for RefreshBackgroundTypes' own platform-fallback assignment; every other
+        // write to this property — including the user's own pick in the ComboBox — means they chose
+        // something, so whatever platform-unsupported (or null) material this session started with
+        // no longer needs protecting from the next save.
+        if (!_suppressPersist)
+        {
+            _isBackgroundFallbackActive = false;
+            _unsupportedPersistedMaterial = null;
+        }
+
         ApplyAndSave();
     }
 
@@ -1175,19 +1217,28 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         var settings = BuildCurrentSettings();
 
-        // Update the current profile object
-        var profile = _layoutService.CurrentProfile with { Customization = settings };
-
-        // Use the internal setter if possible, or request a save
+        // Use the internal setter if possible, or request a save — the LIVE paint always uses
+        // `settings` verbatim (the fallback, while one is showing), never the substitution below.
         _themeService.ApplyCustomization(settings);
 
-        // _suppressPersist SKIPS ONLY THIS LINE (RemEx-k7891). RefreshBackgroundTypes' platform
+        // _suppressPersist SKIPS THIS WHOLE BLOCK (RemEx-k7891). RefreshBackgroundTypes' platform
         // fallback needs the repaint above — and the preset/tile refresh below — to run exactly as a
         // real pick's would, so the picker and the dashboard background never disagree about what's
         // on screen. What it must never do is write the fallback over the profile's real, persisted
         // BackgroundMaterial, which is exactly what RequestSave does.
         if (!_suppressPersist)
         {
+            // RemEx-k7891 FOLLOW-UP (Opus review, MEDIUM). _suppressPersist alone only covers the
+            // fallback's OWN suppressed call above — but CanvasBackgroundType stays "Aurora" after
+            // it, so THIS save (triggered by something else entirely — a hardware-accent sync, an
+            // unrelated slider) would otherwise persist that displayed fallback over the real,
+            // unsupported-here material. While _isBackgroundFallbackActive is set, substitute the
+            // stashed original back in for the persisted copy only; the live `settings` above (and
+            // therefore the on-screen paint) is untouched.
+            var toPersist = _isBackgroundFallbackActive
+                ? settings with { BackgroundMaterial = _unsupportedPersistedMaterial! }
+                : settings;
+            var profile = _layoutService.CurrentProfile with { Customization = toPersist };
             _layoutService.RequestSave(profile);
         }
 
