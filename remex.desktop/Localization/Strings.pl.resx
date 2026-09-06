@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Jak mocno wygenerowana paleta odsuwa tekst od powierzchni za nim.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>STUDIO PALETY</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Ostatnie</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Chroma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Baza</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Odcień</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Jasność</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Koło koloru bazowego</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>PODSTAWOWE PRESETY</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>ZAAWANSOWANE DOSTRAJANIE</value>
   </data>
@@ -414,14 +402,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Siła poświaty</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Kolor akcentu</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Tryb tła</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>ATMOSFERA KANWY</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Resetuj do domyślnych motywu</value>
@@ -1312,15 +1294,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intensywny</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Dodaj własny kolor</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Własny kolor akcentu</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Wariant schematu</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Ekran startowy</value>
   </data>
@@ -1635,27 +1608,6 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Grubość poświaty neonowej w pikselach</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Wybierz motyw kolorystyczny</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Wybierz fioletowy motyw</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Wybierz cyjanowy motyw</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Wybierz różowy motyw</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Wybierz złoty motyw</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Wybierz zielony motyw</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Wybierz czerwony motyw</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Wybierz styl animacji ekranu powitalnego</value>
@@ -2451,9 +2403,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Czcionka dużych tytułów stron. Obejmuje czcionki wyświetlacza aplikacji oraz wszystkie czcionki zainstalowane w tym systemie.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TYPOGRAFIA</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Rozmiar interfejsu</value>
   </data>
@@ -2744,9 +2693,6 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochromatyczny</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2776,15 +2722,6 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Sałatka owocowa</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>Na podstawie zawartości</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Rampa tonalna</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Podstawowy</value>
@@ -3191,15 +3128,6 @@ Możesz zmienić:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>System</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>Z tego komputera</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Dopasuj do akcentu Windows</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>Z tapety</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Adres: {1}</value>
   </data>
@@ -3217,9 +3145,6 @@ Możesz zmienić:
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Stan połączenia</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Udostępnij paletę</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>Kopiuj jako AXAML</value>

@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>जनरेट किया गया पैलेट टेक्स्ट को उसके पीछे की सतह से कितना अलग करता है।</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>पैलेट स्टूडियो</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>हाल के</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>क्रोमा</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>सीड</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>ह्यू</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>टोन</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>सीड रंग चक्र</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>बेस प्रीसेट</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>उन्नत फाइन-ट्यूनिंग</value>
   </data>
@@ -417,14 +405,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>ग्लो शक्ति</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>एक्सेंट रंग</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>पृष्ठभूमि मोड</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>कैनवास वातावरण</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>थीम डिफ़ॉल्ट पर रीसेट करें</value>
@@ -1520,15 +1502,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>तीव्र</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>कस्टम रंग जोड़ें</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>कस्टम एक्सेंट रंग</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>स्कीम संस्करण</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>स्प्लैश स्क्रीन</value>
   </data>
@@ -1843,27 +1816,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>पिक्सेल में नियॉन चमक मोटाई</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>रंग पैलेट थीम हाइलाइट चुनें</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>नियॉन वायलेट थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>साइबर स्यान थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>हॉट पिंक/मजेंटा थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>सोलर गोल्ड/एम्बर थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>पन्ना हरा थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>क्रिमसन रोज थीम चुनें</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>स्टार्टअप स्वागत स्प्लैश स्क्रीन अनुक्रम एनीमेशन की शैली चुनें</value>
@@ -2405,9 +2357,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Remote_WakeInstruction" xml:space="preserve">
     <value>इसे सेट करने के लिए: अपने फ़ोन पर RemEx ऐप खोलें, सेटिंग्स → Wake-on-LAN पर जाएं।</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>टाइपोग्राफी</value>
-  </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>पेज शीर्षक फ़ॉन्ट</value>
   </data>
@@ -2743,9 +2692,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>मोनोक्रोम</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2775,15 +2721,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>फ्रूट सलाद</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>कॉन्टेंट के आधार पर</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>टोनल रैंप</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>प्राइमरी</value>
@@ -3190,15 +3127,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>सिस्टम</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>इस PC से</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Windows एक्सेंट से मिलाएँ</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>वॉलपेपर से</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;पता: {1}</value>
   </data>
@@ -3216,9 +3144,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>कनेक्शन स्थिति</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>पैलेट साझा करें</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>AXAML के रूप में कॉपी करें</value>

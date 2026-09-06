@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Üretilen paletin metni arkasındaki yüzeyden ne kadar ayırdığı.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>PALET STÜDYOSU</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Son kullanılanlar</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Kroma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Tohum</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Renk tonu</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Açıklık</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Tohum renk çarkı</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>TEMEL ÖN AYARLAR</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>GELİŞMİŞ İNCE AYAR</value>
   </data>
@@ -417,14 +405,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Parlaklık Gücü</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Vurgu Rengi</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Arka Plan Modu</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>TUVAL ATMOSFERI</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Tema Varsayılanlarına Sıfırla</value>
@@ -1520,15 +1502,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Yoğun</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Özel renk ekle</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Özel vurgu rengi</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Şema Varyantı</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Açılış Ekranı</value>
   </data>
@@ -1843,27 +1816,6 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Piksel cinsinden neon parlama kalınlığı</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Renk paleti teması vurgularını seç</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Neon Menekşe renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Siber Macenta renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Canlı Pembe renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Güneş Altını renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Zümrüt Yeşili renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Koyu Kırmızı renk temasını seç</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Başlangıç hoş geldiniz açılış ekranı animasyonu tarzını seç</value>
@@ -2454,9 +2406,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Büyük sayfa başlıkları için yazı tipi. Uygulamanın görüntü yazı tiplerini ve bu sistem üzerinde yüklü olan yazı tiplerini içerir.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TİPOGRAFİ</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Kullanıcı Arayüzü Boyutu</value>
   </data>
@@ -2747,9 +2696,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Tek Renk</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2779,15 +2725,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Meyve Salatası</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>İçeriğe Göre</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Tonal Skala</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Birincil</value>
@@ -3194,15 +3131,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Sistem</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>Bu PC'den</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Windows vurgu rengini kullan</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>Duvar kağıdından</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Adres: {1}</value>
   </data>
@@ -3220,9 +3148,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Bağlantı durumu</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Paleti paylaş</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>AXAML olarak kopyala</value>

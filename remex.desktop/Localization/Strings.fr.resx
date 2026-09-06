@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>À quel point la palette générée éloigne le texte de la surface située derrière.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>STUDIO DE PALETTE</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Récents</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Chroma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Base</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Teinte</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Ton</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Roue chromatique de la couleur de base</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>PRÉRÉGLAGES DE BASE</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>RÉGLAGE AVANCÉ</value>
   </data>
@@ -417,14 +405,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensité de la lueur</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Couleur d'accentuation</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Mode d'arrière-plan</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>ATMOSPHÈRE DE L'ESPACE DE TRAVAIL</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Réinitialiser aux valeurs du thème</value>
@@ -1520,15 +1502,6 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intense</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Ajouter une couleur personnalisée</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Couleur d'accentuation personnalisée</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Variante de schéma</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Écran de démarrage</value>
   </data>
@@ -1843,27 +1816,6 @@ Linux : ip addr  ou  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Épaisseur du halo de néon en pixels</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Sélectionner les couleurs de surbrillance du thème</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Violet Néon</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Cyan Cyber</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Rose Bonbon/Magenta</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Or Solaire/Ambre</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Vert Émeraude</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Sélectionner le thème Rose Cramoisi</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Sélectionner le style d'animation de l'écran d'accueil</value>
@@ -2450,9 +2402,6 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Fonte pour les grands titres de page. Inclut les fontes d'affichage de l'application et toute fonte installée sur ce système.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TYPOGRAPHIE</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Taille de l'IU</value>
   </data>
@@ -2743,9 +2692,6 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochrome</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2775,15 +2721,6 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Salade de fruits</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>D'après le contenu</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Rampe tonale</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Primaire</value>
@@ -3190,15 +3127,6 @@ Vous pouvez modifier :
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Système</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>Depuis ce PC</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Reprendre l'accent Windows</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>Depuis le fond d'écran</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Adresse : {1}</value>
   </data>
@@ -3216,9 +3144,6 @@ Vous pouvez modifier :
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>État de la connexion</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Partager la palette</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>Copier en AXAML</value>

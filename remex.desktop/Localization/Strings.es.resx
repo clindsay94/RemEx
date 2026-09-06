@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Cuánto separa la paleta generada el texto de la superficie que hay detrás.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>ESTUDIO DE PALETA</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Recientes</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Croma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Base</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Matiz</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Tono</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Rueda de color base</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>PRESETS BASE</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>AJUSTE FINO AVANZADO</value>
   </data>
@@ -417,14 +405,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidad del Brillo</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Color de Acento</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Modo de Fondo</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>ATMÓSFERA DEL LIENZO</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Restablecer a Valores del Tema</value>
@@ -1526,15 +1508,6 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intenso</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Añadir color personalizado</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Color de acento personalizado</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Variante de esquema</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Pantalla de inicio</value>
   </data>
@@ -1849,27 +1822,6 @@ Linux: ip addr  o  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Grosor del brillo de neón en píxeles</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Seleccionar reflejos del tema de paleta de colores</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Seleccionar tema Violeta Neón</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Seleccionar tema Cian Cyber</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Seleccionar tema Rosa Fucsia/Magenta</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Seleccionar tema Oro Solar/Ámbar</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Seleccionar tema Verde Esmeralda</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Seleccionar tema Rosa Carmesí</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Seleccionar el estilo de animación de la pantalla de bienvenida</value>
@@ -2449,9 +2401,6 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Canvas_SelectedCountFormat" xml:space="preserve">
     <value>Selección: {0}</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TIPOGRAFÍA</value>
-  </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>Fuente de títulos de página</value>
   </data>
@@ -2757,9 +2706,6 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monocromo</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2789,15 +2735,6 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Ensalada de frutas</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>Según el contenido</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Rampa tonal</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Primario</value>
@@ -3204,15 +3141,6 @@ Puedes cambiar:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Sistema</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>Desde este PC</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Usar el acento de Windows</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>Desde el fondo de pantalla</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Dirección: {1}</value>
   </data>
@@ -3230,9 +3158,6 @@ Puedes cambiar:
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Estado de la conexión</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Compartir paleta</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>Copiar como AXAML</value>

@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>How hard the generated palette pushes text away from the surface behind it.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>PALETTE STUDIO</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Recent</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Chroma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Seed</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Hue</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Tone</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Seed colour wheel</value>
@@ -420,9 +411,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>BASE PRESETS</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>ADVANCED FINE-TUNING</value>
   </data>
@@ -438,20 +426,11 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Glow Strength</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Accent Color</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Background Mode</value>
   </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>CANVAS ATMOSPHERE</value>
-  </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Reset to Theme Defaults</value>
-  </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TYPOGRAPHY</value>
   </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>Page Title Font</value>
@@ -1565,15 +1544,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intense</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Add custom color</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Custom accent color</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Scheme Variant</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Splash Screen</value>
   </data>
@@ -2044,27 +2014,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Neon glow thickness/spread in pixels</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Select color palette theme highlights</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Select Neon Violet accent color theme</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Select Cyber Cyan accent color theme</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Select Hot Pink/Magenta accent color theme</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Select Solar Gold/Amber accent color theme</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Select Emerald Green accent color theme</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Select Crimson Rose accent color theme</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Select the style of startup welcome splash screen sequence animation</value>
@@ -2749,9 +2698,6 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochrome</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2781,15 +2727,6 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Fruit Salad</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>From Content</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Tonal Ramp</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Primary</value>
@@ -3196,15 +3133,6 @@ You can change:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>System</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>From this PC</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Match Windows accent</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>From wallpaper</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Address: {1}</value>
   </data>
@@ -3222,9 +3150,6 @@ You can change:
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Connection status</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Share palette</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>Copy as AXAML</value>

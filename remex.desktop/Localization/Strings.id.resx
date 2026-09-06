@@ -26,23 +26,14 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Seberapa jauh palet yang dihasilkan memisahkan teks dari permukaan di belakangnya.</value>
   </data>
-  <data name="Custom_PaletteStudio" xml:space="preserve">
-    <value>STUDIO PALET</value>
-  </data>
   <data name="Custom_RecentSeeds" xml:space="preserve">
     <value>Terbaru</value>
-  </data>
-  <data name="Custom_SeedChroma" xml:space="preserve">
-    <value>Kroma</value>
   </data>
   <data name="Custom_SeedHex" xml:space="preserve">
     <value>Dasar</value>
   </data>
   <data name="Custom_SeedHue" xml:space="preserve">
     <value>Rona</value>
-  </data>
-  <data name="Custom_SeedTone" xml:space="preserve">
-    <value>Terang</value>
   </data>
   <data name="Custom_SeedWheel" xml:space="preserve">
     <value>Roda warna dasar</value>
@@ -399,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>PRESET DASAR</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>PENYETELAN LANJUTAN</value>
   </data>
@@ -417,14 +405,8 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Kekuatan Cahaya</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Warna Aksen</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Mode Latar Belakang</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>ATMOSFER KANVAS</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Atur Ulang ke Default Tema</value>
@@ -1520,15 +1502,6 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intens</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Tambahkan warna kustom</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Warna aksen kustom</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Varian Skema</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Layar Pembuka</value>
   </data>
@@ -1843,27 +1816,6 @@ Linux: ip addr  atau  hostname -I</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Ketebalan cahaya neon dalam piksel</value>
-  </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Pilih warna aksen tema palet</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Pilih tema warna Violet Neon</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Pilih tema warna Cyan Cyber</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Pilih tema warna Merah Muda/Magenta</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Pilih tema warna Emas Solar/Amber</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Pilih tema warna Hijau Zamrud</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Pilih tema warna Merah Mawar</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Pilih gaya animasi layar selamat datang</value>
@@ -2389,9 +2341,6 @@ Linux: ip addr  atau  hostname -I</value>
   </data>
 
 
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TIPOGRAFI</value>
-  </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>Font Judul Halaman</value>
   </data>
@@ -2746,9 +2695,6 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monokrom</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2778,15 +2724,6 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   </data>
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Salad Buah</value>
-  </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>Berdasarkan Konten</value>
-  </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
-  </data>
-  <data name="Custom_TonalRamp" xml:space="preserve">
-    <value>Ramp Tonal</value>
   </data>
   <data name="Custom_TonalRamp_Primary" xml:space="preserve">
     <value>Primer</value>
@@ -3193,15 +3130,6 @@ Anda dapat mengubah:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Sistem</value>
   </data>
-  <data name="Custom_SystemSeedHeader" xml:space="preserve">
-    <value>Dari PC ini</value>
-  </data>
-  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
-    <value>Samakan dengan aksen Windows</value>
-  </data>
-  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
-    <value>Dari wallpaper</value>
-  </data>
   <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
     <value>{0}&#xD;&#xA;Alamat: {1}</value>
   </data>
@@ -3219,9 +3147,6 @@ Anda dapat mengubah:
   </data>
   <data name="A11y_ConnectionStatusButton" xml:space="preserve">
     <value>Status koneksi</value>
-  </data>
-  <data name="Custom_SharePaletteHeader" xml:space="preserve">
-    <value>Bagikan palet</value>
   </data>
   <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
     <value>Salin sebagai AXAML</value>
