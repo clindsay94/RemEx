@@ -40,6 +40,12 @@
     <Color x:Key="AccentPrimary">#6C4CFF</Color>
     <Color x:Key="AccentHover">#826AFF</Color>
     <Color x:Key="AccentPressed">#543BD9</Color>
+    <!-- The M3 Tertiary role, published under its own name rather than reused through AccentPressed
+         (RemEx-qljv). AccentPressed already carries palette.Tertiary for the pressed-state use case,
+         but binding a chart series to a key named for "this button is being pressed" would couple a
+         sparkline's second series to a control state that can never move without breaking the other.
+         Same colour, same fallback literal, a name that means what it is used for. -->
+    <Color x:Key="PaletteTertiary">#543BD9</Color>
 
     <!-- Aurora mesh set (RemEx-ddynd): overridden from the seed on every apply; these are the
          tone-30 values of the default seed so the first frame is not transparent. -->
@@ -77,6 +83,7 @@
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
     <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
+    <SolidColorBrush x:Key="PaletteTertiaryBrush" Color="{DynamicResource PaletteTertiary}"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
     <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
     <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>

@@ -372,6 +372,11 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("AccentHoverBrush", new SolidColorBrush(palette.Secondary));
         SetResourceOverrideInternal("AccentPressed", palette.Tertiary);
         SetResourceOverrideInternal("AccentPressedBrush", new SolidColorBrush(palette.Tertiary));
+        // Same source as AccentPressed above (palette.Tertiary), published under its own name so a
+        // chart series can bind to "the tertiary role" without coupling to a button's pressed state
+        // (RemEx-qljv).
+        SetResourceOverrideInternal("PaletteTertiary", palette.Tertiary);
+        SetResourceOverrideInternal("PaletteTertiaryBrush", new SolidColorBrush(palette.Tertiary));
 
         // The Aurora mesh's own set, following the SAME light/dark answer the palette does, so
         // System mode flips it with the OS (spec section 6).

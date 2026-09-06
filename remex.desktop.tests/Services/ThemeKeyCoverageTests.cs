@@ -57,6 +57,26 @@ public class ThemeKeyCoverageTests
     }
 
     [Fact]
+    public void PaletteTertiaryIsDeclaredAndPushedFromTheSeed()
+    {
+        // NAMED EXPLICITLY (RemEx-qljv), on top of the sweep above. The sweep's failure message for
+        // one missing key among ~50 is easy to miss under a sea of otherwise-green output; this fails
+        // loudly and by name if the M3 Tertiary role's own key regresses.
+        var colourKeys = ThemeFiles().SelectMany(ColourKeysIn).Distinct().ToArray();
+
+        colourKeys.Should().Contain("PaletteTertiary",
+            "the Tertiary role must be published under its own name, not only reachable through "
+            + "AccentPressed — SparklineControl's secondary accent depends on this key existing");
+        colourKeys.Should().Contain("PaletteTertiaryBrush");
+
+        var overridden = OverriddenKeys();
+        overridden.Should().Contain("PaletteTertiary",
+            "ThemeService must push palette.Tertiary into PaletteTertiary on every ApplyCustomization, "
+            + "the same as it already does for AccentPressed");
+        overridden.Should().Contain("PaletteTertiaryBrush");
+    }
+
+    [Fact]
     public void TheGeometryKeysAreTheOnlyThingLeftHandAuthored()
     {
         // ANTI-VACUITY AND SCOPE CONTROL IN ONE. The test above is satisfied by finding no colour

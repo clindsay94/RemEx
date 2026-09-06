@@ -54,13 +54,16 @@ public class SparklineControl : Control
     /// ceiling, so it follows the theme's error colour rather than the card's own accent.
     /// <para>
     /// The two <c>StyledProperty</c> defaults above (<see cref="AccentColorProperty"/>,
-    /// <see cref="SecondaryAccentColorProperty"/>) are deliberately still literals and cannot get
-    /// the same treatment: a property default is baked in at static registration, which runs before
-    /// any theme is loaded, so there is nothing to resolve against at that moment. In practice both
-    /// are set by the card's own customisation binding, so the default only shows on an unbound
-    /// control. Making them theme-aware means a <c>Setter</c> in each of the four theme files, which
-    /// is a design decision about what a sparkline's default accent should be per theme rather than
-    /// plumbing — recorded on RemEx-fy0a and filed as RemEx-qljv.
+    /// <see cref="SecondaryAccentColorProperty"/>) are deliberately still literals and cannot get the
+    /// same treatment: a property default is baked in at static registration, which runs before any
+    /// theme is loaded, so there is nothing to resolve against at that moment. They are NOT the
+    /// effective default any more, though — an app-level <c>Style Selector="ctrl|SparklineControl"</c>
+    /// (App.axaml) sets both from the theme once the control is actually in the tree: AccentColor from
+    /// <c>AccentPrimary</c>, SecondaryAccentColor from the M3 Tertiary role (<c>PaletteTertiary</c>,
+    /// pushed by <c>ThemeService</c>). A Style setter is lower priority than a local value, so the
+    /// card's own customisation binding still wins wherever one is set; these literals are now only
+    /// the last-resort fallback for a control built entirely outside that style pipeline. (RemEx-fy0a,
+    /// decided in RemEx-qljv.)
     /// </para>
     /// </remarks>
     private static Color HotColor => ThemeResources.Color("SystemError", HotColorFallback);

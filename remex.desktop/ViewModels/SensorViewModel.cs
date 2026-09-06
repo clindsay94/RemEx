@@ -112,8 +112,16 @@ public partial class SensorViewModel : ObservableObject
     /// <summary>Second normalized history series for the DualMetric view (null when unbound).</summary>
     public ObservableCollection<double>? SecondaryHistory => SecondarySensor?.History;
 
-    /// <summary>Accent hex for the DualMetric second series (falls back to a warm amber).</summary>
-    public string SecondaryAccentHex => SecondarySensor?.Theme.AccentColor ?? "#FFB020";
+    /// <summary>
+    /// Accent hex for the DualMetric second series. Falls back to the theme's Tertiary role
+    /// (<c>PaletteTertiary</c>) rather than a hardcoded amber — the same literal reused here would be
+    /// the fix from RemEx-qljv surviving one layer up, since this binding wins over SparklineControl's
+    /// own theme-derived Style default whenever it resolves to a value (Bindings always do).
+    /// </summary>
+    public string SecondaryAccentHex => SecondarySensor?.Theme.AccentColor
+        ?? ThemeResources.Color("PaletteTertiary", DefaultSecondaryAccent).ToString();
+
+    private static readonly Avalonia.Media.Color DefaultSecondaryAccent = Avalonia.Media.Color.Parse("#FFB020");
 
     partial void OnSecondarySensorChanged(SensorViewModel? value)
     {

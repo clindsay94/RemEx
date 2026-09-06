@@ -5,6 +5,7 @@
              xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
              xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
              xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+             xmlns:ctrl="using:Remex.Desktop.Controls"
              x:Class="Remex.Desktop.App" RequestedThemeVariant="Dark">
     <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
@@ -150,6 +151,22 @@
         <!-- Base Text Styling -->
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══ SparklineControl's theme-derived defaults (RemEx-qljv) ═══
+             The StyledProperty registrations (SparklineControl.cs) still default to hex literals,
+             because a property default is baked in at static registration time, before any theme is
+             loaded — there is nothing to resolve against yet. A Style setter runs later, once the
+             control is in the visual tree with a theme applied, so it is the layer where a theme
+             answer can actually land: AccentColor takes the theme's own accent (the same move that
+             settled AccentForegroundBrush in RemEx-tq2e), and SecondaryAccentColor takes the M3
+             Tertiary role, which contrasts from Primary by construction in every scheme variant.
+             A Style setter is LOWER priority than a local value, so every existing per-sensor binding
+             (HomeView, CanvasView, TrayFlyoutWindow) still wins here unchanged — this only reaches an
+             unbound control. -->
+        <Style Selector="ctrl|SparklineControl">
+            <Setter Property="AccentColor" Value="{DynamicResource AccentPrimary}"/>
+            <Setter Property="SecondaryAccentColor" Value="{DynamicResource PaletteTertiary}"/>
         </Style>
 
         <!-- ═══ The four inherited Window properties, settled deliberately (RemEx-n0pb8 via the
