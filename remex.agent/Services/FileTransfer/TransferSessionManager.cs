@@ -67,6 +67,29 @@ public sealed class TransferSessionManager : IDisposable
     internal long MaxTransferBytes { get; init; } = DefaultMaxTransferBytes;
 
     /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). The sender's
+    /// outstanding-unacked-bytes cap enforced in <see cref="StreamSenderAsync"/>, overridable so a test
+    /// can reach the backpressure wait without streaming a real 8 MB. Not used by DI — the default
+    /// container only binds constructors, so an <c>init</c> property is invisible to host bootstrapping
+    /// and production always gets <see cref="FileTransferLimits.MaxUnackedBytes"/>.
+    /// </summary>
+    /// <remarks>
+    /// NOT THE SAME GUARD AS <see cref="MaxTransferBytes"/> ABOVE, even though the shape was copied from
+    /// it and a first draft of the Kotlin equivalent's comment got this wrong (RemEx-xefvb). <see
+    /// cref="MaxTransferBytes"/> is the RECEIVE side's whole-transfer ceiling, checked once against a
+    /// declared size at offer time. This is the SEND side's flow-control cap: re-checked on every frame
+    /// in <see cref="StreamSenderAsync"/> against how far <c>sentOffset</c> has run ahead of the peer's
+    /// last acked offset, not a one-shot admission check.
+    ///
+    /// This is the counterpart to the Kotlin unacked cap <c>FileHostHandler</c> made injectable for the
+    /// same reason (RemEx-68wwl) — its coverage is
+    /// <c>FileHostHandlerTest.downloadSend_stopsReadingOnceTooMuchIsUnacked</c> and its control. Here the
+    /// guard had no coverage while it compared against a <c>const</c>, because reaching the branch from a
+    /// test meant actually streaming 8 MB.
+    /// </remarks>
+    internal long MaxUnackedBytes { get; init; } = FileTransferLimits.MaxUnackedBytes;
+
+    /// <summary>
     /// How long <see cref="PushFileAsync"/> waits for the phone's <c>file_transfer_ready</c>
     /// (RemEx-gfx3n).
     /// </summary>
@@ -1311,7 +1334,7 @@ public sealed class TransferSessionManager : IDisposable
             while ((read = await source.ReadAsync(buffer.AsMemory(0, FileTransferLimits.DataPayloadBytes), ct)) > 0)
             {
                 // Backpressure: never let outstanding unacked bytes exceed the cap.
-                while (sentOffset - session.CommittedOffset > FileTransferLimits.MaxUnackedBytes)
+                while (sentOffset - session.CommittedOffset > MaxUnackedBytes)
                     await session.WaitForAckAsync(ct);
 
                 var isFinal = sentOffset + read >= size;
