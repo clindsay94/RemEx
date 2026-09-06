@@ -186,6 +186,22 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <summary>Test seam: the current value of <see cref="_profileIsFallback"/>.</summary>
     internal bool ProfileIsFallbackForTests => _profileIsFallback;
 
+    /// <summary>
+    /// True once <see cref="LoadAsync"/> or <see cref="ReloadAsync"/> has completed at least once -
+    /// success or the failure fallback, either way (RemEx-71b1m). Before that, <see cref="CurrentProfile"/>
+    /// is only this class's own constructor default: a bare <c>new DashboardProfile()</c>, unmigrated
+    /// and stamped at SchemaVersion 0, that no read of any file ever produced. <see cref="_profileIsFallback"/>
+    /// alone does not cover this gap - it defaults to false, the exact value it also holds once a REAL
+    /// load has succeeded, so a save that races ahead of the very first load reads as "nothing wrong"
+    /// and persists that raw default over whatever the user's file actually holds. Observed concretely
+    /// as a first-run boot writing a schema-0 customization to disk before the real load's migrated
+    /// record ever landed.
+    /// </summary>
+    private volatile bool _hasLoadedOnce;
+
+    /// <summary>Test seam: the current value of <see cref="_hasLoadedOnce"/>.</summary>
+    internal bool HasLoadedOnceForTests => _hasLoadedOnce;
+
     private readonly ILogger<DashboardLayoutService> _logger;
 
     /// <summary>Raised after a profile is successfully written to disk by <see cref="SaveInternalAsync"/> (i.e. after <see cref="SaveAsync"/> or a flushed <see cref="RequestSave"/>).</summary>
@@ -427,6 +443,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // layout could not be loaded when it plainly just was.
             _profileIsFallback = false;
             LoadFailureWarning = null;
+            _hasLoadedOnce = true;
 
             // A MIGRATION THAT IS NEVER WRITTEN BACK IS NOT A MIGRATION, IT IS A RE-DERIVATION
             // (review finding). Nothing else persists the stamp except the Palette Studio's save, so
@@ -499,6 +516,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // customization replaced with defaults in memory only - RequestSave and SaveInternalAsync
             // must refuse to write that over the file until a load actually succeeds.
             _profileIsFallback = existed;
+            _hasLoadedOnce = true;
 
             return profile;
         }
@@ -601,6 +619,23 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         }
 
         CurrentProfile = profile;
+
+        // NO LOAD HAS EVER HAPPENED YET (RemEx-71b1m). Every caller here builds `profile` as
+        // `CurrentProfile with { ... }` (TriggerSave, CompleteTutorial, DismissCoachMark,
+        // OnIsReducedMotionChanged); before the first LoadAsync/ReloadAsync completes, that base is
+        // still this class's own unmigrated, schema-0 constructor default - not anything a file on
+        // disk ever produced. CurrentProfile is still updated above, same as ever, so an in-memory
+        // reader sees the edit the caller just made (the pending real load is about to replace it
+        // anyway, the same way it always replaces the constructor default) - but there is nothing
+        // real on disk yet for this edit to be saved OVER, so queuing a WRITE here is exactly how a
+        // first-run boot ended up with a schema-0 customization in dashboard_layout.json before the
+        // real load's migrated record ever landed.
+        if (!_hasLoadedOnce)
+        {
+            _logger.LogWarning(
+                "DashboardLayoutService: not queuing a write - no profile has been loaded from disk yet, so there is nothing real to save over");
+            return;
+        }
 
         lock (_saveQueueLock)
         {

@@ -51,6 +51,10 @@ public class DashboardLayoutSaveOrderingTests
     public async Task ADirectSaveCancelsAQueuedOneInsteadOfBeingOverwrittenByIt()
     {
         using var service = new DashboardLayoutService(new ThemeService());
+        // RemEx-71b1m: RequestSave now refuses until a load has happened at least once - a queued
+        // save in this test has to be a REAL queued save, not one silently refused because nothing
+        // ever loaded.
+        await service.LoadAsync();
 
         var saves = 0;
         service.ProfileSaved += () => Interlocked.Increment(ref saves);
@@ -84,11 +88,15 @@ public class DashboardLayoutSaveOrderingTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void DisposeDrainsAQueuedSaveInsteadOfDroppingIt()
+    public async Task DisposeDrainsAQueuedSaveInsteadOfDroppingIt()
     {
         var service = new DashboardLayoutService(new ThemeService());
         var path = service.FilePathForTests;
         var marker = "drained-" + Guid.NewGuid().ToString("N");
+
+        // RemEx-71b1m: a queue this test can drain has to be a real one - RequestSave now refuses
+        // until a load has happened at least once, same reasoning as the test above.
+        await service.LoadAsync();
 
         service.RequestSave(new DashboardProfile { Language = marker });
         service.Dispose();
@@ -161,6 +169,9 @@ public class DashboardLayoutSaveOrderingTests
     public async Task AQueuedSaveReachesDiskOnItsOwn_WithoutAnExplicitFlush()
     {
         using var service = new DashboardLayoutService(new ThemeService());
+        // RemEx-71b1m: same as the tests above - a debounce timer this test can wait on has to
+        // actually get armed, which now needs a load to have happened first.
+        await service.LoadAsync();
 
         var saves = 0;
         service.ProfileSaved += () => Interlocked.Increment(ref saves);
