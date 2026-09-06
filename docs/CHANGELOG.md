@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The Personalize sheet on the PC now works the way the phone's colour flow does.** Colour comes
+  from a source first — your Windows accent (the default, followed live within two seconds of a
+  change), your wallpaper, or a colour you pick on the wheel — then Vibrancy and Contrast shape it,
+  then one of Android's seven palette strategies in Android's order (Content and Spritz retire
+  into Tonal Spot and Neutral). Below that sit the PC-only Look, a Fine-tuning expander, Behaviour
+  and Saved palettes, in that order. The background gained two real modes: Aurora, the colour
+  mesh, is its own choice now, with a light-mode colour set so it reads on a light surface and a
+  freeze at its first frame under reduced motion; and Wallpaper actually draws your desktop
+  wallpaper, or an image you pick, behind the window with an adjustable blur and the palette's
+  surface veil so text stays legible. Mica is gone from the picker because it never rendered on
+  this build; a profile saved on Mica opens as Wallpaper at a high blur. Saved palettes keep the
+  whole recipe — source, seed, vibrancy, contrast, strategy — under a name you can edit, sit beside
+  the built-in presets, and export and import in a versioned file that still reads older exports.
+  The welcome splash defaults to Cosmic Zoom, and a Preview button plays it in place.
+  (RemEx-8twk0; closes RemEx-ddynd and RemEx-z94c7)
 - The Remote, Settings and App Launcher screens on the PC now fade and settle in section by
   section the first time you open each one in a session, the same way the dashboard does. Reduced
   motion turns it off, and it never delays anything from being clickable. (RemEx-alwfa.2)
@@ -657,6 +672,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- The personalization profile is at schema 4. Arm 3 carries the sheet redesign (saved palettes,
+  the colour source, strategy normalisation); arm 4 maps a stored Mica to Wallpaper at blur 0.9
+  and a stored RemexCommand splash to Cosmic Zoom, once, through `with` expressions so no field
+  is dropped, and a fresh profile is stamped at the current schema with the record defaults rather
+  than migrated. `scripts/resx_remove_keys.py` removes a key from all nine resx files at once and
+  refuses while any desktop source still names it as a whole identifier; the 25 `Custom_*` keys
+  the sheet stopped showing left through it. The palette sweep has fifteen cells (Aurora-Light and
+  Wallpaper-Dark-B06 joined the thirteen) and stamps the schema this build writes, checked against
+  the constant; `docs/REGRESSION-GUARDS.md` gained the Aurora reduced-motion pairing guard.
+  (RemEx-8twk0)
 - `scripts/perf-baseline.ps1` measures cold start, warm launches and memory for any two git refs by
   deploying each through the normal local install and relaunching the installed host, and
   `docs/PERF-BASELINE.md` records the first run: launch time improved against the pre-Material
