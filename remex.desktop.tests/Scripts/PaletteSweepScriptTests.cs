@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using Remex.Desktop.Services;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Scripts;
@@ -51,10 +52,16 @@ public class PaletteSweepScriptTests
     {
         var text = ScriptText();
 
-        text.Should().MatchRegex(@"Id = 'Aurora-Light';[^\n]*Background = 'Aurora'[^\n]*Mode = 'Light'");
-        text.Should().MatchRegex(@"Id = 'Wallpaper-Dark-B06';[^\n]*Seed = '#00FF00'[^\n]*Background = 'Wallpaper'[^\n]*WallpaperBlur = 0\.6[^\n]*Mode = 'Dark'");
+        // Contrast is pinned too: a cell that drifts to contrast 1.0 tests something else entirely
+        // while every other fact here stays green.
+        text.Should().MatchRegex(@"Id = 'Aurora-Light';[^\n]*Background = 'Aurora'[^\n]*Mode = 'Light'[^\n]*Contrast = 0\.0");
+        text.Should().MatchRegex(@"Id = 'Wallpaper-Dark-B06';[^\n]*Seed = '#00FF00'[^\n]*Background = 'Wallpaper'[^\n]*WallpaperBlur = 0\.6[^\n]*Mode = 'Dark'[^\n]*Contrast = 0\.0");
         text.Should().Contain("'canvasBackgroundType'", "a cell's background reaches the profile the host reads");
-        text.Should().Contain("-NotePropertyValue 4 ", "the sweep writes the schema this build writes, or the host re-migrates the file");
+        // Tied to the constant, not a literal: when the next migration arm bumps the schema, this
+        // fails until the sweep writes the new number, instead of letting the host re-migrate every
+        // sweep profile on read.
+        text.Should().Contain($"-NotePropertyValue {CustomizationMigration.CurrentSchemaVersion} ",
+            "the sweep writes the schema this build writes (CustomizationMigration.CurrentSchemaVersion), or the host re-migrates the file");
     }
 
     [Fact]

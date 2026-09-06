@@ -559,14 +559,15 @@ added ABOVE this block, never after it.
 
 ### Aurora's static `Opacity` must equal its first keyframe, and its animation must be class-gated
 
-`remex.desktop/Controls/DashboardBackgroundControl.axaml` — the three `AuroraLayerN` rectangles
-(RemEx-ddynd). Reduced motion is implemented by REMOVING the `aurora-animated` class (bound to
+`remex.desktop/Controls/DashboardBackgroundControl.axaml:127-180` — the three `AuroraLayerN` rectangles
+and their `.aurora-animated` styles (RemEx-ddynd). Reduced motion is implemented by REMOVING the `aurora-animated` class (bound to
 `!IsReducedMotion`), which stops the keyframe animation and lets the property fall back to the
 rectangle's own `Opacity`. If that static value drifts from the first keyframe, switching reduced
 motion on visibly jumps the mesh; if the `Style` selector loses `.aurora-animated`, the mesh keeps
 animating with the setting supposedly off — silently, exactly like the chrome-suppression failure
-above. `AuroraMeshTests.ReducedMotionFreezesTheMeshAtItsFirstKeyframeInsteadOfHidingIt` pins both
-halves; a layer added later must satisfy the same pairing.
+above. `AuroraMeshTests.ReducedMotionFreezesTheMeshAtItsFirstKeyframeInsteadOfHidingIt`
+(`remex.desktop.tests/Controls/AuroraMeshTests.cs:137`) pins both halves; a layer added later must
+satisfy the same pairing.
 
 ### Theme switch removes only the tracked base-theme dictionary, never the whole `Themes/` folder
 
