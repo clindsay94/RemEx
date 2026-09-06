@@ -245,6 +245,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Diagnostics screen's system-log tab on the PC is now translated: the "reading" status, the
+  Windows and Linux empty-state explanations, the unsupported-platform line and the error lines
+  were English in every language, under a translated tab header, and the Linux explanation
+  named the Logs tab by its English name. (RemEx-rg9in)
 - Developer-facing: about a hundred tracked files had picked up Windows line endings in the
   working copy (written back by PowerShell tooling), which made `git status` report them as
   modified with an empty diff once anything touched them. They are rewritten to LF, the
