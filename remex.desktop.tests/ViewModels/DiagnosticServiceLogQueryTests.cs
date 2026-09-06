@@ -1,3 +1,4 @@
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -44,10 +45,12 @@ public class DiagnosticServiceLogQueryTests
     {
         var text = DiagnosticLogsViewModel.DescribeLinuxJournal(output);
 
-        // The empty state must say WHY it can be empty and where the real record lives —
-        // a bare blank is indistinguishable from "no problems".
+        // The empty state must say WHY it can be empty and where the real record lives — a bare
+        // blank is indistinguishable from "no problems". Asserted against the localized resource
+        // values (RemEx-rg9in), not hardcoded English, since the wording now comes from
+        // Logs_Service_LinuxEmpty / Logs_LiveTab rather than a literal in the view model.
         Assert.Contains("XDG autostart", text);
-        Assert.Contains("Logs tab", text);
+        Assert.Contains(LocalizationService.Instance["Logs_LiveTab"], text);
     }
 
     [Fact]

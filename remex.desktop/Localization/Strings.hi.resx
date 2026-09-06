@@ -1547,6 +1547,26 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>विंडोज इवेंट व्यूअर या लिनक्स सिस्टमडी जर्नल से नवीनतम इवेंट लॉग क्वेरी।</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>RemEx द्वारा लिखी गई सिस्टम इवेंट लॉग प्रविष्टियाँ पढ़ी जा रही हैं…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>RemEx के लिए कोई Windows इवेंट लॉग प्रविष्टि नहीं मिली।
+यह सामान्य है — RemEx यहां केवल गंभीर स्टार्टअप समस्याओं के लिए लिखता है, इसलिए एक खाली सूची का आमतौर पर मतलब है कि कुछ भी गलत नहीं हुआ है।</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>journalctl क्वेरी विफल रही: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>सिस्टम इवेंट लॉग केवल Windows और Linux पर उपलब्ध हैं।</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>सिस्टम इवेंट लॉग नहीं पढ़ा जा सका: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Remex.Agent के लिए कोई उपयोगकर्ता-जर्नल प्रविष्टि दर्ज नहीं है।
+यह उन डेस्कटॉप पर सामान्य है जो RemEx को systemd के बजाय सीधे XDG ऑटोस्टार्ट से चलाते हैं — OS वहां इसका आउटपुट कभी कैप्चर नहीं करता। ऊपर दिया गया {0} RemEx का अपना रिकॉर्ड है और हर जगह काम करता है।</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>सिस्टम इवेंट लॉग क्वेरी करें</value>
   </data>

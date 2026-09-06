@@ -1339,6 +1339,26 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Ostatnie zapytanie o logi zdarzeń z Podglądu zdarzeń systemu Windows lub dziennika systemd systemu Linux.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Odczytywanie wpisów dziennika zdarzeń systemowych zapisanych przez RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Nie znaleziono wpisów dziennika zdarzeń systemu Windows dla RemEx.
+To normalne — RemEx zapisuje tutaj wyłącznie poważne problemy z uruchamianiem, więc pusta lista zwykle oznacza, że nic złego się nie wydarzyło.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Nie udało się odpytać journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Dzienniki zdarzeń systemowych są dostępne tylko w systemach Windows i Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Nie można odczytać dziennika zdarzeń systemowych: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Brak wpisów dziennika użytkownika zarejestrowanych dla Remex.Agent.
+Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autostartu XDG, a nie przez systemd — system operacyjny nigdy nie przechwytuje tam jego danych wyjściowych. Sekcja {0} powyżej to własny zapis RemEx i działa wszędzie.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Pobierz dziennik zdarzeń systemu</value>
   </data>

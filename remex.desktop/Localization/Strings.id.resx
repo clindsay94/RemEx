@@ -1547,6 +1547,26 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Kueri log peristiwa terbaru dari Windows Event Viewer atau Linux systemd journal.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Membaca entri log peristiwa sistem yang ditulis oleh RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Tidak ditemukan entri log peristiwa Windows untuk RemEx.
+Ini normal — RemEx hanya menulis di sini untuk masalah startup yang serius, jadi daftar kosong biasanya berarti tidak ada yang salah.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Gagal melakukan kueri journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Log peristiwa sistem hanya tersedia di Windows dan Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Tidak dapat membaca log peristiwa sistem: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Tidak ada entri user-journal yang tercatat untuk Remex.Agent.
+Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, bukan melalui systemd — OS tidak pernah menangkap outputnya di sana. {0} di atas adalah catatan RemEx sendiri dan berfungsi di mana saja.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Kueri Log Peristiwa Sistem</value>
   </data>

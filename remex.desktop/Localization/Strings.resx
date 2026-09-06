@@ -1589,6 +1589,26 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Latest event logs query from Windows Event Viewer or Linux systemd journal.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Reading system event log entries written by RemEx...</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>No Windows event log entries found for RemEx.
+This is normal — RemEx only writes here for serious startup problems, so an empty list usually means nothing has gone wrong.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Failed to query journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>System event logs are only available on Windows and Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Could not read the system event log: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>No user-journal entries recorded for Remex.Agent.
+That is expected on desktops that start RemEx directly from XDG autostart rather than through systemd — the OS never captures its output there. The {0} above is RemEx's own record and works everywhere.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Query System Event Logs</value>
   </data>

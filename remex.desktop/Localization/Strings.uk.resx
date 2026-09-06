@@ -1547,6 +1547,26 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Останній запит логів подій з Windows Event Viewer або журналу systemd в Linux.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Читання записів журналу подій системи, зроблених RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Записів журналу подій Windows для RemEx не знайдено.
+Це нормально — RemEx записує сюди лише серйозні проблеми запуску, тож порожній список зазвичай означає, що нічого поганого не сталося.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Не вдалося виконати запит journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Журнали подій системи доступні лише в Windows і Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Не вдалося прочитати журнал подій системи: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Записів журналу користувача для Remex.Agent не зафіксовано.
+Це очікувано на робочих столах, які запускають RemEx безпосередньо через автозапуск XDG, а не через systemd — ОС ніколи не перехоплює його вивід у такому разі. {0} вище — це власний запис RemEx, який працює всюди.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Запитати журнал подій системи</value>
   </data>

@@ -1547,6 +1547,26 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Windows Olay Görüntüleyicisi veya Linux systemd günlüğünden alınan en son olay günlüğü sorgusu.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>RemEx tarafından yazılan sistem olay günlüğü girişleri okunuyor…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>RemEx için Windows olay günlüğü girişi bulunamadı.
+Bu normaldir — RemEx buraya yalnızca ciddi başlangıç sorunlarında yazar, bu nedenle boş bir liste genellikle hiçbir şeyin yanlış gitmediği anlamına gelir.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>journalctl sorgusu başarısız oldu: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Sistem olay günlükleri yalnızca Windows ve Linux'ta kullanılabilir.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Sistem olay günlüğü okunamadı: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Remex.Agent için kaydedilmiş kullanıcı-journal girişi yok.
+Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran masaüstlerinde beklenen bir durumdur — işletim sistemi çıktısını orada asla yakalamaz. Yukarıdaki {0} RemEx'in kendi kaydıdır ve her yerde çalışır.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Sistem Olay Günlüklerini Sorgula</value>
   </data>

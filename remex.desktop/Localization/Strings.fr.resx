@@ -1547,6 +1547,26 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Dernière requête de journaux d'événements depuis l'Observateur d'événements Windows ou le journal systemd Linux.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Lecture des entrées du journal d'événements système écrites par RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Aucune entrée du journal d'événements Windows trouvée pour RemEx.
+C'est normal : RemEx n'écrit ici qu'en cas de problème grave au démarrage, donc une liste vide signifie généralement que tout va bien.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Échec de la requête journalctl : {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Les journaux d'événements système ne sont disponibles que sous Windows et Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Impossible de lire le journal d'événements système : {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Aucune entrée du journal utilisateur enregistrée pour Remex.Agent.
+C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage automatique XDG plutôt que par systemd — le système ne capture jamais sa sortie dans ce cas. La section {0} ci-dessus est le propre registre de RemEx et fonctionne partout.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Interroger les journaux d'événements système</value>
   </data>

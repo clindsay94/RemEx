@@ -1553,6 +1553,26 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Última consulta de registros de eventos del Visor de eventos de Windows o del diario systemd de Linux.</value>
   </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Leyendo las entradas del registro de eventos del sistema escritas por RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>No se encontraron entradas del registro de eventos de Windows para RemEx.
+Esto es normal: RemEx solo escribe aquí ante problemas graves de inicio, así que una lista vacía normalmente significa que no ha ocurrido ningún problema.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>No se pudo consultar journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Los registros de eventos del sistema solo están disponibles en Windows y Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>No se pudo leer el registro de eventos del sistema: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>No hay entradas del diario de usuario registradas para Remex.Agent.
+Esto es esperable en escritorios que inician RemEx directamente desde el autoarranque XDG en lugar de a través de systemd, ya que el sistema operativo nunca captura su salida allí. El apartado {0} de arriba es el propio registro de RemEx y funciona en todas partes.</value>
+  </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Consultar registros de eventos del sistema</value>
   </data>

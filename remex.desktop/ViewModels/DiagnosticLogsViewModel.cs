@@ -320,7 +320,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
-        ServiceLogsText = "Reading system event log entries written by RemEx...\n";
+        ServiceLogsText = LocalizationService.Instance["Logs_Service_Reading"] + "\n";
         try
         {
             if (OperatingSystem.IsWindows())
@@ -331,7 +331,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
 
                 var (_, output) = await RunCommandAsync("powershell.exe", $"-Command \"{powershellCmd}\"");
                 ServiceLogsText = string.IsNullOrWhiteSpace(output)
-                    ? "No Windows event log entries found for RemEx.\nThis is normal — RemEx only writes here for serious startup problems, so an empty list usually means nothing has gone wrong."
+                    ? LocalizationService.Instance["Logs_Service_WindowsEmpty"]
                     : output.Trim();
             }
             else if (OperatingSystem.IsLinux())
@@ -351,16 +351,16 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
                     "journalctl", LinuxJournalArguments);
                 ServiceLogsText = ok
                     ? DescribeLinuxJournal(output)
-                    : $"Failed to query journalctl: {output}";
+                    : string.Format(LocalizationService.Instance["Logs_Service_JournalFailed"], output);
             }
             else
             {
-                ServiceLogsText = "System event logs are only available on Windows and Linux.";
+                ServiceLogsText = LocalizationService.Instance["Logs_Service_Unsupported"];
             }
         }
         catch (Exception ex)
         {
-            ServiceLogsText = $"Could not read the system event log: {ex.Message}";
+            ServiceLogsText = string.Format(LocalizationService.Instance["Logs_Service_ReadError"], ex.Message);
         }
     }
 
@@ -385,10 +385,9 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         // that literal must not suppress a hundred genuine lines (review finding).
         if (trimmed.Length == 0 || trimmed.StartsWith("-- No entries --", StringComparison.Ordinal))
         {
-            return "No user-journal entries recorded for Remex.Agent.\n"
-                + "That is expected on desktops that start RemEx directly from XDG autostart "
-                + "rather than through systemd — the OS never captures its output there. "
-                + "The Logs tab above is RemEx's own record and works everywhere.";
+            return string.Format(
+                LocalizationService.Instance["Logs_Service_LinuxEmpty"],
+                LocalizationService.Instance["Logs_LiveTab"]);
         }
 
         return trimmed;
