@@ -426,6 +426,12 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
             CurrentProfile = profile;
 
+            // SET BEFORE ProfileReplaced RAISES (RemEx-71b1m, review LOW). A subscriber that reacts
+            // to the replacement by saving must not find _hasLoadedOnce still false - that would
+            // refuse its write for the very same reason a pre-load save must be refused, except this
+            // subscriber is reacting to a load that has, in fact, just happened.
+            _hasLoadedOnce = true;
+
             // A REAL REPLACEMENT, NOT A SAVE-THROUGH OR AN ORDINARY READ (RemEx-waqb4, tightened by
             // review) - see ProfileReplaced's own remarks for why RequestSave must never raise this,
             // and LoadAsync's for why a plain read must not either. Only isReplacement callers
@@ -443,7 +449,6 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // layout could not be loaded when it plainly just was.
             _profileIsFallback = false;
             LoadFailureWarning = null;
-            _hasLoadedOnce = true;
 
             // A MIGRATION THAT IS NEVER WRITTEN BACK IS NOT A MIGRATION, IT IS A RE-DERIVATION
             // (review finding). Nothing else persists the stamp except the Palette Studio's save, so
@@ -505,6 +510,11 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
 
+            // SET BEFORE ProfileReplaced RAISES, SAME AS THE SUCCESS PATH ABOVE (RemEx-71b1m, review
+            // LOW). A load attempt happened here too, even though it failed - a subscriber reacting
+            // to the replacement must not find _hasLoadedOnce still false.
+            _hasLoadedOnce = true;
+
             // Also gated on isReplacement (RemEx-waqb4), same reasoning as the success path above - a
             // fallback default is just as foreign to a view model cached over the profile this load
             // failed to preserve, but only when the caller actually asked to replace one.
@@ -516,7 +526,6 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // customization replaced with defaults in memory only - RequestSave and SaveInternalAsync
             // must refuse to write that over the file until a load actually succeeds.
             _profileIsFallback = existed;
-            _hasLoadedOnce = true;
 
             return profile;
         }
