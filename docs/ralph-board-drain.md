@@ -144,6 +144,16 @@ reaps a branch whose bead is not closed.
    uncommitted work along with yours. Name the paths. Do not start new work on top of an
    unexplained dirty tree.
 
+   **A dirty tree can be a false positive.** With `.gitattributes` `* text=auto eol=lf` and
+   `core.autocrlf=true`, a tracked file whose working copy has CRLF (written by PowerShell
+   `Set-Content`/`Add-Content`, some `sed -i` builds, etc.) shows ` M` in `git status` once its
+   stat cache is dirtied, even though the content is byte-identical to HEAD once normalized.
+   **`git diff` is authoritative over `git status`** for this shape: if `git diff -- <path>` is
+   empty, there is nothing to inspect or restore. Clear the false flag with `git add <path>`
+   (re-stats the index, stages nothing, since the blob is unchanged) or by rewriting the file to
+   LF in place. Confirmed on 100 tracked files repo-wide 2026-09-06 (RemEx-wabls) — not one file,
+   not every file, but any `eol=lf` text file a Windows tool has written CRLF into.
+
 3. Pick a bead, in this order of preference:
    a. `bd list --status in_progress` — a bead already claimed by a prior iteration or session that
       is unfinished. Finish stale claims before opening new fronts.
