@@ -237,6 +237,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Personalize sheet's header on the PC briefly rendered the literal text
+  "Avalonia.Controls.Border" instead of its title (Material's default side-sheet header template
+  stringified the header control). The fix that opted the sheet out of that template is now
+  pinned by a regression test so it cannot quietly come back. (RemEx-e0a2z)
 - The tray flyout's pin button now has a tooltip in every language ("Pin this window" / "Unpin
   this window" were translated long ago but never wired up), and the FAQ answer about changing
   how RemEx looks no longer describes four themes that no longer exist. (RemEx-ldv7r)
