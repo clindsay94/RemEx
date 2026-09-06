@@ -458,7 +458,11 @@ flipping `HostSendSession.ackSignal` from `CONFLATED` to `RENDEZVOUS` leaves eve
 already parked when the next ack arrives — the "token arrives with nobody waiting" case the buffer
 exists for is unreachable, and reaching it re-entrantly deadlocks the test thread instead of failing.
 The buffer is load-bearing: without it an ack landing between the condition check and the park is
-dropped and the transfer freezes mid-file with no error either side.
+dropped and the transfer freezes mid-file with no error either side. The same exception holds for the
+upload direction since `RemEx-yi7id`: `UploadSendLoopTest` runs under `Dispatchers.Unconfined` too, so
+flipping the `ackSignal` that `FileTransferEngine.runUpload` builds and hands to `UploadSendLoop` from
+`CONFLATED` to `RENDEZVOUS` also stays green. Treat both channels' capacity as guarded by this note,
+not by a test.
 
 Two of those were green until the *tests* were fixed, not the code: bounding on `size` was
 unfalsifiable while the reconcile ran unconditionally, and the `final`-flag mutation passed against a
