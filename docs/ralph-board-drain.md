@@ -1,12 +1,14 @@
 # RemEx Board-Drain Ralph Loop — the RemEx overlay
 
-> **SUPERSEDED 2026-08-08 — use [`ralph-serial-drain.md`](ralph-serial-drain.md) instead.**
-> The parallel lane system this file describes was retired: the worktrees are gone, the merge queue
-> is unused, and the machinery beads are deferred. It was retired on measurement — lanes cost
-> $14.05 per landed bead with 25% lost to session limits killing agents mid-flight, because
-> parallelism buys wall-clock and the binding constraint here is a token quota.
-> This file is kept for the LANE MODE contract and the history, and because `.ralph.psd1` still
-> references it as `ProcedureOverlay`. Do not follow it for new work.
+> **`ralph-serial-drain.md` was never committed — this file is the live overlay.** A 2026-08-08 note
+> here claimed this file was superseded by that one, but it was written to a gitignored path
+> (`/docs/ralph-serial-drain.md` in `.gitignore`) and is gone; it does not exist anywhere in this
+> repo's history. `.ralph.psd1` still points `ProcedureOverlay` at THIS file. Follow it for new work.
+> The parallel lane system this file originally described was retired: the worktrees are gone, the
+> merge queue is unused, and the machinery beads are deferred. It was retired on measurement — lanes
+> cost $14.05 per landed bead with 25% lost to session limits killing agents mid-flight, because
+> parallelism buys wall-clock and the binding constraint here is a token quota. This file is kept for
+> the LANE MODE contract and the history.
 
 **This is the project overlay, not the whole procedure.** The generic loop lives with the tooling
 at `~/.claude/ralph/board-drain.md`; a lane is handed both, concatenated into
@@ -221,9 +223,22 @@ reaps a branch whose bead is not closed.
      either occurrence was caught.
 
      ```
-     dotnet build <proj> -c Release --nologo -t:Rebuild
-     dotnet test  <proj> -c Release --nologo --no-build --filter "FullyQualifiedName~<Suite>"
+     dotnet build <testproj> -c Release --nologo -t:Rebuild
+     dotnet test  <testproj> -c Release --nologo --no-build --filter "FullyQualifiedName~<Suite>"
      ```
+   - **Building the DEPENDENCY is not the same measurement, and it also reports GREEN.** Measured
+     2026-08-20 on RemEx-9me77: inject a defect into `remex.desktop`, then run
+     `dotnet build remex.desktop -c Release -t:Rebuild` (exit 0, mutation compiled fine) followed by
+     `dotnet test remex.desktop.tests -c Release --no-build` — 38/38 GREEN, defect still present.
+     Building only the project you mutated never refreshes the TEST project's own output directory,
+     which still holds the pre-injection `remex.desktop.dll` that `--no-build` happily reuses. The
+     build exit code is 0 here too, so the exit-code rule below passes and tells you nothing — this
+     is a different failure than an injection that fails to compile. Rebuilding
+     `remex.desktop.tests` made the same injection fail correctly. **Rule: rebuild the TEST project,
+     which pulls the dependency in, rather than the project you mutated:**
+     `dotnet build <testproj> -c Release --nologo -t:Rebuild`. Printing the failing test NAMES and
+     checking the test TOTAL — not just the exit code — is the detector that catches both this form
+     and the non-compiling one below.
    - **CHECK THE BUILD EXIT CODE BEFORE BELIEVING AN INJECTION RESULT** (RemEx-u5q0). Now that
      TreatWarningsAsErrors covers every project, a naive mutation often does not COMPILE: deleting a
      catch leaves `CS1524 Expected catch or finally`, `when (false)` trips CS8360, and a leading
