@@ -237,6 +237,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- With the colour source on "Windows accent", restoring the PC window from the tray at the same
+  moment the background accent poll ran could briefly apply the older of two accent readings.
+  Each poll is now stamped before it reads, and a reading that an even newer one has already
+  overtaken is discarded. (RemEx-tsfcr)
 - Opening a saved layout on a PC that cannot offer its background material (an Acrylic layout
   opened on Linux, or a layout with no material recorded) no longer overwrites the saved choice.
   The Personalize sheet shows the platform's fallback for this session, and any save you trigger
