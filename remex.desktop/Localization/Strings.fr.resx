@@ -2626,6 +2626,9 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Bibliothèque de capteurs</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Non vu récemment</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Pourquoi RemEx a-t-il besoin d'une autorisation particulière pour fonctionner ?</value>
   </data>

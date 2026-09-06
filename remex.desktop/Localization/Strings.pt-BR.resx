@@ -2626,6 +2626,9 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Biblioteca de sensores</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Não visto recentemente</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Por que o RemEx precisa de uma permissão especial para funcionar?</value>
   </data>

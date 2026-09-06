@@ -510,8 +510,14 @@
                                       reads the same in all four themes and needs no per-theme value -
                                       and still legible, because a stale template is exactly as
                                       droppable as a live one and must not look disabled.
+
+                                      HelpText carries the same fact to a screen reader (RemEx-lki2r):
+                                      the opacity above is a sighted-only signal, and StaleAutomationHint
+                                      is null (so HelpText is unset) on every live card because it comes
+                                      off the same IsStale field the class above does.
                                     -->
                                     <material:Card Classes="interactive" Classes.stale="{Binding IsStale}"
+                                            AutomationProperties.HelpText="{Binding StaleAutomationHint}"
                                             Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="{Binding CardTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>

@@ -2627,6 +2627,9 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Biblioteka czujników</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Nie widziano ostatnio</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Dlaczego RemEx potrzebuje specjalnych uprawnień, aby działać?</value>
   </data>

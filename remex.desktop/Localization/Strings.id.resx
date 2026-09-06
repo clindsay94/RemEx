@@ -2629,6 +2629,9 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Pustaka sensor</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Tidak terlihat baru-baru ini</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Mengapa RemEx memerlukan izin khusus untuk berjalan?</value>
   </data>

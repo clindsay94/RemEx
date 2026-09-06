@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -91,7 +92,22 @@ public partial class CanvasCardViewModel : ObservableObject
     /// marked.
     /// </remarks>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StaleAutomationHint))]
     private bool _isStale;
+
+    /// <summary>
+    /// The non-visual half of the stale mark (RemEx-lki2r): the 0.55 opacity in
+    /// <c>CanvasView.axaml</c>'s <c>Border.stale</c> style reaches sighted users only, so this
+    /// carries the same fact through <c>AutomationProperties.HelpText</c> for a screen reader.
+    /// </summary>
+    /// <remarks>
+    /// Driven by <see cref="NotifyPropertyChangedForAttribute"/> off <see cref="IsStale"/> rather
+    /// than set alongside it at the call site - the opacity class and this string are two
+    /// independent bindings in the view, and setting them from two separate lines is exactly how
+    /// they drift apart. One field, one generated notification, both consumers.
+    /// </remarks>
+    public string? StaleAutomationHint =>
+        IsStale ? LocalizationService.Instance["A11y_StagedSensorStale"] : null;
 
     /// <summary>Action to request a pin toggle, typically wired to the dashboard.</summary>
     private Action? _requestPinToggle;

@@ -2632,6 +2632,9 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Sensor library</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Not seen recently</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Why does RemEx need special permission to run?</value>
   </data>

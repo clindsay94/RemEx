@@ -2626,6 +2626,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>सेंसर लाइब्रेरी</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>हाल ही में नहीं देखा गया</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>RemEx को चलने के लिए विशेष अनुमति क्यों चाहिए?</value>
   </data>

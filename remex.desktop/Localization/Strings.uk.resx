@@ -2627,6 +2627,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Бібліотека сенсорів</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Не виявлено нещодавно</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Чому RemEx потребує особливого дозволу для роботи?</value>
   </data>
