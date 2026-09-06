@@ -245,6 +245,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The PC can no longer write an unmigrated default layout over a saved one before the saved
+  layout has been read: a save requested before the first load is refused, and every save after
+  it goes through the migrated profile. In practice this only ever fired in an isolated test
+  state directory, but the path is now closed for good. (RemEx-71b1m)
 - Importing a RemEx savefile on the PC no longer gets quietly undone by the Personalize sheet:
   the sheet kept the values it had read at startup, and the next slider nudge wrote those old
   values (corner radius, glass and window opacity, glow, accent, scheme, UI scale, fonts) back
