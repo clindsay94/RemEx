@@ -160,7 +160,12 @@
              control is in the visual tree with a theme applied, so it is the layer where a theme
              answer can actually land: AccentColor takes the theme's own accent (the same move that
              settled AccentForegroundBrush in RemEx-tq2e), and SecondaryAccentColor takes the M3
-             Tertiary role, which contrasts from Primary by construction in every scheme variant.
+             Tertiary role, which is a distinct hue from Primary in every scheme variant EXCEPT
+             Monochrome — DynamicColorGenerator.SeedCoreFor strips chroma from every tonal palette
+             under that variant (MonochromeHasNoChromaOnAnyTonalPalette), so Primary and Tertiary
+             both render the same grey there and the two series lose their separation. Not fixed
+             here: what should distinguish a sparkline's two series under Monochrome is an open
+             design call, left for the gate to file as its own bead.
              A Style setter is LOWER priority than a local value, so every existing per-sensor binding
              (HomeView, CanvasView, TrayFlyoutWindow) still wins here unchanged — this only reaches an
              unbound control. -->
