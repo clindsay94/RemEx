@@ -33,6 +33,8 @@ public sealed class WindowsAccentWatcher : IDisposable
     private string? _last;
     private bool _visible;
     private bool _running;
+    private long _pollStamp;
+    private long _lastAppliedStamp;
 
     /// <summary>Raised with the new "#RRGGBB" when the accent differs from the last one seen.</summary>
     public event Action<string>? AccentChanged;
@@ -87,17 +89,26 @@ public sealed class WindowsAccentWatcher : IDisposable
         // THE REGISTRY READ HAPPENS OUTSIDE THE GATE (RemEx-8twk0.3 review, LOW). SetVisible(true)
         // and PollNow() call this on the UI thread, so a pool-thread poll holding _gate across
         // TryRead() could block the UI thread behind a registry read. The gate is only ever held
-        // long enough to check _running or to compare-and-update _last.
+        // long enough to check _running, stamp the poll, or compare-and-update _last.
+        long stamp;
         lock (_gate)
         {
             if (!_running) return;
+            stamp = ++_pollStamp;
         }
 
         var hex = TryRead();
 
+        // STAMPED BEFORE THE READ, CHECKED AFTER (RemEx-tsfcr). The read happens outside the
+        // gate above, so read order and apply order are decoupled: a UI-thread poll from
+        // SetVisible(true) can start before a timer-tick poll but finish after it. Without the
+        // stamp, the UI thread's stale read would then overwrite the timer tick's newer one.
+        // Discard any poll whose stamp is older than the last one actually applied.
         lock (_gate)
         {
             if (!_running) return;
+            if (stamp <= _lastAppliedStamp) return;
+            _lastAppliedStamp = stamp;
             if (hex is null || string.Equals(hex, _last, StringComparison.OrdinalIgnoreCase)) return;
             _last = hex;
         }

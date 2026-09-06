@@ -174,4 +174,53 @@ public class WindowsAccentWatcherTests
         act.Should().NotThrow("a poll racing Dispose must not throw");
         raised.Should().BeEmpty("nothing should raise once the watcher has been disposed");
     }
+
+    [Fact]
+    public void AnOlderPollThatAppliesAfterANewerOneIsDiscarded()
+    {
+        // RemEx-tsfcr: the registry read happens outside _gate (RemEx-8twk0.3), so read order
+        // and apply order can come apart — a UI-thread poll from SetVisible(true) can start
+        // before a timer-tick poll but finish reading after it already applied. Driven
+        // deterministically here by having the first poll's read function reentrantly run a
+        // second, "newer" poll to completion before returning its own, older value — no real
+        // threads needed, since Poll() only ever holds _gate briefly.
+        var clock = new ManualTimeProvider();
+        WindowsAccentWatcher? watcher = null;
+        var callCount = 0;
+
+        string? Read()
+        {
+            callCount++;
+            return callCount switch
+            {
+                1 => "#111111",              // Start()'s seed read
+                2 => ReadOlderThenRace(),     // the older poll: races a newer one first
+                3 => "#222222",               // the newer poll's own (nested) read
+                _ => "#333333",               // a later, ordinary poll
+            };
+
+            string ReadOlderThenRace()
+            {
+                watcher!.PollNow(); // the newer poll wins the lock first and applies "#222222"
+                return "#111111";   // the older poll's own read, applied (and discarded) after
+            }
+        }
+
+        watcher = new WindowsAccentWatcher(Read, clock);
+        var raised = new List<string>();
+        watcher.AccentChanged += raised.Add;
+
+        watcher.Start();
+        watcher.PollNow(); // call 2: the older poll racing the nested, newer call 3
+
+        raised.Should().Equal(new[] { "#222222" }, "the newer read wins, the stale one is discarded");
+        watcher.Current.Should().Be("#222222");
+
+        // The single-poll path still works afterwards: the stamp counter does not perma-suppress
+        // a legitimate later change once the race is over.
+        watcher.PollNow(); // call 4: an ordinary poll, no reentrancy
+
+        raised.Should().Equal(new[] { "#222222", "#333333" });
+        watcher.Current.Should().Be("#333333");
+    }
 }
