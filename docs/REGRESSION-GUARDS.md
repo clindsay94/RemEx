@@ -380,7 +380,7 @@ bytes. The receiver then tears its sink down and finalizes a zero-byte transfer,
 
 - C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1427`),
   called at `TransferSessionManager.cs:1356` before the completion is sent.
-- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:323`).
+- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:320`).
 - Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
   `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
   sender had the defect for three beads after the other two were fixed. It was the only one never
@@ -473,8 +473,10 @@ C# sender's cap is now the same shape: an injectable init-only seam, `MaxUnacked
 `TransferSessionManager.cs:90`, defaulting to `FileTransferLimits.MaxUnackedBytes` and compared
 against in `StreamSenderAsync` at `TransferSessionManager.cs:1337`. `HostSendBackpressureTests`
 covers both halves — the sender stopping at the cap and resuming once an ack lowers outstanding
-bytes back under it (`RemEx-xefvb`). `FileTransferEngine.runUpload` on the upload path is still
-uncovered (`RemEx-yi7id`). Any value
+bytes back under it (`RemEx-xefvb`). `FileTransferEngine.runUpload` on the upload path is now covered
+the same way: the loop is extracted into `UploadSendLoop`, an injectable collaborator (the object
+singleton itself has no constructor to seam a defaulted cap onto), exercised by
+`UploadSendLoopTest` (`RemEx-yi7id`). Any value
 set there must exceed the peer's 4 MB ack interval or the sender deadlocks in silence — a smaller cap
 is valid only against a fake that acks by hand. That inverse
 sizing is what made this look like a flaky feature rather than a bug: large pushes incidentally

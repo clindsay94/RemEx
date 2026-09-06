@@ -295,25 +295,22 @@ object FileTransferEngine {
                         sent += r
                     }
                 }
-                val buf = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
-                while (true) {
-                    val read = it.read(buf)
-                    if (read <= 0) break
-                    while (sent - committed.get() > FileTransferLimits.MAX_UNACKED_BYTES) {
-                        // receiveCatching is stable API (unlike isClosedForReceive); a closed channel
-                        // means the peer/socket dropped, so abort and let the queue mark this failed.
-                        if (ackSignal.receiveCatching().isClosed) {
-                            throw IllegalStateException("Channel closed.")
-                        }
-                    }
-                    val isFinal = sent + read >= t.size
-                    if (!FileTransferChannelClient.sendData(t.id, sent, buf, read, isFinal)) {
-                        throw IllegalStateException("Binary channel closed mid-transfer.")
-                    }
-                    digest.update(buf, 0, read)
-                    sent += read
-                    updateProgress(t.id, sent)
-                }
+                // The send loop itself is extracted to UploadSendLoop (RemEx-yi7id): this object is a
+                // singleton driving the FileTransferChannelClient singleton directly, so it has no
+                // constructor to seam a defaulted cap onto the way FileHostHandler does — the
+                // collaborator is what makes the loop (and its cap) unit-testable without mutable
+                // global state.
+                sent =
+                    UploadSendLoop(FileTransferChannelClient::sendData).run(
+                        transferId = t.id,
+                        input = it,
+                        size = t.size,
+                        initialSent = sent,
+                        committed = committed,
+                        ackSignal = ackSignal,
+                        digest = digest,
+                        onProgress = { bytes -> updateProgress(t.id, bytes) },
+                    )
                 // Drain before completing (RemEx-y6x6): the bulk data frames and file_transfer_complete
                 // travel on SEPARATE sockets (/ws/files vs the control /ws). If we announce completion the
                 // instant the last frame is enqueued, the tiny complete overtakes the still-in-flight bulk

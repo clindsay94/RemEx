@@ -154,9 +154,11 @@ class FileHostHandler(
      * **IT IS NOT THE COUNTERPART OF THAT PROPERTY, AND SAYING SO WOULD BE WORSE THAN SAYING
      * NOTHING** (review). `MaxTransferBytes` is the 5 GB RECEIVE-side total-transfer ceiling
      * (`TransferSessionManager.cs:67`, applied at `:201`); it has nothing to do with backpressure.
-     * The C# BACKPRESSURE loop at `TransferSessionManager.cs:1314` still reads
-     * `FileTransferLimits.MaxUnackedBytes` raw and is **still uncovered** — see RemEx-xefvb. A
-     * comment implying both sides were done here would end the next parity pass before it started.
+     * The C# BACKPRESSURE loop has the same shape now: an injectable init-only seam,
+     * `MaxUnackedBytes` (`TransferSessionManager.cs:90`), compared against in `StreamSenderAsync`
+     * at `TransferSessionManager.cs:1337` and covered by `HostSendBackpressureTests` (RemEx-xefvb).
+     * `FileTransferEngine.runUpload`'s upload-path loop is covered the same way, via the
+     * `UploadSendLoop` collaborator (RemEx-yi7id).
      *
      * Defaulted, so production and every existing call site are unchanged.
      *
