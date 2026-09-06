@@ -33,7 +33,12 @@ adversarial seeds is crossed with:
 - **Mode**: Light, Dark
 - **Contrast**: 0.0, 1.0 (the full Material contrast range's two ends)
 
-`1 + 3 seeds × 2 modes × 2 contrasts = 13 cells`. The exact 13 are data in
+Two cells vary the background instead of the seed (RemEx-ddynd): **Aurora-Light** (Default seed,
+Aurora mesh, light mode) and **Wallpaper-Dark-B06** (Chroma seed, real wallpaper at blur 0.6, dark
+mode). They write `canvasBackgroundType` and, for Wallpaper, `wallpaperSource`/`wallpaperBlur`;
+every other cell leaves the profile's background alone.
+
+`1 + 3 seeds × 2 modes × 2 contrasts + 2 background cells = 15 cells`. The exact 15 are data in
 [`scripts/ui-palette-sweep.ps1`](../scripts/ui-palette-sweep.ps1) — run `-ListCells` to read them
 rather than trusting a second copy of the table here:
 
@@ -104,7 +109,7 @@ run.
 
 ## Findings ledger
 
-This is the ledger as of RemEx-8q7de: every cell × view marked **not run**. Filling it in — running
+This is the ledger as of RemEx-8q7de: every one of the fifteen cells × view marked **not run**. Filling it in — running
 the sweep, looking at every screenshot, and recording what was actually seen — is RemEx-bmuji's
 job, not this bead's. A cell marked "not run" here has not been looked at; do not read this table
 as "verified fine".
@@ -124,6 +129,8 @@ as "verified fine".
 | Chroma-Light-C1 | not run | not run | not run | not run | not run | not run | not run | not run | not run | manual |
 | Chroma-Dark-C0 | not run | not run | not run | not run | not run | not run | not run | not run | not run | manual |
 | Chroma-Dark-C1 | not run | not run | not run | not run | not run | not run | not run | not run | not run | manual |
+| Aurora-Light | not run | not run | not run | not run | not run | not run | not run | not run | not run | manual |
+| Wallpaper-Dark-B06 | not run | not run | not run | not run | not run | not run | not run | not run | not run | manual |
 
 RemoteDesktop is marked `manual` for every cell — it is never swept by the script (see above), so
 "not run" and "manual" mean different things here: a `not run` cell is waiting on RemEx-bmuji to

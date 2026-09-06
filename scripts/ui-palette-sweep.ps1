@@ -10,9 +10,10 @@
     longer covers the surface that can break — it covers four points on a space with millions.
     The axis this script drives instead: the shipped default preset, plus three adversarial
     seeds (near-white, near-black, max-chroma) picked to stress the generator rather than to
-    look good, each crossed with light/dark mode and contrast 0.0/1.0. That is
-    1 + 3 seeds x 2 modes x 2 contrasts = 13 cells (-ListCells enumerates them by reading the
-    data below, not by restating it here).
+    look good, each crossed with light/dark mode and contrast 0.0/1.0, plus two cells that vary
+    the background instead of the seed (Aurora-Light, Wallpaper-Dark-B06, RemEx-ddynd). That is
+    1 + 3 seeds x 2 modes x 2 contrasts + 2 background cells = 15 cells (-ListCells enumerates
+    them by reading the data below, not by restating it here).
 
     Each cell is captured against every scriptable view (Home, Sensors, Commands, Launcher,
     Processes, Files, Logs, Settings, About) using Remex.Desktop's `--view <Name>` launch
@@ -98,7 +99,8 @@ $snapshotScript = Join-Path $PSScriptRoot 'ui-snapshot.ps1'
 #   Chalk  #F5F5F5 - near-white   (very light lightness)
 #   Ink    #0B0B0F - near-black   (very dark lightness)
 #   Chroma #00FF00 - pure green   (max chroma / saturation)
-# each x Mode(Light,Dark) x Contrast(0.0,1.0) = 3 x 2 x 2 = 12, plus Default = 13 cells.
+# each x Mode(Light,Dark) x Contrast(0.0,1.0) = 3 x 2 x 2 = 12, plus Default = 13, plus the two
+# background cells (Aurora-Light, Wallpaper-Dark-B06) = 15 cells.
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 $Script:CellMatrix = @(
     [ordered]@{ Id = 'Default';         ThemeId = 'BaseDarkGlass'; Seed = '#6C4CFF'; SchemeVariant = 'TonalSpot'; Mode = 'Dark';  Contrast = 0.0 }
@@ -117,6 +119,12 @@ $Script:CellMatrix = @(
     [ordered]@{ Id = 'Chroma-Light-C1'; ThemeId = 'Dynamic'; Seed = '#00FF00'; SchemeVariant = 'TonalSpot'; Mode = 'Light'; Contrast = 1.0 }
     [ordered]@{ Id = 'Chroma-Dark-C0';  ThemeId = 'Dynamic'; Seed = '#00FF00'; SchemeVariant = 'TonalSpot'; Mode = 'Dark';  Contrast = 0.0 }
     [ordered]@{ Id = 'Chroma-Dark-C1';  ThemeId = 'Dynamic'; Seed = '#00FF00'; SchemeVariant = 'TonalSpot'; Mode = 'Dark';  Contrast = 1.0 }
+
+    # RemEx-ddynd: the two background modes the spec adds. Aurora on the default seed in LIGHT
+    # mode (the harder case for a mesh built from tone-90 pastels); Wallpaper on the max-chroma
+    # seed in dark mode at the default blur, desktop source, so the veil has a real picture to sit on.
+    [ordered]@{ Id = 'Aurora-Light';      ThemeId = 'BaseDarkGlass'; Seed = '#6C4CFF'; SchemeVariant = 'TonalSpot'; Background = 'Aurora'; Mode = 'Light'; Contrast = 0.0 }
+    [ordered]@{ Id = 'Wallpaper-Dark-B06'; ThemeId = 'Dynamic'; Seed = '#00FF00'; SchemeVariant = 'TonalSpot'; Background = 'Wallpaper'; WallpaperBlur = 0.6; Mode = 'Dark';  Contrast = 0.0 }
 )
 
 # The nine views --view opens (Remex.Desktop.Services.StartupViewArgument.Navigators), in
@@ -225,13 +233,25 @@ try {
 
         # Only the customization fields the sweep cares about — everything else in the profile
         # (canvas layout, connection history, sensor alerts...) passes through untouched.
-        $customization | Add-Member -NotePropertyName 'schemaVersion'   -NotePropertyValue 2                  -Force
+        # schemaVersion 4 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
+        # a lower number is re-migrated on read, which is not what a sweep cell asked for.
+        $customization | Add-Member -NotePropertyName 'schemaVersion'   -NotePropertyValue 4                  -Force
         $customization | Add-Member -NotePropertyName 'baseTheme'       -NotePropertyValue $cell.ThemeId       -Force
         $customization | Add-Member -NotePropertyName 'accentColor'     -NotePropertyValue $cell.Seed          -Force
         $customization | Add-Member -NotePropertyName 'schemeVariant'   -NotePropertyValue $cell.SchemeVariant -Force
         $customization | Add-Member -NotePropertyName 'themeContrast'   -NotePropertyValue $cell.Contrast      -Force
         $customization | Add-Member -NotePropertyName 'themeSeedChroma' -NotePropertyValue 48.0                -Force
         $customization | Add-Member -NotePropertyName 'themeMode'       -NotePropertyValue $cell.Mode          -Force
+
+        # Background cells only; every other cell leaves the profile's own background in place.
+        if ($cell.Contains('Background')) {
+            $customization | Add-Member -NotePropertyName 'canvasBackgroundType' -NotePropertyValue $cell.Background -Force
+            $customization | Add-Member -NotePropertyName 'colorSource'          -NotePropertyValue 'Custom'         -Force
+            if ($cell.Background -eq 'Wallpaper') {
+                $customization | Add-Member -NotePropertyName 'wallpaperSource' -NotePropertyValue 'Desktop'         -Force
+                $customization | Add-Member -NotePropertyName 'wallpaperBlur'   -NotePropertyValue $cell.WallpaperBlur -Force
+            }
+        }
 
         # UTF-8 no BOM (matching DashboardLayoutService.JsonOptions' own contract for this file),
         # written to a temp sibling and moved into place (RemEx-8q7de round 2, HIGH). A relaunched

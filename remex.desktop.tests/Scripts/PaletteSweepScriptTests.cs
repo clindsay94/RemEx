@@ -37,13 +37,24 @@ public class PaletteSweepScriptTests
     }
 
     [Fact]
-    public void MatrixHasExactlyThirteenCells()
+    public void MatrixHasExactlyFifteenCells()
     {
         // Negative lookbehind for a letter so "ThemeId = 'BaseDarkGlass'" isn't double-counted as
         // an "Id = " row alongside the actual "Id = 'Default'" it sits next to.
         var idRows = Regex.Matches(MatrixDataBlock(), @"(?<![A-Za-z])Id\s*=\s*'[^']+'");
-        idRows.Should().HaveCount(13,
-            "the axis is 1 default + 3 adversarial seeds x 2 modes x 2 contrasts = 13 - a row added or lost here silently shrinks or pads the sweep");
+        idRows.Should().HaveCount(15,
+            "the axis is 1 default + 3 adversarial seeds x 2 modes x 2 contrasts + 2 background cells = 15 - a row added or lost here silently shrinks or pads the sweep");
+    }
+
+    [Fact]
+    public void TheTwoBackgroundCellsCarryTheirModeAndBlur()
+    {
+        var text = ScriptText();
+
+        text.Should().MatchRegex(@"Id = 'Aurora-Light';[^\n]*Background = 'Aurora'[^\n]*Mode = 'Light'");
+        text.Should().MatchRegex(@"Id = 'Wallpaper-Dark-B06';[^\n]*Seed = '#00FF00'[^\n]*Background = 'Wallpaper'[^\n]*WallpaperBlur = 0\.6[^\n]*Mode = 'Dark'");
+        text.Should().Contain("'canvasBackgroundType'", "a cell's background reaches the profile the host reads");
+        text.Should().Contain("-NotePropertyValue 4 ", "the sweep writes the schema this build writes, or the host re-migrates the file");
     }
 
     [Fact]
