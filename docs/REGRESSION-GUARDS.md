@@ -469,8 +469,12 @@ green, suspect the fixture before concluding the code is covered.
 8 MB, so every transfer *smaller* than that reaches the completion without ever forcing an ack round
 trip. On the Kotlin sender that cap is now an injectable constructor parameter defaulting to
 `FileTransferLimits.MAX_UNACKED_BYTES`, so the branch is reachable from a test (`RemEx-68wwl`); the
-C# sender at `TransferSessionManager.cs:1314` still reads the raw const and is **still uncovered**
-(`RemEx-xefvb`), as is `FileTransferEngine.runUpload` on the upload path (`RemEx-yi7id`). Any value
+C# sender's cap is now the same shape: an injectable init-only seam, `MaxUnackedBytes` at
+`TransferSessionManager.cs:90`, defaulting to `FileTransferLimits.MaxUnackedBytes` and compared
+against in `StreamSenderAsync` at `TransferSessionManager.cs:1337`. `HostSendBackpressureTests`
+covers both halves — the sender stopping at the cap and resuming once an ack lowers outstanding
+bytes back under it (`RemEx-xefvb`). `FileTransferEngine.runUpload` on the upload path is still
+uncovered (`RemEx-yi7id`). Any value
 set there must exceed the peer's 4 MB ack interval or the sender deadlocks in silence — a smaller cap
 is valid only against a fake that acks by hand. That inverse
 sizing is what made this look like a flaky feature rather than a bug: large pushes incidentally

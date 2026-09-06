@@ -86,6 +86,12 @@ public sealed class TransferSessionManager : IDisposable
     /// <c>FileHostHandlerTest.downloadSend_stopsReadingOnceTooMuchIsUnacked</c> and its control. Here the
     /// guard had no coverage while it compared against a <c>const</c>, because reaching the branch from a
     /// test meant actually streaming 8 MB.
+    ///
+    /// A TEST VALUE MUST EXCEED <see cref="FileTransferLimits.AckIntervalBytes"/> (4 MB), the same
+    /// warning the Kotlin seam carries. The receiver acks at that interval and on the final frame, never
+    /// in between, so a cap set below it parks the sender in <see cref="SendSession.WaitForAckAsync"/>
+    /// forever with no error on either side — the ack it is waiting for is never sent. Only a fake that
+    /// acks by hand, rather than the real receive path, can safely go smaller.
     /// </remarks>
     internal long MaxUnackedBytes { get; init; } = FileTransferLimits.MaxUnackedBytes;
 
