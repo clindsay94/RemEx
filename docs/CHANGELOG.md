@@ -245,6 +245,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Importing a RemEx savefile on the PC no longer gets quietly undone by the Personalize sheet:
+  the sheet kept the values it had read at startup, and the next slider nudge wrote those old
+  values (corner radius, glass and window opacity, glow, accent, scheme, UI scale, fonts) back
+  over the import. The sheet is now rebuilt from the imported profile. (RemEx-waqb4)
 - Developer-facing: the PC's file-send backpressure cap (8 MB of unacknowledged data) is now
   covered by a test that proves the sender stops at the cap and resumes on the phone's ack,
   through the same test-only seam the receive-side ceiling already had. No behaviour change.
