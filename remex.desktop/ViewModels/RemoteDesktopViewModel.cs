@@ -278,6 +278,12 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
         _shell.PropertyChanged += OnShellPropertyChanged;
 
+        // A REPLACED PROFILE MUST NOT LEAVE Quality/TargetFps/Scale STALE (RemEx-w6ipy). Unlike
+        // RemoteViewModel this VM can hold a live stream, so a savefile import must never drop or
+        // rebuild the cached instance mid-session - only the three fields snapshotted below are
+        // re-read, in place, and the stream itself is left untouched.
+        _shell.LayoutService.ProfileReplaced += OnProfileReplaced;
+
         // Sync stream defaults from persisted Settings panel values.
         // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
         var profile = shell.LayoutService.CurrentProfile;
@@ -1058,11 +1064,31 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Re-reads Quality/TargetFps/Scale off the freshly-replaced profile (RemEx-w6ipy). Marshalled
+    /// through <see cref="ShellViewModel.ProfileReplacedDispatch"/>, same reason as
+    /// ShellViewModel's own ProfileReplaced handler: ReloadAsync is not guaranteed to complete on
+    /// the UI thread. Deliberately does not touch <see cref="IsStreaming"/> or the desktop service -
+    /// a live stream must survive a savefile import untouched; only the next ApplySettingsAsync
+    /// picks up the imported values.
+    /// </summary>
+    private void OnProfileReplaced() => _shell.ProfileReplacedDispatch(() =>
+    {
+        var profile = _shell.LayoutService.CurrentProfile;
+        if (profile is null)
+            return;
+
+        Quality = profile.StreamQuality;
+        TargetFps = profile.StreamFps;
+        Scale = SnapScale(profile.StreamScale);
+    });
+
     public void Dispose()
     {
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         _shell.PropertyChanged -= OnShellPropertyChanged;
+        _shell.LayoutService.ProfileReplaced -= OnProfileReplaced;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;

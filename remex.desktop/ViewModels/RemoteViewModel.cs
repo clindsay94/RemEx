@@ -67,20 +67,43 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         // cannot disagree about which adapter is primary (RemEx-izuj).
         (HostMacAddress, HostAdapterName) = PrimaryNetworkAdapter.Find();
 
+        // A REPLACED PROFILE MUST NOT LEAVE THE DISPLAYED WOL FIELDS STALE (RemEx-w6ipy, same shape
+        // as waqb4's CustomizationViewModel fix). _profile below is only ever assigned from a
+        // LoadAsync/ReloadAsync result or from ProfileReplaced's own re-read, so a savefile import
+        // that lands while this page is cached refreshes what's shown instead of leaving the
+        // pre-import snapshot in the boxes until the next full navigation away and back.
+        _layoutService.ProfileReplaced += OnProfileReplaced;
+
         _ = LoadWolConfigAsync();
     }
 
 
     private async Task LoadWolConfigAsync()
     {
-        _profile = await _layoutService.LoadAsync();
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            WolMacAddress = _profile.WolMacAddress;
-            WolBroadcastIp = string.IsNullOrWhiteSpace(_profile.WolBroadcastIp)
-                ? "255.255.255.255" : _profile.WolBroadcastIp;
-            WolPort = _profile.WolPort > 0 ? _profile.WolPort : 9;
-        });
+        var profile = await _layoutService.LoadAsync();
+        _profile = profile;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyProfileToFields(profile));
+    }
+
+    /// <summary>
+    /// Re-reads the WOL fields off the freshly-replaced profile (RemEx-w6ipy). Marshalled through
+    /// <see cref="ShellViewModel.ProfileReplacedDispatch"/> for the same reason
+    /// ShellViewModel's own ProfileReplaced handler is: ReloadAsync (a savefile import, or the
+    /// autosnapshot/export path if that ever changes to reload) is not guaranteed to complete on
+    /// the UI thread.
+    /// </summary>
+    private void OnProfileReplaced() => _shell.ProfileReplacedDispatch(() =>
+    {
+        _profile = _layoutService.CurrentProfile;
+        ApplyProfileToFields(_profile);
+    });
+
+    private void ApplyProfileToFields(DashboardProfile profile)
+    {
+        WolMacAddress = profile.WolMacAddress;
+        WolBroadcastIp = string.IsNullOrWhiteSpace(profile.WolBroadcastIp)
+            ? "255.255.255.255" : profile.WolBroadcastIp;
+        WolPort = profile.WolPort > 0 ? profile.WolPort : 9;
     }
 
     partial void OnWolMacAddressChanged(string value) => SaveWolConfig();
@@ -89,7 +112,12 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
 
     private void SaveWolConfig()
     {
-        var updated = _profile with
+        // The live, migrated profile is the base - not the constructor-time _profile snapshot -
+        // so a WOL edit after a savefile import layers onto the imported values instead of
+        // overwriting them with whatever this view model last saw (RemEx-w6ipy), the same base
+        // CanvasDashboardViewModel.TriggerSave uses.
+        var baseProfile = _layoutService.CurrentProfile ?? _profile;
+        var updated = baseProfile with
         {
             WolMacAddress = WolMacAddress,
             WolBroadcastIp = WolBroadcastIp,
@@ -261,7 +289,6 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
 
     public void Dispose()
     {
-        // No resources to dispose currently, but implementing IDisposable for consistency
-        // in the ViewModel disposal hierarchy
+        _layoutService.ProfileReplaced -= OnProfileReplaced;
     }
 }
