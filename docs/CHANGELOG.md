@@ -237,6 +237,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a saved layout on a PC that cannot offer its background material (an Acrylic layout
+  opened on Linux, or a layout with no material recorded) no longer overwrites the saved choice.
+  The Personalize sheet shows the platform's fallback for this session, and any save you trigger
+  from another control keeps the original material on disk until you pick a background
+  yourself. Before, the fallback was written back on the spot and the next Windows launch had
+  lost Acrylic for good. (RemEx-k7891)
 - The Personalize sheet's header on the PC briefly rendered the literal text
   "Avalonia.Controls.Border" instead of its title (Material's default side-sheet header template
   stringified the header control). The fix that opted the sheet out of that template is now
