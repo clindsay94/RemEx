@@ -88,6 +88,12 @@ public sealed class RemexSavefileService : IDisposable
     /// <summary>Reads all four sections from their live storage services and assembles a savefile envelope.</summary>
     public async Task<RemexSavefile> BuildSavefileAsync(string kind)
     {
+        // LoadAsync, DELIBERATELY NOT ReloadAsync (RemEx-waqb4 review, HIGH). This is a read for a
+        // manual export or the 30-second rolling autosnapshot (WriteSnapshotAsync, itself fired off a
+        // System.Threading.Timer callback with no SynchronizationContext) — nobody here asked to
+        // replace the live profile, so this must never raise ProfileReplaced. It still assigns
+        // DashboardLayoutService.CurrentProfile as a side effect of loading, same as before this bead;
+        // that assignment itself is unchanged, only whether it also raises the event.
         var dashboardLayout = await _layoutService.LoadAsync();
         var launchers = await _launcherStorage.LoadEntriesAsync();
         var fileTransferRoots = await _fileTransferRootSettings.LoadAsync();
@@ -239,8 +245,12 @@ public sealed class RemexSavefileService : IDisposable
         try
         {
             await _layoutService.SaveAsync(profile);
-            // Re-applies the theme (ThemeService.ApplyCustomization) as a side effect of loading.
-            await _layoutService.LoadAsync();
+            // ReloadAsync, NOT LoadAsync (RemEx-waqb4 review, HIGH) - this re-read is the one that
+            // actually intends to replace whatever CurrentProfile held before the import, so it has to
+            // raise ProfileReplaced for ShellViewModel's cached CustomizationViewModel to hear about
+            // it. It also re-applies the theme (ThemeService.ApplyCustomization) as a side effect of
+            // loading, unchanged from before.
+            await _layoutService.ReloadAsync();
 
             if (!string.IsNullOrWhiteSpace(profile.Language))
             {

@@ -175,7 +175,11 @@ public partial class App : Application
         {
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
             var savefileService = Services.GetRequiredService<RemexSavefileService>();
-            var profile = await layoutService.LoadAsync();
+            // ReloadAsync (RemEx-waqb4 review): the very first load genuinely replaces the
+            // constructor-default CurrentProfile with whatever is actually on disk, so it is a real
+            // replacement in the same sense a savefile import is - harmless either way this early
+            // (nothing has cached a view model against the default yet), but correct to name it as one.
+            var profile = await layoutService.ReloadAsync();
 
             // Auto-check for a newer GitHub release on startup unless the user opted out. Fire-and-forget
             // so a slow/absent network never delays the window; the About page reads the cached result.

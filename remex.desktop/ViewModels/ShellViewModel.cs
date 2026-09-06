@@ -611,12 +611,21 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // it is a get-only property backed by the field) is what makes a bound, already-open
         // Personalize sheet pick up the fresh instance immediately, same as OnPresenceChanged above
         // re-raises ShowPresencePulse rather than waiting for an unrelated notification.
-        _onProfileReplaced = () =>
+        //
+        // MARSHALLED ONTO THE UI THREAD, NOT RUN INLINE (review, HIGH). ProfileReplaced is now only
+        // raised by DashboardLayoutService.ReloadAsync, but that is still reachable off the UI thread
+        // — RemexSavefileService's silent autosnapshot arms a bare System.Threading.Timer with no
+        // SynchronizationContext, and its manual export can run from wherever the caller awaits it
+        // from. Disposing the live, bound CustomizationViewModel and re-raising CustomizationVm from a
+        // thread pool thread would touch bound UI state off-thread even though it can no longer
+        // happen every 30 seconds. ProfileReplacedDispatch below is that check/post, same shape as
+        // CanvasDashboardViewModel.ReloadFromPersistedLayout's.
+        _onProfileReplaced = () => ProfileReplacedDispatch(() =>
         {
             _customizationViewModel?.Dispose();
             _customizationViewModel = null;
             OnPropertyChanged(nameof(CustomizationVm));
-        };
+        });
         _layoutService.ProfileReplaced += _onProfileReplaced;
 
         // Initialize background/shared VMs
@@ -635,6 +644,30 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// surface exposes it the same way, which is the only arrangement where they cannot drift.
     /// </remarks>
     public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
+
+    /// <summary>
+    /// How the <see cref="DashboardLayoutService.ProfileReplaced"/> handler reaches the UI thread.
+    /// Replaceable so it can be tested without a real, pumped dispatcher (RemEx-waqb4 review),
+    /// the same reason <c>CanvasDashboardViewModel.Dispatch</c> exists.
+    /// </summary>
+    /// <remarks>
+    /// THE LAMBDA IS NOT EVALUATED AT CONSTRUCTION, so building a <see cref="ShellViewModel"/> in a
+    /// test never touches <see cref="Dispatcher.UIThread"/> on its own. That matters here specifically
+    /// because this assembly has no <c>Avalonia.Headless</c> reference: nothing pumps a callback
+    /// <c>Post</c> actually queues, and by the time
+    /// a test's own awaited <c>DashboardLayoutService.ReloadAsync</c> resumes, its continuation can
+    /// land on a different pool thread than whichever one <see cref="HardwareThemeService"/>'s
+    /// <c>DispatcherTimer</c> bound as "the" UI thread earlier in the same test — so
+    /// <see cref="Dispatcher.UIThread"/>.CheckAccess() reads false and the real default would queue
+    /// work nothing ever drains. A test sets this to run its argument inline instead.
+    /// </remarks>
+    internal Action<Action> ProfileReplacedDispatch { get; set; } = run =>
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            run();
+        else
+            Dispatcher.UIThread.Post(run);
+    };
 
     /// <summary>
     /// True when the drawer-footer connection button's presence badge should pulse (RemEx-d7xj8):

@@ -193,21 +193,29 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
     /// <summary>
     /// Raised when <see cref="CurrentProfile"/> is replaced with a profile a caller did not build
-    /// FROM the previous one — a load off disk, whether that succeeds or falls back to defaults
-    /// (RemEx-waqb4). A savefile import is the concrete path: <c>RemexSavefileService</c>'s import
-    /// calls <see cref="SaveAsync"/> then <see cref="LoadAsync"/>, and it is that trailing
-    /// <see cref="LoadAsync"/> — inside <see cref="LoadAsyncCore"/> — that actually swaps
+    /// FROM the previous one — a <see cref="ReloadAsync"/> off disk, whether that succeeds or falls
+    /// back to defaults (RemEx-waqb4). A savefile import is the concrete path:
+    /// <c>RemexSavefileService.ImportDashboardLayoutAsync</c> calls <see cref="SaveAsync"/> then
+    /// <see cref="ReloadAsync"/>, and it is that trailing <see cref="ReloadAsync"/> that actually swaps
     /// <see cref="CurrentProfile"/> for the imported values and raises this.
     /// </summary>
     /// <remarks>
-    /// ONLY <see cref="LoadAsyncCore"/>'S TWO ASSIGNMENTS RAISE THIS, DELIBERATELY. Every other
-    /// write to <see cref="CurrentProfile"/> — <see cref="RequestSave"/>'s, which is what
-    /// <c>CustomizationViewModel.ApplyAndSave</c> calls on every slider nudge — hands in
-    /// <c>CurrentProfile with { ... }</c>: the SAME profile a caller (typically a cached view model)
-    /// just built, not a foreign one. Firing this there would tell every subscriber "your data is
-    /// stale, rebuild" on the caller's own write, which for the Personalize sheet means the sheet
-    /// resetting itself under the user's hand mid-edit. A subscriber that wants "did the load
+    /// <para>
+    /// ONLY <see cref="ReloadAsync"/> CAN RAISE THIS (review, HIGH) — <see cref="LoadAsyncCore"/>
+    /// gates both of its <see cref="CurrentProfile"/> assignments on the <c>isReplacement</c> flag,
+    /// and <see cref="LoadAsync"/> always passes <c>false</c>. The first version raised this from
+    /// EVERY load, including <see cref="LoadAsync"/>'s: <c>RemexSavefileService.BuildSavefileAsync</c>
+    /// calls it on every manual export and every 30-second autosnapshot timer tick — a background,
+    /// off-UI-thread read nobody asked to replace anything — and <c>CanvasDashboardViewModel</c> calls
+    /// it on its own periodic refreshes. Either one firing this 30 seconds after an unrelated slider
+    /// nudge reset a bound, open Personalize sheet out from under the user, from a thread pool thread.
+    /// </para>
+    /// <para>
+    /// <see cref="RequestSave"/>'s write is excluded for a different reason — see its own call site's
+    /// comment: it hands in <c>CurrentProfile with { ... }</c>, the SAME profile a caller (typically
+    /// a cached view model) just built, not a foreign one. A subscriber that wants "did the load
     /// change what disk holds" has <see cref="ProfileSaved"/> for that.
+    /// </para>
     /// </remarks>
     public event Action? ProfileReplaced;
 
@@ -321,7 +329,25 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     }
 
     /// <inheritdoc />
-    public Task<DashboardProfile> LoadAsync() => LoadAsyncCore(onReadAttemptFailed: null);
+    /// <remarks>
+    /// A PLAIN READ, NOT A REPLACEMENT (RemEx-waqb4 review, HIGH). This is what
+    /// <c>RemexSavefileService.BuildSavefileAsync</c> calls on every manual export AND every 30-second
+    /// autosnapshot, and what <c>CanvasDashboardViewModel</c> calls on its own periodic refreshes — none
+    /// of those intend to replace anything a view model has cached, so this overload never raises
+    /// <see cref="ProfileReplaced"/>. <see cref="ReloadAsync"/> is the one that does.
+    /// </remarks>
+    public Task<DashboardProfile> LoadAsync() => LoadAsyncCore(onReadAttemptFailed: null, isReplacement: false);
+
+    /// <summary>
+    /// Loads the persisted profile and raises <see cref="ProfileReplaced"/> once the swap into
+    /// <see cref="CurrentProfile"/> completes (RemEx-waqb4 review, HIGH). Use this only from a caller
+    /// that actually intends to replace the live profile out from under whatever cached it: the
+    /// initial app load (<c>App.InitializeAppAsync</c>) and a savefile import's post-<see cref="SaveAsync"/>
+    /// re-read (<c>RemexSavefileService.ImportDashboardLayoutAsync</c>). Every other reader wants
+    /// <see cref="LoadAsync"/> instead - see its remarks for why raising this from every read broke a
+    /// bound Personalize sheet from a background thread 30 seconds after an unrelated slider nudge.
+    /// </summary>
+    public Task<DashboardProfile> ReloadAsync() => LoadAsyncCore(onReadAttemptFailed: null, isReplacement: true);
 
     /// <summary>
     /// TEST SEAM ONLY (RemEx-8y3qy round 2). Runs the real <see cref="LoadAsync"/> path with
@@ -330,9 +356,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// fixed delay against it.
     /// </summary>
     internal Task<DashboardProfile> LoadAsyncForTests(Action<int> onReadAttemptFailed) =>
-        LoadAsyncCore(onReadAttemptFailed);
+        LoadAsyncCore(onReadAttemptFailed, isReplacement: false);
 
-    private async Task<DashboardProfile> LoadAsyncCore(Action<int>? onReadAttemptFailed)
+    private async Task<DashboardProfile> LoadAsyncCore(Action<int>? onReadAttemptFailed, bool isReplacement)
     {
         await _gate.WaitAsync();
         try
@@ -384,12 +410,14 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
             CurrentProfile = profile;
 
-            // A REAL REPLACEMENT, NOT A SAVE-THROUGH (RemEx-waqb4) - see ProfileReplaced's own
-            // remarks for why RequestSave must never raise this. A view model cached over the old
-            // CurrentProfile (CustomizationViewModel, held by ShellViewModel's ??=) has to hear about
-            // this one specifically, or the next slider nudge writes its stale snapshot back over
+            // A REAL REPLACEMENT, NOT A SAVE-THROUGH OR AN ORDINARY READ (RemEx-waqb4, tightened by
+            // review) - see ProfileReplaced's own remarks for why RequestSave must never raise this,
+            // and LoadAsync's for why a plain read must not either. Only isReplacement callers
+            // (ReloadAsync) reach this. A view model cached over the old CurrentProfile
+            // (CustomizationViewModel, held by ShellViewModel's ??=) has to hear about a REAL
+            // replacement specifically, or the next slider nudge writes its stale snapshot back over
             // whatever this load just brought in.
-            ProfileReplaced?.Invoke();
+            if (isReplacement) ProfileReplaced?.Invoke();
 
             // A LOAD THAT JUST SUCCEEDED MEANS CurrentProfile IS TRUSTWORTHY AGAIN (RemEx-8y3qy
             // round 2). Cleared before the possible RequestSave below - a migrating profile arriving
@@ -460,10 +488,10 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
 
-            // Also a replacement (RemEx-waqb4), same reasoning as the success path above - a
+            // Also gated on isReplacement (RemEx-waqb4), same reasoning as the success path above - a
             // fallback default is just as foreign to a view model cached over the profile this load
-            // failed to preserve.
-            ProfileReplaced?.Invoke();
+            // failed to preserve, but only when the caller actually asked to replace one.
+            if (isReplacement) ProfileReplaced?.Invoke();
 
             // A FABRICATED PROFILE MUST NOT LOOK SAVE-WORTHY (RemEx-8y3qy round 2). `existed` is
             // exactly "this was not a fresh install": a brand-new user has no real profile to protect
