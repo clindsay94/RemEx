@@ -24,6 +24,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private bool _isApplyingPreset;
 
+    /// <summary>
+    /// Short-circuits only the persist half of <see cref="ApplyAndSave"/> — the live repaint (and
+    /// preview/tile refresh) still runs, <c>_layoutService.RequestSave</c> alone does not.
+    /// </summary>
+    /// <remarks>
+    /// RemEx-k7891: <see cref="RefreshBackgroundTypes"/>'s platform fallback has to go through the
+    /// real <c>CanvasBackgroundType</c> setter — CommunityToolkit.Mvvm's generator forbids writing an
+    /// <c>[ObservableProperty]</c> backing field directly from anywhere but the constructor
+    /// (MVVMTK0034) — so this is the same shape as <see cref="_isApplyingPreset"/>, guarding the one
+    /// step that must not run instead of skipping the setter's side effects altogether.
+    /// </remarks>
+    private bool _suppressPersist;
+
     /// <summary>Held so <see cref="Dispose"/> can detach it — the theme service outlives this VM.</summary>
     private Action<CustomizationSettings>? _onCustomizationApplied;
 
@@ -722,9 +735,22 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         AvailableBackgroundTypes.Add("Gradient");
         AvailableBackgroundTypes.Add("Solid");
 
-        // A mode this platform cannot offer resolves to the default for the session.
+        // A mode this platform cannot offer (or a null/absent one off disk) falls back to Aurora
+        // for THIS SESSION ONLY (RemEx-k7891). Going through the CanvasBackgroundType property here
+        // used to persist the fallback: the generated setter's OnCanvasBackgroundTypeChanged partial
+        // ends in ApplyAndSave, so opening a profile saved with Acrylic once on a platform that
+        // doesn't offer it — or a hand-edited profile with BackgroundMaterial missing or null —
+        // silently and permanently rewrote it to Aurora on disk. _suppressPersist keeps the setter's
+        // repaint (picker and dashboard background must never disagree about what's on screen)
+        // while skipping only ApplyAndSave's RequestSave call — the profile's real choice survives
+        // until the user actually picks something themselves. (The backing field can't be written
+        // directly outside the constructor: CommunityToolkit.Mvvm's generator forbids it, MVVMTK0034.)
         if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))
-            CanvasBackgroundType = "Aurora";
+        {
+            _suppressPersist = true;
+            try { CanvasBackgroundType = "Aurora"; }
+            finally { _suppressPersist = false; }
+        }
     }
 
     /// <summary>
@@ -1147,15 +1173,48 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     {
         if (_isApplyingPreset) return;
 
-        // EVERY FIELD THIS SCREEN DOES NOT OWN HAS TO BE CARRIED FORWARD BY HAND. Building a fresh
-        // record and assigning only what the sliders bind to silently resets the rest to their
-        // defaults on the next save — which is why ThemeContrast has been persisted, reloaded and
-        // then wiped on the first customization change since it was added, and why "the contrast
-        // setting does nothing" (RemEx-68ynp) was true in two independent places at once.
-        // CustomizationSettingsRoundTripTests fails if a new field is added and not listed here.
+        var settings = BuildCurrentSettings();
+
+        // Update the current profile object
+        var profile = _layoutService.CurrentProfile with { Customization = settings };
+
+        // Use the internal setter if possible, or request a save
+        _themeService.ApplyCustomization(settings);
+
+        // _suppressPersist SKIPS ONLY THIS LINE (RemEx-k7891). RefreshBackgroundTypes' platform
+        // fallback needs the repaint above — and the preset/tile refresh below — to run exactly as a
+        // real pick's would, so the picker and the dashboard background never disagree about what's
+        // on screen. What it must never do is write the fallback over the profile's real, persisted
+        // BackgroundMaterial, which is exactly what RequestSave does.
+        if (!_suppressPersist)
+        {
+            _layoutService.RequestSave(profile);
+        }
+
+        // The gallery is downstream of the same settings the shell is, so it repaints here rather
+        // than from four separate change handlers that would each have to remember to.
+        RefreshPresetPreviews(onlyVarying: true);
+        RefreshSchemeVariantStrips();
+        RefreshSavedPaletteTiles();
+    }
+
+    /// <summary>
+    /// Builds the <see cref="CustomizationSettings"/> record from the view model's current live
+    /// values, for <see cref="ApplyAndSave"/> to apply and (unless <see cref="_suppressPersist"/>) persist.
+    /// </summary>
+    /// <remarks>
+    /// EVERY FIELD THIS SCREEN DOES NOT OWN HAS TO BE CARRIED FORWARD BY HAND. Building a fresh
+    /// record and assigning only what the sliders bind to silently resets the rest to their
+    /// defaults on the next save — which is why ThemeContrast has been persisted, reloaded and
+    /// then wiped on the first customization change since it was added, and why "the contrast
+    /// setting does nothing" (RemEx-68ynp) was true in two independent places at once.
+    /// CustomizationSettingsRoundTripTests fails if a new field is added and not listed here.
+    /// </remarks>
+    private CustomizationSettings BuildCurrentSettings()
+    {
         var carried = _layoutService.CurrentProfile.Customization;
 
-        var settings = new CustomizationSettings
+        return new CustomizationSettings
         {
             // WITHOUT THIS LINE THE MIGRATION RE-RUNS ON EVERY LAUNCH. The record's default is 0,
             // which means "written before the seed engine", so a save that forgets to stamp the
@@ -1202,19 +1261,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
         };
-
-        // Update the current profile object
-        var profile = _layoutService.CurrentProfile with { Customization = settings };
-
-        // Use the internal setter if possible, or request a save
-        _themeService.ApplyCustomization(settings);
-        _layoutService.RequestSave(profile);
-
-        // The gallery is downstream of the same settings the shell is, so it repaints here rather
-        // than from four separate change handlers that would each have to remember to.
-        RefreshPresetPreviews(onlyVarying: true);
-        RefreshSchemeVariantStrips();
-        RefreshSavedPaletteTiles();
     }
 
     /// <summary>Clicking a variant strip is choosing a variant — the same live-apply path the old ComboBox used.</summary>

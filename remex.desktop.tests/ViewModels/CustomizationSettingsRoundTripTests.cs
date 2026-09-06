@@ -138,18 +138,22 @@ public class CustomizationSettingsRoundTripTests
             .Select(p => p.Name)
             .ToArray();
 
-    /// <summary>The object-initializer body of <c>ApplyAndSave</c>, as source text.</summary>
+    /// <summary>
+    /// The object-initializer body of <c>BuildCurrentSettings</c> — the record-construction half of
+    /// what used to be inline in <c>ApplyAndSave</c>, extracted by RemEx-k7891 so the platform
+    /// background-type fallback can repaint through the same settings without persisting them.
+    /// </summary>
     private static string ApplyAndSaveInitializer()
     {
         var source = File.ReadAllText(Path.Combine(RepoRoot(),
             "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
 
         var match = Regex.Match(source,
-            @"var settings = new CustomizationSettings\s*\{(.*?)\n        \};",
+            @"return new CustomizationSettings\s*\{(.*?)\n        \};",
             RegexOptions.Singleline);
 
         match.Success.Should().BeTrue(
-            "ApplyAndSave's initializer moved or was reshaped — re-point this test rather than deleting it");
+            "BuildCurrentSettings's initializer moved or was reshaped — re-point this test rather than deleting it");
         return match.Groups[1].Value;
     }
 
