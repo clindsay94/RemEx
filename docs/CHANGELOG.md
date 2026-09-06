@@ -237,6 +237,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Developer-facing: about a hundred tracked files had picked up Windows line endings in the
+  working copy (written back by PowerShell tooling), which made `git status` report them as
+  modified with an empty diff once anything touched them. They are rewritten to LF, the
+  localization baseline writer now emits LF, and the drain procedure documents the shape and
+  the remedy. No content changed. (RemEx-wabls)
 - With the colour source on "Windows accent", restoring the PC window from the tray at the same
   moment the background accent poll ran could briefly apply the older of two accent readings.
   Each poll is now stamped before it reads, and a reading that an even newer one has already
