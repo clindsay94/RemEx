@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Sparklines on the PC that have no accent of their own now take the theme's primary accent,
+  and a sparkline's second series takes the palette's tertiary colour, instead of two fixed
+  hex colours that matched no theme. Sensors with their own accent are unchanged. (RemEx-qljv)
 - Developer-facing: the board-drain procedure now documents the second stale-assembly trap
   (rebuilding only the dependency leaves the test project's output directory holding the old
   DLL, so a `--no-build` test run passes with the defect present) and tells the loop to rebuild
