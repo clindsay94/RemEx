@@ -1119,7 +1119,7 @@ if ($UpdateBaseline) {
         )
         known   = @($script:Findings | ForEach-Object { $_.Id } | Sort-Object -Unique)
     }
-    $payload | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $baselinePath -Encoding utf8
+    [IO.File]::WriteAllText($baselinePath, ((($payload | ConvertTo-Json -Depth 4) -replace "`r`n", "`n") + "`n"), [Text.UTF8Encoding]::new($false))
     Write-Heading 'Baseline updated'
     Write-Host "  Wrote $($payload.known.Count) known finding(s) to scripts/localization-baseline.json" -ForegroundColor Yellow
     Write-Host '  Review that diff carefully - every line you added is a defect you chose not to fix.' -ForegroundColor Yellow
