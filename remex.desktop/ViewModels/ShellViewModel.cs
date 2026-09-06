@@ -30,6 +30,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private readonly PropertyChangedEventHandler _onConnectionChanged;
     private readonly PropertyChangedEventHandler _onPresenceChanged;
+    private readonly Action _onProfileReplaced;
     private bool _welcomeSplashStarted;
 
     /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
@@ -600,6 +601,24 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         };
         Presence.PropertyChanged += _onPresenceChanged;
 
+        // A REPLACED PROFILE INVALIDATES THE CACHED PERSONALIZATION VM (RemEx-waqb4).
+        // CustomizationViewModel snapshots every field off CurrentProfile.Customization once, in its
+        // own constructor, and EnsureCustomizationVm's ??= never rebuilds it - so a savefile import
+        // (DashboardLayoutService.ProfileReplaced) has to drop the cached instance itself, the same
+        // way Dispose already does, so the next EnsureCustomizationVm call builds a fresh one against
+        // the imported values instead of the next slider nudge writing the stale snapshot back over
+        // the import. Raising CustomizationVm's own change notification (not an ObservableProperty -
+        // it is a get-only property backed by the field) is what makes a bound, already-open
+        // Personalize sheet pick up the fresh instance immediately, same as OnPresenceChanged above
+        // re-raises ShowPresencePulse rather than waiting for an unrelated notification.
+        _onProfileReplaced = () =>
+        {
+            _customizationViewModel?.Dispose();
+            _customizationViewModel = null;
+            OnPropertyChanged(nameof(CustomizationVm));
+        };
+        _layoutService.ProfileReplaced += _onProfileReplaced;
+
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
@@ -639,6 +658,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
         Presence.PropertyChanged -= _onPresenceChanged;
+        _layoutService.ProfileReplaced -= _onProfileReplaced;
 
         // Nulled rather than left for the view to unsubscribe alone (RemEx-8twk0.8 fix round, LOW) -
         // same pattern as ThemeService.CustomizationApplied - so a view that outlives Dispose() (or a

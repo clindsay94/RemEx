@@ -192,6 +192,26 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     public event Action? ProfileSaved;
 
     /// <summary>
+    /// Raised when <see cref="CurrentProfile"/> is replaced with a profile a caller did not build
+    /// FROM the previous one — a load off disk, whether that succeeds or falls back to defaults
+    /// (RemEx-waqb4). A savefile import is the concrete path: <c>RemexSavefileService</c>'s import
+    /// calls <see cref="SaveAsync"/> then <see cref="LoadAsync"/>, and it is that trailing
+    /// <see cref="LoadAsync"/> — inside <see cref="LoadAsyncCore"/> — that actually swaps
+    /// <see cref="CurrentProfile"/> for the imported values and raises this.
+    /// </summary>
+    /// <remarks>
+    /// ONLY <see cref="LoadAsyncCore"/>'S TWO ASSIGNMENTS RAISE THIS, DELIBERATELY. Every other
+    /// write to <see cref="CurrentProfile"/> — <see cref="RequestSave"/>'s, which is what
+    /// <c>CustomizationViewModel.ApplyAndSave</c> calls on every slider nudge — hands in
+    /// <c>CurrentProfile with { ... }</c>: the SAME profile a caller (typically a cached view model)
+    /// just built, not a foreign one. Firing this there would tell every subscriber "your data is
+    /// stale, rebuild" on the caller's own write, which for the Personalize sheet means the sheet
+    /// resetting itself under the user's hand mid-edit. A subscriber that wants "did the load
+    /// change what disk holds" has <see cref="ProfileSaved"/> for that.
+    /// </remarks>
+    public event Action? ProfileReplaced;
+
+    /// <summary>
     /// The layout file: the per-user RemEx directory, or the test redirect when it is set. A test
     /// that constructs this service used to create and overwrite the developer's own saved dashboard
     /// (RemEx-ln0k) — this is that user's arrangement of their cards, not scratch state.
@@ -364,6 +384,13 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
             CurrentProfile = profile;
 
+            // A REAL REPLACEMENT, NOT A SAVE-THROUGH (RemEx-waqb4) - see ProfileReplaced's own
+            // remarks for why RequestSave must never raise this. A view model cached over the old
+            // CurrentProfile (CustomizationViewModel, held by ShellViewModel's ??=) has to hear about
+            // this one specifically, or the next slider nudge writes its stale snapshot back over
+            // whatever this load just brought in.
+            ProfileReplaced?.Invoke();
+
             // A LOAD THAT JUST SUCCEEDED MEANS CurrentProfile IS TRUSTWORTHY AGAIN (RemEx-8y3qy
             // round 2). Cleared before the possible RequestSave below - a migrating profile arriving
             // right after a prior failed load must not have its own write-back blocked by that
@@ -432,6 +459,11 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             var profile = MigrateProfile(FreshProfile(), out _)!;
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
+
+            // Also a replacement (RemEx-waqb4), same reasoning as the success path above - a
+            // fallback default is just as foreign to a view model cached over the profile this load
+            // failed to preserve.
+            ProfileReplaced?.Invoke();
 
             // A FABRICATED PROFILE MUST NOT LOOK SAVE-WORTHY (RemEx-8y3qy round 2). `existed` is
             // exactly "this was not a fresh install": a brand-new user has no real profile to protect
