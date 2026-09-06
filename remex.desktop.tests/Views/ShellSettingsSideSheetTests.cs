@@ -98,6 +98,29 @@ public class ShellSettingsSideSheetTests
     }
 
     [Fact]
+    public void TheSettingsSideSheet_OptsOutOfTheDefaultHeaderTemplate()
+    {
+        // RemEx-e0a2z. Material.Styles 3.19.0's own SideSheet ControlTheme supplies a DEFAULT
+        // SideSheetHeaderTemplate - a Headline6 TextBlock bound straight to the SideSheetHeader
+        // object - so that when the header is a real control (this file sets it to the
+        // SettingsSheetHeader Border, not a string), the template's TextBlock.Text binding falls
+        // back to the header's own ToString(). For a Border that renders the literal type name,
+        // "Avalonia.Controls.Border", painted top-right next to the window's own caption buttons -
+        // reproduced live on the hot-reload host by removing the attribute this test pins: the
+        // gear FAB's panel header showed "Avalonia.Controls.Border" instead of "Personalize".
+        // SideSheetHeaderTemplate="{x:Null}" opts out of that default template entirely, which lets
+        // SideSheetHeader present ITSELF (a real control needs no template) instead of being
+        // stringified through one.
+        var sheetOpenTag = Regex.Match(ShellMarkup(), @"<material:SideSheet\b[^>]*>", RegexOptions.Singleline);
+        sheetOpenTag.Success.Should().BeTrue("the SideSheet element has to exist");
+
+        sheetOpenTag.Value.Should().MatchRegex(
+            @"SideSheetHeaderTemplate\s*=\s*""\{x:Null\}""",
+            "without opting out of the default header template, the header Border renders as its " +
+            "own type name instead of the Personalize title/subtitle it actually contains");
+    }
+
+    [Fact]
     public void TheSideSheetOpenStateBindsTwoWay()
     {
         // Mirrors ShellDrawerOverlayTests.TheDrawerOpenStateBindsTwoWay for the same reason: SideSheet
