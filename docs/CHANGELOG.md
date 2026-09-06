@@ -245,6 +245,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Developer-facing: the PC's file-send backpressure cap (8 MB of unacknowledged data) is now
+  covered by a test that proves the sender stops at the cap and resumes on the phone's ack,
+  through the same test-only seam the receive-side ceiling already had. No behaviour change.
+  (RemEx-xefvb)
 - The Diagnostics screen's system-log tab on the PC is now translated: the "reading" status, the
   Windows and Linux empty-state explanations, the unsupported-platform line and the error lines
   were English in every language, under a translated tab header, and the Linux explanation
