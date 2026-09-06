@@ -245,6 +245,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Remote screen's Wake-on-LAN fields and the Remote Desktop quality, FPS and scale settings
+  on the PC now follow a savefile import too, and a Wake-on-LAN edit made after an import no
+  longer writes the pre-import layout back over it. (RemEx-w6ipy)
 - The PC can no longer write an unmigrated default layout over a saved one before the saved
   layout has been read: a save requested before the first load is refused, and every save after
   it goes through the migrated profile. In practice this only ever fired in an isolated test
