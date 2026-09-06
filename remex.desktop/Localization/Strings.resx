@@ -1590,7 +1590,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Latest event logs query from Windows Event Viewer or Linux systemd journal.</value>
   </data>
   <data name="Logs_Service_Reading" xml:space="preserve">
-    <value>Reading system event log entries written by RemEx...</value>
+    <value>Reading system event log entries written by RemEx…</value>
   </data>
   <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
     <value>No Windows event log entries found for RemEx.

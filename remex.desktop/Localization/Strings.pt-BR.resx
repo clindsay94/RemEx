@@ -1565,7 +1565,7 @@ Isso é normal — o RemEx só grava aqui em caso de problemas graves de inicial
   </data>
   <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
     <value>Nenhuma entrada do journal do usuário registrada para o Remex.Agent.
-Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do XDG em vez de pelo systemd — o sistema operacional nunca captura sua saída nesse caso. O {0} acima é o próprio registro do RemEx e funciona em qualquer lugar.</value>
+Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do XDG em vez de pelo systemd — o sistema operacional nunca captura sua saída nesse caso. A aba {0} acima é o próprio registro do RemEx e funciona em qualquer lugar.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Consultar logs de eventos do sistema</value>

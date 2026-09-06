@@ -33,9 +33,11 @@ public class ServiceLogsLocalizationTests
 
     /// <summary>
     /// <c>ServiceLogsText = "..."</c> / <c>ServiceLogsText = $"..."</c> is exactly the shape every
-    /// literal in this branch used to take. If either ever reappears it means a hardcoded English
-    /// sentence replaced a resource lookup — the injection proof for this test flips this very
-    /// assertion by reinstating one such literal.
+    /// literal in <c>FetchServiceLogsAsync</c> used to take, and <c>return "..."</c> /
+    /// <c>return $"..."</c> is the shape <c>DescribeLinuxJournal</c>'s literal took before it moved
+    /// to <c>Logs_Service_LinuxEmpty</c>. If either reappears it means a hardcoded English sentence
+    /// replaced a resource lookup — the injection proof for this test flips this very assertion by
+    /// reinstating one such literal in each method.
     /// </summary>
     [Fact]
     public void ServiceLogsText_IsNeverAssignedARawStringLiteral()
@@ -44,13 +46,14 @@ public class ServiceLogsLocalizationTests
         File.Exists(path).Should().BeTrue($"the view model must be readable at {path}");
 
         var text = File.ReadAllText(path);
-        var offenders = Regex.Matches(text, @"ServiceLogsText\s*=\s*\$?""[^""]*[A-Za-z]{3,}[^""]*""")
+        var offenders = Regex.Matches(text, @"(?:ServiceLogsText\s*=|return)\s*\$?""[^""]*[A-Za-z]{3,}[^""]*""")
             .Select(m => m.Value)
             .ToList();
 
         offenders.Should().BeEmpty(
-            "every ServiceLogsText assignment in the ServiceLogs branch must come from " +
-            "LocalizationService.Instance[...], not a hardcoded English sentence (RemEx-rg9in)");
+            "every ServiceLogsText assignment and every string DescribeLinuxJournal returns in the " +
+            "ServiceLogs branch must come from LocalizationService.Instance[...], not a hardcoded " +
+            "English sentence (RemEx-rg9in)");
     }
 
     /// <summary>Every key this bead added must be defined in the neutral resx and all 8 locales.</summary>

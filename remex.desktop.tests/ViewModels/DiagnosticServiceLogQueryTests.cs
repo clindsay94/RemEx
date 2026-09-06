@@ -45,12 +45,16 @@ public class DiagnosticServiceLogQueryTests
     {
         var text = DiagnosticLogsViewModel.DescribeLinuxJournal(output);
 
-        // The empty state must say WHY it can be empty and where the real record lives — a bare
-        // blank is indistinguishable from "no problems". Asserted against the localized resource
-        // values (RemEx-rg9in), not hardcoded English, since the wording now comes from
-        // Logs_Service_LinuxEmpty / Logs_LiveTab rather than a literal in the view model.
-        Assert.Contains("XDG autostart", text);
-        Assert.Contains(LocalizationService.Instance["Logs_LiveTab"], text);
+        // The empty state must say WHY it can be empty and where the real record lives. Asserted
+        // against the localized resource values (RemEx-rg9in) rather than a hardcoded English
+        // literal — a bare substring like "XDG autostart" is culture-dependent now that the
+        // wording comes from Logs_Service_LinuxEmpty / Logs_LiveTab instead of a view-model
+        // literal, so the expected text is built from the same resources DescribeLinuxJournal
+        // reads from.
+        var expected = string.Format(
+            LocalizationService.Instance["Logs_Service_LinuxEmpty"],
+            LocalizationService.Instance["Logs_LiveTab"]);
+        Assert.Equal(expected, text);
     }
 
     [Fact]
