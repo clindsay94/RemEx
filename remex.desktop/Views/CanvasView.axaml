@@ -6,7 +6,8 @@
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
     xmlns:svc="using:Remex.Desktop.Services"
-    xmlns:ctrl="using:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
+    xmlns:ctrl="using:Remex.Desktop.Controls"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles" x:Class="Remex.Desktop.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
 
     <UserControl.Styles>
         <!-- Snapshot status line: success by default, error colour when the last attempt failed (RemEx-40x8). -->
@@ -278,7 +279,7 @@
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
                                             <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" IsEnabled="{Binding !Connection.IsConnected}"/>
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->

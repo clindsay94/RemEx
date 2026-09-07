@@ -5,6 +5,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
     x:Class="Remex.Desktop.Views.FileTransferView"
     x:DataType="vm:FileTransferViewModel"
     DragDrop.AllowDrop="True">
@@ -153,8 +154,7 @@
 
                         <!-- New folder input -->
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding IsCreatingFolder}" Margin="0,0,0,8">
-                            <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_NewFolderLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding NewFolderName}" PlaceholderText="{local:Localize FileTransfer_NewFolderWatermark}" FontSize="12"/>
+                            <TextBox Grid.Column="1" Text="{Binding NewFolderName}" PlaceholderText="{local:Localize FileTransfer_NewFolderWatermark}" FontSize="12" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize FileTransfer_NewFolderLabel}"/>
                             <Button Grid.Column="2" Content="{local:Localize FileTransfer_CreateFolderConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmNewFolderCommand}" Margin="8,0,8,0"/>
                             <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelNewFolderCommand}" Margin="0"/>
                         </Grid>
@@ -164,8 +164,7 @@
                 <!-- Row 3: Action bar (rename mode) -->
                 <Border Grid.Row="3" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding IsRenaming}">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_RenameInputPlaceholder}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBox Grid.Column="1" Text="{Binding RenameInputText}" PlaceholderText="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="12"/>
+                        <TextBox Grid.Column="1" Text="{Binding RenameInputText}" PlaceholderText="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="12" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize FileTransfer_RenameInputPlaceholder}"/>
                         <Button Grid.Column="2" Content="{local:Localize FileTransfer_RenameConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmRenameCommand}" Margin="8,0,8,0"/>
                         <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelRenameCommand}" Margin="0"/>
                     </Grid>

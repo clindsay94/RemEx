@@ -1151,7 +1151,7 @@
                                 <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
                                 <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                             </StackPanel>
-                            <Button Name="SettingsSheetCloseButton" Classes="tertiary icon-button" AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
                                 <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                             </Button>
                         </Grid>
@@ -1190,8 +1190,7 @@
                             <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
                             <material:Card Padding="16" DataContext="{Binding SettingsVm}">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="{conv:Localize Settings_Language}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch">
+                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch" AutomationProperties.Name="{conv:Localize Settings_Language}" assists:ComboBoxAssist.Label="{conv:Localize Settings_Language}">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding DisplayName}"/>

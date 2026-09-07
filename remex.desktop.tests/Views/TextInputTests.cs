@@ -35,6 +35,41 @@ public class TextInputTests
     private static readonly string[] SurfaceProperties =
         { "Background", "BorderBrush", "BorderThickness", "CornerRadius", "Padding" };
 
+    /// <summary>
+    /// Inputs that deliberately have no <c>TextFieldAssist</c>/<c>ComboBoxAssist</c> Label or
+    /// Hints (RemEx-5w9ws.1). Matched by a substring unique to the tag rather than a line number,
+    /// so an unrelated edit above the field doesn't silently widen or break the allow-list. Each
+    /// entry names the reason a floating label is wrong here, not merely missing.
+    /// </summary>
+    private static readonly Dictionary<string, string> LabelExemptInputs = new()
+    {
+        // Search/filter fields: the bead's own exception (Btn_Discover's caption is the label,
+        // a filter box's placeholder is the label - "Search" floating above an empty filter box
+        // says less than the placeholder text it would replace).
+        ["Binding SearchQuery"] = "FileTransferView - search field, placeholder is the affordance",
+        ["Binding WindowSearchText"] = "RemoteDesktopView - search field, placeholder is the affordance",
+        ["x:Name=\"SearchBox\""] = "SecondMetricDialog - search field, placeholder is the affordance",
+        ["Binding SearchText}\" PlaceholderText=\"{local:Localize TaskMgr_SearchPlaceholder"] =
+            "TaskManagerView - search field, placeholder is the affordance",
+        ["AppLauncher_SearchWatermark"] = "AppLauncherView - search field, placeholder is the affordance",
+
+        // Dense single-row toolbars: a floating label needs vertical headroom above the field that
+        // a fixed-height horizontal control bar does not have. Each of these keeps the caption
+        // TextBlock beside it instead (unlike the vertical settings-row fields this bead converted).
+        ["Binding RemoteRoots"] = "FileTransferView - toolbar row (Row 0: root selector + search + volumes)",
+        ["Binding AvailableDisplayTargets"] = "RemoteDesktopView - toolbar row (display picker)",
+        ["Binding SelectedScaleIndex"] = "RemoteDesktopView - toolbar row (scale picker)",
+        ["Binding Connection.HostAddress"] = "RemoteDesktopView - toolbar row (connection panel host field)",
+
+        // Read-only display, not data entry: a floating label asks "what do I type here", which is
+        // the wrong question for a terminal-style output pane the user never types into.
+        ["Binding ServiceLogsText"] = "DiagnosticLogsView - read-only log viewer, not a data-entry field",
+
+        // Inline edit-in-place overlay: the sensor's own title is already visible on the card this
+        // overlays, so a floating "Title" label would repeat information rather than add it.
+        ["Binding Sensor.CustomTitle"] = "CanvasView - inline rename overlay of a title already on the card",
+    };
+
     [Fact]
     public void NoViewPaintsAnInputItself()
     {
@@ -146,6 +181,59 @@ public class TextInputTests
         Regex.Matches(dialog, @"<TextBlock[^>]*Text=""\{Binding ErrorText\}""").Should().BeEmpty(
             "the floating error TextBlock is what this replaced; two copies of the message would "
             + "be worse than either");
+    }
+
+    [Fact]
+    public void EveryInputCarriesALabelOrIsAListedException()
+    {
+        // THE ACCEPTANCE CRITERION RemEx-5w9ws.1 WAS FILED FOR: every TextBox/ComboBox/
+        // NumericUpDown either floats its own Label (or Hints), or is one of the LabelExemptInputs
+        // above with a reason attached. An unlisted bare field is exactly the state 34 inputs were
+        // in before this bead - a per-screen judgement nobody had made yet, not a rule anyone was
+        // deliberately breaking.
+        var offenders = new List<string>();
+        var exemptedSeen = new HashSet<string>();
+
+        foreach (var (file, tag, kind) in Inputs())
+        {
+            // Inputs()'s pattern is shared with the other facts in this class and, like theirs,
+            // stops at the first '>' - which a property-element tag such as
+            // <ComboBox.ItemTemplate> also satisfies, because '.' is a word boundary. Those tags
+            // never carry Background/BorderBrush/etc, so the other facts never noticed; this one
+            // would flag every ComboBox with an ItemTemplate as an unlabelled offender.
+            if (Regex.IsMatch(tag, $@"^<{Regex.Escape(kind)}\."))
+            {
+                continue;
+            }
+
+            var hasAssist = Regex.IsMatch(
+                tag, @"(TextFieldAssist\.(Label|Hints)|ComboBoxAssist\.(Label|Hints))\s*=");
+            if (hasAssist)
+            {
+                continue;
+            }
+
+            var exemption = LabelExemptInputs.Keys.FirstOrDefault(key => tag.Contains(key));
+            if (exemption is not null)
+            {
+                exemptedSeen.Add(exemption);
+                continue;
+            }
+
+            offenders.Add($"{Path.GetFileName(file)}: <{kind} …> has no Label/Hints and matches no listed exception");
+        }
+
+        // ANTI-VACUITY: every listed exception has to actually match something, or the list is
+        // quietly protecting nothing (a rename, a deleted field) while still looking exhaustive.
+        var unmatchedExceptions = LabelExemptInputs.Keys.Except(exemptedSeen).ToList();
+        unmatchedExceptions.Should().BeEmpty(
+            "every LabelExemptInputs entry has to match a real field, or the allow-list is stale: "
+            + string.Join(", ", unmatchedExceptions));
+
+        offenders.Should().BeEmpty(
+            "every input needs a floating Label/Hints, or has to be added to LabelExemptInputs "
+            + "with a reason - a search field's placeholder or a toolbar row's inline caption, not "
+            + "silence");
     }
 
     // ─────────────────────────── plumbing ───────────────────────────

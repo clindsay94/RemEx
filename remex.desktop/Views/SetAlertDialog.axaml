@@ -28,11 +28,10 @@
 
         <!-- Threshold -->
         <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
-            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" Theme="{StaticResource CaptionTextBlock}"
-                       Foreground="{DynamicResource TextSecondaryBrush}"/>
             <NumericUpDown Value="{Binding Threshold}" Increment="1"
                            Minimum="-99999" Maximum="99999"
                            FormatString="F1"
+                           assists:TextFieldAssist.Label="{local:Localize SetAlert_ThresholdValue}"
                            Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
         </StackPanel>
 

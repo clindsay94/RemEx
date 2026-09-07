@@ -5,6 +5,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:views="using:Remex.Desktop.Views"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
     x:Class="Remex.Desktop.Views.ConnectionView" x:DataType="vm:ConnectionViewModel">
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24" MaxWidth="760" HorizontalAlignment="Left">
@@ -28,9 +29,8 @@
                     </StackPanel>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Text="{conv:Localize Conn_HostAddress}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center"/>
+                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}"/>
                             <Button Grid.Column="1" Classes="secondary" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
                         </Grid>
                     </StackPanel>
