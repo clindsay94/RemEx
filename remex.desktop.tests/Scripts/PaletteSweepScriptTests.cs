@@ -181,14 +181,16 @@ public class PaletteSweepScriptTests
         // plain Contains/IndexOf - the doc comment right above the real call ALSO says the words
         // "Assert-NoRemexProcessAlive" in prose (explaining what this fix prevents), and a naive
         // text search would find that mention instead of the code (the exact anti-pattern this
-        // file's own remarks warn about for MatrixDataBlock).
-        var stopIndex = Regex.Match(finallyBody, @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch").Index;
-        var assertIndex = Regex.Match(finallyBody, @"(?m)^\s*Assert-NoRemexProcessAlive\b").Index;
+        // file's own remarks warn about for MatrixDataBlock). Checked via .Success, not by
+        // comparing .Index to -1 - a FAILED Regex.Match still reports Index 0, so that comparison
+        // would silently pass even when the call is missing entirely.
+        var stopMatch = Regex.Match(finallyBody, @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch");
+        var assertMatch = Regex.Match(finallyBody, @"(?m)^\s*Assert-NoRemexProcessAlive\b");
 
-        stopIndex.Should().BeGreaterThan(-1,
+        stopMatch.Success.Should().BeTrue(
             "the finally block must itself call '-Stop -NoRelaunch' - without it, an exception between a loop iteration's -Start and its paired -Stop strands that host");
-        assertIndex.Should().BeGreaterThan(-1, "the finally block must still assert no Remex process is alive");
-        stopIndex.Should().BeLessThan(assertIndex,
+        assertMatch.Success.Should().BeTrue("the finally block must still assert no Remex process is alive");
+        stopMatch.Index.Should().BeLessThan(assertMatch.Index,
             "the finally block's own cleanup stop must run BEFORE Assert-NoRemexProcessAlive - otherwise the assertion is the only thing left to throw, and a mid-cell exception strands the host it was reported to strand (RemEx-l5vck)");
     }
 
