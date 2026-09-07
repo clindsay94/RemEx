@@ -245,6 +245,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- With the colour source on "Windows accent", the Vibrancy you asked for no longer creeps
+  downward every time Windows changes its accent. The slider's request is now saved on its own
+  (layout schema 5, migrated from what an older layout had achieved), and each new accent hue is
+  shaped from that request rather than from whatever the previous hue managed to hold, so a hue
+  that can carry the full vibrancy gets it back. (RemEx-ceu4x)
 - The expanding-arrows button next to Minimize on the PC's title bar is gone on Windows and
   Linux. It put the window into a fullscreen mode whose only exit was a hover-the-top-edge bar
   designed for macOS, and dragging the window out of that mode left it without caption buttons
