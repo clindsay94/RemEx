@@ -1656,8 +1656,23 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         foreach (var c in Cards) TrackZIndex(c.ZIndex);
 
-        // Also update local storage so they stay in sync even when offline next time
-        _layoutService.RequestSave(profile);
+        // Also update local storage so the layout stays in sync even when offline next time - but
+        // layer only the layout fields this method actually applied onto THIS device's own profile
+        // (the same "base on CurrentProfile" shape TriggerSave/DismissCoachMark already use), not the
+        // received profile wholesale. `profile` here is the CONNECTED HOST's own DashboardProfile -
+        // a loopback self-connect's host_dashboard_layout.json is a separate, machine-wide file from
+        // this device's per-user one - and it carries its own Customization, Language, Wake-on-LAN,
+        // etc. Saving it wholesale silently overwrote this device's own settings with the host's the
+        // moment a sync arrived, which is how an explicit Light/seed theme reverted to whatever the
+        // host's profile happened to carry (RemEx-hmigd).
+        var localBase = _layoutService.CurrentProfile ?? _profile;
+        _layoutService.RequestSave(localBase with
+        {
+            Cards = profile.Cards ?? new(),
+            PinnedSensorIds = profile.PinnedSensorIds ?? new(),
+            IsSnapToGridEnabled = profile.IsSnapToGridEnabled,
+            GridSize = profile.GridSize,
+        });
 
         // Refresh home pinned sensors if the home view is cached, but do NOT
         // forcibly navigate — the user may be on a different screen.
