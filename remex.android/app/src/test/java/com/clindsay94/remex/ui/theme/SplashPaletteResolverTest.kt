@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.theme
 import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -81,5 +82,34 @@ class SplashPaletteResolverTest {
     fun `normal animator scale crossfades`() {
         assertEquals(SplashExitTransition.CROSSFADE, splashExitTransitionFor(1f))
         assertEquals(SplashExitTransition.CROSSFADE, splashExitTransitionFor(0.5f))
+    }
+
+    /**
+     * RemEx-alwfa.1 review, HIGH-2: the "added" cost claim needs an actual number, not just an
+     * assertion of purity. [colorSchemeFromSeed] (the HCT/DynamicScheme math [buildSplashScheme]
+     * calls) plus [SplashPaletteResolver.resolve] is the entire on-thread compute cost of the
+     * recolour once personalization is in hand — the DataStore wait itself is bounded separately,
+     * by `MainActivity`'s own 250ms timeout, not by anything measured here. 200 iterations, warmed
+     * up first, well under a generous 5ms/iteration ceiling on JVM (a release device's ART JIT is
+     * not slower than this).
+     */
+    @Test
+    fun `the seed-to-scheme-to-palette compute cost is microseconds, not milliseconds`() {
+        val seed = Color(0xFF3B6B4A)
+        repeat(20) { SplashPaletteResolver.resolve(colorSchemeFromSeed(seed, true, "tonal_spot", 0.0)) } // warm-up
+
+        val iterations = 200
+        val start = System.nanoTime()
+        repeat(iterations) {
+            val scheme = colorSchemeFromSeed(seed, darkTheme = it % 2 == 0, style = "tonal_spot", contrast = 0.0)
+            SplashPaletteResolver.resolve(scheme)
+        }
+        val totalMs = (System.nanoTime() - start) / 1_000_000.0
+        val perIterationMs = totalMs / iterations
+
+        assertTrue(
+            "expected well under 5ms/iteration, measured ${perIterationMs}ms (total ${totalMs}ms over $iterations runs)",
+            perIterationMs < 5.0
+        )
     }
 }

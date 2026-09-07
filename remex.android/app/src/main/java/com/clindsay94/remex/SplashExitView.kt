@@ -11,6 +11,7 @@ import android.graphics.Shader
 import android.view.View
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
+import com.clindsay94.remex.ui.theme.SplashMarkGeometry
 import com.clindsay94.remex.ui.theme.SplashPalette
 import kotlin.math.min
 
@@ -23,27 +24,42 @@ import kotlin.math.min
  * The mark is recoloured at runtime, not checked in as a new asset (RemEx-alwfa.1e): it reuses
  * the checked-in `ic_launcher_monochrome` drawable purely as an ALPHA MASK (its own baked colours
  * are irrelevant — see that drawable's header comment) and repaints the opaque pixels with a
- * primary -> tertiary gradient via `PorterDuff.Mode.SRC_IN`. The three brand dots along the top
- * of the hex casing are then redrawn in the resolved accent colour on top, at the coordinates
- * `ic_launcher_monochrome.xml` places them at (27.3/34.3/41.3, 36 in its 108-unit viewport),
- * corrected for that file's own `scale=0.8, pivot=(54,54)` group transform.
+ * primary -> tertiary gradient via `PorterDuff.Mode.SRC_IN`. The three brand dots are then redrawn
+ * in the resolved accent colour on top, at [SplashMarkGeometry]'s derived centers.
+ *
+ * The mask bitmap is built ONCE, in [onSizeChanged], not per frame (RemEx-alwfa.1 review, HIGH-4):
+ * `onDraw` runs on every frame of the crossfade, and a fresh full-size `ARGB_8888` bitmap plus a
+ * vector rasterize each time was megabytes of avoidable allocation/GC on the startup path. It is
+ * recycled in [onDetachedFromWindow].
  */
 class SplashExitView(context: Context, private val palette: SplashPalette) : View(context) {
 
     private val backdropPaint = Paint().apply { color = palette.backdrop.toArgb() }
     private val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent.toArgb() }
 
-    override fun onDraw(canvas: Canvas) {
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backdropPaint)
-        if (width <= 0 || height <= 0) return
+    private var maskBitmap: Bitmap? = null
+    private var maskLeft = 0f
+    private var maskTop = 0f
+    private var maskSize = 0
 
-        val size = min(width, height)
-        val left = (width - size) / 2
-        val top = (height - size) / 2
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        rebuildMask(w, h)
+    }
+
+    private fun rebuildMask(w: Int, h: Int) {
+        maskBitmap?.recycle()
+        maskBitmap = null
+        if (w <= 0 || h <= 0) return
+
+        val size = min(w, h)
+        maskSize = size
+        maskLeft = (w - size) / 2f
+        maskTop = (h - size) / 2f
 
         val mask = ContextCompat.getDrawable(context, R.drawable.ic_launcher_monochrome) ?: return
-        val maskBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val maskCanvas = Canvas(maskBitmap)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val maskCanvas = Canvas(bitmap)
         mask.setBounds(0, 0, size, size)
         mask.draw(maskCanvas)
 
@@ -56,32 +72,28 @@ class SplashExitView(context: Context, private val palette: SplashPalette) : Vie
             xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
         }
         maskCanvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), gradientPaint)
-        canvas.drawBitmap(maskBitmap, left.toFloat(), top.toFloat(), null)
-        maskBitmap.recycle()
+        maskBitmap = bitmap
+    }
 
-        val scale = size / ViewportSize
-        for (dotX in AccentDotXs) {
+    override fun onDraw(canvas: Canvas) {
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backdropPaint)
+        val bitmap = maskBitmap ?: return
+        canvas.drawBitmap(bitmap, maskLeft, maskTop, null)
+
+        val scale = maskSize / SplashMarkGeometry.ViewportSize
+        for (dotX in SplashMarkGeometry.accentDotCenterXs) {
             canvas.drawCircle(
-                left + dotX * scale,
-                top + AccentDotY * scale,
-                AccentDotRadius * scale,
+                maskLeft + dotX * scale,
+                maskTop + SplashMarkGeometry.accentDotCenterY * scale,
+                SplashMarkGeometry.accentDotRadius * scale,
                 accentPaint
             )
         }
     }
 
-    private companion object {
-        /** `ic_launcher_monochrome.xml`'s `viewportWidth`/`viewportHeight`. */
-        const val ViewportSize = 108f
-
-        /**
-         * The three brand-dot centers from `ic_launcher_monochrome.xml` (27.3/34.3/41.3, 36),
-         * pre-multiplied through that file's own `<group scaleX="0.8" scaleY="0.8" pivotX="54"
-         * pivotY="54">` transform (`t = 54 + (v - 54) * 0.8`) since this view draws directly onto
-         * the mask bitmap's untransformed 108-unit space.
-         */
-        val AccentDotXs = floatArrayOf(32.64f, 38.24f, 43.84f)
-        const val AccentDotY = 39.6f
-        const val AccentDotRadius = 1.76f
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        maskBitmap?.recycle()
+        maskBitmap = null
     }
 }
