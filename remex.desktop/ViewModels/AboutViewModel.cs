@@ -84,9 +84,6 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _hostFingerprint = SpkiFingerprintDisplay.Unavailable;
 
-    [ObservableProperty]
-    private bool _isShowShortcutsOpen;
-
     // ── Update check (RemEx-<update-checker>) ──────────────────────────────────
     private readonly UpdateCheckService? _updateService;
     private string? _downloadUrl;
@@ -297,9 +294,6 @@ public partial class AboutViewModel : ObservableObject, IDisposable
                 LocalizationService.Instance[$"Faq_Q{q}_Answer"]));
         }
     }
-
-    [RelayCommand]
-    private void ToggleShortcuts() => IsShowShortcutsOpen = !IsShowShortcutsOpen;
 
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

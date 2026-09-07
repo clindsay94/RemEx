@@ -36,12 +36,10 @@ public class AboutViewCharacterisationTests
         "HostBuildId",
         "HostFingerprint",
         "HostVersion",
-        "IsShowShortcutsOpen",
         "IsUpdateAvailable",
         "NavigateBackCommand",
         "OpenGitHubCommand",
         "Question",
-        "ToggleShortcutsCommand",
         "UpdateStatusText",
         "Version",
         "WhatsNewItems",
@@ -139,6 +137,29 @@ public class AboutViewCharacterisationTests
             .ToArray();
 
         offenders.Should().BeEmpty("a SelectableTextBlock must never carry a TextBlock Theme");
+    }
+
+    [Fact]
+    public void KeyboardShortcutsButtonHasExactlyOneFlyoutOpenStateOwner()
+    {
+        // RemEx-acvny: the button used to carry BOTH a Command (which flips a VM bool) AND a
+        // Flyout whose IsOpen was bound TwoWay to that same bool. Avalonia's Button.OnClick runs
+        // a bound Command first and marks the click Handled, so its own native
+        // ShowAttachedFlyout() call never fires - and setting FlyoutBase.IsOpen from a binding has
+        // no show/positioning side effect on its own, so the VM-driven path never opened it
+        // either. Net effect: clicking the button did nothing. The fix keeps a single owner of
+        // the open state - the Button's native click-to-open - so neither attribute may return.
+        var about = About();
+
+        var buttonOpenTag = Regex.Match(about, @"<Button\b[^>]*About_KeyboardShortcuts[^>]*>", RegexOptions.Singleline).Value;
+        buttonOpenTag.Should().NotBeEmpty("AboutView should still have the Keyboard Shortcuts button");
+        buttonOpenTag.Should().NotContain("Command=",
+            "a Button that owns its Flyout via native click-to-open must not also drive it through a Command");
+
+        var flyoutTag = Regex.Match(about, @"<Flyout\b[^>]*>", RegexOptions.Singleline).Value;
+        flyoutTag.Should().NotBeEmpty("AboutView should still have the keyboard shortcuts Flyout");
+        flyoutTag.Should().NotContain("IsOpen=",
+            "a bound IsOpen does not itself open a FlyoutBase - it only creates a second, non-functional owner of the open state");
     }
 
     [Fact]

@@ -38,10 +38,16 @@
                         </StackPanel>
                     </material:ColorZone>
 
-                    <!-- Keyboard Shortcuts Button -->
-                    <Button Classes="secondary" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
+                    <!-- Keyboard Shortcuts Button. No Command here on purpose (RemEx-acvny): Avalonia's
+                         Button.OnClick executes a bound Command first and marks the click Handled,
+                         which skips its own ShowAttachedFlyout() call entirely - and a Flyout's IsOpen
+                         has no show/positioning side effect when set from a binding, so a VM-owned
+                         "IsOpen" TwoWay pair was a second, non-functional owner of the open state.
+                         Leaving the Button's native click-to-open as the only owner is what actually
+                         opens the flyout. -->
+                    <Button Classes="secondary" Content="{local:Localize About_KeyboardShortcuts}" HorizontalAlignment="Center" Margin="0,-8,0,0">
                         <Button.Flyout>
-                            <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
+                            <Flyout Placement="Bottom">
                                 <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="{local:Localize About_KeyboardShortcuts}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
