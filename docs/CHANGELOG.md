@@ -245,6 +245,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A staged sensor that has stopped reporting is now actually dimmed in the PC's sensor drawer.
+  The dim was added earlier but its style never matched the card it was written for, so it had
+  never rendered in any theme. Checked by eye on the default seed and the near-white, near-black
+  and max-chroma sweep seeds: still readable, still reads as something you can drop onto the
+  canvas. Screen readers now hear "Not seen recently" on a stale row too, in every language.
+  (RemEx-lki2r)
 - Developer-facing: the phone's upload backpressure cap (the other half of RemEx-68wwl) is now
   covered: the send loop moved out of the FileTransferEngine singleton into a small injectable
   collaborator so a test can prove it stops at the cap, resumes on the PC's ack, and fails
