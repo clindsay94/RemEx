@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -94,6 +95,24 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private IReadOnlyList<TrayTile> _tiles = [];
 
+    /// <summary>
+    /// Online paired devices, shown as the presence badge's content (RemEx-rjnbo.1).
+    /// <see cref="IPairedDeviceSource"/> already exists for <c>SettingsViewModel</c>'s paired-device
+    /// list; this resolves the same source rather than inventing a second count.
+    /// </summary>
+    [ObservableProperty]
+    private int _onlineDeviceCount;
+
+    /// <summary>
+    /// Whether the presence badge should show <see cref="OnlineDeviceCount"/> as content. The
+    /// presence dot itself (<c>Classes="presence"</c>, coloured by <c>Classes.connected</c>) stays
+    /// visible either way - unlike the Files/Diagnostics badges, this one is never fully hidden at
+    /// zero, because it doubles as the "is anything attached at all" indicator.
+    /// </summary>
+    public bool HasOnlineDevices => OnlineDeviceCount > 0;
+
+    partial void OnOnlineDeviceCountChanged(int value) => OnPropertyChanged(nameof(HasOnlineDevices));
+
     public TrayFlyoutViewModel(ShellViewModel shell, HomeViewModel home)
     {
         _shell = shell;
@@ -157,6 +176,12 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     private void RebuildTiles()
     {
         var remoteEnabled = TrayTileRules.IsRemoteDesktopEnabled(Presence.IsPhoneAttached);
+
+        // Resolved on every rebuild rather than cached (RemEx-rjnbo.1, same reasoning as
+        // SettingsViewModel.RefreshPairedDevices): the embedded host publishes its container after
+        // it starts, and this view model can be built first.
+        OnlineDeviceCount = EmbeddedHostServiceLocator.TryResolve<IPairedDeviceSource>()?
+            .PairedDevices().Count(device => device.IsOnline) ?? 0;
 
         Tiles =
         [

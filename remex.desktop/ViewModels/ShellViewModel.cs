@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,6 +12,7 @@ using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
 using Remex.Core.Guards;
+using Remex.Core.Logging;
 using Remex.Core.Models;
 
 namespace Remex.Desktop.ViewModels;
@@ -159,6 +161,82 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         AlertBadgeCount = 0;
         AlertNotifications.Clear();
+    }
+
+    // ═══════════════ File Transfer Badge (RemEx-rjnbo.1) ═══════════════
+
+    /// <summary>
+    /// The one <see cref="FileTransferQueue"/> for this session, owned HERE rather than by
+    /// <see cref="FileTransferViewModel"/> so its count exists before the Files page does.
+    /// </summary>
+    /// <remarks>
+    /// <c>FileTransferViewModel</c> is built lazily, on first navigation to Files (see
+    /// <see cref="NavigateToFileTransfer"/>) - so a badge bound to ITS queue would only ever appear
+    /// after the user had already been to the page it is meant to draw them to, which is backwards
+    /// for a badge. Constructing the queue here, unconditionally, and handing this same instance to
+    /// <c>FileTransferViewModel</c> once it exists means there is exactly one queue for the session,
+    /// not two that could disagree about how many transfers are active.
+    /// <c>GetService</c>, not <c>GetRequiredService</c>: this runs unconditionally in the
+    /// constructor, and <see cref="FileTransferQueue"/> already treats a null logger as
+    /// <c>NullLogger</c>, so a test DI container with nothing registered for it degrades to no
+    /// logging rather than throwing out of a constructor nothing about file transfer touches.
+    /// </remarks>
+    private readonly FileTransferQueue _transferQueue;
+
+    /// <summary>
+    /// Test seam (RemEx-rjnbo.1): lets a test enqueue directly against the same queue the Files
+    /// badge and (once built) the Files page share, without ever calling
+    /// <see cref="NavigateToFileTransfer"/> - which is the whole point being tested, that the count
+    /// exists before the page does.
+    /// </summary>
+    internal FileTransferQueue TransferQueueForTests => _transferQueue;
+
+    /// <summary>Number of transfers currently in flight (queued or actively transferring).</summary>
+    [ObservableProperty]
+    private int _activeTransferCount;
+
+    /// <summary>Whether the Files nav badge should be visible - a zero count hides rather than shows "0".</summary>
+    public bool HasActiveTransfers => ActiveTransferCount > 0;
+
+    partial void OnActiveTransferCountChanged(int value) => OnPropertyChanged(nameof(HasActiveTransfers));
+
+    private void OnTransferQueueChanged() =>
+        ActiveTransferCount = _transferQueue.Items.Count(item => item.IsActive);
+
+    // ═══════════════ Diagnostics Badge (RemEx-rjnbo.1) ═══════════════
+
+    /// <summary>
+    /// Log entries at Warning or above since the Logs &amp; Diagnostics page was last opened - "the
+    /// smallest honest source" for an unread count, since nothing in the app tracks a richer concept
+    /// of "read" than that.
+    /// </summary>
+    [ObservableProperty]
+    private int _diagnosticsBadgeCount;
+
+    /// <summary>Whether the Diagnostics nav badge should be visible - a zero count hides rather than shows "0".</summary>
+    public bool HasUnreadDiagnostics => DiagnosticsBadgeCount > 0;
+
+    partial void OnDiagnosticsBadgeCountChanged(int value) => OnPropertyChanged(nameof(HasUnreadDiagnostics));
+
+    /// <summary>
+    /// Runs a diagnostics-log callback on the UI thread. A test seam, same shape as
+    /// <see cref="ProfileReplacedDispatch"/> and for the identical reason:
+    /// <see cref="InMemoryLogSink.LogAdded"/> can fire from any thread a logger call happens to run
+    /// on, and this assembly has no <c>Avalonia.Headless</c> reference to pump a real
+    /// <c>Dispatcher.UIThread.Post</c> in a test.
+    /// </summary>
+    internal Action<Action> DiagnosticsLogDispatch { get; set; } = run =>
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            run();
+        else
+            Dispatcher.UIThread.Post(run);
+    };
+
+    private void OnDiagnosticLogAdded(LogEntry entry)
+    {
+        if (entry.Level < LogLevel.Warning) return;
+        DiagnosticsLogDispatch(() => DiagnosticsBadgeCount++);
     }
 
     // ═══════════════ Tray Tooltip Summary ═══════════════
@@ -548,7 +626,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             LocalizationService.Instance["Custom_WallpaperUnavailable"]);
     }
 
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, HardwareThemeService hardwareThemeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
+    /// <param name="transferQueuePost">
+    /// The shared <see cref="FileTransferQueue"/>'s UI-thread marshaller (RemEx-rjnbo.1). Defaults to
+    /// null, which <see cref="FileTransferQueue"/> itself turns into a real
+    /// <see cref="Dispatcher.UIThread"/>.Post - correct in production, but this assembly has no
+    /// <c>Avalonia.Headless</c> reference to pump one, so a test that wants to enqueue against
+    /// <see cref="TransferQueueForTests"/> and observe the result synchronously passes
+    /// <c>action =&gt; action()</c>, same shape as <c>FileTransferQueueTests.NewQueue</c>.
+    /// </param>
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, HardwareThemeService hardwareThemeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null)
     {
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
@@ -632,6 +718,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
+
+        // Eager, not lazy like _fileTransferViewModel below - see _transferQueue's own remarks for why.
+        _transferQueue = new FileTransferQueue(post: transferQueuePost, logger: _services.GetService<ILogger<FileTransferQueue>>());
+        _transferQueue.Changed += OnTransferQueueChanged;
+
+        // Same reasoning: an unread-diagnostics badge has to exist before the Logs page does, and
+        // InMemoryLogSink is a process-wide static, so subscribing here (rather than in a lazily
+        // built DiagnosticLogsViewModel) is what makes that possible.
+        InMemoryLogSink.LogAdded += OnDiagnosticLogAdded;
     }
 
     /// <summary>
@@ -722,6 +817,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _taskManagerViewModel?.Dispose();
         _aboutViewModel?.Dispose();
         _fileTransferViewModel?.Dispose();
+
+        // Disposed AFTER _fileTransferViewModel, which unsubscribes its own handlers from this same
+        // instance but (RemEx-rjnbo.1) never disposes it - this queue is ShellViewModel's, not the
+        // page's, to tear down.
+        _transferQueue.Changed -= OnTransferQueueChanged;
+        _transferQueue.Dispose();
+        InMemoryLogSink.LogAdded -= OnDiagnosticLogAdded;
 
         // Dispose shared connection ViewModel
         Connection.Dispose();
@@ -1009,11 +1111,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
         // Hand-constructed rather than DI-resolved, so the logger has to be passed explicitly —
         // same reasoning as NavigateToRemoteDesktop above: the constructor default would
-        // degrade to no logger and discard every file-transfer failure diagnostic.
+        // degrade to no logger and discard every file-transfer failure diagnostic. transferQueue is
+        // _transferQueue (RemEx-rjnbo.1), not a fresh one — queueLogger is only for the branch where
+        // nobody supplies a queue, which is never true here, so it is left unset.
         _fileTransferViewModel ??= new FileTransferViewModel(
             Connection,
             _services.GetRequiredService<ILogger<FileTransferViewModel>>(),
-            _services.GetRequiredService<ILogger<FileTransferQueue>>());
+            transferQueue: _transferQueue);
         SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
 
@@ -1021,6 +1125,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void NavigateToDiagnosticLogs()
     {
         _diagnosticLogsViewModel ??= new DiagnosticLogsViewModel(this);
+        // Arriving on the page is the acknowledgement (same shape as NavigateToCanvas clearing
+        // AlertBadgeCount): whatever fired while the user was elsewhere no longer counts as unread.
+        DiagnosticsBadgeCount = 0;
         SetTransitionAndNavigate(8, _diagnosticLogsViewModel);
     }
 

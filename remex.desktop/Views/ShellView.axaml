@@ -840,7 +840,17 @@
                                     <!-- File Explorer -->
                                     <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Files}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <Grid ColumnDefinitions="64,*">
-                                            <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <!-- THE ACTIVE-TRANSFER COUNT REACHES A SCREEN (RemEx-rjnbo.1). ShellViewModel
+                                                 owns _transferQueue eagerly - not FileTransferViewModel, which is only
+                                                 built the first time a user opens this page - so the count exists before
+                                                 the page does. Same IsBadgeVisible-hides-zero shape as the Sensors badge
+                                                 below; placement/paint come from App.axaml. -->
+                                            <material:Badged Grid.Column="0"
+                                                             BadgeContent="{Binding ActiveTransferCount}"
+                                                             IsBadgeVisible="{Binding HasActiveTransfers}"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <mi:MaterialIcon Kind="FolderOutline" Width="22" Height="22"/>
+                                            </material:Badged>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>
@@ -848,7 +858,16 @@
                                     <!-- Logs & Diagnostics -->
                                     <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <Grid ColumnDefinitions="64,*">
-                                            <mi:MaterialIcon Grid.Column="0" Kind="FileDocument" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <!-- THE UNREAD-DIAGNOSTICS COUNT REACHES A SCREEN (RemEx-rjnbo.1). The smallest
+                                                 honest source: entries at Warning or above since this page was last
+                                                 opened. NavigateToDiagnosticLogs is the acknowledgement, same shape as
+                                                 NavigateToCanvas clearing AlertBadgeCount. -->
+                                            <material:Badged Grid.Column="0"
+                                                             BadgeContent="{Binding DiagnosticsBadgeCount}"
+                                                             IsBadgeVisible="{Binding HasUnreadDiagnostics}"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <mi:MaterialIcon Kind="FileDocument" Width="22" Height="22"/>
+                                            </material:Badged>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>

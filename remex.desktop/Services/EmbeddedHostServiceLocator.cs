@@ -27,4 +27,22 @@ internal static class EmbeddedHostServiceLocator
                 "This usually means the in-process host failed to start — check the host logs.");
         return services.GetRequiredService<T>();
     }
+
+    /// <summary>
+    /// Resolves an optional service from either container, or null when neither has one
+    /// (RemEx-rjnbo.1). <c>SettingsViewModel</c> had its own private copy of exactly this
+    /// (<c>ResolveHostService</c>) for its paired-device list, renamer and revoker - "ONE RESOLVER,
+    /// because the third copy was about to land" per that method's own remarks, and the tray
+    /// flyout's device-count badge is that third copy, so it lives here instead of becoming a fourth
+    /// verbatim duplicate.
+    /// </summary>
+    /// <remarks>
+    /// The app container is tried first and is expected to miss; it exists so a desktop-side test
+    /// double can win. Resolved on every call, never cached: the embedded host publishes its
+    /// container after it starts, and a caller built first would otherwise cache null for the
+    /// session (the mistake found in review of RemEx-n8xk).
+    /// </remarks>
+    public static T? TryResolve<T>() where T : class
+        => App.Services?.GetService(typeof(T)) as T
+            ?? App.EmbeddedHostServices?.GetService(typeof(T)) as T;
 }

@@ -60,19 +60,33 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// <summary>Wired by the view so the VM can select every entry in the list for a multi-select op.</summary>
     public Action? SelectAllEntries { get; set; }
 
+    /// <summary>
+    /// Whether this view model built <see cref="TransferQueue"/> itself and must dispose it, versus
+    /// receiving ShellViewModel's shared instance (RemEx-rjnbo.1) - a shared queue outlives any one
+    /// page and belongs to whoever constructed it.
+    /// </summary>
+    private readonly bool _ownsTransferQueue;
+
     public FileTransferViewModel(
         ConnectionViewModel connection,
         ILogger<FileTransferViewModel>? logger = null,
-        ILogger<FileTransferQueue>? queueLogger = null)
+        ILogger<FileTransferQueue>? queueLogger = null,
+        FileTransferQueue? transferQueue = null)
     {
         _connection = connection;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
         _client = new FileTransferClient(connection);
 
-        // Passed explicitly, for the reason ShellViewModel already documents one level up: this view
-        // model is hand-constructed rather than DI-resolved, so a constructor default silently
-        // degrades to no logger and discards every transfer-failure diagnostic (RemEx-6tvh).
-        TransferQueue = new FileTransferQueue(post: null, logger: queueLogger);
+        // SHARED WITH ShellViewModel WHEN SUPPLIED (RemEx-rjnbo.1). The Files-nav badge needs a live
+        // transfer count before this view model has ever been built - it is lazily constructed on
+        // first navigation - so ShellViewModel owns one queue eagerly and hands it in here instead of
+        // this view model building a second, disagreeing one. Every other caller (every existing
+        // test) still gets its own queue, passed explicitly for the reason ShellViewModel's own
+        // construction site already documents: this view model is hand-constructed rather than
+        // DI-resolved, so a constructor default silently degrades to no logger and discards every
+        // transfer-failure diagnostic (RemEx-6tvh).
+        _ownsTransferQueue = transferQueue is null;
+        TransferQueue = transferQueue ?? new FileTransferQueue(post: null, logger: queueLogger);
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
@@ -1703,8 +1717,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
-        TransferQueue.Dispose();
         TransferQueue.ItemCompleted -= OnTransferCompleted;
+        // Only disposed when this view model actually owns it (RemEx-rjnbo.1) - a queue handed in
+        // by ShellViewModel outlives this page and is ShellViewModel's to dispose.
+        if (_ownsTransferQueue)
+            TransferQueue.Dispose();
         _searchCts?.Cancel();
         _client.Dispose();
     }

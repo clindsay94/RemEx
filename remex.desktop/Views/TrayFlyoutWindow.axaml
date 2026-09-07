@@ -49,7 +49,14 @@
 
             <!-- Status strip. Doubles as the drag handle in pinned mode: this window has no system
                  title bar, so without PointerPressed here a pinned window could not be moved.
-                 The material:Badged below is the presence indicator. -->
+                 The material:Badged below is the presence indicator, and (RemEx-rjnbo.1) now also
+                 carries the online-paired-device count as its content instead of rendering as a bare
+                 dot - Classes="presence"/Classes.connected keep the same red/green vocabulary and
+                 BottomRight placement App.axaml declares for both. Unlike the Files/Diagnostics
+                 badges, this one is never fully hidden: it doubles as the presence dot, so at zero
+                 online devices BadgeDisplayContent drops back to a plain dot rather than the whole
+                 badge disappearing. No fixed BadgeWidth/BadgeHeight any more - a plain dot no longer
+                 needs the app-wide badge shrunk to fit content that was never there. -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto"
                   PointerPressed="OnHeaderPressed"
                   Background="Transparent"
@@ -57,7 +64,8 @@
 
                 <material:Badged Grid.Column="0" Classes="presence"
                                   Classes.connected="{Binding Presence.IsPhoneAttached}"
-                                  BadgeDisplayContent="False" BadgeWidth="10" BadgeHeight="10"
+                                  BadgeContent="{Binding OnlineDeviceCount}"
+                                  BadgeDisplayContent="{Binding HasOnlineDevices}"
                                   Margin="0,0,12,0" VerticalAlignment="Center"
                                   AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}">
                     <mi:MaterialIcon Kind="Cellphone" Width="18" Height="18"
