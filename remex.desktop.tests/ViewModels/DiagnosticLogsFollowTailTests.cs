@@ -66,6 +66,34 @@ public class DiagnosticLogsFollowTailTests
     }
 
     [Fact]
+    public void TurningFollowingBackOnDirectly_RequestsAScroll()
+    {
+        // The ToggleSwitch binds straight to IsFollowingTail, not through JumpToNewestCommand — a
+        // reviewer finding was that only the command raised ScrollToEndRequested, so flipping the
+        // switch on left the list wherever it happened to be instead of snapping to the newest entry.
+        using var vm = CreateViewModel();
+        vm.OnLogListScrolled(isAtEnd: false);
+        var scrollRequested = false;
+        vm.ScrollToEndRequested += () => scrollRequested = true;
+
+        vm.IsFollowingTail = true;
+
+        Assert.True(scrollRequested);
+    }
+
+    [Fact]
+    public void TurningFollowingOff_DoesNotRequestAScroll()
+    {
+        using var vm = CreateViewModel();
+        var scrollRequested = false;
+        vm.ScrollToEndRequested += () => scrollRequested = true;
+
+        vm.IsFollowingTail = false;
+
+        Assert.False(scrollRequested);
+    }
+
+    [Fact]
     public void ArrivalWhileFollowing_RequestsAScroll()
     {
         // ProcessIncomingEntry is the synchronous half OnLogAdded posts to Dispatcher.UIThread —

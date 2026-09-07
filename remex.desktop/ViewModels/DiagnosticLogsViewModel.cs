@@ -78,10 +78,25 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isFollowingTail = true;
 
     /// <summary>
-    /// Raised so the view scrolls the log list to the newest entry — either a live arrival while
-    /// following, or a resumed follow via <see cref="JumpToNewest"/>. A plain event rather than
-    /// bound state: "scroll now" is a one-shot action, not something to observe, which is the same
-    /// reasoning behind <see cref="CopyToClipboardAsync"/> being a delegate instead of a property.
+    /// Turning following back on — whether via <see cref="JumpToNewest"/> or the ToggleSwitch bound
+    /// directly to this property — should snap to the newest entry immediately rather than waiting
+    /// for the next live arrival to do it. Guarded to the true transition only: CommunityToolkit only
+    /// raises this on an actual value change, so re-checking an already-true toggle is a no-op here
+    /// too, and turning following OFF must not scroll anywhere.
+    /// </summary>
+    partial void OnIsFollowingTailChanged(bool value)
+    {
+        if (value)
+            ScrollToEndRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Raised so the view scrolls the log list to the newest entry — a live arrival while following,
+    /// or following being turned back on (see <see cref="OnIsFollowingTailChanged(bool)"/>), whether via
+    /// <see cref="JumpToNewest"/> or the ToggleSwitch bound directly to <see cref="IsFollowingTail"/>.
+    /// A plain event rather than bound state: "scroll now" is a one-shot action, not something to
+    /// observe, which is the same reasoning behind <see cref="CopyToClipboardAsync"/> being a
+    /// delegate instead of a property.
     /// </summary>
     public event Action? ScrollToEndRequested;
 
@@ -343,13 +358,10 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
             IsFollowingTail = false;
     }
 
-    /// <summary>Resumes following and snaps straight to the newest entry — the "Jump to newest" chip.</summary>
+    /// <summary>Resumes following — the "Jump to newest" chip. OnIsFollowingTailChanged is what
+    /// actually snaps to the newest entry, so the ToggleSwitch gets the same behavior for free.</summary>
     [RelayCommand]
-    public void JumpToNewest()
-    {
-        IsFollowingTail = true;
-        ScrollToEndRequested?.Invoke();
-    }
+    public void JumpToNewest() => IsFollowingTail = true;
 
     // ─────────────────── Export ───────────────────
 
