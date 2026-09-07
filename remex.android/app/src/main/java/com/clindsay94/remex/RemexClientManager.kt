@@ -324,23 +324,28 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // the connection is established, and again on every theme-flow change, debounced inside
         // ThemeSyncSender. applicationContext because the seed resolver reads dynamic color and
         // configuration state that must outlive whichever Activity happened to call initialize().
+        //
+        // Dispatchers.IO throughout, like the heartbeat loop below: RemexCoreClient.SendMessage is
+        // a blocking JNI call (RemEx-66rf's reasoning applies here too), and managerScope itself is
+        // Dispatchers.Main, so leaving these on the default dispatcher would run every native send
+        // on the UI thread (review finding on RemEx-y06a0.1).
         val appContext = context.applicationContext
         val sender =
                 ThemeSyncSender(
-                        scope = managerScope,
+                        scope = CoroutineScope(managerScope.coroutineContext + Dispatchers.IO),
                         isConnected = { _isConnected.value },
                         resolveSeed = { snapshot -> ThemeSyncSeedResolver.resolve(appContext, snapshot) },
                         send = { json -> RemexCoreClient.SendMessage(json) },
                 )
 
-        managerScope.launch {
+        managerScope.launch(Dispatchers.IO) {
             settings.personalizationPreferencesFlow
                     .map { it.toThemeSnapshot() }
                     .distinctUntilChanged()
                     .collect { snapshot -> sender.onThemeChanged(snapshot) }
         }
 
-        managerScope.launch {
+        managerScope.launch(Dispatchers.IO) {
             connectedHost.filterNotNull().collect {
                 sender.onConnected(settings.personalizationPreferencesFlow.first().toThemeSnapshot())
             }

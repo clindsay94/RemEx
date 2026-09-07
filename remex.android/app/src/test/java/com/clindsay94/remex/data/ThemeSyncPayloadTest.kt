@@ -17,6 +17,7 @@ class ThemeSyncPayloadTest {
                 themePalette: String = "default",
                 themeStyle: String = "tonal_spot",
                 themeSeedColor: String = "#6750A4",
+                themeSeedChroma: Float = 48.0f,
                 themeContrast: Float = 0.0f,
                 dynamicColor: Boolean = true
         ) = ThemeSnapshot(
@@ -24,6 +25,7 @@ class ThemeSyncPayloadTest {
                 themePalette = themePalette,
                 themeStyle = themeStyle,
                 themeSeedColor = themeSeedColor,
+                themeSeedChroma = themeSeedChroma,
                 themeContrast = themeContrast,
                 dynamicColor = dynamicColor
         )
@@ -117,13 +119,14 @@ class ThemeSyncPayloadTest {
         }
 
         @Test
-        fun `toThemeSnapshot carries only the six theme fields off PersonalizationPreferences`() {
+        fun `toThemeSnapshot carries the theme fields off PersonalizationPreferences, including chroma`() {
                 val prefs =
                         SettingsManager.PersonalizationPreferences(
                                 themeMode = "light",
                                 themePalette = "custom",
                                 themeStyle = "vibrant",
                                 themeSeedColor = "#112233",
+                                themeSeedChroma = 72.0f,
                                 themeContrast = 0.5f,
                                 dynamicColor = false
                         )
@@ -134,6 +137,7 @@ class ThemeSyncPayloadTest {
                 assertEquals("custom", snapshot.themePalette)
                 assertEquals("vibrant", snapshot.themeStyle)
                 assertEquals("#112233", snapshot.themeSeedColor)
+                assertEquals(72.0f, snapshot.themeSeedChroma)
                 assertEquals(0.5f, snapshot.themeContrast)
                 assertFalse(snapshot.dynamicColor)
         }

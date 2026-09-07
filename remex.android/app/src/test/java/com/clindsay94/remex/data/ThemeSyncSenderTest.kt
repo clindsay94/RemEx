@@ -37,6 +37,7 @@ class ThemeSyncSenderTest {
                         themePalette = "default",
                         themeStyle = themeStyle,
                         themeSeedColor = "#6750A4",
+                        themeSeedChroma = 48.0f,
                         themeContrast = 0.0f,
                         dynamicColor = true
                 )

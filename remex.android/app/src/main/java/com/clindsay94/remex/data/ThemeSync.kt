@@ -14,6 +14,7 @@ data class ThemeSnapshot(
         val themePalette: String,
         val themeStyle: String,
         val themeSeedColor: String,
+        val themeSeedChroma: Float,
         val themeContrast: Float,
         val dynamicColor: Boolean
 )
@@ -25,6 +26,7 @@ fun SettingsManager.PersonalizationPreferences.toThemeSnapshot(): ThemeSnapshot 
                 themePalette = themePalette,
                 themeStyle = themeStyle,
                 themeSeedColor = themeSeedColor,
+                themeSeedChroma = themeSeedChroma,
                 themeContrast = themeContrast,
                 dynamicColor = dynamicColor
         )
