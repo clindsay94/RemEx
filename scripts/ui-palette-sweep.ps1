@@ -201,6 +201,19 @@ function Assert-NoRemexProcessAlive([string]$When) {
     }
 }
 
+# Bounded poll used after every -Stop -NoRelaunch call (RemEx-l5vck). ui-hotreload.ps1's own
+# Stop-Remex already blocks on Process.WaitForExit before -Stop returns, so on the happy path
+# this is redundant - it exists for whatever that guarantee does not cover (a child process
+# outliving its parent, Get-Process racing the OS's own process-table cleanup on this share)
+# without turning a slow-but-real exit into a hard failure. Best-effort and silent: it never
+# throws on timeout, it just stops polling. Assert-NoRemexProcessAlive stays the actual guard.
+function Wait-NoRemexProcess([int]$TimeoutMs = 15000) {
+    $deadline = [datetime]::UtcNow.AddMilliseconds($TimeoutMs)
+    while ((Get-Process -Name 'Remex.Agent', 'Remex.Desktop' -ErrorAction SilentlyContinue) -and [datetime]::UtcNow -lt $deadline) {
+        Start-Sleep -Milliseconds 100
+    }
+}
+
 # Remembered so the ORIGINAL state is what gets put back, not an assumption. If nothing was
 # running before the sweep started, nothing should be running after it either.
 $wasRunningBeforeSweep = [bool](Get-Process -Name Remex.Agent -ErrorAction SilentlyContinue)
@@ -224,6 +237,7 @@ try {
         # the sweep is about to start ANOTHER host in a moment, so relaunching the installed
         # Release build here would just hand it the file we are mid-write on (RemEx-8q7de round 2).
         & $hotReloadScript -Stop -NoRelaunch | Out-Null
+        Wait-NoRemexProcess
 
         $profileJson = Get-Content -Raw -Path $profilePath | ConvertFrom-Json
         if (-not $profileJson.PSObject.Properties['customization']) {
@@ -295,6 +309,7 @@ try {
             # -NoRelaunch here too - see the pre-write -Stop above. Every stop inside this loop
             # must leave nothing running; only the very last stop, after the loop, may relaunch.
             & $hotReloadScript -Stop -NoRelaunch | Out-Null
+            Wait-NoRemexProcess
         }
 
         foreach ($view in $Script:ManualViews) {
@@ -303,6 +318,17 @@ try {
     }
 }
 finally {
+    # ROOT CAUSE (RemEx-l5vck): every -Stop -NoRelaunch inside the loop above is paired with the
+    # -Start just before it, but an exception thrown BETWEEN that -Start and its paired -Stop (the
+    # process never appeared within the poll window, ui-snapshot.ps1 failed, the profile write
+    # threw) skips the paired -Stop entirely and jumps straight here with the host it just started
+    # still running - which is exactly what was reported as Assert-NoRemexProcessAlive throwing
+    # out of this very block mid-sweep. Finish the cleanup ourselves first, best-effort, so a mid-
+    # cell exception cannot strand a host; the assertion right after is what still refuses to
+    # continue if this cleanup itself cannot succeed (e.g. a process that will not die at all).
+    try { & $hotReloadScript -Stop -NoRelaunch | Out-Null } catch { Write-Warning "finally block's own cleanup stop failed: $_" }
+    Wait-NoRemexProcess
+
     # A live host reading or writing the profile at the moment of restore is exactly the bug this
     # whole safety net exists to prevent (RemEx-8q7de round 2, CRITICAL) - fail loudly rather than
     # restore underneath it.
