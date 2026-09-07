@@ -138,7 +138,7 @@
                                  The button beside it, Upload, is what this actually did. Restore a phone-directed
                                  action when there is a PC-to-phone channel to carry it (RemEx-uov9y), and give it
                                  its own code path rather than this one. -->
-                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="primary compact" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="secondary compact" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadBtn}" Classes="secondary compact" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="secondary compact" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="secondary compact" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>

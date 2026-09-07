@@ -163,13 +163,9 @@ public class ButtonVocabularyTests
             ["Canvas_CoachGotIt"] = "CanvasView - the coach-mark overlay is a different surface from the dashboard cards",
             ["Canvas_AddCard"] = "CanvasView - a per-staging-item template button, a different surface per card",
 
-            ["FileTransfer_UploadBtn"] = "FileTransferView - pre-existing dual primary in one action bar, tracked as RemEx-a3q14, not fixed here (out of z7pnx.1's scope)",
-            ["FileTransfer_UploadFolderBtn"] = "FileTransferView - see the UploadBtn entry (RemEx-a3q14)",
             ["FileTransfer_CreateFolderConfirmBtn"] = "FileTransferView - mutually exclusive by IsCreatingFolder",
             ["FileTransfer_RenameConfirmBtn"] = "FileTransferView - mutually exclusive by IsRenaming",
 
-            ["About_Update_CheckButton"] = "AboutView - pre-existing dual primary once an update is found, tracked as RemEx-a3q14, not fixed here (out of z7pnx.1's scope)",
-            ["About_Update_DownloadButton"] = "AboutView - see the CheckButton entry (RemEx-a3q14)",
             ["About_ViewGitHub"] = "AboutView - the GitHub card is a different surface from the Software Update card",
 
             ["Home_InitializeSensors"] = "HomeView - the Sensors HUD empty-state card is a different surface from the phone-link card",
