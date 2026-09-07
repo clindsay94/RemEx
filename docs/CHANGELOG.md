@@ -405,6 +405,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The PC's tray menu has an "Open logs folder" item, and the app gained one shared "busy"
+  affordance: a small spinner inside a button while a command runs, and three soft placeholder
+  rows while a list fills for the first time (the Diagnostics system-log fetch, the trusted
+  devices list, and the Task Manager process list use it). The placeholder's shimmer is static
+  when reduced motion is on. (RemEx-kjdi)
 - The PC's Diagnostics log viewer gained three small conveniences: a right-click menu on any
   row with "Copy message" and "Copy with stack", a "Follow tail" switch that keeps the newest
   entry in view (scrolling up pauses it and offers "Jump to newest"), and after an export a
