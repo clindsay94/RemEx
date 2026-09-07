@@ -375,6 +375,19 @@ public sealed record RemexMessage
     /// </remarks>
     [JsonPropertyName("mediaSeek")]
     public Remex.Core.Models.MediaSeekRequest? MediaSeek { get; init; }
+
+    /// <summary>
+    /// The phone's palette at one instant, for <see cref="MessageTypes.ThemeSync"/> (RemEx-y06a0.1,
+    /// RemEx-sudp8). Optional addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. Like
+    /// <see cref="MediaSeek"/> it is pairing-gated for free by the default-true
+    /// <c>RequiresPairing</c>. An unpaired sender's own theme is not something the host has any
+    /// business adopting.
+    /// </remarks>
+    [JsonPropertyName("themeSync")]
+    public Remex.Core.Models.PhoneThemeSnapshot? ThemeSync { get; init; }
 }
 
 /// <summary>
@@ -567,4 +580,14 @@ public static class MessageTypes
     /// answer is the next <c>media_state</c>, which the phone is already listening for.
     /// </remarks>
     public const string MediaSeek = "media_seek";
+
+    /// <summary>
+    /// The phone's palette at one instant, CLIENT -> HOST (RemEx-y06a0.1, blocker of RemEx-sudp8).
+    /// </summary>
+    /// <remarks>
+    /// NOTHING IS SENT BACK, like <see cref="MediaSeek"/>: the host stores the snapshot and the
+    /// desktop's Personalize sheet reads it straight from <c>IPhoneThemeSnapshotStore</c>, so there
+    /// is no reply to route and no JNI concern on the way back to Android.
+    /// </remarks>
+    public const string ThemeSync = "theme_sync";
 }

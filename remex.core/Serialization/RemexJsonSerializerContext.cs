@@ -155,6 +155,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(MediaArtworkRequest))]
 [JsonSerializable(typeof(MediaArtwork))]
 [JsonSerializable(typeof(MediaSeekRequest))]
+[JsonSerializable(typeof(PhoneThemeSnapshot))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }
