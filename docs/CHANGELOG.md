@@ -245,6 +245,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The expanding-arrows button next to Minimize on the PC's title bar is gone on Windows and
+  Linux. It put the window into a fullscreen mode whose only exit was a hover-the-top-edge bar
+  designed for macOS, and dragging the window out of that mode left it without caption buttons
+  or window snapping. macOS keeps the button. If a window ever ends up fullscreen through some
+  other route, Escape now leaves it. (RemEx-5253o)
 - The PC could quietly lose its own theme about half a minute after launch. The desktop app
   connects to its own background agent at startup, and the agent's layout sync carried the
   machine-wide layout file; the desktop then saved that whole profile, colours and all, over the
