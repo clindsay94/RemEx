@@ -61,9 +61,20 @@
           in one bead. Window.Title is not lost: it still drives the taskbar entry and Alt-Tab, the
           only two places it was ever load-bearing — this is the one place it was purely
           decorative and colliding with something that now says more.
+       6. PART_FullScreenButton and PART_PopoverFullScreenButton gated on
+          WindowChromePlatform.ShowFullScreenButton (RemEx-5253o, Connor reported 2026-09-06). On
+          Windows and Linux a title-bar fullscreen button is not a platform convention, and the only
+          way out of FullScreen this template offers - the FullscreenPopover below, a
+          hover-the-top-edge bar - is a macOS affordance, not a Windows/Linux one; Connor found the
+          button but no discoverable way back. Avalonia 12.1.1 has no public, settable property to
+          suppress the button (the existing :has-fullscreen pseudo-class below is driven by the
+          internal, read-only Window.AllowedWindowActions, sourced from the platform impl), so this
+          is a plain OperatingSystem.IsMacOS() check exposed as a static property and consumed via
+          x:Static, combined with (not replacing) the existing :not(:has-fullscreen) styles.
      WindowChromeBackdropTests guards 2 and 3 from this source. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:chrome="using:Remex.Desktop.Themes.Chrome">
 
   <x:Double x:Key="CaptionButtonWidth">45</x:Double>
   <x:Double x:Key="CaptionButtonHeight">30</x:Double>
@@ -250,6 +261,17 @@
     </Style>
     <Style Selector="^:not(:has-fullscreen) /template/ Button#PART_PopoverFullScreenButton">
       <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <!-- RemEx-5253o: hidden on Windows/Linux regardless of :has-fullscreen (see change 6 in the
+         file header) — a title-bar fullscreen button is not a platform convention there, and this
+         template's only exit from FullScreen (the FullscreenPopover below) is a macOS-only
+         affordance. Still combined with, not instead of, the :not(:has-fullscreen) styles above: if
+         the platform genuinely disallows fullscreen, that more specific selector still wins. -->
+    <Style Selector="^ /template/ Button#PART_FullScreenButton">
+      <Setter Property="IsVisible" Value="{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}" />
+    </Style>
+    <Style Selector="^ /template/ Button#PART_PopoverFullScreenButton">
+      <Setter Property="IsVisible" Value="{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}" />
     </Style>
     <Style Selector="^:fullscreen /template/ Panel#PART_TitleTextPanel">
       <Setter Property="IsVisible" Value="False" />

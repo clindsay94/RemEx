@@ -136,6 +136,30 @@ public class WindowChromeBackdropTests
             "MainWindow merges the chrome dictionary that defines the theme");
     }
 
+    [Fact]
+    public void FullScreenButtons_AreGatedOnThePlatformCheckRegardlessOfHasFullscreen()
+    {
+        // RemEx-5253o: on Windows/Linux the title-bar fullscreen button was a trap - the only exit
+        // this template offers (FullscreenPopover, below) is a macOS hover-the-top-edge affordance,
+        // not discoverable on Windows. Avalonia 12.1.1 has no public, settable property to suppress
+        // the button (the pre-existing :not(:has-fullscreen) styles above are driven by the
+        // internal, read-only Window.AllowedWindowActions), so this is a plain OS check.
+        var xaml = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Themes", "Chrome", "WindowChrome.axaml"));
+
+        xaml.Should().Contain(
+            "Selector=\"^ /template/ Button#PART_FullScreenButton\"",
+            "the platform gate must apply unconditionally, alongside (not instead of) the " +
+            ":not(:has-fullscreen) styles");
+        xaml.Should().Contain(
+            "Selector=\"^ /template/ Button#PART_PopoverFullScreenButton\"",
+            "the FullscreenPopover's own fullscreen-toggle button needs the same gate, or the " +
+            "exit route stays visible while the entry route is hidden");
+        xaml.Should().Contain(
+            "{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}",
+            "the gate must be wired to WindowChromePlatform, not a separate ad-hoc check");
+    }
+
     private static XDocument Chrome()
         => XDocument.Parse(File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "Themes", "Chrome", "WindowChrome.axaml")));

@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Remex.Desktop.Services;
@@ -37,6 +39,15 @@ public partial class MainWindow : Window
         }
 
         WindowDecorationsTheme = decorationsTheme;
+
+        // RemEx-5253o: belt-and-braces exit for any future path into FullScreen (the chrome's own
+        // fullscreen button is gated off non-macOS in WindowChrome.axaml, but Remote Desktop's
+        // immersive mode or an OS shortcut could still land here). Registered on the Tunnel phase so
+        // it always runs before the Escape KeyBinding below fires DismissOverlaysCommand — exiting
+        // FullScreen takes priority over that key press, and e.Handled=true stops the bubble phase
+        // from also dismissing overlays on the same keystroke. When not in FullScreen this handler
+        // is a no-op and Escape reaches DismissOverlaysCommand exactly as before.
+        AddHandler(KeyDownEvent, OnEscapeExitsFullScreen, RoutingStrategies.Tunnel);
 
         _themeService = App.Services.GetService<ThemeService>(); // optional service
         if (_themeService is not null)
@@ -153,4 +164,18 @@ public partial class MainWindow : Window
     // window without a compositor keeps painting the previous seed's Surface after a theme switch.
     private static SolidColorBrush OpaqueSurfaceFallbackBrush() =>
         new(ThemeResources.OpaqueColor("GlassBaseDark", Color.FromRgb(0x0A, 0x0A, 0x10)));
+
+    private void OnEscapeExitsFullScreen(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldExitFullScreenOnEscape(e.Key, WindowState))
+            return;
+
+        WindowState = WindowState.Normal;
+        e.Handled = true;
+    }
+
+    // Pure logic pulled out of OnEscapeExitsFullScreen so it is testable without an Avalonia
+    // headless runtime (RemEx-5253o) — this project has none.
+    internal static bool ShouldExitFullScreenOnEscape(Key key, WindowState state) =>
+        key == Key.Escape && state == WindowState.FullScreen;
 }
