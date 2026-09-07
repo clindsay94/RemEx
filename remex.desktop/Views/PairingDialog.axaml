@@ -53,6 +53,7 @@
                          LetterSpacing="8"
                          HorizontalContentAlignment="Center"
                          IsEnabled="{Binding CanEdit}"
+                         AutomationProperties.Name="{local:Localize PairingDialogTitle}"
                          assists:TextFieldAssist.Hints="{Binding ErrorText}"
                          Classes.invalid="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 

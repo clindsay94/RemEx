@@ -30,16 +30,16 @@
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,16,0,0">
                         <!-- Filter toolbar (live, non-destructive) -->
                         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                            <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_VerbosityFilter}" MinWidth="200" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                            <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" assists:ComboBoxAssist.Label="{local:Localize Logs_Preset}" MinWidth="185" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                            <TextBox Text="{Binding SearchText}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Logs_SearchWatermark}" MinWidth="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                            <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_CaptureLevel}" MinWidth="120" VerticalAlignment="Center" Margin="0,0,0,8" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
+                            <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_VerbosityFilter}" AutomationProperties.Name="{local:Localize Logs_VerbosityFilter}" MinWidth="200" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" assists:ComboBoxAssist.Label="{local:Localize Logs_Preset}" AutomationProperties.Name="{local:Localize Logs_Preset}" MinWidth="185" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <TextBox Text="{Binding SearchText}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Logs_SearchWatermark}" AutomationProperties.Name="{local:Localize Logs_SearchWatermark}" MinWidth="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_CaptureLevel}" AutomationProperties.Name="{local:Localize Logs_CaptureLevel}" MinWidth="120" VerticalAlignment="Center" Margin="0,0,0,8" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
                         </WrapPanel>
 
                         <!-- Export + actions bar -->
                         <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" Margin="0,0,0,12">
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportAs}" MinWidth="130" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportScope}" MinWidth="195" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportAs}" AutomationProperties.Name="{local:Localize Logs_ExportAs}" MinWidth="130" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" assists:ComboBoxAssist.Label="{local:Localize Logs_ExportScope}" AutomationProperties.Name="{local:Localize Logs_ExportScope}" MinWidth="195" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="{Binding EntryCountText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             <Button Grid.Column="3" Classes="secondary" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="4" Classes="secondary" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
@@ -126,6 +126,7 @@
                                          FontFamily="{StaticResource JetBrainsMono}"
                                          FontSize="12"
                                          Foreground="{DynamicResource TextPrimaryBrush}"
+                                         AutomationProperties.Name="{local:Localize Logs_ServiceTab}"
                                          Margin="0"/>
                             </ScrollViewer>
                         </material:Card>

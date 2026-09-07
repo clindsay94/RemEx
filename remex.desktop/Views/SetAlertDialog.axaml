@@ -32,6 +32,7 @@
                            Minimum="-99999" Maximum="99999"
                            FormatString="F1"
                            assists:TextFieldAssist.Label="{local:Localize SetAlert_ThresholdValue}"
+                           AutomationProperties.Name="{local:Localize SetAlert_ThresholdValue}"
                            Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
         </StackPanel>
 
@@ -39,6 +40,7 @@
         <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,12">
             <ComboBox ItemsSource="{Binding Directions}" SelectedItem="{Binding Direction}"
                       assists:ComboBoxAssist.Label="{local:Localize SetAlert_TriggerDirection}"
+                      AutomationProperties.Name="{local:Localize SetAlert_TriggerDirection}"
                       Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
@@ -52,6 +54,7 @@
         <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,24">
             <ComboBox ItemsSource="{Binding Severities}" SelectedItem="{Binding Severity}"
                       assists:ComboBoxAssist.Label="{local:Localize SetAlert_Severity}"
+                      AutomationProperties.Name="{local:Localize SetAlert_Severity}"
                       Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>

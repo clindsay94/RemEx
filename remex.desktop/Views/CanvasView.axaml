@@ -279,7 +279,7 @@
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
                                             <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" AutomationProperties.Name="{conv:Localize Conn_HostAddress}" IsEnabled="{Binding !Connection.IsConnected}"/>
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->
@@ -404,7 +404,7 @@
                                             </Grid>
 
                                             <!-- Inline rename editor: normal-sized overlay spanning the card. Commits on Enter/blur. -->
-                                            <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                                            <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" AutomationProperties.Name="{local:Localize Canvas_Rename}" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
                                         </Grid>
                                     </Grid>
                                 </ctrl:DraggableCard>

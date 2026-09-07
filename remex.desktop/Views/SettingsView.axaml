@@ -115,7 +115,7 @@
 
                             <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_ConfigureHostAddressTooltip}">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_HostAddress}"/>
+                                    <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_HostAddress}" AutomationProperties.Name="{local:Localize Settings_HostAddress}"/>
                                     <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DiscoverHostsTooltip}"/>
                                 </Grid>
                             </StackPanel>
@@ -380,7 +380,7 @@
                                                      row, and clearing it is a deliberate act — blank means
                                                      "fall back to the device id", which the hint says. -->
                                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}">
-                                                    <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_PairedDeviceNewName}"/>
+                                                    <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_PairedDeviceNewName}" AutomationProperties.Name="{local:Localize Settings_PairedDeviceNewName}"/>
                                                     <Button
                                                             Classes="secondary"
                                                             Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"

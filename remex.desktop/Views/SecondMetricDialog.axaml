@@ -22,7 +22,7 @@
         </StackPanel>
 
         <!-- Search -->
-        <TextBox Grid.Row="1" x:Name="SearchBox" PlaceholderText="{local:Localize SecondMetric_Search}" Margin="0,0,0,12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+        <TextBox Grid.Row="1" x:Name="SearchBox" PlaceholderText="{local:Localize SecondMetric_Search}" Margin="0,0,0,12" Foreground="{DynamicResource TextPrimaryBrush}" AutomationProperties.Name="{local:Localize SecondMetric_Search}"/>
 
         <!-- Candidate list -->
         <material:Card Grid.Row="2" Padding="4">

@@ -196,12 +196,7 @@ public class TextInputTests
 
         foreach (var (file, tag, kind) in Inputs())
         {
-            // Inputs()'s pattern is shared with the other facts in this class and, like theirs,
-            // stops at the first '>' - which a property-element tag such as
-            // <ComboBox.ItemTemplate> also satisfies, because '.' is a word boundary. Those tags
-            // never carry Background/BorderBrush/etc, so the other facts never noticed; this one
-            // would flag every ComboBox with an ItemTemplate as an unlabelled offender.
-            if (Regex.IsMatch(tag, $@"^<{Regex.Escape(kind)}\."))
+            if (IsPropertyElementTag(tag, kind))
             {
                 continue;
             }
@@ -235,6 +230,43 @@ public class TextInputTests
             + "with a reason - a search field's placeholder or a toolbar row's inline caption, not "
             + "silence");
     }
+
+    [Fact]
+    public void EveryInputAnnouncesWhatItEdits()
+    {
+        // THE ACCEPTANCE CRITERION RemEx-5w9ws.2 WAS FILED FOR. Avalonia's TextBox automation peer
+        // does not fall back to Watermark/PlaceholderText, and RemEx-5w9ws.1's own TextFieldAssist
+        // Label does not become the UIA Name either - verified live with ui-snapshot -Tree against
+        // SettingsView's labelled "PC Address" field, which announced an empty name. So every input
+        // needs an explicit AutomationProperties.Name; there is no floating-label shortcut around it.
+        //
+        // NO EXEMPTIONS, unlike the fact above: a search field still has to say "search", a toolbar
+        // combo still has to say what it pickers, and a read-only log viewer still has to say what
+        // it is showing. The reasons that let a field skip a floating LABEL (no vertical room, the
+        // placeholder already reads fine visually) do not apply to whether it announces anything to
+        // a screen reader at all.
+        var offenders = Inputs()
+            .Where(input => !IsPropertyElementTag(input.Tag, input.Kind))
+            .Where(input => !Regex.IsMatch(input.Tag, @"AutomationProperties\.Name\s*="))
+            .Select(input => $"{Path.GetFileName(input.File)}: <{input.Kind} …>")
+            .Distinct()
+            .ToList();
+
+        offenders.Should().BeEmpty(
+            "every TextBox/ComboBox/NumericUpDown needs AutomationProperties.Name so a screen "
+            + "reader announces what it edits, not just that it is an edit control");
+    }
+
+    /// <summary>
+    /// True for a property-element tag such as <c>&lt;ComboBox.ItemTemplate&gt;</c>. Inputs()'s
+    /// pattern stops at the first '&gt;', which that tag also satisfies because '.' is a word
+    /// boundary - a real ComboBox with an ItemTemplate produces two matches, only one of which is
+    /// an actual input. The Background/BorderBrush facts above never noticed because a
+    /// property-element tag never carries those; a Label/Name presence check would flag every one
+    /// of them as an offender without this filter.
+    /// </summary>
+    private static bool IsPropertyElementTag(string tag, string kind)
+        => Regex.IsMatch(tag, $@"^<{Regex.Escape(kind)}\.");
 
     // ─────────────────────────── plumbing ───────────────────────────
 

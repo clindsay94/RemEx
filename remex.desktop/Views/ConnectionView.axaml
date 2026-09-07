@@ -30,7 +30,7 @@
 
                     <StackPanel Spacing="8">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}"/>
+                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" AutomationProperties.Name="{conv:Localize Conn_HostAddress}"/>
                             <Button Grid.Column="1" Classes="secondary" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
                         </Grid>
                     </StackPanel>

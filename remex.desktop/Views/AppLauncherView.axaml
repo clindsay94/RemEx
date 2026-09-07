@@ -147,7 +147,7 @@
 
 
             <!-- ═══ Search ═══ -->
-            <TextBox PlaceholderText="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
+            <TextBox PlaceholderText="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}" AutomationProperties.Name="{local:Localize AppLauncher_SearchWatermark}"/>
 
             <!-- ═══ Apps Grid ═══ -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
