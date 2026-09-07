@@ -672,9 +672,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // time, not on what the person asked the slider for — so a Vibrancy of 90 that a Windows
         // accent hue could only reach 60 of showed the slider parked at 60, permanently, the moment
         // the sheet was closed and reopened once.
+        //
+        // CLAMPED HERE TOO (RemEx-aidt1 review LOW), the same range OnSeedChromaChanged clamps a
+        // live edit to. This bypasses that setter (see the comment above this constructor's own
+        // block for why), so a hand-edited profile carrying a request outside the wheel's own range
+        // would otherwise show the slider itself pinned at MaxChroma while the field it is bound to
+        // reports the unclamped number - the exact split RemEx-8twk0.8 already fixed for a live drag.
         var (hue, _, tone) = SeedHct.FromColor(initialSeed);
         _seedHue = hue;
-        _seedChroma = settings.ThemeSeedChromaRequest;
+        _seedChroma = Math.Clamp(settings.ThemeSeedChromaRequest, 0, SeedHct.MaxChroma);
         _seedTone = tone;
 
         // Build the preset gallery. AFTER the seed axes are set, because the tiles are painted from
@@ -720,7 +726,34 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             if (!IsCustomSource && !string.Equals(applied.AccentColor, AccentColor, StringComparison.OrdinalIgnoreCase))
             {
                 _isApplyingPreset = true;
-                try { AccentColor = applied.AccentColor; }
+                try
+                {
+                    // MIRRORS AdoptSourceSeed, NOT A PLAIN AccentColor ASSIGNMENT (RemEx-aidt1).
+                    // Assigning AccentColor directly ran OnAccentColorChanged -> SyncSeedFromAccent
+                    // UNGUARDED (this handler never sets _isSyncingSeed), which re-derives SeedChroma
+                    // from the just-applied seed's ACHIEVED chroma - silently overwriting the live
+                    // Vibrancy REQUEST with whatever the coordinator's hue could reach. The next
+                    // unrelated slider nudge then persisted that corrupted request, reintroducing the
+                    // exact ratchet RemEx-ceu4x fixed, just gated behind "sheet open during a
+                    // background accent sync". Taking hue/tone only and recombining through
+                    // PushSeedToAccent (which guards its OWN AccentColor write with _isSyncingSeed)
+                    // keeps SeedChroma exactly what it already was.
+                    if (Color.TryParse(applied.AccentColor, out var appliedSeed))
+                    {
+                        var (hue, _, tone) = SeedHct.FromColor(appliedSeed);
+                        _isSyncingSeed = true;
+                        try { SeedHue = hue; SeedTone = tone; }
+                        finally { _isSyncingSeed = false; }
+                        PushSeedToAccent();
+                    }
+                    else
+                    {
+                        // Unreachable in practice - ColorSourceCoordinator only ever hands this
+                        // event a hex ShapedBySource itself parsed - but a direct assignment is the
+                        // closest thing to the old behaviour if it ever is.
+                        AccentColor = applied.AccentColor;
+                    }
+                }
                 finally { _isApplyingPreset = false; }
             }
             if (IsWindowsAccentSource) SourceAccentHex = SystemSeedSources.TryGetWindowsAccent();

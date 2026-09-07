@@ -38,8 +38,12 @@ Principles that settled every decision below:
   default `#6C4CFF`), `SchemeVariant` (default TonalSpot), `ThemeSeedChroma` (48), `ThemeContrast`
   (0), `ThemeMode` (Light, Dark, System), `BackgroundMaterial` (JSON `canvasBackgroundType`,
   default Mica), `SplashStyle` (default RemexCommand), `CustomAccentColors` (string array of hex),
-  fonts, `UiScale`, `CornerRadius`, `GlassOpacity`, `GlowStrength`, `AppWindowOpacity`.
-- Migration: `remex.desktop/Services/CustomizationMigration.cs`, `CurrentSchemaVersion = 2`,
+  fonts, `UiScale`, `CornerRadius`, `GlassOpacity`, `GlowStrength`, `AppWindowOpacity`. `ThemeSeedChroma`
+  is the ACHIEVED chroma of `AccentColor` (what Android's own seed reproduces, RemEx-ndhlv);
+  `ThemeSeedChromaRequest` (48) is the Vibrancy slider's raw REQUEST, kept separately so a
+  Windows-accent or Wallpaper hue that cannot hold it does not permanently lower what the next hue
+  is asked for (RemEx-ceu4x).
+- Migration: `remex.desktop/Services/CustomizationMigration.cs`, `CurrentSchemaVersion = 5`,
   a `with`-based step per version.
 - Engine: `remex.desktop/Services/DynamicColorGenerator.cs` over the MaterialColorUtilities
   package; `StyleFor(variant)` at `:198-206` maps Vibrant, Expressive, Rainbow, FruitSalad, Content,

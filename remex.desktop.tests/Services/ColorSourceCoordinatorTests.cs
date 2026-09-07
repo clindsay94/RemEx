@@ -245,4 +245,86 @@ public class ColorSourceCoordinatorTests : IDisposable
         vm.SeedChroma.Should().NotBe(layout.CurrentProfile.Customization.ThemeSeedChroma,
             "not the achieved chroma of whatever hue last shaped the seed");
     }
+
+    /// <summary>
+    /// RemEx-aidt1 review LOW. The constructor seeds <c>_seedChroma</c> from the persisted request
+    /// by a direct field write, bypassing <c>OnSeedChromaChanged</c>'s
+    /// <see cref="SeedHct.MaxChroma"/> clamp (RemEx-8twk0.8 gate addendum). A hand-edited profile
+    /// carrying a request outside the wheel's own range must not reopen the sheet with the slider
+    /// reporting a number the wheel itself cannot reach.
+    /// </summary>
+    [Fact]
+    public async Task ReopeningTheSheetClampsAHandEditedRequestToTheWheelsRange()
+    {
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        var layout = new DashboardLayoutService(Path.Combine(_tempDirectory, "dashboard_layout.json"), theme);
+
+        var settings = new CustomizationSettings
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = 500.0,
+        };
+        await File.WriteAllTextAsync(
+            layout.FilePathForTests,
+            System.Text.Json.JsonSerializer.Serialize(
+                new DashboardProfile { Customization = settings }, DashboardLayoutService.JsonOptions));
+        await layout.LoadAsync();
+
+        var vm = new CustomizationViewModel(null!, layout, theme);
+
+        vm.SeedChroma.Should().Be(SeedHct.MaxChroma,
+            "a request outside the wheel's own range must clamp at construction the same way a live edit does");
+    }
+
+    /// <summary>
+    /// RemEx-aidt1 main finding. <c>ColorSourceCoordinator.Apply</c> can run while the sheet is
+    /// open — the coordinator is always alive, and the sheet is only ever an additional listener on
+    /// <c>ThemeService.CustomizationApplied</c>. Before this fix, the view model's handler assigned
+    /// <c>AccentColor</c> directly, which ran <c>SyncSeedFromAccent</c> UNGUARDED and overwrote the
+    /// live Vibrancy REQUEST with whatever the just-applied hue could ACHIEVE — silently, with
+    /// nothing persisted until the next unrelated control was touched, at which point the corrupted
+    /// value became the new persisted request.
+    /// </summary>
+    [Fact]
+    public async Task ACustomizationAppliedFromTheCoordinatorKeepsTheLiveRequestEvenWhenTheHueCannotHoldIt()
+    {
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        var layout = new DashboardLayoutService(Path.Combine(_tempDirectory, "dashboard_layout.json"), theme);
+        await layout.LoadAsync();
+
+        layout.RequestSave(layout.CurrentProfile with
+        {
+            Customization = layout.CurrentProfile.Customization with
+            {
+                ColorSource = ColorSources.WindowsAccent,
+                ThemeSeedChromaRequest = 90.0,
+            },
+        });
+        await layout.FlushAsync();
+
+        var watcher = new WindowsAccentWatcher(() => null, new ManualTimeProvider());
+        var coordinator = new ColorSourceCoordinator(layout, theme, watcher);
+        // Constructed AFTER the profile above is saved, so the VM's own construction-time seeding
+        // (the test above) starts it at the same request of 90 the coordinator is about to shape a
+        // near-white hue against.
+        var vm = new CustomizationViewModel(null!, layout, theme);
+
+        // Near-white: HCT's chroma envelope collapses toward the tone extremes regardless of hue,
+        // so this cannot hold anywhere near 90.
+        coordinator.Apply("#F2F2F2");
+        await layout.FlushAsync();
+
+        vm.SeedChroma.Should().Be(90.0,
+            "a background accent sync while the sheet is open must not overwrite the live request");
+        vm.AccentColor.Should().Be(layout.CurrentProfile.Customization.AccentColor,
+            "the wheel must still show the shaped seed the coordinator just applied");
+
+        // The corruption this bead fixes only reached disk on the NEXT save — nudge an unrelated
+        // control and check what actually got persisted.
+        vm.ThemeContrast = 0.3;
+        await layout.FlushAsync();
+
+        layout.CurrentProfile.Customization.ThemeSeedChromaRequest.Should().Be(90.0,
+            "an unrelated save must not persist a request the accent sync silently overwrote");
+    }
 }
