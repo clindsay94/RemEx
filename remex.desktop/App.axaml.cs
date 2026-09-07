@@ -4,8 +4,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using System.IO;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Desktop.Configuration;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -665,6 +667,9 @@ public partial class App : Application
             Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
         };
 
+        var logsFolderItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenLogsFolder"] };
+        logsFolderItem.Click += (_, _) => OpenLogsFolder();
+
         var showItem = new NativeMenuItem { Header = strings["Tray_ShowMainWindow"] };
         showItem.Click += OnShowMainWindow;
 
@@ -685,6 +690,7 @@ public partial class App : Application
         menu.Items.Add(_remoteDesktopItem);
         menu.Items.Add(transfersItem);
         menu.Items.Add(pairItem);
+        menu.Items.Add(logsFolderItem);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(showItem);
         menu.Items.Add(settingsItem);
@@ -711,5 +717,32 @@ public partial class App : Application
 
         if (_remoteDesktopItem is not null)
             _remoteDesktopItem.IsEnabled = TrayTileRules.IsRemoteDesktopEnabled(presence.IsPhoneAttached);
+    }
+
+    /// <summary>
+    /// Opens <see cref="PathSettings.LogsDirectory"/> — the configured logs directory, resolved
+    /// through <see cref="Remex.Core.Services.RemexDataPaths.PerUserDirectory"/> so it honours the
+    /// same test/host-state redirect as every other per-user store (RemEx-kjdi).
+    /// </summary>
+    /// <remarks>
+    /// Reuses <see cref="DiagnosticLogsViewModel.LaunchFolder"/> rather than a second
+    /// <c>Process.Start</c> call — the export folder's "reveal in Explorer/xdg-open" logic
+    /// (RemEx-a8du) is the one true folder launcher, called directly rather than through a
+    /// transient <see cref="DiagnosticLogsViewModel"/> instance: that VM subscribes to
+    /// <see cref="InMemoryLogSink.LogAdded"/> in its constructor and is never disposed here, which
+    /// would leak a subscription every time the tray item is clicked.
+    /// </remarks>
+    private static void OpenLogsFolder()
+    {
+        try
+        {
+            var directory = new PathSettings().LogsDirectory;
+            Directory.CreateDirectory(directory);
+            DiagnosticLogsViewModel.LaunchFolder(directory);
+        }
+        catch (Exception ex)
+        {
+            InMemoryLogSink.Append(LogLevel.Warning, "Tray", "Could not open the logs folder", ex);
+        }
     }
 }

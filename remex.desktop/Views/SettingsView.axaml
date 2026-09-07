@@ -5,7 +5,8 @@
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
     xmlns:views="using:Remex.Desktop.Views"
-    xmlns:coreModels="using:Remex.Core.Models" x:Class="Remex.Desktop.Views.SettingsView" x:DataType="vm:SettingsViewModel">
+    xmlns:coreModels="using:Remex.Core.Models"
+    xmlns:controls="using:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.SettingsView" x:DataType="vm:SettingsViewModel">
 
     <UserControl.Styles>
 
@@ -426,6 +427,7 @@
 
                         <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasTrustedDevices}"/>
 
+                        <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoadingTrustedDevices}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
                         <ItemsControl ItemsSource="{Binding TrustedDevices}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:FileTrustDeviceItem">
@@ -454,6 +456,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        </controls:BusyPlaceholder>
                     </StackPanel>
                 </material:Card>
 

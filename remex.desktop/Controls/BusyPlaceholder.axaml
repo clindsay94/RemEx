@@ -1,0 +1,95 @@
+<ContentControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:controls="using:Remex.Desktop.Controls"
+    x:Class="Remex.Desktop.Controls.BusyPlaceholder">
+
+    <!-- ═══ BusyPlaceholder (RemEx-kjdi) ═══
+         Two visual states, selected by pseudo-classes set in the code-behind:
+         - :busy:not(:skeleton)  -> Spinner mode: dim the real Content, show a small indeterminate ring.
+         - :busy:skeleton        -> Skeleton mode: hide the real Content, show 4 placeholder bars.
+         - not :busy             -> Content shown normally, both placeholders hidden.
+         The shimmer on the skeleton bars is an Opacity keyframe animation, gated off entirely
+         (falling back to a static, evenly-dim bar) whenever :reduced-motion is set — see the two
+         mutually exclusive Style blocks below. No hex colours anywhere: every brush is a
+         DynamicResource theme token so the shimmer reads correctly on every palette-sweep cell
+         (Default/Chalk-Light/Ink-Dark), not just the one this was designed against. -->
+
+    <ContentControl.Template>
+        <ControlTemplate>
+            <Grid>
+                <ContentPresenter Name="PART_ContentPresenter"
+                                   Content="{TemplateBinding Content}"
+                                   ContentTemplate="{TemplateBinding ContentTemplate}"
+                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                <!-- Spinner mode overlay: a small indeterminate ring, centered over the (dimmed) content. -->
+                <ProgressBar Name="PART_Spinner"
+                             IsVisible="False"
+                             IsIndeterminate="True"
+                             Width="16" Height="16"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Foreground="{DynamicResource AccentPrimaryBrush}"/>
+
+                <!-- Skeleton mode: 4 rounded bars standing in for a list's first fill. Widths vary so
+                     the group reads as placeholder text rather than a solid block. -->
+                <StackPanel Name="PART_Skeleton" IsVisible="False" Spacing="10" VerticalAlignment="Top">
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="320" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="260" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="300" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="180" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                </StackPanel>
+            </Grid>
+        </ControlTemplate>
+    </ContentControl.Template>
+
+    <ContentControl.Styles>
+        <Style Selector="Border.skeleton-bar">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Opacity" Value="0.55"/>
+        </Style>
+
+        <!-- Skeleton mode visibility: show the bars, hide the real content underneath them. -->
+        <Style Selector="controls|BusyPlaceholder:busy:skeleton /template/ StackPanel#PART_Skeleton">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="controls|BusyPlaceholder:busy:skeleton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+
+        <!-- Spinner mode: show the ring, dim (not hide) the content it sits over. -->
+        <Style Selector="controls|BusyPlaceholder:busy:not(:skeleton) /template/ ProgressBar#PART_Spinner">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="controls|BusyPlaceholder:busy:not(:skeleton) /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+
+        <!-- Shimmer: only while busy AND in skeleton mode AND motion is not reduced. -->
+        <Style Selector="controls|BusyPlaceholder:busy:skeleton:not(:reduced-motion) /template/ Border.skeleton-bar">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.35"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="0.8"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.35"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Reduced motion: a static placeholder, no animation - just a fixed, slightly higher
+             opacity than the resting 0.55 so it still reads as "something is loading". -->
+        <Style Selector="controls|BusyPlaceholder:busy:skeleton:reduced-motion /template/ Border.skeleton-bar">
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+    </ContentControl.Styles>
+</ContentControl>

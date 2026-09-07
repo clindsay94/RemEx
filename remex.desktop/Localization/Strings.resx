@@ -2164,6 +2164,12 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
     <value>Pair a device</value>
   </data>
+  <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
+    <value>Open logs folder</value>
+  </data>
+  <data name="Busy_Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
   <data name="A11y_TrayFlyout_Header" xml:space="preserve">
     <value>RemEx status</value>
   </data>

@@ -200,6 +200,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
 
+    /// <summary>True while <see cref="LoadTrustedDevicesAsync"/> is fetching the trust list — drives
+    /// the skeleton-row placeholder over the card's first fill and every manual refresh (RemEx-kjdi).</summary>
+    [ObservableProperty] private bool _isLoadingTrustedDevices;
+
+    /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
+    /// (RemEx-kjdi). <c>_shell</c> is <see langword="null"/> in some existing tests.</summary>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
     /// <summary>
     /// The phones paired to this PC (RemEx-kirdm).
     /// </summary>
@@ -956,6 +964,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (service is null)
             return;
 
+        IsLoadingTrustedDevices = true;
         try
         {
             var records = await service.GetAllAsync(CancellationToken.None);
@@ -965,6 +974,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message)));
+        }
+        finally
+        {
+            IsLoadingTrustedDevices = false;
         }
     }
 

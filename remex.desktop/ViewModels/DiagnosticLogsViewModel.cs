@@ -66,6 +66,16 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private LogExportScope? _selectedExportScope;
     [ObservableProperty] private string _serviceLogsText = string.Empty;
 
+    /// <summary>True while <see cref="FetchServiceLogsAsync"/> is reading the OS event log / journal
+    /// (RemEx-kjdi). Drives the inline spinner-in-button on the "Query service log" button — the
+    /// wait is a real one: a PowerShell or journalctl child process, not an in-memory read.</summary>
+    [ObservableProperty] private bool _isFetchingServiceLogs;
+
+    /// <summary>Forwards the shell's reduced-motion setting so the busy placeholder's shimmer can be
+    /// gated on it without this view-model owning the setting itself (RemEx-kjdi). <c>_shell</c> is
+    /// <see langword="null"/> in some existing tests (RemEx-8y3qy's pattern), hence the null-conditional.</summary>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
     /// <summary>"shown / retained" counter for the status line.</summary>
     public string EntryCountText => $"{VisibleEntries.Count} / {_all.Count}";
 
@@ -446,7 +456,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// "reveal and select the file" — RemEx has no select-in-file-manager plumbing yet, and this
     /// bead scoped to opening the folder (RemEx-a8du).
     /// </summary>
-    private static void LaunchFolder(string directory)
+    internal static void LaunchFolder(string directory)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -491,6 +501,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
+        IsFetchingServiceLogs = true;
         ServiceLogsText = LocalizationService.Instance["Logs_Service_Reading"] + "\n";
         try
         {
@@ -532,6 +543,10 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             ServiceLogsText = string.Format(LocalizationService.Instance["Logs_Service_ReadError"], ex.Message);
+        }
+        finally
+        {
+            IsFetchingServiceLogs = false;
         }
     }
 

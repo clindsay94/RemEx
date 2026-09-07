@@ -978,7 +978,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void NavigateToTaskManager()
     {
         NotifyIfDisconnected("Task Manager");
-        _taskManagerViewModel ??= new TaskManagerViewModel(Connection);
+        _taskManagerViewModel ??= new TaskManagerViewModel(Connection, this);
         SetTransitionAndNavigate(4, _taskManagerViewModel);
     }
 

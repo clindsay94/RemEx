@@ -3,7 +3,8 @@
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services" x:Class="Remex.Desktop.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
+    xmlns:controls="using:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
 
     <UserControl.Styles>
         <Style Selector="ListBoxItem">
@@ -40,6 +41,7 @@
 
         <!-- Unified List Container (M3 Surface) -->
         <material:Card Grid.Row="3" Classes="surface" Padding="0" InsideClipping="True">
+            <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoading}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
             <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -109,6 +111,7 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            </controls:BusyPlaceholder>
         </material:Card>
     </Grid>
 </UserControl>

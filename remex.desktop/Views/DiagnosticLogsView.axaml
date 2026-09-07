@@ -6,6 +6,7 @@
              xmlns:vm="using:Remex.Desktop.ViewModels"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:logging="using:Remex.Core.Logging"
+             xmlns:controls="using:Remex.Desktop.Controls"
              x:Class="Remex.Desktop.Views.DiagnosticLogsView"
              x:DataType="vm:DiagnosticLogsViewModel">
 
@@ -108,7 +109,11 @@
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
                             <TextBlock Grid.Column="0" Text="{local:Localize Logs_ServiceDesc}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Logs_QueryService}" Command="{Binding FetchServiceLogsCommand}"/>
+                            <Button Grid.Column="1" Classes="secondary" Command="{Binding FetchServiceLogsCommand}" IsEnabled="{Binding !IsFetchingServiceLogs}">
+                                <controls:BusyPlaceholder Mode="Spinner" IsBusy="{Binding IsFetchingServiceLogs}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
+                                    <TextBlock Text="{local:Localize Logs_QueryService}"/>
+                                </controls:BusyPlaceholder>
+                            </Button>
                         </Grid>
 
                         <!-- Terminal Output -->

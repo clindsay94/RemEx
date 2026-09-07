@@ -11,6 +11,7 @@ namespace Remex.Desktop.ViewModels;
 public partial class TaskManagerViewModel : ObservableObject, IDisposable
 {
     private readonly ConnectionViewModel _connection;
+    private readonly ShellViewModel? _shell;
     private CancellationTokenSource? _pollingCts;
 
     /// <summary>Exposes the connection state for view bindings.</summary>
@@ -44,15 +45,27 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _sortDescending = false;
 
+    /// <summary>True until the first process list arrives, then true again only while an explicit
+    /// refresh has no data on screen yet (RemEx-kjdi) — drives the skeleton-row placeholder over the
+    /// list's first fill without blanking an already-populated list on a routine poll.</summary>
+    [ObservableProperty]
+    private bool _isLoading = true;
+
     private List<ProcessInfo> _lastRawProcesses = new();
 
     public ICommand RefreshCommand { get; }
     public ICommand KillProcessCommand { get; }
     public ICommand SortCommand { get; }
 
-    public TaskManagerViewModel(ConnectionViewModel connection)
+    /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
+    /// (RemEx-kjdi). <c>_shell</c> is optional (see the constructor) — a null shell just answers
+    /// <see langword="false"/> here rather than throwing.</summary>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
+    public TaskManagerViewModel(ConnectionViewModel connection, ShellViewModel? shell = null)
     {
         _connection = connection;
+        _shell = shell;
         RefreshCommand = new AsyncRelayCommand(RefreshProcessesAsync);
         KillProcessCommand = new AsyncRelayCommand<ProcessInfo>(KillProcessAsync);
         SortCommand = new RelayCommand<string>(SortByColumn);
@@ -82,11 +95,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     private void Connection_ProcessListReceived(List<ProcessInfo> list)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            _lastRawProcesses = list;
-            UpdateProcessList();
-        });
+        Dispatcher.UIThread.Post(() => ApplyReceivedProcessList(list));
+    }
+
+    /// <summary>
+    /// The real handler for a received process list. INTERNAL RATHER THAN PRIVATE (the RemEx-mzbn
+    /// pattern <c>SettingsViewModel.ReplaceTrustedDevices</c> already uses): the production path
+    /// above hops through <c>Dispatcher.UIThread.Post</c>, which never runs in a headless test, so a
+    /// test driving <see cref="Connection_ProcessListReceived"/> would assert against a first-fill
+    /// that never actually fills. Tests call this directly instead — the method production uses.
+    /// </summary>
+    internal void ApplyReceivedProcessList(List<ProcessInfo> list)
+    {
+        _lastRawProcesses = list;
+        UpdateProcessList();
+        IsLoading = false;
     }
 
     private void UpdateProcessList()
@@ -111,7 +134,20 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     private async Task RefreshProcessesAsync()
     {
-        await _connection.RequestProcessListAsync();
+        if (Processes.Count == 0)
+        {
+            IsLoading = true;
+        }
+
+        try
+        {
+            await _connection.RequestProcessListAsync();
+        }
+        catch
+        {
+            IsLoading = false;
+            throw;
+        }
     }
 
     /// <summary>
