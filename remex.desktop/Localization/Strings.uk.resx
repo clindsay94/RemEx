@@ -1583,6 +1583,21 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Копіювати вибране</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Копіювати повідомлення</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Копіювати зі стеком</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Стежити за кінцем</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Перейти до найновішого</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Відкрити папку</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Очистити логи</value>
   </data>

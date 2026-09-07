@@ -1583,6 +1583,21 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>चयनित कॉपी करें</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>संदेश कॉपी करें</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>स्टैक सहित कॉपी करें</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>अंत का अनुसरण करें</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>नवीनतम पर जाएँ</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>फ़ोल्डर खोलें</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>लॉग साफ़ करें</value>
   </data>

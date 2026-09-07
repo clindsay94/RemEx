@@ -1583,6 +1583,21 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Copier la sélection</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Copier le message</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Copier avec la pile</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Suivre la fin</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Aller au plus récent</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Effacer les journaux</value>
   </data>

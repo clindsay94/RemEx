@@ -1583,6 +1583,21 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Seçilenleri Kopyala</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Mesajı kopyala</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Yığınla kopyala</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Sonu takip et</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>En yeniye git</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Klasörü aç</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Günlükleri Temizle</value>
   </data>

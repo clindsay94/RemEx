@@ -1583,6 +1583,21 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Salin Pilihan</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Salin pesan</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Salin dengan stack</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Ikuti akhir</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Lompat ke terbaru</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Buka folder</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Bersihkan Log</value>
   </data>

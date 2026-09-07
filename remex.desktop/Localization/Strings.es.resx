@@ -1589,6 +1589,21 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Copiar seleccionados</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Copiar mensaje</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Copiar con pila</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Seguir el final</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Ir a lo más reciente</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Abrir carpeta</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Borrar registros</value>
   </data>

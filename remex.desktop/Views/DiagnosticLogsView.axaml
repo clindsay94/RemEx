@@ -57,6 +57,18 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="logging:LogEntry">
                                         <StackPanel Spacing="1" Margin="0,1">
+                                            <StackPanel.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="{local:Localize Logs_CopyMessage}"
+                                                              AutomationProperties.Name="{local:Localize Logs_CopyMessage}"
+                                                              Command="{Binding $parent[UserControl].((vm:DiagnosticLogsViewModel)DataContext).CopyEntryMessageCommand}"
+                                                              CommandParameter="{Binding}"/>
+                                                    <MenuItem Header="{local:Localize Logs_CopyWithStack}"
+                                                              AutomationProperties.Name="{local:Localize Logs_CopyWithStack}"
+                                                              Command="{Binding $parent[UserControl].((vm:DiagnosticLogsViewModel)DataContext).CopyEntryWithStackCommand}"
+                                                              CommandParameter="{Binding}"/>
+                                                </ContextMenu>
+                                            </StackPanel.ContextMenu>
                                             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                                                 <mi:MaterialIcon Grid.Column="0" Width="14" Height="14" Kind="{Binding Level, Converter={x:Static local:LogLevelToIconKindConverter.Instance}}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" Margin="0,0,6,0"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding TimeStamp, StringFormat='{}{0:HH:mm:ss}'}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>

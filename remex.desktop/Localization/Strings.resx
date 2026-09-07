@@ -1625,6 +1625,21 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Logs_CopySelected" xml:space="preserve">
     <value>Copy Selected</value>
   </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Copy message</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Copy with stack</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Follow tail</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Jump to newest</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Clear Logs</value>
   </data>

@@ -187,6 +187,25 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         return string.Join(Environment.NewLine, displayed.Where(chosen.Contains));
     }
 
+    /// <summary>Puts one row's bare message on the clipboard — no timestamp, level, category, or
+    /// exception. For pasting a single line into a chat or a ticket without the surrounding noise.</summary>
+    [RelayCommand]
+    public async Task CopyEntryMessageAsync(LogEntry? entry)
+    {
+        if (entry is null || CopyToClipboardAsync is null) return;
+        await CopyToClipboardAsync(entry.Message);
+    }
+
+    /// <summary>Puts one row on the clipboard exactly as rendered — <see cref="LogEntry.ToString"/>,
+    /// which already appends the exception block when the entry carries one. The counterpart to
+    /// <see cref="CopyEntryMessageAsync"/> for when the stack trace is the point of pasting it.</summary>
+    [RelayCommand]
+    public async Task CopyEntryWithStackAsync(LogEntry? entry)
+    {
+        if (entry is null || CopyToClipboardAsync is null) return;
+        await CopyToClipboardAsync(entry.ToString());
+    }
+
     [RelayCommand]
     public void RefreshLogs()
     {
