@@ -143,12 +143,12 @@ public class AboutViewCharacterisationTests
     public void KeyboardShortcutsButtonHasExactlyOneFlyoutOpenStateOwner()
     {
         // RemEx-acvny: the button used to carry BOTH a Command (which flips a VM bool) AND a
-        // Flyout whose IsOpen was bound TwoWay to that same bool. Avalonia's Button.OnClick runs
-        // a bound Command first and marks the click Handled, so its own native
-        // ShowAttachedFlyout() call never fires - and setting FlyoutBase.IsOpen from a binding has
-        // no show/positioning side effect on its own, so the VM-driven path never opened it
-        // either. Net effect: clicking the button did nothing. The fix keeps a single owner of
-        // the open state - the Button's native click-to-open - so neither attribute may return.
+        // Flyout whose IsOpen was bound TwoWay to that same bool. Avalonia's Button.OnClick opens
+        // the attached Flyout FIRST, then raises Click, then runs the bound Command - so the click
+        // opened the flyout natively and the Command's flip of IsShowShortcutsOpen then drove the
+        // TwoWay IsOpen binding straight back to false, closing it again inside the same click.
+        // Net effect: clicking the button did nothing visible. The fix keeps a single owner of
+        // the open state - the Button's native open/close toggle - so neither attribute may return.
         var about = About();
 
         var buttonOpenTag = Regex.Match(about, @"<Button\b[^>]*About_KeyboardShortcuts[^>]*>", RegexOptions.Singleline).Value;

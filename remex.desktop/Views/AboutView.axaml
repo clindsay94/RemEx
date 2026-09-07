@@ -39,12 +39,12 @@
                     </material:ColorZone>
 
                     <!-- Keyboard Shortcuts Button. No Command here on purpose (RemEx-acvny): Avalonia's
-                         Button.OnClick executes a bound Command first and marks the click Handled,
-                         which skips its own ShowAttachedFlyout() call entirely - and a Flyout's IsOpen
-                         has no show/positioning side effect when set from a binding, so a VM-owned
-                         "IsOpen" TwoWay pair was a second, non-functional owner of the open state.
-                         Leaving the Button's native click-to-open as the only owner is what actually
-                         opens the flyout. -->
+                         Button.OnClick opens the attached Flyout FIRST, then raises Click, then runs
+                         the bound Command. With a Command wired here too, the click opened the flyout
+                         natively and then the Command flipped the VM's IsShowShortcutsOpen bool, which
+                         drove the flyout's TwoWay IsOpen binding straight back to false - closing it
+                         again inside the same click. Removing the Command leaves the Button's native
+                         open/close toggle as the only owner of the open state. -->
                     <Button Classes="secondary" Content="{local:Localize About_KeyboardShortcuts}" HorizontalAlignment="Center" Margin="0,-8,0,0">
                         <Button.Flyout>
                             <Flyout Placement="Bottom">
