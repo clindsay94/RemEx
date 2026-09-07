@@ -245,6 +245,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Follow-up to the Vibrancy fix below: a Windows accent change that arrives while the Personalize
+  sheet is open no longer resets the slider to what the new hue happened to achieve, and a
+  hand-edited layout with an out-of-range vibrancy is clamped on load. (RemEx-aidt1)
 - With the colour source on "Windows accent", the Vibrancy you asked for no longer creeps
   downward every time Windows changes its accent. The slider's request is now saved on its own
   (layout schema 5, migrated from what an older layout had achieved), and each new accent hue is
