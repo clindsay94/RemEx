@@ -155,7 +155,14 @@ function Get-ScopePatterns {
 
     $dotnet = @(
         '*.cs', '*.csproj', '*.props', '*.targets', '*.sln', '*.resx',
-        '*.editorconfig', '*.manifest', '*.json'
+        '*.editorconfig', '*.manifest', '*.json',
+        '*.axaml', # Avalonia compiles XAML into the assembly; a XAML-only edit is a source change.
+        '*.ps1'    # remex.desktop.tests scrapes scripts/*.ps1 as source (PaletteSweepScriptTests
+                    # and friends), so a script-only edit is also a source change to what those
+                    # tests assert about.
+        # The ralph loop's .psd1 config is deliberately NOT in this list: fingerprinting it would
+        # invalidate every receipt whenever that config changes, which is unrelated to whether the
+        # code still verifies (see the .ralph.psd1 header).
     )
     $android = @(
         'remex.android/*', 'remex.core/*'
