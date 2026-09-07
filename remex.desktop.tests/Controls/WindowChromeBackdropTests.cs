@@ -160,6 +160,31 @@ public class WindowChromeBackdropTests
             "the gate must be wired to WindowChromePlatform, not a separate ad-hoc check");
     }
 
+    [Fact]
+    public void FullScreenButtons_PlatformGateIsDeclaredBeforeTheHasFullscreenHide()
+    {
+        // Opus review of 256a08b: Avalonia has no CSS specificity - at equal Style priority the
+        // LAST-declared matching style wins, not the "more specific" one. So the platform gate
+        // (WindowChromePlatform.ShowFullScreenButton) has to be declared FIRST and the capability
+        // hide (:not(:has-fullscreen)) LAST, or a macOS window whose AllowedWindowActions excludes
+        // fullscreen would show a dead button - the platform gate's unconditional True would be the
+        // last word instead of the capability hide's False.
+        var xaml = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Themes", "Chrome", "WindowChrome.axaml"));
+
+        var platformGateIndex = xaml.IndexOf(
+            "{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}", StringComparison.Ordinal);
+        var capabilityHideIndex = xaml.IndexOf(
+            "Selector=\"^:not(:has-fullscreen) /template/ Button#PART_FullScreenButton\"",
+            StringComparison.Ordinal);
+
+        platformGateIndex.Should().BeGreaterThan(-1);
+        capabilityHideIndex.Should().BeGreaterThan(-1);
+        platformGateIndex.Should().BeLessThan(capabilityHideIndex,
+            "the last-declared style wins in Avalonia, so the capability hide must come after " +
+            "the platform gate to still be able to override it");
+    }
+
     private static XDocument Chrome()
         => XDocument.Parse(File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "Themes", "Chrome", "WindowChrome.axaml")));

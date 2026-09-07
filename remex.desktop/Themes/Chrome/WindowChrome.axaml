@@ -70,7 +70,11 @@
           suppress the button (the existing :has-fullscreen pseudo-class below is driven by the
           internal, read-only Window.AllowedWindowActions, sourced from the platform impl), so this
           is a plain OperatingSystem.IsMacOS() check exposed as a static property and consumed via
-          x:Static, combined with (not replacing) the existing :not(:has-fullscreen) styles.
+          x:Static. Avalonia has no CSS-style specificity: for the same property at Style priority,
+          the LAST-declared matching Style wins. So this platform-gate pair is declared BEFORE the
+          :not(:has-fullscreen) pair below, not after — the capability hide has to be the one that
+          can still win (e.g. a macOS window whose AllowedWindowActions excludes fullscreen), not
+          get silently overridden by it.
      WindowChromeBackdropTests guards 2 and 3 from this source. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -256,22 +260,25 @@
     <Style Selector="^:not(:has-maximize) /template/ Button#PART_MaximizeButton">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="^:not(:has-fullscreen) /template/ Button#PART_FullScreenButton">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="^:not(:has-fullscreen) /template/ Button#PART_PopoverFullScreenButton">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
     <!-- RemEx-5253o: hidden on Windows/Linux regardless of :has-fullscreen (see change 6 in the
          file header) — a title-bar fullscreen button is not a platform convention there, and this
          template's only exit from FullScreen (the FullscreenPopover below) is a macOS-only
-         affordance. Still combined with, not instead of, the :not(:has-fullscreen) styles above: if
-         the platform genuinely disallows fullscreen, that more specific selector still wins. -->
+         affordance. Avalonia has no CSS specificity: at equal Style priority the LAST-declared
+         matching style wins. This pair is declared BEFORE the :not(:has-fullscreen) pair directly
+         below on purpose, so the capability hide is the one declared last and still wins if the
+         platform genuinely disallows fullscreen (e.g. a macOS window whose AllowedWindowActions
+         excludes it) — putting this pair after it would have shown a dead button on that window. -->
     <Style Selector="^ /template/ Button#PART_FullScreenButton">
       <Setter Property="IsVisible" Value="{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}" />
     </Style>
     <Style Selector="^ /template/ Button#PART_PopoverFullScreenButton">
       <Setter Property="IsVisible" Value="{x:Static chrome:WindowChromePlatform.ShowFullScreenButton}" />
+    </Style>
+    <Style Selector="^:not(:has-fullscreen) /template/ Button#PART_FullScreenButton">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^:not(:has-fullscreen) /template/ Button#PART_PopoverFullScreenButton">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
     <Style Selector="^:fullscreen /template/ Panel#PART_TitleTextPanel">
       <Setter Property="IsVisible" Value="False" />

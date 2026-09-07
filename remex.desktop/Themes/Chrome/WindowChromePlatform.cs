@@ -20,9 +20,11 @@ public static class WindowChromePlatform
 {
     /// <summary>
     /// Whether the title-bar fullscreen button (and its FullscreenPopover twin) should be shown.
-    /// Always combined with the existing <c>:not(:has-fullscreen)</c> style in WindowChrome.axaml,
-    /// which still wins if the platform genuinely disallows fullscreen — this only narrows the
-    /// platforms where a supported fullscreen is *also offered from the chrome*.
+    /// WindowChrome.axaml declares this pair's Style BEFORE the existing
+    /// <c>:not(:has-fullscreen)</c> style — Avalonia has no CSS specificity, so at equal Style
+    /// priority the LAST-declared matching style wins, and the capability hide has to be able to
+    /// win if the platform genuinely disallows fullscreen (this only narrows the platforms where a
+    /// supported fullscreen is *also offered from the chrome*).
     /// </summary>
     public static bool ShowFullScreenButton { get; } = OperatingSystem.IsMacOS();
 }
