@@ -3328,6 +3328,9 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Kaynak</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Telefonuma uydur</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Windows vurgu rengi</value>
   </data>

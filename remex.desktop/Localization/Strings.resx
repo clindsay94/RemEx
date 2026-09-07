@@ -3330,6 +3330,9 @@ You can change:
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Source</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Match my phone</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Windows accent</value>
   </data>

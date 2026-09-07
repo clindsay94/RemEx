@@ -3324,6 +3324,9 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>स्रोत</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>मेरे फ़ोन से मिलाएं</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Windows एक्सेंट</value>
   </data>

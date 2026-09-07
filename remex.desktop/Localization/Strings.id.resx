@@ -3327,6 +3327,9 @@ Anda dapat mengubah:
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Sumber</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Samakan dengan ponsel saya</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Aksen Windows</value>
   </data>

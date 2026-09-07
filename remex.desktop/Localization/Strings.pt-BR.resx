@@ -3324,6 +3324,9 @@ Você pode mudar:
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Origem</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Combinar com meu celular</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Cor de destaque do Windows</value>
   </data>

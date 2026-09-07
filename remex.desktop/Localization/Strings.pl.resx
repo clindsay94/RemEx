@@ -3325,6 +3325,9 @@ Możesz zmienić:
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Źródło</value>
   </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Dopasuj do telefonu</value>
+  </data>
   <data name="Custom_Source_WindowsAccent" xml:space="preserve">
     <value>Akcent Windows</value>
   </data>
