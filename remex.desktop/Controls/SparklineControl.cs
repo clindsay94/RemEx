@@ -74,6 +74,25 @@ public class SparklineControl : Control
     private const byte GlowAlpha = 100;
     private const byte TrackAlpha = 40;
 
+    /// <summary>
+    /// Two colours closer than this in hue (degrees) AND chroma read as the same colour to a
+    /// viewer, not two distinguishable series (RemEx-n2kv0). Deliberately loose rather than tuned
+    /// to a just-noticeable-difference study: the only real-world case this has to catch is
+    /// Monochrome's Primary/Tertiary both landing on the same chroma-0 grey, and it must not fire
+    /// for ordinary variety between two saturated theme roles.
+    /// </summary>
+    private const double IndistinguishableHueDegrees = 12.0;
+
+    /// <summary>Chroma below this reads as "no meaningful hue" - two greys are never distinguishable by hue alone.</summary>
+    private const double IndistinguishableChroma = 6.0;
+
+    /// <summary>
+    /// The dim step for a secondary series that collapses onto the primary's colour. Reuses
+    /// <c>CanvasView.axaml</c>'s <c>material|Card.stale</c> opacity rather than inventing a new
+    /// per-theme value (gate decision, RemEx-n2kv0).
+    /// </summary>
+    private const double IndistinguishableSecondaryOpacity = 0.55;
+
     private ISolidColorBrush? _accentBrush;
     private ISolidColorBrush? _areaFillBrush;
     private ISolidColorBrush? _glowBrush;
@@ -396,9 +415,41 @@ public class SparklineControl : Control
         if (secondary != null && secondary.Count >= 2)
         {
             var secAccent = SecondaryAccentColor;
+
+            // Detected by colour distance, not by variant name (gate decision, RemEx-n2kv0): a
+            // future variant that collapses Primary and Tertiary onto the same hue is covered too,
+            // not just Monochrome specifically.
+            if (SeriesColorsAreIndistinguishable(AccentColor, secAccent))
+            {
+                secAccent = new Color(
+                    (byte)Math.Round(secAccent.A * IndistinguishableSecondaryOpacity),
+                    secAccent.R, secAccent.G, secAccent.B);
+            }
+
             var secBrush = new ImmutableSolidColorBrush(secAccent);
             DrawSeriesLine(context, bounds, secondary, secBrush, filledAlpha: 0);
         }
+    }
+
+    /// <summary>
+    /// Whether two series colours would read as the same colour to a viewer. Computed in HCT
+    /// (hue/chroma), not by comparing raw sRGB channels, so a hue rotation reads as distinguishable
+    /// even when it lands at similar luminance. Internal so <c>SparklineDualMetricDimmingTests</c>
+    /// can assert the predicate directly rather than only through a rendered pixel.
+    /// </summary>
+    internal static bool SeriesColorsAreIndistinguishable(Color a, Color b)
+    {
+        var (hueA, chromaA, _) = SeedHct.FromColor(a);
+        var (hueB, chromaB, _) = SeedHct.FromColor(b);
+
+        // Chroma near zero makes hue noise, not signal - two greys are indistinguishable
+        // regardless of how far apart their "hues" measure (Monochrome's exact case).
+        if (chromaA < IndistinguishableChroma && chromaB < IndistinguishableChroma) return true;
+
+        double hueDelta = Math.Abs(hueA - hueB);
+        hueDelta = Math.Min(hueDelta, 360.0 - hueDelta);
+
+        return hueDelta < IndistinguishableHueDegrees && Math.Abs(chromaA - chromaB) < IndistinguishableChroma;
     }
 
     /// <summary>Draws a normalized (0–1) series as a line, optionally with a faint area fill.</summary>
