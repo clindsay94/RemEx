@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
-using Remex.Desktop.Services;
-using Remex.Desktop.ViewModels;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
@@ -16,14 +12,31 @@ namespace Remex.Desktop.Tests.Views;
 /// <summary>
 /// Guards the two halves of the stale-staged-sensor mark (RemEx-lki2r, following up on RemEx-yqpa):
 /// the 0.55 opacity a sighted user sees, and the <c>AutomationProperties.HelpText</c> a screen
-/// reader gets instead. Both must stay driven off the same <c>IsStale</c> field, because the whole
-/// point of routing the hint through <c>NotifyPropertyChangedFor</c> rather than setting it
-/// alongside the opacity class at the call site is that the two cannot independently drift.
+/// reader gets instead. Both are pure source-text pins - there is no headless render here that
+/// would notice a binding quietly pointing at the wrong property, the same reason
+/// <c>StatusDotPresenceBindingTests</c> works this way.
 /// </summary>
 /// <remarks>
-/// SOURCE-TEXT FOR THE XAML HALF, BEHAVIOUR FOR THE VIEWMODEL HALF - the same split
-/// <c>StatusDotPresenceBindingTests</c> uses, for the same reason: there is no headless render here
-/// that would notice a binding quietly pointing at the wrong property.
+/// NO VIEW-MODEL PROPERTY HERE, AND THAT WAS A REVIEW CORRECTION, NOT THE ORIGINAL DESIGN. A first
+/// version added <c>CanvasCardViewModel.StaleAutomationHint</c>, generated off <c>IsStale</c> and
+/// requiring the view model to subscribe to <c>LocalizationService.Instance.PropertyChanged</c> so
+/// the hint refreshed on a language switch. Review caught that this app never disposes a removed
+/// <c>CanvasCardViewModel</c> - <c>StagedCards.Remove</c>/<c>Cards.Remove</c> just drop the
+/// reference - so with roughly 470 staged cards in a session, that subscription rooted every
+/// removed card, and its <c>SensorViewModel</c> history buffers, for the process lifetime. The
+/// HelpText now comes from a plain XAML style instead: zero per-item state, and
+/// <c>{local:Localize}</c>/the converter below both refresh (or accept not refreshing, deliberately
+/// - see <c>StaleSensorHelpTextConverter</c>'s own remarks) without a subscription to leak.
+/// <para>
+/// HELPTEXT LIVES ON THE LISTBOXITEM CONTAINER, NOT THE material:Card (also review). Verified live
+/// on the hot-reload host: a hardcoded HelpText set directly on a material:Card never surfaced via
+/// UIA - not on the Card, not on any descendant - while the identical value on the containing
+/// ListBoxItem read back correctly. Material.Styles.Controls.Card simply does not route
+/// AutomationProperties.HelpText to its automation peer. UIA also reads HelpText from the FOCUSED
+/// element, which for a list is the item container, not a descendant - a second, independent
+/// reason it belongs there. So the opacity and the HelpText are necessarily two different Style
+/// elements (different TargetType), not one - both keyed off the same <c>IsStale</c> binding.
+/// </para>
 /// </remarks>
 public class StaleSensorAccessibilityTests
 {
@@ -34,7 +47,7 @@ public class StaleSensorAccessibilityTests
     private const string ExpectedStaleOpacity = "0.55";
 
     [Fact]
-    public void BorderStaleStyle_SetsTheOpacityTokenTheEyesPassVerified()
+    public void CardStaleStyle_SetsTheOpacityTokenTheEyesPassVerified()
     {
         var axaml = File.ReadAllText(CanvasViewPath());
 
@@ -61,90 +74,28 @@ public class StaleSensorAccessibilityTests
     }
 
     [Fact]
-    public void StagedCardTemplate_BindsAutomationHelpTextOnTheSameElementAsTheStaleClass()
+    public void StagedCardTemplate_BindsAutomationHelpTextOnTheListBoxItemContainer()
     {
         var axaml = File.ReadAllText(CanvasViewPath());
 
-        // Whole-element match (Singleline, "<material:Card ... >") so attributes wrapped across
-        // lines are still seen together - the same shape StatusDotPresenceBindingTests uses for
-        // exactly this reason.
-        var cardMatch = Regex.Match(
+        // Whole-element match (Singleline) so attributes wrapped across lines are still seen
+        // together - the same shape StatusDotPresenceBindingTests uses for exactly this reason.
+        // TargetType ListBoxItem, not material:Card (see the class remarks for why): a Card's
+        // automation peer does not surface HelpText via UIA at all, verified live.
+        var itemStyleMatch = Regex.Match(
             axaml,
-            @"<material:Card\s+Classes=""interactive""\s+Classes\.stale=""\{Binding IsStale\}""[^>]*>",
+            @"<Style\s+Selector=""ListBoxItem""[^>]*>\s*<Setter\s+Property=""AutomationProperties\.HelpText""[^/]*/>",
             RegexOptions.Singleline);
 
-        cardMatch.Success.Should().BeTrue(
-            "the staged card template should still carry Classes.stale=\"{Binding IsStale}\" on the " +
-            "material:Card element");
-        cardMatch.Value.Should().Contain(
-            "AutomationProperties.HelpText=\"{Binding StaleAutomationHint}\"",
-            "the non-visual signal must live on the SAME element as the opacity class, bound to " +
-            "StaleAutomationHint - a screen reader user must not be able to reach a card whose " +
-            "opacity says stale but whose HelpText says nothing, or the reverse");
-    }
-
-    [Fact]
-    public void IsStale_ChangedRaisesBothItsOwnAndStaleAutomationHintNotifications()
-    {
-        var card = new CanvasCardViewModel();
-        var raised = new List<string?>();
-        card.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
-
-        card.IsStale = true;
-
-        raised.Should().Contain(nameof(CanvasCardViewModel.IsStale));
-        raised.Should().Contain(nameof(CanvasCardViewModel.StaleAutomationHint),
-            "StaleAutomationHint is generated off IsStale via NotifyPropertyChangedFor specifically " +
-            "so the two cannot go out of step - if this fails, the attribute was removed or the " +
-            "field it targets was renamed without updating it");
-    }
-
-    /// <summary>
-    /// The behavioural half of what LocalizedPropertyRefreshTests checks by source scan: a card
-    /// left staged and stale across a language switch must announce the NEW language, not the one
-    /// active when it first went stale.
-    /// </summary>
-    [Fact]
-    public void StaleAutomationHint_RefreshesOnALanguageChange()
-    {
-        var original = LocalizationService.Instance.CultureTag;
-        try
-        {
-            LocalizationService.Instance.SetCulture("en");
-            var card = new CanvasCardViewModel { IsStale = true };
-            var englishHint = card.StaleAutomationHint;
-
-            var raised = new List<string?>();
-            card.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
-
-            LocalizationService.Instance.SetCulture("fr");
-
-            raised.Should().Contain(nameof(CanvasCardViewModel.StaleAutomationHint),
-                "the card must re-raise StaleAutomationHint when the language changes, or a screen " +
-                "reader keeps hearing the pre-switch language for as long as the card stays stale");
-            card.StaleAutomationHint.Should().NotBe(englishHint,
-                "A11y_StagedSensorStale has a real French translation, so the French and English " +
-                "hints must differ - if they match here, the translation is missing or the getter " +
-                "isn't actually re-resolving the key");
-        }
-        finally
-        {
-            LocalizationService.Instance.SetCulture(original);
-        }
-    }
-
-    [Fact]
-    public void StaleAutomationHint_IsNullWhenLiveAndTheLocalizedHintWhenStale()
-    {
-        var card = new CanvasCardViewModel();
-
-        card.IsStale = false;
-        card.StaleAutomationHint.Should().BeNull(
-            "a live staged card must add no HelpText at all, not an empty string that would still " +
-            "override whatever HelpText the card might otherwise carry");
-
-        card.IsStale = true;
-        card.StaleAutomationHint.Should().Be(LocalizationService.Instance["A11y_StagedSensorStale"]);
+        itemStyleMatch.Success.Should().BeTrue(
+            "CanvasView.axaml should style ListBoxItem (the staged-card container) with an " +
+            "AutomationProperties.HelpText setter - HelpText set on the inner material:Card does " +
+            "not reach a screen reader (RemEx-lki2r)");
+        itemStyleMatch.Value.Should().Contain("IsStale",
+            "the HelpText setter must be bound off the SAME IsStale field the opacity style " +
+            "reacts to (via Classes.stale), so the two cannot disagree about a given row");
+        itemStyleMatch.Value.Should().Contain("StaleSensorHelpTextConverter",
+            "the localized/null resolution belongs in the converter, not duplicated inline");
     }
 
     /// <summary>Every locale must define the key this bead added, not just the neutral resx.</summary>

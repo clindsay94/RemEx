@@ -507,9 +507,30 @@
                                   fix the opacity setter never fired in any theme - not a contrast
                                   problem on one seed, the mark was dead on all of them. The eyes
                                   pass that was supposed to catch this (this bead) is what found it.
+
                                 -->
                                 <Style Selector="material|Card.stale">
                                     <Setter Property="Opacity" Value="0.55"/>
+                                </Style>
+
+                                <!--
+                                  HelpText goes on the ListBoxItem CONTAINER, not the Card above
+                                  (RemEx-lki2r, review). Verified live: a hardcoded HelpText set
+                                  directly on a material:Card never surfaced via UIA - on the Card or
+                                  any of its descendants - while the identical value set on the
+                                  containing ListBoxItem read back correctly. Material.Styles.Controls
+                                  .Card simply does not route AutomationProperties.HelpText to its
+                                  automation peer. UIA also reads HelpText from the FOCUSED element,
+                                  which for a list is the item container, not a descendant - a second,
+                                  independent reason this belongs here rather than on the Card.
+                                  StaleSensorHelpTextConverter reads the localizer at bind time (see
+                                  its own remarks for why that is an accepted trade here, not an
+                                  oversight) - the Binding is against the item's CanvasCardViewModel,
+                                  same as everything inside the DataTemplate below.
+                                -->
+                                <Style Selector="ListBoxItem" x:DataType="vm:CanvasCardViewModel">
+                                    <Setter Property="AutomationProperties.HelpText"
+                                            Value="{Binding IsStale, Converter={x:Static conv:StaleSensorHelpTextConverter.Instance}}"/>
                                 </Style>
                             </ListBox.Styles>
                             <ListBox.ItemTemplate>
@@ -523,12 +544,11 @@
                                       droppable as a live one and must not look disabled.
 
                                       HelpText carries the same fact to a screen reader (RemEx-lki2r):
-                                      the opacity above is a sighted-only signal, and StaleAutomationHint
-                                      is null (so HelpText is unset) on every live card because it comes
-                                      off the same IsStale field the class above does.
+                                      see the ListBoxItem style above, keyed off this same IsStale
+                                      value - not the Card, whose automation peer does not surface
+                                      HelpText at all (verified live; see that style's own comment).
                                     -->
                                     <material:Card Classes="interactive" Classes.stale="{Binding IsStale}"
-                                            AutomationProperties.HelpText="{Binding StaleAutomationHint}"
                                             Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="{Binding CardTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>

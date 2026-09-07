@@ -1,8 +1,6 @@
-using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
-using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -11,32 +9,8 @@ namespace Remex.Desktop.ViewModels;
 /// Holds position, size, z-order, and drag state — plus a reference to the
 /// concrete content VM (SensorViewModel or ConnectionViewModel).
 /// </summary>
-public partial class CanvasCardViewModel : ObservableObject, IDisposable
+public partial class CanvasCardViewModel : ObservableObject
 {
-    /// <summary>
-    /// Keeps <see cref="StaleAutomationHint"/> in the current language (RemEx-lki2r). Without this,
-    /// LocalizedPropertyRefreshTests catches exactly the defect its own history describes: the
-    /// getter resolves the right text for whatever language is active NOW, but nothing re-raises it
-    /// when the language changes later, so a screen reader keeps hearing the old one.
-    /// </summary>
-    public CanvasCardViewModel()
-    {
-        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
-    }
-
-    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) =>
-        OnPropertyChanged(nameof(StaleAutomationHint));
-
-    /// <summary>
-    /// Not wired into any removal path yet — this app's cards are never explicitly disposed today
-    /// (StagedCards.Remove/Cards.Remove drop the reference and let it collect; RemEx-lki2r did not
-    /// take on auditing every one of those sites against Undo/Redo's PushOperation, which can keep a
-    /// removed card reachable). Detaching here is what LocalizedPropertyRefreshTests requires to
-    /// accept the subscription above as leak-safe in principle; actually calling it for every
-    /// deletion path is real but separate work.
-    /// </summary>
-    public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
-
     /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
     /// <remarks>
     /// The Connection card's dot lives in a card-scoped DataTemplate, so it resolves against THIS
@@ -116,23 +90,21 @@ public partial class CanvasCardViewModel : ObservableObject, IDisposable
     /// card may still be bound to. Only meaningful for staged templates; a placed card is never
     /// marked.
     /// </remarks>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StaleAutomationHint))]
-    private bool _isStale;
-
-    /// <summary>
-    /// The non-visual half of the stale mark (RemEx-lki2r): the 0.55 opacity in
-    /// <c>CanvasView.axaml</c>'s <c>Border.stale</c> style reaches sighted users only, so this
-    /// carries the same fact through <c>AutomationProperties.HelpText</c> for a screen reader.
-    /// </summary>
     /// <remarks>
-    /// Driven by <see cref="NotifyPropertyChangedForAttribute"/> off <see cref="IsStale"/> rather
-    /// than set alongside it at the call site - the opacity class and this string are two
-    /// independent bindings in the view, and setting them from two separate lines is exactly how
-    /// they drift apart. One field, one generated notification, both consumers.
+    /// The non-visual half of the stale mark (RemEx-lki2r) - the screen-reader HelpText a screen
+    /// reader gets instead of the 0.55 opacity a sighted user sees - lives entirely in
+    /// <c>CanvasView.axaml</c>'s <c>material|Card.stale</c> style, as a second Setter alongside the
+    /// Opacity one, rather than as a computed property here. A per-card computed property needed a
+    /// per-card subscription to <c>LocalizationService.Instance.PropertyChanged</c> to refresh on a
+    /// language switch (review, RemEx-lki2r) - and with ~470 staged templates in a session and no
+    /// removal path that calls Dispose, that subscription rooted every card and its
+    /// <see cref="SensorViewModel"/> history buffers for the process lifetime. The XAML setter needs
+    /// none of that: <c>{local:Localize}</c> already refreshes on its own, and the SAME style
+    /// selector that gates the opacity gates the HelpText, so the two cannot disagree by
+    /// construction - zero per-item state either way.
     /// </remarks>
-    public string? StaleAutomationHint =>
-        IsStale ? LocalizationService.Instance["A11y_StagedSensorStale"] : null;
+    [ObservableProperty]
+    private bool _isStale;
 
     /// <summary>Action to request a pin toggle, typically wired to the dashboard.</summary>
     private Action? _requestPinToggle;
