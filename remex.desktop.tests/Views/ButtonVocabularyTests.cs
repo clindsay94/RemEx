@@ -97,6 +97,45 @@ public class ButtonVocabularyTests
     }
 
     [Fact]
+    public void EveryButtonDeclaresAClass()
+    {
+        // THE ACCEPTANCE CRITERION RemEx-z7pnx.1 WAS FILED FOR. A Button with no Classes
+        // attribute at all falls through to Material's default ControlTheme, which is
+        // registered on {x:Type Button} and renders as a RAISED ACCENT-FILLED button with a
+        // Depth1 shadow - "no class" was never "no style", it was "primary" by accident.
+        // Every button in the app now picks one on purpose; WindowChrome.axaml's
+        // minimise/maximise/close are template parts of the window chrome, not app buttons,
+        // and are the only exemption (docs/BUTTON-VOCABULARY.md).
+        var offenders = new List<string>();
+
+        foreach (var (file, text) in XamlFiles())
+        {
+            if (Path.GetFileName(file) == "WindowChrome.axaml")
+            {
+                continue;
+            }
+
+            // The tag name must be followed by whitespace, '>' or '/' - never '.', or this
+            // would match a property-element tag like <Button.Flyout> instead of a real Button.
+            foreach (Match match in Regex.Matches(
+                         text, @"<(?:Button|ToggleButton|RepeatButton|DropDownButton|SplitButton)(?=[\s>/])([^>]*?)/?>"))
+            {
+                if (Regex.IsMatch(match.Groups[1].Value, @"\bClasses\s*="))
+                {
+                    continue;
+                }
+
+                offenders.Add(Path.GetFileName(file));
+            }
+        }
+
+        offenders.Should().BeEmpty(
+            "every Button (and its WPF-style siblings) needs a Classes attribute or it renders "
+            + "as Material's default raised primary by accident; WindowChrome.axaml's template "
+            + "parts are the only exemption (RemEx-z7pnx.1)");
+    }
+
+    [Fact]
     public void NoButtonCarriesTwoEmphases()
     {
         // "primary secondary" is not louder, it is undefined: Avalonia has no specificity, so

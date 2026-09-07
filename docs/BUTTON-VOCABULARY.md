@@ -170,9 +170,10 @@ The tray flyout's chips were on this list until RemEx-x3vom; they are
 Adding to this table without a bead that owns the exception is how the old sprawl came back last
 time. The guard test asserts the list, so widening it is a deliberate edit rather than a drift.
 
-## Still to do
+## Every button has a role
 
-**66 buttons carry no class at all** and therefore render as Material's default raised primary.
-Most of them are not primary actions. They need a per-screen judgement about which role they play,
-which is what the Phase 4 view-migration beads (RemEx-1ufoa) are for — a sweep that guesses would
-be worse than the state it replaced. Tracked as **RemEx-z7pnx.1**.
+RemEx-z7pnx.1 closed the gap the section above used to describe: every `<Button>` (and its
+WPF-style siblings) in `remex.desktop` now declares a `Classes` attribute, one per-screen judgement
+at a time about which single action that screen exists for. `EveryButtonDeclaresAClass`
+(`ButtonVocabularyTests.cs`) guards it — WindowChrome.axaml's template parts are the only
+exemption.

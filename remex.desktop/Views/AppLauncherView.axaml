@@ -182,8 +182,10 @@
                             </material:Card.BorderBrush>
 
                             <Grid RowDefinitions="*, Auto">
-                                <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <!-- Main Launch Button (Top Area). tertiary: the click target is
+                                     transparent chrome over the Card's own per-app colour, which is
+                                     already the tile's whole look (RemEx-z7pnx.1). -->
+                                <Button Grid.Row="0" Classes="tertiary" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
                                         <!-- 80px, up from 64 (RemEx-u4244). The source is now a 256px
                                              shell icon rather than a 32px one, so the art can carry

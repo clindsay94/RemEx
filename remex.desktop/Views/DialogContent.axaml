@@ -18,8 +18,11 @@
          DialogButtons - MaterialDialogs.cs hands CustomDialogBuilderParams an empty DialogButtons array
          so the library renders no button of its own (see that file's type remarks for why a
          library-rendered button cannot carry this app's Classes vocabulary against 3.19.0). Cancel is
-         always "secondary"; ActionButton's Classes are supplied by the caller through the constructor
-         below - ConfirmAsync passes "primary danger", RestoreAsync passes "primary". -->
+         always "secondary"; ActionButton's Classes="primary" below is only the DEFAULT - the
+         constructor clears it and applies the caller's own classes (ConfirmAsync passes "primary
+         danger", RestoreAsync passes "primary"), so ButtonVocabularyTests sees a real Classes
+         attribute (RemEx-z7pnx.1) without risking two emphases stacking if a future caller ever
+         forgot to pass one. -->
     <StackPanel Spacing="18" Margin="24,24,24,24">
         <StackPanel Spacing="6">
             <TextBlock x:Name="HeaderText"
@@ -32,7 +35,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button x:Name="CancelButton" Classes="secondary" Click="OnCancelClick"/>
-            <Button x:Name="ActionButton" Click="OnActionClick"/>
+            <Button x:Name="ActionButton" Classes="primary" Click="OnActionClick"/>
         </StackPanel>
     </StackPanel>
 </UserControl>

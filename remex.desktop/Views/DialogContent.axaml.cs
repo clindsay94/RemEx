@@ -47,6 +47,10 @@ public partial class DialogContent : UserControl
         MessageTextBlock.Text = message;
         CancelButton.Content = cancelText;
         ActionButton.Content = actionText;
+        // Clear the XAML default ("primary") before applying the caller's classes - without this,
+        // a caller passing anything other than "primary" would leave both classes on the button at
+        // once, which is the "NoButtonCarriesTwoEmphases" bug this guard exists to catch elsewhere.
+        ActionButton.Classes.Clear();
         foreach (var cls in actionClasses.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             ActionButton.Classes.Add(cls);
     }

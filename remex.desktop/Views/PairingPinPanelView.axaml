@@ -22,7 +22,7 @@
     <StackPanel Spacing="16">
         <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="{conv:Localize Settings_PairingPinTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
+            <Button Classes="tertiary icon-button" AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
                 <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}"/>
             </Button>
         </Grid>
@@ -52,7 +52,7 @@
             <!-- GenerateQrCodeCommand, NOT RevealPairingPinCommand (RemEx-7ykyn, item 3): now that both
                  panels open together, refreshing only the PIN would leave the QR beside it encoding the
                  session that just expired — a code that scans and pairs with nothing. -->
-            <Button Command="{Binding GenerateQrCodeCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Settings_PairingPinGetNew}">
+            <Button Classes="primary" Command="{Binding GenerateQrCodeCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Settings_PairingPinGetNew}">
                 <TextBlock Text="{conv:Localize Settings_PairingPinGetNew}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
             </Button>
         </StackPanel>

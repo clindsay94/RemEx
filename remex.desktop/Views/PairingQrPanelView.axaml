@@ -20,7 +20,7 @@
     <StackPanel Spacing="16">
         <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="{conv:Localize Home_QrCodeButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
+            <Button Classes="tertiary icon-button" AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand">
                 <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}"/>
             </Button>
         </Grid>

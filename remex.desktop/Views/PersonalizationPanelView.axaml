@@ -87,7 +87,7 @@
                                     <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
                                 </TextBox.KeyBindings>
                             </TextBox>
-                            <Button Grid.Column="1" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
+                            <Button Grid.Column="1" Classes="primary compact" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
                             <Border Grid.Column="2" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
                         </Grid>
                     </StackPanel>
@@ -616,7 +616,7 @@
             </StackPanel>
         </material:Card>
 
-        <Button Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+        <Button Classes="tertiary" Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
 
     </StackPanel>
 </UserControl>
