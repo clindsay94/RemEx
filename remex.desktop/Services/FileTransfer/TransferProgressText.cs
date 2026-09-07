@@ -88,8 +88,30 @@ public static class TransferProgressText
         // (the parity checker requires every key present in every file; see PluralRules' remarks).
         var category = PluralRules.Category(LocalizationService.Instance.CultureTag, remaining.Amount);
         var key = $"{baseKey}_{category}";
+        var fallbackKey = $"{baseKey}_{PluralCategory.Other}";
 
-        return string.Format(LocalizationService.Instance.Culture, LocalizationService.Instance[key], remaining.Amount);
+        var template = ResolveWithFallback(k => LocalizationService.Instance[k], key, fallbackKey);
+        return string.Format(LocalizationService.Instance.Culture, template, remaining.Amount);
+    }
+
+    /// <summary>
+    /// Looks up <paramref name="key"/>; if <paramref name="lookup"/> could not resolve it (returned
+    /// the key itself, <see cref="LocalizationService"/>'s own "not found" signal), falls back to
+    /// <paramref name="fallbackKey"/> instead of showing the raw key name on screen.
+    /// </summary>
+    /// <remarks>
+    /// A REVIEW FINDING, NOT A CASE THIS BEAD'S NINE FILES CAN ACTUALLY HIT TODAY: every locale
+    /// carries all four plural-suffixed keys (parity is enforced by
+    /// <c>scripts/check-localization.ps1</c>), so <paramref name="key"/> always resolves currently.
+    /// This exists for the locale that eventually does not — a tenth language added with only
+    /// <c>_Other</c> filled in should read as "not translated for every count", not as the developer
+    /// key name in every language. <c>internal</c> and taking the lookup as a delegate so a test can
+    /// exercise the fallback without needing a genuinely missing resx entry to exist somewhere.
+    /// </remarks>
+    internal static string ResolveWithFallback(Func<string, string> lookup, string key, string fallbackKey)
+    {
+        var value = lookup(key);
+        return value == key ? lookup(fallbackKey) : value;
     }
 
     private static string UnitAbbreviation(TransferRateUnit unit) => unit switch

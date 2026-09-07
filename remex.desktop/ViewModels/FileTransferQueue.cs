@@ -178,6 +178,14 @@ public sealed partial class FileTransferQueueItem : ObservableObject
         ApplyLocalizedRateAndEta();
     }
 
+    /// <summary>
+    /// <see cref="RefreshRateAndEta"/> against THIS item's own clock. What the owning
+    /// <see cref="FileTransferQueue"/>'s periodic timer calls on every active item, so a stall goes
+    /// stale even though nothing fed a new observation - see that timer's remarks for why one is
+    /// needed at all (RemEx-4lcq review fix).
+    /// </summary>
+    internal void RefreshRateAndEtaNow() => RefreshRateAndEta(_nowMillis());
+
     /// <summary>(Re)renders <see cref="RateText"/>/<see cref="EtaText"/> from the last CLASSIFIED figures.</summary>
     private void ApplyLocalizedRateAndEta()
     {
@@ -295,6 +303,27 @@ public sealed class FileTransferQueue : IDisposable
     private readonly object _pumpLock = new();
     private bool _pumping;
 
+    /// <summary>
+    /// Drives both the per-item clock (RemEx-4lcq) AND the periodic re-evaluation timer below. One
+    /// clock rather than two: a test that advances a fake clock has to move both the estimator's
+    /// notion of "now" and the timer's schedule together, and a review of the first cut of this bead
+    /// found that a timer-less design left an ACTIVE, STALLED transfer showing its last figure
+    /// forever — nothing calls <see cref="FileTransferQueueItem.RefreshRateAndEta"/> again once
+    /// progress stops arriving, which is the exact failure this bead exists to fix.
+    /// </summary>
+    private readonly TimeProvider _timeProvider;
+
+    /// <summary>
+    /// Re-evaluates every ACTIVE item's <see cref="FileTransferQueueItem.RateText"/>/<c>EtaText</c>
+    /// once a second so a stall goes stale even though nothing fed it a new observation. Started only
+    /// while at least one item is active and stopped otherwise, by <see cref="UpdateRefreshTimerRunning"/>.
+    /// </summary>
+    private readonly ITimer _refreshTimer;
+
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(1);
+
+    private bool _refreshTimerRunning;
+
     /// <summary>Live, ordered view of every transfer (active, queued, and completed).</summary>
     public ObservableCollection<FileTransferQueueItem> Items { get; } = new();
 
@@ -315,11 +344,56 @@ public sealed class FileTransferQueue : IDisposable
     /// Where a failure's real detail goes. Optional and null-defaulted to match the other view models,
     /// so existing construction sites and tests are unaffected.
     /// </param>
-    public FileTransferQueue(Action<Action>? post, ILogger<FileTransferQueue>? logger = null)
+    /// <param name="timeProvider">
+    /// Defaults to <see cref="TimeProvider.System"/>. Tests pass a fake (e.g. the shared
+    /// <c>ManualTimeProvider</c>) so both the estimator's clock and the periodic refresh tick are
+    /// driven by the same controllable "now" — see the field's remarks.
+    /// </param>
+    public FileTransferQueue(Action<Action>? post, ILogger<FileTransferQueue>? logger = null, TimeProvider? timeProvider = null)
     {
         _post = post ?? (action => Dispatcher.UIThread.Post(action));
         _logger = logger ?? NullLogger<FileTransferQueue>.Instance;
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _refreshTimer = _timeProvider.CreateTimer(OnRefreshTick, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        Changed += UpdateRefreshTimerRunning;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+    }
+
+    /// <summary>
+    /// A monotonic millisecond reading derived from <see cref="_timeProvider"/>. <c>GetTimestamp()</c>
+    /// is the monotonic member of <see cref="TimeProvider"/> (the <c>Stopwatch</c> analogue) —
+    /// <c>GetUtcNow()</c> is wall-clock time and can step backwards on a sync, which
+    /// <see cref="TransferRateEstimator.Update"/> would read as a negative interval.
+    /// </summary>
+    private long NowMillis() => (long)((double)_timeProvider.GetTimestamp() * 1000.0 / _timeProvider.TimestampFrequency);
+
+    /// <summary>Re-renders every active item's rate/ETA text as of "now" — the periodic tick's callback.</summary>
+    private void OnRefreshTick(object? state) => _post(() =>
+    {
+        foreach (var item in Items)
+        {
+            if (item.IsActive)
+                item.RefreshRateAndEtaNow();
+        }
+    });
+
+    /// <summary>Starts the refresh timer the moment an item becomes active, stops it once none are.</summary>
+    /// <remarks>
+    /// Runs off <see cref="Changed"/> rather than a dedicated hook because every place that can make
+    /// an item active or inactive already raises it: <see cref="Enqueue"/>, the pump's state
+    /// transitions, <see cref="CancelAll"/>, <see cref="ClearCompleted"/>. A timer running while the
+    /// queue is idle would tick forever for nothing to refresh; leaving it running across every item
+    /// completing would leak the process's last reference to this queue alive via the timer callback.
+    /// </remarks>
+    private void UpdateRefreshTimerRunning()
+    {
+        var shouldRun = Items.Any(item => item.IsActive);
+        if (shouldRun == _refreshTimerRunning)
+            return;
+
+        _refreshTimerRunning = shouldRun;
+        var period = shouldRun ? RefreshInterval : Timeout.InfiniteTimeSpan;
+        _refreshTimer.Change(period, period);
     }
 
     /// <summary>
@@ -336,16 +410,25 @@ public sealed class FileTransferQueue : IDisposable
         });
 
     /// <summary>
-    /// Detaches from the <see cref="LocalizationService"/> singleton. Not optional: the service
-    /// outlives every view, so a queue that subscribes without detaching is pinned for the process
-    /// lifetime along with every item it holds.
+    /// Detaches from the <see cref="LocalizationService"/> singleton and stops the refresh timer. The
+    /// localizer subscription is not optional: the service outlives every view, so a queue that
+    /// subscribes without detaching is pinned for the process lifetime along with every item it
+    /// holds. The timer is the same story - a running <see cref="ITimer"/> holds a reference to its
+    /// callback, which closes over this queue.
     /// </summary>
-    public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+    public void Dispose()
+    {
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+        Changed -= UpdateRefreshTimerRunning;
+        _refreshTimer.Dispose();
+    }
 
     /// <summary>Adds a transfer to the tail of the queue and starts the pump if idle. Returns the new item.</summary>
     public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work)
     {
-        var item = new FileTransferQueueItem(kind, fileName, work);
+        // The item's clock is THIS queue's, not its own default - see _timeProvider's remarks. Every
+        // item a queue produces shares one controllable "now" with that queue's refresh timer.
+        var item = new FileTransferQueueItem(kind, fileName, work, NowMillis);
         item.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(FileTransferQueueItem.State))

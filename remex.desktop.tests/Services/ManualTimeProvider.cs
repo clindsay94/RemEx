@@ -18,6 +18,19 @@ namespace Remex.Desktop.Tests.Services;
 internal sealed class ManualTimeProvider : TimeProvider
 {
     private readonly List<ManualTimer> _timers = new();
+    private long _elapsedMilliseconds;
+
+    /// <summary>
+    /// One tick is one millisecond, so <see cref="GetTimestamp"/> already reads as a millisecond
+    /// count - a caller converting via <c>GetTimestamp() * 1000 / TimestampFrequency</c> (the same
+    /// formula <see cref="TimeProvider.System"/> needs, since its frequency is NOT 1000) gets the
+    /// value back unchanged. Added for <c>FileTransferQueue</c>'s per-item clock (RemEx-4lcq review
+    /// fix): its estimator and its periodic refresh timer must share one controllable "now", and
+    /// <see cref="Advance"/> is the single point that moves both.
+    /// </summary>
+    public override long TimestampFrequency => 1000L;
+
+    public override long GetTimestamp() => _elapsedMilliseconds;
 
     public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
     {
@@ -28,6 +41,10 @@ internal sealed class ManualTimeProvider : TimeProvider
 
     public void Advance(TimeSpan by)
     {
+        // Moved BEFORE firing timers: every callback invoked by this one Advance() call - a period
+        // shorter than `by` fires more than once - sees the same, fully-advanced "now", the same way
+        // wall time is not itself waiting on a timer callback to finish ticking forward.
+        _elapsedMilliseconds += (long)by.TotalMilliseconds;
         foreach (var timer in _timers.ToArray()) timer.Advance(by);
     }
 

@@ -53,6 +53,14 @@ public class FileTransferQueueItemProgressTests
     /// the last observation happened to arrive — the whole point of <c>RefreshRateAndEta</c> taking
     /// its own "now" separately from <c>ApplyProgress</c>.
     /// </summary>
+    /// <remarks>
+    /// THIS IS A UNIT TEST OF THE METHOD, CALLING IT DIRECTLY — it does not prove anything calls
+    /// <c>RefreshRateAndEta</c> again once progress genuinely stops arriving. That behavioural proof
+    /// (review finding on RemEx-4lcq) is
+    /// <c>FileTransferQueueTests.ActiveTransfer_ThatStalls_GoesBlankThroughThePeriodicRefreshTimer</c>,
+    /// which drives the same staleness entirely through the queue's own periodic tick and never calls
+    /// this method by name.
+    /// </remarks>
     [Fact]
     public void AfterFourTimeConstantsOfSilence_TheEstimateGoesBlankRatherThanFreezing()
     {

@@ -104,4 +104,25 @@ public class TransferProgressTextTests
                     new TransferRate.Known(1.0, TransferRateUnit.MegabytesPerSecond),
                     new TransferEta.Remaining(3, TransferEtaUnit.Minutes))
                 .Should().Be("1.0 MB/s · 3 minutes left"));
+
+    // ── ResolveWithFallback (review finding on RemEx-4lcq: a missing plural form must not render its own key name) ──
+
+    [Fact]
+    public void ResolveWithFallback_UsesTheSpecificFormWhenPresent()
+    {
+        var resources = new Dictionary<string, string> { ["Foo_One"] = "one item", ["Foo_Other"] = "N items" };
+        string Lookup(string k) => resources.GetValueOrDefault(k, k); // mirrors LocalizationService's own "?? key"
+
+        TransferProgressText.ResolveWithFallback(Lookup, "Foo_One", "Foo_Other").Should().Be("one item");
+    }
+
+    [Fact]
+    public void ResolveWithFallback_FallsBackToOtherWhenTheSpecificFormIsMissing()
+    {
+        var resources = new Dictionary<string, string> { ["Foo_Other"] = "N items" }; // no Foo_Few
+        string Lookup(string k) => resources.GetValueOrDefault(k, k);
+
+        TransferProgressText.ResolveWithFallback(Lookup, "Foo_Few", "Foo_Other")
+            .Should().Be("N items", "a missing form must fall back to Other rather than show the raw key name");
+    }
 }

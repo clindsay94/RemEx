@@ -3,6 +3,7 @@ using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
+using Remex.Desktop.Tests.Services;
 using Remex.Desktop.ViewModels;
 using System.IO;
 using Xunit;
@@ -523,5 +524,87 @@ public class FileTransferQueueTests
         queue.Invoking(q => q.CancelAll()).Should().NotThrow();
 
         queue.Items.Should().BeEmpty();
+    }
+
+    // ─── The periodic refresh timer (RemEx-4lcq review fix) ───
+
+    /// <summary>
+    /// An ACTIVE transfer that stops reporting progress goes blank through the QUEUE'S OWN periodic
+    /// refresh tick, not merely when <c>RefreshRateAndEta</c> happens to be called directly.
+    /// </summary>
+    /// <remarks>
+    /// The first cut of this bead only had <c>ApplyProgress</c> calling
+    /// <c>FileTransferQueueItem.RefreshRateAndEta</c>, and progress arrives only from inside
+    /// <c>FileTransferClient</c>'s copy loop - so on a genuinely dead connection nothing ever called
+    /// it again and the row showed its last figure forever, which is the exact failure this bead
+    /// exists to fix. A unit test that calls <c>RefreshRateAndEta</c> directly passes for the wrong
+    /// reason: it proves the method is correct, not that anything in the running app ever calls it
+    /// once progress has stopped. This drives the stall entirely through
+    /// <see cref="ManualTimeProvider.Advance"/>, the same clock the queue's timer and the item's
+    /// estimator both read, and never calls <c>RefreshRateAndEta</c> itself.
+    /// <para>
+    /// Feeds the item through <c>ApplyProgress</c> directly rather than the work delegate's
+    /// <see cref="IProgress{T}"/> - that indirection defers every <c>Report</c> onto the thread pool
+    /// (by design: <see cref="System.Progress{T}"/> always posts, even when called from the capturing
+    /// thread), which raced against this test's synchronous clock advances. The queue's timer plumbing
+    /// under test does not go through <see cref="IProgress{T}"/> at all, so bypassing it here does not
+    /// weaken what this test proves.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task ActiveTransfer_ThatStalls_GoesBlankThroughThePeriodicRefreshTimer()
+    {
+        var clock = new ManualTimeProvider();
+        var queue = new FileTransferQueue(action => action(), timeProvider: clock);
+        var started = new TaskCompletionSource();
+        var gate = new TaskCompletionSource();
+
+        var item = queue.Enqueue(FileTransferQueueKind.Download, "stall.bin", async (_, _) =>
+        {
+            started.TrySetResult();
+            await gate.Task;
+        });
+
+        await started.Task;
+        item.State.Should().Be(TransferState.Active);
+
+        const long bytesPerTick = 1024L * 1024L;
+        const long total = 10 * bytesPerTick;
+        for (var i = 1; i <= 5; i++)
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            item.ApplyProgress(new TransferProgress(bytesPerTick * i, total));
+        }
+
+        item.RateText.Should().NotBeNull("a steady rate must be established before the stall");
+
+        // No further progress is ever applied. Advance past four time constants of silence (default
+        // tau=5s => 20s) purely by ticking the queue's own 1-second refresh timer.
+        clock.Advance(TimeSpan.FromSeconds(25));
+
+        item.RateText.Should().BeNull("the queue's periodic tick must blank a stalled transfer on its own");
+        item.EtaText.Should().BeNull();
+
+        gate.SetResult();
+        await Settled(item);
+    }
+
+    /// <summary>The refresh timer stops once nothing is active, rather than ticking forever for nothing.</summary>
+    [Fact]
+    public async Task RefreshTimer_StopsOnceNoItemIsActive()
+    {
+        var clock = new ManualTimeProvider();
+        var queue = new FileTransferQueue(action => action(), timeProvider: clock);
+
+        var item = queue.Enqueue(FileTransferQueueKind.Upload, "quick.bin", (_, _) => Task.CompletedTask);
+        await item.Completion.Task;
+
+        item.IsTerminal.Should().BeTrue();
+
+        // Advancing well past the stale threshold must not throw or resurrect any text - there is
+        // nothing left for the tick to do, and it must not still be scheduled.
+        clock.Invoking(c => c.Advance(TimeSpan.FromSeconds(30))).Should().NotThrow();
+        item.RateText.Should().BeNull();
+        item.EtaText.Should().BeNull();
     }
 }

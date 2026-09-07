@@ -106,6 +106,23 @@ public class PluralRulesTests
     public void TurkishAndIndonesian_AreAlwaysOther(string culture, int n) =>
         PluralRules.Category(culture, n).Should().Be(PluralCategory.Other);
 
+    /// <summary>
+    /// A REGIONAL VARIANT MUST REACH THE SAME RULE AS THE BARE LANGUAGE TAG (review finding on
+    /// RemEx-4lcq): matching the full culture tag verbatim let "pl-PL" and "uk-UA" fall all the way
+    /// through to the English "singular at one" default, silently losing the four-form rule for any
+    /// caller that passed a region-qualified tag instead of the bare "pl"/"uk" this project happens
+    /// to store in <c>SettingsViewModel.AvailableLanguages</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("pl-PL", 1, PluralCategory.One)]
+    [InlineData("pl-PL", 3, PluralCategory.Few)]
+    [InlineData("pl-PL", 11, PluralCategory.Many)]
+    [InlineData("uk-UA", 1, PluralCategory.One)]
+    [InlineData("uk-UA", 3, PluralCategory.Few)]
+    [InlineData("uk-UA", 11, PluralCategory.Many)]
+    public void RegionQualifiedTags_ReachTheSameRuleAsTheBareLanguage(string culture, int n, PluralCategory expected) =>
+        PluralRules.Category(culture, n).Should().Be(expected);
+
     [Fact]
     public void UnrecognisedCulture_FallsBackToTheEnglishRule() =>
         PluralRules.Category("xx-XX", 1).Should().Be(PluralCategory.One);

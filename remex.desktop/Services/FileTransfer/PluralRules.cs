@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Remex.Desktop.Services.FileTransfer;
 
 /// <summary>The CLDR cardinal-plural category a count falls into.</summary>
@@ -39,17 +41,20 @@ public static class PluralRules
     /// The category <paramref name="n"/> falls into for <paramref name="cultureTag"/>.
     /// </summary>
     /// <param name="cultureTag">
-    /// One of the exact tags <c>SettingsViewModel.AvailableLanguages</c> offers — "en", "es", "fr",
-    /// "hi", "id", "pl", "pt-BR", "tr", "uk". Matched case-insensitively; anything else (a culture
-    /// RemEx does not ship) falls back to the English rule rather than throwing, the same way
-    /// <see cref="LocalizationService"/> falls back to English on an unrecognised culture code.
+    /// Typically one of the exact tags <c>SettingsViewModel.AvailableLanguages</c> offers — "en",
+    /// "es", "fr", "hi", "id", "pl", "pt-BR", "tr", "uk" — but matched on the LANGUAGE subtag alone
+    /// (via <see cref="CultureInfo.TwoLetterISOLanguageName"/>), so "pl-PL" or "uk-UA" still reach the
+    /// Polish/Ukrainian rule rather than silently falling to English (review finding on RemEx-4lcq:
+    /// matching the full tag verbatim missed exactly that). A tag .NET does not recognise, or a
+    /// language RemEx does not ship, falls back to the English rule rather than throwing, the same
+    /// way <see cref="LocalizationService"/> falls back to English on an unrecognised culture code.
     /// </param>
     /// <param name="n">The count being displayed. Must be non-negative.</param>
     public static PluralCategory Category(string cultureTag, int n)
     {
         if (n < 0) throw new ArgumentOutOfRangeException(nameof(n), n, "Plural category is undefined for a negative count.");
 
-        return cultureTag.ToLowerInvariant() switch
+        return LanguageOf(cultureTag) switch
         {
             "pl" => Polish(n),
             "uk" => Ukrainian(n),
@@ -66,6 +71,25 @@ public static class PluralRules
             // en, es, pt-BR (and anything unrecognised): the ordinary "singular at exactly one" rule.
             _ => n == 1 ? PluralCategory.One : PluralCategory.Other,
         };
+    }
+
+    /// <summary>
+    /// The two-letter language subtag, lower-invariant — "pl-PL" and "uk-UA" must reach the same rule
+    /// as "pl" and "uk", not fall through to English because the full tag never matched a case label.
+    /// </summary>
+    private static string LanguageOf(string cultureTag)
+    {
+        try
+        {
+            return new CultureInfo(cultureTag).TwoLetterISOLanguageName.ToLowerInvariant();
+        }
+        catch (CultureNotFoundException)
+        {
+            // Not a real culture at all (a test fixture like "xx-XX", or bad data) - fall through to
+            // the ordinary switch's default arm exactly as before, rather than throwing over a tag
+            // this method was never asked to validate.
+            return cultureTag.ToLowerInvariant();
+        }
     }
 
     /// <summary>French and Hindi: "one" covers zero as well as one (real CLDR "i = 0 or n = 1").</summary>
