@@ -397,6 +397,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The PC's Diagnostics log viewer gained three small conveniences: a right-click menu on any
+  row with "Copy message" and "Copy with stack", a "Follow tail" switch that keeps the newest
+  entry in view (scrolling up pauses it and offers "Jump to newest"), and after an export a
+  status line naming the file with an "Open folder" button. All labelled for screen readers, in
+  every language. (RemEx-a8du)
 - The PC's file-transfer queue now shows transfer speed and time remaining on the active row,
   in every language, following the same rules the phone uses: the estimate rounds up before it
   picks a unit, says "finishing" under a second, gives up past 23 hours, and is re-read once a
