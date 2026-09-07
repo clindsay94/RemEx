@@ -63,7 +63,7 @@ public class BusyPlaceholderTests
             RegexOptions.Singleline);
 
         animatedStyleMatch.Success.Should().BeTrue("expected a Style element wrapping Style.Animations directly");
-        animatedStyleMatch.Groups[1].Value.Should().Contain(":not(:reduced-motion)",
+        animatedStyleMatch.Groups[1].Value.Should().Contain(":not(.reduced-motion)",
             "an ungated shimmer would keep animating for a reduced-motion user");
     }
 
@@ -72,10 +72,10 @@ public class BusyPlaceholderTests
     {
         var text = ControlSource();
 
-        // A separate, non-animated rule must apply when :reduced-motion is set — the static
+        // A separate, non-animated rule must apply when .reduced-motion is set — the static
         // fallback the bead calls for, not merely "no animation" (which would leave the resting
         // 0.55 opacity from Border.skeleton-bar and look identical to the idle state).
-        Regex.IsMatch(text, @"<Style Selector=""[^""]*:reduced-motion[^""]*"">\s*<Setter Property=""Opacity""")
+        Regex.IsMatch(text, @"<Style Selector=""[^""]*\.reduced-motion[^""]*"">\s*<Setter Property=""Opacity""")
             .Should().BeTrue("reduced motion needs its own static Opacity setter, not just an absent animation");
     }
 

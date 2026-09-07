@@ -27,7 +27,7 @@ public enum BusyPlaceholderMode
 /// (<see cref="BusyPlaceholderMode.Spinner"/>, wrapping the button's own label) or AROUND a list
 /// (<see cref="BusyPlaceholderMode.Skeleton"/>, wrapping the real <c>ItemsControl</c>/<c>ListBox</c>
 /// so it can hide it under the skeleton rows while <see cref="IsBusy"/> is true). One control, one
-/// template (<c>BusyPlaceholder.axaml</c>), pseudo-classes select the visual — no per-view style
+/// template (<c>BusyPlaceholder.axaml</c>), Classes select the visual — no per-view style
 /// duplication.
 /// <para>
 /// <see cref="IsReducedMotion"/> is a plain styled property rather than this control reading a
@@ -69,14 +69,16 @@ public partial class BusyPlaceholder : ContentControl
     public BusyPlaceholder()
     {
         InitializeComponent();
-        UpdatePseudoClasses();
+        UpdateVisualState();
     }
 
-    // Pseudo-classes, not a converter per Setter: the template needs three independent booleans
-    // (busy / skeleton-mode / reduced-motion) to combine freely — busy-and-skeleton looks nothing
-    // like busy-and-spinner, and reduced-motion only matters while both of those are true. Avalonia
-    // selectors compose pseudo-classes with plain AND (":busy:skeleton") for free; a single
-    // "visual state" enum would need one branch per combination instead.
+    // Plain Classes, NOT pseudo-classes: a pseudo-class selector matching this control BY ITS OWN
+    // TYPE NAME, declared inside that same type's own template file, does not reliably match here
+    // (verified live via ui-hotreload — IsBusy="True" produced no visible change at all). Named
+    // Classes toggled on the instance and matched with a plain ".busy.skeleton"-style selector is
+    // the pattern DashboardBackgroundControl.axaml already uses successfully in this codebase
+    // (Classes.aurora-animated, Classes.palette-transition-suppressed) — proven to work, so this
+    // follows it instead of re-attempting the pseudo-class route.
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -85,14 +87,26 @@ public partial class BusyPlaceholder : ContentControl
             change.Property == ModeProperty ||
             change.Property == IsReducedMotionProperty)
         {
-            UpdatePseudoClasses();
+            UpdateVisualState();
         }
     }
 
-    private void UpdatePseudoClasses()
+    private void UpdateVisualState()
     {
-        PseudoClasses.Set(":busy", IsBusy);
-        PseudoClasses.Set(":skeleton", Mode == BusyPlaceholderMode.Skeleton);
-        PseudoClasses.Set(":reduced-motion", IsReducedMotion);
+        SetClass("busy", IsBusy);
+        SetClass("skeleton", Mode == BusyPlaceholderMode.Skeleton);
+        SetClass("reduced-motion", IsReducedMotion);
+    }
+
+    private void SetClass(string name, bool value)
+    {
+        if (value)
+        {
+            if (!Classes.Contains(name)) Classes.Add(name);
+        }
+        else
+        {
+            Classes.Remove(name);
+        }
     }
 }
