@@ -205,12 +205,21 @@ function Assert-NoRemexProcessAlive([string]$When) {
 # Stop-Remex already blocks on Process.WaitForExit before -Stop returns, so on the happy path
 # this is redundant - it exists for whatever that guarantee does not cover (a child process
 # outliving its parent, Get-Process racing the OS's own process-table cleanup on this share)
-# without turning a slow-but-real exit into a hard failure. Best-effort and silent: it never
-# throws on timeout, it just stops polling. Assert-NoRemexProcessAlive stays the actual guard.
+# without turning a slow-but-real exit into a hard failure. It does not throw on timeout itself -
+# every call site pairs it with an Assert-NoRemexProcessAlive right after (RemEx-l5vck review),
+# so a live host is never followed by a profile read/write/restore - but an expired budget is
+# never SILENT either: name the survivors so whichever assertion fires next has already been
+# explained in the log.
 function Wait-NoRemexProcess([int]$TimeoutMs = 15000) {
     $deadline = [datetime]::UtcNow.AddMilliseconds($TimeoutMs)
-    while ((Get-Process -Name 'Remex.Agent', 'Remex.Desktop' -ErrorAction SilentlyContinue) -and [datetime]::UtcNow -lt $deadline) {
+    $alive = Get-Process -Name 'Remex.Agent', 'Remex.Desktop' -ErrorAction SilentlyContinue
+    while ($alive -and [datetime]::UtcNow -lt $deadline) {
         Start-Sleep -Milliseconds 100
+        $alive = Get-Process -Name 'Remex.Agent', 'Remex.Desktop' -ErrorAction SilentlyContinue
+    }
+    if ($alive) {
+        $names = ($alive | ForEach-Object { "$($_.ProcessName) (pid $($_.Id))" }) -join ', '
+        Write-Warning "Wait-NoRemexProcess timed out after ${TimeoutMs}ms with still-alive process(es): $names"
     }
 }
 
@@ -246,6 +255,7 @@ try {
         # Release build here would just hand it the file we are mid-write on (RemEx-8q7de round 2).
         & $hotReloadScript -Stop -NoRelaunch | Out-Null
         Wait-NoRemexProcess
+        Assert-NoRemexProcessAlive "before writing the profile for cell '$($cell.Id)'"
 
         $profileJson = Get-Content -Raw -Path $profilePath | ConvertFrom-Json
         if (-not $profileJson.PSObject.Properties['customization']) {
@@ -318,6 +328,7 @@ try {
             # must leave nothing running; only the very last stop, after the loop, may relaunch.
             & $hotReloadScript -Stop -NoRelaunch | Out-Null
             Wait-NoRemexProcess
+            Assert-NoRemexProcessAlive "after stopping cell '$($cell.Id)' view '$view'"
         }
 
         foreach ($view in $Script:ManualViews) {

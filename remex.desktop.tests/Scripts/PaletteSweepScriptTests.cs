@@ -164,6 +164,58 @@ public class PaletteSweepScriptTests
     }
 
     /// <summary>
+    /// RemEx-l5vck: an exception thrown between a loop iteration's <c>-Start</c> and its paired
+    /// <c>-Stop -NoRelaunch</c> (the process never appearing, a snapshot failing, a profile write
+    /// throwing) skips that paired <c>-Stop</c> entirely and lands directly on
+    /// <c>Assert-NoRemexProcessAlive</c> below — which then, correctly, finds the just-started
+    /// host still alive and refuses to continue, stranding it. The <c>finally</c> block must
+    /// attempt its own <c>-Stop -NoRelaunch</c> FIRST — textually before the assertion — so a
+    /// mid-cell exception can no longer strand a host.
+    /// </summary>
+    [Fact]
+    public void FinallyBlockStopsTheHostBeforeAssertingNoneAreAlive()
+    {
+        var finallyBody = FinallyBlockBody();
+
+        // Anchored to an actual call (only whitespace before the name on its line) rather than a
+        // plain Contains/IndexOf - the doc comment right above the real call ALSO says the words
+        // "Assert-NoRemexProcessAlive" in prose (explaining what this fix prevents), and a naive
+        // text search would find that mention instead of the code (the exact anti-pattern this
+        // file's own remarks warn about for MatrixDataBlock).
+        var stopIndex = Regex.Match(finallyBody, @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch").Index;
+        var assertIndex = Regex.Match(finallyBody, @"(?m)^\s*Assert-NoRemexProcessAlive\b").Index;
+
+        stopIndex.Should().BeGreaterThan(-1,
+            "the finally block must itself call '-Stop -NoRelaunch' - without it, an exception between a loop iteration's -Start and its paired -Stop strands that host");
+        assertIndex.Should().BeGreaterThan(-1, "the finally block must still assert no Remex process is alive");
+        stopIndex.Should().BeLessThan(assertIndex,
+            "the finally block's own cleanup stop must run BEFORE Assert-NoRemexProcessAlive - otherwise the assertion is the only thing left to throw, and a mid-cell exception strands the host it was reported to strand (RemEx-l5vck)");
+    }
+
+    /// <summary>
+    /// ui-hotreload.ps1's own Stop-Remex blocks on WaitForExit before <c>-Stop</c> returns, so
+    /// this poll is normally redundant - it exists for whatever that guarantee does not cover, and
+    /// it must run IMMEDIATELY after each in-loop <c>-Stop -NoRelaunch</c>, not merely exist
+    /// somewhere in the loop (RemEx-l5vck review).
+    /// </summary>
+    [Fact]
+    public void EveryLoopStopIsImmediatelyFollowedByAPoll()
+    {
+        var lines = TryBlockBody().Replace("\r\n", "\n").Split('\n');
+
+        var stopLineIndexes = Enumerable.Range(0, lines.Length)
+            .Where(i => Regex.IsMatch(lines[i], @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch"))
+            .ToList();
+
+        stopLineIndexes.Should().NotBeEmpty("the sweep's main loop must actually stop the host somewhere");
+        foreach (var i in stopLineIndexes)
+        {
+            lines[i + 1].Should().Contain("Wait-NoRemexProcess",
+                $"the '-Stop -NoRelaunch' call on \"{lines[i].Trim()}\" must be immediately followed by a Wait-NoRemexProcess poll");
+        }
+    }
+
+    /// <summary>
     /// Everything between the top-level <c>$Script:CellMatrix = @(</c> and its matching closing
     /// <c>)</c> — the DATA, not the header comment above it that restates the same facts in prose.
     /// </summary>
