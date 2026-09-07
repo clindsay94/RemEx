@@ -87,6 +87,32 @@ public class SchemeStrategyTests
                 "Content is no longer a user-facing strategy");
     }
 
+    [Theory]
+    [InlineData("Vibrant")]
+    [InlineData("Neutral")]
+    [InlineData("Expressive")]
+    public void SuccessAndWarningArePinnedToTonalSpotRegardlessOfVariant(string variant)
+    {
+        // Gate decision, RemEx-gw3ad: a seed means the same thing on both ends of the link, so
+        // semantic colours must not change meaning with the decorative variant. Android
+        // (Theme.kt:110-111) always builds success/warning from SchemeTonalSpot; the PC now
+        // matches for every SchemeVariant, not just Monochrome.
+        var variantPalette = DynamicColorGenerator.Generate(Seed, variant, isDark: true);
+        var tonalSpotPalette = DynamicColorGenerator.Generate(Seed, "TonalSpot", isDark: true);
+
+        variantPalette.Success.Should().Be(tonalSpotPalette.Success, $"success is pinned to TonalSpot under {variant}");
+        variantPalette.OnSuccess.Should().Be(tonalSpotPalette.OnSuccess, $"onSuccess is pinned to TonalSpot under {variant}");
+        variantPalette.Warning.Should().Be(tonalSpotPalette.Warning, $"warning is pinned to TonalSpot under {variant}");
+        variantPalette.OnWarning.Should().Be(tonalSpotPalette.OnWarning, $"onWarning is pinned to TonalSpot under {variant}");
+
+        // Not Primary: at this seed's hue, Vibrant's chroma boost happens to land on the exact same
+        // tone-80 value TonalSpot produces, which would make a Primary-equality check pass by
+        // coincidence rather than by verifying the variant is actually still applied. Secondary
+        // (and PrimaryContainer, Tertiary) differ from TonalSpot for all three variants here.
+        variantPalette.Secondary.Should().NotBe(tonalSpotPalette.Secondary,
+            $"{variant}'s roles must still follow its own variant, only success/warning are pinned");
+    }
+
     [Fact]
     public void EveryStrategyStillProducesAReadableSurfacePair()
     {

@@ -88,16 +88,15 @@ public static class DynamicColorGenerator
         var scheme = MapScheme(core, isDark);
 
         // Success and warning are separate schemes, not roles carved out of the user's seed: a
-        // semantic colour that drifts with the accent stops being semantic. Same style, same mode,
-        // same contrast — so they track the rest of the palette in every way except hue.
-        //
-        // MONOCHROME IS THE ONE EXCEPTION. Its whole job is to strip chroma from the user's own
-        // accent; it must not also grey out "connected" and "warning". Every other style already
-        // leaves success/warning visibly green/amber (Style.Spritz — Neutral's style — still keeps
-        // ~12 chroma), so only Monochrome swaps to Style.TonalSpot for these two semantic cores.
-        var semanticStyle = string.Equals(variant, SchemeVariants.Monochrome, StringComparison.Ordinal)
-            ? Style.TonalSpot
-            : style;
+        // semantic colour that drifts with the accent stops being semantic. Same mode and contrast
+        // as the rest of the palette — but the STYLE is always TonalSpot, matching Android
+        // (Theme.kt:110-111), regardless of the user's chosen SchemeVariant (RemEx-gw3ad, gate
+        // decision 2026-09-07). A seed means the same thing on both ends of the link, so "connected
+        // green" and "warning amber" must not change meaning with the decorative variant — under
+        // Neutral the old chroma-~12 green and Vibrant's chroma-~94 green disagreed with each other
+        // and with the phone's chroma-~36 green. This repaints success/warning for every existing
+        // non-TonalSpot user; the changelog records it as a deliberate look change, not a fix.
+        var semanticStyle = Style.TonalSpot;
         var successCore = CoreFor(SuccessSeed, semanticStyle);
         var successScheme = MapScheme(successCore, isDark);
         var warningCore = CoreFor(WarningSeed, semanticStyle);
