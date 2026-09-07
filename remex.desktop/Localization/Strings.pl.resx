@@ -1061,6 +1061,51 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Nie udało się usunąć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Kończenie…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>pozostała {0} sekunda</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>pozostały {0} sekundy</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>pozostało {0} sekund</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>pozostało {0} sekundy</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>pozostała {0} minuta</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>pozostały {0} minuty</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>pozostało {0} minut</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>pozostało {0} minuty</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>pozostała {0} godzina</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>pozostały {0} godziny</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>pozostało {0} godzin</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>pozostało {0} godziny</value>
+  </data>
 
   
 

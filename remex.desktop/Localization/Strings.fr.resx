@@ -1101,6 +1101,51 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Impossible de retirer ce dossier. Vérifiez que l'appareil connecté est toujours couplé, puis réessayez.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Finalisation…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>{0} seconde restante</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>{0} secondes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>{0} secondes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>{0} secondes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>{0} minute restante</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>{0} minutes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>{0} minutes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>{0} minutes restantes</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>{0} heure restante</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>{0} heures restantes</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>{0} heures restantes</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>{0} heures restantes</value>
+  </data>
 
   
 

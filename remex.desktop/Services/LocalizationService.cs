@@ -35,6 +35,16 @@ public sealed class LocalizationService : INotifyPropertyChanged
     public string CultureTag => _culture.Name;
 
     /// <summary>
+    /// The active culture itself, for callers that need to format a NUMBER rather than look up a
+    /// string — <c>TransferProgressText</c> in particular, which must render "12.4 MB/s" with the
+    /// active locale's decimal separator rather than <see cref="CultureInfo.CurrentCulture"/>'s. Using
+    /// the thread's ambient culture there would drift from this service the moment RemEx's in-app
+    /// language switch disagrees with the OS locale, which is exactly the case this service exists to
+    /// handle for strings.
+    /// </summary>
+    public CultureInfo Culture => _culture;
+
+    /// <summary>
     /// Gets a localized string by key from the resource manager.
     /// </summary>
     public string this[string key] =>

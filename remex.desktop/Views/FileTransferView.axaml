@@ -357,11 +357,16 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:FileTransferQueueItem">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4" AutomationProperties.HelpText="{Binding RateEtaText}">
                                     <TextBlock Grid.Column="0" Text="{Binding ModeLabel}" Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="64"/>
                                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding FileName}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                         <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" IsVisible="{Binding IsActive}"/>
+                                        <!-- "12.3 MB/s · 3 minutes left". Only while active and only once the
+                                             estimator has enough to say something (RemEx-4lcq) - RateEtaText is
+                                             null rather than a placeholder until then, and again once the
+                                             transfer reaches a terminal state. -->
+                                        <TextBlock Text="{Binding RateEtaText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding RateEtaText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding StateLabel}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0"/>
                                     <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}">

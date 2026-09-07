@@ -1101,6 +1101,51 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Tidak dapat menghapus folder tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Menyelesaikan…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>{0} detik lagi</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>{0} detik lagi</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>{0} detik lagi</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>{0} detik lagi</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>{0} menit lagi</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>{0} menit lagi</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>{0} menit lagi</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>{0} menit lagi</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>{0} jam lagi</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>{0} jam lagi</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>{0} jam lagi</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>{0} jam lagi</value>
+  </data>
 
   
 

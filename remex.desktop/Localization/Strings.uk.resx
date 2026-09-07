@@ -1101,6 +1101,51 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Не вдалося видалити цю папку. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Завершення…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>залишилася {0} секунда</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>залишилося {0} секунди</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>залишилося {0} секунд</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>залишилося {0} секунди</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>залишилася {0} хвилина</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>залишилося {0} хвилини</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>залишилося {0} хвилин</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>залишилося {0} хвилини</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>залишилася {0} година</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>залишилося {0} години</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>залишилося {0} годин</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>залишилося {0} години</value>
+  </data>
 
   
 

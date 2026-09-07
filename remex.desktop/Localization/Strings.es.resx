@@ -1107,6 +1107,51 @@ Linux: ip addr  o  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>No se pudo quitar esa carpeta. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Finalizando…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>queda {0} segundo</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>quedan {0} segundos</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>quedan {0} segundos</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>quedan {0} segundos</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>queda {0} minuto</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>quedan {0} minutos</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>quedan {0} minutos</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>quedan {0} minutos</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>queda {0} hora</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>quedan {0} horas</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>quedan {0} horas</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>quedan {0} horas</value>
+  </data>
 
   
 

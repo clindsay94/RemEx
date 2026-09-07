@@ -74,6 +74,26 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     /// <summary>Completes when the item reaches a terminal state — used by callers/tests to await the result.</summary>
     internal TaskCompletionSource Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>
+    /// Where "now" comes from for the rate estimator (RemEx-4lcq). A MONOTONIC millisecond reading,
+    /// never <see cref="DateTime"/> — a wall clock can step backwards or jump on a time sync, which
+    /// <see cref="TransferRateEstimator.Update"/> would read as a negative or infinite interval.
+    /// <see cref="Environment.TickCount64"/> is the production default; tests inject a counter they
+    /// control so a "stall" can be simulated by simply not advancing it.
+    /// </summary>
+    private readonly Func<long> _nowMillis;
+
+    private readonly TransferRateEstimator _rateEstimator = new();
+
+    private TransferProgress _lastProgress;
+
+    // The last CLASSIFIED figures, not just their formatted text — kept so a language switch can
+    // re-render "12.3 MB/s · 3 minutes left" in the new language without waiting for the next
+    // progress tick. Cleared alongside RateText/EtaText on a terminal transition, so a finished row
+    // does not spuriously reacquire text on the next language switch.
+    private TransferRate _lastRate = new TransferRate.Unknown();
+    private TransferEta _lastEta = new TransferEta.Unknown();
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsActive))]
     [NotifyPropertyChangedFor(nameof(IsTerminal))]
@@ -89,11 +109,29 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work)
+    /// <summary>Localized throughput ("12.3 MB/s"), or null while unknown (RemEx-4lcq).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RateEtaText))]
+    private string? _rateText;
+
+    /// <summary>Localized time remaining ("3 minutes left" / "Finishing…"), or null while unknown.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RateEtaText))]
+    private string? _etaText;
+
+    /// <summary>"<see cref="RateText"/> · <see cref="EtaText"/>", either half alone, or null when both are.</summary>
+    public string? RateEtaText => RateText is null
+        ? null
+        : EtaText is null
+            ? RateText
+            : string.Format(LocalizationService.Instance["FileTransfer_RateEtaFormat"], RateText, EtaText);
+
+    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work, Func<long>? nowMillis = null)
     {
         Kind = kind;
         FileName = fileName;
         Work = work;
+        _nowMillis = nowMillis ?? (() => Environment.TickCount64);
     }
 
     public bool IsActive => State is TransferState.Negotiating or TransferState.Active or TransferState.Verifying;
@@ -101,6 +139,76 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     public bool IsTerminal => State is TransferState.Done or TransferState.Failed or TransferState.Cancelled;
 
     public bool CanCancel => !IsTerminal;
+
+    /// <summary>
+    /// Feeds a progress observation and refreshes <see cref="Progress"/>, <see cref="RateText"/> and
+    /// <see cref="EtaText"/> together, so the three never disagree about how far along the transfer
+    /// is (RemEx-4lcq).
+    /// </summary>
+    internal void ApplyProgress(TransferProgress progress)
+    {
+        Progress = Math.Clamp(progress.Fraction * 100.0, 0.0, 100.0);
+        _lastProgress = progress;
+
+        var now = _nowMillis();
+        _rateEstimator.Update(progress.BytesTransferred, now);
+        RefreshRateAndEta(now);
+    }
+
+    /// <summary>
+    /// Recomputes <see cref="RateText"/>/<see cref="EtaText"/> as of <paramref name="nowMillis"/>
+    /// WITHOUT feeding the estimator a new observation.
+    /// </summary>
+    /// <remarks>
+    /// AGED AT READ TIME, NOT CACHED FROM THE LAST UPDATE. This calls
+    /// <see cref="TransferRateEstimator.BytesPerSecondAt"/> and
+    /// <see cref="TransferRateEstimator.SecondsRemainingAt"/> with the "now" it is given, so a stall
+    /// goes stale exactly when the estimator says it should — four time constants after the last real
+    /// observation — rather than whenever this happens to be called next. <see cref="ApplyProgress"/>
+    /// calls this every tick, which is what re-evaluates staleness in the running app; exposed
+    /// separately (internal) so a test can prove the aging without needing a new observation to
+    /// trigger it.
+    /// </remarks>
+    internal void RefreshRateAndEta(long nowMillis)
+    {
+        _lastRate = TransferProgressFormat.Rate(_rateEstimator.BytesPerSecondAt(nowMillis));
+        _lastEta = TransferProgressFormat.Eta(
+            _rateEstimator.SecondsRemainingAt(_lastProgress.BytesTransferred, _lastProgress.TotalBytes, nowMillis));
+
+        ApplyLocalizedRateAndEta();
+    }
+
+    /// <summary>(Re)renders <see cref="RateText"/>/<see cref="EtaText"/> from the last CLASSIFIED figures.</summary>
+    private void ApplyLocalizedRateAndEta()
+    {
+        RateText = TransferProgressText.RateText(_lastRate);
+        EtaText = TransferProgressText.EtaText(_lastEta);
+    }
+
+    /// <summary>
+    /// Resets the rate estimate on (re)start and clears the displayed text on completion — the same
+    /// two moments <c>FileTransferEngine</c> resets its estimator on Android (RemEx-4lcq).
+    /// </summary>
+    /// <remarks>
+    /// Reached through <see cref="State"/>'s own setter, so it also covers a resume from
+    /// <see cref="TransferState.Paused"/> even though nothing on the PC drives that state today: a
+    /// resumed transfer restarting the average avoids treating the paused gap as elapsed time, which
+    /// would otherwise compute a rate near zero from a stale byte count against a large time delta.
+    /// </remarks>
+    partial void OnStateChanged(TransferState value)
+    {
+        if (value == TransferState.Active)
+        {
+            _rateEstimator.ResetRate();
+        }
+        else if (IsTerminal)
+        {
+            _lastRate = new TransferRate.Unknown();
+            _lastEta = new TransferEta.Unknown();
+            RateText = null;
+            EtaText = null;
+        }
+    }
 
     /// <summary>
     /// Re-raises the two labels that read <see cref="LocalizationService"/> at get-time. Called by the
@@ -112,6 +220,18 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     {
         OnPropertyChanged(nameof(ModeLabel));
         OnPropertyChanged(nameof(StateLabel));
+
+        // RateText/EtaText are SNAPSHOTTED text (RemEx-4lcq), not properties that read the localizer
+        // at get-time — the same shape as AboutViewModel.UpdateHostVersion and
+        // SettingsViewModel.UpdateHostCapabilitySummary. Without this, an active transfer's rate and
+        // ETA keep the previous language until the next progress tick happens to arrive.
+        ApplyLocalizedRateAndEta();
+
+        // RateText/EtaText's own setters already cascade to this via [NotifyPropertyChangedFor], but
+        // ONLY when the reformatted text actually differs from what was already there - which it
+        // will not on a round-trip back to the same language, or on an item that has neither yet.
+        // Raised explicitly so the joiner's word order is never left depending on that coincidence.
+        OnPropertyChanged(nameof(RateEtaText));
     }
 
     /// <summary>Localized one-word description of the transfer direction.</summary>
@@ -329,8 +449,7 @@ public sealed class FileTransferQueue : IDisposable
         }
 
         SetState(item, TransferState.Active);
-        var progress = new Progress<TransferProgress>(
-            p => _post(() => item.Progress = Math.Clamp(p.Fraction * 100.0, 0.0, 100.0)));
+        var progress = new Progress<TransferProgress>(p => _post(() => item.ApplyProgress(p)));
 
         try
         {
