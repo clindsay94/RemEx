@@ -410,6 +410,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Match my phone's theme.** The phone now tells the PC its theme (seed colour, style, light or
+  dark, contrast, and whether it is on wallpaper colour) after it connects and whenever the theme
+  changes, and the PC's Personalize sheet offers a "Match my phone" action once it knows one.
+  Pressing it applies the phone's seed and settings as your own choice, so it sticks. With no
+  phone theme known the action is simply absent. (RemEx-y06a0.1, RemEx-sudp8)
 - The PC's tray menu has an "Open logs folder" item, and the app gained one shared "busy"
   affordance: a small spinner inside a button while a command runs, and three soft placeholder
   rows while a list fills for the first time (the Diagnostics system-log fetch, the trusted
