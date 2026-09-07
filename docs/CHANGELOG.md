@@ -245,6 +245,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Developer-facing: the phone's upload backpressure cap (the other half of RemEx-68wwl) is now
+  covered: the send loop moved out of the FileTransferEngine singleton into a small injectable
+  collaborator so a test can prove it stops at the cap, resumes on the PC's ack, and fails
+  cleanly when the channel closes. No behaviour change; the completion drain is untouched.
+  (RemEx-yi7id)
 - The Remote screen's Wake-on-LAN fields and the Remote Desktop quality, FPS and scale settings
   on the PC now follow a savefile import too, and a Wake-on-LAN edit made after an import no
   longer writes the pre-import layout back over it. (RemEx-w6ipy)
