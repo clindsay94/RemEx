@@ -534,7 +534,12 @@ public sealed class PingPongHandler(
                         }
                         else
                         {
-                            logger.LogDebug(
+                            // LogWarning, not LogDebug: Debug is filtered out under the default
+                            // "Information" minimum level (appsettings.json), so a Debug line here
+                            // would never surface — leaving "why didn't the button appear" with
+                            // nothing in any log to answer it, the exact failure shape RemEx-y6x6
+                            // and friends exist to avoid.
+                            logger.LogWarning(
                                 "Ignored malformed theme_sync from {ClientId}.", connectionClientId);
                         }
 
@@ -1348,12 +1353,24 @@ public sealed class PingPongHandler(
     /// business rejecting a message over a style name it does not itself have to interpret.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// CONTRAST IS -1.0..1.0, NOT 0.0..1.0. Android's M3 contrast is signed (negative means reduced
     /// contrast); the PC's own <c>ThemeContrast</c> has no room below zero, but clamping that away is
     /// a mapping decision for the reader, not a reason to drop the whole message here.
+    /// </para>
+    /// <para>
+    /// <c>sync.SeedHex is { } seed</c>, NOT A BARE NULL-FORGIVING READ (Opus review, RemEx-sudp8 fix
+    /// round). No wire field on <see cref="PhoneThemeSnapshot"/> is <c>required</c> any more, so a
+    /// <c>theme_sync</c> missing "seed" deserializes with <c>SeedHex</c> genuinely null at runtime —
+    /// the property's own <c>= string.Empty</c> initializer only applies to a plain C# construction,
+    /// not to System.Text.Json filling in an absent record property. <c>Regex.IsMatch(null)</c>
+    /// throws, and an exception escaping this switch case would take the whole receive loop with it:
+    /// the exact "one absent field drops the phone's whole control session" failure this validator
+    /// exists to prevent, just moved one call deeper.
+    /// </para>
     /// </remarks>
     private static bool IsValidThemeSync(PhoneThemeSnapshot sync) =>
-        HexColorPattern.IsMatch(sync.SeedHex)
+        sync.SeedHex is { } seed && HexColorPattern.IsMatch(seed)
         && sync.Contrast is >= -1.0 and <= 1.0
         && sync.Mode is "light" or "dark" or "system"
         && !string.IsNullOrWhiteSpace(sync.Style);

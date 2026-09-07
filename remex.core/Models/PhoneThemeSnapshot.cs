@@ -24,22 +24,31 @@ namespace Remex.Core.Models;
 /// same record shape serves as both the deserialization target and the stored snapshot without a
 /// second type to keep in sync.
 /// </para>
+/// <para>
+/// NONE OF THE WIRE FIELDS ARE <c>required</c> (Opus review, RemEx-sudp8 fix round). A required
+/// member missing from the JSON makes System.Text.Json throw, which <c>MessageSerializer.Deserialize</c>
+/// turns into a null <c>RemexMessage</c> — and a null message makes <c>PingPongHandler</c>'s
+/// receive loop treat it as a disconnect and drop the WHOLE session, for every message type, not
+/// just this one. A malformed or truncated <c>theme_sync</c> must be rejectABLE, not
+/// connection-ending, so every field defaults instead (empty string / 0 / false) and
+/// <c>PingPongHandler.IsValidThemeSync</c> is what actually refuses an incomplete snapshot.
+/// </para>
 /// </remarks>
 public sealed record PhoneThemeSnapshot
 {
     /// <summary><c>#RRGGBB</c>. The resolved scheme primary when the phone is on dynamic colour.</summary>
     [JsonPropertyName("seed")]
-    public required string SeedHex { get; init; }
+    public string SeedHex { get; init; } = string.Empty;
 
     /// <summary>
     /// Android's <c>themeStyle</c> name verbatim (<c>tonal_spot</c>, <c>vibrant</c>, …). An
     /// unrecognised value is a PC-side mapping decision (<c>CustomizationViewModel.TryMapPhoneTheme</c>),
     /// not one made here.
     /// </summary>
-    public required string Style { get; init; }
+    public string Style { get; init; } = string.Empty;
 
     /// <summary><c>light</c>, <c>dark</c>, or <c>system</c> — the phone's light/dark preference.</summary>
-    public required string Mode { get; init; }
+    public string Mode { get; init; } = string.Empty;
 
     /// <summary>
     /// The phone's <c>themeContrast</c>, in Android's own M3 range of -1.0..1.0 — negative means
@@ -47,14 +56,14 @@ public sealed record PhoneThemeSnapshot
     /// verbatim here; <c>CustomizationViewModel.TryMapPhoneTheme</c> is where it gets clamped into
     /// the PC's range, not this record.
     /// </summary>
-    public required double Contrast { get; init; }
+    public double Contrast { get; init; }
 
     /// <summary>Whether the phone is on dynamic (wallpaper) colour.</summary>
     [JsonPropertyName("dynamic")]
-    public required bool DynamicColor { get; init; }
+    public bool DynamicColor { get; init; }
 
     /// <summary>The phone's wall clock at send time. For "last seen" display only; never for ordering.</summary>
-    public required long SentAtUnixMs { get; init; }
+    public long SentAtUnixMs { get; init; }
 
     /// <summary>
     /// The paired device this arrived from, stamped by the host after receipt. Never sent by the

@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Agent.Handlers;
@@ -43,6 +44,42 @@ public class ThemeSyncDispatchTests
             }
 
             var payload = MessageSerializer.Serialize(script[_next++]);
+            payload.CopyTo(b.Array.AsSpan(b.Offset));
+            return Task.FromResult(
+                new WebSocketReceiveResult(payload.Length, WebSocketMessageType.Text, true));
+        }
+
+        public override WebSocketCloseStatus? CloseStatus => null;
+        public override string? CloseStatusDescription => null;
+        public override WebSocketState State => WebSocketState.Open;
+        public override string? SubProtocol => null;
+        public override void Abort() { }
+        public override Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task CloseOutputAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override void Dispose() { }
+    }
+
+    /// <summary>
+    /// Same as <see cref="ScriptedWebSocket"/> but delivers raw JSON text frames verbatim — needed
+    /// to reproduce a key ENTIRELY ABSENT from the wire (e.g. no "seed" at all), which a
+    /// <see cref="RemexMessage"/> built in C# and re-serialized cannot: a property left unset there
+    /// still carries its own field initializer and serializes present-with-a-value, not absent.
+    /// </summary>
+    private sealed class RawScriptedWebSocket(params string[] script) : WebSocket
+    {
+        private int _next;
+
+        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType t, bool e, CancellationToken c)
+            => Task.CompletedTask;
+
+        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> b, CancellationToken c)
+        {
+            if (_next >= script.Length)
+            {
+                return Task.FromResult(new WebSocketReceiveResult(0, WebSocketMessageType.Close, true));
+            }
+
+            var payload = System.Text.Encoding.UTF8.GetBytes(script[_next++]);
             payload.CopyTo(b.Array.AsSpan(b.Offset));
             return Task.FromResult(
                 new WebSocketReceiveResult(payload.Length, WebSocketMessageType.Text, true));
@@ -166,13 +203,78 @@ public class ThemeSyncDispatchTests
         Assert.Null(store.Latest);
     }
 
+    [Fact]
+    public async Task ASeedKeyEntirelyAbsentIsRejectedWithoutEndingTheSession()
+    {
+        // RemEx-sudp8 fix round (Opus review, HIGH). Before: SeedHex/Style/Mode/Contrast/DynamicColor
+        // /SentAtUnixMs were all `required`, so a theme_sync missing ANY of them made
+        // System.Text.Json throw, MessageSerializer.Deserialize return null, and PingPongHandler's
+        // receive loop (HandleAsync:207, `if (message is null) break;`) treat that exactly like the
+        // peer closing the socket — dropping the phone's WHOLE control session over one absent
+        // field, silently, before IsValidThemeSync ever ran. Now: no field is `required`, so this
+        // deserializes fine (SeedHex is null), IsValidThemeSync rejects it explicitly, and — the
+        // point of this test — the SAME connection goes on to accept the next, well-formed sync.
+        var store = new PhoneThemeSnapshotStore();
+
+        await RunRawAsync(
+            store,
+            """{"type":"theme_sync","protocolVersion":2,"clientId":"phone-1","themeSync":{"style":"tonal_spot","mode":"dark","contrast":0.5,"dynamic":false,"sentAtUnixMs":1700000000000}}""",
+            """{"type":"theme_sync","protocolVersion":2,"clientId":"phone-1","themeSync":{"seed":"#6750A4","style":"tonal_spot","mode":"dark","contrast":0.5,"dynamic":false,"sentAtUnixMs":1700000000000}}""");
+
+        Assert.NotNull(store.Latest);
+        Assert.Equal("#6750A4", store.Latest!.SeedHex);
+    }
+
+    [Fact]
+    public async Task ARawValidMessageWithNoRequiredFieldsRoundTripsEndToEnd()
+    {
+        // Sanity base case for RawScriptedWebSocket itself: a genuinely complete raw JSON frame
+        // (protocolVersion included, unlike the earlier live-check omission this fix round traced)
+        // must reach the store exactly like the RemexMessage-object-based tests above.
+        var store = new PhoneThemeSnapshotStore();
+        var log = new CapturingLogger();
+        await RunRawAsync(
+            store,
+            log,
+            """{"type":"theme_sync","protocolVersion":2,"clientId":"phone-1","themeSync":{"seed":"#6750A4","style":"tonal_spot","mode":"dark","contrast":0.5,"dynamic":false,"sentAtUnixMs":1700000000000}}""");
+        Assert.True(store.Latest is not null, "LOG:\n" + string.Join("\n", log.Lines));
+    }
+
+    /// <summary>
+    /// Surfaces every log line HandleAsync emits for a connection, so a test that fails
+    /// unexpectedly shows WHY rather than just that it did — this is what caught the
+    /// protocolVersion gate the first raw-JSON attempt at this fix round tripped over.
+    /// </summary>
+    private sealed class CapturingLogger : ILogger<PingPongHandler>
+    {
+        public List<string> Lines { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel level) => true;
+        public void Log<TState>(LogLevel level, EventId id, TState state, Exception? ex, Func<TState, Exception?, string> formatter)
+            => Lines.Add($"[{level}] {formatter(state, ex)}{(ex is null ? "" : " EX:" + ex)}");
+    }
+
+    /// <summary>Drives one whole loopback connection carrying raw JSON text frames.</summary>
+    private static Task RunRawAsync(IPhoneThemeSnapshotStore store, params string[] script) =>
+        RunRawAsync(store, NullLogger<PingPongHandler>.Instance, script);
+
+    private static async Task RunRawAsync(IPhoneThemeSnapshotStore store, ILogger<PingPongHandler> logger, params string[] script)
+    {
+        var socket = new RawScriptedWebSocket(script);
+        await DriveAsync(socket, store, logger);
+    }
+
     /// <summary>Drives one whole loopback connection carrying <paramref name="script"/>.</summary>
     private static async Task RunAsync(IPhoneThemeSnapshotStore store, params RemexMessage[] script)
     {
         var socket = new ScriptedWebSocket(script);
+        await DriveAsync(socket, store, NullLogger<PingPongHandler>.Instance);
+    }
 
+    private static async Task DriveAsync(WebSocket socket, IPhoneThemeSnapshotStore store, ILogger<PingPongHandler> logger)
+    {
         var handler = new PingPongHandler(
-            NullLogger<PingPongHandler>.Instance,
+            logger,
             null!,
             Mock.Of<Remex.Core.Services.Command.ISystemCommandService>(),
             Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),

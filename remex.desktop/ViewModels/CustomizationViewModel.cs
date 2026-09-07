@@ -1711,9 +1711,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     internal static (string? SeedHex, string? SchemeVariant, string? Mode, double? Contrast) TryMapPhoneTheme(
         PhoneThemeSnapshot snapshot)
     {
-        string? seedHex = Color.TryParse(snapshot.SeedHex, out _) ? snapshot.SeedHex : null;
+        // NULL-SAFE READS, NOT JUST NULLABLE ANNOTATIONS (RemEx-sudp8 fix round). PhoneThemeSnapshot's
+        // wire properties are no longer `required`, and System.Text.Json fills an absent record
+        // property with a genuine runtime null - bypassing the property's own `= string.Empty`
+        // initializer, which only applies to a plain C# construction. Color.TryParse(null, ...) and
+        // string.Replace on a null reference both throw, and this method has no host-side validator
+        // in front of it the way PingPongHandler.IsValidThemeSync does on the write side.
+        string? seedHex = snapshot.SeedHex is { } seedIn && Color.TryParse(seedIn, out _) ? seedIn : null;
 
-        var normalizedStyle = snapshot.Style.Replace("_", "", StringComparison.Ordinal);
+        var normalizedStyle = (snapshot.Style ?? string.Empty).Replace("_", "", StringComparison.Ordinal);
         var schemeVariant = SchemeVariants.TonalSpot;
         foreach (var known in KnownPhoneStyles)
         {

@@ -97,6 +97,42 @@ public class PhoneThemeSnapshotRoundTripTests
     }
 
     [Fact]
+    public void AThemeSyncMissingAFieldDeserializesInsteadOfDroppingTheWholeMessage()
+    {
+        // RemEx-sudp8 fix round (Opus review, HIGH). No wire field on PhoneThemeSnapshot is
+        // `required` any more: a `required` member missing from the JSON makes System.Text.Json
+        // throw, MessageSerializer.Deserialize turns that into a null RemexMessage, and a null
+        // message makes PingPongHandler's receive loop treat it as a disconnect - dropping the
+        // WHOLE control session over one absent field, for every message type, not just this one.
+        // "style" is missing here; it must default rather than throw, and PingPongHandler.IsValidThemeSync
+        // (not this deserializer) is what rejects the incomplete snapshot.
+        var arrived = Deserialize(
+            """{"type":"theme_sync","themeSync":{"seed":"#6750A4","mode":"dark","contrast":0.5,"dynamic":true,"sentAtUnixMs":1700000000000}}""");
+
+        Assert.NotNull(arrived);
+        Assert.NotNull(arrived!.ThemeSync);
+        // GENUINELY NULL, NOT string.Empty — System.Text.Json fills an absent record property with
+        // a runtime null, bypassing PhoneThemeSnapshot.Style's own `= string.Empty` initializer
+        // (that initializer only applies to a plain `new PhoneThemeSnapshot()` in C#). Consuming code
+        // (IsValidThemeSync, TryMapPhoneTheme) has to tolerate this null, not this deserializer.
+        Assert.Null(arrived.ThemeSync!.Style);
+        Assert.Equal("#6750A4", arrived.ThemeSync.SeedHex);
+    }
+
+    [Fact]
+    public void AThemeSyncWithAnExtraUnknownFieldDeserializesAndIgnoresIt()
+    {
+        var arrived = Deserialize(
+            """
+            {"type":"theme_sync","themeSync":{"seed":"#6750A4","style":"tonal_spot","mode":"dark","contrast":0.5,"dynamic":true,"sentAtUnixMs":1700000000000,"somethingFuture":"x"}}
+            """);
+
+        Assert.NotNull(arrived?.ThemeSync);
+        Assert.Equal("#6750A4", arrived!.ThemeSync!.SeedHex);
+        Assert.Equal("tonal_spot", arrived.ThemeSync.Style);
+    }
+
+    [Fact]
     public void ClientIdAndReceivedUtcAreHostStampedNotWireFields()
     {
         // The phone never sends these - they are absent from the wire and only appear once
