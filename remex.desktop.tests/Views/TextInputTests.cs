@@ -68,6 +68,15 @@ public class TextInputTests
         // Inline edit-in-place overlay: the sensor's own title is already visible on the card this
         // overlays, so a floating "Title" label would repeat information rather than add it.
         ["Binding Sensor.CustomTitle"] = "CanvasView - inline rename overlay of a title already on the card",
+
+        // NumericUpDown, not TextBox/ComboBox (Opus review round 2, MEDIUM): confirmed against
+        // Material.Avalonia 3.19.0's actual source (Material.Styles/Resources/Themes/
+        // NumericUpDown.axaml) that OutlineNumericUpDown template-binds TextFieldAssist.Label
+        // down to an inner PART_TextBox themed MaterialOnlyPresenterTextBox - a stripped template
+        // with no label element - while the outer template's own styles target
+        // Border#PART_LabelRootBorder, an element the outer template never declares either. The
+        // value is bound through but never painted; a caption TextBlock stays for this one field.
+        ["SetAlert_ThresholdValue"] = "SetAlertDialog - OutlineNumericUpDown never renders TextFieldAssist.Label in Material.Avalonia 3.19.0; a caption TextBlock stays",
     };
 
     [Fact]
