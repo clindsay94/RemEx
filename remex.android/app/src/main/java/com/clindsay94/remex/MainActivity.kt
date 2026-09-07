@@ -136,6 +136,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Hoisted so the catch below can also tear down a partially-added exitView (RemEx-alwfa.1
+        // review round 2, LOW): a throw AFTER addView must not leave the opaque overlay stuck on
+        // top of content just because it removed the system splash successfully.
+        var decor: ViewGroup? = null
+        var exitView: SplashExitView? = null
+
         try {
             val darkTheme = when (prefs?.themeMode?.lowercase()) {
                 "dark" -> true
@@ -147,28 +153,30 @@ class MainActivity : ComponentActivity() {
             val palette = SplashPaletteResolver.resolveOrFallback(scheme, darkTheme)
 
             val splashRoot = provider.view
-            val exitView = SplashExitView(this, palette).apply {
+            val view = SplashExitView(this, palette).apply {
                 layoutParams = ViewGroup.LayoutParams(splashRoot.width, splashRoot.height)
             }
-            val decor = window.decorView as ViewGroup
-            decor.addView(exitView, decor.indexOfChild(splashRoot) + 1)
+            exitView = view
+            val group = window.decorView as ViewGroup
+            decor = group
+            group.addView(view, group.indexOfChild(splashRoot) + 1)
 
             val animatorScale =
                 Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
             when (splashExitTransitionFor(animatorScale)) {
                 SplashExitTransition.CUT -> {
-                    runCatching { decor.removeView(exitView) }
+                    runCatching { group.removeView(view) }
                     removeSplashOnce()
                 }
                 SplashExitTransition.CROSSFADE -> {
                     val fallback = Runnable {
-                        runCatching { decor.removeView(exitView) }
+                        runCatching { group.removeView(view) }
                         removeSplashOnce()
                     }
-                    exitView.postDelayed(fallback, SplashExitFallbackRemovalMs)
+                    view.postDelayed(fallback, SplashExitFallbackRemovalMs)
 
-                    exitView.alpha = 0f
-                    exitView.animate()
+                    view.alpha = 0f
+                    view.animate()
                         .alpha(1f)
                         .setDuration(SplashExitCrossfadeMs)
                         .withEndAction {
@@ -176,8 +184,8 @@ class MainActivity : ComponentActivity() {
                                 .alpha(0f)
                                 .setDuration(SplashExitCrossfadeMs)
                                 .withEndAction {
-                                    exitView.removeCallbacks(fallback)
-                                    runCatching { decor.removeView(exitView) }
+                                    view.removeCallbacks(fallback)
+                                    runCatching { group.removeView(view) }
                                     removeSplashOnce()
                                 }
                                 .start()
@@ -187,8 +195,12 @@ class MainActivity : ComponentActivity() {
             }
         } catch (t: Throwable) {
             // Never leave the system splash stuck over content because painting the recoloured
-            // exit phase itself failed (RemEx-alwfa.1 review, HIGH-3).
+            // exit phase itself failed (RemEx-alwfa.1 review, HIGH-3) — and if a partially added
+            // exitView survived the throw, it must come off too, or an opaque overlay is left
+            // sitting on top of content even though the system splash itself was removed
+            // (RemEx-alwfa.1 review round 2, LOW).
             Log.w(TAG, "seed splash exit failed; removing the system splash directly", t)
+            runCatching { decor?.removeView(exitView) }
             removeSplashOnce()
         }
     }
