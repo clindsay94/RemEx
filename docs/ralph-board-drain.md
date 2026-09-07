@@ -191,6 +191,11 @@ reaps a branch whose bead is not closed.
      edited after it — which is precisely the "tests passed, but against what?" hole. Everything
      below this bullet is still true and is what to reach for when narrowing down a specific
      failure; the one command is what to reach for to answer "is this finished?".
+     The dotnet scope's fingerprint covers `.cs`/`.csproj`/`.props`/`.targets`/`.sln`/`.resx`/
+     `.editorconfig`/`.manifest`/`.json`/`.axaml`/`.ps1` — Avalonia compiles `.axaml` into the
+     assembly and `remex.desktop.tests` scrapes `scripts/*.ps1` as source, so both count as source
+     now too, while the ralph loop's own `.psd1` config stays deliberately excluded (RemEx-0tui6).
+     A receipt written before this change is invalidated once, the first time `-Check` runs after it.
    - PC / core changes: `dotnet build Remex.sln` then `dotnet test Remex.sln`.
    - **Counting warnings: grep `": warning "`, never `"warning CS"`.** `warning CS` matches compiler
      diagnostics and nothing else, so analyzer warnings — xUnit, CA, IDE, NuGet — cannot appear in
