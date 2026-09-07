@@ -202,10 +202,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>True while <see cref="LoadTrustedDevicesAsync"/> is fetching the trust list — drives
     /// the skeleton-row placeholder over the card's first fill and every manual refresh (RemEx-kjdi).</summary>
-    [ObservableProperty] private bool _isLoadingTrustedDevices;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoTrustedDevices))]
+    private bool _isLoadingTrustedDevices;
 
     /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
     /// (RemEx-kjdi). <c>_shell</c> is <see langword="null"/> in some existing tests.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — low stakes, since reduced motion is a settings
+    /// toggle, not something flipped mid-wait.</remarks>
     public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
 
     /// <summary>
@@ -491,6 +496,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public bool SupportsTrustManagement => ResolveTrustService() is not null;
 
     public bool HasTrustedDevices => TrustedDevices.Count > 0;
+
+    /// <summary>Gates the "no trusted devices" caption (review finding, RemEx-kjdi): without the
+    /// loading half of this, the caption sat OUTSIDE the BusyPlaceholder and rendered on top of the
+    /// skeleton rows during every refresh, since an empty list makes <see cref="HasTrustedDevices"/>
+    /// false whether or not a fetch is in flight.</summary>
+    public bool ShowNoTrustedDevices => !HasTrustedDevices && !IsLoadingTrustedDevices;
 
     /// <summary>
     /// Test-only seam: supplies the trust service instead of resolving it from the embedded host.
@@ -1014,6 +1025,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         OnPropertyChanged(nameof(HasTrustedDevices));
+        OnPropertyChanged(nameof(ShowNoTrustedDevices));
     }
 
     /// <summary>
@@ -1129,6 +1141,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             UnsubscribeTrustDevice(item);
             TrustedDevices.Remove(item);
             OnPropertyChanged(nameof(HasTrustedDevices));
+            OnPropertyChanged(nameof(ShowNoTrustedDevices));
             ShowTransientStatus(LocalizationService.Instance["Settings_TrustRevoked"]);
         }
         catch (Exception ex)

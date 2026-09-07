@@ -79,6 +79,23 @@ public class BusyPlaceholderTests
             .Should().BeTrue("reduced motion needs its own static Opacity setter, not just an absent animation");
     }
 
+    /// <summary>
+    /// Review finding: without <c>Classes="circular"</c>, ProgressIndicatorTests'
+    /// TheCircularClassActuallySwapsTheTemplate documents that a plain ProgressBar renders as the
+    /// default 16px-wide LINEAR bar, not a ring — a visible, wrong rendering that no test caught
+    /// until an eyes pass did.
+    /// </summary>
+    [Fact]
+    public void TheSpinnerUsesTheCircularTemplate()
+    {
+        var text = ControlSource();
+
+        var spinnerTag = Regex.Match(text, @"<ProgressBar Name=""PART_Spinner""[^>]*/>", RegexOptions.Singleline);
+        spinnerTag.Success.Should().BeTrue("expected to find the PART_Spinner ProgressBar element");
+        spinnerTag.Value.Should().Contain("Classes=\"circular\"",
+            "without this the spinner renders as a linear bar, not the ring the design calls for");
+    }
+
     private static string ControlPath() =>
         Path.Combine(RepoRoot(), "remex.desktop", "Controls", "BusyPlaceholder.axaml");
 

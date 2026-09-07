@@ -74,6 +74,10 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// <summary>Forwards the shell's reduced-motion setting so the busy placeholder's shimmer can be
     /// gated on it without this view-model owning the setting itself (RemEx-kjdi). <c>_shell</c> is
     /// <see langword="null"/> in some existing tests (RemEx-8y3qy's pattern), hence the null-conditional.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes, so a live toggle while this page's busy placeholder
+    /// happens to be visible will not update the binding until something else re-reads it. Low
+    /// stakes — reduced motion is a settings-page toggle, not something flipped mid-wait.</remarks>
     public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
 
     /// <summary>"shown / retained" counter for the status line.</summary>
@@ -498,6 +502,15 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     // Application event log by source; Linux reads the user journal by process name
     // (RemEx-2vfx — the previous query named a systemd unit the installer deletes). ─────────────
 
+    /// <summary>
+    /// Runs the external command <see cref="FetchServiceLogsAsync"/> needs (PowerShell on Windows,
+    /// journalctl on Linux). Replaceable so a test can verify <see cref="IsFetchingServiceLogs"/>'s
+    /// true-during/false-after semantics without spawning a real child process (review finding,
+    /// RemEx-w7ei's class of concern) — the same seam <see cref="FolderLauncher"/> and
+    /// <see cref="CopyToClipboardAsync"/> use for the same reason. Defaults to the real runner.
+    /// </summary>
+    internal Func<string, string, Task<(bool Success, string Output)>> CommandRunner { get; set; } = RunCommandAsync;
+
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
@@ -511,7 +524,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
                                     "Select-Object TimeGenerated, EntryType, Message | " +
                                     "ForEach-Object { '[' + $_.TimeGenerated.ToString('yyyy-MM-dd HH:mm:ss') + '] [' + $_.EntryType.ToString().ToUpper() + '] ' + $_.Message }";
 
-                var (_, output) = await RunCommandAsync("powershell.exe", $"-Command \"{powershellCmd}\"");
+                var (_, output) = await CommandRunner("powershell.exe", $"-Command \"{powershellCmd}\"");
                 ServiceLogsText = string.IsNullOrWhiteSpace(output)
                     ? LocalizationService.Instance["Logs_Service_WindowsEmpty"]
                     : output.Trim();
@@ -529,7 +542,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
                 // the process's stdout/stderr in the user journal, ones that spawn it directly
                 // may capture nothing — which is why the empty case explains itself below
                 // instead of reading as "no problems".
-                var (ok, output) = await RunCommandAsync(
+                var (ok, output) = await CommandRunner(
                     "journalctl", LinuxJournalArguments);
                 ServiceLogsText = ok
                     ? DescribeLinuxJournal(output)

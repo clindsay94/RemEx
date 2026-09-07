@@ -39,7 +39,12 @@
                      which outranks a Style Setter — the exact trap DashboardBackgroundControl.axaml's
                      own Transitions comment documents for this codebase. Visibility for every part
                      below is Style-driven, full stop; the "Resting state" rules are load-bearing. -->
+                <!-- Classes="circular" is load-bearing, not decorative: TheCircularClassActuallySwapsTheTemplate
+                     (ProgressIndicatorTests) documents that .circular is a TEMPLATE SWAP
+                     (MaterialCircularProgressBar), not a resize - without it this renders as the
+                     default 16px-wide LINEAR bar, not the ring the design calls for (review finding). -->
                 <ProgressBar Name="PART_Spinner"
+                             Classes="circular"
                              IsIndeterminate="True"
                              Width="16" Height="16"
                              HorizontalAlignment="Center" VerticalAlignment="Center"

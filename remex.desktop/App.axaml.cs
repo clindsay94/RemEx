@@ -736,6 +736,10 @@ public partial class App : Application
     {
         try
         {
+            // Accepted gap (review, RemEx-kjdi): `new PathSettings()` reads the type's own default,
+            // not any configured RemexClientSettings.Paths from DI — RemexClientSettings is not
+            // currently wired into this app's service collection at all (its own file is the only
+            // place it is referenced), so there is nothing configured to diverge from yet.
             var directory = new PathSettings().LogsDirectory;
             Directory.CreateDirectory(directory);
             DiagnosticLogsViewModel.LaunchFolder(directory);

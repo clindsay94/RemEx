@@ -425,7 +425,7 @@
 
                         <TextBlock Text="{local:Localize Settings_TrustDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
 
-                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasTrustedDevices}"/>
+                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding ShowNoTrustedDevices}"/>
 
                         <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoadingTrustedDevices}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
                         <ItemsControl ItemsSource="{Binding TrustedDevices}">

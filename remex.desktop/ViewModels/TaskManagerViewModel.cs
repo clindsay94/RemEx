@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -60,6 +61,9 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
     /// (RemEx-kjdi). <c>_shell</c> is optional (see the constructor) — a null shell just answers
     /// <see langword="false"/> here rather than throwing.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — low stakes, since reduced motion is a settings
+    /// toggle, not something flipped mid-wait.</remarks>
     public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
 
     public TaskManagerViewModel(ConnectionViewModel connection, ShellViewModel? shell = null)
@@ -71,6 +75,23 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         SortCommand = new RelayCommand<string>(SortByColumn);
 
         _connection.ProcessListReceived += Connection_ProcessListReceived;
+        _connection.PropertyChanged += Connection_PropertyChanged;
+    }
+
+    /// <summary>
+    /// Clears the skeleton if the connection drops while a refresh is outstanding (review finding,
+    /// RemEx-kjdi). <see cref="RefreshProcessesAsync"/>'s own post-await check only catches a
+    /// refresh that was ALREADY disconnected; this catches the connected-then-dropped race, where
+    /// <see cref="ConnectionViewModel.RequestProcessListAsync"/> has already returned (its guarded
+    /// send is fire-and-forget) and no reply will ever arrive to run
+    /// <see cref="ApplyReceivedProcessList"/>.
+    /// </summary>
+    private void Connection_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && !_connection.IsConnected)
+        {
+            IsLoading = false;
+        }
     }
 
     partial void OnSearchTextChanged(string value)
@@ -147,6 +168,17 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         {
             IsLoading = false;
             throw;
+        }
+
+        // RequestProcessListAsync silently no-ops when the socket is not open
+        // (ConnectionViewModel.SendGuardedAsync returns early rather than throwing or reporting
+        // failure) - no reply will ever arrive to clear the flag via ApplyReceivedProcessList, so a
+        // refresh issued while disconnected must not leave the skeleton shimmering forever
+        // (review finding, RemEx-kjdi). The connected-then-dropped-before-the-reply race is instead
+        // caught by Connection_PropertyChanged above, since IsConnected is still true here.
+        if (!_connection.IsConnected)
+        {
+            IsLoading = false;
         }
     }
 
@@ -353,6 +385,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _connection.ProcessListReceived -= Connection_ProcessListReceived;
+        _connection.PropertyChanged -= Connection_PropertyChanged;
         StopPolling();
     }
 }
