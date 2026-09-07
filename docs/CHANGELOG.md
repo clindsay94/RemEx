@@ -245,6 +245,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The "Keyboard Shortcuts" button on the PC's About page opens its list again; it had two
+  competing owners of the flyout's open state and cancelled itself out. (RemEx-acvny)
 - Developer-facing: the verify gate's receipt now fingerprints XAML and PowerShell sources too.
   A change to a `.axaml` view or a script the tests scrape after a verify run used to leave the
   receipt reading as valid; it now invalidates like a C# edit does. (RemEx-0tui6)
