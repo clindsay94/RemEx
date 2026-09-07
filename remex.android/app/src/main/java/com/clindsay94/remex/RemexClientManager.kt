@@ -10,6 +10,9 @@ import com.clindsay94.remex.data.MediaArtworkCache
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaSeekReconciler
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.data.ThemeSyncSeedResolver
+import com.clindsay94.remex.data.ThemeSyncSender
+import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
 import com.clindsay94.remex.ui.screens.PairingSurface
@@ -23,7 +26,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -303,13 +309,40 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     fun initialize(context: Context) {
         if (settingsManager != null) return
 
-        settingsManager = SettingsManager(context)
+        val settings = SettingsManager(context)
+        settingsManager = settings
 
         managerScope.launch {
             val host = settingsManager?.hostFlow?.first().orEmpty()
             if (host.isNotBlank()) {
                 runCatching { RemexConnectionService.start(context) }
                         .onFailure { Log.w("RemexManager", "Failed to start keepalive service during initialize", it) }
+            }
+        }
+
+        // theme_sync (RemEx-y06a0.1, blocker of RemEx-sudp8): announce the phone's palette once
+        // the connection is established, and again on every theme-flow change, debounced inside
+        // ThemeSyncSender. applicationContext because the seed resolver reads dynamic color and
+        // configuration state that must outlive whichever Activity happened to call initialize().
+        val appContext = context.applicationContext
+        val sender =
+                ThemeSyncSender(
+                        scope = managerScope,
+                        isConnected = { _isConnected.value },
+                        resolveSeed = { snapshot -> ThemeSyncSeedResolver.resolve(appContext, snapshot) },
+                        send = { json -> RemexCoreClient.SendMessage(json) },
+                )
+
+        managerScope.launch {
+            settings.personalizationPreferencesFlow
+                    .map { it.toThemeSnapshot() }
+                    .distinctUntilChanged()
+                    .collect { snapshot -> sender.onThemeChanged(snapshot) }
+        }
+
+        managerScope.launch {
+            connectedHost.filterNotNull().collect {
+                sender.onConnected(settings.personalizationPreferencesFlow.first().toThemeSnapshot())
             }
         }
 
