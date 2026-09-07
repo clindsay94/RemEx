@@ -26,15 +26,17 @@ public class CustomizationMigrationTests
 {
     /// <summary>
     /// Every other assertion here is relative to <see cref="CustomizationMigration.CurrentSchemaVersion"/>,
-    /// so a bump would keep the suite green. The number is pinned on purpose: schema 4 is the arm
-    /// that retired Mica (RemEx-8twk0.6), and the splash-default flip (RemEx-8twk0.9) EXTENDS that
-    /// arm rather than adding a schema 5, because 4 never ships between the two tasks. Move this
-    /// number only with a new arm and a reason.
+    /// so a bump would keep the suite green. The number is pinned on purpose: schema 4 was the arm
+    /// that retired Mica (RemEx-8twk0.6), and the splash-default flip (RemEx-8twk0.9) EXTENDED that
+    /// arm rather than adding a schema 5, because 4 never shipped between the two tasks. Schema 5
+    /// (RemEx-ceu4x) could not do the same thing for the same reason arm 3 -&gt; 4 could not fold
+    /// into arm 2 -&gt; 3: schema 4 had already shipped, so a real profile on disk at schema 4 needs
+    /// its own arm to reach. Move this number only with a new arm and a reason.
     /// </summary>
     [Fact]
-    public void TheCurrentSchemaIsFourUntilANewArmSaysOtherwise()
+    public void TheCurrentSchemaIsFiveUntilANewArmSaysOtherwise()
     {
-        CustomizationMigration.CurrentSchemaVersion.Should().Be(4);
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(5);
     }
 
     /// <summary>
@@ -287,7 +289,14 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion });
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here and seeds ThemeSeedChromaRequest from
+        // ThemeSeedChroma - the one field this "byte identical apart from the stamp" test has to
+        // name explicitly now, the same way arm 3 already earns its own exclusions elsewhere.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        });
     }
 
     [Fact]
@@ -300,8 +309,12 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
-            "a non-Mica background at schema 3 must not have its blur touched by arm 3->4");
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here; see the Aurora test above for why.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        }, "a non-Mica background at schema 3 must not have its blur touched by arm 3->4");
     }
 
     [Fact]
@@ -322,8 +335,12 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        after.Should().BeEquivalentTo(before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
-            "only the old default is flipped; a choice is a choice");
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here; see the Aurora test above for why.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        }, "only the old default is flipped; a choice is a choice");
     }
 
     [Fact]
@@ -339,8 +356,10 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
-    public void ASchemaFourProfileIsUntouched()
+    public void ASchemaCurrentProfileIsUntouched()
     {
+        // Was "ASchemaFourProfileIsUntouched" — renamed when RemEx-ceu4x moved current to 5, since a
+        // literal schema-4 profile is no longer a no-op (see the arm-5 tests below).
         var current = SchemaTwo() with
         {
             SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
@@ -350,6 +369,43 @@ public class CustomizationMigrationTests
 
         CustomizationMigration.Migrate(current, out _).Should().BeSameAs(current,
             "a profile already at the current schema is returned as the same instance");
+    }
+
+    // ─── Arm 5: the Vibrancy request is persisted separately from the achieved chroma (RemEx-ceu4x) ──
+
+    private static CustomizationSettings SchemaFour() => SchemaTwo() with { SchemaVersion = 4 };
+
+    [Fact]
+    public void ASchemaFourProfileGetsItsRequestSeededFromWhatItAchieved()
+    {
+        // Schema 4 already shipped, so a real profile on disk at exactly schema 4 - not "current",
+        // which is 5 now - has no themeSeedChromaRequest key at all. The only honest seed for a
+        // request nobody has typed yet is the seed's own achieved chroma.
+        var before = SchemaFour() with { ThemeSeedChroma = 73.0 };
+        before.ThemeSeedChromaRequest.Should().Be(48.0, "anti-vacuity: the un-migrated record default, not a coincidence");
+
+        var migrated = CustomizationMigration.Migrate(before, out var warning);
+
+        warning.Should().BeNull("nothing here needed repairing, only seeding");
+        migrated.ThemeSeedChromaRequest.Should().Be(73.0, "seeded from what the seed actually achieved");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmFiveDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same as ArmThreeDropsNoField: one `with` expression, so every
+        // field it does not name survives verbatim. Built by reflection so a field added next year
+        // is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 4);
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        }, "arm 5 rewrites only ThemeSeedChromaRequest");
     }
 
     [Fact]

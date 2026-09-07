@@ -280,8 +280,20 @@ public record CustomizationSettings
     /// <summary>Relative strength of the neon/glow effects.</summary>
     public double GlowStrength { get; init; } = 2;
 
-    /// <summary>Vibrancy (Chroma) level for the seed color (Material 3).</summary>
+    /// <summary>Vibrancy (Chroma) level for the seed color (Material 3). The ACHIEVED chroma of
+    /// <see cref="AccentColor"/> — what <c>Hct.From(hue, ThemeSeedChroma, tone)</c> actually
+    /// reproduces, which may be lower than what was asked for (most hue/tone pairs cannot reach
+    /// high chroma in sRGB). This is Android's vibrancy axis and the parity RemEx-ndhlv wants.</summary>
     public double ThemeSeedChroma { get; init; } = 48.0;
+
+    /// <summary>
+    /// The Vibrancy slider's raw ask, independent of what the seed could hold. A Windows-accent or
+    /// Wallpaper source change re-shapes the seed from a new hue/tone but this same request every
+    /// time, so the chroma no longer ratchets down toward whatever the least forgiving accent hue
+    /// could reach (RemEx-ceu4x). <see cref="ThemeSeedChroma"/> stays the ACHIEVED value the two
+    /// platforms agree on; this field never leaves the desktop's own studio.
+    /// </summary>
+    public double ThemeSeedChromaRequest { get; init; } = 48.0;
 
     /// <summary>Contrast level for the dynamic color scheme (-1.0 to 1.0).</summary>
     public double ThemeContrast { get; init; } = 0.0;

@@ -62,19 +62,27 @@ public sealed class ColorSourceCoordinator : IDisposable
 
     /// <summary>
     /// The seed a source colour becomes: the source's hue and tone, the profile's own vibrancy
-    /// (<c>ThemeSeedChroma</c>) as chroma — so the Vibrancy slider keeps shaping a seed the person
-    /// cannot type. Returns the same instance when the source is not a colour.
+    /// REQUEST (<c>ThemeSeedChromaRequest</c>) as chroma — so the Vibrancy slider keeps shaping a
+    /// seed the person cannot type. Returns the same instance when the source is not a colour.
     /// </summary>
+    /// <remarks>
+    /// REQUESTS THE REQUEST, NOT WHAT WAS LAST ACHIEVED (RemEx-ceu4x). Achieved chroma is
+    /// LESS-THAN-OR-EQUAL-TO what was asked for — most hue/tone pairs cannot reach high chroma in
+    /// sRGB — so re-requesting <c>ThemeSeedChroma</c> (the previous achieved value) on every accent
+    /// change made the seed monotonically less vibrant: three accent changes whose hues could not
+    /// hold the chroma, and Vibrancy had silently drifted toward grey with no user action.
+    /// <c>ThemeSeedChromaRequest</c> never changes here, so the next hue gets the full ask back.
+    /// </remarks>
     internal static CustomizationSettings ShapedBySource(CustomizationSettings settings, string sourceHex)
     {
         if (!Color.TryParse(sourceHex, out var source)) return settings;
 
         var (hue, _, tone) = SeedHct.FromColor(source);
-        var seed = SeedHct.ToHex(hue, settings.ThemeSeedChroma, tone);
+        var seed = SeedHct.ToHex(hue, settings.ThemeSeedChromaRequest, tone);
         return settings with
         {
             AccentColor = seed,
-            ThemeSeedChroma = SeedHct.ChromaOf(seed, settings.ThemeSeedChroma),
+            ThemeSeedChroma = SeedHct.ChromaOf(seed, settings.ThemeSeedChromaRequest),
         };
     }
 

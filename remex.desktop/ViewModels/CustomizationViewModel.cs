@@ -667,7 +667,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             ? parsedSeed
             : ThemeService.FallbackAccentColor;
 
-        (_seedHue, _seedChroma, _seedTone) = SeedHct.FromColor(initialSeed);
+        // CHROMA COMES FROM THE PERSISTED REQUEST, NOT THE SEED'S OWN ACHIEVED VALUE (RemEx-ceu4x).
+        // Reading FromColor's chroma here reopened the sheet on whatever the accent could hold last
+        // time, not on what the person asked the slider for — so a Vibrancy of 90 that a Windows
+        // accent hue could only reach 60 of showed the slider parked at 60, permanently, the moment
+        // the sheet was closed and reopened once.
+        var (hue, _, tone) = SeedHct.FromColor(initialSeed);
+        _seedHue = hue;
+        _seedChroma = settings.ThemeSeedChromaRequest;
+        _seedTone = tone;
 
         // Build the preset gallery. AFTER the seed axes are set, because the tiles are painted from
         // the live settings and Dynamic's tile is the live settings.
@@ -1283,6 +1291,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // means Hct.From(hue, ThemeSeedChroma, tone) reproduces this exact seed, which is the
             // property the Android side needs for the two platforms to agree (RemEx-ndhlv).
             ThemeSeedChroma = SeedHct.ChromaOf(AccentColor, carried.ThemeSeedChroma),
+            // THE RAW ASK, ALONGSIDE THE ACHIEVED VALUE ABOVE (RemEx-ceu4x). Without this,
+            // ColorSourceCoordinator.ShapedBySource had nothing to request but the achieved chroma
+            // above, and achieved <= requested means every accent change whose hue could not hold
+            // it ratcheted Vibrancy down permanently. SeedChroma is the slider's own live value, so
+            // this is exactly what the studio is showing right now, independent of what the current
+            // seed could reach.
+            ThemeSeedChromaRequest = SeedChroma,
             // SUPERSEDED FIELD CARRIED VERBATIM, MODE WRITTEN INSTEAD (RemEx-zk5bc). UseLightPalette
             // is a migration input now; writing new values to it would recreate the two-fields-that-
             // can-disagree trap the mode exists to end.

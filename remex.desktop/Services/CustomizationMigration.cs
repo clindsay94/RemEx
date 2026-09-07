@@ -35,8 +35,11 @@ public static class CustomizationMigration
     /// 3 = the personalization sheet: colour source, wallpaper, saved palettes (RemEx-ddynd),
     /// 4 = Mica retired from the background-mode picker (RemEx-8twk0.6); the same arm also flips a
     ///     persisted RemexCommand splash to CosmicZoom, the new default (RemEx-8twk0.9).
+    /// 5 = <c>ThemeSeedChromaRequest</c> added (RemEx-ceu4x). Schema 4 already shipped, so a
+    ///     schema-4 profile on disk today has no such key and cannot be caught by extending an
+    ///     earlier arm — the same reason 3 -&gt; 4 needed its own arm rather than folding into 2 -&gt; 3.
     /// </remarks>
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -81,6 +84,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 2) migrated = StampThemeMode(migrated);
         if (migrated.SchemaVersion < 3) migrated = FromSchemaTwo(migrated);
         if (migrated.SchemaVersion < 4) migrated = FromSchemaThree(migrated);
+        if (migrated.SchemaVersion < 5) migrated = FromSchemaFour(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -183,6 +187,23 @@ public static class CustomizationMigration
                 : settings.SplashStyle,
         };
     }
+
+    /// <summary>
+    /// Schema 4 → 5: the Vibrancy slider's request is persisted separately from what it achieved
+    /// (RemEx-ceu4x). ONE <c>with</c> EXPRESSION, so a field this arm does not name cannot be
+    /// dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// <c>ThemeSeedChromaRequest</c> never existed before this arm, so ANY profile arriving below
+    /// schema 5 has the record default in it rather than a real answer — there is no "did the user
+    /// really mean 48" ambiguity to preserve here the way arm 3 -&gt; 4 had for Mica. The seed's own
+    /// chroma is the only honest seed for a request nobody has typed yet: it is what the Vibrancy
+    /// slider would show today if nothing had ratcheted it, and it means
+    /// <see cref="ColorSourceCoordinator.ShapedBySource"/> does not immediately reshape the very
+    /// next accent change down to whatever the record default (48) allows.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaFour(CustomizationSettings settings) =>
+        settings with { ThemeSeedChromaRequest = settings.ThemeSeedChroma };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

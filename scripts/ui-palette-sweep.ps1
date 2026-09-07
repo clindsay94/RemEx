@@ -233,15 +233,16 @@ try {
 
         # Only the customization fields the sweep cares about — everything else in the profile
         # (canvas layout, connection history, sensor alerts...) passes through untouched.
-        # schemaVersion 4 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
+        # schemaVersion 5 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
         # a lower number is re-migrated on read, which is not what a sweep cell asked for.
-        $customization | Add-Member -NotePropertyName 'schemaVersion'   -NotePropertyValue 4                  -Force
-        $customization | Add-Member -NotePropertyName 'baseTheme'       -NotePropertyValue $cell.ThemeId       -Force
-        $customization | Add-Member -NotePropertyName 'accentColor'     -NotePropertyValue $cell.Seed          -Force
-        $customization | Add-Member -NotePropertyName 'schemeVariant'   -NotePropertyValue $cell.SchemeVariant -Force
-        $customization | Add-Member -NotePropertyName 'themeContrast'   -NotePropertyValue $cell.Contrast      -Force
-        $customization | Add-Member -NotePropertyName 'themeSeedChroma' -NotePropertyValue 48.0                -Force
-        $customization | Add-Member -NotePropertyName 'themeMode'       -NotePropertyValue $cell.Mode          -Force
+        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 5                  -Force
+        $customization | Add-Member -NotePropertyName 'baseTheme'              -NotePropertyValue $cell.ThemeId       -Force
+        $customization | Add-Member -NotePropertyName 'accentColor'            -NotePropertyValue $cell.Seed          -Force
+        $customization | Add-Member -NotePropertyName 'schemeVariant'          -NotePropertyValue $cell.SchemeVariant -Force
+        $customization | Add-Member -NotePropertyName 'themeContrast'          -NotePropertyValue $cell.Contrast      -Force
+        $customization | Add-Member -NotePropertyName 'themeSeedChroma'        -NotePropertyValue 48.0                -Force
+        $customization | Add-Member -NotePropertyName 'themeSeedChromaRequest' -NotePropertyValue 48.0                -Force
+        $customization | Add-Member -NotePropertyName 'themeMode'              -NotePropertyValue $cell.Mode          -Force
 
         # Background cells only; every other cell leaves the profile's own background in place.
         if ($cell.Contains('Background')) {

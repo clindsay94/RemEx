@@ -5,6 +5,7 @@ using Avalonia.Media;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
+using Remex.Desktop.ViewModels;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Services;
@@ -44,7 +45,7 @@ public class ColorSourceCoordinatorTests : IDisposable
     [Fact]
     public void ShapedBySource_TakesHueAndToneFromTheSourceAndChromaFromTheProfile()
     {
-        var settings = new CustomizationSettings { ThemeSeedChroma = 20.0, AccentColor = "#6C4CFF" };
+        var settings = new CustomizationSettings { ThemeSeedChromaRequest = 20.0, AccentColor = "#6C4CFF" };
 
         var shaped = ColorSourceCoordinator.ShapedBySource(settings, "#0078D4");
 
@@ -52,8 +53,10 @@ public class ColorSourceCoordinatorTests : IDisposable
         var (hue, chroma, tone) = SeedHct.FromColor(Color.Parse(shaped.AccentColor));
         hue.Should().BeApproximately(sourceHue, 2.0);
         tone.Should().BeApproximately(sourceTone, 2.0);
-        chroma.Should().BeLessOrEqualTo(21.0, "the profile's vibrancy, not the source's chroma, shapes the seed");
+        chroma.Should().BeLessOrEqualTo(21.0, "the profile's vibrancy REQUEST, not the source's chroma, shapes the seed");
         shaped.ThemeSeedChroma.Should().BeApproximately(chroma, 0.01, "what was achieved is what is persisted (RemEx-ndhlv)");
+        shaped.ThemeSeedChromaRequest.Should().Be(20.0,
+            "the request itself must never change just because the achieved chroma did (RemEx-ceu4x)");
     }
 
     [Fact]
@@ -64,6 +67,45 @@ public class ColorSourceCoordinatorTests : IDisposable
         var shaped = ColorSourceCoordinator.ShapedBySource(settings, "#0078D4");
 
         shaped.Should().BeEquivalentTo(settings, o => o.Excluding(s => s.AccentColor).Excluding(s => s.ThemeSeedChroma));
+    }
+
+    /// <summary>
+    /// RemEx-ceu4x. Before this fix, <c>ShapedBySource</c> re-requested whatever chroma was last
+    /// ACHIEVED, so a hue that could not hold the request permanently lowered the ceiling for every
+    /// hue after it. Two hues that cannot hold a chroma of 90 (HCT's chroma envelope collapses to
+    /// almost nothing at the tone extremes, regardless of hue) must each still leave the REQUEST at
+    /// 90, and a hue that CAN hold 90 — tried twice, with a low hue in between — must get the full
+    /// chroma back both times.
+    /// </summary>
+    [Fact]
+    public void ShapedBySource_TheRequestSurvivesHuesThatCannotHoldItAndAGoodHueGetsItBack()
+    {
+        var settings = new CustomizationSettings { ThemeSeedChromaRequest = 90.0, AccentColor = "#6C4CFF" };
+
+        const string nearWhite = "#F2F2F2";
+        const string nearBlack = "#0A0A0A";
+        const string pureGreen = "#00FF00";
+        const string pureRed = "#FF0000";
+
+        var afterNearWhite = ColorSourceCoordinator.ShapedBySource(settings, nearWhite);
+        afterNearWhite.ThemeSeedChromaRequest.Should().Be(90.0, "a hue that cannot hold 90 must not touch the request");
+        afterNearWhite.ThemeSeedChroma.Should().BeLessThan(90.0, "a near-white hue cannot hold anywhere near chroma 90");
+
+        var afterNearBlack = ColorSourceCoordinator.ShapedBySource(afterNearWhite, nearBlack);
+        afterNearBlack.ThemeSeedChromaRequest.Should().Be(90.0, "a second bad hue must not touch the request either");
+        afterNearBlack.ThemeSeedChroma.Should().BeLessThan(90.0, "a near-black hue cannot hold chroma 90 either");
+        afterNearBlack.ThemeSeedChroma.Should().NotBeApproximately(afterNearWhite.ThemeSeedChroma, 0.01,
+            "what was achieved tracks the CURRENT hue, not a value inherited from the previous one");
+
+        var afterFirstGoodHue = ColorSourceCoordinator.ShapedBySource(afterNearBlack, pureGreen);
+        afterFirstGoodHue.ThemeSeedChromaRequest.Should().Be(90.0);
+        afterFirstGoodHue.ThemeSeedChroma.Should().BeApproximately(90.0, 3.0,
+            "a hue that CAN hold 90 must get the full request back, not whatever the worst prior hue allowed");
+
+        var afterSecondGoodHue = ColorSourceCoordinator.ShapedBySource(afterFirstGoodHue, pureRed);
+        afterSecondGoodHue.ThemeSeedChromaRequest.Should().Be(90.0);
+        afterSecondGoodHue.ThemeSeedChroma.Should().BeApproximately(90.0, 3.0,
+            "the ratchet is gone: a second good hue in a row still gets the full chroma back");
     }
 
     [Fact]
@@ -166,5 +208,41 @@ public class ColorSourceCoordinatorTests : IDisposable
         layout.CurrentProfile.Should().Be(before, "an unparseable hex must leave the profile untouched");
         (await File.ReadAllTextAsync(layout.FilePathForTests)).Should().Be(onDiskBefore,
             "no save should have been queued for a hex ShapedBySource could not parse");
+    }
+
+    /// <summary>
+    /// RemEx-ceu4x round-trip: the sheet used to seed the Vibrancy slider from the ACHIEVED chroma
+    /// of the persisted <c>AccentColor</c>, so reopening it after even one hue that could not hold
+    /// the request showed the slider parked wherever that hue left it, not where the person put it.
+    /// </summary>
+    [Fact]
+    public async Task ReopeningTheSheetShowsTheRequestOnTheSliderNotTheAchievedValue()
+    {
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        var layout = new DashboardLayoutService(Path.Combine(_tempDirectory, "dashboard_layout.json"), theme);
+
+        // A seed whose OWN chroma is 60 (achievable at this hue/tone), but a request of 90 sitting
+        // alongside it - exactly the gap ShapedBySource leaves behind when a Windows-accent hue
+        // could not hold the full ask.
+        var seedWithAchievedSixty = SeedHct.ToHex(hue: 260, chroma: 60, tone: 45);
+        var settings = new CustomizationSettings
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ColorSource = ColorSources.WindowsAccent,
+            AccentColor = seedWithAchievedSixty,
+            ThemeSeedChroma = SeedHct.ChromaOf(seedWithAchievedSixty, 60.0),
+            ThemeSeedChromaRequest = 90.0,
+        };
+        await File.WriteAllTextAsync(
+            layout.FilePathForTests,
+            System.Text.Json.JsonSerializer.Serialize(
+                new DashboardProfile { Customization = settings }, DashboardLayoutService.JsonOptions));
+        await layout.LoadAsync();
+
+        var vm = new CustomizationViewModel(null!, layout, theme);
+
+        vm.SeedChroma.Should().Be(90.0, "the slider must show the REQUEST the person made");
+        vm.SeedChroma.Should().NotBe(layout.CurrentProfile.Customization.ThemeSeedChroma,
+            "not the achieved chroma of whatever hue last shaped the seed");
     }
 }
