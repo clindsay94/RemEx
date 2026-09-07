@@ -245,6 +245,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Developer-facing: the palette sweep script no longer strands a Debug host when a cell fails
+  mid-loop. Its cleanup block now stops the host and waits for it to exit before asserting that
+  nothing is running, so the saved layout is always restored and the installed build relaunched.
+  Every in-loop stop now waits for the host to exit and refuses to write the profile if it has
+  not. (RemEx-l5vck)
 - Developer-facing (Android): adding a primary tab to the phone's navigation without giving it a
   pager page is now a build error instead of a crash on the user's first swipe. The primary tabs
   are a sealed type and the pager's page mapping is exhaustive over it. No visible change.
