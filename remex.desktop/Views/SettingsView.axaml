@@ -121,7 +121,7 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="primary" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}" AutomationProperties.Name="{local:Localize Settings_SaveReconnect}">
+                                <Button Classes="secondary" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}" AutomationProperties.Name="{local:Localize Settings_SaveReconnect}">
                                     <TextBlock Text="{local:Localize Settings_SaveReconnect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                                 </Button>
                                 <Button Classes="secondary danger" Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
@@ -283,7 +283,7 @@
                             <TextBlock Text="{local:Localize Settings_BackupDescription}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="primary" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ExportButton}">
+                                <Button Classes="secondary" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ExportButton}">
                                     <TextBlock Text="{local:Localize Settings_ExportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                                 </Button>
                                 <Button Classes="secondary" Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ImportButton}">
@@ -306,7 +306,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,16,0" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                <Button Classes="primary" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferAddFolder}">
+                                <Button Classes="secondary" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferAddFolder}">
                                     <TextBlock Text="{local:Localize Settings_FileTransferAddFolder}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                                 </Button>
                                 <Button Classes="secondary" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferRestoreDefaults}">

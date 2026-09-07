@@ -110,7 +110,10 @@ public class ButtonVocabularyTests
 
         foreach (var (file, text) in XamlFiles())
         {
-            if (Path.GetFileName(file) == "WindowChrome.axaml")
+            // Matched by repo-relative PATH, not bare filename (Opus review round 2, LOW): a
+            // same-named WindowChrome.axaml dropped anywhere else in the tree would otherwise be
+            // silently exempted too.
+            if (RepoRelativeViewPath(file) == "Themes/Chrome/WindowChrome.axaml")
             {
                 continue;
             }
@@ -133,6 +136,94 @@ public class ButtonVocabularyTests
             "every Button (and its WPF-style siblings) needs a Classes attribute or it renders "
             + "as Material's default raised primary by accident; WindowChrome.axaml's template "
             + "parts are the only exemption (RemEx-z7pnx.1)");
+    }
+
+    [Fact]
+    public void AtMostOnePrimaryButtonPerViewSurface()
+    {
+        // Opus review round 2 (HIGH), RemEx-z7pnx.1: SettingsView had FOUR buttons wearing
+        // "primary" on one scrolling page - Save, Save & Reconnect, Export Settings, Add Shared
+        // Folder - the exact "screen with six primaries" outcome the vocabulary forbids. Three
+        // are "secondary" now; this guards against it coming back. The unit here is the FILE,
+        // the coarsest thing a regex scan can reason about - finer-grained cards and mutually
+        // exclusive states need documented help below, same anti-sprawl discipline as Exceptions.
+        var perFilePrimaryExceptions = new Dictionary<string, string>
+        {
+            ["Presence.IsHostDown"] = "ShellView - HostDown/HasNoPhone/HasPhone are mutually exclusive Presence states, never two visible together",
+            ["Presence.HasNoPhone"] = "ShellView - see the Presence.IsHostDown entry",
+            ["Presence.HasPhone"] = "ShellView - see the Presence.IsHostDown entry",
+            ["TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter"] = "ShellView - Tutorial_Next/Tutorial_Finish are mutually exclusive by TutorialPageIndex",
+            ["TutorialPageIndex, Converter={x:Static conv:IntEqualConverter"] = "ShellView - see the IntNotEqualConverter entry",
+            ["x:Name=\"ActionButton\""] = "DialogContent - Classes=\"primary\" is only the XAML default; the constructor clears it and applies the caller's own classes, and Cancel is always \"secondary\" (RemEx-z7pnx.1)",
+
+            ["Dashboard_Connect"] = "CanvasView Actions card - Connect/CancelConnect/Disconnect are mutually exclusive by connection state",
+            ["Canvas_CancelConnect"] = "CanvasView Actions card - see the Dashboard_Connect entry",
+            ["Canvas_Disconnect"] = "CanvasView Actions card - see the Dashboard_Connect entry",
+            ["Canvas_ActionDone"] = "CanvasView - the floating selection toolbar is a different surface from the dashboard cards",
+            ["Canvas_CoachGotIt"] = "CanvasView - the coach-mark overlay is a different surface from the dashboard cards",
+            ["Canvas_AddCard"] = "CanvasView - a per-staging-item template button, a different surface per card",
+
+            ["FileTransfer_UploadBtn"] = "FileTransferView - pre-existing dual primary in one action bar, tracked as RemEx-a3q14, not fixed here (out of z7pnx.1's scope)",
+            ["FileTransfer_UploadFolderBtn"] = "FileTransferView - see the UploadBtn entry (RemEx-a3q14)",
+            ["FileTransfer_CreateFolderConfirmBtn"] = "FileTransferView - mutually exclusive by IsCreatingFolder",
+            ["FileTransfer_RenameConfirmBtn"] = "FileTransferView - mutually exclusive by IsRenaming",
+
+            ["About_Update_CheckButton"] = "AboutView - pre-existing dual primary once an update is found, tracked as RemEx-a3q14, not fixed here (out of z7pnx.1's scope)",
+            ["About_Update_DownloadButton"] = "AboutView - see the CheckButton entry (RemEx-a3q14)",
+            ["About_ViewGitHub"] = "AboutView - the GitHub card is a different surface from the Software Update card",
+
+            ["Home_InitializeSensors"] = "HomeView - the Sensors HUD empty-state card is a different surface from the phone-link card",
+            ["Home_InitializeLink"] = "HomeView - the phone-link card is a different surface from the Sensors HUD card",
+        };
+
+        var byFile = new Dictionary<string, List<string>>();
+        var exemptedSeen = new HashSet<string>();
+
+        foreach (var (file, text) in XamlFiles())
+        {
+            var primaries = new List<string>();
+
+            foreach (Match match in Regex.Matches(
+                         text, @"<(?:Button|ToggleButton|RepeatButton|DropDownButton|SplitButton)\b[^>]*?\bClasses=""([^""]+)""[^>]*>"))
+            {
+                var classes = match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (!classes.Contains("primary"))
+                {
+                    continue;
+                }
+
+                var exemption = perFilePrimaryExceptions.Keys.FirstOrDefault(
+                    key => match.Value.Contains(key, StringComparison.Ordinal));
+                if (exemption is not null)
+                {
+                    exemptedSeen.Add(exemption);
+                    continue;
+                }
+
+                primaries.Add(match.Value);
+            }
+
+            if (primaries.Count > 0)
+            {
+                byFile[file] = primaries;
+            }
+        }
+
+        // ANTI-VACUITY: every exception has to actually match a real button, or the list is
+        // quietly protecting nothing while still looking exhaustive.
+        var unmatchedExceptions = perFilePrimaryExceptions.Keys.Except(exemptedSeen).ToList();
+        unmatchedExceptions.Should().BeEmpty(
+            "every AtMostOnePrimaryButtonPerViewSurface exception has to match a real button, or "
+            + "the allow-list is stale: " + string.Join(", ", unmatchedExceptions));
+
+        var offenders = byFile
+            .Where(kv => kv.Value.Count > 1)
+            .Select(kv => $"{Path.GetFileName(kv.Key)}: {kv.Value.Count} unlisted primaries")
+            .ToList();
+
+        offenders.Should().BeEmpty(
+            "at most one .primary belongs on a surface at a time; an extra one needs a listed "
+            + "reason above, not just presence - that is how SettingsView ended up with four");
     }
 
     [Fact]
@@ -260,7 +351,22 @@ public class ButtonVocabularyTests
     private static IEnumerable<(string File, string Text)> XamlFiles()
         => Directory
             .EnumerateFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.axaml", SearchOption.AllDirectories)
-            .Select(file => (file, File.ReadAllText(file)));
+            .Select(file => (file, StripXmlComments(File.ReadAllText(file))));
+
+    /// <summary>
+    /// Removes <c>&lt;!-- ... --&gt;</c> blocks before any regex scan (Opus review round 2, LOW):
+    /// without this, a commented-out Button could either satisfy a guard that should have failed
+    /// on the real markup, or trip one that should have ignored dead prose. Every fact in this
+    /// file reads through XamlFiles(), so the fix is centralised here rather than per-test.
+    /// </summary>
+    private static string StripXmlComments(string xaml)
+        => Regex.Replace(xaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
+
+    /// <summary>The view file's path relative to remex.desktop, with forward slashes, for exact
+    /// path comparisons instead of a bare filename that a same-named file elsewhere would also
+    /// satisfy.</summary>
+    private static string RepoRelativeViewPath(string file)
+        => Path.GetRelativePath(Path.Combine(RepoRoot(), "remex.desktop"), file).Replace('\\', '/');
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
