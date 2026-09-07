@@ -55,13 +55,13 @@ sealed class Screen {
 
     // ── Destinations that appear in a navigation surface ──────────────────────
     @Serializable
-    data object Dashboard : NavDestination() {
+    data object Dashboard : PrimaryDestination() {
         override val titleRes = R.string.screen_dashboard_title
         override val icon = Icons.Default.Dashboard
     }
 
     @Serializable
-    data object RemoteControl : NavDestination() {
+    data object RemoteControl : PrimaryDestination() {
         override val titleRes = R.string.screen_remote_control_title
         override val icon = Icons.Default.TouchApp
     }
@@ -73,13 +73,13 @@ sealed class Screen {
     }
 
     @Serializable
-    data object AppLauncher : NavDestination() {
+    data object AppLauncher : PrimaryDestination() {
         override val titleRes = R.string.screen_app_launcher_title
         override val icon = Icons.AutoMirrored.Filled.Launch
     }
 
     @Serializable
-    data object TaskManager : NavDestination() {
+    data object TaskManager : PrimaryDestination() {
         override val titleRes = R.string.screen_task_manager_title
         override val icon = Icons.AutoMirrored.Filled.List
     }
@@ -153,13 +153,25 @@ sealed class NavDestination : Screen() {
 }
 
 /**
+ * A [NavDestination] with a page in `PrimaryDestinationsPager` (RemEx-740mr).
+ *
+ * Splitting this out of [NavDestination] is what makes a tab without a page a compile error rather
+ * than a first-swipe crash. `PrimaryDestinationsPager`'s `when` is over this sealed type, with no
+ * `else` branch — the compiler demands a branch for every subclass. Before this, `navItems` was a
+ * `List<NavDestination>` and the pager's exhaustive `when` still needed an `else -> error(...)`,
+ * because nothing tied "is in navItems" to "the sealed type the pager switches on": a fifth
+ * `NavDestination` added to `navItems` compiled fine and only failed on the user's first swipe.
+ */
+sealed class PrimaryDestination : NavDestination()
+
+/**
  * Primary navigation destinations — shown in NavigationBar / NavigationRail / NavigationDrawer.
  *
  * ORDER IS LOAD-BEARING: `AppNavigation` derives pager indices from the position in this list, so
  * reordering silently changes which tab a swipe lands on.
  */
-val navItems =
-        listOf<NavDestination>(
+val navItems: List<PrimaryDestination> =
+        listOf(
                 Screen.Dashboard,
                 Screen.RemoteControl,
                 Screen.AppLauncher,

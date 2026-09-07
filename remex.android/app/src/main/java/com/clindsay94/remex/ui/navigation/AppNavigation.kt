@@ -376,8 +376,11 @@ private fun AppNavigationContent(
         fun onNavItemClick(screen: NavDestination) {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 // Object identity replaces the old route-string lookup; the pager index is the
-                // position in navItems, whose order is load-bearing (see NavRoutes.kt).
-                val primaryIndex = navItems.indexOf(screen)
+                // position in navItems, whose order is load-bearing (see NavRoutes.kt). navItems is
+                // List<PrimaryDestination> (RemEx-740mr) but `screen` here is the wider
+                // NavDestination (moreItems calls this too), so indexOfFirst rather than indexOf —
+                // indexOf's parameter type is PrimaryDestination and would not accept `screen`.
+                val primaryIndex = navItems.indexOfFirst { it == screen }
                 if (primaryIndex >= 0) {
                         navigateToPrimary(primaryIndex)
                 } else {
@@ -1024,25 +1027,30 @@ private fun PrimaryDestinationsPager(
                 beyondViewportPageCount = 0,
                 userScrollEnabled = true,
         ) { page ->
-                when (navItems[page]) {
-                        Screen.Dashboard -> dashboardScreenContent { onNavigateToConnection() }
-                        Screen.RemoteControl ->
-                                remoteControlScreenContent { onNavigateToConnection() }
-                        Screen.AppLauncher ->
-                                appLauncherScreenContent { onNavigateToConnection() }
-                        Screen.TaskManager ->
-                                taskManagerScreenContent(
-                                        { onNavigateToConnection() },
-                                        page == pagerState.currentPage &&
-                                                !pagerState.isScrollInProgress,
-                                )
-                        // Unreachable while navItems holds the four tabs above. The typed 'when'
-                        // makes the compiler demand this branch — and that is the upgrade: the old
-                        // string 'when' rendered a silent blank page for an unmapped tab, this
-                        // fails at the first swipe naming the destination that has no page.
-                        else ->
-                                error("navItems contains ${navItems[page]} but the pager has no page for it")
-                }
+                // Expression-bodied local fun, not a 'when' statement: a 'when' whose result is
+                // discarded (the old shape here) is *not* required to be exhaustive by the Kotlin
+                // compiler even over a sealed type — that is exactly how a fifth navItem used to
+                // compile and crash on first swipe (RemEx-740mr). Making the 'when' the expression
+                // body of a function turns a missing branch into a hard compile error instead: add a
+                // PrimaryDestination without wiring a page here and this function fails to compile.
+                // No 'else' branch — that would silently re-admit the runtime fallback this replaces.
+                @Composable
+                fun renderPage(destination: PrimaryDestination): Unit =
+                        when (destination) {
+                                Screen.Dashboard ->
+                                        dashboardScreenContent { onNavigateToConnection() }
+                                Screen.RemoteControl ->
+                                        remoteControlScreenContent { onNavigateToConnection() }
+                                Screen.AppLauncher ->
+                                        appLauncherScreenContent { onNavigateToConnection() }
+                                Screen.TaskManager ->
+                                        taskManagerScreenContent(
+                                                { onNavigateToConnection() },
+                                                page == pagerState.currentPage &&
+                                                        !pagerState.isScrollInProgress,
+                                        )
+                        }
+                renderPage(navItems[page])
         }
 }
 
