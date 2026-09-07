@@ -250,6 +250,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing is running, so the saved layout is always restored and the installed build relaunched.
   Every in-loop stop now waits for the host to exit and refuses to write the profile if it has
   not. (RemEx-l5vck)
+- Developer-facing: the palette sweep script creates its screenshot output directory for the
+  default and trailing-separator forms of its output path; before, the first screenshot write
+  threw and the sweep never got past its first cell. (RemEx-hqwkv)
 - Developer-facing (Android): adding a primary tab to the phone's navigation without giving it a
   pager page is now a build error instead of a crash on the user's first swipe. The primary tabs
   are a sealed type and the pager's page mapping is exhaustive over it. No visible change.
