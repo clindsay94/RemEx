@@ -38,7 +38,8 @@ public class ClipboardFetchHandlerTests
             Mock.Of<IInputSimulationService>(),
             null!, null!, null!, null!, null!, null!,
             new Remex.Agent.Services.ClientSessionRegistry(), null!, null!, clipboard,
-            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
+            new Remex.Agent.Services.Theme.PhoneThemeSnapshotStore());
 
     [Fact]
     public async Task ClipboardTextIsSentWithReasonNone()

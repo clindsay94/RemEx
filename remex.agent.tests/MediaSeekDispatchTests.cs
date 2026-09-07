@@ -199,7 +199,8 @@ public class MediaSeekDispatchTests
             NewNameStore(),
             NewActivityStore(),
             new FakeHostClipboard(),
-            monitor);
+            monitor,
+            new Remex.Agent.Services.Theme.PhoneThemeSnapshotStore());
 
         try
         {

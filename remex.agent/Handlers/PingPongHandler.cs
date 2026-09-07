@@ -1,8 +1,10 @@
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Theme;
 using Remex.Core.Validation;
 using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
@@ -37,7 +39,8 @@ public sealed class PingPongHandler(
     PairedClientNameStore nameStore,
     PairedDeviceActivityStore activityStore,
     Remex.Core.Services.Clipboard.IHostClipboard hostClipboard,
-    Remex.Agent.Services.Media.IMediaSessionMonitor mediaSessionMonitor) : IDisposable
+    Remex.Agent.Services.Media.IMediaSessionMonitor mediaSessionMonitor,
+    IPhoneThemeSnapshotStore phoneThemeStore) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -509,6 +512,30 @@ public sealed class PingPongHandler(
                             logger.LogDebug(
                                 "Media seek to {PositionMs}ms was not accepted by the current session.",
                                 message.MediaSeek.PositionMs);
+                        }
+
+                        break;
+
+                    // A phone's palette, CLIENT -> HOST (RemEx-y06a0.1, RemEx-sudp8). Validated here
+                    // rather than trusted verbatim: this arrives over the same channel as every
+                    // other client-originated message, and a malformed contrast or a garbage hex
+                    // would otherwise sit in the store waiting for "Match my phone" to paint the
+                    // sheet with it. Stamped with the SESSION clientId (not whatever the payload
+                    // might claim) so the store always attributes a snapshot to the connection that
+                    // actually sent it.
+                    case MessageTypes.ThemeSync when message.ThemeSync is not null:
+                        if (IsValidThemeSync(message.ThemeSync))
+                        {
+                            phoneThemeStore.Set(message.ThemeSync with
+                            {
+                                ClientId = connectionClientId,
+                                ReceivedUtc = DateTimeOffset.UtcNow,
+                            });
+                        }
+                        else
+                        {
+                            logger.LogDebug(
+                                "Ignored malformed theme_sync from {ClientId}.", connectionClientId);
                         }
 
                         break;
@@ -1309,6 +1336,27 @@ public sealed class PingPongHandler(
 
         return outcome;
     }
+
+    /// <summary>Hex colour, case-insensitive: the phone's <c>Theme.toHexRgb</c> emits upper-case, but nothing here depends on that.</summary>
+    private static readonly Regex HexColorPattern = new(@"^#[0-9A-Fa-f]{6}$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Format-level sanity for an inbound <c>theme_sync</c> (RemEx-y06a0.1, RemEx-sudp8). This is
+    /// NOT where an unrecognised style is mapped to a PC scheme variant — that lookup, including its
+    /// unknown-style fallback, belongs to <c>CustomizationViewModel.TryMapPhoneTheme</c> on the
+    /// reading side; here a style is accepted as long as it is present, because the host has no
+    /// business rejecting a message over a style name it does not itself have to interpret.
+    /// </summary>
+    /// <remarks>
+    /// CONTRAST IS -1.0..1.0, NOT 0.0..1.0. Android's M3 contrast is signed (negative means reduced
+    /// contrast); the PC's own <c>ThemeContrast</c> has no room below zero, but clamping that away is
+    /// a mapping decision for the reader, not a reason to drop the whole message here.
+    /// </remarks>
+    private static bool IsValidThemeSync(PhoneThemeSnapshot sync) =>
+        HexColorPattern.IsMatch(sync.SeedHex)
+        && sync.Contrast is >= -1.0 and <= 1.0
+        && sync.Mode is "light" or "dark" or "system"
+        && !string.IsNullOrWhiteSpace(sync.Style);
 
     internal static bool RequiresPairing(string type) => type switch
     {

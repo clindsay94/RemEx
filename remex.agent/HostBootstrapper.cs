@@ -258,6 +258,11 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<PairedClientNameStore>();
         builder.Services.AddSingleton<PairedDeviceActivityStore>();
         builder.Services.AddSingleton<PairedDeviceNameOverrideStore>();
+        // The phone's last-known palette, for "Match my phone" (RemEx-sudp8). Interface lives in
+        // Remex.Core so the desktop can depend on it without referencing Remex.Agent, resolved there
+        // via App.EmbeddedHostServices the same way SystemStatusViewModel reaches ISystemReadinessService.
+        builder.Services.AddSingleton<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore,
+            Remex.Agent.Services.Theme.PhoneThemeSnapshotStore>();
 
         // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
         // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
@@ -529,7 +534,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<PairedClientNameStore>(),
                 context.RequestServices.GetRequiredService<PairedDeviceActivityStore>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>(),
-                context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>());
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

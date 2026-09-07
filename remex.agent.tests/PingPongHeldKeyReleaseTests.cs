@@ -78,7 +78,8 @@ public class PingPongHeldKeyReleaseTests
             NewNameStore(),
             NewActivityStore(),
             new FakeHostClipboard(),
-            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
+            new Remex.Agent.Services.Theme.PhoneThemeSnapshotStore());
 
     private static InputEvent Key(string type, int keyCode) =>
         new() { EventType = type, KeyCode = keyCode };

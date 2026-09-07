@@ -119,7 +119,8 @@ public class ScreenshotPushDetachmentTests
                 NullLogger<PairedDeviceActivityStore>.Instance,
                 Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())),
             new FakeHostClipboard(),
-            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>());
+            Mock.Of<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
+            new Remex.Agent.Services.Theme.PhoneThemeSnapshotStore());
     }
 
     [Fact]
