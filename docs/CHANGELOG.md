@@ -399,9 +399,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The PC's file-transfer queue now shows transfer speed and time remaining on the active row,
   in every language, following the same rules the phone uses: the estimate rounds up before it
-  picks a unit, says "finishing" under a second, gives up past 23 hours, and disappears when
-  the transfer stalls instead of freezing on a stale number. Polish and Ukrainian get their
-  proper plural forms for seconds, minutes and hours. (RemEx-4lcq)
+  picks a unit, says "finishing" under a second, gives up past 23 hours, and is re-read once a
+  second so a stalled transfer goes blank instead of freezing on a stale number. Polish and
+  Ukrainian get their proper plural forms for seconds, minutes and hours. (RemEx-4lcq)
 - **The play/pause button on the phone shows which way it will go.** It was a play triangle no
   matter what — the one control on the screen whose job is to tell you what pressing it does, and it
   could not, because nothing ever told the phone what the PC was playing.
