@@ -40,14 +40,21 @@ public class StaleSensorAccessibilityTests
 
         // Anchored to the Style element itself, not just "Opacity Value=" anywhere in the file -
         // a coincidental match elsewhere in CanvasView.axaml would otherwise pass this vacuously.
+        //
+        // material|Card, NOT Border (RemEx-lki2r): Material.Styles.Controls.Card derives from
+        // ContentControl/TemplatedControl, not Border - a Selector="Border.stale" type-matches
+        // nothing a Card ever is, so the original selector here never fired in any theme. Pinned
+        // to the corrected selector so a regression back to "Border.stale" fails this test instead
+        // of silently reintroducing dead styling.
         var match = Regex.Match(
             axaml,
-            @"<Style\s+Selector=""Border\.stale"">\s*<Setter\s+Property=""Opacity""\s+Value=""([^""]+)""\s*/>",
+            @"<Style\s+Selector=""material\|Card\.stale"">\s*<Setter\s+Property=""Opacity""\s+Value=""([^""]+)""\s*/>",
             RegexOptions.Singleline);
 
         match.Success.Should().BeTrue(
-            "CanvasView.axaml should define a Border.stale style setting Opacity - if the selector " +
-            "or property name changed, update this test alongside it");
+            "CanvasView.axaml should define a material|Card.stale style setting Opacity - a " +
+            "Border.stale selector type-matches nothing (Card is not a Border) and is dead styling " +
+            "(RemEx-lki2r) - if the selector or property name changed, update this test alongside it");
         match.Groups[1].Value.Should().Be(ExpectedStaleOpacity,
             "the stale opacity is a single token everywhere (no per-theme value); if the eyes pass " +
             "moved it, this pin and the remark above it must move together");
@@ -90,6 +97,40 @@ public class StaleSensorAccessibilityTests
             "StaleAutomationHint is generated off IsStale via NotifyPropertyChangedFor specifically " +
             "so the two cannot go out of step - if this fails, the attribute was removed or the " +
             "field it targets was renamed without updating it");
+    }
+
+    /// <summary>
+    /// The behavioural half of what LocalizedPropertyRefreshTests checks by source scan: a card
+    /// left staged and stale across a language switch must announce the NEW language, not the one
+    /// active when it first went stale.
+    /// </summary>
+    [Fact]
+    public void StaleAutomationHint_RefreshesOnALanguageChange()
+    {
+        var original = LocalizationService.Instance.CultureTag;
+        try
+        {
+            LocalizationService.Instance.SetCulture("en");
+            var card = new CanvasCardViewModel { IsStale = true };
+            var englishHint = card.StaleAutomationHint;
+
+            var raised = new List<string?>();
+            card.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+            LocalizationService.Instance.SetCulture("fr");
+
+            raised.Should().Contain(nameof(CanvasCardViewModel.StaleAutomationHint),
+                "the card must re-raise StaleAutomationHint when the language changes, or a screen " +
+                "reader keeps hearing the pre-switch language for as long as the card stays stale");
+            card.StaleAutomationHint.Should().NotBe(englishHint,
+                "A11y_StagedSensorStale has a real French translation, so the French and English " +
+                "hints must differ - if they match here, the translation is missing or the getter " +
+                "isn't actually re-resolving the key");
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(original);
+        }
     }
 
     [Fact]

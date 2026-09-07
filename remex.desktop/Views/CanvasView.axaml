@@ -496,8 +496,19 @@
                                   A conditional class rather than a converter: Avalonia toggles it
                                   straight from the bool, so there is no third type to keep in step
                                   with the two that already express this.
+
+                                  MATERIAL|CARD, NOT BORDER (RemEx-lki2r). The class is set on the
+                                  material:Card element below, and Material.Styles.Controls.Card
+                                  derives from ContentControl/TemplatedControl - it is not a Border
+                                  and never has been (checked via reflection against
+                                  Material.Styles.dll: Card -> ContentControl -> TemplatedControl ->
+                                  Control -> ... -> AvaloniaObject). A Selector="Border.stale" here
+                                  type-matches nothing a Card ever is, so from RemEx-yqpa until this
+                                  fix the opacity setter never fired in any theme - not a contrast
+                                  problem on one seed, the mark was dead on all of them. The eyes
+                                  pass that was supposed to catch this (this bead) is what found it.
                                 -->
-                                <Style Selector="Border.stale">
+                                <Style Selector="material|Card.stale">
                                     <Setter Property="Opacity" Value="0.55"/>
                                 </Style>
                             </ListBox.Styles>
