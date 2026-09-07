@@ -218,7 +218,15 @@ function Wait-NoRemexProcess([int]$TimeoutMs = 15000) {
 # running before the sweep started, nothing should be running after it either.
 $wasRunningBeforeSweep = [bool](Get-Process -Name Remex.Agent -ErrorAction SilentlyContinue)
 
-$outDir = Split-Path -Parent $Out
+# -Out is documented as a PREFIX, and is used in both of two shapes: a trailing-slash "folder"
+# (the default, "...\sweep-<timestamp>\", where every capture lands INSIDE it) or a bare prefix
+# with no separator (e.g. "...\diag-8twk0-11", where captures land beside it as
+# "...\diag-8twk0-11Default-Home.png"). Split-Path -Parent alone only gets the second shape
+# right - fed a trailing-slash path it drops the last segment as if it were a leaf filename, so
+# the directory it names for the FIRST shape is $Out's parent, not $Out itself, and the
+# timestamped folder the default -Out promises is never created (RemEx-hqwkv). Resolve which
+# directory actually needs to exist by shape instead of asking Split-Path to guess.
+$outDir = if ($Out -match '[\\/]$') { $Out } else { Split-Path -Parent $Out }
 if ($outDir -and -not (Test-Path $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 }
