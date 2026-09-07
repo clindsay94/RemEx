@@ -26,12 +26,17 @@
                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 
                 <!-- Spinner mode overlay: a small indeterminate ring, centered over the (dimmed) content. -->
+                <!-- No Foreground/Background here: ProgressBar colour is one rule in App.axaml
+                     (RemEx-rcgmc) - a per-view/per-control override is exactly the mistake that
+                     bead fixed. AutomationProperties.Name forwards the caller's own label
+                     (already localized, set on the BusyPlaceholder itself) rather than duplicating
+                     a second string: an indeterminate ring announces nothing without SOME name. -->
                 <ProgressBar Name="PART_Spinner"
                              IsVisible="False"
                              IsIndeterminate="True"
                              Width="16" Height="16"
                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                             Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                             AutomationProperties.Name="{TemplateBinding (AutomationProperties.Name)}"/>
 
                 <!-- Skeleton mode: 4 rounded bars standing in for a list's first fill. Widths vary so
                      the group reads as placeholder text rather than a solid block. -->

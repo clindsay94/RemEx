@@ -45,13 +45,16 @@ public class TaskManagerListSurfaceTests
 
         listBoxes.Should().ContainSingle("the page binds exactly one ListBox to Processes");
 
-        var container = listBoxes[0].Parent;
-        container.Should().NotBeNull();
-        container!.Name.LocalName.Should().Be("Card",
+        // The nearest Card ANCESTOR, not necessarily the immediate parent: RemEx-kjdi wraps the
+        // ListBox in a BusyPlaceholder (the shared skeleton-rows affordance) so the list itself sits
+        // one level deeper than it used to. The surface invariant this test protects is unchanged —
+        // the list still lives inside a Card.surface — only the exact nesting depth moved.
+        var container = listBoxes[0].Ancestors().FirstOrDefault(a => a.Name.LocalName == "Card");
+        container.Should().NotBeNull(
             "the surface primitive is Material's Card since RemEx-qbzl1; a plain Border here would " +
             "silently drop the card paint and the elevation ramp along with the surface override");
 
-        var classes = (container.Attribute("Classes")?.Value ?? string.Empty).Split(' ');
+        var classes = (container!.Attribute("Classes")?.Value ?? string.Empty).Split(' ');
         classes.Should().Contain("surface",
             "without the surface class, the Card hover transform scales a list-height surface " +
             "and slides the top of the list over the search field");

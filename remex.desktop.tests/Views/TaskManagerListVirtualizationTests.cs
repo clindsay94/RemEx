@@ -68,10 +68,14 @@ public class TaskManagerListVirtualizationTests
         rows.Should().NotBeEmpty("the root Grid needs explicit rows to bound the list");
 
         // The list lives in the star row; the header and the search bar sit in the Auto rows above
-        // it, which is what keeps them pinned while the list scrolls on its own.
-        var container = ProcessListBox().Parent!;
+        // it, which is what keeps them pinned while the list scrolls on its own. The row-bearing
+        // ancestor is not necessarily the immediate parent: RemEx-kjdi wraps the ListBox in a
+        // BusyPlaceholder (the shared skeleton-rows affordance) inside the Card that carries Grid.Row.
+        var container = ProcessListBox().Ancestors()
+            .FirstOrDefault(a => a.Attribute("Grid.Row") is not null);
+        container.Should().NotBeNull("some ancestor between the list and the root Grid must pin the row");
         var listRow = int.Parse(
-            container.Attribute("Grid.Row")?.Value ?? "0",
+            container!.Attribute("Grid.Row")?.Value ?? "0",
             System.Globalization.CultureInfo.InvariantCulture);
 
         rows.Should().HaveCountGreaterThan(listRow, "the list's row index must exist in RowDefinitions");
