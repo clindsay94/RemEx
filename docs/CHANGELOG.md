@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every button on the PC now declares its role in the button vocabulary, so at most one action
   per screen renders as the raised primary; the buttons that carried no class fell through to
   Material's raised default and made several screens shout. (RemEx-z7pnx.1)
+- Text fields on the PC float their labels inside the field, Material style, and the separate
+  caption that used to sit beside each one is gone; search and filter boxes keep a placeholder,
+  and the alert threshold field keeps its caption because that control never paints a floating
+  label. (RemEx-5w9ws.1)
 - Sparklines on the PC that have no accent of their own now take the theme's primary accent,
   and a sparkline's second series takes the palette's tertiary colour, instead of two fixed
   hex colours that matched no theme. Sensors with their own accent are unchanged. (RemEx-qljv)
