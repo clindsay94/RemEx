@@ -34,6 +34,11 @@
                     </ComboBox>
                 </Grid>
 
+                <!-- "Match my phone" (RemEx-sudp8): independent of which ColorSource is selected -
+                     pressing it moves ColorSource to Custom itself - and hidden rather than
+                     disabled when no phone has synced a palette over the link (RemEx-y06a0.1). -->
+                <Button Classes="compact" Content="{local:Localize Custom_MatchPhoneTheme}" Command="{Binding MatchPhoneThemeCommand}" IsVisible="{Binding HasPhoneTheme}" AutomationProperties.Name="{local:Localize Custom_MatchPhoneTheme}"/>
+
                 <!-- Windows accent: the raw registry colour, as read. -->
                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsWindowsAccentSource}">
                     <Border x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding SourceAccentHex}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding SourceAccentHex}" AutomationProperties.Name="{local:Localize Custom_CurrentWindowsAccent}"/>

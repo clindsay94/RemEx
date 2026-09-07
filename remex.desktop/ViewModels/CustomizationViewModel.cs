@@ -4,6 +4,7 @@ using Remex.Desktop.Services;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Theme;
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Media;
@@ -62,6 +63,17 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     /// <summary>Held so <see cref="Dispose"/> can detach it — the theme service outlives this VM.</summary>
     private Action<CustomizationSettings>? _onCustomizationApplied;
+
+    /// <summary>
+    /// The host's latest <c>theme_sync</c> snapshot, resolved once at construction time
+    /// (RemEx-sudp8) — the same tolerant, try/catch-guarded lookup
+    /// <c>SystemStatusViewModel.ResolveFromHost</c> uses, so a sheet opened while the embedded host
+    /// is down (or absent in a test) shows no "Match my phone" affordance rather than throwing.
+    /// </summary>
+    private readonly IPhoneThemeSnapshotStore? _phoneThemeStore;
+
+    /// <summary>Held so <see cref="Dispose"/> can detach it — the store outlives this VM.</summary>
+    private Action<PhoneThemeSnapshot?>? _onPhoneThemeChanged;
 
     // The old _useLightPalette mirror is gone with the switch it fed (RemEx-zk5bc): the null-mode
     // fallback reads settings.UseLightPalette inline at load, and the save path carries the stored
@@ -587,6 +599,29 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _shell = shell;
         _layoutService = layoutService;
         _themeService = themeService;
+
+        // NOT EmbeddedHostServiceLocator.Require<T>, which throws when the host is absent — the
+        // same reason SystemStatusViewModel.ResolveFromHost isn't either. This sheet has to survive
+        // the host being down or, in a test, never having existed at all; it just shows no "Match my
+        // phone" affordance in that case.
+        try
+        {
+            _phoneThemeStore = App.EmbeddedHostServices?.GetService(typeof(IPhoneThemeSnapshotStore))
+                as IPhoneThemeSnapshotStore;
+        }
+        catch (ObjectDisposedException)
+        {
+            _phoneThemeStore = null;
+        }
+
+        if (_phoneThemeStore is not null)
+        {
+            // POSTED, NOT RUN INLINE: Set() is called from the agent's WebSocket receive loop, which
+            // is not the UI thread this view model's bindings expect (RemEx-r8c6 is the same shape
+            // for LauncherEntriesReceived et al.).
+            _onPhoneThemeChanged = _ => Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(HasPhoneTheme)));
+            _phoneThemeStore.Changed += _onPhoneThemeChanged;
+        }
 
         // Initialize from current profile
         var settings = _layoutService.CurrentProfile.Customization;
@@ -1592,6 +1627,114 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SeedFromWallpaper() => ColorSource = ColorSources.Wallpaper;
 
+    /// <summary>
+    /// Whether a phone has synced a palette over the link (RemEx-sudp8). Read manually rather than
+    /// via <c>[NotifyPropertyChangedFor]</c> because the underlying value lives in
+    /// <see cref="IPhoneThemeSnapshotStore"/>, not an <c>[ObservableProperty]</c> on this view model
+    /// — the <see cref="_onPhoneThemeChanged"/> handler raises the change manually, the same shape
+    /// <see cref="HasWallpaperSeedCandidates"/> uses for a collection's <c>Count</c>.
+    /// </summary>
+    public bool HasPhoneTheme => _phoneThemeStore?.Latest is not null;
+
+    /// <summary>
+    /// Applies the phone's last-synced palette through the normal seed pipeline, exactly like
+    /// <see cref="SelectTheme"/> and <see cref="ApplySavedPalette"/>: batched under
+    /// <see cref="_isApplyingPreset"/> so each field write's own <c>ApplyAndSave</c> is a no-op,
+    /// then one explicit <see cref="ApplyAndSave"/> and <see cref="CommitSeedToRecents"/> once the
+    /// batch is over.
+    /// </summary>
+    [RelayCommand]
+    private void MatchPhoneTheme()
+    {
+        var snapshot = _phoneThemeStore?.Latest;
+        if (snapshot is null) return;
+
+        var (seedHex, schemeVariant, mode, contrast) = TryMapPhoneTheme(snapshot);
+
+        _isApplyingPreset = true;
+        try
+        {
+            // SAME SHAPE AS SelectTheme: a null means "leave this axis alone", so ColorSource only
+            // moves to Custom paired with an actual seed to show — a malformed hex changes nothing,
+            // including the source picker, rather than switching to Custom with no new colour to show.
+            if (seedHex is not null) { ColorSource = ColorSources.Custom; AccentColor = seedHex; }
+            if (schemeVariant is not null) SchemeVariant = schemeVariant;
+            if (mode is not null) SetThemeMode(mode);
+            if (contrast is not null) ThemeContrast = contrast.Value;
+        }
+        finally
+        {
+            _isApplyingPreset = false;
+        }
+
+        ApplyAndSave();
+        CommitSeedToRecents();
+    }
+
+    /// <summary>The seven Android style names, exactly as <c>SettingsManager</c> stores them.</summary>
+    private static readonly string[] KnownPhoneStyles =
+    [
+        SchemeVariants.TonalSpot, SchemeVariants.Vibrant, SchemeVariants.Expressive,
+        SchemeVariants.Rainbow, SchemeVariants.FruitSalad, SchemeVariants.Neutral, SchemeVariants.Monochrome,
+    ];
+
+    /// <summary>
+    /// Maps a <see cref="PhoneThemeSnapshot"/> onto the four axes <see cref="MatchPhoneTheme"/>
+    /// writes. Internal and static so <c>PhoneThemeMappingTests</c> can pin the table without a
+    /// constructed view model.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// STYLE NEVER RETURNS NULL. Android's style name arrives snake_case
+    /// (<c>tonal_spot</c>) against the PC's PascalCase constants (<c>TonalSpot</c>), so the
+    /// comparison strips underscores and ignores case rather than requiring an exact match; anything
+    /// that still doesn't land on one of the seven — including Android's own <c>content</c> and
+    /// <c>spritz</c> internal names, which are not user-facing style choices — maps to
+    /// <see cref="SchemeVariants.TonalSpot"/>, per the wire contract. This is a DIFFERENT rule from
+    /// <see cref="SchemeVariants.Normalize"/>, which maps a legacy PERSISTED PC string's own
+    /// "Spritz" to <see cref="SchemeVariants.Neutral"/> — that rule is about this app's old on-disk
+    /// names, not the phone's wire vocabulary, and reusing it here would send Android's actual
+    /// <c>neutral</c> down the same path as its very different <c>spritz</c> edge case.
+    /// </para>
+    /// <para>
+    /// CONTRAST IS CLAMPED, NOT REJECTED. The phone's contrast is signed (-1.0..1.0, Android's M3
+    /// range); the PC's has no room below zero, so anything negative floors to 0 and anything above
+    /// 1 ceilings to 1 rather than the axis being left alone.
+    /// </para>
+    /// <para>
+    /// SEED AND MODE CAN BOTH BE NULL: an unparseable hex leaves <see cref="AccentColor"/> untouched
+    /// (mirrors <see cref="SyncSeedFromAccent"/>'s own refusal to collapse a bad string to black),
+    /// and a mode outside <c>light</c>/<c>dark</c>/<c>system</c> leaves the mode picker untouched —
+    /// the wire contract does not define a fallback for either.
+    /// </para>
+    /// </remarks>
+    internal static (string? SeedHex, string? SchemeVariant, string? Mode, double? Contrast) TryMapPhoneTheme(
+        PhoneThemeSnapshot snapshot)
+    {
+        string? seedHex = Color.TryParse(snapshot.SeedHex, out _) ? snapshot.SeedHex : null;
+
+        var normalizedStyle = snapshot.Style.Replace("_", "", StringComparison.Ordinal);
+        var schemeVariant = SchemeVariants.TonalSpot;
+        foreach (var known in KnownPhoneStyles)
+        {
+            if (!string.Equals(known, normalizedStyle, StringComparison.OrdinalIgnoreCase)) continue;
+            schemeVariant = known;
+            break;
+        }
+
+        string? mode = snapshot.Mode switch
+        {
+            "light" => ThemeModes.Light,
+            "dark" => ThemeModes.Dark,
+            "system" => ThemeModes.System,
+            _ => null,
+        };
+
+        double? contrast = double.IsNaN(snapshot.Contrast) ? null : Math.Clamp(snapshot.Contrast, 0.0, 1.0);
+
+        return (seedHex, schemeVariant, mode, contrast);
+    }
+
     /// <summary>A candidate swatch click: remember which one, and adopt it.</summary>
     [RelayCommand]
     private void SelectWallpaperSeed(string hex)
@@ -1643,5 +1786,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // close over this view model.
         SavedPalettes.Clear();
         _themeService.CustomizationApplied -= _onCustomizationApplied;
+        if (_phoneThemeStore is not null) _phoneThemeStore.Changed -= _onPhoneThemeChanged;
     }
 }
