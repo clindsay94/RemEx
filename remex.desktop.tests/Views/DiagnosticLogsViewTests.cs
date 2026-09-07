@@ -133,6 +133,59 @@ public class DiagnosticLogsViewTests
         (clearButton.Attribute("Classes")?.Value ?? "").Split(' ').Should().Contain("danger");
     }
 
+    // ─────────────────── RemEx-a8du: copy variants, follow tail, open folder ───────────────────
+
+    [Fact]
+    public void PerRowContextMenu_OffersCopyMessageAndCopyWithStack()
+    {
+        Source.Should().Contain("CopyEntryMessageCommand");
+        Source.Should().Contain("CopyEntryWithStackCommand");
+    }
+
+    [Fact]
+    public void FollowTailToggle_JumpToNewestChip_AndOpenFolderButton_ArePresent()
+    {
+        Source.Should().Contain("{Binding IsFollowingTail}");
+        Source.Should().Contain("{Binding JumpToNewestCommand}");
+        Source.Should().Contain("{Binding OpenExportFolderCommand}");
+    }
+
+    /// <summary>
+    /// RemEx-df08 owns the sweep of this view's PRE-EXISTING controls, which carry no
+    /// AutomationProperties.Name today (RemEx-a8du's bead text is explicit that nothing new should
+    /// add to that backlog). So this checks only the controls THIS bead adds, by Command binding
+    /// rather than by counting every Button/ToggleButton/MenuItem in the file — the latter would
+    /// fail against df08's existing backlog and this bead does not own clearing it.
+    /// </summary>
+    [Theory]
+    [InlineData("CopyEntryMessageCommand")]
+    [InlineData("CopyEntryWithStackCommand")]
+    [InlineData("JumpToNewestCommand")]
+    [InlineData("OpenExportFolderCommand")]
+    public void EveryNewInteractiveControl_CarriesAnAutomationName(string commandBinding)
+    {
+        var doc = XDocument.Parse(Source);
+        var element = doc.Descendants()
+            .Single(e => e.Attribute("Command")?.Value == $"{{Binding {commandBinding}}}"
+                         || (e.Attribute("Command")?.Value ?? "").EndsWith($").{commandBinding}}}", StringComparison.Ordinal));
+
+        // AutomationProperties.Name is an attached property with no separate xmlns declared in this
+        // file, so Avalonia/XDocument sees it as a plain attribute in the element's own namespace.
+        element.Attribute("AutomationProperties.Name").Should().NotBeNull(
+            $"the control bound to {commandBinding} is new in this bead and must carry a localized " +
+            "accessible name so RemEx-df08's backlog does not grow");
+    }
+
+    [Fact]
+    public void FollowTailToggle_CarriesAnAutomationName()
+    {
+        var doc = XDocument.Parse(Source);
+        var toggle = doc.Descendants(XName.Get("ToggleSwitch", Avalonia))
+            .Single(e => e.Attribute("IsChecked")?.Value == "{Binding IsFollowingTail}");
+
+        toggle.Attribute("AutomationProperties.Name").Should().NotBeNull();
+    }
+
     private static int CountOccurrences(string haystack, string needle)
     {
         var count = 0;
