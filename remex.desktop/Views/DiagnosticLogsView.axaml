@@ -26,7 +26,7 @@
             <TabControl>
                 <!-- Tab 1: Live App Logs -->
                 <TabItem Header="{local:Localize Logs_LiveTab}">
-                    <Grid RowDefinitions="Auto,Auto,*" Margin="0,16,0,0">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,16,0,0">
                         <!-- Filter toolbar (live, non-destructive) -->
                         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" assists:ComboBoxAssist.Label="{local:Localize Logs_VerbosityFilter}" MinWidth="200" VerticalAlignment="Center" Margin="0,0,16,8"/>
@@ -46,9 +46,26 @@
                             <Button Grid.Column="6" Classes="secondary danger" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}"/>
                         </Grid>
 
+                        <!-- Export status: the toast has no action slot, so "Open containing folder"
+                             lives inline, appearing once something has actually been exported. -->
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,10"
+                              IsVisible="{Binding LastExportedFilePath, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <TextBlock Grid.Column="0" Text="{Binding LastExportedStatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Logs_OpenFolder}" AutomationProperties.Name="{local:Localize Logs_OpenFolder}" Command="{Binding OpenExportFolderCommand}"/>
+                        </Grid>
+
+                        <!-- Follow tail: on by default, auto-pauses on a manual scroll away from the
+                             end (see the ListBox's ScrollViewer.ScrollChanged handler below), and the
+                             chip is the only way back once paused. -->
+                        <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,0,0,10">
+                            <TextBlock Grid.Column="0" Text="{local:Localize Logs_FollowTail}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ToggleSwitch Grid.Column="1" AutomationProperties.Name="{local:Localize Logs_FollowTail}" IsChecked="{Binding IsFollowingTail}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Classes="secondary" Content="{local:Localize Logs_JumpToNewest}" AutomationProperties.Name="{local:Localize Logs_JumpToNewest}" Command="{Binding JumpToNewestCommand}" IsVisible="{Binding !IsFollowingTail}" Margin="16,0,0,0"/>
+                        </Grid>
+
                         <!-- Colored, virtualized log list -->
-                        <material:Card Grid.Row="2" Classes="surface" Padding="4" InsideClipping="True" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <ListBox Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}">
+                        <material:Card Grid.Row="4" Classes="surface" Padding="4" InsideClipping="True" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <ListBox x:Name="LogListBox" Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}" ScrollViewer.ScrollChanged="OnLogListScrollChanged">
                                 <!-- Ctrl+C on the list itself, so the shortcut works wherever the
                                      selection was made rather than only while the button has focus. -->
                                 <ListBox.KeyBindings>

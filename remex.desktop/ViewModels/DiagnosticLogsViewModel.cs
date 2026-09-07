@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -67,8 +69,48 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// <summary>"shown / retained" counter for the status line.</summary>
     public string EntryCountText => $"{VisibleEntries.Count} / {_all.Count}";
 
+    /// <summary>
+    /// Whether new entries should keep the list scrolled to the newest one. On by default; a manual
+    /// scroll away from the end pauses it (see <see cref="OnLogListScrolled"/>) and only
+    /// <see cref="JumpToNewest"/> turns it back on — the view never re-enables it on its own, so a
+    /// user reading mid-list is not yanked back down by the next line that arrives.
+    /// </summary>
+    [ObservableProperty] private bool _isFollowingTail = true;
+
+    /// <summary>
+    /// Raised so the view scrolls the log list to the newest entry — either a live arrival while
+    /// following, or a resumed follow via <see cref="JumpToNewest"/>. A plain event rather than
+    /// bound state: "scroll now" is a one-shot action, not something to observe, which is the same
+    /// reasoning behind <see cref="CopyToClipboardAsync"/> being a delegate instead of a property.
+    /// </summary>
+    public event Action? ScrollToEndRequested;
+
     /// <summary>Set by the view to present a save-file picker (prompts the user to name the export).</summary>
     public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickSaveFileAsync { get; set; }
+
+    /// <summary>Full local path of the most recent successful export, or <see langword="null"/> if
+    /// nothing has been exported this session. Drives the "Open containing folder" affordance —
+    /// NotificationService.Notify takes no action callback, so this is the inline route (RemEx-a8du).</summary>
+    [ObservableProperty] private string? _lastExportedFilePath;
+
+    /// <summary>The bare file name of <see cref="LastExportedFilePath"/>, for the inline status row —
+    /// the same "name only, not the full path" choice the export toast already made.</summary>
+    [ObservableProperty] private string? _lastExportedFileName;
+
+    partial void OnLastExportedFileNameChanged(string? value) => OnPropertyChanged(nameof(LastExportedStatusText));
+
+    /// <summary>The inline status row's text. Reuses the export toast's own format string rather than
+    /// duplicating "Saved to {0}." as a second resource key.</summary>
+    public string? LastExportedStatusText => LastExportedFileName is null
+        ? null
+        : string.Format(LocalizationService.Instance["Notification_LogsExported_Message"], LastExportedFileName);
+
+    /// <summary>
+    /// Launches the OS file manager on a directory. Replaceable so a test can verify routing without
+    /// spawning a real process — the same seam <see cref="CopyToClipboardAsync"/> and
+    /// <see cref="PickSaveFileAsync"/> use for the same reason. Defaults to the real launcher.
+    /// </summary>
+    public Action<string> FolderLauncher { get; set; } = LaunchFolder;
 
     public DiagnosticLogsViewModel(ShellViewModel shell)
     {
@@ -85,6 +127,20 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         RebuildVisible();
 
         InMemoryLogSink.LogAdded += OnLogAdded;
+        // LastExportedStatusText resolves "Notification_LogsExported_Message" when GOT, so a
+        // language switch while the export status row is showing would otherwise leave it in
+        // whatever language was active at export time until the next export recomputed it
+        // (RemEx-6ddx's class of defect — see AboutViewModel.OnLocalizationChanged, the reference
+        // implementation this mirrors).
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+    }
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // SetCulture raises "Item", "Item[]" and "" in sequence; act once per switch.
+        if (!string.IsNullOrEmpty(e.PropertyName)) return;
+
+        OnPropertyChanged(nameof(LastExportedStatusText));
     }
 
     private void BuildPresetsAndScopes()
@@ -244,23 +300,55 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(EntryCountText));
     }
 
-    private void OnLogAdded(LogEntry entry)
+    private void OnLogAdded(LogEntry entry) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ProcessIncomingEntry(entry));
+
+    /// <summary>
+    /// The synchronous half of a live arrival, factored out of the dispatcher-posted lambda above so
+    /// a test can drive it directly — nothing pumps <c>Dispatcher.UIThread</c> in the test assembly
+    /// (no Avalonia.Headless reference in the repo), so a test going through
+    /// <see cref="OnLogAdded"/> itself would never observe this body running at all.
+    /// </summary>
+    internal void ProcessIncomingEntry(LogEntry entry)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        _all.Add(entry);
+        if (_all.Count > MaxTrackedEntries)
         {
-            _all.Add(entry);
-            if (_all.Count > MaxTrackedEntries)
-            {
-                var removed = _all[0];
-                _all.RemoveAt(0);
-                VisibleEntries.Remove(removed);
-            }
+            var removed = _all[0];
+            _all.RemoveAt(0);
+            VisibleEntries.Remove(removed);
+        }
 
-            if (PassesDisplay(entry))
-                VisibleEntries.Add(entry);
+        if (PassesDisplay(entry))
+        {
+            VisibleEntries.Add(entry);
+            // Only an entry that actually lands ON SCREEN is worth scrolling for — one filtered out
+            // below the display level must not yank a following view toward a row it will never show.
+            if (IsFollowingTail)
+                ScrollToEndRequested?.Invoke();
+        }
 
-            OnPropertyChanged(nameof(EntryCountText));
-        });
+        OnPropertyChanged(nameof(EntryCountText));
+    }
+
+    /// <summary>
+    /// Called by the view whenever the log list's scroll position changes, reporting whether it is
+    /// currently at the end. Moving away from the end pauses following; reaching the end again on
+    /// its own does NOT resume it — only <see cref="JumpToNewest"/> does, so scrolling down to catch
+    /// up manually is not silently reinterpreted as asking to follow again.
+    /// </summary>
+    public void OnLogListScrolled(bool isAtEnd)
+    {
+        if (!isAtEnd)
+            IsFollowingTail = false;
+    }
+
+    /// <summary>Resumes following and snaps straight to the newest entry — the "Jump to newest" chip.</summary>
+    [RelayCommand]
+    public void JumpToNewest()
+    {
+        IsFollowingTail = true;
+        ScrollToEndRequested?.Invoke();
     }
 
     // ─────────────────── Export ───────────────────
@@ -309,6 +397,58 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
             NotificationImportance.Outcome,
             LocalizationService.Instance["Notification_LogsExported_Title"],
             string.Format(LocalizationService.Instance["Notification_LogsExported_Message"], file.Name));
+
+        // The toast has no action slot to attach "Open containing folder" to (NotificationService.
+        // Notify takes a title and a message, nothing else), so the reveal affordance lives here
+        // instead, inline under the export controls.
+        LastExportedFilePath = file.TryGetLocalPath();
+        LastExportedFileName = file.Name;
+    }
+
+    /// <summary>Opens the most recent export's containing folder. A no-op with nothing exported yet
+    /// or when the path has no directory component, rather than throwing on either.</summary>
+    [RelayCommand]
+    public void OpenExportFolder()
+    {
+        if (string.IsNullOrEmpty(LastExportedFilePath)) return;
+
+        var directory = Path.GetDirectoryName(LastExportedFilePath);
+        if (string.IsNullOrEmpty(directory)) return;
+
+        try
+        {
+            FolderLauncher(directory);
+        }
+        catch (Exception ex)
+        {
+            // A failed reveal is a missing convenience, not a defect worth crashing over — but
+            // swallowing it silently would mean the click looked like it worked. Same lesson as
+            // RemEx-43ha: a failure with no trace anywhere is worse than one recorded here, which is
+            // exactly the sink the diagnostics export reads.
+            InMemoryLogSink.Append(LogLevel.Warning, "Logs", "Could not open the export folder", ex);
+        }
+    }
+
+    /// <summary>
+    /// The real folder launcher: Explorer on Windows, xdg-open on Linux. Opens the DIRECTORY, not a
+    /// "reveal and select the file" — RemEx has no select-in-file-manager plumbing yet, and this
+    /// bead scoped to opening the folder (RemEx-a8du).
+    /// </summary>
+    private static void LaunchFolder(string directory)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo { FileName = directory, UseShellExecute = true });
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "xdg-open",
+                Arguments = $"\"{directory}\"",
+                UseShellExecute = false,
+            });
+        }
     }
 
     private IReadOnlyList<LogEntry> ResolveScope(LogExportScope scope) => scope.Kind switch
@@ -443,7 +583,11 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void Dispose() => InMemoryLogSink.LogAdded -= OnLogAdded;
+    public void Dispose()
+    {
+        InMemoryLogSink.LogAdded -= OnLogAdded;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+    }
 }
 
 /// <summary>A named diagnostic filter over the retained log buffer (subsystem categories + optional level floor).</summary>
