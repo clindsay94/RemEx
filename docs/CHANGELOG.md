@@ -245,6 +245,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The PC could quietly lose its own theme about half a minute after launch. The desktop app
+  connects to its own background agent at startup, and the agent's layout sync carried the
+  machine-wide layout file; the desktop then saved that whole profile, colours and all, over the
+  per-user one, and the next re-read repainted it. A layout sync now brings across only the
+  cards, pinned sensors and grid settings, and leaves this device's personalization alone.
+  (RemEx-hmigd)
 - A staged sensor that has stopped reporting is now actually dimmed in the PC's sensor drawer.
   The dim was added earlier but its style never matched the card it was written for, so it had
   never rendered in any theme. Checked by eye on the default seed and the near-white, near-black
