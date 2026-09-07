@@ -245,6 +245,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Developer-facing: the verify gate's receipt now fingerprints XAML and PowerShell sources too.
+  A change to a `.axaml` view or a script the tests scrape after a verify run used to leave the
+  receipt reading as valid; it now invalidates like a C# edit does. (RemEx-0tui6)
 - Developer-facing: the palette sweep script no longer strands a Debug host when a cell fails
   mid-loop. Its cleanup block now stops the host and waits for it to exit before asserting that
   nothing is running, so the saved layout is always restored and the installed build relaunched.
