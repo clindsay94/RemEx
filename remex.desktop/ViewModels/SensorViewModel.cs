@@ -84,11 +84,19 @@ public partial class SensorViewModel : ObservableObject
     public SensorAlert? Alert
     {
         get => _alert;
-        set => _alert = value;
+        set
+        {
+            if (SetProperty(ref _alert, value))
+                OnPropertyChanged(nameof(HasAlert));
+        }
     }
 
-    /// <summary>Raised when the sensor value crosses its configured threshold.</summary>
-    public event Action<SensorAlert>? AlertTriggered;
+    /// <summary>Whether this sensor has a configured alert.</summary>
+    public bool HasAlert => Alert is not null;
+
+    /// <summary>Raised when the sensor value crosses its configured threshold, carrying the reading
+    /// that crossed it.</summary>
+    public event Action<SensorAlert, double>? AlertTriggered;
 
     // ═══════════════ Graph Type ═══════════════
 
@@ -398,7 +406,7 @@ public partial class SensorViewModel : ObservableObject
         if (triggered && !IsAlertActive)
         {
             IsAlertActive = true;
-            AlertTriggered?.Invoke(_alert);
+            AlertTriggered?.Invoke(_alert, Value);
         }
         else if (!triggered)
         {

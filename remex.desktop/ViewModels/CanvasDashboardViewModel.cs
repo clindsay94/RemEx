@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,7 +15,7 @@ namespace Remex.Desktop.ViewModels;
 /// ViewModel for the Canvas workspace. Manages placed cards, the staging
 /// drawer for new sensors, snap-to-grid logic, and persistence triggers.
 /// </summary>
-public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
+public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, ISensorCatalog
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ShellViewModel _shell;
@@ -40,14 +41,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alerts ═══════════════
 
-    /// <summary>Persisted alert thresholds, keyed by the sensor's DISPLAY NAME.</summary>
-    /// <remarks>
-    /// Case-insensitive on purpose and correct as it stands: this is keyed by the user-facing name, so
-    /// a host relabelling "CPU Total" to "Cpu Total" should keep the alert the user set rather than
-    /// silently drop it. Checked deliberately alongside RemEx-228x, which was about a DIFFERENT set
-    /// that is keyed by identity — the two look alike and are not.
-    /// </remarks>
-    private readonly Dictionary<string, SensorAlert> _sensorAlerts = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The single source of configured alerts (RemEx-8wpvr.2). Case-insensitive by sensor
+    /// name inside the store itself, matching every other name comparison in this class.</summary>
+    private readonly SensorAlertStore _alertStore;
+
+    /// <summary>Runtime trip state and the notification cooldown (RemEx-8wpvr.2). Session-only.</summary>
+    private readonly SensorAlertTracker _alertTracker;
 
     /// <summary>Sensor IDENTITIES whose alert handler is already wired, so it is wired exactly once.</summary>
     /// <remarks>
@@ -79,8 +78,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     /// </remarks>
     internal static StringComparer SensorIdentityComparer => StringComparer.Ordinal;
 
-    /// <summary>Raised when a sensor crosses its configured threshold.</summary>
-    public event Action<SensorAlert>? SensorAlertFired;
+    /// <summary>Raised when a sensor crosses its configured threshold and the tracker says a
+    /// notification is due (i.e. it has not already notified for this sensor within the cooldown).
+    /// Carries the value that crossed the threshold.</summary>
+    public event Action<SensorAlert, double>? SensorAlertFired;
 
     /// <summary>Raised when the view should open the "Set Alert" dialog for a sensor.</summary>
     public event Action<string, SensorAlert?>? ShowSetAlertRequested;
@@ -269,59 +270,105 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     {
         if (card?.Sensor is null) return;
         var sensorName = card.Sensor.Name;
-        _sensorAlerts.TryGetValue(sensorName, out var existing);
+        _alertStore.TryGet(sensorName, out var existing);
         ShowSetAlertRequested?.Invoke(sensorName, existing);
     }
 
     /// <summary>
-    /// Applies an alert result returned from the SetAlertDialog.
-    /// Pass null to remove the alert; pass a SensorAlert with empty SensorName to clear.
+    /// Applies an alert result returned from the SetAlertDialog. Pass null to remove the alert; pass a
+    /// SensorAlert with empty SensorName to clear. A thin call into <see cref="_alertStore"/> —
+    /// <see cref="OnAlertStoreChanged"/> does the re-apply-to-sensors and the save.
     /// </summary>
     public void ApplySensorAlert(string sensorName, SensorAlert? result)
     {
         if (result is null || string.IsNullOrEmpty(result.SensorName))
-        {
-            // Clear alert
-            _sensorAlerts.Remove(sensorName);
-            ApplyAlertToSensors(sensorName, null);
-        }
+            _alertStore.Remove(sensorName);
         else
+            _alertStore.Set(result);
+    }
+
+    /// <summary>
+    /// Re-applies every configured alert from <see cref="_alertStore"/> onto the matching sensors,
+    /// case-insensitively by name, and forgets tracker state for any alert no longer configured
+    /// (review addendum on RemEx-8wpvr.1: <c>Forget</c>, not just <c>Acknowledge</c>, so a re-added
+    /// alert notifies fresh instead of inheriting a stale cooldown).
+    /// </summary>
+    /// <remarks>
+    /// Runs on every <see cref="SensorAlertStore.Changed"/>, not just the one alert that changed — the
+    /// store's event carries no name, by design (see its own remarks).
+    /// </remarks>
+    private void OnAlertStoreChanged()
+    {
+        foreach (var card in Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null))
         {
-            _sensorAlerts[sensorName] = result;
-            ApplyAlertToSensors(sensorName, result);
+            var sensor = card.Sensor!;
+            sensor.Alert = _alertStore.TryGet(sensor.Name, out var alert) ? alert : null;
         }
+
+        foreach (var tripped in _alertTracker.Tripped.ToList())
+        {
+            if (!_alertStore.TryGet(tripped.SensorName, out _))
+                _alertTracker.Forget(tripped.SensorName);
+        }
+
         TriggerSave();
     }
 
-    private void ApplyAlertToSensors(string sensorName, SensorAlert? alert)
+    /// <summary>Refreshes <see cref="CanvasCardViewModel.IsAlertTripped"/> (and the trip snapshot
+    /// backing its tooltip) on every card for the tracker's current state. Runs on every
+    /// <see cref="SensorAlertTracker.TrippedChanged"/>.</summary>
+    private void OnTrippedChanged()
     {
+        var tripped = _alertTracker.Tripped;
         foreach (var card in Cards.Concat(StagedCards)
-            .Where(c => c.CardType == "Sensor" &&
-                   string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase)))
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null))
         {
-            if (card.Sensor is not null)
-                card.Sensor.Alert = alert;
+            var trip = tripped.FirstOrDefault(t =>
+                string.Equals(t.SensorName, card.Sensor!.Name, StringComparison.OrdinalIgnoreCase));
+            card.IsAlertTripped = trip is not null;
+            card.SetTrippedAlert(trip);
         }
     }
 
-    private void OnSensorAlertTriggered(SensorAlert alert)
+    private void OnSensorAlertTriggered(SensorAlert alert, double value)
     {
-        // Flash all canvas cards for the sensor
-        var affected = Cards
-            .Where(c => c.CardType == "Sensor" &&
-                   string.Equals(c.Sensor?.Name, alert.SensorName, StringComparison.OrdinalIgnoreCase))
+        var shouldNotify = _alertTracker.Trip(alert.SensorName, value, alert);
+        OnTrippedChanged();
+
+        if (shouldNotify)
+            SensorAlertFired?.Invoke(alert, value);
+    }
+
+    // ═══════════════ ISensorCatalog ═══════════════
+
+    /// <summary>
+    /// Every sensor the canvas has seen this session, distinct by name (case-insensitive, matching
+    /// every other sensor-name comparison in this class), sourced from <see cref="Cards"/> and
+    /// <see cref="StagedCards"/> together so a sensor that was only ever staged still shows up.
+    /// <see cref="SensorInfo.IsConnected"/> is true when at least one card for the sensor is not
+    /// marked stale (<see cref="CanvasCardViewModel.IsStale"/> — placed cards are never stale).
+    /// </summary>
+    public IReadOnlyList<SensorInfo> Known =>
+        Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null)
+            .GroupBy(c => c.Sensor!.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var sensor = g.First().Sensor!;
+                return new SensorInfo(
+                    sensor.Name,
+                    sensor.DisplayName,
+                    string.IsNullOrEmpty(sensor.Unit) ? null : sensor.Unit,
+                    g.Any(c => !c.IsStale));
+            })
             .ToList();
 
-        foreach (var c in affected) c.IsAlertActive = true;
-
-        SensorAlertFired?.Invoke(alert);
-
-        // Auto-reset the flash after 2 s
-        _ = Task.Delay(2000).ContinueWith(_ =>
-            Dispatcher.UIThread.Post(() =>
-            {
-                foreach (var c in affected) c.IsAlertActive = false;
-            }));
+    /// <inheritdoc />
+    public bool TryResolve(string name, [MaybeNullWhen(false)] out SensorInfo info)
+    {
+        info = Known.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
+        return info is not null;
     }
 
     /// <summary>Cards currently placed on the canvas.</summary>
@@ -366,11 +413,15 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     public CanvasDashboardViewModel(
         ConnectionViewModel connection,
         DashboardLayoutService layoutService,
-        ShellViewModel shell)
+        ShellViewModel shell,
+        SensorAlertStore alertStore,
+        SensorAlertTracker alertTracker)
     {
         Connection = connection;
         _layoutService = layoutService;
         _shell = shell;
+        _alertStore = alertStore;
+        _alertTracker = alertTracker;
 
         // Listen for telemetry updates to create/update sensor cards.
         Connection.PropertyChanged += OnConnectionPropertyChanged;
@@ -383,6 +434,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         StagedCards.CollectionChanged += OnStagedCardsCollectionChanged;
 
         SelectedCards.CollectionChanged += OnSelectedCardsChanged;
+
+        _alertStore.Changed += OnAlertStoreChanged;
+        _alertTracker.TrippedChanged += OnTrippedChanged;
     }
 
     private void OnConnectionPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -474,8 +528,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             GridSize = _profile.GridSize;
 
             // Restore sensor alerts from profile.
-            foreach (var alert in _profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>())
-                _sensorAlerts[alert.SensorName] = alert;
+            _alertStore.ReplaceAll(_profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
 
             // Restore non-sensor cards from profile.
             foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
@@ -1133,7 +1186,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     var sensor = new SensorViewModel();
 
                     // Apply any persisted alert for this sensor.
-                    if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
+                    if (_alertStore.TryGet(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
 
                     // Keep one reusable template in staging so users can add more cards.
@@ -1148,6 +1201,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         Height = 150,
                     };
                     staged.RequestPinToggle = () => TogglePinToHome(staged);
+                    staged.RequestAcknowledgeAlert = () => _alertTracker.Acknowledge(sensor.Name);
                     StagedCards.Add(staged);
 
                     // Restore every persisted card for this sensor.
@@ -1165,6 +1219,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
                         restored.IsPinnedToHome = pinnedIds.Contains(sensorName);
                         restored.RequestPinToggle = () => TogglePinToHome(restored);
+                        restored.RequestAcknowledgeAlert = () => _alertTracker.Acknowledge(sensor.Name);
                         Cards.Add(restored);
                         TrackZIndex(saved.ZIndex);
                     }
@@ -1388,7 +1443,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             HostAddress = Connection.HostAddress,
             Cards = CanvasLayoutMerge.MergeCards(baseProfile.Cards, liveCardStates, materializedSensorNames),
             PinnedSensorIds = CanvasLayoutMerge.MergePinnedSensors(baseProfile.PinnedSensorIds, livePinned, materializedSensorNames),
-            SensorAlerts = _sensorAlerts.Values.ToList(),
+            SensorAlerts = _alertStore.All.ToList(),
         };
 
         _profile = profile;
@@ -1724,6 +1779,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         Cards.CollectionChanged -= OnCardsCollectionChanged;
         StagedCards.CollectionChanged -= OnStagedCardsCollectionChanged;
         SelectedCards.CollectionChanged -= OnSelectedCardsChanged;
+        _alertStore.Changed -= OnAlertStoreChanged;
+        _alertTracker.TrippedChanged -= OnTrippedChanged;
     }
 }
 

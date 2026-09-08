@@ -229,7 +229,7 @@ public class DestructiveActionFailClosedTests : IDisposable
     {
         // layoutService and shell are stored and never dereferenced, by the constructor or by the
         // reboot path. Building either for real would drag in the whole DI graph for no coverage.
-        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
+        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
         vm.Connection.StatusText = Sentinel;
         return vm;
     }

@@ -88,7 +88,7 @@ public sealed class CanvasDashboardViewModelLayoutSyncTests : IAsyncLifetime
             new ServiceCollection().AddLogging().BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
-        _vm = new CanvasDashboardViewModel(connection, _layoutService, _shell);
+        _vm = new CanvasDashboardViewModel(connection, _layoutService, _shell, new SensorAlertStore(), new SensorAlertTracker());
     }
 
     public Task DisposeAsync()

@@ -4,6 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -87,7 +88,7 @@ public sealed class SensorIndexTests
         var vm = NewDashboard();
 
         var fired = new List<SensorAlert>();
-        vm.SensorAlertFired += fired.Add;
+        vm.SensorAlertFired += (a, v) => fired.Add(a);
 
         // First tick creates the view models — and is where subscription happens, once per identity.
         vm.ApplyTelemetry(new TelemetryPayload
@@ -141,7 +142,7 @@ public sealed class SensorIndexTests
         var vm = NewDashboard();
 
         var fired = new List<SensorAlert>();
-        vm.SensorAlertFired += fired.Add;
+        vm.SensorAlertFired += (a, v) => fired.Add(a);
 
         vm.ApplyTelemetry(new TelemetryPayload
         {
@@ -269,7 +270,7 @@ public sealed class SensorIndexTests
         var vm = NewDashboard();
 
         var fired = new List<SensorAlert>();
-        vm.SensorAlertFired += fired.Add;
+        vm.SensorAlertFired += (a, v) => fired.Add(a);
 
         vm.ApplyTelemetry(new TelemetryPayload
         {
@@ -413,7 +414,7 @@ public sealed class SensorIndexTests
 
     private static CanvasDashboardViewModel NewDashboard() =>
         // layoutService and shell are stored and never dereferenced by this path (RemEx-w9ui).
-        new(new ConnectionViewModel(), null!, null!);
+        new(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
     [Fact]
     public void ApplyTelemetry_CreatesOneStagedCardPerSensor()

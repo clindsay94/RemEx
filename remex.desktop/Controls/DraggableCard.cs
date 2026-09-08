@@ -160,6 +160,14 @@ public class DraggableCard : ContentControl
         var props = e.GetCurrentPoint(this).Properties;
         if (!props.IsLeftButtonPressed) return;
 
+        // Acknowledge a tripped alert on press, without altering selection or drag below
+        // (RemEx-8wpvr.2). Execute() runs the delegate unconditionally regardless of CanExecute, so
+        // the IsAlertTripped check here is the only guard.
+        if (DataContext is CanvasCardViewModel { IsAlertTripped: true } trippedVm)
+        {
+            trippedVm.AcknowledgeAlertCommand.Execute(null);
+        }
+
         // Ctrl+Click: toggle card selection without starting a drag.
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Pointer.Type != PointerType.Touch)
         {

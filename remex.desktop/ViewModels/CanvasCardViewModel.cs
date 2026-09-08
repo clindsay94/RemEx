@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -62,9 +64,106 @@ public partial class CanvasCardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDragging;
 
-    /// <summary>True while the card's sensor has an active threshold alert.</summary>
+    /// <summary>
+    /// True while the card's sensor has an active threshold alert. A pure mirror of
+    /// <see cref="SensorViewModel.IsAlertActive"/> — set only by the sensor-change and sensor-property
+    /// mirroring below, never by the dashboard directly. Replaces the old 2-second flash timer
+    /// (RemEx-8wpvr.2): the card is "hot" for exactly as long as its sensor is.
+    /// </summary>
     [ObservableProperty]
     private bool _isAlertActive;
+
+    /// <summary>
+    /// True while this card's sensor has crossed its threshold and not yet been acknowledged. Set by
+    /// the dashboard from <c>SensorAlertTracker</c>; cleared by <see cref="AcknowledgeAlertCommand"/>.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AcknowledgeAlertCommand))]
+    private bool _isAlertTripped;
+
+    /// <summary>True while this card's sensor has a configured alert. Mirrors
+    /// <see cref="SensorViewModel.HasAlert"/>, the same way <see cref="IsAlertActive"/> does.</summary>
+    [ObservableProperty]
+    private bool _hasAlert;
+
+    /// <summary>Trip snapshot backing <see cref="AlertTooltip"/> while <see cref="IsAlertTripped"/> is
+    /// true. Set by the dashboard alongside <see cref="IsAlertTripped"/> — this VM does not read the
+    /// tracker itself.</summary>
+    private TrippedAlert? _trippedAlert;
+
+    /// <summary>
+    /// Sets the trip snapshot the dashboard just read from <c>SensorAlertTracker</c>. Called alongside
+    /// setting <see cref="IsAlertTripped"/>; pass null when the sensor is not tripped.
+    /// </summary>
+    public void SetTrippedAlert(TrippedAlert? trip)
+    {
+        _trippedAlert = trip;
+        OnPropertyChanged(nameof(AlertTooltip));
+    }
+
+    /// <summary>
+    /// Alert bell tooltip: the configured threshold when armed, the trip snapshot when tripped, empty
+    /// when there is no alert. Plain text — RemEx-8wpvr.4 binds it into the UI and can localize then.
+    /// </summary>
+    public string AlertTooltip
+    {
+        get
+        {
+            if (IsAlertTripped && _trippedAlert is { } trip)
+            {
+                return $"Tripped at {trip.At.LocalDateTime:t} ({trip.Value:0.#} {Sensor?.Unit}). Click to acknowledge.";
+            }
+
+            if (Sensor?.Alert is { } alert)
+            {
+                var direction = alert.Direction == AlertDirection.Above ? "above" : "below";
+                return $"Alert: {direction} {alert.Threshold:0.#} {Sensor.Unit} · {alert.Severity}";
+            }
+
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Wires/unwires the live mirror to whichever <see cref="SensorViewModel"/> this card currently
+    /// points at. Takes the (old, new) overload the source generator also offers, so unsubscribing
+    /// from the previous sensor needs no extra field — a reassignment (a card's sensor reference
+    /// changes, e.g. on restore) never leaves a stale subscription alongside the new one.
+    /// </summary>
+    partial void OnSensorChanged(SensorViewModel? oldValue, SensorViewModel? newValue)
+    {
+        if (oldValue is not null)
+            oldValue.PropertyChanged -= OnSensorPropertyChanged;
+
+        if (newValue is not null)
+            newValue.PropertyChanged += OnSensorPropertyChanged;
+
+        IsAlertActive = newValue?.IsAlertActive ?? false;
+        HasAlert = newValue?.HasAlert ?? false;
+        OnPropertyChanged(nameof(AlertTooltip));
+    }
+
+    private void OnSensorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(SensorViewModel.IsAlertActive):
+                IsAlertActive = Sensor?.IsAlertActive ?? false;
+                break;
+            case nameof(SensorViewModel.HasAlert):
+                HasAlert = Sensor?.HasAlert ?? false;
+                OnPropertyChanged(nameof(AlertTooltip));
+                break;
+        }
+    }
+
+    /// <summary>Action to acknowledge this card's tripped alert, wired by the dashboard to
+    /// <c>SensorAlertTracker.Acknowledge(Sensor.Name)</c> — the same delegate shape as
+    /// <see cref="RequestPinToggle"/>, since this VM does not hold the tracker itself.</summary>
+    public Action? RequestAcknowledgeAlert { get; set; }
+
+    [RelayCommand(CanExecute = nameof(IsAlertTripped))]
+    private void AcknowledgeAlert() => RequestAcknowledgeAlert?.Invoke();
 
     // ═══════════════ Content References ═══════════════
 

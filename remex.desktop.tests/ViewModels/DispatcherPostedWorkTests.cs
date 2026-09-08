@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using FluentAssertions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -54,7 +55,7 @@ public class DispatcherPostedWorkTests
         //
         // layoutService and shell are stored and never dereferenced on this path, exactly as the
         // destructive-action suite already relies on.
-        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
+        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
         // THE QUEUE, HELD RATHER THAN RUN. Substituting the dispatch seam keeps the two things this
         // test has always cared about — that ProcessTelemetry SCHEDULES rather than executes, and
@@ -98,7 +99,7 @@ public class DispatcherPostedWorkTests
         // which is the exact defect this test is named after — left it GREEN, because an inline
         // lambda is still a lambda declared in this class. The assertion could not see the one thing
         // it was for.
-        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
+        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
         vm.Dispatch.Should().NotBeNull(
             "an unset dispatcher would make ProcessTelemetry throw on every real telemetry tick");

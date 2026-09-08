@@ -843,7 +843,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _layoutService.ProfileReplaced += _onProfileReplaced;
 
         // Initialize background/shared VMs
-        _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
+        //
+        // GetService, not GetRequiredService: both are simple in-memory state holders with no
+        // dependencies, so a test DI container with nothing registered for them degrades to a
+        // fresh instance rather than throwing out of this constructor (RemEx-8wpvr.2).
+        var alertStore = _services.GetService<SensorAlertStore>() ?? new SensorAlertStore();
+        var alertTracker = _services.GetService<SensorAlertTracker>() ?? new SensorAlertTracker();
+        _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this, alertStore, alertTracker);
         _ = _canvasViewModel.InitializeAsync();
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
 
@@ -1135,7 +1141,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alert Notifications ═══════════════
 
-    private void OnSensorAlertFired(SensorAlert alert)
+    private void OnSensorAlertFired(SensorAlert alert, double value)
     {
         AlertBadgeCount++;
         AlertNotifications.Insert(0, new SensorAlertNotification(

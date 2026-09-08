@@ -3,6 +3,7 @@ using System.Linq;
 using FluentAssertions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -72,7 +73,8 @@ public class DashboardTickCostTests
 
     public DashboardTickCostTests(Xunit.Abstractions.ITestOutputHelper output) => _output = output;
 
-    private static CanvasDashboardViewModel NewDashboard() => new(new ConnectionViewModel(), null!, null!);
+    private static CanvasDashboardViewModel NewDashboard() =>
+        new(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
     private static TelemetryPayload Reading(string id, double value) => new()
     {
@@ -132,7 +134,7 @@ public class DashboardTickCostTests
         sensor.Alert = new SensorAlert { SensorName = "cpu-pkg-0", Threshold = 90, Direction = AlertDirection.Above };
 
         var fired = new List<SensorAlert>();
-        vm.SensorAlertFired += fired.Add;
+        vm.SensorAlertFired += (a, v) => fired.Add(a);
 
         vm.ApplyTelemetry(Reading("cpu-pkg-0", 95));
 
@@ -161,7 +163,7 @@ public class DashboardTickCostTests
             new SensorAlert { SensorName = "gpu-hot-0", Threshold = 90, Direction = AlertDirection.Above };
 
         var fired = new List<SensorAlert>();
-        vm.SensorAlertFired += fired.Add;
+        vm.SensorAlertFired += (a, v) => fired.Add(a);
 
         // Normal, spike, normal — one tick each, exactly as telemetry delivers them.
         vm.ApplyTelemetry(Reading("gpu-hot-0", 41));

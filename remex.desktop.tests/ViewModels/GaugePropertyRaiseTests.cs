@@ -3,6 +3,7 @@ using System.Linq;
 using FluentAssertions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -29,7 +30,7 @@ public class GaugePropertyRaiseTests
 {
     private static CanvasDashboardViewModel NewDashboard() =>
         // layoutService and shell are stored and never dereferenced by this path (RemEx-w9ui).
-        new(new ConnectionViewModel(), null!, null!);
+        new(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
     private static TelemetryPayload Tick(double value, string unit = "%") =>
         new()

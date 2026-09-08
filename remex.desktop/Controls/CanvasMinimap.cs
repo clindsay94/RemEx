@@ -154,7 +154,7 @@ public class CanvasMinimap : Control
                 double cw = Math.Max(2, card.Width  * scaleX);
                 double ch = Math.Max(2, card.Height * scaleY);
 
-                var brush = card.IsAlertActive ? alertBrush : cardBrush;
+                var brush = card.IsAlertActive || card.IsAlertTripped ? alertBrush : cardBrush;
                 context.DrawRectangle(brush, null, new Rect(cx, cy, cw, ch));
             }
         }
