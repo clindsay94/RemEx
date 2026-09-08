@@ -23,6 +23,15 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     private int _nextZIndex = 1;
     private bool _isInitialized;
     private DashboardProfile? _pendingSyncProfile;
+
+    // Set around the alert-store seed inside ApplyProfile (RemEx-8wpvr.2, HIGH review round 2): every
+    // ApplyProfile call re-seeds _alertStore from the incoming profile via ReplaceAll, which raises
+    // SensorAlertStore.Changed unconditionally. Once OnAlertStoreChanged is subscribed (after first
+    // init - see the subscription's own remarks) that Changed would otherwise trigger a save on every
+    // profile application (pending host sync, LayoutProfileReceived, SyncLayoutAsync's offline
+    // reload, ReloadFromPersistedLayout) even though nothing the user did actually changed. The
+    // re-apply-to-sensors half must still run - only the save half is suppressed.
+    private bool _suppressAlertStoreSave;
     private bool _isRefreshingSensorActivation;
 
     // ═══════════════ Undo / Redo ═══════════════
@@ -297,9 +306,19 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// Runs on every <see cref="SensorAlertStore.Changed"/>, not just the one alert that changed — the
     /// store's event carries no name, by design (see its own remarks).
     /// </remarks>
+    /// <summary>
+    /// Test-only counter of saves actually triggered by <see cref="OnAlertStoreChanged"/> — same
+    /// pattern as <see cref="SensorCustomizationNotifications"/> below. Lets RemEx-8wpvr.2 (review
+    /// round 2, HIGH) regression tests prove ApplyProfile's alert-store reseed does not fire an extra,
+    /// redundant save on top of the unconditional layout-sync save ApplyProfile already issues.
+    /// </summary>
+    internal int AlertStoreSaveCount { get; private set; }
+
     private void OnAlertStoreChanged()
     {
         ReapplyAlertsToSensors();
+        if (_suppressAlertStoreSave) return;
+        AlertStoreSaveCount++;
         TriggerSave();
     }
 
@@ -362,7 +381,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// received a live reading (<see cref="SensorViewModel.RawReading"/> is set by
     /// <see cref="SensorViewModel.Update"/> on every telemetry tick and never cleared) — NOT
     /// <see cref="CanvasCardViewModel.IsStale"/>, which is false for every placed card by contract, so
-    /// a sensor that was placed but never actually reported would otherwise read as connected forever.
+    /// a sensor that was placed but never actually reported would otherwise read as connected forever
+    /// — AND, RemEx-8wpvr.2 (review round 2, MEDIUM), <see cref="Connection"/>.<see cref="ConnectionViewModel.IsConnected"/>:
+    /// <c>RawReading is not null</c> alone is itself monotonic (it is set on the first reading and never
+    /// cleared), so once a sensor had ever reported once it read as connected forever even after the
+    /// host dropped. Gating on the live host connection too makes IsConnected fall back to false the
+    /// moment the host disconnects, without forgetting that the sensor was seen.
     /// </summary>
     public IReadOnlyList<SensorInfo> Known =>
         Cards.Concat(StagedCards)
@@ -375,7 +399,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
                     sensor.Name,
                     sensor.DisplayName,
                     string.IsNullOrEmpty(sensor.Unit) ? null : sensor.Unit,
-                    g.Any(c => c.Sensor!.RawReading is not null));
+                    Connection.IsConnected && g.Any(c => c.Sensor!.RawReading is not null));
             })
             .ToList();
 
@@ -1704,6 +1728,27 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         _profile = profile;
         IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
         GridSize = profile.GridSize;
+
+        // Seed the alert store from every profile this canvas ever applies (RemEx-8wpvr.2, HIGH
+        // review round 2) - not just the local-load path in FinishInitialize's else branch. Before
+        // this, the _pendingSyncProfile != null branch of FinishInitialize called ApplyProfile without
+        // ever seeding the store, so a host sync that landed before the local LoadAsync completed left
+        // _alertStore empty for the whole session - and every later save writes
+        // `SensorAlerts = _alertStore.All.ToList()`, so the next card drag wiped every alert from disk.
+        // Suppressed here (try/finally, exception-safe) because ReplaceAll raises Changed
+        // unconditionally, and once OnAlertStoreChanged is subscribed (every ApplyProfile call except
+        // the very first, pre-subscription one from FinishInitialize) that would fire an unwanted
+        // TriggerSave on every profile application.
+        try
+        {
+            _suppressAlertStoreSave = true;
+            _alertStore.ReplaceAll(profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
+            ReapplyAlertsToSensors();
+        }
+        finally
+        {
+            _suppressAlertStoreSave = false;
+        }
 
         var profileCardIds = (profile.Cards ?? Enumerable.Empty<CardState>())
             .Select(c => c.CardId)

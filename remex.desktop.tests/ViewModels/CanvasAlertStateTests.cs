@@ -156,6 +156,7 @@ public sealed class CanvasAlertStateTests
     public void SensorCatalogListsCanvasAndStagedSensors()
     {
         var vm = NewDashboard();
+        vm.Connection.IsConnected = true; // IsConnected also gates on the live host connection (RemEx-8wpvr.2 review round 2, MEDIUM)
         vm.ApplyTelemetry(Reading("cpu-pkg-0", 10)); // never placed — stays in the staging drawer
 
         ISensorCatalog catalog = vm;
@@ -183,6 +184,12 @@ public sealed class CanvasAlertStateTests
     /// received a live reading via the telemetry path (<see cref="SensorViewModel.Update"/>, which
     /// sets <see cref="SensorViewModel.RawReading"/>).
     /// </summary>
+    /// <remarks>
+    /// Review round 2 (HIGH... no, MEDIUM) found this was STILL monotonic: <c>RawReading is not
+    /// null</c> is set on the first reading and never cleared, so a sensor that had ever reported once
+    /// read as connected forever even after the host dropped. The fix ANDs in
+    /// <see cref="ConnectionViewModel.IsConnected"/> — see the third case below.
+    /// </remarks>
     [Fact]
     public void IsConnectedReflectsWhetherTheSensorHasEverReportedAReading()
     {
@@ -194,16 +201,26 @@ public sealed class CanvasAlertStateTests
         vm.Cards.Add(new CanvasCardViewModel { CardType = "Sensor", Sensor = neverReported });
 
         ISensorCatalog catalog = vm;
+        vm.Connection.IsConnected = true;
         catalog.TryResolve("never-reported", out var info).Should().BeTrue();
         info!.IsConnected.Should().BeFalse(
             "a placed card is never IsStale, so IsConnected must not be derived from staleness — a " +
-            "sensor that has never actually reported a reading must not read as connected");
+            "sensor that has never actually reported a reading must not read as connected, even while " +
+            "the host is connected");
 
-        // The same sensor instance, once telemetry has actually arrived for it.
+        // The same sensor instance, once telemetry has actually arrived for it, while still connected.
         neverReported.Update(new SensorReading { Id = "never-reported", Name = "never-reported", Value = 1, Unit = "°C" });
 
         catalog.TryResolve("never-reported", out info).Should().BeTrue();
-        info!.IsConnected.Should().BeTrue("the sensor has now received a live reading");
+        info!.IsConnected.Should().BeTrue("the sensor has now received a live reading and the host is connected");
+
+        // The host drops. A reported reading alone must no longer read as connected — RawReading is
+        // never cleared, so without gating on the live connection this stayed true forever.
+        vm.Connection.IsConnected = false;
+
+        catalog.TryResolve("never-reported", out info).Should().BeTrue();
+        info!.IsConnected.Should().BeFalse(
+            "the host disconnected — a previously-reported reading must not keep reading as connected");
     }
 
     /// <summary>
