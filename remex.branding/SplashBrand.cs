@@ -2,17 +2,42 @@ using SkiaSharp;
 
 namespace Remex.Branding;
 
-/// <summary>SkiaSharp realization of the brand mark. Paths parse once; drawing is in 108-unit space.</summary>
+/// <summary>
+/// SkiaSharp realization of the brand mark. Paths parse once; drawing is in 108-unit space.
+/// <see cref="BackdropStart"/>, <see cref="BackdropEnd"/>, <see cref="MarkStart"/>,
+/// <see cref="MarkEnd"/> and <see cref="Amber"/> are mutable (RemEx-alwfa.1) — <see cref="ApplyPalette"/>
+/// overwrites them from a <see cref="SplashPalette"/> before a frame paints, which is how the splash
+/// variants (CosmicZoomVariant, PongVariant, RemexCommandVariant) recolour without each one taking a
+/// palette parameter of its own: they already read these statics on every frame. Process-wide state
+/// by design — one desktop app process, one active splash — so nothing here needs to be threadsafe.
+/// </summary>
 public static partial class SplashBrand
 {
-    public static readonly SKColor BackdropStart = new(RemexBrandData.BackdropStartArgb);
-    public static readonly SKColor BackdropEnd   = new(RemexBrandData.BackdropEndArgb);
+    public static SKColor BackdropStart { get; private set; } = new(RemexBrandData.BackdropStartArgb);
+    public static SKColor BackdropEnd   { get; private set; } = new(RemexBrandData.BackdropEndArgb);
     public static readonly SKColor WindowFill    = new(RemexBrandData.WindowFillArgb);
     public static readonly SKColor WindowStroke  = new(RemexBrandData.WindowStrokeArgb);
-    public static readonly SKColor Amber         = new(RemexBrandData.AmberArgb);
+    public static SKColor Amber         { get; private set; } = new(RemexBrandData.AmberArgb);
     public static readonly SKColor SlateLo       = new(RemexBrandData.SlateLoArgb);
     public static readonly SKColor SlateHi       = new(RemexBrandData.SlateHiArgb);
     public static readonly SKColor OffWhite      = new(RemexBrandData.OffWhiteArgb);
+
+    /// <summary>The terminal-window mark's own gradient fill (primary -&gt; tertiary once a seed palette
+    /// is applied). Defaults to <see cref="RemexBrandData.WindowFillArgb"/> at both stops, which is a
+    /// solid fill identical to the brand default's look.</summary>
+    public static SKColor MarkStart { get; private set; } = new(RemexBrandData.WindowFillArgb);
+    public static SKColor MarkEnd   { get; private set; } = new(RemexBrandData.WindowFillArgb);
+
+    /// <summary>Overwrites the mutable palette fields above from <paramref name="palette"/>. Call before
+    /// painting a frame; see the class remarks for why this is global, mutable state.</summary>
+    public static void ApplyPalette(SplashPalette palette)
+    {
+        BackdropStart = new SKColor(palette.BackdropStart);
+        BackdropEnd   = new SKColor(palette.BackdropEnd);
+        MarkStart     = new SKColor(palette.MarkStart);
+        MarkEnd       = new SKColor(palette.MarkEnd);
+        Amber         = new SKColor(palette.Accent);
+    }
 
     public static SKPath Window  { get; } = Parse(RemexBrandData.WindowPath);
     public static SKPath Dot1    { get; } = Parse(RemexBrandData.Dot1Path);
@@ -35,9 +60,15 @@ public static partial class SplashBrand
 
     private static byte Alpha(float o) => (byte)Math.Clamp((int)(o * 255f + 0.5f), 0, 255);
 
+    /// <summary>Brand-default overload — <see cref="BrandRasterizer"/> and BrandAssetGen's checked-in
+    /// rasters always render this, never a seed palette (RemEx-alwfa.1 decision (e)).</summary>
+    public static void DrawInto(SKCanvas canvas, int width, int height) =>
+        DrawInto(canvas, width, height, SplashPalette.Default);
+
     /// <summary>Fill the whole w×h with the diagonal gradient, then draw the mark centered and undistorted.</summary>
-    public static void DrawInto(SKCanvas canvas, int width, int height)
+    public static void DrawInto(SKCanvas canvas, int width, int height, SplashPalette palette)
     {
+        ApplyPalette(palette);
         float f0 = RemexBrandData.GradStart / RemexBrandData.Viewport; // 6/108
         float f1 = RemexBrandData.GradEnd / RemexBrandData.Viewport;   // 102/108
         using var bg = new SKPaint { IsAntialias = true };
@@ -76,8 +107,25 @@ public static partial class SplashBrand
         canvas.Scale(gs);
         canvas.Translate(-RemexBrandData.GroupPivot, -RemexBrandData.GroupPivot);
 
-        fill.Color = WindowFill.WithAlpha(a);
+        // The window's own fill is the "mark gradient" (RemEx-alwfa.1 decision (c)): MarkStart ->
+        // MarkEnd, diagonal, same fractions as the backdrop gradient in DrawInto. Built from a fixed
+        // (absolute) pair of points rather than a relative shader so RHole below — drawn later, over
+        // RBowl — can reuse the SAME shader instance and land on exactly the same colours at exactly
+        // the same canvas position, which is what makes the "hole" read as a punch through the
+        // window's fill rather than a mismatched patch. At the default palette MarkStart == MarkEnd,
+        // so this collapses to the same solid fill the brand default always painted.
+        var markBounds = Window.Bounds;
+        float mf0 = RemexBrandData.GradStart / RemexBrandData.Viewport;
+        float mf1 = RemexBrandData.GradEnd / RemexBrandData.Viewport;
+        using var markShader = SKShader.CreateLinearGradient(
+            new SKPoint(markBounds.Left + markBounds.Width * mf0, markBounds.Top + markBounds.Height * mf0),
+            new SKPoint(markBounds.Left + markBounds.Width * mf1, markBounds.Top + markBounds.Height * mf1),
+            new[] { MarkStart, MarkEnd }, null, SKShaderTileMode.Clamp);
+
+        fill.Shader = markShader;
+        fill.Color = SKColors.White.WithAlpha(a);
         canvas.DrawPath(Window, fill);
+        fill.Shader = null;
         stroke.Color = WindowStroke.WithAlpha(Alpha(RemexBrandData.WindowStrokeAlpha * opacity));
         stroke.StrokeWidth = RemexBrandData.WindowStrokeWidth;
         canvas.DrawPath(Window, stroke);
@@ -96,8 +144,12 @@ public static partial class SplashBrand
         canvas.DrawPath(RStem, fill);
         canvas.DrawPath(RBowl, fill);
         canvas.DrawPath(RLeg, fill);
-        fill.Color = WindowFill.WithAlpha(a);
+        // Same shader instance and alpha as the Window fill above, so the "hole" reads as a punch
+        // through the window's own gradient rather than a mismatched solid patch.
+        fill.Shader = markShader;
+        fill.Color = SKColors.White.WithAlpha(a);
         canvas.DrawPath(RHole, fill);
+        fill.Shader = null;
 
         fill.Color = Amber.WithAlpha(a);
         canvas.DrawPath(Cursor, fill);

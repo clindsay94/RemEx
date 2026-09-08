@@ -424,6 +424,13 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // Apply persisted theme settings to the UI.
             _themeService.ApplyCustomization(profile.Customization);
 
+            // Refreshes the splash's last-seed sidecar (RemEx-alwfa.1, decision (b)) from whatever
+            // just loaded, so an install that predates this bead gets a sidecar the very first time
+            // it starts, without the user ever opening Personalize. Fire-and-forget: a sidecar write
+            // failure must never fail a profile load, and WriteAsync already logs its own failures.
+            LastSeedSidecar.WriteAsync(profile.Customization, _logger)
+                .FireAndForget("write the last-seed splash sidecar", _logger);
+
             CurrentProfile = profile;
 
             // SET BEFORE ProfileReplaced RAISES (RemEx-71b1m, review LOW). A subscriber that reacts

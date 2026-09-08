@@ -1297,6 +1297,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // `settings` verbatim (the fallback, while one is showing), never the substitution below.
         _themeService.ApplyCustomization(settings);
 
+        // Every live change refreshes the splash's last-seed sidecar (RemEx-alwfa.1, decision (b)),
+        // not only a persisted one — `settings` is the seed actually painting the shell right now,
+        // which is what the NEXT launch's splash should match. Fire-and-forget: a failed sidecar
+        // write must never block or fail this method, and WriteAsync already logs its own failures.
+        LastSeedSidecar.WriteAsync(settings).FireAndForget("write the last-seed splash sidecar");
+
         // _suppressPersist SKIPS THIS WHOLE BLOCK (RemEx-k7891). RefreshBackgroundTypes' platform
         // fallback needs the repaint above — and the preset/tile refresh below — to run exactly as a
         // real pick's would, so the picker and the dashboard background never disagree about what's

@@ -18,7 +18,11 @@ namespace Remex.Desktop.Controls.Splash;
 /// Hosts the SkiaSharp splash variants inside Avalonia. Owns the frame loop (DispatcherTimer + real
 /// Stopwatch dt), tap-to-skip, the version label + skip hint, and completion. Leases Avalonia's Skia
 /// canvas so the pure-SkiaSharp variants (remex.branding) draw straight onto the render surface.
-/// Fixed brand palette by design (not theme-adaptive) — replaces the old BootSequenceControl.
+/// Brand default, runtime recolour allowed (RemEx-alwfa.1) — replaces the old BootSequenceControl.
+/// <see cref="OnAttachedToVisualTree"/> reads the last-seed sidecar and applies the resolved
+/// palette to <see cref="SplashBrand"/> before the frame timer starts, so the very first frame — not
+/// just later ones — paints in the user's seed colours. Missing/corrupt sidecar falls back to the
+/// fixed brand palette, never throws.
 /// </summary>
 public sealed class SkiaSplashControl : Control, IDisposable
 {
@@ -77,6 +81,10 @@ public sealed class SkiaSplashControl : Control, IDisposable
     {
         base.OnAttachedToVisualTree(e);
         EnsureTypeface();
+        // BEFORE the timer starts and BEFORE the variant is created, so the very first painted
+        // frame already carries the resolved palette (RemEx-alwfa.1, decision (b)) — the dashboard
+        // profile has not loaded yet at this point, only the tiny sidecar has.
+        SplashBrand.ApplyPalette(SplashPaletteResolver.ResolveFromSidecar());
         _variant = CreateVariant(SplashStyle);
         _elapsed = 0;
         _completed = false;
