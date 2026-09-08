@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Remex.Core.Messages;
@@ -89,8 +91,30 @@ public sealed class CanvasAlertStateTests
             var layoutService = new DashboardLayoutService(Path.Combine(tempDir, "dashboard_layout.json"), theme);
             await layoutService.LoadAsync();
 
-            var vm = new CanvasDashboardViewModel(
-                new ConnectionViewModel(), layoutService, null!, new SensorAlertStore(), new SensorAlertTracker());
+            // RemEx-8wpvr.2 moved the dashboard's SensorAlertStore.Changed subscription out of the
+            // constructor and into the end of InitializeAsync's load path, so a VM that never calls
+            // InitializeAsync no longer wires up ApplySensorAlert's re-apply (the shape this test
+            // exercises below). But InitializeAsync itself is not called here — it awaits
+            // Dispatcher.UIThread.InvokeAsync, and this assembly has no Avalonia.Headless reference
+            // (see DispatcherPostedWorkTests / ProfileReplacementInvalidatesCustomizationVmTests), so
+            // nothing ever drains a real Post. An earlier version of this test built a real
+            // ShellViewModel (with its HardwareThemeService's DispatcherTimer) and awaited
+            // vm.InitializeAsync() directly; that hung, measured directly, because "the" UI thread
+            // ends up bound to whichever thread anywhere in the process first touched
+            // Dispatcher.UIThread, which is generally not the thread InitializeAsync's own internal
+            // LoadAsync happens to resume on. Wiring the same private handler InitializeAsync would
+            // have subscribed reproduces its effect on ApplySensorAlert without going anywhere near
+            // the dispatcher — shell can stay null! the way NewDashboard()'s does, since nothing
+            // reached here dereferences it.
+            var connection = new ConnectionViewModel();
+            var alertStore = new SensorAlertStore();
+            var alertTracker = new SensorAlertTracker();
+            var vm = new CanvasDashboardViewModel(connection, layoutService, null!, alertStore, alertTracker);
+
+            var onAlertStoreChanged = typeof(CanvasDashboardViewModel)
+                .GetMethod("OnAlertStoreChanged", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            alertStore.Changed += (Action)Delegate.CreateDelegate(typeof(Action), vm, onAlertStoreChanged);
+
             vm.ApplyTelemetry(Reading("cpu-pkg-0", 10));
 
             var card = vm.StagedCards.Single();
@@ -150,5 +174,80 @@ public sealed class CanvasAlertStateTests
         catalog.TryResolve("gpu-hot-0", out _).Should().BeFalse("resolution is by sensor Name, not the host id");
         catalog.TryResolve("GPU Hotspot", out var info).Should().BeTrue();
         info!.IsConnected.Should().BeTrue("a freshly-added, non-stale card is currently present");
+    }
+
+    /// <summary>
+    /// RemEx-8wpvr.2 (review, MEDIUM): <c>IsConnected</c> used to be <c>g.Any(c => !c.IsStale)</c>, but
+    /// a placed card is never stale by contract — so a sensor that was placed but had never actually
+    /// reported a reading read as connected forever. It must instead reflect whether the sensor has
+    /// received a live reading via the telemetry path (<see cref="SensorViewModel.Update"/>, which
+    /// sets <see cref="SensorViewModel.RawReading"/>).
+    /// </summary>
+    [Fact]
+    public void IsConnectedReflectsWhetherTheSensorHasEverReportedAReading()
+    {
+        var vm = NewDashboard();
+
+        // Placed directly on the canvas, like a restored card whose sensor hasn't reported yet — no
+        // Update() call, so RawReading is still null.
+        var neverReported = new SensorViewModel { Name = "never-reported" };
+        vm.Cards.Add(new CanvasCardViewModel { CardType = "Sensor", Sensor = neverReported });
+
+        ISensorCatalog catalog = vm;
+        catalog.TryResolve("never-reported", out var info).Should().BeTrue();
+        info!.IsConnected.Should().BeFalse(
+            "a placed card is never IsStale, so IsConnected must not be derived from staleness — a " +
+            "sensor that has never actually reported a reading must not read as connected");
+
+        // The same sensor instance, once telemetry has actually arrived for it.
+        neverReported.Update(new SensorReading { Id = "never-reported", Name = "never-reported", Value = 1, Unit = "°C" });
+
+        catalog.TryResolve("never-reported", out info).Should().BeTrue();
+        info!.IsConnected.Should().BeTrue("the sensor has now received a live reading");
+    }
+
+    /// <summary>
+    /// RemEx-8wpvr.2 (review, MEDIUM): <c>CanvasCardViewModel.OnSensorChanged</c> subscribes to its
+    /// sensor's <c>PropertyChanged</c> but nothing unsubscribed on removal — <see cref="SensorViewModel"/>
+    /// instances live for the whole session, so a removed card stayed rooted and kept mirroring the
+    /// sensor's alert state forever. <c>Cards.Remove</c> call sites must now also call
+    /// <see cref="CanvasCardViewModel.Detach"/>.
+    /// </summary>
+    [Fact]
+    public async Task RemovingACardStopsItMirroringItsSensorsAlertState()
+    {
+        var tempDir = Directory.CreateTempSubdirectory("remex-8wpvr2-detach-").FullName;
+        try
+        {
+            // A real DashboardLayoutService, unlike NewDashboard()'s null! — RemoveSelectedCommand
+            // unconditionally calls TriggerSave, which dereferences it.
+            var theme = new ThemeService { PostToUiThread = action => action() };
+            var layoutService = new DashboardLayoutService(Path.Combine(tempDir, "dashboard_layout.json"), theme);
+            await layoutService.LoadAsync();
+
+            var vm = new CanvasDashboardViewModel(
+                new ConnectionViewModel(), layoutService, null!, new SensorAlertStore(), new SensorAlertTracker());
+            var sensor = new SensorViewModel();
+            sensor.Update(new SensorReading { Id = "cpu-pkg-0", Name = "cpu-pkg-0", Value = 10, Unit = "°C" });
+            var card = new CanvasCardViewModel { CardType = "Sensor", Sensor = sensor };
+            vm.Cards.Add(card);
+
+            vm.ToggleCardSelection(card);
+            vm.RemoveSelectedCommand.Execute(null);
+            vm.Cards.Should().NotContain(card, "RemoveSelected removed it from the canvas");
+
+            // The sensor lives on for the rest of the session (it may still be in StagedCards, or
+            // referenced by a fresh placed card) - raising its PropertyChanged here stands in for any
+            // later activity on it.
+            sensor.IsAlertActive = true;
+
+            card.IsAlertActive.Should().BeFalse(
+                "a removed card must be detached from its sensor - it must not keep mirroring " +
+                "PropertyChanged after Cards.Remove");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { /* best-effort cleanup */ }
+        }
     }
 }

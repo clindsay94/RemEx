@@ -299,6 +299,20 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// </remarks>
     private void OnAlertStoreChanged()
     {
+        ReapplyAlertsToSensors();
+        TriggerSave();
+    }
+
+    /// <summary>
+    /// The re-apply half of <see cref="OnAlertStoreChanged"/>, split out so <see cref="InitializeAsync"/>
+    /// can run it once on load WITHOUT saving. <see cref="OnAlertStoreChanged"/> itself is not
+    /// subscribed until the load path's own restore work is done (see the comment on that
+    /// subscription) — <see cref="_alertStore"/>'s load-time <c>ReplaceAll</c> must not have a save
+    /// wired up yet, or the debounced write lands on a canvas that hasn't restored its non-sensor
+    /// cards, silently deleting them from the profile (RemEx-8wpvr.2, HIGH).
+    /// </summary>
+    private void ReapplyAlertsToSensors()
+    {
         foreach (var card in Cards.Concat(StagedCards)
             .Where(c => c.CardType == "Sensor" && c.Sensor is not null))
         {
@@ -311,8 +325,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             if (!_alertStore.TryGet(tripped.SensorName, out _))
                 _alertTracker.Forget(tripped.SensorName);
         }
-
-        TriggerSave();
     }
 
     /// <summary>Refreshes <see cref="CanvasCardViewModel.IsAlertTripped"/> (and the trip snapshot
@@ -346,8 +358,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// Every sensor the canvas has seen this session, distinct by name (case-insensitive, matching
     /// every other sensor-name comparison in this class), sourced from <see cref="Cards"/> and
     /// <see cref="StagedCards"/> together so a sensor that was only ever staged still shows up.
-    /// <see cref="SensorInfo.IsConnected"/> is true when at least one card for the sensor is not
-    /// marked stale (<see cref="CanvasCardViewModel.IsStale"/> — placed cards are never stale).
+    /// <see cref="SensorInfo.IsConnected"/> is true when at least one card for the sensor has ever
+    /// received a live reading (<see cref="SensorViewModel.RawReading"/> is set by
+    /// <see cref="SensorViewModel.Update"/> on every telemetry tick and never cleared) — NOT
+    /// <see cref="CanvasCardViewModel.IsStale"/>, which is false for every placed card by contract, so
+    /// a sensor that was placed but never actually reported would otherwise read as connected forever.
     /// </summary>
     public IReadOnlyList<SensorInfo> Known =>
         Cards.Concat(StagedCards)
@@ -360,7 +375,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
                     sensor.Name,
                     sensor.DisplayName,
                     string.IsNullOrEmpty(sensor.Unit) ? null : sensor.Unit,
-                    g.Any(c => !c.IsStale));
+                    g.Any(c => c.Sensor!.RawReading is not null));
             })
             .ToList();
 
@@ -435,7 +450,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
 
         SelectedCards.CollectionChanged += OnSelectedCardsChanged;
 
-        _alertStore.Changed += OnAlertStoreChanged;
+        // _alertStore.Changed is deliberately NOT subscribed here — see InitializeAsync, which
+        // subscribes it once the load path's restore work is done (RemEx-8wpvr.2, HIGH).
         _alertTracker.TrippedChanged += OnTrippedChanged;
     }
 
@@ -507,27 +523,48 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
 
         var localProfile = await _layoutService.LoadAsync();
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(() => FinishInitialize(localProfile));
+    }
+
+    /// <summary>
+    /// The synchronous, UI-thread half of <see cref="InitializeAsync"/>'s load path — split into its
+    /// own method (RemEx-8wpvr.2) purely so tests can invoke it directly by reflection instead of
+    /// through <see cref="Dispatcher"/>.<see cref="Dispatcher.UIThread"/>, the same seam shape
+    /// <c>ApplyProfile</c> already gets from <c>CanvasDashboardViewModelLayoutSyncTests</c>. This
+    /// assembly has no Avalonia.Headless reference, so nothing ever drains a real
+    /// <see cref="Dispatcher.UIThread"/> post; awaiting the real, dispatcher-wrapped
+    /// <see cref="InitializeAsync"/> from a test hangs whenever "the" UI thread — bound to whichever
+    /// thread anywhere in the process first touched <see cref="Dispatcher.UIThread"/> (a
+    /// <c>HardwareThemeService</c>'s <c>DispatcherTimer</c>, say) — differs from the thread this
+    /// call's own preceding <c>await _layoutService.LoadAsync()</c> happens to resume on. Measured
+    /// directly, not assumed: two rewritten tests hung exactly that way before this split
+    /// (<c>CanvasAlertStateTests</c>, <c>CanvasDashboardViewModelAlertLoadSaveTests</c>).
+    /// </summary>
+    private void FinishInitialize(DashboardProfile localProfile)
+    {
+        _isInitialized = true;
+
+        // Seed the first-visit coach mark from whatever profile is now loaded.
+        InitCoachMark();
+
+        // If a host sync arrived before we finished local load, prioritize the host.
+        if (_pendingSyncProfile != null)
         {
-            _isInitialized = true;
-
-            // Seed the first-visit coach mark from whatever profile is now loaded.
-            InitCoachMark();
-
-            // If a host sync arrived before we finished local load, prioritize the host.
-            if (_pendingSyncProfile != null)
-            {
-                ApplyProfile(_pendingSyncProfile);
-                _pendingSyncProfile = null;
-                return;
-            }
-
+            ApplyProfile(_pendingSyncProfile);
+            _pendingSyncProfile = null;
+        }
+        else
+        {
             // Otherwise, use the local profile.
             _profile = localProfile;
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
 
-            // Restore sensor alerts from profile.
+            // Restore sensor alerts from profile. _alertStore.Changed is NOT subscribed yet (see
+            // below) — ReplaceAll fires Changed unconditionally, and OnAlertStoreChanged saves,
+            // so if it were live here the debounced save would land before the non-sensor cards
+            // below are back on the canvas and silently drop them from the profile
+            // (RemEx-8wpvr.2, HIGH).
             _alertStore.ReplaceAll(_profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
 
             // Restore non-sensor cards from profile.
@@ -544,16 +581,24 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             // Create default cards if this is a fresh profile.
             EnsureDefaultCards();
 
-            // If we're already connected, maybe the host is empty?
-            // We should probably push our local layout if the host didn't send anything.
-            // But for now, let's just ensure we stay in sync.
+            // Re-apply the alerts just restored onto any sensors already materialized, without
+            // saving — saving is OnAlertStoreChanged's job once it is subscribed below.
+            ReapplyAlertsToSensors();
+        }
 
-            RefreshSensorActivationItems();
+        // Subscribed here, once, after the restore work above (whichever branch ran) has
+        // finished — never in the constructor. See the remark on the (absent) ctor subscription.
+        _alertStore.Changed += OnAlertStoreChanged;
 
-            // Final refresh of home pinned sensors after local load.
-            if (_shell.CurrentView is HomeViewModel home)
-                home.RefreshPinnedSensors();
-        });
+        // If we're already connected, maybe the host is empty?
+        // We should probably push our local layout if the host didn't send anything.
+        // But for now, let's just ensure we stay in sync.
+
+        RefreshSensorActivationItems();
+
+        // Final refresh of home pinned sensors after local load.
+        if (_shell.CurrentView is HomeViewModel home)
+            home.RefreshPinnedSensors();
     }
 
     [RelayCommand]
@@ -690,6 +735,13 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     {
         PushOperation(new RemoveCardOperation(Cards, card));
         Cards.Remove(card);
+
+        // A sensor card removed here is a placed CLONE (see PlaceFromStaging) — the reusable
+        // template stays in StagedCards untouched, so this instance is genuinely discarded, not
+        // reused. Detach so it stops mirroring PropertyChanged from a SensorViewModel that outlives
+        // it for the rest of the session (RemEx-8wpvr.2, MEDIUM). No-op for non-sensor cards, which
+        // never have a Sensor set.
+        card.Detach();
 
         // Sensor templates remain in staging; removing from canvas is enough.
         if (card.CardType == "Sensor")
@@ -847,6 +899,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         {
             ops.Add(new RemoveCardOperation(Cards, card));
             Cards.Remove(card);
+            card.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
         }
 
         ClearSelection();
@@ -1610,6 +1663,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
                 {
                     Cards.Remove(card);
                     SelectedCards.Remove(card);
+                    card.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
                 }
                 TriggerSave();
             }
@@ -1659,6 +1713,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         foreach (var existing in Cards.Where(c => !profileCardIds.Contains(c.CardId)).ToList())
         {
             Cards.Remove(existing);
+            existing.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
         }
 
         foreach (var state in profile.Cards ?? Enumerable.Empty<CardState>())
@@ -1781,6 +1836,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         SelectedCards.CollectionChanged -= OnSelectedCardsChanged;
         _alertStore.Changed -= OnAlertStoreChanged;
         _alertTracker.TrippedChanged -= OnTrippedChanged;
+
+        // Every card's PropertyChanged mirror onto its (session-lived) Sensor, unsubscribed
+        // (RemEx-8wpvr.2, MEDIUM) — same reasoning as every Cards.Remove call site above.
+        foreach (var card in Cards.Concat(StagedCards))
+            card.Detach();
     }
 }
 

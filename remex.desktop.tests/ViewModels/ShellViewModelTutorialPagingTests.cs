@@ -42,7 +42,10 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().AddLogging().BuildServiceProvider(),
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider(),
             transferQueuePost: action => action());
     }
 

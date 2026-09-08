@@ -157,6 +157,16 @@ public partial class CanvasCardViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Unsubscribes from the current <see cref="Sensor"/>'s <c>PropertyChanged</c> (via
+    /// <c>OnSensorChanged</c>, triggered by setting it null) and drops the reference. Call this
+    /// at every site that removes a card from the canvas for good — <see cref="SensorViewModel"/>
+    /// instances live for the whole session, so a discarded card left subscribed stays rooted and
+    /// keeps mirroring the sensor's alert state indefinitely (RemEx-8wpvr.2, MEDIUM). A no-op for
+    /// non-sensor cards, which never have a <see cref="Sensor"/> set.
+    /// </summary>
+    public void Detach() => Sensor = null;
+
     /// <summary>Action to acknowledge this card's tripped alert, wired by the dashboard to
     /// <c>SensorAlertTracker.Acknowledge(Sensor.Name)</c> — the same delegate shape as
     /// <see cref="RequestPinToggle"/>, since this VM does not hold the tracker itself.</summary>

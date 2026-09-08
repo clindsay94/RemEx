@@ -85,7 +85,10 @@ public sealed class CanvasDashboardViewModelLayoutSyncTests : IAsyncLifetime
             _theme,
             new HardwareThemeService(_theme),
             connection,
-            new ServiceCollection().AddLogging().BuildServiceProvider());
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
         _vm = new CanvasDashboardViewModel(connection, _layoutService, _shell, new SensorAlertStore(), new SensorAlertTracker());

@@ -91,7 +91,10 @@ public sealed class ProfileReplacementInvalidatesCustomizationVmTests : IAsyncLi
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().AddLogging().BuildServiceProvider());
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider());
 
         // Run the ProfileReplaced handler inline (see ProfileReplacedDispatch's own remarks): this
         // assembly has no Avalonia.Headless reference, so nothing drains a real Dispatcher.UIThread

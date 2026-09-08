@@ -51,7 +51,10 @@ public sealed class RemoteDesktopViewModelProfileReplacementTests : IAsyncLifeti
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().AddLogging().BuildServiceProvider());
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
         _remoteDesktop = new RemoteDesktopViewModel(new ConnectionViewModel(), _shell);

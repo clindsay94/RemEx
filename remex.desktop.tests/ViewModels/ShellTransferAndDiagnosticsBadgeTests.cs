@@ -52,7 +52,10 @@ public sealed class ShellTransferAndDiagnosticsBadgeTests : IAsyncLifetime
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().AddLogging().BuildServiceProvider(),
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider(),
             transferQueuePost: action => action());
 
         _shell.ProfileReplacedDispatch = run => run();

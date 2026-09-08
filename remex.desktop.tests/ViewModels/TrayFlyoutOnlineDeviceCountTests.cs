@@ -52,7 +52,10 @@ public sealed class TrayFlyoutOnlineDeviceCountTests : IAsyncLifetime
             theme,
             new HardwareThemeService(theme),
             connection,
-            new ServiceCollection().AddLogging().BuildServiceProvider(),
+            new ServiceCollection().AddLogging()
+                .AddSingleton<SensorAlertStore>()
+                .AddSingleton<SensorAlertTracker>()
+                .BuildServiceProvider(),
             transferQueuePost: action => action());
         _shell.ProfileReplacedDispatch = run => run();
         _shell.DiagnosticsLogDispatch = run => run();

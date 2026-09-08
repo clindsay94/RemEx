@@ -844,11 +844,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // Initialize background/shared VMs
         //
-        // GetService, not GetRequiredService: both are simple in-memory state holders with no
-        // dependencies, so a test DI container with nothing registered for them degrades to a
-        // fresh instance rather than throwing out of this constructor (RemEx-8wpvr.2).
-        var alertStore = _services.GetService<SensorAlertStore>() ?? new SensorAlertStore();
-        var alertTracker = _services.GetService<SensorAlertTracker>() ?? new SensorAlertTracker();
+        // GetRequiredService, not GetService ?? new: both are registered as singletons in
+        // App.axaml.cs, and a `?? new` fallback here can silently split the instance a test container
+        // built for itself from the one this constructor creates unnoticed — any other component that
+        // resolves SensorAlertStore/SensorAlertTracker from the same container then talks to a
+        // different alert store than the canvas does (RemEx-8wpvr.2, MEDIUM). A test building
+        // ShellViewModel with a bare ServiceCollection must register both, same as it already does
+        // for ILogger<FileTransferQueue> below.
+        var alertStore = _services.GetRequiredService<SensorAlertStore>();
+        var alertTracker = _services.GetRequiredService<SensorAlertTracker>();
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this, alertStore, alertTracker);
         _ = _canvasViewModel.InitializeAsync();
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
