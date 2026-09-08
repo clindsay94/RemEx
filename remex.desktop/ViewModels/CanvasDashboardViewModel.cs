@@ -1739,10 +1739,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // unconditionally, and once OnAlertStoreChanged is subscribed (every ApplyProfile call except
         // the very first, pre-subscription one from FinishInitialize) that would fire an unwanted
         // TriggerSave on every profile application.
+        //
+        // Seed from the LOCAL profile, not `profile` (RemEx-8wpvr.2, HIGH review round 3). Alerts
+        // are device-local by design - the trailing save below layers only Cards/PinnedSensorIds/
+        // IsSnapToGridEnabled/GridSize from `profile` onto localBase and never carries SensorAlerts
+        // (RemEx-hmigd). On two of this method's five call sites (OnLayoutProfileReceivedAsync and
+        // FinishInitialize's pending-sync branch) `profile` is the CONNECTED HOST's own
+        // DashboardProfile, whose host_dashboard_layout.json never has alerts - so seeding from
+        // `profile` reset _alertStore to empty on every host sync, and the next card drag then
+        // persisted that empty list to THIS device's own disk. Use the same source the save below
+        // resolves to (`_layoutService.CurrentProfile`), falling back to `profile` only when there is
+        // no local profile yet (first-ever ApplyProfile, before any local load has completed).
         try
         {
             _suppressAlertStoreSave = true;
-            _alertStore.ReplaceAll(profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
+            var alertSeedProfile = _layoutService.CurrentProfile ?? profile;
+            _alertStore.ReplaceAll(alertSeedProfile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
             ReapplyAlertsToSensors();
         }
         finally
