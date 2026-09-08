@@ -1873,6 +1873,12 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>Uyarı: {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Uyarı: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>{0} saatinde tetiklendi ({1}). Onaylamak için tıklayın.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Geri Al (Ctrl+Z)</value>
   </data>

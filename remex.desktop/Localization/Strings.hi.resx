@@ -1873,6 +1873,12 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>अलर्ट: {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>अलर्ट: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>{0} पर ट्रिप हुआ ({1})। स्वीकार करने के लिए क्लिक करें.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>पूर्ववत करें (Ctrl+Z)</value>
   </data>

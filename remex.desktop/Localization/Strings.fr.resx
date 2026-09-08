@@ -1873,6 +1873,12 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>Alerte : {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Alerte : {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Déclenchée à {0} ({1}). Cliquez pour accuser réception.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Annuler (Ctrl+Z)</value>
   </data>

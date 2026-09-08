@@ -103,7 +103,10 @@ public partial class CanvasCardViewModel : ObservableObject
 
     /// <summary>
     /// Alert bell tooltip: the configured threshold when armed, the trip snapshot when tripped, empty
-    /// when there is no alert. Plain text — RemEx-8wpvr.4 binds it into the UI and can localize then.
+    /// when there is no alert. Localized from <c>Canvas_AlertBellConfigured</c> /
+    /// <c>Canvas_AlertBellTripped</c>, reusing <see cref="AlertDirection"/>/<see cref="AlertSeverity"/>
+    /// keys the way <c>ShellViewModel.OnSensorAlertFired</c> does, and
+    /// <see cref="SensorReadingFormat.FormatReading"/> for the value/threshold text (RemEx-8wpvr.4).
     /// </summary>
     public string AlertTooltip
     {
@@ -111,13 +114,21 @@ public partial class CanvasCardViewModel : ObservableObject
         {
             if (IsAlertTripped && _trippedAlert is { } trip)
             {
-                return $"Tripped at {trip.At.LocalDateTime:t} ({trip.Value:0.#} {Sensor?.Unit}). Click to acknowledge.";
+                var trippedValue = SensorReadingFormat.FormatReading(trip.Value, Sensor?.Unit);
+                var localTime = trip.At.LocalDateTime.ToString("t", LocalizationService.Instance.Culture);
+                return string.Format(
+                    LocalizationService.Instance["Canvas_AlertBellTripped"], localTime, trippedValue);
             }
 
             if (Sensor?.Alert is { } alert)
             {
-                var direction = alert.Direction == AlertDirection.Above ? "above" : "below";
-                return $"Alert: {direction} {alert.Threshold:0.#} {Sensor.Unit} · {alert.Severity}";
+                var directionKey = $"{nameof(AlertDirection)}_{alert.Direction}";
+                var severityKey = $"{nameof(AlertSeverity)}_{alert.Severity}";
+                var direction = LocalizationService.Instance[directionKey];
+                var severityText = LocalizationService.Instance[severityKey];
+                var threshold = SensorReadingFormat.FormatReading(alert.Threshold, Sensor.Unit);
+                return string.Format(
+                    LocalizationService.Instance["Canvas_AlertBellConfigured"], direction, threshold, severityText);
             }
 
             return string.Empty;
@@ -157,15 +168,32 @@ public partial class CanvasCardViewModel : ObservableObject
         }
     }
 
+    /// <summary>Re-raises <see cref="AlertTooltip"/> on a language change (RemEx-8wpvr.4) — its
+    /// getter now reads <c>LocalizationService.Instance</c>, so without this the tooltip would keep
+    /// rendering the previous language until <see cref="HasAlert"/> or <see cref="IsAlertTripped"/>
+    /// next changed for an unrelated reason (guarded by <c>LocalizedPropertyRefreshTests</c>).
+    /// </summary>
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) =>
+        OnPropertyChanged(nameof(AlertTooltip));
+
+    public CanvasCardViewModel()
+    {
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+    }
+
     /// <summary>
     /// Unsubscribes from the current <see cref="Sensor"/>'s <c>PropertyChanged</c> (via
-    /// <c>OnSensorChanged</c>, triggered by setting it null) and drops the reference. Call this
-    /// at every site that removes a card from the canvas for good — <see cref="SensorViewModel"/>
-    /// instances live for the whole session, so a discarded card left subscribed stays rooted and
-    /// keeps mirroring the sensor's alert state indefinitely (RemEx-8wpvr.2, MEDIUM). A no-op for
-    /// non-sensor cards, which never have a <see cref="Sensor"/> set.
+    /// <c>OnSensorChanged</c>, triggered by setting it null), from <c>LocalizationService.Instance</c>
+    /// (RemEx-8wpvr.4), and drops the <see cref="Sensor"/> reference. Call this at every site that
+    /// removes a card from the canvas for good — both are process-lifetime singletons, so a
+    /// discarded card left subscribed to either stays rooted forever (RemEx-8wpvr.2, MEDIUM). A
+    /// no-op for the sensor half on non-sensor cards, which never have a <see cref="Sensor"/> set.
     /// </summary>
-    public void Detach() => Sensor = null;
+    public void Detach()
+    {
+        Sensor = null;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+    }
 
     /// <summary>Action to acknowledge this card's tripped alert, wired by the dashboard to
     /// <c>SensorAlertTracker.Acknowledge(Sensor.Name)</c> — the same delegate shape as

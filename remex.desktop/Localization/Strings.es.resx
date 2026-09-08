@@ -1879,6 +1879,12 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>Alerta: {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Alerta: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Activado a las {0} ({1}). Haga clic para reconocer.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Deshacer (Ctrl+Z)</value>
   </data>

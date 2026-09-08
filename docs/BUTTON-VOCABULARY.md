@@ -159,6 +159,7 @@ Two groups of buttons keep bespoke styles, each because another bead owns them:
 |---|---|---|
 | `nav-item` | `ShellView.axaml` | **RemEx-zi3ua** — retained for the drawer-toggle brand button; the nine nav destinations moved to `ListBoxItem` |
 | Window chrome buttons | `Themes/Chrome/WindowChrome.axaml` | Template parts of the window chrome, not app buttons |
+| `alert-bell` | `CanvasView.axaml` | **RemEx-8wpvr.4** — scopes the `Button.alert-bell mi\|MaterialIcon` / `.tripped` Kind+Foreground styles to the per-card alert bell, alongside its `tertiary icon-button` roles |
 
 `gear-fab` (`ShellView.axaml`) was on this list until **RemEx-bado6**: the gear is a Material
 `FloatingButton` now, not a `Button`, so the guard tests it used to except from can no longer even

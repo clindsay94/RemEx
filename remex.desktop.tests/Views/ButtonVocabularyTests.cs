@@ -58,6 +58,9 @@ public class ButtonVocabularyTests
         // now, not a Button, so the regexes below — scoped to Button/ToggleButton/RepeatButton/
         // DropDownButton/SplitButton tags — can no longer even see a Classes="gear-fab" if one
         // existed. Keeping the entry would have been an exception with nothing left to except.
+        ["alert-bell"] = "RemEx-8wpvr.4 — CanvasView's per-card alert bell; scopes the Kind/Foreground "
+            + "styles (Button.alert-bell mi|MaterialIcon / .tripped) to that one button rather than "
+            + "any icon-button in the app",
     };
 
     [Fact]

@@ -1873,6 +1873,12 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>Сповіщення: {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Сповіщення: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Спрацювало о {0} ({1}). Натисніть, щоб підтвердити.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Скасувати (Ctrl+Z)</value>
   </data>

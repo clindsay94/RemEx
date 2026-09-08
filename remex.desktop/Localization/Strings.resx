@@ -2071,6 +2071,12 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="Alert_Notify_Body" xml:space="preserve">
     <value>Alert: {0} {1} · {2}</value>
   </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Alert: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Tripped at {0} ({1}). Click to acknowledge.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Undo (Ctrl+Z)</value>
   </data>

@@ -19,6 +19,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ShellViewModel _shell;
+
+    /// <summary>Forwards the shell's reduced-motion setting so <c>DraggableCard</c> can gate the
+    /// alert pulse animation (RemEx-8wpvr.4), the same shell-proxy shape as
+    /// <see cref="SettingsViewModel.IsReducedMotion"/> / <see cref="TaskManagerViewModel.IsReducedMotion"/>.
+    /// </summary>
+    /// <remarks>Accepted gap, same as those: no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — <c>DraggableCard</c> re-reads it on attach and
+    /// whenever the alert-active class is (re)applied, which is when the pulse would start anyway.
+    /// </remarks>
+    public bool IsReducedMotion => _shell.IsReducedMotion;
+
     private DashboardProfile _profile = new();
     private int _nextZIndex = 1;
     private bool _isInitialized;

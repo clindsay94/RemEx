@@ -96,7 +96,36 @@ public class DraggableCard : ContentControl
             cardVm.PropertyChanged += OnCardViewModelPropertyChanged;
             UpdateSelectedClass(cardVm.IsSelected);
             UpdateAlertClass(cardVm.IsAlertActive);
+            UpdateReducedMotionClass();
         }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        // FindCanvasDashboard() walks GetVisualParent(), so it only resolves once this card is
+        // actually in the tree — OnDataContextChanged above can fire earlier (e.g. container
+        // recycling), when the walk would just return null. Re-check here so a card that starts
+        // pulsing gets the right glow (steady vs. animated) instead of always defaulting to
+        // animated because the dashboard wasn't reachable yet (RemEx-8wpvr.4).
+        UpdateReducedMotionClass();
+    }
+
+    /// <summary>
+    /// Mirrors <see cref="CanvasDashboardViewModel.IsReducedMotion"/> onto the "reduced-motion"
+    /// class, which only matters in combination with "alert-active" (RemEx-8wpvr.4) — see
+    /// <c>CanvasView.axaml</c>'s <c>ctrl|DraggableCard.alert-active.reduced-motion</c> style. Same
+    /// accepted gap as the property it reads: not live-updated on a mid-session toggle, only
+    /// re-read on attach and whenever the alert-active class is (re)applied.
+    /// </summary>
+    private void UpdateReducedMotionClass()
+    {
+        var reduced = FindCanvasDashboard()?.IsReducedMotion ?? false;
+        if (reduced)
+            Classes.Add("reduced-motion");
+        else
+            Classes.Remove("reduced-motion");
     }
 
     private void OnCardViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -106,7 +135,10 @@ public class DraggableCard : ContentControl
         if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
             UpdateSelectedClass(cardVm.IsSelected);
         else if (e.PropertyName == nameof(CanvasCardViewModel.IsAlertActive))
+        {
             UpdateAlertClass(cardVm.IsAlertActive);
+            UpdateReducedMotionClass();
+        }
     }
 
     private void UpdateSelectedClass(bool isSelected)

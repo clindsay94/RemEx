@@ -1190,8 +1190,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         var resolved = catalog.TryResolve(alert.SensorName, out var info) ? info : null;
         var displayName = resolved?.DisplayName ?? alert.SensorName;
         var unit = resolved?.Unit ?? string.Empty;
-        var formattedReading = FormatReading(value, unit);
-        var formattedThreshold = FormatReading(alert.Threshold, unit);
+        var formattedReading = SensorReadingFormat.FormatReading(value, unit);
+        var formattedThreshold = SensorReadingFormat.FormatReading(alert.Threshold, unit);
 
         var directionKey = $"{nameof(AlertDirection)}_{alert.Direction}";
         var severityKey = $"{nameof(AlertSeverity)}_{alert.Severity}";
@@ -1209,18 +1209,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             ? NotificationImportance.Problem
             : NotificationImportance.Outcome;
         NotificationService.Instance.Notify(importance, title, body);
-    }
-
-    /// <summary>
-    /// Composes a value and its unit for display. Decision: exactly one space between value and
-    /// unit ("90 °C"), matching the settings card spec - not the 4px-gap layout some cards render
-    /// with no literal space in the string. When <paramref name="unit"/> is empty there is no
-    /// trailing space. Follow this in .4/.5 rather than inlining another "{0}{1}" concatenation.
-    /// </summary>
-    private static string FormatReading(double value, string? unit)
-    {
-        var formattedValue = value.ToString("F1", LocalizationService.Instance.Culture);
-        return string.IsNullOrEmpty(unit) ? formattedValue : $"{formattedValue} {unit}";
     }
 
     [RelayCommand]
