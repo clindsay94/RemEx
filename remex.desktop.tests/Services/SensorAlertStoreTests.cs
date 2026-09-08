@@ -61,7 +61,7 @@ public class SensorAlertStoreTests
         store.Set(MakeAlert("CPU Package"));
 
         store.TryGet("cpu package", out var alert).Should().BeTrue();
-        alert.SensorName.Should().Be("CPU Package");
+        alert!.SensorName.Should().Be("CPU Package");
     }
 
     [Fact]

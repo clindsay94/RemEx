@@ -10,6 +10,9 @@ public sealed record TrippedAlert(string SensorName, DateTimeOffset At, double V
 /// <summary>
 /// Runtime trip state and the per-sensor notification cooldown. Session-only: nothing here is
 /// persisted. Takes a clock so the 60-second cooldown is deterministic under test.
+/// UI-thread affine, not thread-safe: callers are the sensor tick and view models, both of which
+/// run on the Avalonia UI thread. <see cref="Tripped"/> is a live dictionary view, so enumerate
+/// it on that thread only.
 /// </summary>
 public sealed class SensorAlertTracker
 {
@@ -75,5 +78,21 @@ public sealed class SensorAlertTracker
     {
         _tripped.Clear();
         TrippedChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Forgets <paramref name="sensorName"/> entirely: clears both its tripped entry and its
+    /// notification cooldown, so a later re-add starts clean instead of having its first
+    /// notification suppressed by a stale cooldown from the removed configuration. The canvas
+    /// calls this when an alert is removed (RemEx-8wpvr.2). Fires <see cref="TrippedChanged"/>
+    /// only when a tripped entry was actually removed.
+    /// </summary>
+    public void Forget(string sensorName)
+    {
+        _lastNotified.Remove(sensorName);
+        if (_tripped.Remove(sensorName))
+        {
+            TrippedChanged?.Invoke();
+        }
     }
 }

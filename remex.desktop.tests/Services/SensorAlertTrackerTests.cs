@@ -175,4 +175,43 @@ public class SensorAlertTrackerTests
 
         tracker.IsTripped("cpu package").Should().BeTrue();
     }
+
+    [Fact]
+    public void Forget_ClearsCooldown_NextTripReturnsTrueImmediately()
+    {
+        var tracker = new SensorAlertTracker();
+        var alert = MakeAlert();
+        var first = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        tracker.Trip("CPU Package", 91.0, alert, first);
+        tracker.Forget("CPU Package");
+        var notify = tracker.Trip("CPU Package", 92.0, alert, first.AddSeconds(1));
+
+        notify.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Forget_OnTrippedName_FiresTrippedChangedOnce()
+    {
+        var tracker = new SensorAlertTracker();
+        tracker.Trip("CPU Package", 91.0, MakeAlert(), DateTimeOffset.UtcNow);
+        var fireCount = 0;
+        tracker.TrippedChanged += () => fireCount++;
+
+        tracker.Forget("CPU Package");
+
+        fireCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void Forget_OnUnknownName_FiresNothing()
+    {
+        var tracker = new SensorAlertTracker();
+        var fireCount = 0;
+        tracker.TrippedChanged += () => fireCount++;
+
+        tracker.Forget("Unknown Sensor");
+
+        fireCount.Should().Be(0);
+    }
 }

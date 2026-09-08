@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Remex.Core.Models;
 
 namespace Remex.Desktop.Services;
@@ -7,6 +8,9 @@ namespace Remex.Desktop.Services;
 /// <summary>
 /// The single in-memory source of configured sensor alerts. Depends on nothing; persistence
 /// stays with the caller (<c>CanvasDashboardViewModel</c> reads/writes <c>DashboardProfile.SensorAlerts</c>).
+/// UI-thread affine, not thread-safe: callers are the sensor tick and view models, both of which
+/// run on the Avalonia UI thread. <see cref="All"/> is a live dictionary view, so enumerate it on
+/// that thread only.
 /// </summary>
 public sealed class SensorAlertStore
 {
@@ -21,7 +25,7 @@ public sealed class SensorAlertStore
     public IReadOnlyCollection<SensorAlert> All => _alerts.Values;
 
     /// <summary>Looks up the alert configured for <paramref name="sensorName"/>, case-insensitively.</summary>
-    public bool TryGet(string sensorName, out SensorAlert alert) => _alerts.TryGetValue(sensorName, out alert!);
+    public bool TryGet(string sensorName, [MaybeNullWhen(false)] out SensorAlert alert) => _alerts.TryGetValue(sensorName, out alert);
 
     /// <summary>Upserts by <see cref="SensorAlert.SensorName"/>. Fires <see cref="Changed"/> even
     /// when the new record is identical to the stored one, since callers re-apply to sensors.</summary>
