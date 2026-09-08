@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -84,7 +85,7 @@ public sealed class CanvasDashboardViewModelLayoutSyncTests : IAsyncLifetime
             _theme,
             new HardwareThemeService(_theme),
             connection,
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().AddLogging().BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
         _vm = new CanvasDashboardViewModel(connection, _layoutService, _shell);

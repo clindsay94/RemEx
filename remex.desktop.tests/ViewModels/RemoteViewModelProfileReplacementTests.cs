@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Core.Services.Network;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -62,7 +63,7 @@ public sealed class RemoteViewModelProfileReplacementTests : IAsyncLifetime
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().AddLogging().BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
         _remote = new RemoteViewModel(new ConnectionViewModel(), _shell, new NoOpWakeOnLanService(), _layoutService);

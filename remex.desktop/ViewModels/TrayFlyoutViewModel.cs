@@ -119,8 +119,16 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         _home = home;
 
         // Rebuild when phone presence changes, so the Remote tile enables and disables in place
-        // rather than at the next time the flyout happens to be reopened.
+        // rather than at the next time the flyout happens to be reopened. Also refresh the badge's
+        // OnlineDeviceCount on every presence signal, not only IsPhoneAttached (review, MEDIUM,
+        // RemEx-rjnbo.1): RebuildTiles previously only ran on show / IsPhoneAttached / locale, and a
+        // PINNED flyout is never re-shown (:126), so the count froze the moment a second paired
+        // device changed state without flipping IsPhoneAttached itself. Both handlers subscribe to
+        // the same PhonePresenceMonitor.PropertyChanged event that already drives IsPhoneAttached -
+        // no dispatcher marshalling here, matching every other Presence handler in this file and
+        // ShellViewModel's, because the poll that raises it already runs on the UI thread.
         Presence.PropertyChanged += OnPresenceChanged;
+        Presence.PropertyChanged += OnPresenceChangedForOnlineDeviceCount;
 
         // And rebuild on a language switch. Every tile label is a snapshot taken in RebuildTiles,
         // and a PINNED flyout is never re-shown - so without this it keeps the previous language
@@ -151,6 +159,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Presence.PropertyChanged -= OnPresenceChanged;
+        Presence.PropertyChanged -= OnPresenceChangedForOnlineDeviceCount;
         LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
     }
 
@@ -158,6 +167,34 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     {
         if (e.PropertyName == nameof(PhonePresenceMonitor.IsPhoneAttached))
             RebuildTiles();
+    }
+
+    /// <summary>
+    /// Keeps <see cref="OnlineDeviceCount"/> live for a PINNED flyout (review, MEDIUM, RemEx-rjnbo.1).
+    /// </summary>
+    /// <remarks>
+    /// DELIBERATELY SEPARATE FROM <see cref="OnPresenceChanged"/> AND FROM <see cref="RebuildTiles"/>.
+    /// A pinned flyout is shown once and never rebuilt again, so the only way its count can move is a
+    /// handler that runs off the presence signal directly rather than off the next call to
+    /// <see cref="Refresh"/>. It refreshes only the count, not the whole tile set, so a test can pin
+    /// that this path runs without RebuildTiles running a second time alongside it. Unfiltered on
+    /// <c>e.PropertyName</c> on purpose: <see cref="IPairedDeviceSource"/> has no change event of its
+    /// own (RemEx-rjnbo.1's own remarks), so every presence tick is the closest live signal there is
+    /// that a paired device's online state may have moved even when <c>IsPhoneAttached</c> itself did
+    /// not flip.
+    /// </remarks>
+    private void OnPresenceChangedForOnlineDeviceCount(object? sender, PropertyChangedEventArgs e) =>
+        RefreshOnlineDeviceCount();
+
+    /// <summary>The <see cref="OnlineDeviceCount"/> half of <see cref="RebuildTiles"/>, split out so
+    /// it can run on its own from a live presence signal without rebuilding the whole tile set.</summary>
+    private void RefreshOnlineDeviceCount()
+    {
+        // Resolved on every call rather than cached (RemEx-rjnbo.1, same reasoning as
+        // SettingsViewModel.RefreshPairedDevices): the embedded host publishes its container after
+        // it starts, and this view model can be built first.
+        OnlineDeviceCount = EmbeddedHostServiceLocator.TryResolve<IPairedDeviceSource>()?
+            .PairedDevices().Count(device => device.IsOnline) ?? 0;
     }
 
     /// <summary>
@@ -177,11 +214,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     {
         var remoteEnabled = TrayTileRules.IsRemoteDesktopEnabled(Presence.IsPhoneAttached);
 
-        // Resolved on every rebuild rather than cached (RemEx-rjnbo.1, same reasoning as
-        // SettingsViewModel.RefreshPairedDevices): the embedded host publishes its container after
-        // it starts, and this view model can be built first.
-        OnlineDeviceCount = EmbeddedHostServiceLocator.TryResolve<IPairedDeviceSource>()?
-            .PairedDevices().Count(device => device.IsOnline) ?? 0;
+        RefreshOnlineDeviceCount();
 
         Tiles =
         [

@@ -236,7 +236,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private void OnDiagnosticLogAdded(LogEntry entry)
     {
         if (entry.Level < LogLevel.Warning) return;
-        DiagnosticsLogDispatch(() => DiagnosticsBadgeCount++);
+
+        // Sitting on the Logs page during a warning burst must not inflate the badge with entries
+        // already visible on screen (review, MEDIUM, RemEx-rjnbo.1) - only what arrives while the
+        // user is elsewhere counts as unread. Checked from inside the dispatched callback rather
+        // than before it, so a navigation racing the log arrival is judged as of when the increment
+        // actually runs, on the UI thread, not as of whatever thread the logger call fired from.
+        // NavigateToDiagnosticLogs already resets the count to 0 on arrival - that IS the "seen"
+        // marker, so all this needs to do is stop moving it while the page is current.
+        DiagnosticsLogDispatch(() =>
+        {
+            if (CurrentView is not DiagnosticLogsViewModel)
+                DiagnosticsBadgeCount++;
+        });
     }
 
     // ═══════════════ Tray Tooltip Summary ═══════════════
@@ -720,7 +732,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
 
         // Eager, not lazy like _fileTransferViewModel below - see _transferQueue's own remarks for why.
-        _transferQueue = new FileTransferQueue(post: transferQueuePost, logger: _services.GetService<ILogger<FileTransferQueue>>());
+        _transferQueue = new FileTransferQueue(post: transferQueuePost, logger: _services.GetRequiredService<ILogger<FileTransferQueue>>());
         _transferQueue.Changed += OnTransferQueueChanged;
 
         // Same reasoning: an unread-diagnostics badge has to exist before the Logs page does, and

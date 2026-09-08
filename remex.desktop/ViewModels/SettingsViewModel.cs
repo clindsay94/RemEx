@@ -251,15 +251,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     /// list, a renamer and a revoker, and each had its own verbatim copy of this two-container
     /// fallback (review of RemEx-4gbp2 called it before the third arrived).
     /// <para>
-    /// RESOLVED ON EVERY CALL, never cached: the host publishes its container after it starts and
-    /// this view model can be built first, so a cached null would stick for the session — the mistake
-    /// found in review of RemEx-n8xk. The app container is tried first and is expected to miss; it is
-    /// there so a desktop-side test double would win.
+    /// DELEGATES TO <see cref="EmbeddedHostServiceLocator.TryResolve{T}"/> (review, LOW,
+    /// RemEx-rjnbo.1) rather than re-implementing the same two-container fallback a second time —
+    /// the tray flyout's device-count badge became the fourth copy the summary above warned about,
+    /// so the logic now lives once, on the locator, and this stays only as the name every existing
+    /// call site here already uses.
     /// </para>
     /// </remarks>
     private static T? ResolveHostService<T>() where T : class
-        => App.Services?.GetService(typeof(T)) as T
-            ?? App.EmbeddedHostServices?.GetService(typeof(T)) as T;
+        => EmbeddedHostServiceLocator.TryResolve<T>();
 
     /// <summary>
     /// Re-reads the paired devices and their live state.

@@ -55,8 +55,11 @@
                  BottomRight placement App.axaml declares for both. Unlike the Files/Diagnostics
                  badges, this one is never fully hidden: it doubles as the presence dot, so at zero
                  online devices BadgeDisplayContent drops back to a plain dot rather than the whole
-                 badge disappearing. No fixed BadgeWidth/BadgeHeight any more - a plain dot no longer
-                 needs the app-wide badge shrunk to fit content that was never there. -->
+                 badge disappearing. BadgeWidth/BadgeHeight="10" restored (review, MEDIUM,
+                 RemEx-rjnbo.1): App.axaml documents 10x10 as what makes a `.presence` Badged read as
+                 a dot rather than the app-wide notification-count size, and the drawer-footer twin in
+                 ShellView.axaml keeps the same fixed size - dropping it here just for this one made
+                 the two presence badges disagree in size at zero online devices. -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto"
                   PointerPressed="OnHeaderPressed"
                   Background="Transparent"
@@ -66,6 +69,7 @@
                                   Classes.connected="{Binding Presence.IsPhoneAttached}"
                                   BadgeContent="{Binding OnlineDeviceCount}"
                                   BadgeDisplayContent="{Binding HasOnlineDevices}"
+                                  BadgeWidth="10" BadgeHeight="10"
                                   Margin="0,0,12,0" VerticalAlignment="Center"
                                   AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}">
                     <mi:MaterialIcon Kind="Cellphone" Width="18" Height="18"

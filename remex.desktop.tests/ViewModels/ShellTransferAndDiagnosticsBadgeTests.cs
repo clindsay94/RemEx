@@ -155,4 +155,51 @@ public sealed class ShellTransferAndDiagnosticsBadgeTests : IAsyncLifetime
 
         _shell.DiagnosticsBadgeCount.Should().Be(0, "arriving on the page is the acknowledgement");
     }
+
+    /// <summary>
+    /// Review, MEDIUM, RemEx-rjnbo.1: the badge used to count a warning even while the user was
+    /// already sitting on the Logs page reading it, because <c>ShellViewModel.OnDiagnosticLogAdded</c>
+    /// only cleared the count on navigation IN and incremented unconditionally after that.
+    /// </summary>
+    [Fact]
+    public void AWarningLoggedWhileDiagnosticsIsCurrentDoesNotRaiseTheCount()
+    {
+        _shell.NavigateToDiagnosticLogsCommand.Execute(null);
+        _shell.DiagnosticsBadgeCount.Should().Be(0);
+
+        InMemoryLogSink.Append(LogLevel.Warning, "Test", "arrived while reading", null);
+
+        _shell.DiagnosticsBadgeCount.Should().Be(0,
+            "a warning that arrives while the diagnostics page is already on screen is not unread");
+        _shell.HasUnreadDiagnostics.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AWarningLoggedWhileElsewhereStillRaisesTheCount()
+    {
+        // Visit diagnostics once (so the count starts at its post-visit zero, not the fixture's
+        // pre-visit zero) and then leave, via a navigation target that needs no DI-resolved view
+        // model (CanvasDashboardViewModel is built eagerly in the constructor) - NavigateToHome
+        // would throw here, since this fixture's container never registered HomeViewModel.
+        _shell.NavigateToDiagnosticLogsCommand.Execute(null);
+        _shell.NavigateToCanvasCommand.Execute(null);
+
+        InMemoryLogSink.Append(LogLevel.Warning, "Test", "arrived while away", null);
+
+        _shell.DiagnosticsBadgeCount.Should().Be(1,
+            "a warning that arrives while the user is on a different page is unread");
+    }
+
+    [Fact]
+    public void NavigatingBackInClearsACountRaisedWhileElsewhere()
+    {
+        _shell.NavigateToDiagnosticLogsCommand.Execute(null);
+        _shell.NavigateToCanvasCommand.Execute(null);
+        InMemoryLogSink.Append(LogLevel.Warning, "Test", "arrived while away", null);
+        _shell.DiagnosticsBadgeCount.Should().Be(1);
+
+        _shell.NavigateToDiagnosticLogsCommand.Execute(null);
+
+        _shell.DiagnosticsBadgeCount.Should().Be(0, "arriving on the page is the acknowledgement");
+    }
 }

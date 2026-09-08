@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
@@ -50,7 +51,7 @@ public sealed class RemoteDesktopViewModelProfileReplacementTests : IAsyncLifeti
             _theme,
             new HardwareThemeService(_theme),
             new ConnectionViewModel(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().AddLogging().BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
 
         _remoteDesktop = new RemoteDesktopViewModel(new ConnectionViewModel(), _shell);

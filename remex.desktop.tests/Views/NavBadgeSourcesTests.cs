@@ -74,6 +74,22 @@ public class NavBadgeSourcesTests
     }
 
     [Fact]
+    public void TheTrayFlyoutPresenceBadgeIsA10PixelDot()
+    {
+        // Review, MEDIUM, RemEx-rjnbo.1: BadgeWidth/BadgeHeight="10" went missing from this badge -
+        // App.axaml documents 10x10 as what makes a `.presence` Badged read as a dot rather than the
+        // app-wide notification-count size, and the drawer-footer twin in ShellView.axaml keeps it,
+        // so this one silently disagreed in size at zero online devices.
+        var badge = TrayPresenceBadge();
+
+        badge.Success.Should().BeTrue("the tray flyout header must carry the presence badge");
+        badge.Value.Should().Contain("BadgeWidth=\"10\"",
+            "a plain presence dot must stay 10px wide, matching App.axaml's documented size");
+        badge.Value.Should().Contain("BadgeHeight=\"10\"",
+            "a plain presence dot must stay 10px tall, matching App.axaml's documented size");
+    }
+
+    [Fact]
     public void NoneOfTheThreeNewBadgesSetTheirOwnPlacement()
     {
         // BadgePlacementAndPaintAreDeclaredOnceForTheWholeApp already scrapes every *.axaml file for
