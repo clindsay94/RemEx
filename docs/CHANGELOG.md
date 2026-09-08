@@ -17,9 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for anyone on a non-default style. (RemEx-gw3ad)
 - A dual-metric sparkline under the Monochrome style draws its second series at reduced opacity
   so the two lines stay distinguishable; any style where the two colours collapse onto each
-  other gets the same treatment. (RemEx-n2kv0)
+  other gets the same treatment, which in practice also means Neutral. The dimming eases off as
+  the contrast slider goes up, so a high-contrast setting is not undone by a faint line. (RemEx-n2kv0)
 - Two rows that showed two raised primary buttons side by side (Upload and Upload Folder on the
   File Transfer screen; Check for Updates and Download on About) now show one. (RemEx-a3q14)
+- Three navigation badges that had nothing behind them now do: the Files entry counts active
+  transfers, the Diagnostics entry counts warnings that arrived while you were on another screen
+  (and stops counting while you are reading the log), and the tray flyout's presence dot carries
+  the number of paired devices currently online, updating live while the flyout is pinned. Alert
+  counts on individual dashboard cards are deliberately left to the sensor-alerts work
+  (RemEx-8wpvr). (RemEx-rjnbo.1)
 - Every button on the PC now declares its role in the button vocabulary, so at most one action
   per screen renders as the raised primary; the buttons that carried no class fell through to
   Material's raised default and made several screens shout. (RemEx-z7pnx.1)
