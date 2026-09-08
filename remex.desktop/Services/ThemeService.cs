@@ -350,11 +350,12 @@ public class ThemeService : IDisposable
         // the current schema can still carry a retired name (hand-edited, or written by a path
         // that skipped the 2→3 arm), and the engine's own fallback for "Spritz" is TonalSpot while
         // the picker would highlight Neutral. One function decides what a persisted string means.
+        var contrastLevel = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
         var palette = DynamicColorGenerator.Generate(
             accentColor,
             SchemeVariants.Normalize(settings.SchemeVariant),
             isDark: !isLightTheme,
-            contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
+            contrast: contrastLevel);
 
         // THE SEED REACHES MATERIAL'S OWN PALETTE TOO (RemEx-prkot). MaterialTheme dresses
         // every control template from its Primary/Secondary swatches; leaving those on the
@@ -377,6 +378,11 @@ public class ThemeService : IDisposable
         // (RemEx-qljv).
         SetResourceOverrideInternal("PaletteTertiary", palette.Tertiary);
         SetResourceOverrideInternal("PaletteTertiaryBrush", new SolidColorBrush(palette.Tertiary));
+        // Published so SparklineControl's dim-on-collapse step (RemEx-n2kv0) can scale its opacity
+        // floor by the same contrast the picker sets, rather than guessing a single fixed dim for
+        // every contrast level. Raw [-1, 1] level, not a derived colour - same shape as the other
+        // settings-derived numeric resources (GlassOpacity, GlowStrength) above.
+        SetResourceOverrideInternal("ThemeContrastLevel", contrastLevel);
 
         // The Aurora mesh's own set, following the SAME light/dark answer the palette does, so
         // System mode flips it with the OS (spec section 6).

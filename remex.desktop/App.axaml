@@ -172,6 +172,9 @@
         <Style Selector="ctrl|SparklineControl">
             <Setter Property="AccentColor" Value="{DynamicResource AccentPrimary}"/>
             <Setter Property="SecondaryAccentColor" Value="{DynamicResource PaletteTertiary}"/>
+            <!-- Feeds the collapsed-series dim floor (RemEx-n2kv0 review finding): a local value
+                 still wins here too, same priority note as above, but nothing currently sets one. -->
+            <Setter Property="ContrastLevel" Value="{DynamicResource ThemeContrastLevel}"/>
         </Style>
 
         <!-- ═══ The four inherited Window properties, settled deliberately (RemEx-n0pb8 via the

@@ -39,6 +39,18 @@ public class SparklineControlStyleTests
     }
 
     [Fact]
+    public void TheStyleSetsContrastLevelFromTheTheme()
+    {
+        var style = StyleFor("ctrl|SparklineControl");
+
+        style.Should().MatchRegex(
+            @"<Setter\s+Property=""ContrastLevel""\s+Value=""\{DynamicResource ThemeContrastLevel\}""\s*/>",
+            "the collapsed-series dim floor (RemEx-n2kv0) has to track the theme's own contrast "
+            + "level, published by ThemeService as ThemeContrastLevel - a mistyped key here compiles "
+            + "and silently falls back to the property default of 0.0");
+    }
+
+    [Fact]
     public void TheControlsNamespaceIsDeclared()
     {
         var app = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml"));

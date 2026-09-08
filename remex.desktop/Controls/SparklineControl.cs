@@ -47,6 +47,16 @@ public class SparklineControl : Control
         AvaloniaProperty.Register<SparklineControl, Color>(nameof(SecondaryAccentColor), Color.Parse("#FFB020"));
 
     /// <summary>
+    /// The active theme's contrast slider, [-1, 1] (0 = no boost). Fed from
+    /// <c>ThemeService</c>'s <c>ThemeContrastLevel</c> resource via the App.axaml Style setter
+    /// below, the same wiring as <see cref="SecondaryAccentColorProperty"/>. Used only to scale the
+    /// collapsed-series dim floor (RemEx-n2kv0) so a high-contrast theme doesn't cut a 1px line's
+    /// ratio in half after the palette already spent its contrast budget getting it distinguishable.
+    /// </summary>
+    public static readonly StyledProperty<double> ContrastLevelProperty =
+        AvaloniaProperty.Register<SparklineControl, double>(nameof(ContrastLevel));
+
+    /// <summary>
     /// The "running hot" colour, resolved from the active theme per render (RemEx-fy0a).
     /// </summary>
     /// <remarks>
@@ -87,11 +97,35 @@ public class SparklineControl : Control
     private const double IndistinguishableChroma = 6.0;
 
     /// <summary>
-    /// The dim step for a secondary series that collapses onto the primary's colour. Reuses
-    /// <c>CanvasView.axaml</c>'s <c>material|Card.stale</c> opacity rather than inventing a new
-    /// per-theme value (gate decision, RemEx-n2kv0).
+    /// Tone (HCT's L*-like axis, 0-100) apart by at least this much escapes the hue/chroma match
+    /// below - once one line is meaningfully lighter or darker than the other, it reads as two
+    /// lines regardless of how close hue and chroma land. Picked well above what any same-mode M3
+    /// role pair actually produces: Monochrome's Primary/Tertiary (identical seed) measure a 0.000
+    /// tone delta, and every SchemeVariant's Primary/Tertiary measured across the Default/Chalk/Ink
+    /// sweep seeds (light+dark, contrast 0 and 1) top out under 0.20 - both roles target the same
+    /// fixed tone for a given mode by M3 construction. 20.0 sits far above that noise floor while
+    /// still catching a real cross-tone comparison (a Container role sits ~30-40 tones from its
+    /// Main), so it is a dead branch on today's Primary/Tertiary pairs and a live guard for
+    /// whatever calls this predicate next (see SparklineDualMetricDimmingTests for the measured
+    /// values behind this comment).
     /// </summary>
-    private const double IndistinguishableSecondaryOpacity = 0.55;
+    private const double IndistinguishableToneDelta = 20.0;
+
+    /// <summary>
+    /// The dim floor for a secondary series that collapses onto the primary's colour, at
+    /// contrast = 0.0. Reuses <c>CanvasView.axaml</c>'s <c>material|Card.stale</c> opacity rather
+    /// than inventing a new per-theme value (gate decision, RemEx-n2kv0).
+    /// </summary>
+    private const double IndistinguishableSecondaryOpacityAtContrast0 = 0.55;
+
+    /// <summary>
+    /// The dim floor at contrast = 1.0. <c>DynamicColorGenerator.Contrasted</c> already walks every
+    /// "on" pair to WCAG AAA at this setting, so a flat 0.55 multiplier on top of that spends half
+    /// of the ratio the palette just spent budget reaching - a 1px collapsed line goes from AAA back
+    /// to under AA. 0.75 keeps a visible dim while giving up much less of that budget; the two
+    /// floors are interpolated by <see cref="ContrastLevel"/> in <c>RenderDualMetric</c>.
+    /// </summary>
+    private const double IndistinguishableSecondaryOpacityAtContrast1 = 0.75;
 
     private ISolidColorBrush? _accentBrush;
     private ISolidColorBrush? _areaFillBrush;
@@ -152,6 +186,12 @@ public class SparklineControl : Control
         set => SetValue(SecondaryAccentColorProperty, value);
     }
 
+    public double ContrastLevel
+    {
+        get => GetValue(ContrastLevelProperty);
+        set => SetValue(ContrastLevelProperty, value);
+    }
+
     /// <summary>
     /// Redraws when the theme changes. Same reasoning as <c>CanvasMinimap</c>: a control that paints
     /// in <see cref="Render"/> is not invalidated by a theme switch the way a DynamicResource
@@ -169,7 +209,7 @@ public class SparklineControl : Control
     {
         AffectsRender<SparklineControl>(HistoryProperty, GraphTypeProperty, AccentColorProperty,
             CurrentValueProperty, MinSeenProperty, MaxSeenProperty, TrackBrushProperty,
-            SecondaryHistoryProperty, SecondaryAccentColorProperty);
+            SecondaryHistoryProperty, SecondaryAccentColorProperty, ContrastLevelProperty);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -421,8 +461,9 @@ public class SparklineControl : Control
             // not just Monochrome specifically.
             if (SeriesColorsAreIndistinguishable(AccentColor, secAccent))
             {
+                double opacityFactor = SecondaryDimOpacityFactor(ContrastLevel);
                 secAccent = new Color(
-                    (byte)Math.Round(secAccent.A * IndistinguishableSecondaryOpacity),
+                    (byte)Math.Round(secAccent.A * opacityFactor),
                     secAccent.R, secAccent.G, secAccent.B);
             }
 
@@ -439,17 +480,38 @@ public class SparklineControl : Control
     /// </summary>
     internal static bool SeriesColorsAreIndistinguishable(Color a, Color b)
     {
-        var (hueA, chromaA, _) = SeedHct.FromColor(a);
-        var (hueB, chromaB, _) = SeedHct.FromColor(b);
+        var (hueA, chromaA, toneA) = SeedHct.FromColor(a);
+        var (hueB, chromaB, toneB) = SeedHct.FromColor(b);
 
         // Chroma near zero makes hue noise, not signal - two greys are indistinguishable
         // regardless of how far apart their "hues" measure (Monochrome's exact case).
         if (chromaA < IndistinguishableChroma && chromaB < IndistinguishableChroma) return true;
 
+        // A large tone gap reads as two lines - one visibly lighter or darker than the other - no
+        // matter how close hue and chroma land. See IndistinguishableToneDelta for why this never
+        // fires on today's real Primary/Tertiary pairs.
+        if (Math.Abs(toneA - toneB) >= IndistinguishableToneDelta) return false;
+
         double hueDelta = Math.Abs(hueA - hueB);
         hueDelta = Math.Min(hueDelta, 360.0 - hueDelta);
 
         return hueDelta < IndistinguishableHueDegrees && Math.Abs(chromaA - chromaB) < IndistinguishableChroma;
+    }
+
+    /// <summary>
+    /// The dim floor for a collapsed secondary series, interpolated by the theme's contrast level
+    /// (RemEx-n2kv0 review finding) - linear between
+    /// <see cref="IndistinguishableSecondaryOpacityAtContrast0"/> at contrast 0.0 and
+    /// <see cref="IndistinguishableSecondaryOpacityAtContrast1"/> at contrast 1.0. Negative contrast
+    /// (reduced-contrast mode) clamps to the same floor as 0.0 - lowering contrast never had extra
+    /// ratio budget to protect. Internal, like <see cref="SeriesColorsAreIndistinguishable"/>, so
+    /// tests can assert the factor directly instead of decoding a rendered pixel.
+    /// </summary>
+    internal static double SecondaryDimOpacityFactor(double contrastLevel)
+    {
+        double contrastT = Math.Clamp(contrastLevel, 0.0, 1.0);
+        return IndistinguishableSecondaryOpacityAtContrast0
+            + contrastT * (IndistinguishableSecondaryOpacityAtContrast1 - IndistinguishableSecondaryOpacityAtContrast0);
     }
 
     /// <summary>Draws a normalized (0–1) series as a line, optionally with a faint area fill.</summary>
