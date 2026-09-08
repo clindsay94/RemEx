@@ -146,6 +146,41 @@ public class HardwareAccentInjectionTests
     }
 
     [Fact]
+    public void ApplyCustomizationCore_PushesAlertGlowShadowFromThePaletteErrorColour()
+    {
+        // RemEx-8wpvr.4 round 2: AlertGlowShadow used to be a literal #F43F5E in
+        // FallbackPalette.axaml with nothing ever overriding it, so a seed whose M3 Error role
+        // was not rose left PART_AlertGlow disagreeing with SystemErrorBrush. It now has to move
+        // with the palette exactly like the ElevationNShadow resources beside it.
+        //
+        // TWO SETTINGS THAT DIFFER IN MODE, NOT ACCENT. DynamicColorGenerator builds the Error
+        // tonal palette at a fixed hue/chroma regardless of the seed colour (see the "every tonal
+        // palette except Error" comment at DynamicColorGenerator.cs:247) — only isDark selects
+        // which tone of that fixed palette comes out. So two accent seeds under the same
+        // light/dark mode would legitimately produce the SAME Error colour; light vs. dark is
+        // the axis that actually proves this key is read from the live palette and not the old
+        // hardcoded literal.
+        var theme = new ThemeService { PostToUiThread = action => action() };
+        var settingsDark = UserSettings("#224466");
+        var settingsLight = settingsDark with { ThemeMode = ThemeModes.Light };
+
+        theme.ApplyCustomizationCore(settingsDark);
+        var expectedDark = DynamicColorGenerator.Generate(
+            Color.Parse("#224466"), settingsDark.SchemeVariant, isDark: true, contrast: settingsDark.ThemeContrast);
+        var shadowDark = theme.GetOverrideResource("AlertGlowShadow").Should().BeOfType<BoxShadows>().Which;
+        shadowDark[0].Color.Should().Be(expectedDark.Error);
+
+        theme.ApplyCustomizationCore(settingsLight);
+        var expectedLight = DynamicColorGenerator.Generate(
+            Color.Parse("#224466"), settingsLight.SchemeVariant, isDark: false, contrast: settingsLight.ThemeContrast);
+        var shadowLight = theme.GetOverrideResource("AlertGlowShadow").Should().BeOfType<BoxShadows>().Which;
+        shadowLight[0].Color.Should().Be(expectedLight.Error);
+
+        shadowDark[0].Color.Should().NotBe(shadowLight[0].Color,
+            "two seeds whose Error roles differ must paint two different alert glow colours");
+    }
+
+    [Fact]
     public void ApplyCustomizationCore_PublishesThemeContrastLevel_MatchingTheSettingsValue()
     {
         // RemEx-n2kv0: ThemeContrastLevel feeds SparklineControl's contrast-scaled dim floor. The

@@ -112,10 +112,13 @@
     <!-- Alert pulse glow (RemEx-8wpvr.4): DraggableCard's PART_AlertGlow border animates its own
          Opacity, but the BoxShadow itself has to be one fixed value - a BoxShadows string is parsed
          as a single opaque literal, so a component inside it cannot be a DynamicResource the way
-         SystemError above is. This mirrors the same tradeoff every themed ElevationNShadow already
-         makes for its own accent glow (e.g. Monolith's Elevation3Shadow embeds its accent as a
-         literal too). The colour matches SystemError (#F43F5E) verbatim; it lives here, once, rather
-         than duplicated per theme file, because SystemError itself is shared across all four themes. -->
+         SystemError above is. This is the same tradeoff every themed ElevationNShadow already makes
+         for its own accent glow (e.g. Monolith's Elevation3Shadow embeds its accent as a literal
+         too), and like those shadows it is NOT shared across seeds: ThemeService.ApplyCustomization
+         overrides this key from the live palette's Error colour on every apply (beside the
+         ElevationNShadow overrides), the same as every other key in this file. The value below is
+         only the pre-first-apply fallback - this file's own SystemError (#F43F5E) above - not a
+         constant the runtime colour agrees with. -->
     <BoxShadows x:Key="AlertGlowShadow">0 0 40 0 #F43F5E</BoxShadows>
     <!-- A FOURTH TOKEN, because the TINT is a different surface from the FILL and inverts its answer.
          ErrorForegroundBrush above is dark, correctly, for solid red. Over 15% red on glass it would

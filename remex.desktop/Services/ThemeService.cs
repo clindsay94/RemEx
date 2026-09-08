@@ -551,6 +551,21 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("Elevation2Shadow", Elevation(34, 9, 0x50, 1.15));
         SetResourceOverrideInternal("Elevation3Shadow", Elevation(48, 12, 0x60, 1.3));
 
+        // Alert pulse glow (RemEx-8wpvr.4): same class of override as the Elevation shadows
+        // above — a BoxShadows value has to carry its colour as a literal component (a
+        // BoxShadows string/struct is one opaque value; nothing inside it can be a
+        // DynamicResource), so it is pushed from the palette here exactly like ElevationNShadow
+        // is, rather than left as the FallbackPalette's hardcoded colour. Blur 40 / spread 0 /
+        // offset 0 matches the pre-first-apply fallback declared in FallbackPalette.axaml.
+        SetResourceOverrideInternal("AlertGlowShadow", new BoxShadows(new BoxShadow
+        {
+            OffsetX = 0,
+            OffsetY = 0,
+            Blur = 40,
+            Spread = 0,
+            Color = palette.Error
+        }));
+
         SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
 
         // Live-themeable typography (font picker). Set directly on the application's root

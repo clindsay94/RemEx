@@ -99,6 +99,10 @@ public class ThemeKeyCoverageTests
                 {
                     "CardCornerRadius", "RemoteCardCornerRadius",
                     "Elevation1Shadow", "Elevation2Shadow", "Elevation3Shadow",
+                    // AlertGlowShadow (RemEx-8wpvr.4): same class as the three Elevation shadows
+                    // above — a BoxShadows resource pushed from palette.Error on every
+                    // ApplyCustomization, just not declared with a colour-valued XAML element.
+                    "AlertGlowShadow",
                 },
                 "anything else left outside the seed pipeline needs a reason recorded here");
     }
