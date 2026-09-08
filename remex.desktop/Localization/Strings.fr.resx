@@ -1867,6 +1867,12 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Critique</value>
   </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} a atteint {1}{2}</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Alerte : {0} {1}{2} · {3}</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Annuler (Ctrl+Z)</value>
   </data>

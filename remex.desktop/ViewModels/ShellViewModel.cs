@@ -33,6 +33,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly PropertyChangedEventHandler _onConnectionChanged;
     private readonly PropertyChangedEventHandler _onPresenceChanged;
     private readonly Action _onProfileReplaced;
+    private readonly Action _onTrippedChanged;
+    private readonly SensorAlertTracker _alertTracker;
     private bool _welcomeSplashStarted;
 
     /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
@@ -144,7 +146,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alert Notifications ═══════════════
 
-    /// <summary>Number of sensor alerts fired in this session (badge count).</summary>
+    /// <summary>
+    /// Number of unacknowledged tripped sensors (badge count). Mirrors
+    /// <see cref="SensorAlertTracker.TrippedCount"/> rather than counting alerts fired this session -
+    /// refreshed whenever <see cref="SensorAlertTracker.TrippedChanged"/> fires (a trip, an
+    /// acknowledge, or acknowledge-all), so it means "how many sensors are tripped right now", not
+    /// "how many times has an alert fired" (RemEx-8wpvr.3).
+    /// </summary>
     [ObservableProperty]
     private int _alertBadgeCount;
 
@@ -156,10 +164,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Recent sensor alert notifications (most recent first).</summary>
     public ObservableCollection<SensorAlertNotification> AlertNotifications { get; } = new();
 
+    /// <summary>
+    /// Dismissing is the only thing that acknowledges every tripped sensor at once - navigating to
+    /// the canvas no longer does (RemEx-8wpvr.3: opening the page cleared a badge whose sensors were
+    /// still tripped, which just hid the signal rather than resolving it). The notification history
+    /// is still cleared here, same asymmetry as before: this command discards both, navigation
+    /// discards neither.
+    /// </summary>
     [RelayCommand]
     private void DismissAlerts()
     {
-        AlertBadgeCount = 0;
+        _alertTracker.AcknowledgeAll();
         AlertNotifications.Clear();
     }
 
@@ -852,10 +867,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // ShellViewModel with a bare ServiceCollection must register both, same as it already does
         // for ILogger<FileTransferQueue> below.
         var alertStore = _services.GetRequiredService<SensorAlertStore>();
-        var alertTracker = _services.GetRequiredService<SensorAlertTracker>();
-        _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this, alertStore, alertTracker);
+        _alertTracker = _services.GetRequiredService<SensorAlertTracker>();
+        _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this, alertStore, _alertTracker);
         _ = _canvasViewModel.InitializeAsync();
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
+
+        // AlertBadgeCount MIRRORS THE TRACKER, IT DOES NOT COUNT (RemEx-8wpvr.3). Seeded from
+        // whatever is already tripped (a fresh tracker is always empty, but a test or future caller
+        // handing in one that is not should not have to wait for the next trip to see it), then kept
+        // live on every TrippedChanged - a trip, an acknowledge, or acknowledge-all.
+        AlertBadgeCount = _alertTracker.TrippedCount;
+        _onTrippedChanged = () => AlertBadgeCount = _alertTracker.TrippedCount;
+        _alertTracker.TrippedChanged += _onTrippedChanged;
 
         // Eager, not lazy like _fileTransferViewModel below - see _transferQueue's own remarks for why.
         _transferQueue = new FileTransferQueue(post: transferQueuePost, logger: _services.GetRequiredService<ILogger<FileTransferQueue>>());
@@ -925,6 +948,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         Connection.PropertyChanged -= _onConnectionChanged;
         Presence.PropertyChanged -= _onPresenceChanged;
         _layoutService.ProfileReplaced -= _onProfileReplaced;
+        _alertTracker.TrippedChanged -= _onTrippedChanged;
 
         // Nulled rather than left for the view to unsubscribe alone (RemEx-8twk0.8 fix round, LOW) -
         // same pattern as ThemeService.CustomizationApplied - so a view that outlives Dispose() (or a
@@ -1145,14 +1169,43 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alert Notifications ═══════════════
 
-    private void OnSensorAlertFired(SensorAlert alert, double value)
+    /// <summary>
+    /// Fires on every notify-worthy trip (the tracker's own 60s per-sensor cooldown already
+    /// filtered repeats - see <see cref="SensorAlertTracker.Trip(string, double, Remex.Core.Models.SensorAlert, DateTimeOffset)"/>).
+    /// Keeps the notification-history insert this bead inherited from RemEx-rjnbo, and adds the
+    /// actual tray/toast announcement (RemEx-8wpvr.3): everything before this bead recorded a trip
+    /// but never told anyone. <c>internal</c> rather than <c>private</c> so
+    /// <c>ShellAlertNotificationTests</c> can drive the importance mapping and text directly,
+    /// without needing a real telemetry tick through <see cref="CanvasDashboardViewModel"/>.
+    /// </summary>
+    internal void OnSensorAlertFired(SensorAlert alert, double value)
     {
-        AlertBadgeCount++;
         AlertNotifications.Insert(0, new SensorAlertNotification(
             alert.SensorName, alert.Severity, DateTime.Now));
         // Cap the list at 20 entries
         while (AlertNotifications.Count > 20)
             AlertNotifications.RemoveAt(AlertNotifications.Count - 1);
+
+        var catalog = (ISensorCatalog)_canvasViewModel!;
+        var resolved = catalog.TryResolve(alert.SensorName, out var info) ? info : null;
+        var displayName = resolved?.DisplayName ?? alert.SensorName;
+        var unit = resolved?.Unit ?? string.Empty;
+        var formattedValue = value.ToString("F1", LocalizationService.Instance.Culture);
+
+        var directionKey = $"{nameof(AlertDirection)}_{alert.Direction}";
+        var severityKey = $"{nameof(AlertSeverity)}_{alert.Severity}";
+        var direction = LocalizationService.Instance[directionKey];
+        var severityText = LocalizationService.Instance[severityKey];
+
+        var title = string.Format(
+            LocalizationService.Instance["Alert_Notify_Title"], displayName, formattedValue, unit);
+        var body = string.Format(
+            LocalizationService.Instance["Alert_Notify_Body"], direction, formattedValue, unit, severityText);
+
+        var importance = alert.Severity == AlertSeverity.Critical
+            ? NotificationImportance.Problem
+            : NotificationImportance.Outcome;
+        NotificationService.Instance.Notify(importance, title, body);
     }
 
     [RelayCommand]
@@ -1215,15 +1268,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         NotifyIfDisconnected("Sensor Workspace");
 
-        // OPENING SENSORS ACKNOWLEDGES THE ALERTS (RemEx-rjnbo). A badge that never clears is a
-        // badge people stop reading. The alerts are sensor alerts and this is the sensor page, so
-        // arriving here IS having seen them.
-        //
-        // The COUNT is reset and AlertNotifications is deliberately left alone: the count means
-        // "unacknowledged", the list is the history, and nothing displays the history yet. Clearing
-        // both here would throw away the only record the moment a future flyout wants to show it.
-        AlertBadgeCount = 0;
-
+        // OPENING SENSORS NO LONGER ACKNOWLEDGES THE ALERTS (RemEx-8wpvr.3, superseding RemEx-rjnbo's
+        // "arriving here IS having seen them"). The badge now means "how many sensors are still
+        // tripped", not "how many times an alert fired while away" - clearing it here would hide a
+        // sensor that is STILL over/under its threshold the moment the page opens, which is the one
+        // time the count is most true. DismissAlerts (an explicit action) is what acknowledges a
+        // trip now; merely looking at the canvas does not.
         SetTransitionAndNavigate(1, _canvasViewModel!);
     }
 

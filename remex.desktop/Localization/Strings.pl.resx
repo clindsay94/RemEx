@@ -1656,6 +1656,12 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Krytyczne</value>
   </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} osiągnął {1}{2}</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Alarm: {0} {1}{2} · {3}</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Cofnij (Ctrl+Z)</value>
   </data>

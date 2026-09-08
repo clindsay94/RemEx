@@ -50,20 +50,27 @@ public class AlertBadgeTests
     }
 
     [Fact]
-    public void SomethingClearsTheCount()
+    public void DismissingIsWhatClearsTheCountNotNavigatingToTheCanvas()
     {
-        // A badge that never clears is a badge people stop reading, so "appear AND clear correctly
-        // with their source state" is half the acceptance. Opening the sensors page is the
-        // acknowledgement: the alerts are sensor alerts and that is where they came from.
+        // RemEx-8wpvr.3: the badge now means "sensors still tripped", not "alerts fired while away",
+        // so merely opening the sensors page must no longer clear it - a sensor can still be over
+        // its threshold the moment the page opens, and that is the one time the count is most true.
+        // DismissAlerts (an explicit acknowledgement, now routed through SensorAlertTracker.
+        // AcknowledgeAll) is the only thing that clears it.
         var shellViewModel = File.ReadAllText(
             Path.Combine(RepoRoot(), "remex.desktop", "ViewModels", "ShellViewModel.cs"));
 
         var navigate = Regex.Match(
             shellViewModel, @"public void NavigateToCanvas\(\)\s*\{.*?\n    \}", RegexOptions.Singleline);
-
         navigate.Success.Should().BeTrue("NavigateToCanvas moved or was renamed");
-        navigate.Value.Should().Contain("AlertBadgeCount = 0",
-            "arriving on the sensors page is what acknowledges the alerts that fired while away");
+        navigate.Value.Should().NotContain("AlertBadgeCount = 0",
+            "opening the canvas must leave unacknowledged trips alone");
+
+        var dismiss = Regex.Match(
+            shellViewModel, @"private void DismissAlerts\(\)\s*\{.*?\n    \}", RegexOptions.Singleline);
+        dismiss.Success.Should().BeTrue("DismissAlerts moved or was renamed");
+        dismiss.Value.Should().Contain("_alertTracker.AcknowledgeAll()",
+            "dismissing is the acknowledgement now - it has to clear the tracker, not a local counter");
     }
 
     [Fact]

@@ -1867,6 +1867,12 @@ Linux: ip addr  या  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>गंभीर</value>
   </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} {1}{2} तक पहुंचा</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>अलर्ट: {0} {1}{2} · {3}</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>पूर्ववत करें (Ctrl+Z)</value>
   </data>

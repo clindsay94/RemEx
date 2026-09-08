@@ -1867,6 +1867,12 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Crítico</value>
   </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} atingiu {1}{2}</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Alerta: {0} {1}{2} · {3}</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Desfazer (Ctrl+Z)</value>
   </data>
