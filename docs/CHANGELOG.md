@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- On the PC, the "connected" green and the warning amber now come from the same Tonal Spot
+  recipe on every colour style, as they already do on the phone, instead of following the
+  decorative style (Vibrant made them shout, Neutral made them fade). A deliberate look change
+  for anyone on a non-default style. (RemEx-gw3ad)
+- A dual-metric sparkline under the Monochrome style draws its second series at reduced opacity
+  so the two lines stay distinguishable; any style where the two colours collapse onto each
+  other gets the same treatment. (RemEx-n2kv0)
+- Two rows that showed two raised primary buttons side by side (Upload and Upload Folder on the
+  File Transfer screen; Check for Updates and Download on About) now show one. (RemEx-a3q14)
 - Every button on the PC now declares its role in the button vocabulary, so at most one action
   per screen renders as the raised primary; the buttons that carried no class fell through to
   Material's raised default and made several screens shout. (RemEx-z7pnx.1)
