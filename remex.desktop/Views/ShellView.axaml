@@ -1390,15 +1390,24 @@
                                 <Button Grid.Column="1" Classes="tertiary compact" Content="{conv:Localize Tutorial_Skip}" Command="{Binding TutorialSkipCommand}" ToolTip.Tip="{conv:Localize Tutorial_SkipTooltip}"/>
                             </Grid>
 
+                            <!-- Tutorial pages (RemEx-9iz00.1): a real Carousel now owns the paging - the
+                                 SelectedIndex two-way binding is the single source of truth TutorialPageIndex,
+                                 the PipsPager below and the Back/Next/Finish buttons all read. PageTransition
+                                 is null under reduced motion, otherwise a short Material-eased horizontal
+                                 slide (BoolToPageTransitionConverter). Content, grouping and localization keys
+                                 are unchanged from the pre-Carousel per-page IsVisible toggles. -->
+                            <Carousel Name="TutorialCarousel"
+                                      SelectedIndex="{Binding TutorialPageIndex, Mode=TwoWay}"
+                                      PageTransition="{Binding IsReducedMotion, Converter={x:Static conv:BoolToPageTransitionConverter.Instance}}">
                             <!-- Page 0: Welcome -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=0}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Monitor" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P0_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P0_Body}"/>
                             </StackPanel>
 
                             <!-- Page 1: How It Works -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=1}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="LinkVariant" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P1_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P1_Body1}"/>
@@ -1409,7 +1418,7 @@
                             </StackPanel>
 
                             <!-- Page 2: HWInfo Setup -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=2}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="ChartLineVariant" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P4_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Body1}"/>
@@ -1420,7 +1429,7 @@
                             </StackPanel>
 
                             <!-- Page 3: Sensors Overview -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=3}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="AccessPoint" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P5_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P5_Body1}"/>
@@ -1434,7 +1443,7 @@
                             </StackPanel>
 
                             <!-- Page 4: App Launcher -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="RocketLaunch" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P6_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P6_Body1}"/>
@@ -1445,7 +1454,7 @@
                             </StackPanel>
 
                             <!-- Page 5: Network & Discovery -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=5}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Magnify" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P7_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P7_Body1}"/>
@@ -1457,7 +1466,7 @@
                             </StackPanel>
 
                             <!-- Page 6: QR Code Pairing -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=6}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Cellphone" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P8_QR_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body1}"/>
@@ -1468,7 +1477,7 @@
                             </StackPanel>
 
                             <!-- Page 7: File Transfer -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=7}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="FolderOutline" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P9_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body1}"/>
@@ -1479,83 +1488,81 @@
                             </StackPanel>
 
                             <!-- Page 8: Glossary Command Palette -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=8}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Keyboard" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_CommandPalette_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_CommandPalette_Body}"/>
                             </StackPanel>
 
                             <!-- Page 9: Glossary App Launcher -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="RocketLaunch" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_AppLauncher_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_AppLauncher_Body}"/>
                             </StackPanel>
 
                             <!-- Page 10: Glossary Task Manager -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="ClipboardList" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_TaskManager_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_TaskManager_Body}"/>
                             </StackPanel>
 
                             <!-- Page 11: Glossary Sensor Canvas -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=11}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="ThermometerLines" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Body}"/>
                             </StackPanel>
 
                             <!-- Page 12: Glossary File Transfer -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=12}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="FolderOutline" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_FileTransfer_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_FileTransfer_Body}"/>
                             </StackPanel>
 
                             <!-- Page 13: Glossary Remote Desktop -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=13}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="RemoteTv" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Body}"/>
                             </StackPanel>
 
                             <!-- Page 14: Glossary Quick Settings -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=14}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Cog" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_QuickSettings_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_QuickSettings_Body}"/>
                             </StackPanel>
 
                             <!-- Page 15: Glossary Customization -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=15}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="Palette" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_Glossary_Customization_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_Customization_Body}"/>
                             </StackPanel>
 
                             <!-- Page 16: You're All Set -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}">
+                            <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="PartyPopper" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P10_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body1}"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body2}"/>
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Replay}"/>
                             </StackPanel>
+                            </Carousel>
 
-                            <!-- Page indicator dots -->
-                            <ItemsControl ItemsSource="{Binding TutorialPageDots}" HorizontalAlignment="Center" Margin="0,4,0,0">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="6"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <!-- Page indicator: Avalonia's own PipsPager (RemEx-9iz00.1) rather than a
+                                 hand-rolled dot ItemsControl - it renders one pip per page from
+                                 NumberOfPages, tracks SelectedPageIndex two-way with the Carousel above,
+                                 and ships its own keyboard/automation support. Its own prev/next buttons
+                                 are hidden - Back/Next/Finish below are the only navigation controls. -->
+                            <PipsPager NumberOfPages="{Binding TutorialPageCount}"
+                                       SelectedPageIndex="{Binding TutorialPageIndex, Mode=TwoWay}"
+                                       IsPreviousButtonVisible="False" IsNextButtonVisible="False"
+                                       HorizontalAlignment="Center" Margin="0,4,0,0"
+                                       AutomationProperties.Name="{conv:Localize Tutorial_PageIndicator}"/>
 
                             <!-- Don't Show Again checkbox -->
                             <CheckBox IsChecked="{Binding DontShowTutorialAgain}" AutomationProperties.Name="{conv:Localize Tutorial_DontShowAgain}" Margin="0,8,0,0" HorizontalAlignment="Center">

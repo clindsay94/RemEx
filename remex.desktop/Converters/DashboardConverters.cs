@@ -1,4 +1,6 @@
 using System.Globalization;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Data.Converters;
 
 namespace Remex.Desktop.Converters;
@@ -81,6 +83,32 @@ public class IntNotEqualConverter : IValueConverter
         if (value is int index && parameter is string s && int.TryParse(s, out var target))
             return index != target;
         return true;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// Bridges <c>ShellViewModel.IsReducedMotion</c> to the tutorial Carousel's PageTransition
+/// (RemEx-9iz00.1): a short Material-eased horizontal slide normally, or <c>null</c> - no
+/// transition at all - when the user has asked for reduced motion.
+/// </summary>
+public class BoolToPageTransitionConverter : IValueConverter
+{
+    public static readonly BoolToPageTransitionConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is true)
+            return null;
+
+        var easing = new CubicEaseOut();
+        return new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Horizontal)
+        {
+            SlideInEasing = easing,
+            SlideOutEasing = easing,
+        };
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

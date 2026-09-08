@@ -2233,6 +2233,9 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Nie pokazuj tego samouczka ponownie</value>
   </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>Postęp samouczka</value>
+  </data>
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
     <value>Parowanie kodem QR</value>
   </data>

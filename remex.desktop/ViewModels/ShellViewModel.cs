@@ -383,21 +383,43 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showTutorialOverlay;
 
-    /// <summary>Current page index of the tutorial (0-based).</summary>
-    [ObservableProperty]
+    /// <summary>
+    /// Resets the carousel to page 0 whenever the overlay is (re)shown (RemEx-9iz00.1) - both
+    /// <see cref="OnBootSequenceCompleted"/> and <see cref="ReplayTutorial"/> already set
+    /// <see cref="TutorialPageIndex"/> to 0 first, but this makes it a guarantee of the flag
+    /// itself rather than something every future call site has to remember to do in order.
+    /// </summary>
+    partial void OnShowTutorialOverlayChanged(bool value)
+    {
+        if (value)
+            TutorialPageIndex = 0;
+    }
+
     private int _tutorialPageIndex;
+
+    /// <summary>
+    /// Current page index of the tutorial (0-based), clamped to [0, TutorialPageCount - 1] so an
+    /// out-of-range value - from the Carousel's own SelectedIndex binding, for instance - can
+    /// never desync the view from the page-count-bounded PipsPager and Back/Next/Finish buttons.
+    /// A manual property rather than [ObservableProperty] because the clamp has to run before the
+    /// value is ever stored, and CommunityToolkit's generated On...Changing hook cannot mutate it.
+    /// </summary>
+    public int TutorialPageIndex
+    {
+        get => _tutorialPageIndex;
+        set
+        {
+            var clamped = Math.Clamp(value, 0, Math.Max(0, TutorialPageCount - 1));
+            if (!SetProperty(ref _tutorialPageIndex, clamped))
+                return;
+
+            TutorialNextCommand.NotifyCanExecuteChanged();
+            TutorialPreviousCommand.NotifyCanExecuteChanged();
+        }
+    }
 
     /// <summary>Total number of tutorial pages.</summary>
     public int TutorialPageCount => _tutorialPages.Count;
-
-    /// <summary>Per-dot opacity (1.0 = active, 0.3 = inactive) for the tutorial page-indicator row.</summary>
-    public IReadOnlyList<double> TutorialPageDots =>
-        Enumerable.Range(0, TutorialPageCount)
-                  .Select(i => i == TutorialPageIndex ? 1.0 : 0.3)
-                  .ToList();
-
-    partial void OnTutorialPageIndexChanged(int value) =>
-        OnPropertyChanged(nameof(TutorialPageDots));
 
     /// <summary>User preference to not show tutorial again.</summary>
     [ObservableProperty]
@@ -928,12 +950,16 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() => IsWelcomeSplashMounted = false);
     }
 
-    [RelayCommand]
+    /// <summary>The running platform, as the flag <see cref="_tutorialPages"/> filters pages by.</summary>
+    private static PlatformFlags CurrentTutorialPlatform =>
+        OperatingSystem.IsWindows() ? PlatformFlags.Windows
+      : OperatingSystem.IsLinux() ? PlatformFlags.Linux
+      : PlatformFlags.Android;
+
+    [RelayCommand(CanExecute = nameof(CanTutorialNext))]
     public void TutorialNext()
     {
-        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
-                     : OperatingSystem.IsLinux() ? PlatformFlags.Linux
-                     : PlatformFlags.Android;
+        var platform = CurrentTutorialPlatform;
 
         int nextIndex = TutorialPageIndex + 1;
         while (nextIndex < _tutorialPages.Count && (_tutorialPages[nextIndex].SupportedPlatforms & platform) == 0)
@@ -943,12 +969,22 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             TutorialPageIndex = nextIndex;
     }
 
-    [RelayCommand]
+    /// <summary>False on the last platform-supported page - Finish/Done takes over there instead.</summary>
+    private bool CanTutorialNext()
+    {
+        var platform = CurrentTutorialPlatform;
+        for (int i = TutorialPageIndex + 1; i < _tutorialPages.Count; i++)
+        {
+            if ((_tutorialPages[i].SupportedPlatforms & platform) != 0)
+                return true;
+        }
+        return false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTutorialPrevious))]
     public void TutorialPrevious()
     {
-        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
-                     : OperatingSystem.IsLinux() ? PlatformFlags.Linux
-                     : PlatformFlags.Android;
+        var platform = CurrentTutorialPlatform;
 
         int prevIndex = TutorialPageIndex - 1;
         while (prevIndex >= 0 && (_tutorialPages[prevIndex].SupportedPlatforms & platform) == 0)
@@ -956,6 +992,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         if (prevIndex >= 0)
             TutorialPageIndex = prevIndex;
+    }
+
+    /// <summary>False on the first platform-supported page.</summary>
+    private bool CanTutorialPrevious()
+    {
+        var platform = CurrentTutorialPlatform;
+        for (int i = TutorialPageIndex - 1; i >= 0; i--)
+        {
+            if ((_tutorialPages[i].SupportedPlatforms & platform) != 0)
+                return true;
+        }
+        return false;
     }
 
     [RelayCommand]

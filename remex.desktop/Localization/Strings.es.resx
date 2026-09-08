@@ -676,6 +676,9 @@
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>No volver a mostrar este tutorial</value>
   </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>Progreso del tutorial</value>
+  </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
     <value>Bienvenido a RemEx</value>
