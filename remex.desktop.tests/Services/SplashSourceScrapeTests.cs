@@ -41,8 +41,10 @@ public sealed class SplashSourceScrapeTests
 
         // ApplyAndSave is the last method-looking construct scraped here is not attempted; instead
         // just require the write call to exist somewhere after the method starts, which is
-        // sufficient given there is exactly one ApplyAndSave in this file.
-        var sidecarWriteIndex = source.IndexOf("LastSeedSidecar.WriteAsync(settings)", applyAndSaveIndex, StringComparison.Ordinal);
+        // sufficient given there is exactly one ApplyAndSave in this file. Matches the call with its
+        // logger argument (RemEx-alwfa.1, Opus review MEDIUM: a failed sidecar write must actually
+        // log in Release, which needs the view model's logger passed through).
+        var sidecarWriteIndex = source.IndexOf("LastSeedSidecar.WriteAsync(settings, _logger)", applyAndSaveIndex, StringComparison.Ordinal);
         sidecarWriteIndex.Should().BeGreaterThan(-1, "ApplyAndSave must refresh the splash's last-seed sidecar on every live change");
     }
 

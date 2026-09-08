@@ -1263,7 +1263,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private void EnsureCustomizationVm()
     {
-        _customizationViewModel ??= new CustomizationViewModel(this, _layoutService, _themeService);
+        _customizationViewModel ??= new CustomizationViewModel(
+            this, _layoutService, _themeService,
+            _services.GetRequiredService<ILogger<CustomizationViewModel>>());
     }
 
     /// <summary>

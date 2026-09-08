@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Desktop.Services;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
@@ -23,6 +25,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
+    private readonly ILogger<CustomizationViewModel> _logger;
     private bool _isApplyingPreset;
 
     /// <summary>
@@ -594,11 +597,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         }
     }
 
-    public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService)
+    public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService, ILogger<CustomizationViewModel>? logger = null)
     {
         _shell = shell;
         _layoutService = layoutService;
         _themeService = themeService;
+        _logger = logger ?? NullLogger<CustomizationViewModel>.Instance;
 
         // NOT EmbeddedHostServiceLocator.Require<T>, which throws when the host is absent — the
         // same reason SystemStatusViewModel.ResolveFromHost isn't either. This sheet has to survive
@@ -1301,7 +1305,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // not only a persisted one — `settings` is the seed actually painting the shell right now,
         // which is what the NEXT launch's splash should match. Fire-and-forget: a failed sidecar
         // write must never block or fail this method, and WriteAsync already logs its own failures.
-        LastSeedSidecar.WriteAsync(settings).FireAndForget("write the last-seed splash sidecar");
+        LastSeedSidecar.WriteAsync(settings, _logger).FireAndForget("write the last-seed splash sidecar", _logger);
 
         // _suppressPersist SKIPS THIS WHOLE BLOCK (RemEx-k7891). RefreshBackgroundTypes' platform
         // fallback needs the repaint above — and the preset/tile refresh below — to run exactly as a

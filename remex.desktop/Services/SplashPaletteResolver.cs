@@ -61,16 +61,47 @@ public static class SplashPaletteResolver
         var palette = DynamicColorGenerator.Generate(seedColor, variant, isDark: !isLight, contrast: seed.Contrast);
 
         uint surfaceArgb = ToArgb(palette.Surface);
+        uint markEndArgb = ToArgb(palette.Tertiary);
+
+        // DIVERGES FROM remex.android's SplashPalette.kt DELIBERATELY: the phone's fixed accent
+        // paints on a flat surface, so measuring it against Surface alone is enough there. Here the
+        // Dot1/Chevron/Cursor accent elements paint OVER the mark's gradient fill, whose end stop is
+        // Tertiary — the very colour the fallback below picks. If amber only cleared the Surface
+        // floor it could still land within ~1:1 of MarkEnd in light mode and read as invisible where
+        // it is actually drawn, so amber must clear BOTH floors, and the fallback candidate is
+        // chosen against BOTH surfaces too (RemEx-alwfa.1, Opus review MEDIUM).
         uint accent = ContrastRatio(RemexBrandData.AmberArgb, surfaceArgb) >= MinAccentContrast
-            ? RemexBrandData.AmberArgb
-            : ToArgb(palette.Tertiary);
+            && ContrastRatio(RemexBrandData.AmberArgb, markEndArgb) >= MinAccentContrast
+                ? RemexBrandData.AmberArgb
+                : PickFallbackAccent(palette, surfaceArgb, markEndArgb);
 
         return new SplashPalette(
             BackdropStart: surfaceArgb,
             BackdropEnd: ToArgb(palette.SurfaceContainerHigh),
             MarkStart: ToArgb(palette.Primary),
-            MarkEnd: ToArgb(palette.Tertiary),
+            MarkEnd: markEndArgb,
             Accent: accent);
+    }
+
+    /// <summary>
+    /// Chooses the first of [Tertiary, OnSurface] that clears <see cref="MinAccentContrast"/>
+    /// against BOTH <paramref name="surfaceArgb"/> and <paramref name="markEndArgb"/> — the accent
+    /// sits over the backdrop everywhere except where the mark's gradient (ending at Tertiary)
+    /// passes underneath it. If neither candidate clears both floors, picks whichever has the
+    /// higher of its two (surface, mark-end) contrast ratios, i.e. the least-bad option.
+    /// </summary>
+    private static uint PickFallbackAccent(DynamicColorGenerator.M3Palette palette, uint surfaceArgb, uint markEndArgb)
+    {
+        uint tertiary = ToArgb(palette.Tertiary);
+        uint onSurface = ToArgb(palette.OnSurface);
+
+        double tertiaryMin = Math.Min(ContrastRatio(tertiary, surfaceArgb), ContrastRatio(tertiary, markEndArgb));
+        if (tertiaryMin >= MinAccentContrast) return tertiary;
+
+        double onSurfaceMin = Math.Min(ContrastRatio(onSurface, surfaceArgb), ContrastRatio(onSurface, markEndArgb));
+        if (onSurfaceMin >= MinAccentContrast) return onSurface;
+
+        return onSurfaceMin >= tertiaryMin ? onSurface : tertiary;
     }
 
     private static uint ToArgb(Color c) => ((uint)c.A << 24) | ((uint)c.R << 16) | ((uint)c.G << 8) | c.B;
