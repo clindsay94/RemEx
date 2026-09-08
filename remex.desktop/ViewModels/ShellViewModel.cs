@@ -497,7 +497,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 return;
 
             var clamped = Math.Clamp(value, 0, visible.Count - 1);
-            TutorialPageIndex = visible[clamped];
+            var target = visible[clamped];
+            var wasNoOp = TutorialPageIndex == target;
+            TutorialPageIndex = target;
+            if (clamped != value && wasNoOp)
+            {
+                // TutorialPageIndex was already `target`, so its own setter saw no field change and
+                // stayed silent - mirroring its no-op path, raise both notifications by hand so an
+                // out-of-range push (e.g. PipsPager.SelectedPageIndex past the last visible page)
+                // gets corrected back on the binding instead of sticking at the invalid pushed value.
+                OnPropertyChanged(nameof(TutorialVisiblePageIndex));
+                OnPropertyChanged(nameof(TutorialPageIndex));
+            }
         }
     }
 

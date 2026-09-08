@@ -51,15 +51,15 @@ public class TutorialCarouselSourceScanTests
     [Fact]
     public void PipsPagerPaintsFromTheThemeNotHardcodedColours()
     {
-        // RemEx-9iz00.1 fix round (MEDIUM): Avalonia.Themes.Fluent/Simple are not merged in this app
-        // (RemEx-prkot), so PipsPager has no ControlTheme of its own and would otherwise render pips
-        // with no paint at all. The overlay supplies one locally, repainted with the same
-        // DynamicResource brushes the removed dot ItemsControl used.
+        // RemEx-9iz00.1 fix round (MEDIUM): Material.Styles ships its own PipsPager ControlTheme,
+        // merged app-wide through App.axaml's MaterialTheme, so PipsPager is not left unstyled. The
+        // overlay's local, Card-scoped ControlTheme OVERRIDES that Material default, repainted with
+        // the same DynamicResource brushes the removed dot ItemsControl used.
         var overlay = TutorialOverlaySource();
 
         overlay.Should().MatchRegex(@"x:Key=""\{x:Type PipsPager\}""",
-            "a local ControlTheme keyed by PipsPager's type is what makes the pips render at all " +
-            "without Fluent/Simple merged");
+            "a local ControlTheme keyed by PipsPager's type overrides Material.Styles' PipsPager " +
+            "theme so the pips paint from RemEx's palette brushes instead of Material's defaults");
         overlay.Should().MatchRegex(@"Selector=""ListBoxItem:selected[^""]*""\s*>\s*<Setter Property=""Fill"" Value=""\{DynamicResource AccentPrimaryBrush\}""\s*/>",
             "the selected pip has to paint from the same accent the removed dot ItemsControl used, " +
             "conditioned on the pip actually being selected");

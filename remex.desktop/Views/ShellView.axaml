@@ -1383,11 +1383,12 @@
                 </Border.Transitions>
                 <Grid>
                     <material:Card Classes="surface" Width="520" MaxWidth="540" Padding="32,28" CornerRadius="28" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <!-- PipsPager theme (RemEx-9iz00.1 fix round, MEDIUM): Avalonia.Themes.Fluent/Simple
-                             are not merged in this app (RemEx-prkot - MaterialTheme owns every control
-                             template), so PipsPager has no ControlTheme of its own to inherit and paint
-                             from - without this it renders no pips at all. Structure follows Avalonia
-                             12.1.1's own Simple-theme PipsPager template (PART_PreviousButton/PART_NextButton/
+                        <!-- PipsPager theme (RemEx-9iz00.1 fix round, MEDIUM): Material.Styles ships its own
+                             PipsPager ControlTheme (Resources/Themes/PipsPager.axaml, plus PipsPagerAssist),
+                             merged app-wide through App.axaml's MaterialTheme, so this is not filling a gap -
+                             it OVERRIDES that theme, Card-scoped, so the pips paint from RemEx's own palette
+                             brushes instead of Material's defaults. Structure follows Avalonia 12.1.1's own
+                             Simple-theme PipsPager template (PART_PreviousButton/PART_NextButton/
                              PART_PipsPagerList named parts a ListBoxItem per pip, pseudo-classed
                              :selected/:pointerover/:pressed), repainted with this app's own DynamicResource
                              brushes instead of Avalonia's ThemeAccentBrush/ThemeControlLowBrush: the same

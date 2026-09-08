@@ -207,4 +207,25 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
             "page, even though SetProperty saw no field change and stayed silent");
         raised.Should().Contain(nameof(ShellViewModel.TutorialVisiblePageIndex));
     }
+
+    [Fact]
+    public void PushingAnOutOfRangeVisibleIndexOnTheLastVisiblePageStillNotifies()
+    {
+        // RemEx-9iz00.1 fix round (LOW): TutorialVisiblePageIndex's setter clamps, then assigns
+        // TutorialPageIndex - when that assignment is a no-op (already on the last visible page),
+        // TutorialPageIndex's own SetProperty stays silent, so nothing corrected the out-of-range
+        // push back onto TutorialVisiblePageIndex itself without the mirrored notify this fixes.
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+        _shell.TutorialVisiblePageIndex = _shell.TutorialVisiblePageCount - 1; // already at the ceiling
+
+        var raised = new List<string>();
+        _shell.PropertyChanged += (_, e) => raised.Add(e.PropertyName ?? "");
+
+        _shell.TutorialVisiblePageIndex = 999; // clamps to the same ceiling - the field never moves
+
+        _shell.TutorialVisiblePageIndex.Should().Be(_shell.TutorialVisiblePageCount - 1);
+        raised.Should().Contain(nameof(ShellViewModel.TutorialVisiblePageIndex),
+            "the binding source that pushed 999 needs to be told the real value is still the last " +
+            "visible page, even though the underlying TutorialPageIndex never moved and stayed silent");
+    }
 }
