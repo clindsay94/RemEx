@@ -146,6 +146,22 @@ public class HardwareAccentInjectionTests
     }
 
     [Fact]
+    public void ApplyCustomizationCore_PublishesThemeContrastLevel_MatchingTheSettingsValue()
+    {
+        // RemEx-n2kv0: ThemeContrastLevel feeds SparklineControl's contrast-scaled dim floor. The
+        // generator-argument half of this (contrast reaching DynamicColorGenerator.Generate) is
+        // covered by ThemeKeyCoverageTests; this covers the OTHER consumer of the same clamped
+        // value — the published resource a control reads directly, not through the palette.
+        var theme = new ThemeService { PostToUiThread = action => action() };
+
+        theme.ApplyCustomizationCore(UserSettings("#224466") with { ThemeContrast = 1.0 });
+        theme.GetOverrideResource("ThemeContrastLevel").Should().Be(1.0);
+
+        theme.ApplyCustomizationCore(UserSettings("#224466") with { ThemeContrast = -1.0 });
+        theme.GetOverrideResource("ThemeContrastLevel").Should().Be(-1.0);
+    }
+
+    [Fact]
     public void InjectThenClear_RestoresExactlyWhatWasPaintedBeforeTheOverride()
     {
         // NOTHING IN THIS TEST DRIVES AN APPLY. That is the entire point, and the first version of

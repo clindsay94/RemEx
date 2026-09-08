@@ -483,14 +483,16 @@ public class SparklineControl : Control
         var (hueA, chromaA, toneA) = SeedHct.FromColor(a);
         var (hueB, chromaB, toneB) = SeedHct.FromColor(b);
 
-        // Chroma near zero makes hue noise, not signal - two greys are indistinguishable
-        // regardless of how far apart their "hues" measure (Monochrome's exact case).
-        if (chromaA < IndistinguishableChroma && chromaB < IndistinguishableChroma) return true;
-
         // A large tone gap reads as two lines - one visibly lighter or darker than the other - no
-        // matter how close hue and chroma land. See IndistinguishableToneDelta for why this never
-        // fires on today's real Primary/Tertiary pairs.
+        // matter how close hue and chroma land. Checked before the grey short-circuit below so two
+        // achromatic colours far apart in tone (e.g. a near-black and a near-white grey) still read
+        // as distinguishable instead of being swallowed by the chroma check first.
         if (Math.Abs(toneA - toneB) >= IndistinguishableToneDelta) return false;
+
+        // Chroma near zero makes hue noise, not signal - two greys close in tone are
+        // indistinguishable regardless of how far apart their "hues" measure (Monochrome's exact
+        // case), now that the tone-delta escape above has already ruled out a large tone gap.
+        if (chromaA < IndistinguishableChroma && chromaB < IndistinguishableChroma) return true;
 
         double hueDelta = Math.Abs(hueA - hueB);
         hueDelta = Math.Min(hueDelta, 360.0 - hueDelta);

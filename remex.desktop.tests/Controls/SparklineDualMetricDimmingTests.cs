@@ -97,18 +97,33 @@ public class SparklineDualMetricDimmingTests
     }
 
     [Fact]
-    public void TwoDifferentChromaZeroGreysAreIndistinguishable()
+    public void TwoWidelySeparatedChromaZeroGreysAreDistinguishable()
     {
-        // Monochrome's Primary and Tertiary are both exact greys, but not necessarily the exact
-        // same TONE - hue is meaningless noise at chroma 0, so tone alone must not read as distinct.
-        // This also guards the tone-delta escape: a 40+ tone gap must NOT fire here, because the
-        // chroma-near-zero branch has to return before the escape is ever reached.
+        // Monochrome's Primary and Tertiary are both exact greys, but a large enough TONE gap still
+        // has to read as two visible lines - a near-black line and a near-white line of "the same
+        // grey" are not the false positive the chroma-near-zero check exists for. The tone-delta
+        // escape now runs BEFORE the grey short-circuit, so a ~40+ tone gap between two chroma-0
+        // colours correctly escapes to "distinguishable" instead of being swallowed by chroma alone.
         var lightGrey = Color.Parse("#B0B0B0");
         var darkGrey = Color.Parse("#404040");
 
+        SparklineControl.SeriesColorsAreIndistinguishable(lightGrey, darkGrey).Should().BeFalse(
+            "both are chroma-0, but the tone gap is far above IndistinguishableToneDelta and must " +
+            "escape the grey short-circuit, not be swallowed by it");
+    }
+
+    [Fact]
+    public void TwoCloseChromaZeroGreysAreIndistinguishable()
+    {
+        // Same chroma-0 Monochrome case, but with the two greys only a few tones apart - well under
+        // IndistinguishableToneDelta, so the tone-delta escape does not fire and the chroma-near-zero
+        // short-circuit still correctly calls these indistinguishable.
+        var lightGrey = SeedHct.ToColor(hue: 0, chroma: 0, tone: 55);
+        var darkGrey = SeedHct.ToColor(hue: 0, chroma: 0, tone: 50);
+
         SparklineControl.SeriesColorsAreIndistinguishable(lightGrey, darkGrey).Should().BeTrue(
-            "both are chroma-0 - the Monochrome case the gate decision was written for - and the " +
-            "chroma-near-zero branch must short-circuit before the tone-delta escape ever runs");
+            "both are chroma-0 and only a few tones apart - well under IndistinguishableToneDelta - " +
+            "so the grey short-circuit must still call these indistinguishable");
     }
 
     [Fact]
