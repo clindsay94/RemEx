@@ -398,27 +398,110 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private int _tutorialPageIndex;
 
     /// <summary>
-    /// Current page index of the tutorial (0-based), clamped to [0, TutorialPageCount - 1] so an
-    /// out-of-range value - from the Carousel's own SelectedIndex binding, for instance - can
-    /// never desync the view from the page-count-bounded PipsPager and Back/Next/Finish buttons.
-    /// A manual property rather than [ObservableProperty] because the clamp has to run before the
-    /// value is ever stored, and CommunityToolkit's generated On...Changing hook cannot mutate it.
+    /// Current page index of the tutorial (0-based), snapped into the platform-visible page list
+    /// (RemEx-9iz00.1 fix round, HIGH) so an out-of-range or platform-hidden value - from the
+    /// Carousel's own SelectedIndex binding, for instance - can never land on a page
+    /// <see cref="CurrentTutorialPlatform"/> does not support. A manual property rather than
+    /// [ObservableProperty] because the snap has to run before the value is ever stored, and
+    /// CommunityToolkit's generated On...Changing hook cannot mutate it.
     /// </summary>
     public int TutorialPageIndex
     {
         get => _tutorialPageIndex;
         set
         {
-            var clamped = Math.Clamp(value, 0, Math.Max(0, TutorialPageCount - 1));
-            if (!SetProperty(ref _tutorialPageIndex, clamped))
+            var snapped = SnapToVisibleTutorialPage(value);
+            var changed = SetProperty(ref _tutorialPageIndex, snapped);
+            if (changed)
+            {
+                OnPropertyChanged(nameof(TutorialVisiblePageIndex));
+                TutorialNextCommand.NotifyCanExecuteChanged();
+                TutorialPreviousCommand.NotifyCanExecuteChanged();
                 return;
+            }
 
-            TutorialNextCommand.NotifyCanExecuteChanged();
-            TutorialPreviousCommand.NotifyCanExecuteChanged();
+            if (snapped != value)
+            {
+                // The stored value already equals the snap, but the incoming value did not - a
+                // two-way binding (Carousel.SelectedIndex, PipsPager.SelectedPageIndex) pushed an
+                // out-of-range or platform-hidden index. SetProperty saw no field change and stayed
+                // silent, which would leave that control showing the invalid pushed value forever.
+                // Raise both notifications by hand so the binding pulls the corrected value back.
+                OnPropertyChanged(nameof(TutorialPageIndex));
+                OnPropertyChanged(nameof(TutorialVisiblePageIndex));
+            }
         }
     }
 
-    /// <summary>Total number of tutorial pages.</summary>
+    /// <summary>
+    /// Snaps <paramref name="candidate"/> to the nearest page <see cref="CurrentTutorialPlatform"/>
+    /// supports - forward (the next higher visible index) first, falling back to the nearest
+    /// visible index behind it when nothing forward exists (an out-of-range-above value, or a
+    /// hidden page with no visible successor). <see cref="VisibleTutorialPageIndices"/> is sorted
+    /// ascending, so a single forward pass finds either an exact match or the correct forward
+    /// snap; falling off the end means backward is the only option left.
+    /// </summary>
+    private int SnapToVisibleTutorialPage(int candidate)
+    {
+        var visible = VisibleTutorialPageIndices;
+        if (visible.Count == 0)
+            return 0;
+
+        foreach (var index in visible)
+        {
+            if (index == candidate)
+                return candidate;
+            if (index > candidate)
+                return index;
+        }
+
+        return visible[^1];
+    }
+
+    /// <summary>
+    /// Indices into <see cref="_tutorialPages"/>, in page order, whose <c>SupportedPlatforms</c>
+    /// includes <see cref="CurrentTutorialPlatform"/> (RemEx-9iz00.1 fix round, HIGH). The
+    /// PipsPager and <see cref="TutorialVisiblePageIndex"/> key off this list rather than the raw
+    /// 17-slot Carousel so pagination never exposes a page the running platform does not have.
+    /// </summary>
+    public IReadOnlyList<int> VisibleTutorialPageIndices =>
+        Enumerable.Range(0, _tutorialPages.Count)
+                  .Where(i => (_tutorialPages[i].SupportedPlatforms & CurrentTutorialPlatform) != 0)
+                  .ToList();
+
+    /// <summary>Number of tutorial pages the running platform actually shows - what the PipsPager's
+    /// <c>NumberOfPages</c> binds to, so its dot count never exceeds what a pip click can reach.</summary>
+    public int TutorialVisiblePageCount => VisibleTutorialPageIndices.Count;
+
+    /// <summary>
+    /// <see cref="TutorialPageIndex"/> expressed as a position in <see cref="VisibleTutorialPageIndices"/>
+    /// (0..<see cref="TutorialVisiblePageCount"/> - 1) - what the PipsPager's <c>SelectedPageIndex</c>
+    /// binds to two-way, so a pip click or arrow key can only ever select a platform-supported page.
+    /// </summary>
+    public int TutorialVisiblePageIndex
+    {
+        get
+        {
+            var visible = VisibleTutorialPageIndices;
+            for (var i = 0; i < visible.Count; i++)
+            {
+                if (visible[i] == TutorialPageIndex)
+                    return i;
+            }
+            return 0; // TutorialPageIndex is always snapped into the visible list; unreachable otherwise.
+        }
+        set
+        {
+            var visible = VisibleTutorialPageIndices;
+            if (visible.Count == 0)
+                return;
+
+            var clamped = Math.Clamp(value, 0, visible.Count - 1);
+            TutorialPageIndex = visible[clamped];
+        }
+    }
+
+    /// <summary>Total number of tutorial pages, including ones the running platform hides.</summary>
     public int TutorialPageCount => _tutorialPages.Count;
 
     /// <summary>User preference to not show tutorial again.</summary>
@@ -950,11 +1033,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() => IsWelcomeSplashMounted = false);
     }
 
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Desktop.Tests</c> via <c>InternalsVisibleTo</c>)
+    /// overriding <see cref="CurrentTutorialPlatform"/>. Null in production, where the running OS
+    /// decides; a test sets this so the platform-filtered paging can be exercised for Windows,
+    /// Linux and Android alike without three CI runners.
+    /// </summary>
+    internal PlatformFlags? TutorialPlatformOverride { get; set; }
+
     /// <summary>The running platform, as the flag <see cref="_tutorialPages"/> filters pages by.</summary>
-    private static PlatformFlags CurrentTutorialPlatform =>
-        OperatingSystem.IsWindows() ? PlatformFlags.Windows
-      : OperatingSystem.IsLinux() ? PlatformFlags.Linux
-      : PlatformFlags.Android;
+    private PlatformFlags CurrentTutorialPlatform =>
+        TutorialPlatformOverride ??
+        (OperatingSystem.IsWindows() ? PlatformFlags.Windows
+       : OperatingSystem.IsLinux() ? PlatformFlags.Linux
+       : PlatformFlags.Android);
 
     [RelayCommand(CanExecute = nameof(CanTutorialNext))]
     public void TutorialNext()

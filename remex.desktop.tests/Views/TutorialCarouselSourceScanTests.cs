@@ -38,10 +38,34 @@ public class TutorialCarouselSourceScanTests
     {
         var overlay = TutorialOverlaySource();
 
-        overlay.Should().MatchRegex(@"<PipsPager\b[\s\S]*?NumberOfPages=""\{Binding TutorialPageCount\}""",
-            "PipsPager renders one pip per page from NumberOfPages - the indicator this bead asked for");
-        overlay.Should().Contain("SelectedPageIndex=\"{Binding TutorialPageIndex, Mode=TwoWay}\"",
-            "the indicator has to track the same index the Carousel and the nav buttons use");
+        // RemEx-9iz00.1 fix round (HIGH): the PipsPager keys off the platform-filtered visible
+        // list, not the raw 17-page TutorialPageCount/TutorialPageIndex the Carousel above uses -
+        // otherwise a pip click or arrow key could reach a page this platform does not support.
+        overlay.Should().MatchRegex(@"<PipsPager\b[\s\S]*?NumberOfPages=""\{Binding TutorialVisiblePageCount\}""",
+            "PipsPager renders one pip per platform-visible page - the indicator this bead asked for");
+        overlay.Should().Contain("SelectedPageIndex=\"{Binding TutorialVisiblePageIndex, Mode=TwoWay}\"",
+            "the indicator has to track a position in the visible-page list, not the raw Carousel index, " +
+            "so it can never select a page the running platform hides");
+    }
+
+    [Fact]
+    public void PipsPagerPaintsFromTheThemeNotHardcodedColours()
+    {
+        // RemEx-9iz00.1 fix round (MEDIUM): Avalonia.Themes.Fluent/Simple are not merged in this app
+        // (RemEx-prkot), so PipsPager has no ControlTheme of its own and would otherwise render pips
+        // with no paint at all. The overlay supplies one locally, repainted with the same
+        // DynamicResource brushes the removed dot ItemsControl used.
+        var overlay = TutorialOverlaySource();
+
+        overlay.Should().MatchRegex(@"x:Key=""\{x:Type PipsPager\}""",
+            "a local ControlTheme keyed by PipsPager's type is what makes the pips render at all " +
+            "without Fluent/Simple merged");
+        overlay.Should().MatchRegex(@"Selector=""ListBoxItem:selected[^""]*""\s*>\s*<Setter Property=""Fill"" Value=""\{DynamicResource AccentPrimaryBrush\}""\s*/>",
+            "the selected pip has to paint from the same accent the removed dot ItemsControl used, " +
+            "conditioned on the pip actually being selected");
+        overlay.Should().Contain("{DynamicResource TextMutedBrush}",
+            "the unselected pips need an outline/variant brush of their own, not another opacity " +
+            "trick on the same accent colour");
     }
 
     [Fact]

@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
@@ -126,5 +128,83 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
 
         _shell.TutorialPageIndex.Should().Be(0);
         _shell.ShowTutorialOverlay.Should().BeTrue();
+    }
+
+    // ─── RemEx-9iz00.1 fix round (HIGH): the PipsPager made every one of the 17 carousel slots
+    // reachable, including pages SupportedPlatforms excludes for the running platform. These pin
+    // the platform-filtered visible-page list and the snap that keeps TutorialPageIndex out of the
+    // pages it hides, using TutorialPlatformOverride (internal, InternalsVisibleTo) rather than the
+    // real OS so the same assertions run identically on every CI platform.
+
+    [Theory]
+    [InlineData(PlatformFlags.Windows)]
+    [InlineData(PlatformFlags.Linux)]
+    public void VisiblePageCountIsSmallerThanTheFullDeckOnEveryPlatform(PlatformFlags platform)
+    {
+        _shell.TutorialPlatformOverride = platform;
+
+        _shell.TutorialVisiblePageCount.Should().BeLessThan(_shell.TutorialPageCount,
+            "HWiNFO (Windows-only) and Quick Settings (Android-only) each hide at least one page " +
+            "on every platform, so the PipsPager's dot count must never equal the raw 17");
+    }
+
+    [Fact]
+    public void SettingAHiddenPageIndexSnapsForwardToTheNearestVisiblePage()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+
+        _shell.TutorialPageIndex = 2; // HWiNFO - Windows-only, hidden on Linux
+
+        _shell.TutorialPageIndex.Should().Be(3,
+            "page 3 (Dashboard, all platforms) is the next visible page after the hidden HWiNFO " +
+            "page - a Linux user must never land on a Windows-only page");
+    }
+
+    [Fact]
+    public void VisiblePageIndexRoundTripsThroughTheVisibleList()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+        var visible = _shell.VisibleTutorialPageIndices;
+
+        for (var i = 0; i < visible.Count; i++)
+        {
+            _shell.TutorialVisiblePageIndex = i;
+            _shell.TutorialVisiblePageIndex.Should().Be(i);
+            _shell.TutorialPageIndex.Should().Be(visible[i]);
+        }
+    }
+
+    [Fact]
+    public void PushingAnOutOfRangeVisibleIndexClampsAndNotifies()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+        var raised = new List<string>();
+        _shell.PropertyChanged += (_, e) => raised.Add(e.PropertyName ?? "");
+
+        _shell.TutorialVisiblePageIndex = 999;
+
+        _shell.TutorialVisiblePageIndex.Should().Be(_shell.TutorialVisiblePageCount - 1);
+        raised.Should().Contain(nameof(ShellViewModel.TutorialVisiblePageIndex));
+        raised.Should().Contain(nameof(ShellViewModel.TutorialPageIndex));
+    }
+
+    [Fact]
+    public void SettingAnOutOfRangeIndexRaisesPropertyChangedEvenWhenTheStoredValueDoesNotMove()
+    {
+        // RemEx-9iz00.1 fix round (LOW, folded into the HIGH fix): a coerced clamp that leaves the
+        // field unchanged still has to push the correction back onto a two-way binding source, or
+        // the Carousel/PipsPager would keep showing the invalid value it sent forever.
+        _shell.TutorialPageIndex = _shell.TutorialPageCount - 1; // already at the ceiling
+
+        var raised = new List<string>();
+        _shell.PropertyChanged += (_, e) => raised.Add(e.PropertyName ?? "");
+
+        _shell.TutorialPageIndex = 999; // clamps to the same ceiling - the field itself never moves
+
+        _shell.TutorialPageIndex.Should().Be(_shell.TutorialPageCount - 1);
+        raised.Should().Contain(nameof(ShellViewModel.TutorialPageIndex),
+            "the binding source that pushed 999 needs to be told the real value is still the last " +
+            "page, even though SetProperty saw no field change and stayed silent");
+        raised.Should().Contain(nameof(ShellViewModel.TutorialVisiblePageIndex));
     }
 }

@@ -1383,6 +1383,98 @@
                 </Border.Transitions>
                 <Grid>
                     <material:Card Classes="surface" Width="520" MaxWidth="540" Padding="32,28" CornerRadius="28" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <!-- PipsPager theme (RemEx-9iz00.1 fix round, MEDIUM): Avalonia.Themes.Fluent/Simple
+                             are not merged in this app (RemEx-prkot - MaterialTheme owns every control
+                             template), so PipsPager has no ControlTheme of its own to inherit and paint
+                             from - without this it renders no pips at all. Structure follows Avalonia
+                             12.1.1's own Simple-theme PipsPager template (PART_PreviousButton/PART_NextButton/
+                             PART_PipsPagerList named parts a ListBoxItem per pip, pseudo-classed
+                             :selected/:pointerover/:pressed), repainted with this app's own DynamicResource
+                             brushes instead of Avalonia's ThemeAccentBrush/ThemeControlLowBrush: the same
+                             AccentPrimaryBrush the removed dot ItemsControl used for the active dot, and
+                             TextMutedBrush - an outline/variant brush, not another opacity trick - for the
+                             rest. Nav buttons stay in the template only so PipsPager's own PART_ lookups
+                             resolve; both are IsVisible="False" below. -->
+                        <material:Card.Resources>
+                            <ControlTheme x:Key="{x:Type PipsPager}" TargetType="PipsPager">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="IsTabStop" Value="False"/>
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <StackPanel Name="PART_RootPanel"
+                                                    Orientation="{TemplateBinding Orientation}"
+                                                    Background="{TemplateBinding Background}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    ClipToBounds="False">
+                                            <Button Name="PART_PreviousButton" Classes="tertiary compact" IsVisible="{TemplateBinding IsPreviousButtonVisible}" Width="24" Height="24"/>
+                                            <ListBox Name="PART_PipsPagerList"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     Padding="0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                                     ItemsSource="{Binding TemplateSettings.Pips, RelativeSource={RelativeSource TemplatedParent}}"
+                                                     SelectedIndex="{Binding SelectedPageIndex, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                     AutoScrollToSelectedItem="False"
+                                                     ClipToBounds="False">
+                                                <ListBox.Styles>
+                                                    <Style Selector="ScrollViewer">
+                                                        <Setter Property="ClipToBounds" Value="False"/>
+                                                    </Style>
+                                                    <Style Selector="ListBoxItem">
+                                                        <Setter Property="Width" Value="12"/>
+                                                        <Setter Property="Height" Value="24"/>
+                                                        <Setter Property="Padding" Value="0"/>
+                                                        <Setter Property="Margin" Value="0"/>
+                                                        <Setter Property="MinWidth" Value="0"/>
+                                                        <Setter Property="MinHeight" Value="0"/>
+                                                        <Setter Property="ClipToBounds" Value="False"/>
+                                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        <Setter Property="Template">
+                                                            <ControlTemplate>
+                                                                <Panel Background="Transparent">
+                                                                    <Ellipse Name="Pip" Width="8" Height="8" Fill="{DynamicResource TextMutedBrush}">
+                                                                        <Ellipse.Transitions>
+                                                                            <Transitions>
+                                                                                <BrushTransition Property="Fill" Duration="0:0:0.1"/>
+                                                                            </Transitions>
+                                                                        </Ellipse.Transitions>
+                                                                    </Ellipse>
+                                                                </Panel>
+                                                            </ControlTemplate>
+                                                        </Setter>
+                                                    </Style>
+                                                    <Style Selector="ListBoxItem:pointerover /template/ Ellipse#Pip">
+                                                        <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                    </Style>
+                                                    <Style Selector="ListBoxItem:selected /template/ Ellipse#Pip">
+                                                        <Setter Property="Fill" Value="{DynamicResource AccentPrimaryBrush}"/>
+                                                    </Style>
+                                                    <Style Selector="ListBoxItem:selected:pointerover /template/ Ellipse#Pip">
+                                                        <Setter Property="Fill" Value="{DynamicResource AccentHoverBrush}"/>
+                                                    </Style>
+                                                    <Style Selector="ListBoxItem:pressed /template/ Ellipse#Pip">
+                                                        <Setter Property="Fill" Value="{DynamicResource AccentPressedBrush}"/>
+                                                    </Style>
+                                                </ListBox.Styles>
+                                                <ListBox.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="{Binding Orientation, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=PipsPager}}"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center"
+                                                                    Spacing="6"/>
+                                                    </ItemsPanelTemplate>
+                                                </ListBox.ItemsPanel>
+                                            </ListBox>
+                                            <Button Name="PART_NextButton" Classes="tertiary compact" IsVisible="{TemplateBinding IsNextButtonVisible}" Width="24" Height="24"/>
+                                        </StackPanel>
+                                    </ControlTemplate>
+                                </Setter>
+                            </ControlTheme>
+                        </material:Card.Resources>
                         <StackPanel Spacing="16">
                             <!-- Header with Skip -->
                             <Grid ColumnDefinitions="*,Auto">
@@ -1554,12 +1646,17 @@
                             </Carousel>
 
                             <!-- Page indicator: Avalonia's own PipsPager (RemEx-9iz00.1) rather than a
-                                 hand-rolled dot ItemsControl - it renders one pip per page from
-                                 NumberOfPages, tracks SelectedPageIndex two-way with the Carousel above,
-                                 and ships its own keyboard/automation support. Its own prev/next buttons
-                                 are hidden - Back/Next/Finish below are the only navigation controls. -->
-                            <PipsPager NumberOfPages="{Binding TutorialPageCount}"
-                                       SelectedPageIndex="{Binding TutorialPageIndex, Mode=TwoWay}"
+                                 hand-rolled dot ItemsControl - it renders one pip per page and ships its
+                                 own keyboard/automation support. Bound to TutorialVisiblePageCount /
+                                 TutorialVisiblePageIndex, not the raw TutorialPageCount/TutorialPageIndex
+                                 the Carousel above uses (fix round, HIGH) - the Carousel still has all 17
+                                 static pages as slots, but this platform can only reach some of them, so
+                                 the pip count and a pip click's reachable range have to be the smaller,
+                                 platform-filtered list or a pip could jump to a page this platform doesn't
+                                 support. Its own prev/next buttons are hidden - Back/Next/Finish below are
+                                 the only navigation controls. -->
+                            <PipsPager NumberOfPages="{Binding TutorialVisiblePageCount}"
+                                       SelectedPageIndex="{Binding TutorialVisiblePageIndex, Mode=TwoWay}"
                                        IsPreviousButtonVisible="False" IsNextButtonVisible="False"
                                        HorizontalAlignment="Center" Margin="0,4,0,0"
                                        AutomationProperties.Name="{conv:Localize Tutorial_PageIndicator}"/>
