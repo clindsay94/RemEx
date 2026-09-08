@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the contrast slider goes up, so a high-contrast setting is not undone by a faint line. (RemEx-n2kv0)
 - Two rows that showed two raised primary buttons side by side (Upload and Upload Folder on the
   File Transfer screen; Check for Updates and Download on About) now show one. (RemEx-a3q14)
+- The first-run tutorial on the PC is now a proper paged carousel: pages slide (or switch
+  instantly with reduce motion on), a row of pips shows where you are, and Back and Next stop at
+  the ends instead of wrapping into nothing. The wording and the page order are unchanged.
+  (RemEx-9iz00.1)
 - The PC splash now wears your colours. The backdrop takes the palette's surface tone and the
   mark's window fills with a primary-to-tertiary gradient from your saved seed and style, read
   from a small `last-seed.json` written next to the profile so it is right before the profile
