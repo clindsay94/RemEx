@@ -177,7 +177,7 @@ public class HardwareAccentInjectionTests
         shadowLight[0].Color.Should().Be(expectedLight.Error);
 
         shadowDark[0].Color.Should().NotBe(shadowLight[0].Color,
-            "two seeds whose Error roles differ must paint two different alert glow colours");
+            "the Error hue is fixed, so light and dark mode are what move the Error tone; the alert glow must follow that tone");
     }
 
     [Fact]
