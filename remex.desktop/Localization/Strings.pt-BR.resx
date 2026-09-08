@@ -1867,6 +1867,36 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Crítico</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Alertas de sensores</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Nenhum alerta configurado. Clique com o botão direito em um cartão de sensor no painel para definir um.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Copiar para…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Confirmar todos</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Redefinir todos os alertas</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Redefinir todos os alertas de sensores?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Isso remove {0} alertas. Nada mais no seu perfil muda.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Disparado às {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} atingiu {1}</value>
   </data>

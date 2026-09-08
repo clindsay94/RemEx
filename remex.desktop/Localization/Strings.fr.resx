@@ -1867,6 +1867,36 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Critique</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Alertes des capteurs</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Aucune alerte configurée. Faites un clic droit sur une carte de capteur dans le canevas pour en définir une.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Modifier</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Copier vers…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Tout accuser réception</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Réinitialiser toutes les alertes</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Réinitialiser toutes les alertes des capteurs ?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Cela supprime {0} alertes. Rien d'autre dans votre profil ne change.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Déclenchée à {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} a atteint {1}</value>
   </data>

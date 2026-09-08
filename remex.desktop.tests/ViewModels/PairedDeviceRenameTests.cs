@@ -156,7 +156,9 @@ public class PairedDeviceRenameTests : IDisposable
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());
 
-        return new SettingsViewModel(null!, new ConnectionViewModel(), null!, null!, savefile);
+        return new SettingsViewModel(
+            null!, new ConnectionViewModel(), null!, null!, savefile,
+            new SensorAlertStore(), new SensorAlertTracker(), null!);
     }
 
     private sealed class FakeSource(IReadOnlyList<PairedDeviceRow> rows) : IPairedDeviceSource

@@ -564,7 +564,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ConnectionViewModel connection,
         ShellViewModel shell,
         FileTransferRootSettingsService fileTransferRootSettings,
-        RemexSavefileService savefileService)
+        RemexSavefileService savefileService,
+        SensorAlertStore alertStore,
+        SensorAlertTracker alertTracker,
+        ISensorCatalog sensorCatalog)
     {
         _layoutService = layoutService;
         _connection = connection;
@@ -573,7 +576,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _savefileService = Guard.NotNull(savefileService);
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+
+        // RemEx-8wpvr.5: constructed here, not resolved lazily, because ShellViewModel builds its
+        // CanvasDashboardViewModel (the ISensorCatalog implementation) in its own constructor, before
+        // EnsureSettingsVm can ever run — unlike this ViewModel, the canvas is never null by the time
+        // Settings is first opened.
+        AlertsSection = new SensorAlertsSectionViewModel(alertStore, alertTracker, sensorCatalog);
     }
+
+    /// <summary>Backs the Settings "Sensor alerts" card (RemEx-8wpvr.5).</summary>
+    public SensorAlertsSectionViewModel AlertsSection { get; }
 
     /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
     /// <remarks>
@@ -708,6 +720,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             UnsubscribeSharedRoot(root);
         foreach (var device in TrustedDevices)
             UnsubscribeTrustDevice(device);
+        AlertsSection.Dispose();
     }
 
     public void RefreshSensors()

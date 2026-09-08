@@ -1867,6 +1867,36 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Kritis</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Peringatan sensor</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Belum ada peringatan yang dikonfigurasi. Klik kanan kartu sensor di kanvas untuk mengaturnya.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Salin ke…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Konfirmasi semua</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Atur ulang semua peringatan</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Atur ulang semua peringatan sensor?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Ini akan menghapus {0} peringatan. Tidak ada yang lain di profil Anda yang berubah.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Terpicu pukul {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} mencapai {1}</value>
   </data>

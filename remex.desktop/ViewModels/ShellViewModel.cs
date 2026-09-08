@@ -1459,7 +1459,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 Connection,
                 this,
                 new FileTransferRootSettingsService(),
-                _services.GetRequiredService<Remex.Desktop.Services.Backup.RemexSavefileService>());
+                _services.GetRequiredService<Remex.Desktop.Services.Backup.RemexSavefileService>(),
+                // Same registered singleton the canvas and this shell instance already share
+                // (RemEx-8wpvr.2's GetRequiredService comment above applies here too), so the
+                // Settings alerts card can never talk to a different store than the canvas.
+                _services.GetRequiredService<SensorAlertStore>(),
+                _alertTracker,
+                _canvasViewModel!);
             _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
             _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
             return;

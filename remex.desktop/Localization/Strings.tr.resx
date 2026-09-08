@@ -1867,6 +1867,36 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Kritik</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Sensör uyarıları</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Yapılandırılmış uyarı yok. Bir tane ayarlamak için tuvaldeki bir sensör kartına sağ tıklayın.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Düzenle</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Şuraya kopyala…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Kaldır</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Tümünü onayla</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Tüm uyarıları sıfırla</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Tüm sensör uyarıları sıfırlansın mı?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Bu, {0} uyarıyı kaldırır. Profilinizdeki başka hiçbir şey değişmez.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>{0} saatinde tetiklendi · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} {1} değerine ulaştı</value>
   </data>

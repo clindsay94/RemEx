@@ -496,7 +496,9 @@ public class DestructiveActionFailClosedTests : IDisposable
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());
 
-        var vm = new SettingsViewModel(null!, new ConnectionViewModel(), null!, null!, savefile);
+        var vm = new SettingsViewModel(
+            null!, new ConnectionViewModel(), null!, null!, savefile,
+            new SensorAlertStore(), new SensorAlertTracker(), null!);
         vm.SavedStatus = Sentinel;
         return vm;
     }

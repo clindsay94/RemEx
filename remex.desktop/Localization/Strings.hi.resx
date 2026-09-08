@@ -1867,6 +1867,36 @@ Linux: ip addr  या  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>गंभीर</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>सेंसर अलर्ट</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>कोई अलर्ट कॉन्फ़िगर नहीं किया गया है। एक सेट करने के लिए कैनवस पर सेंसर कार्ड पर राइट-क्लिक करें।</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>संपादित करें</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>इसमें कॉपी करें…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>हटाएं</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>सभी स्वीकार करें</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>सभी अलर्ट रीसेट करें</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>सभी सेंसर अलर्ट रीसेट करें?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>इससे {0} अलर्ट हट जाएंगे। आपकी प्रोफ़ाइल में कुछ और नहीं बदलेगा।</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>{0} बजे ट्रिप हुआ · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} {1} तक पहुंचा</value>
   </data>

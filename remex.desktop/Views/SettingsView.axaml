@@ -256,6 +256,43 @@
                         </StackPanel>
                     </material:Card>
 
+                    <!-- ═══ Sensor Alerts Section (RemEx-8wpvr.5) ═══ -->
+                    <material:Card Padding="24">
+                        <StackPanel Spacing="16" DataContext="{Binding AlertsSection}">
+                            <TextBlock Text="{local:Localize Settings_Alerts_Title}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                            <TextBlock Text="{local:Localize Settings_Alerts_Empty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"/>
+
+                            <!-- Virtualising ListBox, not a bare ItemsControl (bd memory: a bare
+                                 ItemsControl realizes every row). MaxHeight bounds the card height
+                                 once the alert list grows past a handful of rows. -->
+                            <ListBox ItemsSource="{Binding Rows}" MaxHeight="320" IsVisible="{Binding !IsEmpty}" Background="Transparent" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SensorAlertRowViewModel">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                           Opacity="{Binding IsDisconnected, Converter={x:Static local:BoolToDoubleConverter.Instance}, ConverterParameter='0.55|1.0'}"/>
+                                                <TextBlock Text="{Binding Summary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding TrippedSummary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemErrorBrush}" IsVisible="{Binding IsTripped}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_Edit}" Command="{Binding EditCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Edit}"/>
+                                                <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_CopyTo}" Command="{Binding CopyToCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_CopyTo}"/>
+                                                <Button Classes="tertiary danger compact" Content="{local:Localize Settings_Alerts_Remove}" Command="{Binding RemoveCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Remove}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Button Classes="secondary" Content="{local:Localize Settings_Alerts_AcknowledgeAll}" Command="{Binding AcknowledgeAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_AcknowledgeAll}"/>
+                                <Button Classes="secondary danger" Content="{local:Localize Settings_Alerts_ResetAll}" Command="{Binding ResetAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_ResetAll}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </material:Card>
+
                     <!-- ═══ Pinned Sensors Section ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="16">

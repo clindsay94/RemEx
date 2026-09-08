@@ -1873,6 +1873,36 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Crítica</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Alertas de sensores</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>No hay alertas configuradas. Haga clic derecho en una tarjeta de sensor en el lienzo para configurar una.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Copiar a…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Quitar</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Confirmar todas</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Restablecer todas las alertas</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>¿Restablecer todas las alertas de sensores?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Esto elimina {0} alertas. El resto de su perfil no cambia.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Activada a las {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} alcanzó {1}</value>
   </data>

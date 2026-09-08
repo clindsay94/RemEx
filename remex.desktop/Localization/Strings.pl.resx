@@ -1656,6 +1656,36 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Krytyczne</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Alerty czujników</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Nie skonfigurowano żadnych alertów. Kliknij prawym przyciskiem myszy kartę czujnika na płótnie, aby ustawić alert.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Edytuj</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Kopiuj do…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Potwierdź wszystkie</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Zresetuj wszystkie alerty</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Zresetować wszystkie alerty czujników?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>To usunie {0} alertów. Nic innego w Twoim profilu się nie zmieni.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Uruchomiono o {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} osiągnął {1}</value>
   </data>

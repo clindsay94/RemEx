@@ -220,7 +220,9 @@ public class PairedDeviceCardTests : IDisposable
             new FileTransferRootSettingsService(),
             Mock.Of<IDashboardProfileStorageService>());
 
-        return new SettingsViewModel(null!, new ConnectionViewModel(), null!, null!, savefile);
+        return new SettingsViewModel(
+            null!, new ConnectionViewModel(), null!, null!, savefile,
+            new SensorAlertStore(), new SensorAlertTracker(), null!);
     }
 
     private static string Flattened() => Regex.Replace(

@@ -2065,6 +2065,36 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Critical</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Sensor alerts</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>No alerts configured. Right-click a sensor card on the canvas to set one.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Copy to…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Acknowledge all</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Reset all alerts</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Reset all sensor alerts?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>This removes {0} alerts. Nothing else in your profile changes.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Tripped at {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} hit {1}</value>
   </data>

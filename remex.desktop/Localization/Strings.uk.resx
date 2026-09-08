@@ -1867,6 +1867,36 @@ Linux: ip addr  або  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Критично</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Сповіщення датчиків</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Сповіщення не налаштовано. Клацніть правою кнопкою миші на картці датчика на полотні, щоб налаштувати одне.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Редагувати</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Копіювати до…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Підтвердити всі</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Скинути всі сповіщення</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Скинути всі сповіщення датчиків?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Це видалить {0} сповіщень. Решта вашого профілю не зміниться.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Спрацювало о {0} · {1}</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} досягло {1}</value>
   </data>

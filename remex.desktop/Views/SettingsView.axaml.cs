@@ -9,6 +9,10 @@ namespace Remex.Desktop.Views;
 
 public partial class SettingsView : UserControl
 {
+    // Rewired on every ConfigureViewModel call so a stale DataContext does not leave the previous
+    // AlertsSection's EditRequested subscribed forever (DiagnosticLogsView's pattern).
+    private SensorAlertsSectionViewModel? _wiredAlertsSection;
+
     public SettingsView()
     {
         InitializeComponent();
@@ -31,6 +35,37 @@ public partial class SettingsView : UserControl
         }
     }
 
+    // ═══════════════ Sensor Alerts (RemEx-8wpvr.5) ═══════════════
+
+    /// <summary>
+    /// Opens <c>SetAlertDialog</c> the same way <c>CanvasView.axaml.cs</c>'s
+    /// <c>OnShowSetAlertRequested</c> does, then writes the result back through
+    /// <see cref="SensorAlertsSectionViewModel.ApplyEditResult"/> — null (or the empty-SensorName
+    /// sentinel ClearAlert passes) removes the alert; anything else upserts it.
+    /// </summary>
+    private async void OnAlertEditRequested(string sensorName, SensorAlert? existing)
+    {
+        try
+        {
+            if (DataContext is not SettingsViewModel vm) return;
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not Window ownerWindow) return;
+
+            SensorAlert? result = null;
+            var dialog = new SetAlertDialog(sensorName, existing, r => result = r);
+            await dialog.ShowDialog(ownerWindow);
+
+            // null means cancelled/dismissed — don't touch the existing alert.
+            if (result != null)
+                vm.AlertsSection.ApplyEditResult(sensorName, result);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SettingsView] SetAlert dialog error: {ex.Message}");
+        }
+    }
+
     private void OnConnectionHistorySelected(object? sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox cb && cb.SelectedItem is ConnectionProfile profile
@@ -48,6 +83,14 @@ public partial class SettingsView : UserControl
 
         // Guards restore-defaults, remove-shared-folder and revoke-trust (RemEx-6p1f).
         vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
+        // Sensor alerts card (RemEx-8wpvr.5). Guards Reset all; EditRequested opens SetAlertDialog
+        // exactly as CanvasView.axaml.cs's OnShowSetAlertRequested does.
+        if (_wiredAlertsSection is not null)
+            _wiredAlertsSection.EditRequested -= OnAlertEditRequested;
+        _wiredAlertsSection = vm.AlertsSection;
+        _wiredAlertsSection.EditRequested += OnAlertEditRequested;
+        _wiredAlertsSection.OnConfirmationRequested = ConfirmationDialogHost.For(this);
 
         vm.PickSharedFolderAsync = async options =>
         {
