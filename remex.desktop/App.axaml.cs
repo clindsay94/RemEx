@@ -57,6 +57,8 @@ public partial class App : Application
         collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
+        collection.AddSingleton<SensorAlertStore>();
+        collection.AddSingleton<SensorAlertTracker>();
         collection.AddSingleton<RemexSavefileService>(sp =>
         {
             // Host-side dashboard storage resolves the same ProgramData path regardless of
