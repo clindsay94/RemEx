@@ -1874,10 +1874,10 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Crítica</value>
   </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
-    <value>{0} alcanzó {1}{2}</value>
+    <value>{0} alcanzó {1}</value>
   </data>
   <data name="Alert_Notify_Body" xml:space="preserve">
-    <value>Alerta: {0} {1}{2} · {3}</value>
+    <value>Alerta: {0} {1} · {2}</value>
   </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Deshacer (Ctrl+Z)</value>

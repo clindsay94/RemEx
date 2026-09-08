@@ -1190,7 +1190,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         var resolved = catalog.TryResolve(alert.SensorName, out var info) ? info : null;
         var displayName = resolved?.DisplayName ?? alert.SensorName;
         var unit = resolved?.Unit ?? string.Empty;
-        var formattedValue = value.ToString("F1", LocalizationService.Instance.Culture);
+        var formattedReading = FormatReading(value, unit);
+        var formattedThreshold = FormatReading(alert.Threshold, unit);
 
         var directionKey = $"{nameof(AlertDirection)}_{alert.Direction}";
         var severityKey = $"{nameof(AlertSeverity)}_{alert.Severity}";
@@ -1198,14 +1199,28 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         var severityText = LocalizationService.Instance[severityKey];
 
         var title = string.Format(
-            LocalizationService.Instance["Alert_Notify_Title"], displayName, formattedValue, unit);
+            LocalizationService.Instance["Alert_Notify_Title"], displayName, formattedReading);
+        // The body states the THRESHOLD that was crossed, not the reading that crossed it -
+        // "Alert: Above 90.0 °C" reads as a rule, not a restatement of the title's "92.4 °C hit".
         var body = string.Format(
-            LocalizationService.Instance["Alert_Notify_Body"], direction, formattedValue, unit, severityText);
+            LocalizationService.Instance["Alert_Notify_Body"], direction, formattedThreshold, severityText);
 
         var importance = alert.Severity == AlertSeverity.Critical
             ? NotificationImportance.Problem
             : NotificationImportance.Outcome;
         NotificationService.Instance.Notify(importance, title, body);
+    }
+
+    /// <summary>
+    /// Composes a value and its unit for display. Decision: exactly one space between value and
+    /// unit ("90 °C"), matching the settings card spec - not the 4px-gap layout some cards render
+    /// with no literal space in the string. When <paramref name="unit"/> is empty there is no
+    /// trailing space. Follow this in .4/.5 rather than inlining another "{0}{1}" concatenation.
+    /// </summary>
+    private static string FormatReading(double value, string? unit)
+    {
+        var formattedValue = value.ToString("F1", LocalizationService.Instance.Culture);
+        return string.IsNullOrEmpty(unit) ? formattedValue : $"{formattedValue} {unit}";
     }
 
     [RelayCommand]

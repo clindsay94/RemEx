@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -128,6 +129,41 @@ public sealed class ShellAlertNotificationTests : IAsyncLifetime, IDisposable
 
         _announced.Should().ContainSingle();
         _announced[0].Title.Should().Contain("Unmapped Sensor");
+    }
+
+    [Fact]
+    public void BodyStatesTheThresholdWithUnitNotTheReading()
+    {
+        // Give the canvas a resolvable sensor so unit formatting is exercised end to end - the
+        // unmapped-sensor fixture below covers the empty-unit case instead.
+        var placedSensor = new SensorViewModel();
+        placedSensor.Update(new SensorReading { Id = "cpu-temp-0", Name = "CPU Temp", Value = 92.4, Unit = "°C" });
+        _shell.CanvasViewModel!.Cards.Add(new CanvasCardViewModel { CardType = "Sensor", Sensor = placedSensor });
+
+        var alert = MakeAlert("CPU Temp", AlertSeverity.Critical); // Threshold = 80
+
+        _shell.OnSensorAlertFired(alert, 92.4);
+
+        _announced.Should().ContainSingle();
+        _announced[0].Title.Should().Contain("92.4 °C",
+            "the title states the reading, with a space between value and unit");
+        _announced[0].Message.Should().Contain("80.0 °C",
+            "the body states the threshold that was crossed, not the reading");
+        _announced[0].Message.Should().NotContain("92.4",
+            "the body must not restate the reading — that's the title's job, or it reads as a tautology");
+    }
+
+    [Fact]
+    public void AnEmptyUnitYieldsNoTrailingSpaceInTheReading()
+    {
+        // "Unmapped Sensor" resolves to nothing in this fixture's canvas, so unit is empty.
+        var alert = MakeAlert("Unmapped Sensor", AlertSeverity.Warning);
+
+        _shell.OnSensorAlertFired(alert, 42.0);
+
+        _announced.Should().ContainSingle();
+        _announced[0].Title.Should().EndWith("42.0",
+            "an empty unit must not leave a trailing space after the formatted value");
     }
 
     [Fact]

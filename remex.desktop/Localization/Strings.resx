@@ -2066,10 +2066,10 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Critical</value>
   </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
-    <value>{0} hit {1}{2}</value>
+    <value>{0} hit {1}</value>
   </data>
   <data name="Alert_Notify_Body" xml:space="preserve">
-    <value>Alert: {0} {1}{2} · {3}</value>
+    <value>Alert: {0} {1} · {2}</value>
   </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Undo (Ctrl+Z)</value>

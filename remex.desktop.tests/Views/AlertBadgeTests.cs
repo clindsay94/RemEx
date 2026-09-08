@@ -87,7 +87,7 @@ public class AlertBadgeTests
             shellViewModel, @"public void NavigateToCanvas\(\)\s*\{.*?\n    \}", RegexOptions.Singleline);
 
         navigate.Value.Should().NotContain("AlertNotifications.Clear()",
-            "navigation acknowledges the count; it does not discard the history");
+            "dismissing alerts acknowledges the count; navigating does not discard the history");
     }
 
     [Fact]

@@ -1868,10 +1868,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Критично</value>
   </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
-    <value>{0} досягло {1}{2}</value>
+    <value>{0} досягло {1}</value>
   </data>
   <data name="Alert_Notify_Body" xml:space="preserve">
-    <value>Сповіщення: {0} {1}{2} · {3}</value>
+    <value>Сповіщення: {0} {1} · {2}</value>
   </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Скасувати (Ctrl+Z)</value>
