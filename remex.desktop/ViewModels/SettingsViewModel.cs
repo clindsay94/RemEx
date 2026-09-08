@@ -616,6 +616,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         // they have to be rebuilt (review; RemEx-q3h0's pattern).
         RefreshPairedDevices();
 
+        // Same defect, same card stack: every alert row's Summary and TrippedSummary are composed
+        // once at row-build time from the localizer, so a language switch leaves them in the
+        // previous language until the store happens to change (review; RemEx-8wpvr.5).
+        AlertsSection.Refresh();
+
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             if (_connection.HostCapabilities == null)

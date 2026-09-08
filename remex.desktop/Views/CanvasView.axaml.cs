@@ -7,6 +7,8 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 
@@ -190,6 +192,11 @@ public partial class CanvasView : UserControl
         }
         catch (Exception ex)
         {
+            // Same silent-catch as SettingsView.OnAlertEditRequested had: Debug.WriteLine compiles
+            // out of Release, so the failure never reached a log a user could send (review;
+            // RemEx-8wpvr.5). App.Services is null in design mode and under test, hence GetService.
+            App.Services?.GetService<ILogger<CanvasView>>()
+                ?.LogError(ex, "SetAlert dialog failed for sensor {SensorName}", sensorName);
             System.Diagnostics.Debug.WriteLine($"[CanvasView] SetAlert dialog error: {ex.Message}");
         }
     }

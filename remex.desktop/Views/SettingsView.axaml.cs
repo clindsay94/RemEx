@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 using Remex.Core.Models;
@@ -62,6 +64,11 @@ public partial class SettingsView : UserControl
         }
         catch (Exception ex)
         {
+            // Debug.WriteLine alone compiles out of Release, which is the only build a user runs —
+            // the failure was fully silent in production (review; RemEx-8wpvr.5). App.Services is
+            // resolved null-safely because it is not built in design mode or under test.
+            App.Services?.GetService<ILogger<SettingsView>>()
+                ?.LogError(ex, "SetAlert dialog failed for sensor {SensorName}", sensorName);
             System.Diagnostics.Debug.WriteLine($"[SettingsView] SetAlert dialog error: {ex.Message}");
         }
     }

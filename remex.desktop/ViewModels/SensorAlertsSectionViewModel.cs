@@ -110,6 +110,16 @@ public partial class SensorAlertsSectionViewModel : ObservableObject, IDisposabl
             _store.Set(result);
     }
 
+    /// <summary>
+    /// Rebuilds every row from the store. Called on a language change: each row holds an
+    /// ALREADY-FORMATTED <see cref="SensorAlertRowViewModel.Summary"/> (and tripped summary), so
+    /// nothing in the binding layer can re-translate them — they have to be rebuilt, exactly as
+    /// <c>SettingsViewModel.RefreshPairedDevices</c> has to for the paired-device rows (RemEx-q3h0's
+    /// pattern). Deliberately the same code path as the <see cref="SensorAlertStore.Changed"/>
+    /// handler rather than a second one, so the two can never format a row differently.
+    /// </summary>
+    public void Refresh() => RebuildRows();
+
     private void OnStoreChanged() => RebuildRows();
 
     private void OnTrippedChanged() => RefreshTripState();
@@ -119,7 +129,7 @@ public partial class SensorAlertsSectionViewModel : ObservableObject, IDisposabl
         Rows.Clear();
         foreach (var row in _store.All
                      .Select(BuildRow)
-                     .OrderBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase))
+                     .OrderBy(r => r.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
             Rows.Add(row);
         }

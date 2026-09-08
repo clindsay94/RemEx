@@ -109,6 +109,48 @@ public class SensorAlertsSectionViewModelTests
             "the settings row and the canvas bell tooltip must read identically in every language");
     }
 
+    /// <summary>
+    /// A row's Summary is composed ONCE, at build time, from the localizer — so switching language
+    /// cannot re-translate it through the binding layer, the way the paired-device rows could not
+    /// (RemEx-q3h0). <see cref="SensorAlertsSectionViewModel.Refresh"/> is the rebuild, and
+    /// <c>SettingsViewModel.OnLocaleChanged</c> is what calls it; the guard below proves the wiring.
+    /// </summary>
+    [Fact]
+    public void Refresh_RebuildsTheRowSummaryInTheNewLanguage()
+    {
+        var store = new SensorAlertStore();
+        var catalog = new FakeSensorCatalog();
+        catalog.Add(new SensorInfo("cpu-pkg-0", "CPU Package", "°C", true));
+        store.Set(MakeAlert("cpu-pkg-0", threshold: 90, direction: AlertDirection.Above, severity: AlertSeverity.Critical));
+
+        var original = LocalizationService.Instance.CultureTag;
+        try
+        {
+            LocalizationService.Instance.SetCulture("en");
+            var vm = new SensorAlertsSectionViewModel(store, new SensorAlertTracker(), catalog);
+            var english = vm.Rows.Single().Summary;
+            english.Should().StartWith("Alert:", "the English Canvas_AlertBellConfigured template");
+
+            LocalizationService.Instance.SetCulture("fr");
+            vm.Rows.Single().Summary.Should().Be(english,
+                "the language switch alone cannot re-translate an already-formatted string — that is the defect");
+
+            vm.Refresh();
+
+            var french = vm.Rows.Single().Summary;
+            french.Should().NotBe(english, "the row must be rebuilt in the language the user just chose");
+            french.Should().Be(string.Format(
+                LocalizationService.Instance["Canvas_AlertBellConfigured"],
+                LocalizationService.Instance["AlertDirection_Above"],
+                SensorReadingFormat.FormatReading(90, "°C"),
+                LocalizationService.Instance["AlertSeverity_Critical"]));
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(original);
+        }
+    }
+
     [Fact]
     public void UnresolvableSensor_ShowsTheStoredNameAndIsDisconnected()
     {
@@ -308,6 +350,27 @@ public class SensorAlertsSectionViewModelTests
 
         text.Should().Contain("AlertsSection.OnConfirmationRequested = ConfirmationDialogHost.For(this)",
             "Reset all must be guarded the same way every other destructive Settings action is (RemEx-6p1f)");
+    }
+
+    /// <summary>
+    /// <see cref="Refresh_RebuildsTheRowSummaryInTheNewLanguage"/> proves the rebuild works; this
+    /// proves anything ever calls it. Without the call the rows keep the previous language until the
+    /// alert store happens to change, which on a settled machine is never.
+    /// </summary>
+    [Fact]
+    public void TheSettingsLocaleHandlerRefreshesTheAlertsSection()
+    {
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "ViewModels", "SettingsViewModel.cs"));
+
+        var handler = System.Text.RegularExpressions.Regex.Match(
+            text,
+            @"private void OnLocaleChanged\(.*?\n    \}",
+            System.Text.RegularExpressions.RegexOptions.Singleline);
+        handler.Success.Should().BeTrue("SettingsViewModel must still have a locale handler to scrape");
+
+        handler.Value.Should().Contain("AlertsSection.Refresh()",
+            "the alert rows hold already-formatted text, so the locale handler has to rebuild them "
+            + "alongside the paired-device rows");
     }
 
     private static readonly string[] NewKeys =
