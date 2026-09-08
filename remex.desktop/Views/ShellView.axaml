@@ -1436,7 +1436,14 @@
                                                         <Setter Property="VerticalAlignment" Value="Center"/>
                                                         <Setter Property="Template">
                                                             <ControlTemplate>
-                                                                <Panel Background="Transparent">
+                                                                <!-- Root is a Border, not a Panel, and binds BorderBrush/BorderThickness:
+                                                                     a view that replaces the ListBoxItem template inherits the obligation
+                                                                     to give the app-wide :focus-visible ring something to paint on
+                                                                     (FocusVisibleStyleGuardTests). -->
+                                                                <Border Background="Transparent"
+                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                                        CornerRadius="6">
                                                                     <Ellipse Name="Pip" Width="8" Height="8" Fill="{DynamicResource TextMutedBrush}">
                                                                         <Ellipse.Transitions>
                                                                             <Transitions>
@@ -1444,7 +1451,7 @@
                                                                             </Transitions>
                                                                         </Ellipse.Transitions>
                                                                     </Ellipse>
-                                                                </Panel>
+                                                                </Border>
                                                             </ControlTemplate>
                                                         </Setter>
                                                     </Style>
