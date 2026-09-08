@@ -74,19 +74,26 @@ public class NavBadgeSourcesTests
     }
 
     [Fact]
-    public void TheTrayFlyoutPresenceBadgeIsA10PixelDot()
+    public void TheTrayFlyoutPresenceBadgeIsOnly10PixelsInTheDotState()
     {
-        // Review, MEDIUM, RemEx-rjnbo.1: BadgeWidth/BadgeHeight="10" went missing from this badge -
-        // App.axaml documents 10x10 as what makes a `.presence` Badged read as a dot rather than the
-        // app-wide notification-count size, and the drawer-footer twin in ShellView.axaml keeps it,
-        // so this one silently disagreed in size at zero online devices.
+        // Fix, MEDIUM, RemEx-rjnbo.1: a literal BadgeWidth/BadgeHeight="10" on this element clips
+        // the device count once BadgeContent draws two digits. The size must instead come from a
+        // Classes.dot="{Binding !HasOnlineDevices}" gate plus a material|Badged.dot style, so it
+        // only applies while the badge is a plain dot - same shape as the nav count badges.
         var badge = TrayPresenceBadge();
 
         badge.Success.Should().BeTrue("the tray flyout header must carry the presence badge");
-        badge.Value.Should().Contain("BadgeWidth=\"10\"",
-            "a plain presence dot must stay 10px wide, matching App.axaml's documented size");
-        badge.Value.Should().Contain("BadgeHeight=\"10\"",
-            "a plain presence dot must stay 10px tall, matching App.axaml's documented size");
+        badge.Value.Should().Contain("Classes.dot=\"{Binding !HasOnlineDevices}\"",
+            "the fixed dot size must be gated to the no-devices-online state");
+        badge.Value.Should().NotContain("BadgeWidth=\"10\"",
+            "the size must come from the material|Badged.dot style, not a literal on the element");
+        badge.Value.Should().NotContain("BadgeHeight=\"10\"",
+            "the size must come from the material|Badged.dot style, not a literal on the element");
+
+        var file = TrayFlyout();
+        file.Should().MatchRegex(
+            @"<Style Selector=""material\|Badged\.dot"">\s*<Setter Property=""BadgeWidth"" Value=""10""\s*/>\s*<Setter Property=""BadgeHeight"" Value=""10""\s*/>",
+            "the dot-state 10x10 size must be declared once as a style, not scattered as literals");
     }
 
     [Fact]
