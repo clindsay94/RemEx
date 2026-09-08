@@ -40,10 +40,17 @@
         </Style>
 
         <!-- ═══ Sensor alert pulse (RemEx-8wpvr.4, replaces the old fixed-opacity flash) ═══
-             Split into two selectors rather than one style carrying both a Setter and a
-             Style.Animations for Effect: Style.Animations runs for as long as its selector matches
+             Opus review (RemEx-8wpvr.4) found the previous version of this block inert: Style.
+             Animations applies keyframes to the styled control (DraggableCard), not to the
+             DropShadowEffect instance created by an Effect setter, and Avalonia has no property-path
+             animation into a nested object (TranslateTransform.Y works only because Transform is
+             special-cased) - so the glow never actually moved. The fix animates Border.Opacity on
+             PART_AlertGlow, a real control-owned property declared in DraggableCard's ControlTemplate
+             (Themes/Shared/DraggableCard.axaml), instead.
+             Split into three selectors rather than one style carrying both a Setter and a
+             Style.Animations for Opacity: Style.Animations runs for as long as its selector matches
              and writes straight to the property every frame, so if ".reduced-motion" also matched
-             this same style and merely tried to override the Effect Setter, the animation would keep
+             this same style and merely tried to override the Opacity Setter, the animation would keep
              winning the tug-of-war and repaint the "steady" glow every frame anyway. ":not()" instead
              makes the two states mutually exclusive selectors, so only one of them is ever active.
              The border stays a plain Setter on the base ".alert-active" style since it does not
@@ -52,29 +59,23 @@
             <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
-        <Style Selector="ctrl|DraggableCard.alert-active:not(.reduced-motion)">
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="{DynamicResource SystemError}" BlurRadius="20" Opacity="0.6"/>
-                </Setter.Value>
-            </Setter>
+        <Style Selector="ctrl|DraggableCard.alert-active /template/ Border#PART_AlertGlow">
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+        <Style Selector="ctrl|DraggableCard.alert-active:not(.reduced-motion) /template/ Border#PART_AlertGlow">
             <Style.Animations>
                 <Animation Duration="0:0:1.6" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%">
-                        <Setter Property="DropShadowEffect.Opacity" Value="0.35"/>
+                        <Setter Property="Opacity" Value="0.35"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
-                        <Setter Property="DropShadowEffect.Opacity" Value="0.85"/>
+                        <Setter Property="Opacity" Value="0.85"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="ctrl|DraggableCard.alert-active.reduced-motion">
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="{DynamicResource SystemError}" BlurRadius="20" Opacity="0.6"/>
-                </Setter.Value>
-            </Setter>
+        <Style Selector="ctrl|DraggableCard.alert-active.reduced-motion /template/ Border#PART_AlertGlow">
+            <Setter Property="Opacity" Value="0.7"/>
         </Style>
         <!-- ═══ DraggableCard chrome + elevation ramp ═══ -->
         <!-- Moved to a ControlTheme at Themes/Shared/DraggableCard.axaml, merged from App.axaml (RemEx-9iz00.3). -->
@@ -375,19 +376,30 @@
 
                                         <!-- ═══ SENSOR ═══ -->
                                         <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}" RowDefinitions="Auto,*">
-                                            <!-- Row 0: title band on top, above the sparkline (readable without a plate). -->
-                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8,5,8,2" VerticalAlignment="Top">
-                                                <mi:MaterialIcon Kind="Pin" Width="10" Height="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
-                                                <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis"/>
+                                            <!-- Row 0: title band on top, above the sparkline (readable without a plate). A Grid,
+                                                 not a StackPanel (gate finding, RemEx-8wpvr.4): a horizontal StackPanel gives its
+                                                 children infinite width along the stack axis, so the title's TextTrimming never
+                                                 actually fired once the bell shared the row - at a 200px card width the bell
+                                                 rendered past the card's right edge, overlapping the neighbour. ColumnDefinitions
+                                                 "*,Auto" bounds the title to the remaining width (so it trims) and pins the bell to
+                                                 its own Auto column (so it always stays inside the padding). -->
+                                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="4" Margin="8,5,8,2" VerticalAlignment="Top">
+                                                <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="4">
+                                                    <mi:MaterialIcon Grid.Column="0" Kind="Pin" Width="10" Height="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                </Grid>
                                                 <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own
                                                      PointerPressed handling (it marks the event Handled) stops DraggableCard's
                                                      OnPointerPressed from seeing it, the same way every other in-card button in this
                                                      app avoids starting a drag — no extra plumbing needed. Classes.tripped drives the
-                                                     two "Button.alert-bell[.tripped]" icon styles below. -->
-                                                <Button Classes="tertiary icon-button alert-bell" Classes.tripped="{Binding IsAlertTripped}" Width="20" Height="20" Padding="0" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" IsVisible="{Binding HasAlert}" Command="{Binding AcknowledgeAlertCommand}" ToolTip.Tip="{Binding AlertTooltip}" AutomationProperties.Name="{Binding AlertTooltip}">
+                                                     two "Button.alert-bell[.tripped]" icon styles below. No local BorderThickness
+                                                     (Opus review, RemEx-8wpvr.4): a local value outranks ".tertiary"'s BorderThickness
+                                                     Setter regardless of pseudo-class, so it was also outranking the
+                                                     ":focus-visible /template/ ContentPresenter" ring setter and hiding it. -->
+                                                <Button Grid.Column="1" Classes="tertiary icon-button alert-bell" Classes.tripped="{Binding IsAlertTripped}" Width="20" Height="20" Padding="0" Background="Transparent" VerticalAlignment="Center" IsVisible="{Binding HasAlert}" Command="{Binding AcknowledgeAlertCommand}" ToolTip.Tip="{Binding AlertTooltip}" AutomationProperties.Name="{Binding AlertTooltip}">
                                                     <mi:MaterialIcon Width="14" Height="14"/>
                                                 </Button>
-                                            </StackPanel>
+                                            </Grid>
 
                                             <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
                                             <Grid Grid.Row="1">

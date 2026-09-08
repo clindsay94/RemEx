@@ -46,30 +46,82 @@ public class CanvasAlertVisualTests
     }
 
     /// <summary>The pulse must actually loop — a finite <c>IterationCount</c> would play once and stop
-    /// looking identical to the old flash it replaced.</summary>
+    /// looking identical to the old flash it replaced. It must also target a real control-owned
+    /// property of the PART_AlertGlow border reached through a <c>/template/</c> selector, not the
+    /// old Effect-based DropShadowEffect.Opacity: Avalonia cannot animate a property path into a
+    /// nested object it does not special-case, which is exactly why the Opus review round found the
+    /// previous version of this pulse inert (RemEx-8wpvr.4).</summary>
     [Fact]
     public void AlertActivePulseAnimationRunsForever()
     {
-        var animatedStyle = ExtractStyleBlock("ctrl|DraggableCard.alert-active:not(.reduced-motion)");
+        var animatedStyle = ExtractStyleBlock(
+            "ctrl|DraggableCard.alert-active:not(.reduced-motion) /template/ Border#PART_AlertGlow");
         animatedStyle.Should().Contain("IterationCount=\"Infinite\"",
             "the live pulse must loop for as long as the card is hot, not play once");
         animatedStyle.Should().Contain("<Style.Animations>",
             "the animated variant is the one that actually carries the keyframe animation");
+        animatedStyle.Should().Contain("Setter Property=\"Opacity\"",
+            "the animation must target PART_AlertGlow's own Opacity - a real control-owned property "
+            + "Style.Animations can actually write to every frame");
+        animatedStyle.Should().NotContain("DropShadowEffect.Opacity",
+            "animating a property path into the Effect setter's nested DropShadowEffect instance is "
+            + "exactly the inert shape the review found - it must not come back");
     }
 
     /// <summary>The reduced-motion variant must hold a steady glow instead of animating it — a
     /// Style.Animations here would defeat the whole point of the branch (RemEx-8wpvr.4 design doc,
-    /// "Canvas visuals").</summary>
+    /// "Canvas visuals"). Same PART_AlertGlow target as the animated variant, just without the
+    /// keyframes.</summary>
     [Fact]
     public void ReducedMotionVariantHasNoAnimation()
     {
-        var reducedStyle = ExtractStyleBlock("ctrl|DraggableCard.alert-active.reduced-motion");
+        var reducedStyle = ExtractStyleBlock(
+            "ctrl|DraggableCard.alert-active.reduced-motion /template/ Border#PART_AlertGlow");
         reducedStyle.Should().NotContain("Style.Animations",
             "reduced motion must hold a steady glow, not a slowed-down or hidden animation");
         reducedStyle.Should().NotContain("<Animation ",
             "reduced motion must hold a steady glow, not a slowed-down or hidden animation");
-        reducedStyle.Should().Contain("Effect",
-            "the reduced-motion card must still show the glow, just without motion");
+        reducedStyle.Should().Contain("Setter Property=\"Opacity\"",
+            "the reduced-motion card must still show the glow, just held steady instead of pulsing");
+    }
+
+    /// <summary>The glow the two styles above target has to actually exist in the control template,
+    /// or both styles resolve a selector that matches nothing - which compiles, renders nothing, and
+    /// fails no test unless the template itself is asserted on (RemEx-8wpvr.4).</summary>
+    [Fact]
+    public void DraggableCardTemplateDeclaresTheAlertGlowBorder()
+    {
+        var themeText = StripXmlComments(File.ReadAllText(
+            Path.Combine(RepoRoot(), "remex.desktop", "Themes", "Shared", "DraggableCard.axaml")));
+
+        themeText.Should().MatchRegex(@"<Border\s+Name=""PART_AlertGlow""",
+            "CanvasView's alert-active styles reach into the template for Border#PART_AlertGlow, so "
+            + "DraggableCard's ControlTemplate must actually declare it");
+        themeText.Should().Contain("IsHitTestVisible=\"False\"",
+            "the glow sits over the card purely for paint and must not intercept pointer input");
+    }
+
+    /// <summary>Gate finding, RemEx-8wpvr.4: at a 200px card width the bell rendered past the card's
+    /// right edge over the neighbouring card once it shared a StackPanel row with a long title,
+    /// because a horizontal StackPanel gives its children infinite width along the stack axis so
+    /// TextTrimming never actually fires. The header row must be a Grid with the title bounded to a
+    /// "*" column and the bell pinned to its own "Auto" column.</summary>
+    [Fact]
+    public void SensorCardHeaderRowIsAGridWithTitleStarAndBellAutoColumn()
+    {
+        var text = CanvasViewText();
+        var bellTag = ExtractAlertBellButtonTag();
+
+        var headerGridPattern = new Regex(
+            @"<Grid\s+Grid\.Row=""0""\s+ColumnDefinitions=""\*,Auto""[^>]*>.*?" + Regex.Escape(bellTag),
+            RegexOptions.Singleline);
+
+        headerGridPattern.IsMatch(text).Should().BeTrue(
+            "the sensor card header row must be a Grid with ColumnDefinitions=\"*,Auto\" (title in *, "
+            + "bell in Auto), not a StackPanel, so the title trims and the bell stays inside the card");
+        bellTag.Should().Contain("Grid.Column=\"1\"",
+            "the bell must sit in the Auto column so it can never overlap the trimmed title or the "
+            + "neighbouring card");
     }
 
     // ─────────────────────────── localization ───────────────────────────

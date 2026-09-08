@@ -33,32 +33,43 @@
         <Setter Property="ClipToBounds" Value="False"/>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
-                    <Border.Transitions>
-                        <Transitions>
-                            <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                                <BoxShadowsTransition.Easing>
-                                    <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
-                                </BoxShadowsTransition.Easing>
-                            </BoxShadowsTransition>
-                        </Transitions>
-                    </Border.Transitions>
-                    <Grid>
-                        <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
-                        <!-- Resize grip -->
-                        <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
-                            <Thumb.Template>
-                                <ControlTemplate>
-                                    <Canvas Width="12" Height="12" Margin="2">
-                                        <Line StartPoint="8,12" EndPoint="12,8" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                        <Line StartPoint="4,12" EndPoint="12,4" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                        <Line StartPoint="0,12" EndPoint="12,0" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
-                                    </Canvas>
-                                </ControlTemplate>
-                            </Thumb.Template>
-                        </Thumb>
-                    </Grid>
-                </Border>
+                <Grid>
+                    <!-- ═══ Alert glow (RemEx-8wpvr.4) ═══ A real control-owned Border so
+                         CanvasView.axaml's ".alert-active" styles can actually animate its Opacity -
+                         Avalonia has no property-path animation into a nested object, which is why the
+                         old Effect/DropShadowEffect.Opacity animation silently did nothing. Shares this
+                         Grid cell with PART_SurfaceBorder (default stretch, no Row/ColumnDefinitions)
+                         so it never affects layout: same size as the surface, drawn first so the
+                         surface paints over it, non-hit-testable, and hidden (Opacity 0) until a
+                         view-state style sets it. -->
+                    <Border Name="PART_AlertGlow" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="{DynamicResource AlertGlowShadow}" Opacity="0" IsHitTestVisible="False"/>
+                    <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
+                                    <BoxShadowsTransition.Easing>
+                                        <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
+                                    </BoxShadowsTransition.Easing>
+                                </BoxShadowsTransition>
+                            </Transitions>
+                        </Border.Transitions>
+                        <Grid>
+                            <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
+                            <!-- Resize grip -->
+                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
+                                <Thumb.Template>
+                                    <ControlTemplate>
+                                        <Canvas Width="12" Height="12" Margin="2">
+                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="{DynamicResource TextMutedBrush}" StrokeThickness="1.5"/>
+                                        </Canvas>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                    </Border>
+                </Grid>
             </ControlTemplate>
         </Setter>
         <Setter Property="Transitions">

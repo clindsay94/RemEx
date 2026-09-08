@@ -109,6 +109,14 @@
     <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
+    <!-- Alert pulse glow (RemEx-8wpvr.4): DraggableCard's PART_AlertGlow border animates its own
+         Opacity, but the BoxShadow itself has to be one fixed value - a BoxShadows string is parsed
+         as a single opaque literal, so a component inside it cannot be a DynamicResource the way
+         SystemError above is. This mirrors the same tradeoff every themed ElevationNShadow already
+         makes for its own accent glow (e.g. Monolith's Elevation3Shadow embeds its accent as a
+         literal too). The colour matches SystemError (#F43F5E) verbatim; it lives here, once, rather
+         than duplicated per theme file, because SystemError itself is shared across all four themes. -->
+    <BoxShadows x:Key="AlertGlowShadow">0 0 40 0 #F43F5E</BoxShadows>
     <!-- A FOURTH TOKEN, because the TINT is a different surface from the FILL and inverts its answer.
          ErrorForegroundBrush above is dark, correctly, for solid red. Over 15% red on glass it would
          measure 1.24:1 here - dark text on a dark surface. White is right: 15.96:1 at rest and
