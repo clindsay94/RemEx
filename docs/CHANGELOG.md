@@ -282,6 +282,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The phone's About screen said "What's New in 2.5.0" over the five 2.4.0 entries. The list now
+  describes 2.5.0: sensor alerts on the PC, Match my theme, clipboard send from the phone, Known
+  PCs on the Connection screen, and folder transfers, in all nine languages. The diagnostics
+  preview sample no longer shows a 2.4.0 version either. (RemEx-qydza)
 - The "Keyboard Shortcuts" button on the PC's About page opens its list again; it had two
   competing owners of the flyout's open state and cancelled itself out. (RemEx-acvny)
 - Developer-facing: the verify gate's receipt now fingerprints XAML and PowerShell sources too.
