@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The "Hardware Sync" toggle is gone from Personalize on the PC. It never did anything: the
+  service behind it polled no hardware and never handed a colour to the theme, so switching it
+  on only started a silent five-second timer. The accent-injection path it was meant to feed
+  stays in place and tested, and a saved profile that still carries the old setting loads as
+  before. Bringing the feature back means adding a real source first (RemEx-v2pbv).
+  (RemEx-dbjfy)
 - On the PC, the "connected" green and the warning amber now come from the same Tonal Spot
   recipe on every colour style, as they already do on the phone, instead of following the
   decorative style (Vibrant made them shout, Neutral made them fade). A deliberate look change
