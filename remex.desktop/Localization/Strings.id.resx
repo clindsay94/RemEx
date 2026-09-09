@@ -1897,6 +1897,21 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Terpicu pukul {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Salin peringatan dari {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filter sensor…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Tampilkan semua sensor</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Terapkan ke {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Menimpa peringatan yang ada pada sensor yang dipilih</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} mencapai {1}</value>
   </data>

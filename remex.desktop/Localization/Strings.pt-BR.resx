@@ -1897,6 +1897,21 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Disparado às {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Copiar alerta de {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filtrar sensores…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Mostrar todos os sensores</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Aplicar a {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Substitui qualquer alerta existente nos sensores selecionados</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} atingiu {1}</value>
   </data>

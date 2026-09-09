@@ -34,6 +34,14 @@ public partial class SensorAlertsSectionViewModel : ObservableObject, IDisposabl
         RebuildRows();
     }
 
+    /// <summary>Exposed so SettingsView.axaml.cs can build <c>CopyAlertDialogViewModel</c> without
+    /// this view model reaching into the dialog itself (RemEx-8wpvr.6) — the same seam
+    /// <see cref="Catalog"/> serves.</summary>
+    public SensorAlertStore Store => _store;
+
+    /// <summary>Exposed for the same reason as <see cref="Store"/>.</summary>
+    public ISensorCatalog Catalog => _catalog;
+
     /// <summary>Every configured alert, sorted by display name (stored name when the sensor is not
     /// resolvable through <see cref="ISensorCatalog"/>).</summary>
     public ObservableCollection<SensorAlertRowViewModel> Rows { get; } = new();
@@ -55,8 +63,9 @@ public partial class SensorAlertsSectionViewModel : ObservableObject, IDisposabl
     /// <see cref="ApplyEditResult"/>.</summary>
     public event Action<string, SensorAlert?>? EditRequested;
 
-    /// <summary>Raised when a row's Copy to… button is clicked. Intentionally has no subscriber yet —
-    /// wiring the copy-to picker is RemEx-8wpvr.6.</summary>
+    /// <summary>Raised when a row's Copy to… button is clicked. SettingsView.axaml.cs subscribes and
+    /// opens <c>CopyAlertDialog</c> (RemEx-8wpvr.6), mirroring how <see cref="EditRequested"/> opens
+    /// <c>SetAlertDialog</c>.</summary>
     public event Action<string>? CopyRequested;
 
     /// <summary>

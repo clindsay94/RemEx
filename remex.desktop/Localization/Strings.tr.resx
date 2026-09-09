@@ -1897,6 +1897,21 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>{0} saatinde tetiklendi · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>{0} sensöründen uyarıyı kopyala: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Sensörleri filtrele…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Tüm sensörleri göster</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>{0} öğesine uygula</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Seçili sensörlerdeki mevcut uyarının üzerine yazar</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} {1} değerine ulaştı</value>
   </data>

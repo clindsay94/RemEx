@@ -2095,6 +2095,21 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Tripped at {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Copy alert from {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filter sensors…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Show all sensors</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Apply to {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Overwrites any existing alert on the selected sensors</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} hit {1}</value>
   </data>

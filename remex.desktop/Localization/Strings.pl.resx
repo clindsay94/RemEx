@@ -1686,6 +1686,21 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Uruchomiono o {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Kopiuj alert z {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filtruj czujniki…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Pokaż wszystkie czujniki</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Zastosuj do {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Nadpisuje istniejący alert na wybranych czujnikach</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} osiągnął {1}</value>
   </data>

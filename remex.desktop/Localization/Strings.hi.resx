@@ -1897,6 +1897,21 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>{0} बजे ट्रिप हुआ · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>{0} से अलर्ट कॉपी करें: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>सेंसर फ़िल्टर करें…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>सभी सेंसर दिखाएं</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>{0} पर लागू करें</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>चयनित सेंसर पर मौजूदा अलर्ट अधिलेखित हो जाएगा</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} {1} तक पहुंचा</value>
   </data>

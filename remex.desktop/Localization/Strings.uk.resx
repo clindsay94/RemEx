@@ -1897,6 +1897,21 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Спрацювало о {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Копіювати сповіщення з {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Фільтрувати датчики…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Показати всі датчики</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Застосувати до {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Перезаписує наявне сповіщення на вибраних датчиках</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} досягло {1}</value>
   </data>

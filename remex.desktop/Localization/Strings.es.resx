@@ -1903,6 +1903,21 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Activada a las {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Copiar alerta desde {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filtrar sensores…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Mostrar todos los sensores</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Aplicar a {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Sobrescribe cualquier alerta existente en los sensores seleccionados</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} alcanzó {1}</value>
   </data>

@@ -1897,6 +1897,21 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
     <value>Déclenchée à {0} · {1}</value>
   </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Copier l'alerte depuis {0} : {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filtrer les capteurs…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Afficher tous les capteurs</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Appliquer à {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Remplace toute alerte existante sur les capteurs sélectionnés</value>
+  </data>
   <data name="Alert_Notify_Title" xml:space="preserve">
     <value>{0} a atteint {1}</value>
   </data>
