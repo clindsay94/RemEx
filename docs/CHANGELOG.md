@@ -836,6 +836,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The desktop test suite can now see paint.** A new `remex.desktop.render.tests` project hosts
+  the real shell view with a real shell view-model in a headless window, rasterises a frame through
+  Skia and asserts on the pixels: the frame is not one flat colour, and the app bar, drawer, drawer
+  header text and settings FAB each contribute pixels inside their own bounds. A positive control
+  paints the settings side sheet opaque, the exact shape of the bug that once rendered the whole
+  shell as a single grey rectangle past 2939 green text-assertion tests, and proves the check
+  fires. It lives in its own project on purpose: the existing desktop tests rely on there being no
+  Avalonia dispatcher, and the headless xunit integration (xunit v3 based at Avalonia 12.1) would
+  have changed that for the whole assembly. Production gains only an inert startup seam so the
+  harness can use the real `App` and its resources without standing up the tray, the IPC listener
+  or a main window. Verified on Windows; the CachyOS run is a follow-up. (RemEx-0e9eq)
 - `scripts/verify.ps1` checks that a set `JAVA_HOME` points at a directory that exists before it
   runs either Gradle task, and records "JAVA_HOME points at a missing directory" as the reason
   when it does not. A JDK update had refreshed only the Machine-scope value while a stale
