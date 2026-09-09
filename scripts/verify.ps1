@@ -746,7 +746,18 @@ if ($Scope -in @('android', 'all')) {
     $androidDir = Join-Path $RepoRoot 'remex.android'
     $gradlew = Join-Path $androidDir $(if ($IsWin) { 'gradlew.bat' } else { 'gradlew' })
 
-    if (-not (Test-Path -LiteralPath $gradlew)) {
+    # RemEx-kou55: a JDK update refreshed only one scope and left JAVA_HOME pointing at a
+    # directory that no longer exists. Gradle then died at JVM init with zero tests recorded,
+    # and "Android unit tests failed" was the only reason in the receipt - which quarantined
+    # desktop-only beads that never touched Android. Catch the dead path before either Gradle
+    # invocation below runs, so the receipt names JAVA_HOME instead. Unset is fine - Gradle
+    # finds java on PATH - so this only fires when the variable is set AND wrong.
+    if ($env:JAVA_HOME -and -not (Test-Path -LiteralPath $env:JAVA_HOME -PathType Container)) {
+        $problems.Add('JAVA_HOME points at a missing directory')
+        Write-Problem "JAVA_HOME=$($env:JAVA_HOME) does not exist." `
+            "A JDK update refreshed only one scope; check User vs Machine scope: [Environment]::GetEnvironmentVariable('JAVA_HOME','User') / ('JAVA_HOME','Machine'), and remove the stale override so the Adoptium-maintained value is the single source of truth."
+    }
+    elseif (-not (Test-Path -LiteralPath $gradlew)) {
         $problems.Add('gradle wrapper not found')
         Write-Problem "Could not find the Gradle wrapper at $gradlew." `
             "Check that remex.android is complete, or run the Android build once via ./build-remex.ps1 -t android"

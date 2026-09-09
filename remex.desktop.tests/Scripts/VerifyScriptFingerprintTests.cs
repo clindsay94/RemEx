@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -50,6 +51,29 @@ public class VerifyScriptFingerprintTests
             RegexOptions.Singleline);
         match.Success.Should().BeTrue("$dotnet moved or was reshaped in Get-ScopePatterns - re-point this test rather than deleting it");
         return match.Groups[1].Value;
+    }
+
+    /// <summary>
+    /// RemEx-kou55: a stale JAVA_HOME made Gradle die at JVM init, and the Android leg reported
+    /// it as "Android unit tests failed" - which quarantined desktop-only beads. The guard must
+    /// check the dead path BEFORE either Gradle invocation, not after.
+    /// </summary>
+    [Fact]
+    public void AndroidLegGuardsAgainstDeadJavaHomeBeforeInvokingGradle()
+    {
+        var text = ScriptText();
+
+        var firstGradlewCall = text.IndexOf("& $gradlew", StringComparison.Ordinal);
+        firstGradlewCall.Should().BeGreaterThan(-1, "the script no longer invokes $gradlew - re-point this test rather than deleting it");
+
+        var javaHomeCheck = Regex.Match(text,
+            @"env:JAVA_HOME.*?Test-Path\s+-LiteralPath\s+\$env:JAVA_HOME|Test-Path\s+-LiteralPath\s+\$env:JAVA_HOME");
+        javaHomeCheck.Success.Should().BeTrue("no Test-Path guard on $env:JAVA_HOME found - the dead-JAVA_HOME guard was removed");
+        javaHomeCheck.Index.Should().BeLessThan(firstGradlewCall,
+            "the JAVA_HOME guard must run before Gradle is invoked, otherwise Gradle dies at JVM init with the failure mis-attributed to 'Android unit tests failed'");
+
+        text.Should().Contain("JAVA_HOME points at a missing directory",
+            "the problem string must name JAVA_HOME, not report a generic Android test failure");
     }
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
