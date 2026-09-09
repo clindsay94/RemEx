@@ -836,6 +836,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- `scripts/verify.ps1` runs the .NET suite with `--blame-hang` and a 180 s per-test timeout, so a
+  test that stops responding is killed and named in the receipt as "test run hung: <test>"
+  instead of the run sitting silently for an hour with one idle test host, which is what two of
+  three runs did on 2026-09-08. Per-project Passed/Failed lines are now echoed too. Guarded from
+  the script source by a test that fails if the flag or the echo is removed. (RemEx-zzf7d)
 - **The desktop test suite can now see paint.** A new `remex.desktop.render.tests` project hosts
   the real shell view with a real shell view-model in a headless window, rasterises a frame through
   Skia and asserts on the pixels: the frame is not one flat colour, and the app bar, drawer, drawer
