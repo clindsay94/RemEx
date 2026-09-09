@@ -29,6 +29,23 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
     public static bool IsShuttingDown { get; set; }
 
+    /// <summary>
+    /// Test-only seam (RemEx-0e9eq, remex.desktop.render.tests). When set,
+    /// <see cref="OnFrameworkInitializationCompleted"/> returns immediately after the base call -
+    /// none of the production DI container, tray, IPC listener or window creation runs. This lets
+    /// the render harness use the real <c>App</c> type (so App.axaml's MaterialTheme and
+    /// BaseDarkGlass resources actually load) without also standing up production startup, which
+    /// touches ProgramData and opens a network listener.
+    /// </summary>
+    internal static bool SkipProductionStartup { get; set; }
+
+    /// <summary>
+    /// Test-only seam (RemEx-0e9eq): lets the render harness hand <see cref="Services"/> a
+    /// container it built itself, since <see cref="SkipProductionStartup"/> means the normal
+    /// container in <see cref="OnFrameworkInitializationCompleted"/> never runs.
+    /// </summary>
+    internal static void SetServicesForTests(IServiceProvider services) => Services = services;
+
     public static int? OverrideHostPort { get; set; }
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
@@ -47,6 +64,12 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (SkipProductionStartup)
+        {
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;

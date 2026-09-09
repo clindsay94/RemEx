@@ -142,7 +142,7 @@ public class NoBlockingWaitsInTestsTests
     }
 
     private static readonly string[] TestAssemblies =
-        ["remex.core.tests", "remex.agent.tests", "remex.desktop.tests"];
+        ["remex.core.tests", "remex.agent.tests", "remex.desktop.tests", "remex.desktop.render.tests"];
 
     private static IEnumerable<string> TestSourceFiles() =>
         TestAssemblies

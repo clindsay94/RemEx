@@ -16,6 +16,12 @@
          nothing throws to say so. See Program.cs / App builder configuration. -->
     <PackageVersion Include="Avalonia.HarfBuzz" Version="12.1.1" />
 
+    <!-- Headless render harness for remex.desktop.render.tests (RemEx-0e9eq). Same cadence as
+         Avalonia itself, pinned to the same version for the same reason as the packages above -
+         MaterialPackagePinTests.TheAvaloniaPackagesAllMoveTogether checks both stay in step. -->
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.1" />
+
     <!-- REPLACES Avalonia.Diagnostics, which does not exist for Avalonia 12 — its NuGet listing
          stops at 11.3.20. DevTools moved to a separately versioned package, hence 2.2.3 rather than
          a 12.x number, and AttachDevTools() became AttachDeveloperTools(). -->
@@ -133,6 +139,15 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="xunit" Version="2.9.3" />
+    <!-- xunit v3, remex.desktop.render.tests ONLY (RemEx-0e9eq). Avalonia.Headless.XUnit 12.1.1's
+         AvaloniaFactAttribute/AvaloniaTheoryAttribute derive from xunit v3's FactAttribute/
+         TheoryAttribute (Xunit.v3.FactDiscoverer, measured in the shipped DLL) - xunit v3 is not a
+         later release of "xunit", it is a separate, source-similar test framework with its own
+         self-hosting apphost model. Every other *.tests project stays on xunit v2 above; do not
+         raise this to replace it repo-wide without re-verifying every existing [Fact]. Pinned to
+         the exact version Avalonia.Headless.XUnit 12.1.1 resolves (xunit.v3.extensibility.core
+         3.2.2) so restore does not pull two different xunit v3 generations into one project. -->
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5" />
   </ItemGroup>

@@ -54,6 +54,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Remex.Desktop.Tests" />
+    <InternalsVisibleTo Include="Remex.Desktop.Render.Tests" />
   </ItemGroup>
 
   <ItemGroup>

@@ -106,6 +106,7 @@ public class MaterialPackagePinTests
                  {
                      "Avalonia.Desktop", "Avalonia.Fonts.Inter",
                      "Avalonia.Skia", "Avalonia.HarfBuzz",
+                     "Avalonia.Headless", "Avalonia.Headless.XUnit",
                  })
         {
             PinnedVersionOf(package).Should().Be(avalonia,
