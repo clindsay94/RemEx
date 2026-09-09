@@ -86,7 +86,6 @@ internal sealed class ShellRenderFixture : IDisposable
         var viewModel = new ShellViewModel(
             layoutService,
             theme,
-            new HardwareThemeService(theme),
             new ConnectionViewModel(),
             services,
             transferQueuePost: action => action())

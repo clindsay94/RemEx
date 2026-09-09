@@ -1553,12 +1553,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Açılış Ekranı</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Donanım Senkronizasyonu</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Vurgu rengini fiziksel RGB ile senkronize et</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Azaltılmış hareket</value>
   </data>

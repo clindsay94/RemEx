@@ -1342,12 +1342,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Ekran startowy</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Synchronizacja sprzętowa</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Synchronizuj kolor akcentu z fizycznym RGB</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Ograniczony ruch</value>
   </data>

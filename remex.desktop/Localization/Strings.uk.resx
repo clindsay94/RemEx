@@ -1553,12 +1553,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Заставка</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Синхронізація апаратного забезпечення</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Синхронізувати колір акценту з фізичним RGB</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Зменшений рух</value>
   </data>

@@ -255,18 +255,13 @@ public class HardwareAccentInjectionTests
             "the hardware colour must go through the seed/generator path, never straight onto one brush");
     }
 
-    [Fact]
-    public void DisablingHardwareSync_ClearsTheOverrideOnThemeService()
-    {
-        // ASSERTED ON THE SOURCE for the same reason: HardwareThemeService owns a DispatcherTimer,
-        // and constructing/driving one outside a running Avalonia app is exactly the kind of thing
-        // this assembly has no headless backend for. The wiring itself is one line and easy to pin.
-        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "HardwareThemeService.cs"));
-
-        source.Should().MatchRegex(
-            @"else\s*\{[^}]*_timer\.Stop\(\);[^}]*_themeService\.ClearHardwareAccent\(\);",
-            "turning sync off must stop the poller AND restore the user's seed, not just stop polling");
-    }
+    // DisablingHardwareSync_ClearsTheOverrideOnThemeService removed (RemEx-dbjfy): it asserted, on
+    // HardwareThemeService.cs's source, that disabling sync called ThemeService.ClearHardwareAccent.
+    // HardwareThemeService is deleted along with the toggle it drove - the toggle never worked, its
+    // poll body was an empty stub - so there is no wiring left to pin. The behaviour it cared about,
+    // "clearing the override restores the user's own seed", is already covered directly against
+    // ThemeService by ClearHardwareAccent_RemovesTheOverride_SoTheEffectiveSettingsRevertToTheUsersSeed
+    // above; rewriting this test to call ClearHardwareAccent itself would just duplicate that one.
 
     [Fact]
     public void ApplyingTheSameHardwareColourTwice_AppliesOnce()

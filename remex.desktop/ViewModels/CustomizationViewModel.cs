@@ -647,7 +647,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         AvailableWallpaperSources.Add(WallpaperSources.Image);
         if (!AvailableWallpaperSources.Contains(_wallpaperSource)) _wallpaperSource = WallpaperSources.Image;
 
-        _syncWithHardware = settings.SyncWithHardware;
         _themeMode = settings.ThemeMode;
         _themeContrast = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
 
@@ -1084,9 +1083,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     }
 
     [ObservableProperty]
-    private bool _syncWithHardware;
-
-    [ObservableProperty]
     private string _splashStyle;
 
     partial void OnSplashStyleChanged(string value) => ApplyAndSave();
@@ -1232,8 +1228,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         ApplyAndSave();
     }
-
-    partial void OnSyncWithHardwareChanged(bool value) => ApplyAndSave();
 
     /// <summary>
     /// The reduced-motion preference, so it can sit with the other personalisation toggles.
@@ -1389,7 +1383,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             AccentColor = AccentColor,
             SchemeVariant = SchemeVariant,
             BackgroundMaterial = CanvasBackgroundType,
-            SyncWithHardware = SyncWithHardware,
+            // Carried, not surfaced: the toggle and its view-model property went in RemEx-dbjfy, but
+            // ApplyAndSave builds a fresh record, so an unassigned field would silently reset a stored
+            // true to false on the next save. Preserve what the profile already holds (the round-trip
+            // guard in CustomizationSettingsRoundTripTests insists on it); see
+            // DashboardProfile.SyncWithHardware for why the field itself stays.
+            SyncWithHardware = carried.SyncWithHardware,
             SplashStyle = SplashStyle,
             PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
             CardHeaderFontFamily = carried.CardHeaderFontFamily,

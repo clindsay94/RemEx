@@ -50,7 +50,6 @@ public sealed class TrayFlyoutOnlineDeviceCountTests : IAsyncLifetime
         _shell = new ShellViewModel(
             layoutService,
             theme,
-            new HardwareThemeService(theme),
             connection,
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

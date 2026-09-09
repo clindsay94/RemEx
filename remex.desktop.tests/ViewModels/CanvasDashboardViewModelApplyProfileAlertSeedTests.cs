@@ -86,7 +86,6 @@ public sealed class CanvasDashboardViewModelApplyProfileAlertSeedTests : IAsyncL
         _shell = new ShellViewModel(
             _layoutService,
             _theme,
-            new HardwareThemeService(_theme),
             _connection,
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

@@ -26,7 +26,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
-    private readonly HardwareThemeService _hardwareThemeService;
     private readonly IImmersiveModeService? _immersiveMode;
     private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
@@ -777,11 +776,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <see cref="TransferQueueForTests"/> and observe the result synchronously passes
     /// <c>action =&gt; action()</c>, same shape as <c>FileTransferQueueTests.NewQueue</c>.
     /// </param>
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, HardwareThemeService hardwareThemeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null)
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null)
     {
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
-        _hardwareThemeService = Guard.NotNull(hardwareThemeService);
         Connection = Guard.NotNull(connectionViewModel);
         _services = Guard.NotNull(services);
         _immersiveMode = immersiveMode; // Intentionally optional
@@ -789,14 +787,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _onCustomizationApplied = settings =>
         {
             Customization = settings;
-            _hardwareThemeService.SetEnabled(settings.SyncWithHardware);
             RefreshWallpaperBackdrop(settings);
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
-            _hardwareThemeService.SetEnabled(Customization.SyncWithHardware);
             RefreshWallpaperBackdrop(Customization);
         }
 
@@ -912,8 +908,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// because this assembly has no <c>Avalonia.Headless</c> reference: nothing pumps a callback
     /// <c>Post</c> actually queues, and by the time
     /// a test's own awaited <c>DashboardLayoutService.ReloadAsync</c> resumes, its continuation can
-    /// land on a different pool thread than whichever one <see cref="HardwareThemeService"/>'s
-    /// <c>DispatcherTimer</c> bound as "the" UI thread earlier in the same test — so
+    /// land on a different pool thread than whichever one a <c>DispatcherTimer</c>
+    /// bound as "the" UI thread earlier in the same test — so
     /// <see cref="Dispatcher.UIThread"/>.CheckAccess() reads false and the real default would queue
     /// work nothing ever drains. A test sets this to run its argument inline instead.
     /// </remarks>

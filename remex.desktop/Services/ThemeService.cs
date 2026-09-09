@@ -717,8 +717,8 @@ public class ThemeService : IDisposable
     }
 
     /// <summary>
-    /// Injects a colour from physical hardware (RGB peripherals, via <see cref="HardwareThemeService"/>)
-    /// as the palette SEED — not a single overwritten brush. Runs through the same
+    /// Injects a colour from physical hardware (RGB peripherals, via a hardware-sync source) as the
+    /// palette SEED — not a single overwritten brush. Runs through the same
     /// generate-and-apply path as any other palette change, so all ~56 derived resources move
     /// together and the change crossfades exactly like a manual seed change does (RemEx-w6c4s).
     /// </summary>
@@ -755,15 +755,24 @@ public class ThemeService : IDisposable
 
     /// <summary>
     /// Clears a hardware accent override and restores the user's own seed. Called when hardware
-    /// sync turns off (<see cref="HardwareThemeService.SetEnabled"/>) or the override otherwise
-    /// needs to end (hardware disconnected, polling stopped).
+    /// sync turns off or the override otherwise needs to end (hardware disconnected, polling
+    /// stopped).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// No caller drives <see cref="ApplyHardwareAccent"/> / <see cref="ClearHardwareAccent"/> today
+    /// — the toggle and its polling service (<c>HardwareThemeService</c>) were removed in RemEx-dbjfy
+    /// because the poll body was an empty stub that never contacted real hardware. This injection
+    /// path itself stays real (RemEx-w6c4s) for a future source (OpenRGB / L-Connect, tracked in a
+    /// follow-up bead) to call into.
+    /// </para>
+    /// <para>
     /// A no-op when no override is active — disabling sync twice, or disabling it when it was
     /// never really injecting anything, must not re-apply the palette and crossfade for nothing.
     /// Callable from any thread, for the same reason and in the same shape as
     /// <see cref="ApplyHardwareAccent"/>: the check-then-act on the override field happens inside
     /// the post, so the two cannot interleave across threads.
+    /// </para>
     /// </remarks>
     public void ClearHardwareAccent() => PostToUiThread(() =>
     {

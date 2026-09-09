@@ -1553,12 +1553,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>स्प्लैश स्क्रीन</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>हार्डवेयर सिंक</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>भौतिक RGB के साथ एक्सेंट रंग सिंक करें</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>कम गति</value>
   </data>

@@ -115,13 +115,12 @@ public class PersonalizationSheetLayoutTests
     }
 
     [Fact]
-    public void BehaviourHasSplashWithPreviewHardwareSyncAndReducedMotion()
+    public void BehaviourHasSplashWithPreviewAndReducedMotion()
     {
         var card = CardAfterHeader("Custom_SectionBehaviour");
 
         card.Should().MatchRegex(@"SelectedItem=""\{Binding SplashStyle[,}]");
         card.Should().Contain("PreviewSplashCommand");
-        card.Should().MatchRegex(@"IsChecked=""\{Binding SyncWithHardware[,}]");
         card.Should().MatchRegex(@"IsChecked=""\{Binding IsReducedMotion[,}]");
     }
 

@@ -67,7 +67,6 @@ public sealed class ShellAlertNotificationTests : IAsyncLifetime, IDisposable
         _shell = new ShellViewModel(
             _layoutService,
             _theme,
-            new HardwareThemeService(_theme),
             new ConnectionViewModel(),
             _serviceProvider,
             transferQueuePost: action => action());

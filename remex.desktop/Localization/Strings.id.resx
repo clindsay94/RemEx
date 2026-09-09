@@ -1553,12 +1553,6 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Layar Pembuka</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Sinkronisasi Perangkat Keras</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Sinkronkan warna aksen dengan RGB fisik</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Kurangi gerak</value>
   </data>

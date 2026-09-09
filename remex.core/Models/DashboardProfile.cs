@@ -367,7 +367,14 @@ public record CustomizationSettings
     [JsonPropertyName("canvasBackgroundType")]
     public string BackgroundMaterial { get; init; } = "Aurora";
 
-    /// <summary>When true, the UI accent color attempts to sync with physical hardware (OpenRGB/FanControl).</summary>
+    /// <summary>
+    /// Retained for savefile compatibility only (RemEx-dbjfy) — the toggle and polling service that
+    /// set this were removed because they never actually contacted hardware. No longer surfaced in
+    /// the UI; <c>CustomizationViewModel.ApplyAndSave</c> carries the stored value forward unchanged
+    /// so an older profile round-trips (the round-trip guard test insists on it). A future real
+    /// hardware-sync source (RemEx-v2pbv) can plug back in through
+    /// <c>ThemeService.ApplyHardwareAccent</c>/<c>ClearHardwareAccent</c>.
+    /// </summary>
     public bool SyncWithHardware { get; init; } = false;
 
     /// <summary>Selected splash screen animation sequence style.</summary>

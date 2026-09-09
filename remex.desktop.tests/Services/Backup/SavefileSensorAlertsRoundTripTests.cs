@@ -192,7 +192,6 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
         var shell = new ShellViewModel(
             destLayout,
             theme,
-            new HardwareThemeService(theme),
             connection,
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

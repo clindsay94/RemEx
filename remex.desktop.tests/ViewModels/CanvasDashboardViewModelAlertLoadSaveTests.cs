@@ -73,7 +73,6 @@ public sealed class CanvasDashboardViewModelAlertLoadSaveTests : IAsyncLifetime
         _shell = new ShellViewModel(
             _layoutService,
             _theme,
-            new HardwareThemeService(_theme),
             connection,
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

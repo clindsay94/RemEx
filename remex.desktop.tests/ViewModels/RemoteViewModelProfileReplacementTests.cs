@@ -61,7 +61,6 @@ public sealed class RemoteViewModelProfileReplacementTests : IAsyncLifetime
         _shell = new ShellViewModel(
             _layoutService,
             _theme,
-            new HardwareThemeService(_theme),
             new ConnectionViewModel(),
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

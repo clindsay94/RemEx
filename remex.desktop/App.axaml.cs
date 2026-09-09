@@ -96,7 +96,6 @@ public partial class App : Application
                 hostProfileStorage);
         });
         collection.AddSingleton<ThemeService>();
-        collection.AddSingleton<HardwareThemeService>();
         collection.AddSingleton(_ => new WindowsAccentWatcher(SystemSeedSources.TryGetWindowsAccent, TimeProvider.System));
         collection.AddSingleton<ColorSourceCoordinator>();
         collection.AddSingleton<UpdateCheckService>();

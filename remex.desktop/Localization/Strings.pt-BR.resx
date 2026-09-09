@@ -1553,12 +1553,6 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Tela de inicialização</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Sincronização de hardware</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Sincronizar cor de acento com RGB físico</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Movimento reduzido</value>
   </data>

@@ -49,7 +49,6 @@ public sealed class RemoteDesktopViewModelProfileReplacementTests : IAsyncLifeti
         _shell = new ShellViewModel(
             _layoutService,
             _theme,
-            new HardwareThemeService(_theme),
             new ConnectionViewModel(),
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()

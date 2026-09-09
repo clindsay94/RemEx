@@ -103,8 +103,9 @@ public class BackgroundFallbackDoesNotPersistTests : IDisposable
     /// fallback's OWN suppressed <c>ApplyAndSave</c> call — but the live <c>CanvasBackgroundType</c>
     /// stays "Aurora" afterwards, so the very NEXT save from ANY OTHER property must not persist
     /// that displayed fallback over the profile's real, unsupported-here material either.
-    /// <c>SyncWithHardware</c> is the cheapest property in this class whose setter ends in
-    /// <c>ApplyAndSave</c> and touches nothing else under test.
+    /// <c>GlassOpacity</c> is the cheapest property in this class whose setter ends in
+    /// <c>ApplyAndSave</c> and touches nothing else under test (<c>SyncWithHardware</c> filled this
+    /// role until its toggle was removed in RemEx-dbjfy).
     /// </summary>
     [Fact]
     public void UnrelatedSaveAfterTheFallback_StillPreservesTheOriginalMaterial()
@@ -112,7 +113,7 @@ public class BackgroundFallbackDoesNotPersistTests : IDisposable
         var (vm, _) = MakeVmWithMaterial(UnsupportedMaterial);
         vm.CanvasBackgroundType.Should().Be("Aurora"); // the session-only fallback from construction
 
-        vm.SyncWithHardware = !vm.SyncWithHardware; // an unrelated nudge, not a background-mode pick
+        vm.GlassOpacity += 0.05; // an unrelated nudge, not a background-mode pick
 
         _layoutService!.CurrentProfile.Customization.BackgroundMaterial.Should().Be(UnsupportedMaterial,
             "an unrelated save must not persist the displayed fallback over the profile's real, " +

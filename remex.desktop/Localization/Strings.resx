@@ -1595,12 +1595,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Splash Screen</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Hardware Sync</value>
-  </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Sync accent color with physical RGB</value>
-  </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Reduced motion</value>
   </data>
