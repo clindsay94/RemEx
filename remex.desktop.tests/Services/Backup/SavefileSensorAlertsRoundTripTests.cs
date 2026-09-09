@@ -51,6 +51,9 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
     private static readonly MethodInfo FinishInitializeMethod =
         typeof(CanvasDashboardViewModel).GetMethod("FinishInitialize", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+    private static readonly MethodInfo ApplyProfileMethod =
+        typeof(CanvasDashboardViewModel).GetMethod("ApplyProfile", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
     private readonly List<string> _tempDirs = new();
     private readonly List<DashboardLayoutService> _layoutServices = new();
 
@@ -168,16 +171,20 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportedProfile_SeedsSensorAlertStoreAndKeepsNonSensorCard_ThroughCanvasReload()
+    public async Task ImportedProfile_SeedsSensorAlertStoreAndKeepsNonSensorCard_ThroughFirstLoadAndReloadFromPersistedLayout()
     {
         var (destLayout, _, alertAbove, alertBelow) = await ExportThenImportAsync();
 
-        // Drive the canvas reload the same way a real "Import savefile" action does once
+        // Drive the canvas the same way a real "Import savefile" action does once
         // SettingsViewModel's ReloadFromPersistedLayout hands the freshly-reloaded profile to the
-        // canvas — FinishInitialize is the synchronous half of that path, reflection-invoked for the
-        // same reason CanvasDashboardViewModelAlertLoadSaveTests and
-        // CanvasDashboardViewModelApplyProfileAlertSeedTests do: this assembly has no
-        // Avalonia.Headless reference, so nothing pumps a real Dispatcher.UIThread.InvokeAsync.
+        // canvas — FinishInitialize/ApplyProfile are reflection-invoked for the same reason
+        // CanvasDashboardViewModelAlertLoadSaveTests and CanvasDashboardViewModelApplyProfileAlertSeedTests
+        // do: this assembly has no Avalonia.Headless reference, so nothing pumps a real
+        // Dispatcher.UIThread.InvokeAsync — and ReloadFromPersistedLayout itself branches on
+        // Dispatcher.UIThread.CheckAccess(), which is exactly the dispatcher this test cannot pump.
+        // ApplyProfile is the seam ReloadFromPersistedLayout calls once that check resolves
+        // synchronously, so invoking it directly exercises the same reseed logic without needing a
+        // dispatcher pump.
         var connection = new ConnectionViewModel();
         var alertStore = new SensorAlertStore();
         var alertTracker = new SensorAlertTracker();
@@ -196,6 +203,7 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
         };
         var vm = new CanvasDashboardViewModel(connection, destLayout, shell, alertStore, alertTracker);
 
+        // First-load / restart path.
         FinishInitializeMethod.Invoke(vm, new object[] { destLayout.CurrentProfile });
 
         // Two independently-failing assertions: the store must carry BOTH imported alerts (this is
@@ -203,9 +211,28 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
         // non-sensor card back on the canvas (this is the part an unrelated regression in the
         // non-sensor restore loop would break instead).
         alertStore.All.Should().BeEquivalentTo(new[] { alertAbove, alertBelow },
-            "importing a savefile must repopulate SensorAlertStore without a restart");
+            "importing a savefile must repopulate SensorAlertStore through the first-load path");
         vm.Cards.Should().Contain(c => c.CardType == "Connection" && c.CardId == "connection-card",
             "the non-sensor card carried by the same import must still be restored onto the canvas");
+
+        // No-restart path: mimic the real "Import savefile" action running against an ALREADY-LIVE
+        // canvas — SettingsViewModel.ReloadFromPersistedLayout -> CanvasDashboardViewModel.ApplyProfile
+        // is what actually runs then, not FinishInitialize. Use a second, independent store/tracker/vm
+        // over the SAME destLayout so this assertion can only pass if ApplyProfile itself seeds the
+        // store — calling ReplaceAll on the first vm's store instead would fire its subscribed
+        // OnAlertStoreChanged handler and persist an empty alert list back onto destLayout, corrupting
+        // the very profile this second call reads.
+        var alertStore2 = new SensorAlertStore();
+        var alertTracker2 = new SensorAlertTracker();
+        var vm2 = new CanvasDashboardViewModel(connection, destLayout, shell, alertStore2, alertTracker2);
+
+        ApplyProfileMethod.Invoke(vm2, new object[] { destLayout.CurrentProfile });
+
+        alertStore2.All.Should().BeEquivalentTo(new[] { alertAbove, alertBelow },
+            "importing a savefile must also repopulate SensorAlertStore through the no-restart " +
+            "ReloadFromPersistedLayout -> ApplyProfile path, without requiring an app restart");
+        vm2.Cards.Should().Contain(c => c.CardType == "Connection" && c.CardId == "connection-card",
+            "the non-sensor card must be restored again on the no-restart reload path too");
     }
 
     private sealed class FakeDashboardProfileStorageService : IDashboardProfileStorageService
