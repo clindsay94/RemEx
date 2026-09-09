@@ -117,14 +117,30 @@ public partial class CopyAlertDialogViewModel : ObservableObject
         var query = _allCandidates.AsEnumerable();
 
         if (SameUnitOnly)
-            query = query.Where(c => string.Equals(c.Unit, _sourceUnit, StringComparison.Ordinal));
+            query = query.Where(c => string.Equals(c.Unit?.Trim(), _sourceUnit?.Trim(), StringComparison.OrdinalIgnoreCase));
 
         var filter = Filter.Trim();
         if (filter.Length > 0)
             query = query.Where(c => c.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase));
 
-        Candidates.Clear();
-        foreach (var candidate in query) Candidates.Add(candidate);
+        var scoped = query.ToList();
+
+        // Diff Candidates against the newly-scoped list rather than Clear()+refill: Clear() raises a
+        // Reset, which empties the ListBox's SelectedItems and, through its two-way binding,
+        // SelectedCandidates too — silently dropping the whole multi-selection on every keystroke in
+        // Filter or every flip of Show all sensors. Removing what fell out and inserting what's new,
+        // in place, leaves surviving items untouched so their selection survives.
+        for (var i = Candidates.Count - 1; i >= 0; i--)
+        {
+            if (!scoped.Contains(Candidates[i]))
+                Candidates.RemoveAt(i);
+        }
+
+        for (var i = 0; i < scoped.Count; i++)
+        {
+            if (i >= Candidates.Count || !ReferenceEquals(Candidates[i], scoped[i]))
+                Candidates.Insert(i, scoped[i]);
+        }
 
         // A selection that fell out of the filtered/scoped view no longer applies.
         for (var i = SelectedCandidates.Count - 1; i >= 0; i--)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -114,6 +115,21 @@ public class CopyAlertDialogViewModelTests
         vm.Candidates.Select(c => c.Name).Should().NotContain("cpu-pkg-0");
     }
 
+    [Fact]
+    public void SameUnitMatch_IsTrimmedAndCaseInsensitive()
+    {
+        var store = new SensorAlertStore();
+        var catalog = new FakeSensorCatalog();
+        catalog.Add(new SensorInfo("psu-power-0", "PSU Power", "W", true));
+        catalog.Add(new SensorInfo("gpu-power-0", "GPU Power", " w ", true));
+
+        var vm = new CopyAlertDialogViewModel(MakeAlert("psu-power-0"), catalog, store);
+
+        vm.SameUnitOnly.Should().BeTrue();
+        vm.Candidates.Select(c => c.Name).Should().BeEquivalentTo(new[] { "gpu-power-0" },
+            "unit comparison must trim whitespace and ignore case");
+    }
+
     // ─────────────────────────── filter ───────────────────────────
 
     [Fact]
@@ -133,6 +149,51 @@ public class CopyAlertDialogViewModelTests
 
         vm.Filter = string.Empty;
         vm.Candidates.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void RebuildCandidates_PreservesSurvivingSelectionAcrossFilterNarrowing()
+    {
+        // A Clear()+refill rebuild raises a collection Reset, which empties the ListBox's
+        // SelectedItems and, through its two-way binding, SelectedCandidates — dropping the whole
+        // multi-selection on every keystroke in Filter. RebuildCandidates must diff instead.
+        var store = new SensorAlertStore();
+        var catalog = new FakeSensorCatalog();
+        catalog.Add(new SensorInfo("cpu-pkg-0", "CPU Package", "°C", true));
+        catalog.Add(new SensorInfo("gpu-hot-0", "GPU Hot Spot", "°C", true));
+        catalog.Add(new SensorInfo("vrm-temp-0", "VRM Temp", "°C", true));
+
+        var vm = new CopyAlertDialogViewModel(MakeAlert("cpu-pkg-0"), catalog, store);
+        vm.Candidates.Select(c => c.Name).Should().BeEquivalentTo("gpu-hot-0", "vrm-temp-0");
+
+        var gpu = vm.Candidates.Single(c => c.Name == "gpu-hot-0");
+        var vrm = vm.Candidates.Single(c => c.Name == "vrm-temp-0");
+        vm.SelectedCandidates.Add(gpu);
+        vm.SelectedCandidates.Add(vrm);
+
+        // The regression this pins: a real ListBox's SelectedItems binding clears itself (and
+        // writes that back into SelectedCandidates) whenever the bound ItemsSource raises a Reset -
+        // exactly what Clear()+refill does. A plain unit test has no ListBox to observe that through,
+        // so the actual tell is on Candidates.CollectionChanged itself: RebuildCandidates must never
+        // raise Reset, only the granular Add/Remove a diff produces.
+        var actions = new List<NotifyCollectionChangedAction>();
+        vm.Candidates.CollectionChanged += (_, e) => actions.Add(e.Action);
+
+        vm.Filter = "p"; // both "GPU Hot Spot" and "VRM Temp" contain 'p' — both still match
+        actions.Should().NotContain(NotifyCollectionChangedAction.Reset,
+            "a Reset empties the ListBox's SelectedItems and silently drops the whole selection");
+        vm.Candidates.Select(c => c.Name).Should().BeEquivalentTo("gpu-hot-0", "vrm-temp-0");
+        vm.SelectedCandidates.Should().BeEquivalentTo(new[] { gpu, vrm },
+            "both candidates still match the filter, so both must remain selected");
+        vm.ApplyLabel.Should().Be(string.Format(LocalizationService.Instance["CopyAlert_Apply"], 2));
+
+        actions.Clear();
+        vm.Filter = "spot"; // only "GPU Hot Spot" matches now
+        actions.Should().NotContain(NotifyCollectionChangedAction.Reset);
+        vm.Candidates.Select(c => c.Name).Should().BeEquivalentTo("gpu-hot-0");
+        vm.SelectedCandidates.Should().BeEquivalentTo(new[] { gpu },
+            "vrm-temp-0 fell out of the filtered view and must be dropped from the selection");
+        vm.ApplyLabel.Should().Be(string.Format(LocalizationService.Instance["CopyAlert_Apply"], 1));
     }
 
     // ─────────────────────────── header ───────────────────────────
@@ -284,6 +345,20 @@ public class CopyAlertDialogViewModelTests
         var cancel = Regex.Match(text, @"<Button\b[^>]*?Command=""\{Binding CancelCommand\}""[^>]*?Classes=""([^""]+)""");
         cancel.Success.Should().BeTrue();
         cancel.Groups[1].Value.Should().NotContain("primary");
+    }
+
+    [Fact]
+    public void CandidateListBoxDeclaresAnAutomationNameForItsItems()
+    {
+        // Without this, each row's UI Automation Name falls back to the item container's default -
+        // the bound view-model's type name - rather than anything a screen reader user can act on.
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CopyAlertDialog.axaml"));
+
+        text.Should().Contain("<Style Selector=\"ListBoxItem\" x:DataType=\"vm:CopyAlertCandidateViewModel\">",
+            "the candidate rows need an item-level style scoped to their view model, not a template override "
+            + "(FocusVisibleStyleGuardTests pins the ListBoxItem template to Material's stock one)");
+        text.Should().Contain("Setter Property=\"AutomationProperties.Name\" Value=\"{Binding DisplayName}\"",
+            "each row's accessible name must come from DisplayName");
     }
 
     private static readonly string[] NewKeys =
