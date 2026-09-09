@@ -836,6 +836,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- `scripts/verify.ps1` checks that a set `JAVA_HOME` points at a directory that exists before it
+  runs either Gradle task, and records "JAVA_HOME points at a missing directory" as the reason
+  when it does not. A JDK update had refreshed only the Machine-scope value while a stale
+  User-scope override still won, Gradle died at JVM start with zero tests recorded, and the
+  receipt said "Android unit tests failed", which quarantined desktop-only beads in the merge
+  queue. An unset `JAVA_HOME` is still fine (Gradle finds `java` on PATH). Guarded from the
+  script source by a test that fails if the check moves after the first Gradle call.
+  (RemEx-kou55)
 - The personalization profile is at schema 4. Arm 3 carries the sheet redesign (saved palettes,
   the colour source, strategy normalisation); arm 4 maps a stored Mica to Wallpaper at blur 0.9
   and a stored RemexCommand splash to Cosmic Zoom, once, through `with` expressions so no field
