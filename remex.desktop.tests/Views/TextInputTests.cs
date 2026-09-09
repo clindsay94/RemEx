@@ -52,6 +52,7 @@ public class TextInputTests
         ["Binding SearchText}\" PlaceholderText=\"{local:Localize TaskMgr_SearchPlaceholder"] =
             "TaskManagerView - search field, placeholder is the affordance",
         ["AppLauncher_SearchWatermark"] = "AppLauncherView - search field, placeholder is the affordance",
+        ["CopyAlert_Filter"] = "CopyAlertDialog - filter field, placeholder is the affordance (RemEx-8wpvr.6)",
 
         // Dense single-row toolbars: a floating label needs vertical headroom above the field that
         // a fixed-height horizontal control bar does not have. Each of these keeps the caption
