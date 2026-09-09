@@ -447,6 +447,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sensor alerts you can actually see and manage.** A sensor card with an alert set now shows a
+  small bell next to its name. When the sensor crosses its threshold the bell turns into a red
+  ringing bell and the card's glow pulses smoothly for as long as the reading stays over the line
+  (a steady glow with Reduce motion on); the bell stays red until you click it, click the card, or
+  use Acknowledge all, so a spike that recovered while you were away is still marked. The Sensors
+  number in the navigation now counts sensors waiting to be acknowledged instead of every firing,
+  and opening the canvas no longer clears it. Each crossing also reaches you by the clock: a
+  Critical alert shows a tray balloon whenever the window is hidden and an in-app toast when it is
+  not, naming the sensor, the reading and the threshold, with the same sensor limited to one
+  notification a minute. Settings gains a **Sensor alerts** card that lists every alert with Edit,
+  Remove and Copy to… (which applies the same threshold to other sensors, same-unit ones by
+  default), plus Acknowledge all and a confirmed Reset all alerts. Alerts continue to travel with
+  profile export and import. (RemEx-8wpvr)
 - **Match my phone's theme.** The phone now tells the PC its theme (seed colour, style, light or
   dark, contrast, and whether it is on wallpaper colour) after it connects and whenever the theme
   changes, and the PC's Personalize sheet offers a "Match my phone" action once it knows one.
