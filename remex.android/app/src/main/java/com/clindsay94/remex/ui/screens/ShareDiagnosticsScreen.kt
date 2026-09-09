@@ -258,9 +258,9 @@ private fun ShareDiagnosticsPreview() {
                 sharing = false,
                 includeNetworkInfo = false,
                 bundle =
-                        "=== RemEx diagnostics ===\n\n[app]\nversion: 2.4.0\n" +
+                        "=== RemEx diagnostics ===\n\n[app]\nversion: 2.5.0\n" +
                                 "device: Samsung SM-S938B\nandroid API: 37\nconnection: connected\n\n" +
-                                "[host]\nhost version: 2.4.0\nplatform: Windows\n\n" +
+                                "[host]\nhost version: 2.5.0\nplatform: Windows\n\n" +
                                 "[log]\nRemexManager: negotiated codec h264_nvenc",
                 snackbarHostState = SnackbarHostState(),
                 onIncludeNetworkInfoChange = {},
