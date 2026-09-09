@@ -76,6 +76,31 @@ public class VerifyScriptFingerprintTests
             "the problem string must name JAVA_HOME, not report a generic Android test failure");
     }
 
+    /// <summary>
+    /// RemEx-zzf7d: two of three verify runs on 2026-09-08 sat 50-60 min at "Running the .NET test
+    /// suite" with an idle testhost and no log advance. A hang must abort with the test named
+    /// instead of a silent wait, and piping the invocation to Out-Null is exactly what made the
+    /// silence possible - so guard against both regressing back in.
+    /// </summary>
+    [Fact]
+    public void DotnetTestInvocationBlameHangsInsteadOfSittingSilently()
+    {
+        var text = ScriptText();
+
+        var invocationStart = text.IndexOf("dotnet test $sln", StringComparison.Ordinal);
+        invocationStart.Should().BeGreaterThan(-1, "the script no longer invokes dotnet test $sln - re-point this test rather than deleting it");
+
+        var exitCapture = text.IndexOf("$testExit = $LASTEXITCODE", invocationStart, StringComparison.Ordinal);
+        exitCapture.Should().BeGreaterThan(invocationStart, "$testExit capture moved or was removed - re-point this test rather than deleting it");
+
+        var invocationRegion = text.Substring(invocationStart, exitCapture - invocationStart);
+
+        invocationRegion.Should().Contain("--blame-hang-timeout",
+            "a hung test must abort and be named instead of sitting silently for an hour (RemEx-zzf7d)");
+        invocationRegion.Should().NotContain("Out-Null",
+            "piping the dotnet test invocation to Out-Null hides per-project progress and swallows the blame-hang output that names a stuck test");
+    }
+
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

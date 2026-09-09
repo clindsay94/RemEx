@@ -674,8 +674,24 @@ if ($Scope -in @('dotnet', 'all')) {
         if (Test-Path -LiteralPath $trxDir) { Remove-Item -LiteralPath $trxDir -Recurse -Force }
         New-Item -ItemType Directory -Path $trxDir -Force | Out-Null
 
-        dotnet test $sln -c Release --no-build --nologo @extra `
-            --logger 'trx' --results-directory $trxDir 2>&1 | Out-Null
+        # RemEx-zzf7d: two of three verify runs on 2026-09-08 sat 50-60 min at this line with one
+        # idle testhost and no log advance, then the same suite passed in ~130s run directly. A
+        # hang here must end with the test NAMED, not an hour of silence. --blame-hang-timeout is
+        # PER TEST (180s of no progress on one test), not a budget for the whole run, so a slow but
+        # alive suite is unaffected - only a test that stops responding gets killed. The output is
+        # STREAMED through ForEach-Object so each project's Passed!/Failed! line appears the moment
+        # that project finishes - a stall before vstest even starts a session (the 2026-09-08
+        # shape: idle testhost, ten idle dotnet processes) never arms the blame timer, and the only
+        # evidence of it is progress stopping. $LASTEXITCODE is still the native call's: nothing
+        # downstream of the first pipeline stage is a native command.
+        $testLines = dotnet test $sln -c Release --no-build --nologo @extra `
+            --blame-hang --blame-hang-timeout 180s --blame-hang-dump-type none `
+            --logger 'trx' --results-directory $trxDir 2>&1 | ForEach-Object {
+                if ($_ -match '^(Passed!|Failed!)|Test Run Aborted|was aborted|inactivity time|hang dump') {
+                    Write-Say "  $_"
+                }
+                $_
+            }
         $testExit = $LASTEXITCODE
 
         $trxFiles = @(Get-ChildItem -LiteralPath $trxDir -Filter '*.trx' -ErrorAction SilentlyContinue)
@@ -703,6 +719,28 @@ if ($Scope -in @('dotnet', 'all')) {
             }
         }
 
+        # RemEx-zzf7d: when --blame-hang fires it drops a Sequence XML under the results directory
+        # listing tests in the order they ran; the last one was the one still running when the
+        # 180s-per-test timeout hit. Read it now so a hang has a name by the time anyone asks.
+        # One file per hung test host - a solution run has one host per project, so two stuck
+        # projects mean two files, and every one of them gets named. GetAttribute, not .Name: on
+        # an XmlElement .Name falls back to the TAG when the attribute is missing, which would
+        # report a test called "Test" and suggest a --filter matching the entire repo.
+        $hungTestNames = [System.Collections.Generic.List[string]]::new()
+        if ($testExit -ne 0) {
+            foreach ($seqFile in @(Get-ChildItem -LiteralPath $trxDir -Filter '*equence*.xml' -Recurse -ErrorAction SilentlyContinue)) {
+                try {
+                    [xml]$seqDoc = Get-Content -LiteralPath $seqFile.FullName -Raw
+                    $lastTest = @($seqDoc.TestSequence.Test) | Select-Object -Last 1
+                    if ($lastTest -is [System.Xml.XmlElement]) {
+                        $n = $lastTest.GetAttribute('Name')
+                        if ($n) { $hungTestNames.Add($n) }
+                    }
+                }
+                catch { }
+            }
+        }
+
         if ($testExit -ne 0 -or $testsFailed -gt 0) {
             $problems.Add("$testsFailed .NET test(s) failed")
             # Into problems, so the NAME survives in the receipt. The .ralph/trx directory is wiped
@@ -713,6 +751,15 @@ if ($Scope -in @('dotnet', 'all')) {
             Write-Problem "$testsFailed of $testsRun tests failed." `
                 "Run: dotnet test Remex.sln -c Release --filter <name of a failing test>"
             foreach ($f in $failedTestNames) { Write-Say "    $f" 'Red' }
+
+            # A hang is reported at THIS level, not only when nothing else failed: a real failure in
+            # one project and a hang in another would otherwise print "1 of N failed" and throw the
+            # hung test's name away - the one diagnostic this block exists to keep (RemEx-zzf7d).
+            foreach ($h in $hungTestNames) {
+                $problems.Add("test run hung: $h")
+                Write-Problem "The test run hung on $h." `
+                    "It made no progress for 180s and its test host was aborted. Run: dotnet test Remex.sln -c Release --filter `"FullyQualifiedName~$h`""
+            }
 
             if ($failedTestNames.Count -eq 0) {
                 if ($testsFailed -eq 0) {
