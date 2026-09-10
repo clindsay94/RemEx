@@ -416,6 +416,9 @@ if ([string]::IsNullOrEmpty($FileVersion)) {
 }
 $RequestedVersion = $Version    # whatever -Version was given, before $Version becomes the resolved one
 $Version = $FileVersion
+# Same capture for the code: both parameters are read into Requested* here, because the plain names
+# are immediately reused below to hold what version.properties actually says.
+$RequestedVersionCode = $VersionCode
 
 # Play rejects an upload whose versionCode isn't strictly higher than the last one, so any change to
 # versionName drags the code up with it. It is monotonic and independent of versionName.
