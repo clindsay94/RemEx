@@ -282,8 +282,27 @@ public sealed class FileTrustService : IFileTrustService
             }
             catch (OperationCanceledException)
             {
-                // 60-second timeout (or caller cancellation) with no user response → clean deny.
-                return new FileConsentDecision(Granted: false, Remember: false);
+                // CALLER CANCELLATION IS NOT A TIMEOUT (RemEx-c7v4n). ct itself only becomes cancelled
+                // when the caller gave up; the auto-deny path cancels timeoutCts without ever touching
+                // ct. Checking ct here — rather than assuming every OperationCanceledException out of
+                // WaitAsync is the 60-second clock — is what keeps a caller-abandoned request from
+                // being reported as "the PC didn't answer in time", which nobody measured.
+                if (ct.IsCancellationRequested)
+                    return new FileConsentDecision(Granted: false, Remember: false);
+
+                // ROUTE-AWARE, DELIBERATELY (RemEx-c7v4n). Both routes land in this one catch, but only
+                // the Desktop route's silence is a host-prompt timeout: the PC dialog was shown and
+                // nobody at the PC answered it. The Phone route's timeout means the PHONE user did not
+                // answer their own prompt — tagging that with a host-side reason would misinform a
+                // different person than the one who actually saw nothing happen (the naming trap this
+                // bead's gate comments flagged). So HostPromptTimedOut is set ONLY for ConsentRoute
+                // .Desktop; every other route keeps the bare null it has always returned here.
+                // ConsentRoutingTests.ATimedOutPromptCarriesNoReasonCodeEither pins that the Phone route
+                // is unaffected and must stay green, unmodified.
+                var denyReason = route == ConsentRoute.Desktop
+                    ? FileConsentDenyReasons.HostPromptTimedOut
+                    : null;
+                return new FileConsentDecision(Granted: false, Remember: false, DenyReason: denyReason);
             }
 
             if (decision.Granted && decision.Remember)

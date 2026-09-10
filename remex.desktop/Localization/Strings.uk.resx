@@ -2348,6 +2348,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
     <value>Не вдалося запитати цей пристрій — він зараз не під’єднаний. Під’єднайте його знову та спробуйте ще раз.</value>
   </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>На запит іншого пристрою не відповіли вчасно. Спробуйте ще раз.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Не вдалося отримати список дисків. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>

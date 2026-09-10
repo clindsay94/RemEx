@@ -719,8 +719,9 @@ public sealed class FileTransferHandler(
             if (string.IsNullOrWhiteSpace(clientId))
                 throw new UnauthorizedAccessException("A paired client identity is required to browse volumes.");
 
-            // Null unless the host refused without asking anyone; see FileConsentDenyReasons. It stays
-            // null on the already-granted path above, which never denies anything (RemEx-l580).
+            // Null unless the host refused without a person answering — either nobody was asked, or
+            // the prompt expired unanswered; see FileConsentDenyReasons. It stays null on the
+            // already-granted path above, which never denies anything (RemEx-l580, RemEx-c7v4n).
             string? denyReason = null;
 
             var granted = await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct);

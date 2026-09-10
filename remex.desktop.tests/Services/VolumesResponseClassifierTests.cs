@@ -24,6 +24,7 @@ public class VolumesResponseClassifierTests
     [InlineData(true, null, null, VolumesOutcome.Granted)]
     [InlineData(false, null, null, VolumesOutcome.Refused)]
     [InlineData(false, "client_unreachable", null, VolumesOutcome.PeerUnreachable)]
+    [InlineData(false, "host_prompt_timed_out", null, VolumesOutcome.HostPromptTimedOut)]
     [InlineData(false, "something_new", null, VolumesOutcome.Refused)]
     [InlineData(false, null, "boom", VolumesOutcome.Failed)]
     public void ItClassifiesEachAnswer(bool granted, string? reason, string? error, VolumesOutcome expected)
@@ -89,5 +90,20 @@ public class VolumesResponseClassifierTests
 
         unreachable.Should().NotBeNullOrWhiteSpace();
         unreachable.Should().NotBe(denied, "the whole point is that these two read differently");
+    }
+
+    [Fact]
+    public void TheHostPromptTimeoutOutcomeHasWordsOfItsOwn()
+    {
+        // RemEx-c7v4n. The peer's own prompt expiring unanswered is not the same fact as somebody
+        // deciding no, nor the same fact as the peer being unreachable — three different words for
+        // three different situations, none of them the generic refusal.
+        var timedOut = LocalizationService.Instance["FileTransfer_VolumesHostPromptTimedOut"];
+        var unreachable = LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"];
+        var denied = LocalizationService.Instance["FileTransfer_VolumesDenied"];
+
+        timedOut.Should().NotBeNullOrWhiteSpace();
+        timedOut.Should().NotBe(unreachable, "the peer being unreachable is a different situation");
+        timedOut.Should().NotBe(denied, "a prompt nobody answered is not the same as a person deciding no");
     }
 }

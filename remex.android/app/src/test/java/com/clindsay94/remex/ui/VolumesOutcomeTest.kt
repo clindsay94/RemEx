@@ -48,6 +48,22 @@ class VolumesOutcomeTest {
     }
 
     @Test
+    fun `an expired PC prompt is told apart from a real refusal`() {
+        // THE ENTIRE POINT OF RemEx-c7v4n's second half. The host's Desktop consent route now says
+        // WHY it denied when the 60s auto-deny fired with nobody at the PC having answered, and this
+        // must classify as something other than REFUSED — REFUSED is "somebody decided no", which is
+        // exactly the fact that did not happen here.
+        assertEquals(
+            VolumesOutcome.HOST_PROMPT_TIMED_OUT,
+            FileManagerLogic.classifyVolumesResponse(
+                fullBrowseGranted = false,
+                denyReason = FileManagerLogic.DENY_REASON_HOST_PROMPT_TIMED_OUT,
+                errorMessage = null,
+            ),
+        )
+    }
+
+    @Test
     fun `no reason means a person decided`() {
         // THE CONTRACT RemEx-l580 ESTABLISHED, and the direction that costs most to get wrong:
         // reading an absent reason as "unreachable" would tell people to reconnect a phone that is
@@ -170,6 +186,15 @@ class VolumesOutcomeTest {
             FileManagerLogic.DENY_REASON_CLIENT_UNREACHABLE,
             declaredDenyReasons()["ClientUnreachable"],
         )
+        assertEquals(
+            "remex.core changed the wire value for HostPromptTimedOut",
+            "host_prompt_timed_out",
+            declaredDenyReasons()["HostPromptTimedOut"],
+        )
+        assertEquals(
+            FileManagerLogic.DENY_REASON_HOST_PROMPT_TIMED_OUT,
+            declaredDenyReasons()["HostPromptTimedOut"],
+        )
     }
 
     @Test
@@ -185,6 +210,7 @@ class VolumesOutcomeTest {
         // host NEWER than this build; it is not a licence to ignore a code our own repo just added.
         val handled = mapOf(
             "ClientUnreachable" to VolumesOutcome.PHONE_UNREACHABLE,
+            "HostPromptTimedOut" to VolumesOutcome.HOST_PROMPT_TIMED_OUT,
         )
 
         val unhandled = declaredDenyReasons().keys - handled.keys

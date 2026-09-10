@@ -435,6 +435,53 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_HostPromptTimeoutDenial_CarriesTheHostTimeoutReasonCode()
+    {
+        // RemEx-c7v4n. HostPromptTimedOut rides the same string DenyReason property ClientUnreachable
+        // already uses — no new type, no serializer-context entry — so this pins that the wire value
+        // travels intact under its own name rather than assuming a plain string constant needs no
+        // coverage of its own. FileVolumesResponse is the case this bead is actually about (full
+        // browse routes to the Desktop dialog). FilePushResponse is pinned defensively — the host
+        // does not currently emit this reason on the push path (RequestConsentAsync's only caller is
+        // FileTransferHandler's volumes handling, and the host only ever consumes FilePushResponse,
+        // never emits one) — so that a future push-side deny path inherits working wire coverage
+        // instead of a gap nobody noticed.
+        var volumesMessage = new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesResponse,
+            FileVolumesResponse = new FileVolumesResponse
+            {
+                RequestId = "req-vol",
+                Volumes = [],
+                FullBrowseGranted = false,
+                DenyReason = FileConsentDenyReasons.HostPromptTimedOut,
+            },
+        };
+        var volumes = RoundTrip(volumesMessage);
+        Assert.Equal(FileConsentDenyReasons.HostPromptTimedOut, volumes.FileVolumesResponse!.DenyReason);
+
+        var pushMessage = new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse
+            {
+                PushId = "p4",
+                Accepted = false,
+                DenyReason = FileConsentDenyReasons.HostPromptTimedOut,
+            },
+        };
+        var push = RoundTrip(pushMessage);
+        Assert.Equal(FileConsentDenyReasons.HostPromptTimedOut, push.FilePushResponse!.DenyReason);
+
+        // AND UNDER THAT EXACT NAME. FileManagerLogic.kt reads this key by hand out of org.json, so
+        // the string IS the contract, same as ClientUnreachable above.
+        var volumesJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(volumesMessage));
+        Assert.Contains("""
+            "denyReason":"host_prompt_timed_out"
+            """, volumesJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RoundTrip_ConsentRequest_PreservesTheAutoDenyDeadline()
     {
         // RemEx-6mxu. The deadline reaching the renderer intact is the entire bead: the phone cannot

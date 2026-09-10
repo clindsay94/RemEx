@@ -11,6 +11,9 @@ public enum VolumesOutcome
     /// <summary>The peer's host refused without asking anybody, because the asker was not reachable.</summary>
     PeerUnreachable,
 
+    /// <summary>The peer's prompt was shown to a person who did not answer it before it expired.</summary>
+    HostPromptTimedOut,
+
     /// <summary>Somebody was asked and said no.</summary>
     Refused,
 
@@ -40,6 +43,17 @@ public enum VolumesOutcome
 /// means a person decided, which is the contract RemEx-l580 established. Reading a missing reason as
 /// "unreachable" would tell somebody to reconnect a device that is working fine.
 /// </para>
+/// <para>
+/// **THE ABSENT-REASON CLAIM ABOVE IS ACCURATE FOR THE FIRST TIME AS OF <see
+/// cref="VolumesOutcome.HostPromptTimedOut"/> (RemEx-c7v4n).** Before this value existed, an absent
+/// reason on a Desktop-routed full-browse deny was ambiguous — it meant either a person tapped Deny,
+/// OR the host's PC-side prompt was shown and nobody answered before the timeout; both arrived as
+/// the same null. Now the timeout case has its own code, so a null reaching this classifier really
+/// does mean a person decided. <see cref="VolumesOutcome.PeerUnreachable"/>'s "without asking
+/// anybody" above is NOT the same claim and needed no correction: it is scoped to
+/// <see cref="FileConsentDenyReasons.ClientUnreachable"/> specifically, which is set only when the
+/// asking client could not be reached at all — nobody was, and still is, asked in that case.
+/// </para>
 /// </remarks>
 public static class VolumesResponseClassifier
 {
@@ -52,6 +66,7 @@ public static class VolumesResponseClassifier
         return Normalize(denyReason) switch
         {
             FileConsentDenyReasons.ClientUnreachable => VolumesOutcome.PeerUnreachable,
+            FileConsentDenyReasons.HostPromptTimedOut => VolumesOutcome.HostPromptTimedOut,
             _ => VolumesOutcome.Refused,
         };
     }

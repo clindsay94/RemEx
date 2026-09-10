@@ -269,11 +269,21 @@ object FileManagerLogic {
     const val DENY_REASON_CLIENT_UNREACHABLE = "client_unreachable"
 
     /**
+     * Mirrors `remex.core` `FileConsentDenyReasons.HostPromptTimedOut` (RemEx-c7v4n). The Desktop
+     * consent prompt was shown on the PC and nobody there answered before the host's auto-deny
+     * timeout — the PC user simply never touched the dialog, which is not the same fact as somebody
+     * having decided no.
+     */
+    const val DENY_REASON_HOST_PROMPT_TIMED_OUT = "host_prompt_timed_out"
+
+    /**
      * What a `file_volumes_response` means for the person who tapped "browse everything".
      *
      * The distinction that matters is [PHONE_UNREACHABLE] versus [REFUSED]: one is a situation the
      * person can fix and the other is an answer they have to accept, and before RemEx-3qmd this end
-     * could not tell them apart because the wire carried no reason.
+     * could not tell them apart because the wire carried no reason. [HOST_PROMPT_TIMED_OUT] is a
+     * further split off [REFUSED] (RemEx-c7v4n): the PC prompt expiring unanswered is not a decision
+     * either, and telling the user "declined" for it states as fact something that never happened.
      */
     enum class VolumesOutcome {
         /** The grant is held; [RemoteVolume]s follow. */
@@ -284,6 +294,9 @@ object FileManagerLogic {
 
         /** The host could not put the question to this phone at all. Reconnecting fixes it. */
         PHONE_UNREACHABLE,
+
+        /** The PC dialog was shown and nobody answered it before the host gave up. Try again. */
+        HOST_PROMPT_TIMED_OUT,
 
         /** The request itself failed — malformed, or the host threw. Not a refusal. */
         FAILED,
@@ -314,6 +327,7 @@ object FileManagerLogic {
         !errorMessage.isNullOrBlank() -> VolumesOutcome.FAILED
         fullBrowseGranted -> VolumesOutcome.GRANTED
         denyReasonOf(denyReason) == DENY_REASON_CLIENT_UNREACHABLE -> VolumesOutcome.PHONE_UNREACHABLE
+        denyReasonOf(denyReason) == DENY_REASON_HOST_PROMPT_TIMED_OUT -> VolumesOutcome.HOST_PROMPT_TIMED_OUT
         else -> VolumesOutcome.REFUSED
     }
 

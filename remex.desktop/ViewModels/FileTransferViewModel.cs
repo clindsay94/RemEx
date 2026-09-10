@@ -1556,6 +1556,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 VolumesOutcome.Granted => string.Format(
                     LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count),
                 VolumesOutcome.PeerUnreachable => LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"],
+                VolumesOutcome.HostPromptTimedOut => LocalizationService.Instance["FileTransfer_VolumesHostPromptTimedOut"],
                 _ => LocalizationService.Instance["FileTransfer_VolumesDenied"],
             };
         }

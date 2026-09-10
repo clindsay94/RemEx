@@ -295,6 +295,89 @@ public sealed class ConsentRoutingTests : IDisposable
     }
 
     [Fact]
+    public async Task ADesktopPromptThatExpiresCarriesTheHostTimeoutReason()
+    {
+        // THE DESKTOP COUNTERPART TO ATimedOutPromptCarriesNoReasonCodeEither, and deliberately NOT a
+        // change to that test (RemEx-c7v4n). That one is the Phone route: the PHONE user did not
+        // answer their own prompt, and it must keep returning a bare null DenyReason unmodified.
+        //
+        // Full browse is what routes to Desktop (ConsentRoutePolicy.Route) even from a client that
+        // advertises phone-prompt support — full browse is authorised at the machine being handed
+        // out, not at whatever surface can render a sheet. Nobody answers the PC dialog here, so the
+        // 60s (shortened for the test) auto-deny fires, and this is the PC user's silence, not the
+        // phone's — which is why the reason names the HOST, not the client.
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions, TimeSpan.FromMilliseconds(200));
+        FileConsentPrompt? raised = null;
+        service.ConsentRequested += p => raised = p;
+        var request = new FileConsentRequest
+        {
+            ConsentId = Guid.NewGuid().ToString("N"),
+            Kind = FileConsentKinds.FullBrowse,
+        };
+
+        var decision = await service.RequestConsentAsync("phone-1", request, CancellationToken.None);
+
+        // The PC dialog was the one shown...
+        Assert.NotNull(raised);
+        Assert.Equal(request.ConsentId, raised!.Request.ConsentId);
+        // ...and nothing went to the phone, so the phone route's own test above is not accidentally
+        // exercised by this one too.
+        Assert.Empty(socket.Sent);
+
+        Assert.False(decision.Granted);
+        Assert.Equal(FileConsentDenyReasons.HostPromptTimedOut, decision.DenyReason);
+    }
+
+    [Fact]
+    public async Task ACallerCancelledDesktopRequestIsNotReportedAsAHostTimeout()
+    {
+        // THE OTHER HALF OF THE SAME catch (RemEx-c7v4n). RequestConsentAsync links the caller's
+        // token with the 60s auto-deny timer, so both a real timeout AND the caller giving up throw
+        // the identical OperationCanceledException out of WaitAsync. Reporting a caller cancellation
+        // as HostPromptTimedOut would tell whoever reads the decision that the PC prompt expired when
+        // in fact this end simply stopped waiting for its own reasons — a fabricated fact, the same
+        // category of bug this whole bead exists to fix in the other direction.
+        //
+        // A timeout far longer than the test needs to run proves the auto-deny clock did not win this
+        // race: only the caller's own cancellation can explain the result.
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions, TimeSpan.FromSeconds(30));
+        var request = new FileConsentRequest
+        {
+            ConsentId = Guid.NewGuid().ToString("N"),
+            Kind = FileConsentKinds.FullBrowse,
+        };
+
+        using var callerCts = new CancellationTokenSource();
+        callerCts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+        var decision = await service.RequestConsentAsync("phone-1", request, callerCts.Token);
+
+        // PINS THE ROUTE, NOT JUST THE OUTCOME (review). Granted=false/DenyReason=null hold
+        // identically on the Phone route, so without this the test would stay green even if
+        // ConsentRoutePolicy stopped sending FullBrowse to Desktop — and would no longer be
+        // exercising the ct-guard on the Desktop branch at all. Empty(socket.Sent) mirrors line 154's
+        // sibling assertion: the PC dialog fired and nothing went to the phone.
+        Assert.Empty(socket.Sent);
+
+        Assert.False(decision.Granted);
+        Assert.Null(decision.DenyReason);
+    }
+
+    [Fact]
     public async Task ThePhonesAnswerResolvesItsOwnPrompt()
     {
         var socket = new RecordingSocket();

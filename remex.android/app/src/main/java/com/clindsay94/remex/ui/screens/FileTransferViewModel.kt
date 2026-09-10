@@ -1768,6 +1768,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             // the rename result replaced by an answer to a question they stopped caring about.
             FileManagerLogic.VolumesOutcome.PHONE_UNREACHABLE ->
                 replaceRequestingVolumesStatus(R.string.file_manager_full_browse_unreachable)
+            // SAME STRING THE CLIENT-SIDE WAIT TIMEOUT ALREADY USES (RemEx-c7v4n): "Your PC didn't
+            // answer in time" is exactly true whether the phone gave up waiting or the host's own
+            // 60s auto-deny fired first and said so explicitly. Reusing it needed zero new strings.
+            FileManagerLogic.VolumesOutcome.HOST_PROMPT_TIMED_OUT ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_timed_out)
             FileManagerLogic.VolumesOutcome.REFUSED ->
                 replaceRequestingVolumesStatus(R.string.file_manager_full_browse_refused)
             FileManagerLogic.VolumesOutcome.GRANTED -> Unit

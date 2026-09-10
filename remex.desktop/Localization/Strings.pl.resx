@@ -2137,6 +2137,9 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
     <value>Nie można zapytać tego urządzenia — nie jest teraz połączone. Połącz je ponownie i spróbuj jeszcze raz.</value>
   </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>Monit na drugim urządzeniu nie doczekał się odpowiedzi na czas. Spróbuj ponownie.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Nie udało się wyświetlić listy dysków. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>

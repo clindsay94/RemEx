@@ -342,8 +342,9 @@ public sealed record FileVolumesResponse
     [JsonPropertyName("fullBrowseGranted")] public bool FullBrowseGranted { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
     /// <summary>
-    /// Why the host refused without anyone being asked, one of <see cref="FileConsentDenyReasons"/>,
-    /// or null when a person actually decided (RemEx-l580).
+    /// Why the host refused without a person answering — either nobody was asked, or the prompt
+    /// expired unanswered — one of <see cref="FileConsentDenyReasons"/>, or null when a person
+    /// actually decided (RemEx-l580, RemEx-c7v4n).
     /// </summary>
     /// <remarks>
     /// SEPARATE FROM <see cref="ErrorMessage"/> BECAUSE A DENY IS NOT AN ERROR. The desktop client
@@ -632,8 +633,9 @@ public sealed record FilePushResponse
     [JsonPropertyName("accepted")] public required bool Accepted { get; init; }
     [JsonPropertyName("transferIds")] public string[]? TransferIds { get; init; }
     /// <summary>
-    /// Why the receiver refused without anyone being asked, one of <see cref="FileConsentDenyReasons"/>,
-    /// or null when a person actually decided (RemEx-l580).
+    /// Why the receiver refused without a person answering — either nobody was asked, or the prompt
+    /// expired unanswered — one of <see cref="FileConsentDenyReasons"/>, or null when a person
+    /// actually decided (RemEx-l580, RemEx-c7v4n).
     /// </summary>
     [JsonPropertyName("denyReason")] public string? DenyReason { get; init; }
 }
@@ -711,8 +713,9 @@ public static class FileConsentKinds
 }
 
 /// <summary>
-/// Machine-readable reasons a consent-gated request was refused WITHOUT the user being asked
-/// (RemEx-l580). Carried on <see cref="FileVolumesResponse.DenyReason"/> and
+/// Machine-readable reasons a consent-gated request was refused without a person answering — either
+/// nobody was asked, or the prompt was shown and expired unanswered (RemEx-l580, RemEx-c7v4n).
+/// Carried on <see cref="FileVolumesResponse.DenyReason"/> and
 /// <see cref="FilePushResponse.DenyReason"/>.
 /// </summary>
 /// <remarks>
@@ -724,9 +727,13 @@ public static class FileConsentKinds
 /// localized on the phone.
 /// </para>
 /// <para>
-/// **NULL IS THE ANSWER FOR EVERY DENY SOMEBODY MADE**, including one that was delivered and timed
-/// out. That is what keeps a code meaningful: if every refusal carried one, a user who just tapped
-/// Deny would be told their PC could not reach them.
+/// **NULL IS STILL THE ANSWER FOR EVERY DENY SOMEBODY ACTUALLY MADE.** That is what keeps a code
+/// meaningful: if every refusal carried one, a user who just tapped Deny would be told their PC
+/// could not reach them. It is NOT the answer for every delivered-but-unanswered prompt any more —
+/// <see cref="HostPromptTimedOut"/> exists precisely for the Desktop route's timeout, where the
+/// prompt WAS shown to a person who did not answer it. The Phone route's own timeout is the one
+/// case still left at null (a pre-existing gap, not a decision — see remex.agent.tests's
+/// <c>ConsentRoutingTests.ATimedOutPromptCarriesNoReasonCodeEither</c>).
 /// </para>
 /// <para>
 /// ADDITIVE AND OPTIONAL, so no <c>protocolVersion</c> bump — same shape as
@@ -747,6 +754,22 @@ public static class FileConsentDenyReasons
     /// them would offer a client two branches it would have to write identically.
     /// </remarks>
     public const string ClientUnreachable = "client_unreachable";
+
+    /// <summary>
+    /// The prompt was put in front of a person on the Desktop consent route (remex.agent's
+    /// <c>ConsentRoute.Desktop</c> — the PC dialog) and nobody answered it before the host's auto-deny
+    /// timeout.
+    /// </summary>
+    /// <remarks>
+    /// NAMED FOR WHAT HAPPENED ON THE HOST, not for who is told about it (RemEx-c7v4n). The Desktop
+    /// route and the Phone route both time out into a bare <c>DenyReason: null</c> today, and a single
+    /// shared "timed out" code would be wrong for whichever route it was not measured on: applied to
+    /// the Phone route it would tell a phone user THEIR device timed out when in fact nobody touched
+    /// the PC. This value is set ONLY on the Desktop route's timeout. The Phone route's timeout is a
+    /// separate, deliberately out-of-scope gap — see remex.agent.tests's
+    /// <c>ConsentRoutingTests.ATimedOutPromptCarriesNoReasonCodeEither</c>.
+    /// </remarks>
+    public const string HostPromptTimedOut = "host_prompt_timed_out";
 }
 
 /// <summary>Numeric protocol limits shared by the PC host and Android mirror.</summary>

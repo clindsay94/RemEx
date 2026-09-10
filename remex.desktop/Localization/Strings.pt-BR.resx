@@ -2347,6 +2347,9 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
     <value>Não foi possível perguntar a esse dispositivo — ele não está conectado agora. Reconecte-o e tente novamente.</value>
   </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>O aviso do outro dispositivo não foi respondido a tempo. Tente novamente.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Não foi possível listar as unidades. Verifique se o dispositivo conectado continua pareado e tente novamente.</value>
   </data>

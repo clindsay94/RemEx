@@ -2307,6 +2307,9 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
     <value>Bu cihaza sorulamadı — şu anda bağlı değil. Yeniden bağlayıp tekrar deneyin.</value>
   </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>Karşı cihazdaki istem zamanında yanıtlanmadı. Tekrar deneyin.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Sürücüler listelenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
