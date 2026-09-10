@@ -326,7 +326,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left that message on screen indefinitely; there is now a client-side backstop sitting just behind
   the PC's own one-minute prompt expiry, and disconnecting ends the wait immediately rather than
   leaving it spinning. A late approval that lands after the backstop fires no longer leaves a
-  "didn't answer in time" message sitting above a list of drives that just loaded. (RemEx-c7v4n)
+  "didn't answer in time" message sitting above a list of drives that just loaded.
+
+  And walking away from the prompt no longer reads as refusing it. The PC's consent prompt gives up
+  after a minute, and that gave the asking device the same answer as a person actively saying no —
+  so leaving your desk for two minutes was reported as "Full-device browsing was declined." The two
+  are now told apart, on the phone and on a PC doing the asking: an unanswered prompt says the
+  prompt was not answered in time, and only a real refusal says it was declined. Only the PC-side
+  prompt is affected; a prompt shown on your phone that you leave unanswered is unchanged, because
+  there the person who did not answer is you. (RemEx-c7v4n)
 
 - Declining the PC's input-permission prompt on Linux no longer costs you a restart. The banner on
   your phone now has an "Ask again" button that makes the PC show the prompt a second time, so being
