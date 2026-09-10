@@ -42,7 +42,6 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.first
-import org.json.JSONObject
 
 data class WidgetRemoteCommand(val id: String, val titleRes: Int, val action: String)
 
@@ -165,7 +164,7 @@ private fun RemoteControlContent() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            context.getString(cmd.titleRes),
+                            WidgetText.ellipsize(context.getString(cmd.titleRes), WidgetText.ControlLabelBudget),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimaryContainer,
                                 fontSize = if (itemWidth >= 100.dp) 12.sp else 10.sp,
@@ -207,18 +206,19 @@ class RemoteCommandCallback : ActionCallback {
                 widgetToast(context, context.getString(R.string.widget_toast_set_mac))
                 return
             }
-            RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
+            // Handed over rather than awaited, like the commands below: this is inside a goAsync()
+            // broadcast window and the native wake now waits for the send (RemEx-52n0).
+            sendWidgetWake(mac, broadcast, 9)
             widgetToast(context, context.getString(R.string.widget_toast_wol_sent))
         } else {
             if (!RemexClientManager.isConnected.value) {
                 widgetToast(context, context.getString(R.string.widget_toast_not_connected))
                 return
             }
-            val request = JSONObject().apply {
-                put("action", action)
-                put("parameters", JSONObject())
-            }
-            RemexCoreClient.SendCommand(request.toString()).getOrNull()
+            // Handed over rather than awaited: this runs inside a goAsync() broadcast window, and
+            // SendCommand now waits for the PC's answer on a ten-second budget — the same order of
+            // magnitude as the window it would have to fit inside (RemEx-66rf).
+            sendWidgetCommand(action)
             widgetToast(context, context.getString(R.string.widget_toast_command_sent, title))
         }
     }

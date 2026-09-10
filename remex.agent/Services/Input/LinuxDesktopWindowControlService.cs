@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -123,7 +124,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
                         return FailedAction(action, "Resize requires both width and height.");
                     }
 
-                    RunWindowCommand("windowsize", action.WindowId, action.Width.Value.ToString(), action.Height.Value.ToString());
+                    RunWindowCommand("windowsize", action.WindowId, Arg(action.Width.Value), Arg(action.Height.Value));
                     break;
 
                 case DesktopWindowActionTypes.MoveToDesktop:
@@ -132,7 +133,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
                         return FailedAction(action, "Move-to-desktop requires a desktop number.");
                     }
 
-                    RunWindowCommand("set_desktop_for_window", action.WindowId, action.DesktopNumber.Value.ToString());
+                    RunWindowCommand("set_desktop_for_window", action.WindowId, Arg(action.DesktopNumber.Value));
                     break;
 
                 default:
@@ -163,6 +164,63 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
         }
     }
 
+    /// <summary>
+    /// Formats a number for an xdotool/kdotool argument list, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// Same rule and same reason as <c>LinuxInputSimulationService.Arg</c> (RemEx-hbma):
+    /// <c>NumberFormatInfo.NegativeSign</c> is culture-dependent, and sv-SE, lt-LT and fi-FI all
+    /// define it as U+2212 MINUS SIGN, which xdotool cannot parse. Not hypothetical here —
+    /// <c>Width</c>, <c>Height</c> and <c>DesktopNumber</c> are unvalidated <c>int?</c> on
+    /// <c>DesktopWindowAction</c> and arrive straight off the <c>/ws</c> socket, with only HasValue
+    /// checks between them and this call, so a negative reaches the argument list without anything
+    /// having to go wrong first. The search limit is clamped to 1..100 and so cannot; it goes
+    /// through the same helper because one rule with no exceptions is what keeps the negative cases
+    /// safe by construction rather than by anyone remembering which values can go negative.
+    /// <para>
+    /// This file was outside the sweep the bead described — it names the input service and "the
+    /// Windows/router equivalents" — and was found by a reviewer asked whether the sweep was
+    /// complete rather than whether the named files were done.
+    /// </para>
+    /// </remarks>
+    internal static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Reads a number out of xdotool/kdotool output, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE MIRROR IMAGE OF <see cref="Arg"/>, AND IT BREAKS A DIFFERENT SET OF LOCALES (RemEx-j7el).
+    /// <c>int.TryParse</c> without a provider uses <c>CurrentCulture</c>, and a culture whose
+    /// <c>NegativeSign</c> is not the ASCII hyphen rejects the hyphen xdotool actually emits. Measured
+    /// across all 890 runtime cultures: parsing <c>"1920"</c> fails in none, parsing <c>"-1920"</c>
+    /// fails in 57 — the ar, ckb, fa, he, ks, lrc, mzn, pa, ps, sd, ur and uz families.
+    /// </para>
+    /// <para>
+    /// THOSE 57 ARE A SUBSET OF THE 95 THAT BREAK WHEN FORMATTING, not a disjoint set, and a first
+    /// draft of this comment said the opposite. It cannot be disjoint: rejecting <c>"-1920"</c>
+    /// requires <c>NegativeSign</c> to differ from the ASCII hyphen, which is the same condition that
+    /// makes formatting differ. Measured — overlap 57, format-only 38.
+    /// </para>
+    /// <para>
+    /// The 38 are the reason this still needed its own fix. They use U+2212, so they PRODUCE an
+    /// unparseable argument but READ an ASCII hyphen back without complaint, because .NET accepts
+    /// both where <c>NegativeSign</c> is U+2212. So fixing the formatting direction leaves parsing
+    /// broken on 57 cultures and repairs nothing on the parse side at all: the two are the same
+    /// condition seen from opposite ends, not the same bug.
+    /// </para>
+    /// <para>
+    /// The values that can actually be negative are window X and Y: a window on a monitor left of or
+    /// above the primary has a negative origin, the same case RemEx-r29r existed for. On an affected
+    /// host the parse silently returned null and geometry simply went missing, with no error anywhere.
+    /// Desktop indices, PIDs and counts cannot be negative and go through this anyway, for the reason
+    /// the formatting side does: one rule with no exceptions is what keeps the negative cases safe by
+    /// construction rather than by anyone remembering which values can go negative.
+    /// </para>
+    /// </remarks>
+    internal static bool TryParse(string? text, out int value) =>
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+
     private DesktopWindowResult FailedAction(DesktopWindowAction action, string errorText) => new()
     {
         RequestId = action.RequestId,
@@ -180,7 +238,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
 
         if (_backendStatus.WindowControlTool == LinuxDesktopTool.Kdotool)
         {
-            arguments.AddRange(["-l", limit.ToString()]);
+            arguments.AddRange(["-l", Arg(limit)]);
             if (!query.IncludeAllDesktops)
             {
                 var currentDesktop = GetSingleValue("get_desktop");
@@ -192,7 +250,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
         }
         else
         {
-            arguments.AddRange(["--limit", limit.ToString()]);
+            arguments.AddRange(["--limit", Arg(limit)]);
             if (!query.IncludeAllDesktops)
             {
                 var currentDesktop = GetSingleValue("get_desktop");
@@ -252,10 +310,10 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
                 shellPairs.TryGetValue("Y", out var yText) &&
                 shellPairs.TryGetValue("WIDTH", out var widthText) &&
                 shellPairs.TryGetValue("HEIGHT", out var heightText) &&
-                int.TryParse(xText, out var x) &&
-                int.TryParse(yText, out var y) &&
-                int.TryParse(widthText, out var width) &&
-                int.TryParse(heightText, out var height))
+                TryParse(xText, out var x) &&
+                TryParse(yText, out var y) &&
+                TryParse(widthText, out var width) &&
+                TryParse(heightText, out var height))
             {
                 return (x, y, width, height);
             }
@@ -263,10 +321,10 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
             var regex = new Regex(@"x\s*[:=]\s*(-?\d+).*?y\s*[:=]\s*(-?\d+).*?width\s*[:=]\s*(\d+).*?height\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             var match = regex.Match(output);
             if (match.Success &&
-                int.TryParse(match.Groups[1].Value, out x) &&
-                int.TryParse(match.Groups[2].Value, out y) &&
-                int.TryParse(match.Groups[3].Value, out width) &&
-                int.TryParse(match.Groups[4].Value, out height))
+                TryParse(match.Groups[1].Value, out x) &&
+                TryParse(match.Groups[2].Value, out y) &&
+                TryParse(match.Groups[3].Value, out width) &&
+                TryParse(match.Groups[4].Value, out height))
             {
                 return (x, y, width, height);
             }
@@ -349,7 +407,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
             .ToList();
 
     private static int? TryParseInt(string? value)
-        => int.TryParse(value, out var parsed) ? parsed : null;
+        => TryParse(value, out var parsed) ? parsed : null;
 
     private static Dictionary<string, string> ParseShellPairs(string output)
     {

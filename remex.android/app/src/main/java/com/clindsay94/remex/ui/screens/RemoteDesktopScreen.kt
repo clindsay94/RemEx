@@ -38,9 +38,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -83,7 +87,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 private const val TAG = "RemoteDesktopScreen"
@@ -92,6 +99,29 @@ private const val TAG = "RemoteDesktopScreen"
 // provably consistent rather than relying on repeated inline literals.
 private val FullscreenOverlayEdgePadding = 16.dp
 private val FullscreenOverlayIconSpacing = 8.dp
+
+// How far the screenshot confirmation lifts itself when the PC-keys lane is showing (RemEx-byij).
+// Both are anchored to the bottom of the video box, and the lane carries the modifier latch states —
+// covering those with a transient message would read as Ctrl/Alt/Shift having come unstuck.
+private val PcKeysLaneClearance = 72.dp
+
+/**
+ * Vertical space the input-unavailable banner leaves for the fullscreen action row above it
+ * (RemEx-iaxc).
+ *
+ * One 48dp icon button plus its 16dp band. The banner is declared after that row in the same Box, so
+ * it would otherwise paint over the toolbar — and being persistent, it would cover Stop for the rest
+ * of the session.
+ */
+private val InputWarningTopClearance = 64.dp
+
+/**
+ * Extra lift for the "asked your PC again" pill, above the screenshot confirmation it shares a
+ * BottomCenter anchor with (RemEx-5bwpv). The two are independent, user-triggered, and both
+ * transient (~4-5s), so nothing stops a screenshot tap and a retry tap landing in the same window —
+ * stacking them deterministically beats letting their text overlap.
+ */
+private val InputRetryNoticeBottomClearance = 56.dp
 
 // Gesture timing thresholds (ms)
 private const val TAP_MAX_DURATION_MS = 250L
@@ -111,6 +141,20 @@ private const val INERTIA_FRAME_MS = 16L // ~60fps
 
 // Throttle interval for move events
 private const val MOVE_THROTTLE_MS = 33L // ~30Hz
+
+/**
+ * The four inputs pan-follow reacts to, combined so ONE collector can watch them all.
+ *
+ * Exists because the alternative is a `LaunchedEffect` keyed on the cursor position, which the host
+ * streams 60-90 times a second — so the effect was torn down and relaunched on every packet
+ * (RemEx-zc9r).
+ */
+private data class PanFollowInput(
+        val cursorX: Float,
+        val cursorY: Float,
+        val cursorVisible: Boolean,
+        val zoom: Float,
+)
 
 /** Stores context about the last completed tap for double-tap detection. */
 private data class TapContext(
@@ -132,8 +176,6 @@ data class RemoteDesktopUiState(
         val vScrollSensitivity: Float = 1.0f,
         val hScrollSensitivity: Float = 1.0f,
         val cursorScale: Float = 1.0f,
-        val hostCursorX: Float = -1f,
-        val hostCursorY: Float = -1f,
         val hostCursorVisible: Boolean = false,
         val cursorBitmap: ImageBitmap? = null,
         val cursorHotspotX: Int = 0,
@@ -145,6 +187,26 @@ data class RemoteDesktopUiState(
         // immediate rotation to landscape on tap, before the stream is actually up.
         val streamRequested: Boolean = false
 )
+
+/**
+ * Whether the idle screen offers its start action (RemEx-5k4dd).
+ *
+ * **AN ERROR IS A DIFFERENT STATE FROM AN UNSUPPORTED HOST**, and conflating them is what made this
+ * screen a dead end. Hiding the action on a host that genuinely cannot stream is right. Hiding it
+ * when a stream FAILED left the user with an error message under a monitor icon and nothing to
+ * press, because several failure paths also clear the capability flag - so the one thing they would
+ * naturally try was the one thing not offered.
+ *
+ * Extracted rather than left inline because the interesting part is the truth table, and the case
+ * that must NOT regress - an unsupported host with no error, still hidden - is invisible in a
+ * composable and provable here.
+ */
+internal fun shouldOfferStartAction(
+    isStreaming: Boolean,
+    supportsRemoteDesktop: Boolean,
+    hasError: Boolean
+): Boolean = !isStreaming && (supportsRemoteDesktop || hasError)
+
 
 // Workaround: calling AnimatedVisibility inside a Box that lives inside a Column
 // causes Kotlin overload resolution to bind to ColumnScope.AnimatedVisibility, which
@@ -203,7 +265,8 @@ private fun SettingSlider(
                 Text(
                         label,
                         style = MaterialTheme.typography.bodyMediumEmphasized,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                 )
                 Slider(
                         value = value,
@@ -241,8 +304,7 @@ private fun SettingsPair(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
-        val currentFrame by viewModel.currentFrame.collectAsStateWithLifecycle()
-        val currentBitmap = currentFrame?.bitmap
+        val currentBitmap by viewModel.currentBitmap.collectAsStateWithLifecycle()
         val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
         val capabilityState by viewModel.capabilityState.collectAsStateWithLifecycle()
         val desktopError by viewModel.desktopError.collectAsStateWithLifecycle()
@@ -252,8 +314,6 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsStateWithLifecycle()
         val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsStateWithLifecycle()
         val cursorScale by viewModel.cursorScale.collectAsStateWithLifecycle()
-        val hostCursorX by viewModel.hostCursorX.collectAsStateWithLifecycle()
-        val hostCursorY by viewModel.hostCursorY.collectAsStateWithLifecycle()
         val hostCursorVisible by viewModel.hostCursorVisible.collectAsStateWithLifecycle()
         val cursorBitmap by viewModel.cursorShapeBitmap.collectAsStateWithLifecycle()
         val cursorHotspotX by viewModel.cursorHotspotX.collectAsStateWithLifecycle()
@@ -269,6 +329,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsStateWithLifecycle()
         val modifierStates by viewModel.modifierStates.collectAsStateWithLifecycle()
         val hasShownUnlimitedWarning by viewModel.hasShownUnlimitedWarning.collectAsStateWithLifecycle()
+        val screenshotStatus by viewModel.screenshotStatus.collectAsStateWithLifecycle()
+        val inputUnavailable by viewModel.inputUnavailable.collectAsStateWithLifecycle()
+        val inputRetryNotice by viewModel.inputRetryNotice.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -289,8 +352,6 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         vScrollSensitivity = vScrollSensitivity,
                         hScrollSensitivity = hScrollSensitivity,
                         cursorScale = cursorScale,
-                        hostCursorX = hostCursorX,
-                        hostCursorY = hostCursorY,
                         hostCursorVisible = hostCursorVisible,
                         cursorBitmap = cursorBitmap,
                         cursorHotspotX = cursorHotspotX,
@@ -303,6 +364,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
         RemoteDesktopScreenContent(
                 uiState = uiState,
+                // Passed as a Flow, not collected here: collecting would put the position back into
+                // composition, which is exactly what RemEx-zc9r removed.
+                hostCursor = viewModel.hostCursor,
                 currentBitmap = currentBitmap,
                 config = config,
                 onSetFullscreen = { isFullscreen = it },
@@ -351,10 +415,15 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 },
                 getHostScreenSize = { viewModel.getHostScreenSize() },
                 getHostDesktopOffset = { viewModel.getHostDesktopOffset() },
-                currentFrameTimestamp = currentFrame?.timestamp,
+                frameTick = viewModel.frameTick,
                 fps = fps,
                 showFpsOverlay = showFpsOverlay,
                 onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
+                screenshotStatus = screenshotStatus,
+                inputUnavailable = inputUnavailable,
+                inputRetryNotice = inputRetryNotice,
+                onTakeScreenshot = { viewModel.takeScreenshot() },
+                onRetryInputPermission = { viewModel.retryInputPermission() },
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
@@ -370,6 +439,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 @Composable
 fun RemoteDesktopScreenContent(
         uiState: RemoteDesktopUiState,
+        /**
+         * The host cursor position, as a STREAM rather than as state.
+         *
+         * Deliberately not part of [uiState]: the host sends 60-90 of these a second, and anything in
+         * uiState recomposes this whole screen on every one. A Flow parameter is stable, so emissions
+         * reach the one collector that wants them and nothing else notices (RemEx-zc9r).
+         */
+        hostCursor: kotlinx.coroutines.flow.Flow<HostCursorSample>,
         currentBitmap: android.graphics.Bitmap?,
         config: RemoteDesktopConfigState,
         onSetFullscreen: (Boolean) -> Unit,
@@ -410,10 +487,18 @@ fun RemoteDesktopScreenContent(
         onMoveWindowToDesktop: (String, Int) -> Unit,
         getHostScreenSize: () -> Pair<Int, Int>,
         getHostDesktopOffset: () -> Pair<Int, Int> = { Pair(0, 0) },
-        currentFrameTimestamp: Long?,
+        frameTick: androidx.compose.runtime.LongState,
         fps: Float = 0f,
         showFpsOverlay: Boolean = false,
         onToggleFpsOverlay: () -> Unit = {},
+        screenshotStatus: String? = null,
+        /** Non-null while the PC is discarding our input but still streaming video (RemEx-iaxc). */
+        inputUnavailable: String? = null,
+        /** Transient "asked your PC again" confirmation after [onRetryInputPermission] (RemEx-5bwpv). */
+        inputRetryNotice: String? = null,
+        onTakeScreenshot: () -> Unit = {},
+        /** User-initiated re-ask of the PC's input-permission prompt (RemEx-5bwpv). */
+        onRetryInputPermission: () -> Unit = {},
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
@@ -427,6 +512,22 @@ fun RemoteDesktopScreenContent(
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
         val view = LocalView.current
+
+        // Last non-null screenshot outcome, kept so the status pill still has words to show while it
+        // fades out. Binding the Text to [screenshotStatus] directly would empty it the moment the
+        // ViewModel cleared the flow, and the fade would play on a blank pill (RemEx-byij).
+        var lastScreenshotStatus by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(screenshotStatus) {
+                if (screenshotStatus != null) lastScreenshotStatus = screenshotStatus
+        }
+
+        // Same pattern, same reason, for the "asked your PC again" pill (RemEx-5bwpv): binding the
+        // Text to [inputRetryNotice] directly would blank it the instant the ViewModel clears the
+        // flow, and the fade would play on an empty pill.
+        var lastInputRetryNotice by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(inputRetryNotice) {
+                if (inputRetryNotice != null) lastInputRetryNotice = inputRetryNotice
+        }
 
         var showSettings by remember { mutableStateOf(false) }
         // Skip the half-expanded state: in landscape the partial sheet is too short to reveal the
@@ -635,59 +736,100 @@ fun RemoteDesktopScreenContent(
         // Smooth the remote cursor: the host streams its position at a limited rate, so animate the
         // overlay toward each new position (critically-damped spring) instead of stepping to it.
         // Snap on (re)appearance / display switch so the cursor doesn't slide across the whole screen.
+        // rememberUpdatedState because the effects below are keyed on Unit and therefore keep their
+        // FIRST-composition lambda forever. mapHostToLocal closes over streamPixelWidth/Height and
+        // currentBitmap, which are plain composable PARAMETERS captured by value — at first
+        // composition 0/0/null, so contentRect() would fall back to a hardcoded 1920x1080 aspect for
+        // the life of the screen and pan-follow would mis-map on every non-16:9 stream, silently and
+        // permanently. The old keyed effect hid this by rebuilding the closure on every packet; that
+        // accidental refresh is exactly what removing the restart took away. (RemEx-zc9r)
+        val currentMapHostToLocal by rememberUpdatedState<(Float, Float) -> Offset?> { hx, hy ->
+            mapHostToLocal(hx, hy, coerce = false)
+        }
+        val currentDensity by rememberUpdatedState(density)
+
         val animatedCursorX = remember { Animatable(0f) }
         val animatedCursorY = remember { Animatable(0f) }
         var cursorWasVisible by remember { mutableStateOf(false) }
-        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible) {
-            if (!uiState.hostCursorVisible) {
-                cursorWasVisible = false
-                return@LaunchedEffect
-            }
-            if (!cursorWasVisible) {
-                cursorWasVisible = true
-                animatedCursorX.snapTo(uiState.hostCursorX)
-                animatedCursorY.snapTo(uiState.hostCursorY)
-                return@LaunchedEffect
-            }
-            val spec = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
-            launch { animatedCursorX.animateTo(uiState.hostCursorX, spec) }
-            launch { animatedCursorY.animateTo(uiState.hostCursorY, spec) }
+        // KEYED ON Unit, NOT ON THE CURSOR. The host streams a position 60-90 times a second, and a
+        // keyed effect is torn down and relaunched on every one of them — hundreds of coroutine
+        // starts per second, on the main thread, stacked on top of frame delivery. collectLatest
+        // reproduces the keyed behaviour exactly (a new position cancels the in-flight block and its
+        // children) without the effect itself churning. Reading the flows directly rather than
+        // through uiState is the other half: it keeps the raw coordinates out of composition, so a
+        // cursor packet no longer recomposes this whole screen. (RemEx-zc9r)
+        LaunchedEffect(Unit) {
+            hostCursor
+                    .collectLatest { (x, y, visible) ->
+                        if (!visible) {
+                            cursorWasVisible = false
+                            return@collectLatest
+                        }
+                        if (!cursorWasVisible) {
+                            cursorWasVisible = true
+                            animatedCursorX.snapTo(x)
+                            animatedCursorY.snapTo(y)
+                            return@collectLatest
+                        }
+                        val spec = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
+                        // coroutineScope, and it is load-bearing: collectLatest's action has NO
+                        // CoroutineScope receiver, so a bare `launch` here would bind to the
+                        // LaunchedEffect's own scope. The action would then complete immediately with
+                        // no children, collectLatest would have nothing to cancel, and the
+                        // cancel-and-retarget behaviour claimed above would not exist — leaving
+                        // correctness resting on Animatable's internal mutex instead of structured
+                        // concurrency. This suspends until both finish, so the launches are children
+                        // of the action and a new position genuinely cancels them.
+                        coroutineScope {
+                            launch { animatedCursorX.animateTo(x, spec) }
+                            launch { animatedCursorY.animateTo(y, spec) }
+                        }
+                    }
         }
 
         // Pan-follow: when zoomed, keep the streamed host cursor on screen by panning the view
         // toward it (edge-triggered via a deadzone), animated so it glides. Re-runs whenever the
         // host cursor moves; each run cancels the previous animation and re-targets.
-        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible, zoomFactor) {
-            if (zoomFactor <= 1f) return@LaunchedEffect
-            // Don't chase a cursor that isn't on the streamed display — its coords are last-known/stale.
-            if (!uiState.hostCursorVisible) return@LaunchedEffect
-            if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@LaunchedEffect
-            if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
-            val local = mapHostToLocal(uiState.hostCursorX, uiState.hostCursorY, coerce = false)
-                ?: return@LaunchedEffect
-            val (targetX, targetY) = PanFollowCalculator.compute(
-                cursorLocalX = local.x,
-                cursorLocalY = local.y,
-                panX = panOffsetX,
-                panY = panOffsetY,
-                zoom = zoomFactor,
-                imageWidth = imageSize.width.toFloat(),
-                imageHeight = imageSize.height.toFloat(),
-            )
-            // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
-            // compute() returns the same clamped target every tick; this skip prevents the
-            // animation from restarting forever. Do not remove.
-            // RD-A2: density-scaled (was a hardcoded 0.5f → sub-pixel on high-DPI panels, causing jitter
-            // at high zoom). ~0.75dp is a stable deadband across densities.
-            val panFollowEpsilonPx = with(density) { 0.75.dp.toPx() }
-            if (abs(targetX - panOffsetX) < panFollowEpsilonPx && abs(targetY - panOffsetY) < panFollowEpsilonPx) {
-                return@LaunchedEffect
-            }
-            val startX = panOffsetX
-            val startY = panOffsetY
-            animate(0f, 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { t, _ ->
-                panOffsetX = startX + (targetX - startX) * t
-                panOffsetY = startY + (targetY - startY) * t
+        // Same treatment, and zoomFactor stays a trigger via snapshotFlow so zooming still re-runs
+        // the follow even when the cursor has not moved. collectLatest preserves the
+        // cancel-and-retarget semantics the keyed effect had. (RemEx-zc9r)
+        LaunchedEffect(Unit) {
+            val panFollowInputs =
+                    combine(hostCursor, snapshotFlow { zoomFactor }) { c, zoom ->
+                        PanFollowInput(c.x, c.y, c.visible, zoom)
+                    }
+            panFollowInputs.collectLatest { (cursorX, cursorY, cursorVisible, zoom) ->
+                if (zoom <= 1f) return@collectLatest
+                // Don't chase a cursor that isn't on the streamed display — its coords are last-known/stale.
+                if (!cursorVisible) return@collectLatest
+                if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@collectLatest
+                if (imageSize.width == 0 || imageSize.height == 0) return@collectLatest
+                val local = currentMapHostToLocal(cursorX, cursorY)
+                    ?: return@collectLatest
+                val (targetX, targetY) = PanFollowCalculator.compute(
+                    cursorLocalX = local.x,
+                    cursorLocalY = local.y,
+                    panX = panOffsetX,
+                    panY = panOffsetY,
+                    zoom = zoom,
+                    imageWidth = imageSize.width.toFloat(),
+                    imageHeight = imageSize.height.toFloat(),
+                )
+                // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
+                // compute() returns the same clamped target every tick; this skip prevents the
+                // animation from restarting forever. Do not remove.
+                // RD-A2: density-scaled (was a hardcoded 0.5f → sub-pixel on high-DPI panels, causing jitter
+                // at high zoom). ~0.75dp is a stable deadband across densities.
+                val panFollowEpsilonPx = with(currentDensity) { 0.75.dp.toPx() }
+                if (abs(targetX - panOffsetX) < panFollowEpsilonPx && abs(targetY - panOffsetY) < panFollowEpsilonPx) {
+                    return@collectLatest
+                }
+                val startX = panOffsetX
+                val startY = panOffsetY
+                animate(0f, 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { t, _ ->
+                    panOffsetX = startX + (targetX - startX) * t
+                    panOffsetY = startY + (targetY - startY) * t
+                }
             }
         }
 
@@ -792,6 +934,21 @@ fun RemoteDesktopScreenContent(
                                                                                 stringResource(
                                                                                         R.string
                                                                                                 .cd_reset_input
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                // Mirrored into the fullscreen control row in the same
+                                                // slot, keeping the shared action order both bars are
+                                                // required to agree on (RemEx-klq).
+                                                RemexTooltip(stringResource(R.string.action_take_screenshot)) {
+                                                        IconButton(onClick = { onTakeScreenshot() }) {
+                                                                Icon(
+                                                                        Icons.Default.ScreenshotMonitor,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .action_take_screenshot
                                                                                 )
                                                                 )
                                                         }
@@ -1134,15 +1291,6 @@ fun RemoteDesktopScreenContent(
                                                         if (!uiState.isStreaming)
                                                                 return@pointerInput
 
-                                                }
-                                                .pointerInput(
-                                                        uiState.isStreaming,
-                                                        inputResetTrigger,
-                                                        uiState.directTouch
-                                                ) {
-                                                        if (!uiState.isStreaming)
-                                                                return@pointerInput
-
                                                         awaitPointerEventScope {
                                                                 // ── Persistent gesture state ──
                                                                 var primaryPointerId: PointerId? =
@@ -1158,7 +1306,7 @@ fun RemoteDesktopScreenContent(
                                                                         false // true once mouseDown
                                                                 // has been sent
                                                                 var dragButton =
-                                                                        0 // which mouse button is
+                                                                        MouseButtons.LEFT // which mouse button is
                                                                 // held
                                                                 var hasMovedBeyondSlop = false
                                                                 var multiTouchActive =
@@ -1227,7 +1375,7 @@ fun RemoteDesktopScreenContent(
                                                                                         dragButton
                                                                                 )
                                                                                 isDragging = false
-                                                                                dragButton = 0
+                                                                                dragButton = MouseButtons.LEFT
                                                                         }
                                                                 }
 
@@ -1698,14 +1846,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPress?.let {
                                                                                                                                 onSendMouseDown(
-                                                                                                                                        0,
+                                                                                                                                        MouseButtons.LEFT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseDown(
-                                                                                                                                0,
+                                                                                                                                MouseButtons.LEFT,
                                                                                                                                 null,
                                                                                                                                 null
                                                                                                                         )
@@ -1713,7 +1861,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                                 isDoubleTapHoldArmed =
                                                                                                                         false
                                                                                                                 lastTap =
@@ -1727,14 +1875,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                 // now that user has started
                                                                                                                 // moving after 500ms hold
                                                                                                                 onSendMouseDown(
-                                                                                                                        0,
+                                                                                                                        MouseButtons.LEFT,
                                                                                                                         null,
                                                                                                                         null
                                                                                                                 )
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                                 longPressArmed =
                                                                                                                         false
                                                                                                         } else if (!isDragging &&
@@ -1749,7 +1897,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         )
                                                                                                                 hostPress?.let {
                                                                                                                         onSendMouseDown(
-                                                                                                                                0,
+                                                                                                                                MouseButtons.LEFT,
                                                                                                                                 it.x.toInt(),
                                                                                                                                 it.y.toInt()
                                                                                                                         )
@@ -1757,7 +1905,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                         }
                                                                                                         // Trackpad (relative, no
                                                                                                         // long-press, no double-tap): just
@@ -1847,7 +1995,7 @@ fun RemoteDesktopScreenContent(
                                                                                                         isDragging =
                                                                                                                 false
                                                                                                         dragButton =
-                                                                                                                0
+                                                                                                                MouseButtons.LEFT
                                                                                                 } else if (!hasMovedBeyondSlop
                                                                                                 ) {
                                                                                                         // Tap gesture (no significant
@@ -1864,14 +2012,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPos?.let {
                                                                                                                                 onSendMouseAbsoluteClick(
-                                                                                                                                        0,
+                                                                                                                                        MouseButtons.LEFT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
-                                                                                                                                0
+                                                                                                                                MouseButtons.LEFT
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =
@@ -1892,14 +2040,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPos?.let {
                                                                                                                                 onSendMouseAbsoluteClick(
-                                                                                                                                        2,
+                                                                                                                                        MouseButtons.RIGHT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
-                                                                                                                                2
+                                                                                                                                MouseButtons.RIGHT
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =
@@ -2135,7 +2283,7 @@ fun RemoteDesktopScreenContent(
                                         } else {
                                                 if (safeFrame != null && !safeFrame.isRecycled) {
                                                         // RemEx-ki0t: this used to be
-                                                        // key(currentFrameTimestamp) { Image(...) }, which forced
+                                                        // key(<per-frame timestamp>) { Image(...) }, which forced
                                                         // Compose to tear down and rebuild the ENTIRE Image node
                                                         // (layout + graphicsLayer + modifier chain) on every
                                                         // incoming MJPEG frame just to force a redraw. A Canvas
@@ -2149,6 +2297,18 @@ fun RemoteDesktopScreenContent(
                                                         // is actually drawn.
                                                         val frameDescription =
                                                                 stringResource(R.string.cd_remote_desktop_frame)
+                                                        // One wrapper per bitmap INSTANCE, not per
+                                                        // frame. inBitmap reuse means this instance
+                                                        // is stable across frames and only changes
+                                                        // when the geometry does, so the allocation
+                                                        // was pure churn. Pixels are read live from
+                                                        // the underlying Bitmap at draw time, so a
+                                                        // cached wrapper still shows new content.
+                                                        // (RemEx-9esj)
+                                                        val frameImage =
+                                                                remember(safeFrame) {
+                                                                        safeFrame.asImageBitmap()
+                                                                }
                                                         Canvas(
                                                                 modifier =
                                                                         Modifier.fillMaxSize()
@@ -2163,10 +2323,21 @@ fun RemoteDesktopScreenContent(
                                                                                         translationY = panOffsetY
                                                                                 }
                                                         ) {
+                                                                // THE REPAINT TRIGGER. Read here and
+                                                                // nowhere else: a snapshot read in a
+                                                                // draw lambda invalidates only the
+                                                                // draw phase, so a new frame repaints
+                                                                // without recomposing or re-laying
+                                                                // out anything. Nothing else this
+                                                                // lambda reads changes between frames
+                                                                // — the bitmap instance is reused in
+                                                                // place — so removing this read
+                                                                // freezes the picture. (RemEx-9esj)
+                                                                frameTick.longValue
                                                                 val rect = contentRect()
                                                                 if (rect.w > 0f && rect.h > 0f) {
                                                                         drawImage(
-                                                                                image = safeFrame.asImageBitmap(),
+                                                                                image = frameImage,
                                                                                 dstOffset =
                                                                                         IntOffset(
                                                                                                 rect.x.roundToInt(),
@@ -2189,7 +2360,8 @@ fun RemoteDesktopScreenContent(
                                         // its mapped on-screen position, so the user can see exactly
                                         // where they're pointing. Uses the same content rect as input
                                         // mapping, so the arrow, the video, and where clicks land all
-                                        // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
+                                        // agree. The cursor position is streamed rather than held in
+                                        // uiState (RemEx-zc9r); -1 = none yet.
                                         // RD-B: gate the overlay on visibility in COMPOSITION (changes rarely),
                                         // but read the ANIMATED cursor position + pan/zoom inside the Canvas DRAW
                                         // scope below, so the per-frame cursor animation invalidates only the draw
@@ -2311,9 +2483,29 @@ fun RemoteDesktopScreenContent(
                                                                         .onSurfaceVariant,
                                                         style = MaterialTheme.typography.bodyLarge
                                                 )
-                                                if (!uiState.isStreaming &&
-                                                                uiState.capabilityState
-                                                                        .supportsRemoteDesktop
+                                                // AN ERROR IS A DIFFERENT STATE FROM AN UNSUPPORTED
+                                                // HOST (RemEx-5k4dd). Hiding this on a host that
+                                                // genuinely cannot stream is right; hiding it when a
+                                                // stream FAILED left the user with an error message
+                                                // under a monitor icon and nothing to press, because
+                                                // several failure paths also clear the capability
+                                                // flag. The screen became a dead end reachable by
+                                                // ordinary failure, with backing out to reconnect the
+                                                // only way forward.
+                                                //
+                                                // The label still reads "start streaming" and that is
+                                                // accurate - it does. Turning it into a cause-aware
+                                                // "Retry" belongs with the guidance work on
+                                                // RemEx-9wyu, where it would sit beside a message
+                                                // explaining what failed rather than under a raw
+                                                // native error string.
+                                                if (shouldOfferStartAction(
+                                                                isStreaming = uiState.isStreaming,
+                                                                supportsRemoteDesktop =
+                                                                        uiState.capabilityState
+                                                                                .supportsRemoteDesktop,
+                                                                hasError = uiState.desktopError != null
+                                                        )
                                                 ) {
                                                         Spacer(modifier = Modifier.height(16.dp))
                                                         FilledTonalButton(
@@ -2389,9 +2581,9 @@ fun RemoteDesktopScreenContent(
 
                                 if (uiState.isFullscreen) {
                                         // Action order mirrors the windowed TopAppBar (Keyboard, PC-keys,
-                                        // Settings, fullscreen-toggle, Stop/Play) for the actions both
-                                        // surfaces share; FPS is fullscreen-only and slotted in without
-                                        // disturbing that shared relative order (RemEx-klq).
+                                        // Screenshot, Settings, fullscreen-toggle, Stop/Play) for the
+                                        // actions both surfaces share; FPS is fullscreen-only and slotted
+                                        // in without disturbing that shared relative order (RemEx-klq).
                                         Row(
                                                 modifier =
                                                         Modifier.align(Alignment.TopEnd)
@@ -2450,6 +2642,32 @@ fun RemoteDesktopScreenContent(
                                                                         contentDescription =
                                                                                 stringResource(
                                                                                         R.string.remote_desktop_fps_overlay_btn
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                // Same slot as in the windowed TopAppBar, preserving the
+                                                // shared action order (RemEx-klq). Worth having here in
+                                                // particular: fullscreen is where the PC's screen is
+                                                // actually being watched.
+                                                RemexTooltip(stringResource(R.string.action_take_screenshot)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onTakeScreenshot() },
+                                                                colors =
+                                                                        IconButtonDefaults
+                                                                                .filledTonalIconButtonColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .surfaceContainerHighest
+                                                                                )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.ScreenshotMonitor,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .action_take_screenshot
                                                                                 )
                                                                 )
                                                         }
@@ -2629,6 +2847,237 @@ fun RemoteDesktopScreenContent(
                                                         onPillSizeChanged = {
                                                                 pcKeysPillSize = it
                                                         }
+                                                )
+                                        }
+                                }
+
+                                // Screenshot outcome (RemEx-byij). LAST CHILD OF THIS BOX ON PURPOSE.
+                                // A Box paints its children in source order, and the PC-keys lane just
+                                // above also anchors BottomCenter — emitted any earlier, this
+                                // confirmation is painted over by it. That is not a rare collision: the
+                                // lane shows whenever the PC-keys bar is on OR the remote keyboard is
+                                // open, and the PC-keys toggle sits in the very control row the
+                                // screenshot button was added to.
+                                //
+                                // Bottom rather than top because in fullscreen the top edge already
+                                // carries the FPS chip at TopStart and the control row at TopEnd, and
+                                // because it is where a snackbar would have appeared — which is where
+                                // people look. This screen has no snackbar to use: its only SnackbarHost
+                                // is declared inside the settings sheet (RemEx-vj31) and renders only
+                                // while that sheet is open.
+                                //
+                                // NOT a Surface, and REVIEW CAUGHT THE VERSION THAT WAS ONE. A
+                                // non-clickable Surface installs `pointerInput(Unit) {}` and eats every
+                                // touch inside its bounds — blocking touch propagation is one of the
+                                // things Surface documents itself as doing. Sitting on top of the
+                                // PC-keys bar for five seconds, it would have swallowed taps on Ctrl,
+                                // Alt and Shift, which would look exactly like the modifier keys being
+                                // broken. A clipped Box draws identically and intercepts nothing.
+                                //
+                                // Not the AssistChip the FPS overlay uses either: a chip is a fixed
+                                // height and would clip this sentence in the longer translations. The
+                                // colours are the two theme roles that chip already pairs, so both stay
+                                // legible under every M3 scheme — seeded, dynamic or static — at either
+                                // contrast extreme.
+                                //
+                                // imePadding to match the lane below: this Box deliberately does not
+                                // consume the IME or nav-bar insets (doing so would resize the video and
+                                // tear down the decoder, RemEx-2y31), so a child anchored to its bottom
+                                // edge renders UNDER an open keyboard unless it insets itself.
+                                // **THE PICTURE KEEPS RUNNING UNDERNEATH, WHICH IS THE WHOLE POINT
+                                // (RemEx-iaxc).** The PC has told us it cannot inject our input - a
+                                // Wayland permission prompt was declined and it has no fallback tool -
+                                // while the video stream is entirely healthy. Routing that through the
+                                // fatal error path would blank a working picture and reconnect into
+                                // the same refused prompt, so it is said over the top instead.
+                                //
+                                // TOP, not bottom: the screenshot pill owns BottomCenter, and unlike
+                                // that one this does not time out. It stays until the stream restarts,
+                                // because the condition it reports does not go away by itself.
+                                //
+                                // **PUSHED BELOW THE ACTION ROW, WHICH IS NOT COSMETIC.** A Box paints
+                                // its children in source order, and this is declared after the
+                                // fullscreen action row above - so without the offset it paints OVER
+                                // the toolbar. In fullscreen statusBarsPadding resolves to zero, so
+                                // both would sit in the same 16dp band, and a 340dp pill centred
+                                // against a right-anchored row of seven icon buttons covers its
+                                // leftmost ones. Since this banner is deliberately persistent, they
+                                // would stay covered for the whole session - including Stop, which is
+                                // one of the few controls still worth anything to a user whose input
+                                // is dead.
+                                PlainAnimatedVisibility(
+                                        visible = inputUnavailable != null,
+                                        modifier =
+                                                Modifier.align(Alignment.TopCenter)
+                                                        .statusBarsPadding()
+                                                        .padding(
+                                                                top = InputWarningTopClearance,
+                                                                start = 16.dp,
+                                                                end = 16.dp,
+                                                                bottom = 16.dp
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .errorContainer.copy(
+                                                                                alpha = 0.94f
+                                                                        )
+                                                                )
+                                                                // Announced when it appears: a
+                                                                // persistent error nobody reads aloud
+                                                                // is invisible to a screen-reader user,
+                                                                // who has the least other evidence that
+                                                                // their input stopped working.
+                                                                .semantics {
+                                                                        liveRegion =
+                                                                                LiveRegionMode.Polite
+                                                                }
+                                        ) {
+                                                Column(
+                                                        // Kept from the text-only version this
+                                                        // replaces (RemEx-5bwpv): the coverage math in
+                                                        // the big comment above this block depends on
+                                                        // the pill's width, not on it being one Text.
+                                                        modifier = Modifier.widthIn(max = 340.dp),
+                                                        horizontalAlignment =
+                                                                Alignment.CenterHorizontally
+                                                ) {
+                                                        Text(
+                                                                text = inputUnavailable.orEmpty(),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .labelLarge,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onErrorContainer,
+                                                                modifier =
+                                                                        Modifier.padding(
+                                                                                start = 14.dp,
+                                                                                end = 14.dp,
+                                                                                top = 10.dp
+                                                                        )
+                                                        )
+                                                        TextButton(
+                                                                onClick = onRetryInputPermission,
+                                                                // Colors, not just the label's text
+                                                                // color: without this the ripple and
+                                                                // state layer stay `primary` drawn
+                                                                // over `errorContainer` in every
+                                                                // themeStyle (RemEx-5bwpv).
+                                                                colors =
+                                                                        ButtonDefaults
+                                                                                .textButtonColors(
+                                                                                        contentColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onErrorContainer
+                                                                                )
+                                                        ) {
+                                                                Text(
+                                                                        text =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .rd_input_retry_button
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                PlainAnimatedVisibility(
+                                        visible = inputRetryNotice != null,
+                                        modifier =
+                                                Modifier.align(Alignment.BottomCenter)
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
+                                                        .padding(16.dp)
+                                                        .padding(
+                                                                bottom =
+                                                                        (if (pcKeysBarVisible ||
+                                                                                        isRemoteKeyboardOpen
+                                                                        )
+                                                                                PcKeysLaneClearance
+                                                                        else 0.dp) +
+                                                                                InputRetryNoticeBottomClearance
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .inverseSurface.copy(
+                                                                                alpha = 0.88f
+                                                                        )
+                                                                )
+                                        ) {
+                                                Text(
+                                                        // Held across the exit fade, same reason as
+                                                        // lastScreenshotStatus below.
+                                                        text = lastInputRetryNotice.orEmpty(),
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .inverseOnSurface,
+                                                        modifier =
+                                                                Modifier.widthIn(max = 320.dp)
+                                                                        .padding(
+                                                                                horizontal = 14.dp,
+                                                                                vertical = 10.dp
+                                                                        )
+                                                )
+                                        }
+                                }
+
+                                PlainAnimatedVisibility(
+                                        visible = screenshotStatus != null,
+                                        modifier =
+                                                Modifier.align(Alignment.BottomCenter)
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
+                                                        .padding(16.dp)
+                                                        // Clears the PC-keys lane when it is showing, so
+                                                        // the confirmation never hides the modifier latch
+                                                        // states it would otherwise cover.
+                                                        .padding(
+                                                                bottom =
+                                                                        if (pcKeysBarVisible ||
+                                                                                        isRemoteKeyboardOpen
+                                                                        )
+                                                                                PcKeysLaneClearance
+                                                                        else 0.dp
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .inverseSurface.copy(
+                                                                                alpha = 0.88f
+                                                                        )
+                                                                )
+                                        ) {
+                                                Text(
+                                                        // Held across the exit fade: reading
+                                                        // screenshotStatus directly would blank the text
+                                                        // the instant it went null, so the pill would
+                                                        // fade out empty.
+                                                        text = lastScreenshotStatus.orEmpty(),
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .inverseOnSurface,
+                                                        modifier =
+                                                                Modifier.widthIn(max = 320.dp)
+                                                                        .padding(
+                                                                                horizontal = 14.dp,
+                                                                                vertical = 10.dp
+                                                                        )
                                                 )
                                         }
                                 }
@@ -3108,6 +3557,22 @@ fun RemoteDesktopScreenContent(
                                                                         .onSurfaceVariant
                                                 )
 
+                                                // THIS SECTION IS EASY TO BELIEVE IS MISSING, and one
+                                                // investigation already concluded exactly that
+                                                // (RemEx-is52): it sits at the very bottom of the
+                                                // settings sheet, below the Input & Controls hint, so
+                                                // a reader who stops scrolling there sees nothing.
+                                                //
+                                                // It is also hidden entirely unless the host advertises
+                                                // supportsAdvancedWindowControl — which on Windows was
+                                                // hard-coded false for a while even though the host had
+                                                // a complete Win32 backend registered and dispatching.
+                                                // If this section is absent on a host you expect to
+                                                // support it, suspect the ADVERTISEMENT before
+                                                // suspecting this UI: see
+                                                // HostCapabilitiesProvider.SupportsAdvancedWindowControl.
+                                                // On Linux it additionally needs kdotool or xdotool on
+                                                // PATH (LinuxDesktopBackendProbe).
                                                 if (uiState.capabilityState
                                                                 .supportsAdvancedWindowControl
                                                 ) {
@@ -3733,6 +4198,7 @@ private fun RemoteDesktopScreenPreview() {
                 capabilityState = RemoteDesktopCapabilityState(supportsRemoteDesktop = true),
                 isFullscreen = false
             ),
+            hostCursor = kotlinx.coroutines.flow.emptyFlow(),
             currentBitmap = null,
             config = RemoteDesktopConfigState(quality = 70, targetFps = 60),
             onSetFullscreen = {},
@@ -3762,7 +4228,12 @@ private fun RemoteDesktopScreenPreview() {
             onResizeWindow = { _, _, _ -> },
             onMoveWindowToDesktop = { _, _ -> },
             getHostScreenSize = { Pair(1920, 1080) },
-            currentFrameTimestamp = 0L,
+            // REMEMBERED, WHICH IT WAS NOT (RemEx-cljx). Creating the state during composition
+            // makes a fresh object on every recomposition, so nothing that reads it can ever see
+            // a change. Harmless here - it is a @Preview and never runs on a device - but it is
+            // the one report of the 262 that was a real defect rather than a rule this project
+            // disagrees with, and it is the shape that is not harmless anywhere else.
+            frameTick = remember { androidx.compose.runtime.mutableLongStateOf(0L) },
             fps = 60f,
             showFpsOverlay = true,
             onToggleFpsOverlay = {}

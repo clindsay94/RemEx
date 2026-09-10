@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -28,6 +30,26 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// <summary>Filtered entries currently shown in the live log list.</summary>
     public ObservableCollection<LogEntry> VisibleEntries { get; } = new();
 
+    /// <summary>
+    /// Rows the user has selected in the live list.
+    /// </summary>
+    /// <remarks>
+    /// THE LIST HAS OFFERED MULTI-SELECT SINCE IT SHIPPED AND NOTHING WAS BOUND TO IT
+    /// (RemEx-7xhln), so selecting rows was a gesture the app accepted and discarded. Avalonia keeps
+    /// this in SELECTION order, which is why <see cref="FormatForClipboard"/> does not read it
+    /// directly.
+    /// </remarks>
+    public ObservableCollection<LogEntry> SelectedEntries { get; } = new();
+
+    /// <summary>
+    /// Set by the view to put text on the system clipboard.
+    /// </summary>
+    /// <remarks>
+    /// The seam <c>RemoteViewModel</c> already uses, for the same reason: a clipboard lives on the
+    /// view and a view model that reached for one could not be tested without a running Avalonia.
+    /// </remarks>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
+
     /// <summary>Diagnostic presets that scope the live view by subsystem / severity.</summary>
     public ObservableCollection<LogPreset> Presets { get; } = new();
 
@@ -44,11 +66,80 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private LogExportScope? _selectedExportScope;
     [ObservableProperty] private string _serviceLogsText = string.Empty;
 
+    /// <summary>True while <see cref="FetchServiceLogsAsync"/> is reading the OS event log / journal
+    /// (RemEx-kjdi). Drives the inline spinner-in-button on the "Query service log" button — the
+    /// wait is a real one: a PowerShell or journalctl child process, not an in-memory read.</summary>
+    [ObservableProperty] private bool _isFetchingServiceLogs;
+
+    /// <summary>Forwards the shell's reduced-motion setting so the busy placeholder's shimmer can be
+    /// gated on it without this view-model owning the setting itself (RemEx-kjdi). <c>_shell</c> is
+    /// <see langword="null"/> in some existing tests (RemEx-8y3qy's pattern), hence the null-conditional.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes, so a live toggle while this page's busy placeholder
+    /// happens to be visible will not update the binding until something else re-reads it. Low
+    /// stakes — reduced motion is a settings-page toggle, not something flipped mid-wait.</remarks>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
     /// <summary>"shown / retained" counter for the status line.</summary>
     public string EntryCountText => $"{VisibleEntries.Count} / {_all.Count}";
 
+    /// <summary>
+    /// Whether new entries should keep the list scrolled to the newest one. On by default; a manual
+    /// scroll away from the end pauses it (see <see cref="OnLogListScrolled"/>) and only
+    /// <see cref="JumpToNewest"/> turns it back on — the view never re-enables it on its own, so a
+    /// user reading mid-list is not yanked back down by the next line that arrives.
+    /// </summary>
+    [ObservableProperty] private bool _isFollowingTail = true;
+
+    /// <summary>
+    /// Turning following back on — whether via <see cref="JumpToNewest"/> or the ToggleSwitch bound
+    /// directly to this property — should snap to the newest entry immediately rather than waiting
+    /// for the next live arrival to do it. Guarded to the true transition only: CommunityToolkit only
+    /// raises this on an actual value change, so re-checking an already-true toggle is a no-op here
+    /// too, and turning following OFF must not scroll anywhere.
+    /// </summary>
+    partial void OnIsFollowingTailChanged(bool value)
+    {
+        if (value)
+            ScrollToEndRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Raised so the view scrolls the log list to the newest entry — a live arrival while following,
+    /// or following being turned back on (see <see cref="OnIsFollowingTailChanged(bool)"/>), whether via
+    /// <see cref="JumpToNewest"/> or the ToggleSwitch bound directly to <see cref="IsFollowingTail"/>.
+    /// A plain event rather than bound state: "scroll now" is a one-shot action, not something to
+    /// observe, which is the same reasoning behind <see cref="CopyToClipboardAsync"/> being a
+    /// delegate instead of a property.
+    /// </summary>
+    public event Action? ScrollToEndRequested;
+
     /// <summary>Set by the view to present a save-file picker (prompts the user to name the export).</summary>
     public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickSaveFileAsync { get; set; }
+
+    /// <summary>Full local path of the most recent successful export, or <see langword="null"/> if
+    /// nothing has been exported this session. Drives the "Open containing folder" affordance —
+    /// NotificationService.Notify takes no action callback, so this is the inline route (RemEx-a8du).</summary>
+    [ObservableProperty] private string? _lastExportedFilePath;
+
+    /// <summary>The bare file name of <see cref="LastExportedFilePath"/>, for the inline status row —
+    /// the same "name only, not the full path" choice the export toast already made.</summary>
+    [ObservableProperty] private string? _lastExportedFileName;
+
+    partial void OnLastExportedFileNameChanged(string? value) => OnPropertyChanged(nameof(LastExportedStatusText));
+
+    /// <summary>The inline status row's text. Reuses the export toast's own format string rather than
+    /// duplicating "Saved to {0}." as a second resource key.</summary>
+    public string? LastExportedStatusText => LastExportedFileName is null
+        ? null
+        : string.Format(LocalizationService.Instance["Notification_LogsExported_Message"], LastExportedFileName);
+
+    /// <summary>
+    /// Launches the OS file manager on a directory. Replaceable so a test can verify routing without
+    /// spawning a real process — the same seam <see cref="CopyToClipboardAsync"/> and
+    /// <see cref="PickSaveFileAsync"/> use for the same reason. Defaults to the real launcher.
+    /// </summary>
+    public Action<string> FolderLauncher { get; set; } = LaunchFolder;
 
     public DiagnosticLogsViewModel(ShellViewModel shell)
     {
@@ -65,6 +156,20 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         RebuildVisible();
 
         InMemoryLogSink.LogAdded += OnLogAdded;
+        // LastExportedStatusText resolves "Notification_LogsExported_Message" when GOT, so a
+        // language switch while the export status row is showing would otherwise leave it in
+        // whatever language was active at export time until the next export recomputed it
+        // (RemEx-6ddx's class of defect — see AboutViewModel.OnLocalizationChanged, the reference
+        // implementation this mirrors).
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+    }
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // SetCulture raises "Item", "Item[]" and "" in sequence; act once per switch.
+        if (!string.IsNullOrEmpty(e.PropertyName)) return;
+
+        OnPropertyChanged(nameof(LastExportedStatusText));
     }
 
     private void BuildPresetsAndScopes()
@@ -126,6 +231,66 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         RebuildVisible();
     }
 
+    /// <summary>Puts the selected rows on the clipboard, in the order they are displayed.</summary>
+    [RelayCommand]
+    public async Task CopySelectedAsync()
+    {
+        if (CopyToClipboardAsync is null) return;
+
+        var text = FormatForClipboard(VisibleEntries, SelectedEntries);
+        if (text.Length == 0) return;
+
+        await CopyToClipboardAsync(text);
+    }
+
+    /// <summary>
+    /// Renders a selection as the text to paste.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **IN DISPLAY ORDER, NOT SELECTION ORDER, AND THAT IS THE ONLY REAL DECISION HERE.** Avalonia
+    /// reports <c>SelectedItems</c> in the order the user clicked, so ctrl-clicking three lines
+    /// bottom-up would paste an incident backwards. A log read out of sequence is worse than no log:
+    /// the reader draws a causal order from it that never happened.
+    /// </para>
+    /// <para>
+    /// NOTHING IS REFORMATTED. <see cref="LogEntry.ToString"/> is what the list already renders, so
+    /// what lands on the clipboard is what the user was looking at — including the exception block,
+    /// which is the part anyone pasting a log into a bug report actually needs.
+    /// </para>
+    /// <para>
+    /// An empty selection returns empty rather than a blank line, so the command can decline to touch
+    /// the clipboard at all instead of silently replacing whatever the user had in it.
+    /// </para>
+    /// </remarks>
+    internal static string FormatForClipboard(
+        IEnumerable<LogEntry> displayed, IEnumerable<LogEntry> selected)
+    {
+        var chosen = new HashSet<LogEntry>(selected);
+        if (chosen.Count == 0) return string.Empty;
+
+        return string.Join(Environment.NewLine, displayed.Where(chosen.Contains));
+    }
+
+    /// <summary>Puts one row's bare message on the clipboard — no timestamp, level, category, or
+    /// exception. For pasting a single line into a chat or a ticket without the surrounding noise.</summary>
+    [RelayCommand]
+    public async Task CopyEntryMessageAsync(LogEntry? entry)
+    {
+        if (entry is null || CopyToClipboardAsync is null) return;
+        await CopyToClipboardAsync(entry.Message);
+    }
+
+    /// <summary>Puts one row on the clipboard exactly as rendered — <see cref="LogEntry.ToString"/>,
+    /// which already appends the exception block when the entry carries one. The counterpart to
+    /// <see cref="CopyEntryMessageAsync"/> for when the stack trace is the point of pasting it.</summary>
+    [RelayCommand]
+    public async Task CopyEntryWithStackAsync(LogEntry? entry)
+    {
+        if (entry is null || CopyToClipboardAsync is null) return;
+        await CopyToClipboardAsync(entry.ToString());
+    }
+
     [RelayCommand]
     public void RefreshLogs()
     {
@@ -164,24 +329,53 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(EntryCountText));
     }
 
-    private void OnLogAdded(LogEntry entry)
+    private void OnLogAdded(LogEntry entry) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ProcessIncomingEntry(entry));
+
+    /// <summary>
+    /// The synchronous half of a live arrival, factored out of the dispatcher-posted lambda above so
+    /// a test can drive it directly — nothing pumps <c>Dispatcher.UIThread</c> in the test assembly
+    /// (no Avalonia.Headless reference in the repo), so a test going through
+    /// <see cref="OnLogAdded"/> itself would never observe this body running at all.
+    /// </summary>
+    internal void ProcessIncomingEntry(LogEntry entry)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        _all.Add(entry);
+        if (_all.Count > MaxTrackedEntries)
         {
-            _all.Add(entry);
-            if (_all.Count > MaxTrackedEntries)
-            {
-                var removed = _all[0];
-                _all.RemoveAt(0);
-                VisibleEntries.Remove(removed);
-            }
+            var removed = _all[0];
+            _all.RemoveAt(0);
+            VisibleEntries.Remove(removed);
+        }
 
-            if (PassesDisplay(entry))
-                VisibleEntries.Add(entry);
+        if (PassesDisplay(entry))
+        {
+            VisibleEntries.Add(entry);
+            // Only an entry that actually lands ON SCREEN is worth scrolling for — one filtered out
+            // below the display level must not yank a following view toward a row it will never show.
+            if (IsFollowingTail)
+                ScrollToEndRequested?.Invoke();
+        }
 
-            OnPropertyChanged(nameof(EntryCountText));
-        });
+        OnPropertyChanged(nameof(EntryCountText));
     }
+
+    /// <summary>
+    /// Called by the view whenever the log list's scroll position changes, reporting whether it is
+    /// currently at the end. Moving away from the end pauses following; reaching the end again on
+    /// its own does NOT resume it — only <see cref="JumpToNewest"/> does, so scrolling down to catch
+    /// up manually is not silently reinterpreted as asking to follow again.
+    /// </summary>
+    public void OnLogListScrolled(bool isAtEnd)
+    {
+        if (!isAtEnd)
+            IsFollowingTail = false;
+    }
+
+    /// <summary>Resumes following — the "Jump to newest" chip. OnIsFollowingTailChanged is what
+    /// actually snaps to the newest entry, so the ToggleSwitch gets the same behavior for free.</summary>
+    [RelayCommand]
+    public void JumpToNewest() => IsFollowingTail = true;
 
     // ─────────────────── Export ───────────────────
 
@@ -212,12 +406,75 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         if (file is null)
             return;
 
-        await using var stream = await file.OpenWriteAsync();
-        await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
-        if (isJson)
-            await writer.WriteAsync(SerializeJson(entries));
-        else
-            await writer.WriteAsync(string.Join(Environment.NewLine, entries.Select(e => e.ToString())));
+        // Scoped rather than `await using var` so the writer has actually flushed and closed before
+        // the notification below claims the export finished.
+        await using (var stream = await file.OpenWriteAsync())
+        await using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+        {
+            if (isJson)
+                await writer.WriteAsync(SerializeJson(entries));
+            else
+                await writer.WriteAsync(string.Join(Environment.NewLine, entries.Select(e => e.ToString())));
+        }
+
+        // An export is an outcome the user asked for and is waiting on. The save dialog closing is
+        // the only feedback it had, and that is indistinguishable from cancelling it (RemEx-5wc2).
+        NotificationService.Instance.Notify(
+            NotificationImportance.Outcome,
+            LocalizationService.Instance["Notification_LogsExported_Title"],
+            string.Format(LocalizationService.Instance["Notification_LogsExported_Message"], file.Name));
+
+        // The toast has no action slot to attach "Open containing folder" to (NotificationService.
+        // Notify takes a title and a message, nothing else), so the reveal affordance lives here
+        // instead, inline under the export controls.
+        LastExportedFilePath = file.TryGetLocalPath();
+        LastExportedFileName = file.Name;
+    }
+
+    /// <summary>Opens the most recent export's containing folder. A no-op with nothing exported yet
+    /// or when the path has no directory component, rather than throwing on either.</summary>
+    [RelayCommand]
+    public void OpenExportFolder()
+    {
+        if (string.IsNullOrEmpty(LastExportedFilePath)) return;
+
+        var directory = Path.GetDirectoryName(LastExportedFilePath);
+        if (string.IsNullOrEmpty(directory)) return;
+
+        try
+        {
+            FolderLauncher(directory);
+        }
+        catch (Exception ex)
+        {
+            // A failed reveal is a missing convenience, not a defect worth crashing over — but
+            // swallowing it silently would mean the click looked like it worked. Same lesson as
+            // RemEx-43ha: a failure with no trace anywhere is worse than one recorded here, which is
+            // exactly the sink the diagnostics export reads.
+            InMemoryLogSink.Append(LogLevel.Warning, "Logs", "Could not open the export folder", ex);
+        }
+    }
+
+    /// <summary>
+    /// The real folder launcher: Explorer on Windows, xdg-open on Linux. Opens the DIRECTORY, not a
+    /// "reveal and select the file" — RemEx has no select-in-file-manager plumbing yet, and this
+    /// bead scoped to opening the folder (RemEx-a8du).
+    /// </summary>
+    internal static void LaunchFolder(string directory)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo { FileName = directory, UseShellExecute = true });
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "xdg-open",
+                Arguments = $"\"{directory}\"",
+                UseShellExecute = false,
+            });
+        }
     }
 
     private IReadOnlyList<LogEntry> ResolveScope(LogExportScope scope) => scope.Kind switch
@@ -240,15 +497,25 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         return JsonSerializer.Serialize(payload, LogExportJsonContext.Default.ListLogEntryExport);
     }
 
-    // ─── System event logs tab: entries RemEx wrote to the OS log, NOT a service. There is no
+    // ─── System event logs tab: entries the OS recorded about RemEx, NOT a service. There is no
     // RemEx service; remex.agent runs in the signed-in user's session. Windows reads the
-    // Application event log by source; the Linux branch still targets the retired remex-host
-    // unit and is tracked as RemEx-2vfx. ────────────────────────────────────────────────────────
+    // Application event log by source; Linux reads the user journal by process name
+    // (RemEx-2vfx — the previous query named a systemd unit the installer deletes). ─────────────
+
+    /// <summary>
+    /// Runs the external command <see cref="FetchServiceLogsAsync"/> needs (PowerShell on Windows,
+    /// journalctl on Linux). Replaceable so a test can verify <see cref="IsFetchingServiceLogs"/>'s
+    /// true-during/false-after semantics without spawning a real child process (review finding,
+    /// RemEx-w7ei's class of concern) — the same seam <see cref="FolderLauncher"/> and
+    /// <see cref="CopyToClipboardAsync"/> use for the same reason. Defaults to the real runner.
+    /// </summary>
+    internal Func<string, string, Task<(bool Success, string Output)>> CommandRunner { get; set; } = RunCommandAsync;
 
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
-        ServiceLogsText = "Reading system event log entries written by RemEx...\n";
+        IsFetchingServiceLogs = true;
+        ServiceLogsText = LocalizationService.Instance["Logs_Service_Reading"] + "\n";
         try
         {
             if (OperatingSystem.IsWindows())
@@ -257,25 +524,72 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
                                     "Select-Object TimeGenerated, EntryType, Message | " +
                                     "ForEach-Object { '[' + $_.TimeGenerated.ToString('yyyy-MM-dd HH:mm:ss') + '] [' + $_.EntryType.ToString().ToUpper() + '] ' + $_.Message }";
 
-                var (_, output) = await RunCommandAsync("powershell.exe", $"-Command \"{powershellCmd}\"");
+                var (_, output) = await CommandRunner("powershell.exe", $"-Command \"{powershellCmd}\"");
                 ServiceLogsText = string.IsNullOrWhiteSpace(output)
-                    ? "No Windows event log entries found for RemEx.\nThis is normal — RemEx only writes here for serious startup problems, so an empty list usually means nothing has gone wrong."
+                    ? LocalizationService.Instance["Logs_Service_WindowsEmpty"]
                     : output.Trim();
             }
             else if (OperatingSystem.IsLinux())
             {
-                var (ok, output) = await RunCommandAsync("journalctl", "-u remex-host -n 100 --no-pager");
-                ServiceLogsText = ok ? output.Trim() : $"Failed to query journalctl: {output}";
+                // BY PROCESS NAME, NOT BY UNIT (RemEx-2vfx). The old query was
+                // `-u remex-host`, a systemd unit the installer actively REMOVES
+                // (agent-install.sh names it LEGACY_SERVICE_UNIT) — so this tab was permanently
+                // empty on every current Linux install. RemEx starts from an XDG autostart
+                // .desktop as an ordinary user process, so the closest thing to an OS record of
+                // it is the USER journal, attributed by _COMM (the kernel's 15-char process
+                // name; the binary is Remex.Agent, 11). Whether anything lands there depends on
+                // the desktop: environments that run XDG autostart through systemd (GNOME) put
+                // the process's stdout/stderr in the user journal, ones that spawn it directly
+                // may capture nothing — which is why the empty case explains itself below
+                // instead of reading as "no problems".
+                var (ok, output) = await CommandRunner(
+                    "journalctl", LinuxJournalArguments);
+                ServiceLogsText = ok
+                    ? DescribeLinuxJournal(output)
+                    : string.Format(LocalizationService.Instance["Logs_Service_JournalFailed"], output);
             }
             else
             {
-                ServiceLogsText = "System event logs are only available on Windows and Linux.";
+                ServiceLogsText = LocalizationService.Instance["Logs_Service_Unsupported"];
             }
         }
         catch (Exception ex)
         {
-            ServiceLogsText = $"Could not read the system event log: {ex.Message}";
+            ServiceLogsText = string.Format(LocalizationService.Instance["Logs_Service_ReadError"], ex.Message);
         }
+        finally
+        {
+            IsFetchingServiceLogs = false;
+        }
+    }
+
+    /// <summary>
+    /// The user-journal query for entries the OS recorded about this process (RemEx-2vfx).
+    /// Internal so a test can pin it: the previous query named a systemd unit the installer
+    /// deletes, and nothing could tell that permanently-empty answer from a healthy one.
+    /// </summary>
+    internal const string LinuxJournalArguments = "--user _COMM=Remex.Agent -n 100 --no-pager";
+
+    /// <summary>
+    /// Turns the journal output into what the tab shows. An empty journal is the expected state
+    /// on desktops that do not route XDG autostart through systemd, so it explains itself rather
+    /// than reading as "nothing has gone wrong" — the in-app Logs tab is the authoritative record
+    /// either way, and this text says so.
+    /// </summary>
+    internal static string DescribeLinuxJournal(string output)
+    {
+        var trimmed = output.Trim();
+        // journalctl prints "-- No entries --" rather than nothing when the query matches nothing.
+        // StartsWith on the WHOLE trimmed output, not Contains: a real entry whose message embeds
+        // that literal must not suppress a hundred genuine lines (review finding).
+        if (trimmed.Length == 0 || trimmed.StartsWith("-- No entries --", StringComparison.Ordinal))
+        {
+            return string.Format(
+                LocalizationService.Instance["Logs_Service_LinuxEmpty"],
+                LocalizationService.Instance["Logs_LiveTab"]);
+        }
+
+        return trimmed;
     }
 
     private static async Task<(bool Success, string Output)> RunCommandAsync(string fileName, string arguments)
@@ -309,7 +623,11 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void Dispose() => InMemoryLogSink.LogAdded -= OnLogAdded;
+    public void Dispose()
+    {
+        InMemoryLogSink.LogAdded -= OnLogAdded;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+    }
 }
 
 /// <summary>A named diagnostic filter over the retained log buffer (subsystem categories + optional level floor).</summary>

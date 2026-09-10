@@ -30,7 +30,7 @@ internal static class PortalDbusHelper
     /// null if the user cancelled / response code is non-zero / timeout / error.
     /// </summary>
     public static async Task<Dictionary<string, VariantValue>?> CallPortalAsync(
-        Connection conn,
+        DBusConnection conn,
         string normalizedSender,
         string interfaceName,
         string method,
@@ -68,14 +68,34 @@ internal static class PortalDbusHelper
                     var dict = reader.ReadDictionaryOfStringToVariantValue();
                     return (response, dict);
                 },
-                (Exception? ex, (uint Response, Dictionary<string, VariantValue> Results) data,
-                    object? rs, object? hs) =>
+                // Tmds.DBus.Protocol 0.94 folded the four loose callback arguments into one
+                // Notification<T> (RemEx-jcma3). The exception and the value used to arrive as
+                // separate parameters where "ex is null" implied a good value; now they are two
+                // properties on one struct, and they are NOT exhaustive - a completion notification
+                // (ObserverDisposed, ConnectionClosed) carries neither.
+                //
+                // The HasValue guard is DEFENSIVE, not load-bearing, and the distinction is worth
+                // stating precisely because an earlier draft of this comment claimed the opposite.
+                // This observer is registered with ObserverFlags.None, which means no completion
+                // notification is emitted today, so the guard cannot currently fire. It is kept
+                // because the alternative - reading .Value unguarded - starts throwing inside this
+                // callback the moment somebody adds a flag, and it costs one line.
+                //
+                // Nothing hangs either way: the timeout registered further down completes the
+                // TaskCompletionSource on every path, so the worst case is a full-timeout wait
+                // rather than a request that never resolves.
+                (Notification<(uint Response, Dictionary<string, VariantValue> Results)> n) =>
                 {
-                    if (ex is not null)
+                    if (n.Exception is not null)
                     {
-                        tcs.TrySetException(ex);
+                        tcs.TrySetException(n.Exception);
                         return;
                     }
+                    if (!n.HasValue)
+                    {
+                        return;
+                    }
+                    var data = n.Value;
                     if (data.Response != 0u)
                     {
                         // 1 = cancelled by user, 2 = other (e.g. compositor terminated session).
@@ -84,7 +104,7 @@ internal static class PortalDbusHelper
                     }
                     tcs.TrySetResult(data.Results);
                 },
-                ObserverFlags.None);
+                flags: ObserverFlags.None);
 
             MessageBuffer buf;
             {

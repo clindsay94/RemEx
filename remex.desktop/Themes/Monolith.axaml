@@ -1,72 +1,22 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- ═══ MONOLITH (INDUSTRIAL) ═══ -->
+    <!-- ═══ MONOLITH THEME ═══
 
-    <!-- Colors -->
-    <Color x:Key="GlassBaseDark">#1C1C1E</Color>
-    <Color x:Key="GlassBaseMedium">#2C2C2E</Color>
-    <Color x:Key="AccentPrimary">#0A84FF</Color>
-    <Color x:Key="AccentHover">#409CFF</Color>
-    <Color x:Key="AccentPressed">#0064CC</Color>
-    <Color x:Key="SystemSuccess">#30D158</Color>
-    <Color x:Key="SystemError">#FF453A</Color>
-    <Color x:Key="SystemWarning">#FFD60A</Color>
-    <Color x:Key="CardBackground">#402C2C2E</Color>
-    <Color x:Key="CardBackgroundHover">#602C2C2E</Color>
-    <Color x:Key="CardBorder">#803A3A3C</Color>
-    <Color x:Key="TextPrimary">#FFFFFF</Color>
-    <Color x:Key="TextSecondary">#8E8E93</Color>
-    <Color x:Key="TextMuted">#6E6E73</Color>
+         A preset is a seed now, not a dictionary. The colours come from Shared/FallbackPalette.axaml
+         until ThemeService.ApplyCustomization lands, and from the M3 generator after that; this
+         preset's seed (#0A84FF) lives in Models/SeedPreset.cs (RemEx-2gjwn).
 
-    <!-- Brushes -->
-    <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
-    <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
-    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
-    <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
-    <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
-    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
-    <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
-    <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
-    <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
-    <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
-    <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
-    <!-- Semi-transparent dark overlay for toolbars and floating panels -->
-    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#40000000"/>
-    <!-- Deep overlay for modal/tutorial backdrops -->
-    <SolidColorBrush x:Key="OverlayBackdropBrush" Color="#E6141720"/>
-
-    <!-- Background Gradients (Solid Dark) -->
-    <Color x:Key="BackgroundGradientStart">#0A0A0C</Color>
-    <Color x:Key="BackgroundGradientMid">#08080A</Color>
-    <Color x:Key="BackgroundGradientEnd">#050505</Color>
-
-    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
-        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
-        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
-    </LinearGradientBrush>
-
-    <!-- UI Geometry -->
-    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
-    <Thickness x:Key="CardBorderThickness">3</Thickness>
-    <BoxShadows x:Key="CardShadow">0 8 32 0 #40000000</BoxShadows>
-    <BoxShadows x:Key="CardHoverShadow">0 12 48 0 #60000000, 0 0 15 2 #400A84FF</BoxShadows>
-
-    <!-- Compatibility aliases for WinUI-style resource names -->
-    <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
-
-    <!-- UI Geometry (Material 3 Expressive Tokens) -->
-    <CornerRadius x:Key="CornerRadiusSmall">8</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusMedium">16</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusLarge">28</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusExtraLarge">36</CornerRadius>
-    <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
+         THIS FILE IS A PURE MERGE NOW (RemEx-bnz2x). The heavy 3px border was the whole identity of
+         this preset - the only one that is not glass, the only one whose cards are drawn rather than
+         floated - and the ONE geometry key that survived ThemeService overwriting everything else.
+         It now lives as SeedPresetCatalog's Monolith entry (CardBorderThickness: 3), written into
+         CustomizationSettings.CardBorderThickness by SelectTheme the same way CornerRadius already
+         is. One surviving key did not justify four dictionary files, so nothing preset-specific is
+         declared here any more. The file still exists as the base-theme resource
+         AppTheme.Monolith resolves to (ThemeService.BaseThemeUri / SwapBaseTheme) - that selection
+         mechanism is unrelated to this bead and untouched by it.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/FallbackPalette.axaml"/>
+    </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

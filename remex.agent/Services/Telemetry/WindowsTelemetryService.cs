@@ -14,12 +14,79 @@ namespace Remex.Agent.Services.Telemetry;
 public class WindowsTelemetryService : ITelemetryService, IDisposable
 {
     private const string HwInfoSharedMemoryName = "Global\\HWiNFO_SENS_SM2";
+
+    // ═══════════════ HWiNFO shared-memory cache (RemEx-8coq) ═══════════════
+    //
+    // Everything HWiNFO reports about a reading EXCEPT its value is fixed for the session: the label,
+    // the unit, the parent device, the classification. The sampler used to re-derive all of it every
+    // second — reopening the memory-mapped file and its view, marshalling every sensor and every
+    // reading element (three fixed-length strings each), lower-casing four or five times per reading
+    // to classify it, and interpolating an Id string. With 200-400 readings that is ~1500-3000
+    // allocations per second, forever, and it was the largest steady-state allocation source in the
+    // process.
+    //
+    // Now the file and view are opened once and the per-reading work is done once into a template;
+    // a tick reads only the value doubles and stamps them onto those templates.
+    private MemoryMappedFile? _hwInfoMmf;
+    private MemoryMappedViewAccessor? _hwInfoAccessor;
+    private HwInfoLayout _hwInfoLayout;
+    private List<HwInfoReadingTemplate>? _hwInfoTemplates;
+
+    // ── Liveness (RemEx-8coq) ──
+    //
+    // CACHING THE MAPPING DESTROYS THE ONLY SIGNAL THAT HWiNFO STOPPED. The shared section lives as
+    // long as ANY handle references it, so once we hold one: HWiNFO can exit and OpenExisting would
+    // still succeed, the signature still reads "HWiS", the geometry is unchanged, and ReadDouble
+    // happily keeps returning the last bytes HWiNFO ever wrote. Nothing throws. The old
+    // open-and-close-per-tick code got its liveness check for free from the FileNotFoundException
+    // that a reclaimed section produced.
+    //
+    // Without this check the dashboard would show FROZEN last-known temperatures and clocks
+    // presented as live, and — because TryReadHwInfo would keep returning true — the WindowsPerf
+    // fallback would stay suppressed. Strictly worse than before the cache.
+    //
+    // poll_time is HWiNFO's own poll timestamp and advances every cycle, so a stalled value means
+    // the producer is gone or wedged. The threshold is deliberately generous against HWiNFO's ~1s
+    // poll: this decides whether to throw away a working mapping, so it must not flap.
+    private long HwInfoStaleAfterMs { get; init; } = 30_000;
+    private long _hwInfoLastPollTime;
+    private long _hwInfoPollChangedAtMs;
+
+    /// <summary>Byte offset of <c>Value</c> inside a reading element, so a tick can read just that.</summary>
+    private static readonly int HwInfoValueFieldOffset =
+        (int)Marshal.OffsetOf<HWiNFO_READING_ELEMENT>(nameof(HWiNFO_READING_ELEMENT.Value));
+
+    /// <summary>
+    /// The shared-memory geometry a template set was built against. Any change invalidates the cache.
+    /// </summary>
+    /// <remarks>
+    /// Keyed on the whole geometry rather than just the reading count, because HWiNFO can also move
+    /// or resize the sections when the user adds hardware or changes its settings — and a stale
+    /// offset would silently read values from the wrong sensor rather than fail.
+    /// </remarks>
+    private readonly record struct HwInfoLayout(
+        uint Readings, uint Sensors, uint ReadingSize, uint ReadingOffset, uint SensorSize, uint SensorOffset,
+        uint Version, uint Revision);
+
+    /// <summary>Everything about one reading that does not change tick to tick.</summary>
+    private sealed record HwInfoReadingTemplate(
+        long ValueAddress,
+        SensorReading Sensor,
+        MetricKind Kind,
+        SENSOR_READING_TYPE ReadingType,
+        string RawUnit,
+        string CanonicalUnit);
     private readonly ILogger<WindowsTelemetryService> _logger;
     private bool _hwinfoAvailable = true;
 
+    /// <summary>
+    /// Completes when the fallback counters have been constructed, the CPU counter primed and the NIC
+    /// baseline taken. Awaited before any read and before disposal.
+    /// </summary>
+    private readonly Task _countersReady;
+
     // Performance Counters for fallback
     private PerformanceCounter? _cpuCounter;
-    private PerformanceCounter? _ramCounter;
     private PerformanceCounter? _diskReadCounter;
     private PerformanceCounter? _diskWriteCounter;
 
@@ -30,22 +97,187 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     private DateTime _lastNetworkPoll = DateTime.MinValue;
     private readonly object _networkLock = new();
 
-    // Cached fallback payload to return when WMI/PerformanceCounter stalls
-    private TelemetryPayload? _cachedFallback;
-    private static readonly TimeSpan WmiFallbackTimeout = TimeSpan.FromSeconds(2);
+    /// <summary>The categories <see cref="ReadWmiFallback"/> can produce, and the cache's key space.</summary>
+    private static readonly string[] PerfCategories = ["CPU", "Memory", "Disk", "Network"];
+
+    /// <summary>
+    /// Most recent WindowsPerf readings, PER CATEGORY, to serve when the read stalls.
+    /// </summary>
+    /// <remarks>
+    /// Keyed by category rather than held as one payload because the read is no longer all-or-nothing:
+    /// since RemEx-rxth a tick reads only the categories a healthy HWiNFO is not already covering. A
+    /// whole-payload cache therefore stored a PARTIAL read, and on the tick where HWiNFO stopped
+    /// producing AND the now-full read timed out, it served only the categories HWiNFO had NOT been
+    /// covering — dropping the rest for that tick (RemEx-c2g4).
+    ///
+    /// THE OBVIOUS ALTERNATIVE IS WORSE, which is why this shape rather than a guard: "only cache
+    /// complete reads" sounds safer, but a machine with good HWiNFO coverage never performs a complete
+    /// read, so its cache would freeze at whatever the first tick produced and go stale forever.
+    ///
+    /// Replaced wholesale on each update rather than mutated, so a reader on another thread sees
+    /// either the old map or the new one — the same atomicity the single-field cache had.
+    /// </remarks>
+    private IReadOnlyDictionary<string, List<SensorReading>> _cachedByCategory =
+        new Dictionary<string, List<SensorReading>>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The per-category fallback cache, for tests that need to see whether a category was actually
+    /// READ rather than merely present in the payload (RemEx-cxel).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The distinction is invisible from outside otherwise, and that is what left the skip logic
+    /// unpinned. When HWiNFO covers a category, <see cref="MergeHwInfoOverPerf"/> drops every
+    /// WindowsPerf sensor in it, so a tick that skipped the read and a tick that performed it emit
+    /// the SAME payload. The difference only surfaces later, on a tick served from this cache — so
+    /// either a test can force that path, or it observes the cache directly. This is the cheaper of
+    /// the two and does not require making the WMI read controllably slow.
+    /// </para>
+    /// <para>
+    /// READ IT, DO NOT MUTATE IT. The dictionary is replaced wholesale on each update, but the
+    /// <see cref="List{T}"/> values are the live ones — clearing or adding to a list through this
+    /// property would corrupt every later <c>ComposeCachedFallback</c>.
+    /// </para>
+    /// </remarks>
+    internal IReadOnlyDictionary<string, List<SensorReading>> CachedByCategory => _cachedByCategory;
+
+    /// <summary>
+    /// The interval, in seconds, that the FIRST network rate was divided by (RemEx-k34y).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A SEAM, because the invariant it exposes cannot be observed any other way, and the obvious
+    /// alternatives are all weaker than they look.
+    /// </para>
+    /// <para>
+    /// Asserting the RATE is useless: the unprimed artefact divides one stray frame by a
+    /// <see cref="DateTime.MinValue"/> baseline, and the resulting near-zero MB/s is
+    /// indistinguishable from a genuinely idle adapter. Asserting that
+    /// <c>_lastNetworkPoll != DateTime.MinValue</c> AFTER a read is worse than useless — it is
+    /// always true, because the read path stamps that field on its way out, so the check passes
+    /// even when the baseline was never taken during warm-up. That was the first shape tried here
+    /// and a mutation proved it green against the very defect it was written for.
+    /// </para>
+    /// <para>
+    /// The INTERVAL is unambiguous. Primed, it is the seconds since the warm-up baseline — a
+    /// handful at most. Unprimed, it is the time since <see cref="DateTime.MinValue"/>: about
+    /// 6.4e10 seconds. There is no machine on which those two are hard to tell apart, so this
+    /// records the first one and stops, pinning the ordering that RemEx-48kh was reverted for
+    /// breaking rather than any magnitude of traffic.
+    /// </para>
+    /// <para>
+    /// Null until the network block has RUN - which is not the same as a rate having been
+    /// computed: the capture precedes the rate, and fires even when the elapsed time is
+    /// non-positive so that no sensor is emitted at all. Checking <c>_activeNic != null</c>
+    /// instead would pass on the broken state, because
+    /// <see cref="InitializeFallbackCounters"/> assigns the NIC BEFORE it takes the byte baseline.
+    /// </para>
+    /// </remarks>
+    internal double? FirstNetworkIntervalSeconds { get; private set; }
+
+    /// <summary>
+    /// Whether a WindowsPerf read has ever completed. Until it has, no category may be skipped, so
+    /// the cache is seeded with every category rather than only the ones HWiNFO never covered.
+    /// </summary>
+    private bool _fallbackCacheSeeded;
+    /// <summary>
+    /// How long a tick waits for the counter warm-up, and for the WindowsPerf read itself.
+    /// </summary>
+    /// <remarks>
+    /// An instance field rather than a constant purely so tests can shrink it. Two seconds is the
+    /// right production value, but a test that deliberately holds the warm-up open then pays it in
+    /// real time — the first version of TelemetryWarmUpGateTests added 12 seconds to the agent suite
+    /// for two assertions, which is not a trade worth making for a regression guard (RemEx-s999).
+    /// </remarks>
+    private readonly TimeSpan _wmiFallbackTimeout;
 
     public WindowsTelemetryService(ILogger<WindowsTelemetryService> logger)
+        : this(logger, countersReady: null)
+    {
+    }
+
+    /// <summary>
+    /// Test seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>): supplies the
+    /// warm-up task, so a test can hold it INCOMPLETE and observe what a tick does meanwhile.
+    /// </summary>
+    /// <remarks>
+    /// Exists because the prime-before-read invariant is otherwise unguarded: it rests on a single
+    /// bounded wait in <see cref="GetTelemetryAsync"/>, and deleting that line leaves the whole suite
+    /// green while restoring the artefacts RemEx-48kh was reverted for — an unprimed CPU counter
+    /// reporting 0% from an empty sample window, and a non-null NIC whose baseline was never taken
+    /// (RemEx-s999). Holding the warm-up open is the only way to reach that window deterministically;
+    /// racing the real one would be a flake generator.
+    ///
+    /// Null means production: build the counters on a background task, as the public constructor does.
+    /// </remarks>
+    internal WindowsTelemetryService(
+        ILogger<WindowsTelemetryService> logger, Task? countersReady, TimeSpan? fallbackTimeout = null)
     {
         _logger = logger;
-        InitializeFallbackCounters();
+        _wmiFallbackTimeout = fallbackTimeout ?? TimeSpan.FromSeconds(2);
+
+        // OFF THE STARTUP THREAD, BUT NOT DEFERRED — the distinction is the whole design here.
+        //
+        // The cost is real and worse than previously recorded. Measured on this machine: the FIRST
+        // construction in a process takes 510-888 ms warm, and 4.9 SECONDS on the first run after a
+        // cold OS cache, which is precisely the sign-in case. Subsequent constructions cost 9 ms, so
+        // it is the machine's performance-counter catalog being loaded, once. This constructor runs
+        // inside the serial IHost.StartAsync, so every bit of that blocked sign-in.
+        //
+        // MAKING IT LAZY WAS TRIED AND REVERTED (RemEx-48kh), and would be wrong again for the same
+        // reason: this method does more than construct counters. It primes the CPU rate counter and
+        // takes the NIC byte baseline, and both are only meaningful AHEAD of the first read. Prime
+        // microseconds before the first NextValue and the rate counter reports 0% from an empty
+        // sample window; take the network baseline inside the call that consumes it and the elapsed
+        // divisor is near zero, turning one stray frame into a multi-megabyte-per-second reading.
+        //
+        // Lazy per counter is no better AFTER RemEx-c2g4 either, because the first successful tick
+        // now reads every category to seed the fallback cache — so nothing would go unbuilt anyway.
+        //
+        // So the work is not skipped or delayed until it is needed; it simply stops happening on the
+        // thread that is holding up sign-in. GetTelemetryAsync waits on this task — bounded, and
+        // skipping the read entirely if it has not finished — which keeps the prime-before-read
+        // ordering the revert was about.
+        //
+        // NOTE this runs before the internal test constructor's body has assigned _sharedMemoryName
+        // and HwInfoStaleAfterMs, because Task.Run is reached through the `: this(logger)` chain.
+        // Safe only because InitializeFallbackCounters reads nothing but _logger; do not give it a
+        // dependency on a field that constructor sets.
+        _countersReady = countersReady ?? Task.Run(InitializeFallbackCounters);
     }
+
+    /// <summary>
+    /// Test constructor: points the sampler at a synthetic shared-memory region and shrinks the
+    /// staleness window so the "HWiNFO stopped" path can be exercised without waiting 30 seconds.
+    /// </summary>
+    /// <remarks>
+    /// Exists because the interesting failures here are all invisible against a live HWiNFO — a
+    /// producer that has EXITED still leaves a perfectly readable, permanently stale mapping behind
+    /// (RemEx-8coq). Driving a region this process writes itself is the only way to test that
+    /// off-device, and it does not skip the fallback-counter initialisation the real one does.
+    /// </remarks>
+    /// <remarks>
+    /// <paramref name="countersReady"/> defaults to null, meaning the production background warm-up.
+    /// Pass one to hold the warm-up open — a test that wants to observe the pre-warm-up window needs
+    /// to control HWiNFO too, or the assertions become machine-dependent: a live HWiNFO supplies
+    /// sensors whose categories displace the WindowsPerf ones being asserted about.
+    /// </remarks>
+    internal WindowsTelemetryService(
+        ILogger<WindowsTelemetryService> logger, string sharedMemoryName, long staleAfterMs,
+        Task? countersReady = null, TimeSpan? fallbackTimeout = null)
+        : this(logger, countersReady, fallbackTimeout)
+    {
+        _sharedMemoryName = sharedMemoryName;
+        HwInfoStaleAfterMs = staleAfterMs;
+    }
+
+    private readonly string _sharedMemoryName = HwInfoSharedMemoryName;
 
     private void InitializeFallbackCounters()
     {
         try
         {
             _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            _ramCounter = new PerformanceCounter("Memory", "Available MBytes");
             _diskReadCounter = new PerformanceCounter("PhysicalDisk", "Disk Read Bytes/sec", "_Total");
             _diskWriteCounter = new PerformanceCounter("PhysicalDisk", "Disk Write Bytes/sec", "_Total");
 
@@ -70,33 +302,25 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         }
     }
 
+    private static readonly IReadOnlySet<string> NoSkippedCategories =
+        new HashSet<string>(StringComparer.Ordinal);
+
     public async Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
     {
-        // Run WMI/PerformanceCounter reads on a separate thread with a timeout
-        // to prevent thread-pool starvation when WMI is slow/stalled.
-        TelemetryPayload payload;
-        try
-        {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(WmiFallbackTimeout);
-            payload = await Task.Run(ReadWmiFallback, timeoutCts.Token);
-            _cachedFallback = payload;
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
-                WmiFallbackTimeout.TotalSeconds);
-            payload = _cachedFallback ?? new TelemetryPayload();
-        }
-
+        // HWiNFO FIRST, which is the ordering this method depends on rather than a rearrangement for
+        // taste. Reading it is cheap — the reading addresses were resolved once, so a tick is a
+        // handful of ReadDouble calls against a mapped view — and knowing which categories it covers
+        // is the only way to skip the expensive WindowsPerf sections WITHOUT silently deleting the
+        // categories it does not cover. Read the other way round, as this used to be, the machine
+        // pays for three PerformanceCounter reads, GlobalMemoryStatusEx, a NIC statistics read and
+        // whatever WMI does, every tick at 1 Hz, and then discards most of it (RemEx-rxth).
+        IReadOnlyList<SensorReading> hwinfoSensors = Array.Empty<SensorReading>();
         if (_hwinfoAvailable)
         {
             try
             {
-                if (TryReadHwInfo(payload, out var updatedPayload))
-                {
-                    return EnsureRamTotal(updatedPayload);
-                }
+                if (TryReadHwInfo(EmptyPayload(), out var hwinfoOnly))
+                    hwinfoSensors = hwinfoOnly.Sensors;
             }
             catch (FileNotFoundException)
             {
@@ -111,7 +335,168 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
             }
         }
 
+        // Empty when HWiNFO produced nothing — a stalled or absent producer must fall all the way
+        // back, not quietly lose whatever it last happened to cover.
+        //
+        // AND EMPTY ON THE FIRST SUCCESSFUL TICK REGARDLESS, to seed the fallback cache. Without this
+        // the skip is self-defeating for the case it was meant to protect: on a machine where HWiNFO
+        // has been healthy since startup and covers CPU and Memory, those categories are never read,
+        // so they never enter the cache — and a later stall serves a payload missing them, which is
+        // precisely the hole RemEx-c2g4 set out to close. One extra read, once per process.
+        var skipCategories = _fallbackCacheSeeded && hwinfoSensors.Count > 0
+            ? CoveredCategories(hwinfoSensors)
+            : NoSkippedCategories;
+
+        // THE COUNTERS MUST BE BUILT AND PRIMED BEFORE ANYTHING READS THEM, which is the invariant
+        // RemEx-48kh was reverted for breaking, and it is enforced here rather than inside the read.
+        //
+        // Bounded, and a timeout SKIPS the read rather than falling through to it. Falling through
+        // would be the trap: InitializeFallbackCounters assigns _activeNic before it takes the byte
+        // baseline, so a half-finished warm-up leaves a non-null NIC with _lastNetworkPoll still at
+        // DateTime.MinValue — one stray frame divided by the process uptime — and a constructed but
+        // unprimed CPU counter reporting 0% from an empty sample window. Those are exactly the
+        // artefacts this whole design exists to avoid.
+        //
+        // Waited asynchronously so a slow warm-up does not tie up a thread, and never unbounded: if
+        // the warm-up ever wedged, an unbounded wait would block one pool thread per tick, forever.
+        var countersReady = true;
+        try
+        {
+            await _countersReady.WaitAsync(_wmiFallbackTimeout, ct);
+        }
+        catch (TimeoutException)
+        {
+            countersReady = false;
+            _logger.LogWarning(
+                "Fallback counters are still warming up after {Timeout}s — serving cached telemetry for this tick.",
+                _wmiFallbackTimeout.TotalSeconds);
+        }
+
+        if (!countersReady)
+        {
+            // Deliberately does NOT mark the cache seeded: nothing was read, so the next tick must
+            // still perform the full seeding read.
+            var waiting = ComposeCachedFallback(_cachedByCategory, GetUptime());
+            if (hwinfoSensors.Count > 0)
+                waiting = waiting with { Sensors = MergeHwInfoOverPerf(waiting.Sensors, hwinfoSensors) };
+            return EnsureRamTotal(waiting);
+        }
+
+        // Run WMI/PerformanceCounter reads on a separate thread with a timeout
+        // to prevent thread-pool starvation when WMI is slow/stalled.
+        TelemetryPayload payload;
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(_wmiFallbackTimeout);
+            payload = await Task.Run(() => ReadWmiFallback(skipCategories), timeoutCts.Token);
+            _cachedByCategory = CacheReadCategories(_cachedByCategory, payload, skipCategories);
+
+            // Only after a read that actually completed: a first tick that TIMED OUT has cached
+            // nothing, so the next one must still be the seeding full read.
+            _fallbackCacheSeeded = true;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
+                _wmiFallbackTimeout.TotalSeconds);
+
+            // Uptime is recomputed rather than cached: it is TickCount64 formatting, so it cannot
+            // stall and a stale one would be strictly worse than a fresh one.
+            payload = ComposeCachedFallback(_cachedByCategory, GetUptime());
+        }
+
+        // Still merged rather than concatenated, even though the skipped categories are exactly the
+        // ones the merge would drop: on the timeout path `payload` is rebuilt from the per-category
+        // cache, whose entries were captured on ticks whose HWiNFO coverage may have been different.
+        if (hwinfoSensors.Count > 0)
+            payload = payload with { Sensors = MergeHwInfoOverPerf(payload.Sensors, hwinfoSensors) };
+
         return EnsureRamTotal(payload);
+    }
+
+    /// <summary>
+    /// Returns a new cache with the categories that were ACTUALLY READ this tick refreshed, and the
+    /// skipped ones carried over untouched.
+    /// </summary>
+    /// <remarks>
+    /// A read category is replaced with whatever it produced, INCLUDING NOTHING — that is the case
+    /// worth being deliberate about. If the machine's only NIC disappears, the Network read runs and
+    /// yields no sensors, and the entry must become empty rather than keep serving the last rates
+    /// forever. Skipped categories are the opposite: they were not measured, so the previous reading
+    /// is the best available answer and is kept.
+    /// </remarks>
+    internal static IReadOnlyDictionary<string, List<SensorReading>> CacheReadCategories(
+        IReadOnlyDictionary<string, List<SensorReading>> previous,
+        TelemetryPayload read,
+        IReadOnlySet<string> skippedCategories)
+    {
+        var updated = new Dictionary<string, List<SensorReading>>(previous, StringComparer.Ordinal);
+
+        foreach (var category in PerfCategories)
+        {
+            if (skippedCategories.Contains(category)) continue;
+            updated[category] = read.Sensors.Where(s => s.Category == category).ToList();
+        }
+
+        return updated;
+    }
+
+    /// <summary>Rebuilds a fallback payload from the freshest reading held for every category.</summary>
+    internal static TelemetryPayload ComposeCachedFallback(
+        IReadOnlyDictionary<string, List<SensorReading>> cached, string uptimeText)
+    {
+        var sensors = new List<SensorReading>();
+
+        foreach (var category in PerfCategories)
+        {
+            if (cached.TryGetValue(category, out var readings)) sensors.AddRange(readings);
+        }
+
+        return new TelemetryPayload { Sensors = sensors, UptimeText = uptimeText };
+    }
+
+    /// <summary>An empty payload, used to read HWiNFO on its own before anything is merged into it.</summary>
+    private static TelemetryPayload EmptyPayload() =>
+        new() { Sensors = new System.Collections.Generic.List<SensorReading>() };
+
+    /// <summary>
+    /// The categories a set of HWiNFO readings covers — the set whose WindowsPerf equivalents the
+    /// overlay would displace, and therefore the set that does not need reading at all.
+    /// </summary>
+    internal static IReadOnlySet<string> CoveredCategories(IReadOnlyList<SensorReading> hwinfoSensors)
+    {
+        var covered = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sensor in hwinfoSensors) covered.Add(sensor.Category);
+        return covered;
+    }
+
+    /// <summary>
+    /// Lays HWiNFO readings over the WindowsPerf ones: any WindowsPerf sensor in a category HWiNFO
+    /// also supplies is dropped, everything else is kept, and the HWiNFO readings are appended.
+    /// </summary>
+    /// <remarks>
+    /// Extracted from <see cref="TryReadHwInfo"/> so the rule is stated in one testable place
+    /// (RemEx-rxth). It is what makes the read-skipping safe to reason about — the skip set is
+    /// exactly the categories this method would have discarded — and it is deliberately still
+    /// applied even when those categories were skipped, because the fallback payload can come from
+    /// the per-category cache, whose entries were captured on ticks whose HWiNFO coverage may have differed.
+    ///
+    /// CATEGORY-SCOPED, NOT WHOLESALE, and that is not an implementation detail: HWiNFO's categories
+    /// come from the user's hardware, so on a machine where it reports no Disk or Network sensors the
+    /// WindowsPerf ones in those categories are the only source there is.
+    /// </remarks>
+    internal static List<SensorReading> MergeHwInfoOverPerf(
+        IReadOnlyList<SensorReading> fallbackSensors, IReadOnlyList<SensorReading> hwinfoSensors)
+    {
+        var covered = CoveredCategories(hwinfoSensors);
+
+        var merged = fallbackSensors
+            .Where(s => s.Source != "WindowsPerf" || !covered.Contains(s.Category))
+            .ToList();
+
+        merged.AddRange(hwinfoSensors);
+        return merged;
     }
 
     /// <summary>
@@ -158,125 +543,78 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         return payload;
     }
 
-    private bool TryReadHwInfo(TelemetryPayload fallback, out TelemetryPayload result)
+    internal bool TryReadHwInfo(TelemetryPayload fallback, out TelemetryPayload result)
     {
         result = fallback;
 
         try
         {
-            using var mmf = MemoryMappedFile.OpenExisting(HwInfoSharedMemoryName, MemoryMappedFileRights.Read);
-            using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+            if (!TryEnsureHwInfoOpen()) return false;
+            var accessor = _hwInfoAccessor!;
 
-            // Read the header first
-            int headerSize = Marshal.SizeOf(typeof(HWiNFO_SHARED_MEM2));
-            byte[] headerBytes = new byte[headerSize];
-            accessor.ReadArray(0, headerBytes, 0, headerSize);
-
-            GCHandle headerHandle = GCHandle.Alloc(headerBytes, GCHandleType.Pinned);
-            HWiNFO_SHARED_MEM2 header;
-            try
-            {
-                header = Marshal.PtrToStructure<HWiNFO_SHARED_MEM2>(headerHandle.AddrOfPinnedObject());
-            }
-            finally
-            {
-                headerHandle.Free();
-            }
-
+            var header = ReadHwInfoHeader(accessor);
             if (header.dwSignature != 0x53695748) // "HWiS"
+            {
+                InvalidateHwInfoCache();
                 return false;
-
-            var sensors = new System.Collections.Generic.List<SensorReading>();
-
-            // Read the parent-sensor section so each reading can be categorized/grouped/named by the
-            // actual device HWiNFO groups it under (drive letter + model, CPU/GPU model, etc.) — far
-            // more reliable than the reading's own generic label.
-            var parentNames = new string[header.dwNumSensorElements];
-            int sensorSize = (int)header.dwSizeOfSensorElement;
-            byte[] sensorBytes = new byte[sensorSize];
-            for (uint si = 0; si < header.dwNumSensorElements; si++)
-            {
-                accessor.ReadArray((long)header.dwOffsetOfSensorSection + (long)si * sensorSize, sensorBytes, 0, sensorSize);
-                var sensorHandle = GCHandle.Alloc(sensorBytes, GCHandleType.Pinned);
-                try
-                {
-                    var se = Marshal.PtrToStructure<HWiNFO_SENSOR_ELEMENT>(sensorHandle.AddrOfPinnedObject());
-                    parentNames[si] = !string.IsNullOrWhiteSpace(se.szSensorNameUser) ? se.szSensorNameUser : se.szSensorNameOrig;
-                }
-                finally
-                {
-                    sensorHandle.Free();
-                }
             }
 
-            int readingSize = (int)header.dwSizeOfReadingElement;
-            byte[] readingBytes = new byte[readingSize];
-
-            for (uint i = 0; i < header.dwNumReadingElements; i++)
+            if (!IsHwInfoStillPolling(header.poll_time))
             {
-                long offset = header.dwOffsetOfReadingSection + (i * readingSize);
-                accessor.ReadArray(offset, readingBytes, 0, readingSize);
-
-                GCHandle elementHandle = GCHandle.Alloc(readingBytes, GCHandleType.Pinned);
-                try
-                {
-                    var reading = Marshal.PtrToStructure<HWiNFO_READING_ELEMENT>(elementHandle.AddrOfPinnedObject());
-                    var label = !string.IsNullOrWhiteSpace(reading.szLabelUser) ? reading.szLabelUser : reading.szLabelOrig;
-                    
-                    if (!string.IsNullOrWhiteSpace(label))
-                    {
-                        var parent = reading.dwSensorIndex < parentNames.Length
-                            ? (parentNames[reading.dwSensorIndex] ?? string.Empty)
-                            : string.Empty;
-                        var (category, group, dev) = ClassifyDevice(parent, label);
-                        var kind = ClassifyKind(category, reading.tReading, label, reading.szUnit);
-                        var value = FormatSensorValue(NormalizeValueForKind(kind, reading.Value, reading.szUnit), reading.szUnit, reading.tReading);
-                        var canon = MetricUnits.Canonical(kind);
-                        // Canonical unit when we recognize the metric; otherwise the normalized host unit.
-                        // A card renders this value+unit, so a bogus "ms"/blank unit on an Unknown sensor
-                        // can never reach a kind-bound load/temperature card (the 1089.0ms bug class).
-                        var unit = canon.Length > 0 ? canon : NormalizeUnit(reading.szUnit, reading.Value);
-
-                        // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
-                        // which are common placeholder values for disconnected sensors.
-                        if (reading.tReading == SENSOR_READING_TYPE.SENSOR_TYPE_TEMP)
-                        {
-                            if (value <= -50 || value >= 112)
-                                continue;
-                        }
-
-                        sensors.Add(new SensorReading
-                        {
-                            Name = DeviceName(dev, label),
-                            Value = value,
-                            Unit = unit,
-                            Category = category,
-                            Source = "HWInfo",
-                            Kind = kind,
-                            Id = $"hwi:{reading.dwSensorIndex:x}:{reading.dwReadingID:x}",
-                            Group = group
-                        });
-                    }
-                }
-                finally
-                {
-                    elementHandle.Free();
-                }
+                _logger.LogInformation(
+                    "HWiNFO stopped updating its shared memory (poll_time stalled for {Stale}ms); " +
+                    "dropping the mapping and falling back until it returns.", HwInfoStaleAfterMs);
+                InvalidateHwInfoCache();
+                return false;
             }
 
-            // When HWiNFO data is available, filter out WindowsPerf sensors that overlap
-            // with HWiNFO data by category. If HWiNFO provides ANY sensor in a category,
-            // all WindowsPerf sensors in that same category are removed.
+            var layout = new HwInfoLayout(
+                header.dwNumReadingElements, header.dwNumSensorElements,
+                header.dwSizeOfReadingElement, header.dwOffsetOfReadingSection,
+                header.dwSizeOfSensorElement, header.dwOffsetOfSensorSection,
+                header.dwVersion, header.dwRevision);
+
+            if (_hwInfoTemplates is null || !_hwInfoLayout.Equals(layout))
+            {
+                _hwInfoTemplates = BuildHwInfoTemplates(accessor, header);
+                _hwInfoLayout = layout;
+                _logger.LogDebug(
+                    "HWiNFO layout changed; rebuilt {Count} reading templates.", _hwInfoTemplates.Count);
+            }
+
+            var sensors = new List<SensorReading>(_hwInfoTemplates.Count);
+            foreach (var template in _hwInfoTemplates)
+            {
+                // The ONLY per-tick read. Everything else on this reading was resolved once.
+                double raw = accessor.ReadDouble(template.ValueAddress);
+
+                var value = FormatSensorValue(
+                    NormalizeValueForKind(template.Kind, raw, template.RawUnit),
+                    template.RawUnit,
+                    template.ReadingType);
+
+                // Value-dependent, so it stays per tick: HWiNFO reports placeholder temperatures
+                // (115C, -128C and similar) for disconnected sensors. Kept OUT of the template build
+                // deliberately — a sensor that is out of range now may be in range next tick, and
+                // caching the decision would strand it.
+                if (template.ReadingType == SENSOR_READING_TYPE.SENSOR_TYPE_TEMP
+                    && (value <= -50 || value >= 112))
+                {
+                    continue;
+                }
+
+                // Also value-dependent: NormalizeUnit promotes MB to GB past 1024. The canonical unit
+                // for a recognised metric is fixed, so that case is resolved in the template.
+                var unit = template.CanonicalUnit.Length > 0
+                    ? template.CanonicalUnit
+                    : NormalizeUnit(template.RawUnit, raw);
+
+                sensors.Add(template.Sensor with { Value = value, Unit = unit });
+            }
+
             if (sensors.Count > 0)
             {
-                var hwinfoCategories = sensors.Select(s => s.Category).ToHashSet();
-
-                var filteredFallback = fallback.Sensors
-                    .Where(s => s.Source != "WindowsPerf" || !hwinfoCategories.Contains(s.Category))
-                    .ToList();
-
-                filteredFallback.AddRange(sensors);
-                fallback = fallback with { Sensors = filteredFallback };
+                fallback = fallback with { Sensors = MergeHwInfoOverPerf(fallback.Sensors, sensors) };
             }
 
             result = fallback;
@@ -285,13 +623,184 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         }
         catch (FileNotFoundException)
         {
+            // HWiNFO is not running. Drop the handles so a later start is picked up.
+            InvalidateHwInfoCache();
             return false;
         }
         catch (Exception ex)
         {
+            // Anything else means the mapping we cached can no longer be trusted — HWiNFO restarting
+            // invalidates the view, and retrying against a dead accessor would fail forever.
+            InvalidateHwInfoCache();
             _logger.LogTrace(ex, "HWiNFO parsing failed.");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Opens the HWiNFO shared memory once and keeps it. Returns false when HWiNFO is not running.
+    /// </summary>
+    private bool TryEnsureHwInfoOpen()
+    {
+        if (_hwInfoAccessor is not null) return true;
+
+        try
+        {
+            _hwInfoMmf = MemoryMappedFile.OpenExisting(_sharedMemoryName, MemoryMappedFileRights.Read);
+            _hwInfoAccessor = _hwInfoMmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+            return true;
+        }
+        catch (FileNotFoundException)
+        {
+            InvalidateHwInfoCache();   // HWiNFO not running; try again next tick.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Drops the cached mapping and templates. Called on ANY failure, because a view that has gone
+    /// bad (HWiNFO restarting is the normal cause) would otherwise be retried forever.
+    /// </summary>
+    private void InvalidateHwInfoCache()
+    {
+        _hwInfoTemplates = null;
+        _hwInfoLayout = default;
+        _hwInfoLastPollTime = 0;
+        _hwInfoPollChangedAtMs = 0;
+
+        _hwInfoAccessor?.Dispose();
+        _hwInfoAccessor = null;
+        _hwInfoMmf?.Dispose();
+        _hwInfoMmf = null;
+    }
+
+    /// <summary>
+    /// Whether HWiNFO is still writing. See the field comments for why a cached mapping cannot tell.
+    /// </summary>
+    /// <remarks>
+    /// Returns true while <paramref name="pollTime"/> keeps changing, and for a grace period after it
+    /// stops. Only a sustained stall is treated as "gone", so a paused or slow poll does not throw
+    /// away a mapping that is about to be useful again.
+    /// </remarks>
+    private bool IsHwInfoStillPolling(long pollTime)
+    {
+        var nowMs = Environment.TickCount64;
+
+        if (pollTime != _hwInfoLastPollTime)
+        {
+            _hwInfoLastPollTime = pollTime;
+            _hwInfoPollChangedAtMs = nowMs;
+            return true;
+        }
+
+        // First observation after a (re)open: start the clock rather than judging immediately.
+        if (_hwInfoPollChangedAtMs == 0)
+        {
+            _hwInfoPollChangedAtMs = nowMs;
+            return true;
+        }
+
+        return nowMs - _hwInfoPollChangedAtMs < HwInfoStaleAfterMs;
+    }
+
+    private static HWiNFO_SHARED_MEM2 ReadHwInfoHeader(MemoryMappedViewAccessor accessor)
+    {
+        int headerSize = Marshal.SizeOf<HWiNFO_SHARED_MEM2>();
+        byte[] headerBytes = new byte[headerSize];
+        accessor.ReadArray(0, headerBytes, 0, headerSize);
+
+        var handle = GCHandle.Alloc(headerBytes, GCHandleType.Pinned);
+        try
+        {
+            return Marshal.PtrToStructure<HWiNFO_SHARED_MEM2>(handle.AddrOfPinnedObject());
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+
+    /// <summary>
+    /// Does the expensive pass once: marshals every sensor and reading element, classifies each
+    /// reading, and records where its value lives so ticks can read that and nothing else.
+    /// </summary>
+    /// <remarks>
+    /// This is the code that used to run every second. Readings with no label are dropped here rather
+    /// than per tick, because a label cannot appear later without the geometry changing — and a
+    /// geometry change rebuilds this whole list.
+    /// </remarks>
+    private List<HwInfoReadingTemplate> BuildHwInfoTemplates(
+        MemoryMappedViewAccessor accessor, HWiNFO_SHARED_MEM2 header)
+    {
+        // Read the parent-sensor section so each reading can be categorized/grouped/named by the
+        // actual device HWiNFO groups it under (drive letter + model, CPU/GPU model, etc.) — far
+        // more reliable than the reading's own generic label.
+        var parentNames = new string[header.dwNumSensorElements];
+        int sensorSize = (int)header.dwSizeOfSensorElement;
+        byte[] sensorBytes = new byte[sensorSize];
+        for (uint si = 0; si < header.dwNumSensorElements; si++)
+        {
+            accessor.ReadArray((long)header.dwOffsetOfSensorSection + (long)si * sensorSize, sensorBytes, 0, sensorSize);
+            var sensorHandle = GCHandle.Alloc(sensorBytes, GCHandleType.Pinned);
+            try
+            {
+                var se = Marshal.PtrToStructure<HWiNFO_SENSOR_ELEMENT>(sensorHandle.AddrOfPinnedObject());
+                parentNames[si] = !string.IsNullOrWhiteSpace(se.szSensorNameUser) ? se.szSensorNameUser : se.szSensorNameOrig;
+            }
+            finally
+            {
+                sensorHandle.Free();
+            }
+        }
+
+        int readingSize = (int)header.dwSizeOfReadingElement;
+        byte[] readingBytes = new byte[readingSize];
+        var templates = new List<HwInfoReadingTemplate>((int)header.dwNumReadingElements);
+
+        for (uint i = 0; i < header.dwNumReadingElements; i++)
+        {
+            long offset = header.dwOffsetOfReadingSection + (i * (long)readingSize);
+            accessor.ReadArray(offset, readingBytes, 0, readingSize);
+
+            var elementHandle = GCHandle.Alloc(readingBytes, GCHandleType.Pinned);
+            try
+            {
+                var reading = Marshal.PtrToStructure<HWiNFO_READING_ELEMENT>(elementHandle.AddrOfPinnedObject());
+                var label = !string.IsNullOrWhiteSpace(reading.szLabelUser) ? reading.szLabelUser : reading.szLabelOrig;
+
+                if (string.IsNullOrWhiteSpace(label)) continue;
+
+                var parent = reading.dwSensorIndex < parentNames.Length
+                    ? (parentNames[reading.dwSensorIndex] ?? string.Empty)
+                    : string.Empty;
+                var (category, group, dev) = ClassifyDevice(parent, label);
+                var kind = ClassifyKind(category, reading.tReading, label, reading.szUnit);
+
+                templates.Add(new HwInfoReadingTemplate(
+                    ValueAddress: offset + HwInfoValueFieldOffset,
+                    Sensor: new SensorReading
+                    {
+                        Name = DeviceName(dev, label),
+                        Value = 0,
+                        Unit = string.Empty,
+                        Category = category,
+                        Source = "HWInfo",
+                        Kind = kind,
+                        Id = $"hwi:{reading.dwSensorIndex:x}:{reading.dwReadingID:x}",
+                        Group = group,
+                    },
+                    Kind: kind,
+                    ReadingType: reading.tReading,
+                    RawUnit: reading.szUnit,
+                    CanonicalUnit: MetricUnits.Canonical(kind)));
+            }
+            finally
+            {
+                elementHandle.Free();
+            }
+        }
+
+        return templates;
     }
 
     private static double FormatSensorValue(double value, string unit, SENSOR_READING_TYPE readingType)
@@ -468,15 +977,39 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         return s.Replace("AMD", " ").Replace("Intel", " ").Trim();
     }
 
-    private TelemetryPayload ReadWmiFallback()
+    /// <summary>
+    /// Reads the WindowsPerf sensors, skipping any category in <paramref name="skipCategories"/>.
+    /// </summary>
+    /// <remarks>
+    /// The skip exists because on a machine with healthy HWiNFO this whole read used to run every
+    /// tick and then be thrown away — three PerformanceCounter reads, GlobalMemoryStatusEx, a NIC
+    /// statistics read and whatever WMI does, at 1 Hz for the life of the process (RemEx-rxth).
+    ///
+    /// IT IS PER-CATEGORY, NOT ALL-OR-NOTHING, and that is the whole correctness argument. The
+    /// HWiNFO overlay only displaces WindowsPerf sensors whose CATEGORY it also supplies (see
+    /// <see cref="MergeHwInfoOverPerf"/>), and which categories it supplies depends on the user's
+    /// hardware and HWiNFO configuration — commonly CPU and Memory, frequently not Disk or Network.
+    /// Skipping the read wholesale whenever HWiNFO is alive would therefore delete every sensor in a
+    /// category HWiNFO does not cover, silently, on exactly the machines that look healthiest.
+    ///
+    /// SKIPPING TICKS IS SAFE FOR THE RATE SOURCES, which was the other stated worry, because none of
+    /// them assumes a fixed interval: <c>PerformanceCounter.NextValue</c> on a rate counter averages
+    /// over the gap since its own previous call, and the NIC block divides by MEASURED elapsed time
+    /// from <c>_lastNetworkPoll</c> rather than by an assumed one second. A resumed category reports
+    /// an average over the skipped window instead of a wrong number.
+    /// </remarks>
+    private TelemetryPayload ReadWmiFallback(IReadOnlySet<string> skipCategories)
     {
         var sensors = new System.Collections.Generic.List<SensorReading>();
 
         // CPU — isolated so PerformanceCounter failures don't wipe all sensors
         try
         {
-            var cpuValue = _cpuCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf", Kind = MetricKind.CpuLoad, Id = "wmi:cpu:load" });
+            if (!skipCategories.Contains("CPU"))
+            {
+                var cpuValue = _cpuCounter?.NextValue() ?? 0;
+                sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf", Kind = MetricKind.CpuLoad, Id = "wmi:cpu:load" });
+            }
         }
         catch (Exception ex)
         {
@@ -488,7 +1021,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         {
             var memStatus = new MEMORYSTATUSEX();
             memStatus.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            if (GlobalMemoryStatusEx(ref memStatus))
+            if (!skipCategories.Contains("Memory") && GlobalMemoryStatusEx(ref memStatus))
             {
                 var usedMemBytes = memStatus.ullTotalPhys - memStatus.ullAvailPhys;
                 sensors.Add(new SensorReading { Name = "Physical Memory Used", Value = usedMemBytes / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
@@ -504,10 +1037,13 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // Disk Activity
         try
         {
-            var diskRead = _diskReadCounter?.NextValue() ?? 0;
-            var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
-            sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+            if (!skipCategories.Contains("Disk"))
+            {
+                var diskRead = _diskReadCounter?.NextValue() ?? 0;
+                var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
+                sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+                sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+            }
         }
         catch (Exception ex)
         {
@@ -519,11 +1055,19 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         {
             lock (_networkLock)
             {
-                if (_activeNic != null)
+                // Skipping leaves _lastNetworkPoll and the byte baselines untouched, so a later
+                // resumed tick divides the accumulated delta by the ACTUAL elapsed time and reports a
+                // correct average over the gap rather than a spike.
+                if (_activeNic != null && !skipCategories.Contains("Network"))
                 {
                     var stats = _activeNic.GetIPv4Statistics();
                     var now = DateTime.UtcNow;
                     var elapsedSeconds = (now - _lastNetworkPoll).TotalSeconds;
+
+                    // Recorded once, for RemEx-k34y. This is the only moment the pre/post-warm-up
+                    // distinction is observable at all: after this block _lastNetworkPoll has been
+                    // stamped and looks primed whether or not it ever was.
+                    FirstNetworkIntervalSeconds ??= elapsedSeconds;
 
                     if (elapsedSeconds > 0)
                     {
@@ -642,10 +1186,24 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        // The warm-up may still be constructing these. Disposing underneath it would race a
+        // half-built counter; a bounded wait keeps shutdown prompt if it has wedged.
+        //
+        // The RESULT is checked, not discarded: Wait(TimeSpan) returns false on timeout rather than
+        // throwing, so an unchecked call would make a wedged warm-up completely undiagnosable — and
+        // on that path disposal proceeds with no synchronisation edge, so it may see stale nulls and
+        // leak the native counter handles the warm-up went on to create.
+        if (!_countersReady.Wait(TimeSpan.FromSeconds(5)))
+        {
+            _logger.LogWarning(
+                "Fallback counter warm-up did not finish within 5s of disposal; performance counter handles may leak.");
+        }
+
         _cpuCounter?.Dispose();
-        _ramCounter?.Dispose();
         _diskReadCounter?.Dispose();
         _diskWriteCounter?.Dispose();
+        InvalidateHwInfoCache();
         GC.SuppressFinalize(this);
     }
 }

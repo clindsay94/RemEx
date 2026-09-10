@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography.X509Certificates;
+using Remex.Desktop.Services.Security;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 
@@ -396,12 +397,8 @@ public class RemoteDesktopService : IDisposable
     {
         if (certificate == null) return false;
 
-        using var cert2 = new X509Certificate2(certificate);
-        var spki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-        var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
-        var hashBase64 = Convert.ToBase64String(hashBytes);
-
-        var accepted = IsCertificateAcceptable(hashBase64, _pinSnapshot, _allowFirstTimeTrust);
+        var hashBase64 = CertificatePinPolicy.ComputeSpkiHash(certificate);
+        var accepted = CertificatePinPolicy.IsCertificateAcceptable(hashBase64, _pinSnapshot, _allowFirstTimeTrust);
         if (!accepted)
         {
             System.Diagnostics.Debug.WriteLine(
@@ -409,34 +406,6 @@ public class RemoteDesktopService : IDisposable
                 "certificate legitimately rotated, the operator must re-pair.");
         }
         return accepted;
-    }
-
-    /// <summary>
-    /// The pinning decision, as a pure function of the presented hash and the captured policy.
-    /// </summary>
-    /// <remarks>
-    /// Separated from the callback so it can be tested exhaustively without a TLS handshake, a DI
-    /// container or a socket. That matters more here than usual: the defect being fixed was not a
-    /// wrong rule but an UNUSED one — the old code computed the hash, looked it up, ignored the
-    /// answer and returned <c>true</c> (RemEx-mlce). A rule nobody consults reads exactly like a
-    /// rule that works.
-    /// </remarks>
-    internal static bool IsCertificateAcceptable(
-        string spkiHashBase64,
-        IReadOnlyDictionary<string, string>? pins,
-        bool allowFirstTimeTrust)
-    {
-        // No snapshot means PrepareTlsValidationAsync did not run. A missing store is NOT an empty
-        // store, and the safe answer to "I do not know" is no.
-        if (pins is null) return false;
-
-        // Pinned hosts exist: the presented cert must be one of them. Mirrors the control channel
-        // in ConnectionViewModel.AcceptSelfSignedCertificate, deliberately — the two channels talk
-        // to the same host and disagreeing about its certificate is its own kind of defect.
-        if (pins.Count > 0) return pins.Values.Contains(spkiHashBase64);
-
-        // Empty store: trusted only for loopback, where the peer is this machine's own host.
-        return allowFirstTimeTrust;
     }
 
     /// <summary>

@@ -16,24 +16,35 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly System.ComponentModel.PropertyChangedEventHandler _onConnectionChanged;
-    private readonly System.ComponentModel.PropertyChangedEventHandler _onShellChanged;
     private readonly Action<TelemetryPayload> _onTelemetry;
     private readonly NotifyCollectionChangedEventHandler _onActivityChanged;
 
     /// <summary>Shared connection ViewModel — drives the status hero card.</summary>
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
+    /// <remarks>
+    /// The same singleton the shell reads. Bound by this screen's status dot so it cannot disagree
+    /// with the sidebar about whether a phone is there — which is what happened when RemEx-0z7w
+    /// rebound only the shell.
+    /// </remarks>
+    public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
+
     /// <summary>Exposes ShellViewModel so AXAML can bind to shell-level preferences.</summary>
     public ShellViewModel Shell => _shell;
 
-    /// <summary>
-    /// True when the connection status dot should display its pulse animation:
-    /// only when actually connected and the user hasn't opted in to reduced motion.
-    /// </summary>
-    public bool ShowConnectionPulse => Connection.IsConnected && !_shell.IsReducedMotion;
-
     /// <summary>Pinned sensor summaries displayed in the UniformGrid.</summary>
     public ObservableCollection<SensorViewModel> PinnedSensors { get; } = new();
+
+    /// <summary>
+    /// The System status card (RemEx-id37).
+    /// </summary>
+    /// <remarks>
+    /// Refreshed once when Home is built and then only when the user asks. It is NOT polled: the
+    /// probe shells out for the firewall check, and running that on a timer would spend a process
+    /// launch every few seconds to re-answer a question whose answer almost never changes.
+    /// </remarks>
+    public SystemStatusViewModel SystemStatus { get; } = new();
 
     // ─── Always-on stats strip (sourced live from the host telemetry stream) ───
 
@@ -70,24 +81,21 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         Connection = connection;
         _shell = shell;
 
-        // Re-compute ShowConnectionPulse whenever either dependency changes; blank the stats
-        // strip the instant the link drops so it never shows stale numbers.
+        // FIRE AND FORGET, DELIBERATELY. RefreshAsync hands the blocking probe to the thread pool
+        // and the card renders nothing until a report arrives, so awaiting here would only delay
+        // Home appearing. Any failure inside is already contained - the card's own Unavailable state
+        // is what a missing host looks like.
+        _ = SystemStatus.RefreshAsync();
+
+        // Blank the stats strip the instant the link drops so it never shows stale numbers. The
+        // presence halo follows Shell.ShowPresencePulse (RemEx-s19yc), not the connection axis, so
+        // nothing here recomputes a pulse any more (RemEx-alwfa.4).
         _onConnectionChanged = (_, e) =>
         {
-            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
-            {
-                OnPropertyChanged(nameof(ShowConnectionPulse));
-                if (!Connection.IsConnected)
-                    UpdateStats(null);
-            }
-        };
-        _onShellChanged = (_, e) =>
-        {
-            if (e.PropertyName == nameof(ShellViewModel.IsReducedMotion))
-                OnPropertyChanged(nameof(ShowConnectionPulse));
+            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && !Connection.IsConnected)
+                UpdateStats(null);
         };
         Connection.PropertyChanged += _onConnectionChanged;
-        _shell.PropertyChanged += _onShellChanged;
 
         // Drive the always-on stats strip from the existing ~1 Hz telemetry stream (already
         // marshalled to the UI thread by ConnectionViewModel — no extra timer needed).
@@ -230,8 +238,8 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        SystemStatus.Dispose();
         Connection.PropertyChanged -= _onConnectionChanged;
-        _shell.PropertyChanged -= _onShellChanged;
         Connection.TelemetryReceived -= _onTelemetry;
         ActivityService.Instance.Recent.CollectionChanged -= _onActivityChanged;
     }

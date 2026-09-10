@@ -24,7 +24,40 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     private readonly IWakeOnLanService _wakeOnLanService;
     private readonly ICertificateService? _certificateService;
     private readonly ICommandChannelAuthenticator? _authenticator;
-    private const int MaxPayloadSize = 10 * 1024 * 1024; // 10MB limit for JSON commands
+    /// <summary>
+    /// The largest command payload this ingress will allocate for (RemEx-ga503).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **SIZED BY WHAT A COMMAND IS, NOT BY WHAT A BUFFER COULD BE.** This was 10MB, and the
+    /// allocation it authorises happens roughly twenty lines before <see cref="IsRequestAuthenticated"/>
+    /// is reached — the length prefix is read from the wire, checked against this, and turned into a
+    /// <c>new byte[length]</c> by a peer that has proved nothing beyond completing a TLS handshake
+    /// against the host's own certificate. Declare ten megabytes, send nothing, and the host holds a
+    /// large-object allocation until the read timeout expires; the DEFAULT concurrency cap of 16
+    /// (overridable via <c>Remex:CommandMaxConcurrent</c>) made the ceiling about 160MB. 8338 is
+    /// external attack surface hardened in RemEx-s032.2, and this was the one allocation on it that a
+    /// stranger got to size.
+    /// </para>
+    /// <para>
+    /// **64KB IS ENORMOUS FOR WHAT THIS CHANNEL CAN DISPATCH, AND AN EARLIER VERSION OF THIS COMMENT
+    /// GOT THAT WRONG IN A DANGEROUS DIRECTION.** It said the widest payload was a launch path. This
+    /// ingress dispatches ONLY the eleven shared whole-machine power verbs — <c>LAUNCHAPP</c>,
+    /// <c>KILLPROCESS</c>, <c>KILLPROCESSELEVATED</c> and <c>SCREENSHOT</c> are deliberately withheld
+    /// from it (RemEx-pmb4; see <c>CommandVerbs.ScriptIngress</c>, enforced by
+    /// <c>CommandVerbDriftTests</c>). The widest thing that legitimately arrives is
+    /// <c>WAKEONLAN</c>'s MAC, broadcast address, port and delay: under about 200 bytes. Writing
+    /// "launch path" here would have told the next reader that 8338 accepts a verb it exists to
+    /// refuse, which is licence to reverse a narrowing decision rather than merely a wrong number.
+    /// </para>
+    /// <para>
+    /// **WHAT THIS REMOVED IS THE AMPLIFICATION, NOT PRE-AUTH ALLOCATION.** A peer that actually
+    /// transmits 64KB still causes a string of roughly 131KB at the <c>GetString</c> below, which is
+    /// itself above the large-object threshold — but it has to send every byte to get it, and the
+    /// read timeout bounds that. What is gone is declaring a size and paying nothing for it.
+    /// </para>
+    /// </remarks>
+    internal const int MaxPayloadSize = 64 * 1024;
 
     // Bound the number of concurrent TCP command sessions so a flood of half-open
     // connections cannot exhaust threads/sockets. Configurable via Remex:CommandMaxConcurrent.
@@ -436,53 +469,23 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     {
         try
         {
-            switch (request.Action.ToUpperInvariant())
+            // ONE IMPLEMENTATION, SHARED WITH THE PAIRED /ws CHANNEL (RemEx-pmb4). These eleven
+            // verbs used to be written out here AND in PingPongHandler, which is how the two tables
+            // drifted. This ingress adds nothing to them: 8338 is external attack surface hardened
+            // in RemEx-s032.2, and the recorded decision is default-to-minimal, so anything the
+            // shared set does not know is refused below rather than handled here.
+            var shared = await Remex.Core.Services.Command.SharedCommandVerbs.TryExecuteAsync(
+                request.Action.ToUpperInvariant(),
+                request.Parameters,
+                _commandService,
+                _wakeOnLanService);
+
+            if (shared is { } outcome)
             {
-                case "SHUTDOWN":
-                    await _commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Shutdown command executed successfully.", null);
-                case "FORCESHUTDOWN":
-                    await _commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
-                case "RESTART":
-                    await _commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Restart command executed successfully.", null);
-                case "FORCERESTART":
-                    await _commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Force Restart command executed successfully.", null);
-                case "RESTARTTOUEFI":
-                    await _commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
-                case "SLEEP":
-                    await _commandService.Sleep();
-                    return new CommandResponse(true, "Sleep command executed successfully.", null);
-                case "HIBERNATE":
-                    await _commandService.Hibernate();
-                    return new CommandResponse(true, "Hibernate command executed successfully.", null);
-                case "SIGNOUT":
-                    await _commandService.SignOut();
-                    return new CommandResponse(true, "SignOut command executed successfully.", null);
-                case "LOCK":
-                    await _commandService.Lock();
-                    return new CommandResponse(true, "Lock command executed successfully.", null);
-                case "MONITOROFF":
-                    await _commandService.MonitorOff();
-                    return new CommandResponse(true, "Monitor off command executed successfully.", null);
-                case "WAKEONLAN":
-                    if (request.Parameters != null && request.Parameters.TryGetValue("MacAddress", out var mac))
-                    {
-                        var broadcastIp = request.Parameters.TryGetValue("BroadcastIp", out var bip) ? bip : "255.255.255.255";
-                        var port = request.Parameters.TryGetValue("Port", out var pStr) && int.TryParse(pStr, out var p) ? p : 9;
-                        await _wakeOnLanService.WakeAsync(mac, broadcastIp, port);
-                        return new CommandResponse(true, $"Wake-on-LAN packet sent to {mac}.", null);
-                    }
-                    else
-                    {
-                        return new CommandResponse(false, "Missing MacAddress", "Wake-on-LAN requires a MacAddress parameter.");
-                    }
-                default:
-                    return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
+                return new CommandResponse(outcome.Success, outcome.Message, outcome.ErrorDetails);
             }
+
+            return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
         }
         catch (SocketException ex)
         {

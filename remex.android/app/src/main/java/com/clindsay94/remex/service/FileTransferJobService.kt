@@ -165,13 +165,36 @@ class FileTransferJobService : JobService() {
         val (text, indeterminate) =
             when (active.state) {
                 TransferState.Active ->
-                    getString(R.string.file_transfer_service_progress, percent, number, total) to false
+                    // The speed and ETA ride in contentText beside the percentage, because this is
+                    // the notification a user glances at during a long transfer and "how much
+                    // longer" is the question they are actually asking.
+                    withRateAndEta(
+                        getString(R.string.file_transfer_service_progress, percent, number, total),
+                        active.id,
+                    ) to false
                 TransferState.Verifying ->
                     getString(R.string.file_manager_transfer_verifying) to true
                 else -> // Negotiating / Queued: no byte progress yet.
                     getString(R.string.file_transfer_service_active) to true
             }
         return NotifModel(title, text, percent, indeterminate)
+    }
+
+    /**
+     * Appends "12.4 MB/s · 38 seconds left", or returns [base] untouched (RemEx-qmiv).
+     *
+     * Untouched is the honest early state: the estimator needs two observations, and padding the
+     * gap with a placeholder number is what the parent bead ruled out, because a user plans around
+     * it even when it is about to change by two orders of magnitude.
+     */
+    private fun withRateAndEta(base: String, transferId: String): String {
+        val suffix = TransferProgressText.progressSuffix(
+            this,
+            TransferProgressFormat.rate(FileTransferEngine.bytesPerSecond(transferId)),
+            TransferProgressFormat.eta(FileTransferEngine.secondsRemaining(transferId)),
+        ) ?: return base
+
+        return getString(R.string.file_transfer_detail_separator, base, suffix)
     }
 
     private fun buildNotification(model: NotifModel): Notification {
@@ -199,18 +222,8 @@ class FileTransferJobService : JobService() {
             .build()
     }
 
-    private fun ensureChannel() {
-        val channel =
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.file_transfer_notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = getString(R.string.file_transfer_notification_channel_description)
-                setShowBadge(false)
-            }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-    }
+    /** Asks the channel's owner rather than declaring a second copy of it (RemEx-9gbzc). */
+    private fun ensureChannel() = FileTransferNotificationManager.ensureTransferChannel(this)
 
     companion object {
         private const val CHANNEL_ID = "remex_file_transfer"

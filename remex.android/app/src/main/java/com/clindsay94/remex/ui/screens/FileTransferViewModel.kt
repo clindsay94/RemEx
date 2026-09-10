@@ -3,20 +3,29 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import android.content.res.AssetFileDescriptor
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
+import com.clindsay94.remex.service.BatchConflictChoice
+import com.clindsay94.remex.service.ConflictAction
+import com.clindsay94.remex.service.FileConflictPolicy
 import com.clindsay94.remex.service.FileManageOperations
 import com.clindsay94.remex.service.FileTransferEngine
 import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
+import com.clindsay94.remex.ui.components.FileConflictPrompt
+import com.clindsay94.remex.service.TransferProgressFormat
+import com.clindsay94.remex.service.TransferProgressText
+import com.clindsay94.remex.service.TransferRateEstimator
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.UUID
@@ -29,8 +38,13 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
@@ -38,6 +52,9 @@ import org.json.JSONObject
 private const val TAG = "FileTransferVM"
 private const val CHUNK_SIZE = 65_536
 private const val SEARCH_DEBOUNCE_MS = 400L
+
+/** One manifest page is a metadata walk of a folder; the first also pays for the whole-subtree count. */
+private const val MANIFEST_PAGE_TIMEOUT_MS = 120_000L
 
 private fun JSONObject.optMeaningfulString(key: String): String? {
     if (!has(key) || isNull(key)) return null
@@ -102,6 +119,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private val _fullBrowseGranted = MutableStateFlow(false)
     val fullBrowseGranted = _fullBrowseGranted.asStateFlow()
+
+    // Waits for the PC's answer to a `file_volumes_request` so the browse UI can render an honest,
+    // always-terminating pending state instead of silence (RemEx-c7v4n).
+    private val volumesTracker = VolumesWaitTracker()
+    val volumesPending: StateFlow<Boolean> = volumesTracker.pending
 
     private val _selectedRootId = MutableStateFlow<String?>(null)
     val selectedRootId = _selectedRootId.asStateFlow()
@@ -198,10 +220,33 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private var pendingRootsDeferred: CompletableDeferred<Unit>? = null
     private var pendingBrowseDeferred: CompletableDeferred<Unit>? = null
 
+    /** The collision the sheet is currently asking about, or null when it is closed (RemEx-agpn). */
+    private val _conflictPrompt = MutableStateFlow<FileConflictPrompt?>(null)
+    val conflictPrompt = _conflictPrompt.asStateFlow()
+
+    private var pendingConflictAnswer: CompletableDeferred<Pair<ConflictAction, Boolean>>? = null
+
+    /**
+     * Identifies the prompt currently on screen, so a late answer cannot resolve a different one.
+     *
+     * A torn-down sheet can still emit one last dismissal. Without this, that stray Skip would
+     * answer the NEXT file's prompt - silently skipping an item the user never saw.
+     */
+    private var pendingConflictToken: Long = 0L
+    private var nextConflictToken: Long = 0L
+
     private var activeTransferId: String? = null
     private var activeTransferFileName: String? = null
     private var activeDownload: ActiveDownload? = null
     private var activeUploadJob: Job? = null
+
+    /**
+     * Throughput and time-remaining for the transfer currently in flight (RemEx-qmiv).
+     *
+     * One estimator, reset between transfers rather than recreated, because it is fed from
+     * [handleProgress] which is the single place progress arrives for either direction.
+     */
+    private val transferRate = TransferRateEstimator()
 
     init {
         // Start the (idempotent) engine so its queue is readable and its control-message collector is
@@ -521,6 +566,22 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun moveSelectedTo(destFolder: String) = manageSelectedTo(destFolder, FileManageOperations.MOVE)
 
+    private companion object {
+        /**
+         * How many times one item may be re-sent after the user answers a collision.
+         *
+         * **A BOUND EXISTS BECAUSE THE USER IS NOT ALWAYS IN THE LOOP.** A remembered "apply to all"
+         * answer satisfies the sheet without asking, so a squatter that keeps claiming each name the
+         * host picks would otherwise spin server round-trips behind a spinner with no way to stop it.
+         * The host's own 10,000-suffix cap does not help: that fires when 10,000 siblings genuinely
+         * exist, not when a racing writer re-takes each freshly chosen name.
+         *
+         * Three is slack rather than a limit anyone should reach - the honest race resolves on round
+         * two. Running out is counted as an ordinary failure, which is what it is.
+         */
+        const val MAX_CONFLICT_ROUNDS = 3
+    }
+
     private fun manageSelectedTo(destFolder: String, operation: String) {
         val rootId = _selectedRootId.value ?: return
         val targets = _displayedEntries.value.filter {
@@ -530,19 +591,211 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         clearSelection()
         viewModelScope.launch {
             _isLoading.value = true
+            try {
             val movingLabel =
                 if (operation == FileManageOperations.MOVE) app().getString(R.string.file_manager_moving, targets.size)
                 else app().getString(R.string.file_manager_copying, targets.size)
             _statusText.value = movingLabel
             var errors = 0
-            for (entry in targets) {
+            var skipped = 0
+            val renamed = mutableListOf<String>()
+
+            // SCOPED TO THIS BATCH BY CONSTRUCTION. A remembered "Replace, apply to all" that
+            // outlived the operation it was given for would overwrite a file in some later,
+            // unrelated copy the user was never asked about - so it is created here and dies here,
+            // rather than living on the ViewModel where forgetting to clear it is silent data loss.
+            val batchChoice = BatchConflictChoice()
+
+            for ((index, entry) in targets.withIndex()) {
                 val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
                 val destination = FileManagerLogic.combinePath(destFolder, entry.name)
-                if (runManage(rootId, relative, operation, destinationPath = destination).failed) errors++
+
+                // A LOOP, NOT TWO ATTEMPTS, and review is the reason. This used to run the operation,
+                // ask once, retry once, and collapse the retry's outcome to errors++ without ever
+                // reading its error code. That made resolved_name_taken UNREACHABLE: the host can
+                // only send it on a retry, because the name it describes is one the host picks only
+                // when a conflictResolution arrives. So the code, its action set, its body text and
+                // all nine translations were dead on arrival - the exact "declared but never
+                // delivered" shape this repo has been bitten by before.
+                //
+                // BOUNDED, because a standing "keep both, apply to all" satisfies the sheet without
+                // asking. Unbounded, a squatter re-taking each name the host picks would spin
+                // round-trips behind a spinner with nobody able to stop it. The honest case resolves
+                // on round two; three is slack, and running out is an ordinary failure.
+                lastResolvedName = null
+                var outcome = runManage(rootId, relative, operation, destinationPath = destination)
+                var rounds = 0
+                // NAMED FOR WHAT IT GUARDS, not for what happened. The first name said the user had
+                // resolved it, which reads backwards - Skip IS the user resolving it, arguably the
+                // most decisive answer available - and would mislead whoever adds the next exit path
+                // into setting the wrong side. What this actually means is that the item is already
+                // in a tally and the code below must not add it to another.
+                var alreadyCounted = false
+
+                while (outcome.failed && rounds < MAX_CONFLICT_ROUNDS) {
+                    val conflict = outcome as? ManageOutcome.HostRefused
+                    val actions = FileConflictPolicy.actionsFor(conflict?.errorCode, operation)
+                    if (actions.isEmpty()) {
+                        // Not a collision - an ordinary failure the user cannot answer. Raising a
+                        // sheet would offer "Replace" as a response to "the disk is full".
+                        break
+                    }
+
+                    val answer = resolveConflict(
+                        fileName = conflict?.conflictingName ?: entry.name,
+                        errorCode = conflict?.errorCode.orEmpty(),
+                        operation = operation,
+                        actions = actions,
+                        hasRemaining = index < targets.lastIndex,
+                        batchChoice = batchChoice,
+                    )
+
+                    val resolution = FileConflictPolicy.resolutionFor(answer)
+                    if (resolution == null) {
+                        // Skip sends nothing at all, so it cannot fail - and it is NOT an error,
+                        // which is why it is counted apart. Reporting a deliberate skip as a failure
+                        // would tell the user something went wrong when they chose it.
+                        alreadyCounted = true
+                        skipped++
+                        break
+                    }
+
+                    lastResolvedName = null
+                    outcome = runManage(rootId, relative, operation, destinationPath = destination,
+                        conflictResolution = resolution)
+                    rounds++
+                }
+
+                // THE TAIL IS A PURE FUNCTION NOW (RemEx-dtbd). Five exits reach this point and the
+                // accounting across them was verified only by inspection: the source-shape guards in
+                // FileConflictWiringTest would pass unchanged on a loop that double-counted skipped
+                // or dropped renamed. It depends on nothing but these three locals, so it is tested
+                // directly instead.
+                val tally = FileManagerLogic.tallyItem(alreadyCounted, outcome.failed, lastResolvedName)
+                errors += tally.errors
+                tally.renamed?.let { renamed += it }
             }
-            _statusText.value = multiResultText(targets.size, errors)
-            _isLoading.value = false
+
+            // ASSEMBLED ONCE, AT THE END. Review caught the per-item versions being written to a
+            // conflated StateFlow and overwritten by this line with no suspension in between, so
+            // "Saved as report (2).pdf" was never observable - and never at all for a single-file
+            // copy, which is the common case and the exact guarantee the bead asked for.
+            //
+            // SKIPS ARE REPORTED, NOT SUBTRACTED INTO SILENCE. Counting them out of both numerator
+            // and denominator made an all-skipped batch read "Deleted 0 items", with nothing saying
+            // the user's own choice was why.
+            // BROWSE FIRST, THEN THE SUMMARY - the order is the whole fix. browseRemote() clears
+            // _statusText synchronously, and _statusText is a conflated StateFlow, so a summary
+            // written before it is discarded without ever being collected. Review caught the first
+            // attempt at this defect merely relocating it: the mid-loop writes were folded into one
+            // terminal write that was STILL overwritten one line later.
             browseRemote()
+            _statusText.value = batchSummary(operation, targets.size - skipped, errors, skipped, renamed)
+            } finally {
+                // The spinner comes down even if this coroutine is cancelled mid-sheet, which is
+                // what a disconnect while the prompt is open looks like. Leaving it up strands the
+                // screen in a loading state nothing will ever clear.
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Asks the user what to do about one collision, reusing a standing answer where it is valid.
+     *
+     * **A STANDING ANSWER IS STILL CHECKED AGAINST THIS COLLISION.** Someone who chose "Replace,
+     * apply to all" for a batch of ordinary collisions has not agreed to destroy a directory tree
+     * when the next item turns out to be a different kind of thing - so a remembered answer that is
+     * not on this collision's offer list is discarded and the question asked again.
+     */
+    private suspend fun resolveConflict(
+        fileName: String,
+        errorCode: String,
+        operation: String,
+        actions: List<ConflictAction>,
+        hasRemaining: Boolean,
+        batchChoice: BatchConflictChoice,
+    ): ConflictAction {
+        batchChoice.standingAnswer?.let { standing ->
+            // The REAL operation. A hardcoded COPY was harmless only because copy and move share
+            // a rule today - which is exactly why it would have survived until the policy gained a
+            // move-specific one, and then been wrong silently.
+            if (batchChoice.canApply(standing, errorCode, operation)) {
+                return standing
+            }
+        }
+
+        val answer = CompletableDeferred<Pair<ConflictAction, Boolean>>()
+        val token = ++nextConflictToken
+        pendingConflictAnswer = answer
+        pendingConflictToken = token
+        _conflictPrompt.value = FileConflictPrompt(token, fileName, errorCode, actions, hasRemaining)
+
+        val (action, applyToAll) = try {
+            answer.await()
+        } finally {
+            // CLEARED ON EVERY EXIT, INCLUDING CANCELLATION. If the batch coroutine is cancelled
+            // while the sheet is open - a disconnect, the screen going away - leaving _conflictPrompt
+            // set would strand a sheet with nothing behind it to answer.
+            if (pendingConflictToken == token) {
+                _conflictPrompt.value = null
+                pendingConflictAnswer = null
+            }
+        }
+
+        batchChoice.remember(action, applyToAll)
+        return action
+    }
+
+    /** The sheet's answer. Skip on dismissal - see FileConflictSheet for why that is the default. */
+    fun onConflictResolved(token: Long, action: ConflictAction, applyToAll: Boolean) {
+        // DROPPED IF IT IS NOT ANSWERING THE PROMPT ON SCREEN. A torn-down sheet can emit one last
+        // dismissal, and without this check that stray Skip would answer the NEXT file's question -
+        // skipping an item the user was never shown.
+        if (token != pendingConflictToken) return
+
+        pendingConflictAnswer?.complete(action to applyToAll)
+    }
+
+    /**
+     * The one line a finished copy/move batch leaves behind.
+     *
+     * Built in one place because [_statusText] is a conflated StateFlow rendered into a single
+     * label: anything written mid-loop is overwritten by the next write with no suspension between,
+     * so it is never observed. Every fact the user needs has to arrive together.
+     */
+    private fun batchSummary(
+        operation: String,
+        succeeded: Int,
+        errors: Int,
+        skipped: Int,
+        renamed: List<String>,
+    ): String {
+        val res = app().resources
+
+        // COPY AND MOVE GET THEIR OWN WORDS. This used to borrow multiResultText, whose strings are
+        // delete-specific, so an all-skipped copy of three files read "Deleted 0 items." - a file
+        // manager that also deletes telling the user it deleted something it did not touch.
+        val done = succeeded - errors
+        val parts = mutableListOf(
+            res.getQuantityString(
+                if (operation == FileManageOperations.MOVE) R.plurals.file_conflict_moved_count
+                else R.plurals.file_conflict_copied_count,
+                done,
+                done,
+            )
+        )
+
+        if (errors > 0) parts += res.getQuantityString(R.plurals.file_conflict_failed_count, errors, errors)
+        if (skipped > 0) parts += res.getQuantityString(R.plurals.file_conflict_skipped_count, skipped, skipped)
+
+        // Named only when there is ONE, because a list of renamed files does not fit a status line -
+        // and the case that matters is the single-file copy, where the user is looking at exactly
+        // one name and would otherwise believe it was the one they asked for.
+        if (renamed.size == 1) parts += app().getString(R.string.file_conflict_saved_as, renamed.single())
+
+        return parts.reduce { acc, part ->
+            app().getString(R.string.file_transfer_detail_separator, acc, part)
         }
     }
 
@@ -563,18 +816,33 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         /** The host never answered. Nothing is known about whether it acted. */
         data object TimedOut : ManageOutcome
 
-        /** The host answered and said no. [message] is its own user-facing wording. */
-        data class HostRefused(val message: String) : ManageOutcome
+        /**
+         * The host answered and said no. [message] is its own user-facing wording.
+         *
+         * [errorCode] and [conflictingName] are the machine-readable half (RemEx-6vd8): non-null
+         * only for a filename collision, and the ONLY thing a client may branch on. The message is
+         * English prose that the host will one day translate, so matching it would work today and
+         * silently stop working later.
+         */
+        data class HostRefused(
+            val message: String,
+            val errorCode: String? = null,
+            val conflictingName: String? = null,
+        ) : ManageOutcome
     }
 
     private val ManageOutcome.failed: Boolean
         get() = this !is ManageOutcome.Ok
 
     /** Sends one file_manage_request and awaits its response. */
+    /** Set by [runManage] when the host renamed the destination. Read and cleared by the caller. */
+    private var lastResolvedName: String? = null
+
     private suspend fun runManage(
         rootId: String,
         relativePath: String,
         operation: String,
+        conflictResolution: String? = null,
         newName: String? = null,
         destinationPath: String? = null,
     ): ManageOutcome {
@@ -593,13 +861,28 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             if (newName != null) put("newName", newName)
             if (destinationPath != null) put("destinationPath", destinationPath)
             if (v3Op) put("overwrite", false)
+            // Only ever sent on a RETRY, after the user answered a collision sheet. A first attempt
+            // carries none, which is what makes the host fail loudly instead of guessing.
+            if (v3Op && conflictResolution != null) put("conflictResolution", conflictResolution)
         }
         if (v3Op) sendV3("file_manage_request", "fileManageRequest", payload)
         else sendMessage(JSONObject().apply { put("type", "file_manage_request"); put("fileManageRequest", payload) })
         return try {
             val response = withTimeout(30_000) { deferred.await() }
-            val hostError = response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
-            if (hostError == null) ManageOutcome.Ok else ManageOutcome.HostRefused(hostError)
+            val body = response.optJSONObject("fileManageResponse")
+            val hostError = body?.optMeaningfulString("errorMessage")
+            if (hostError == null) {
+                // A rename the HOST chose, reported so the user is not left believing they have
+                // report.pdf when the file on disk is report (2).pdf.
+                body?.optMeaningfulString("resolvedName")?.let { lastResolvedName = it }
+                ManageOutcome.Ok
+            } else {
+                ManageOutcome.HostRefused(
+                    hostError,
+                    errorCode = body.optMeaningfulString("errorCode"),
+                    conflictingName = body.optMeaningfulString("conflictingName"),
+                )
+            }
         } catch (_: TimeoutCancellationException) {
             // Deliberately carries no message. Naming the operation is the CALLER's job - this
             // function serves five of them and cannot know which one it is being used for, which is
@@ -691,13 +974,31 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun loadVolumes() {
         if (caps()?.fullBrowse != true) return
+        // Idempotent re-tap: a pending request already covers it, and this also keeps awaitResponse()
+        // from being entered concurrently (VolumesWaitTracker is not reentrant).
+        if (volumesTracker.pending.value) return
         val requestId = newRequestId()
-        _statusText.value = app().getString(R.string.file_manager_requesting_volumes)
+        // Names the actual wait (RemEx-c7v4n round 3 review): a generic "Loading…" told the user
+        // something was happening but not that a human on their PC has to act — the fact that sends
+        // them to their desk instead of tapping again.
+        _statusText.value = app().getString(R.string.file_manager_full_browse_pending)
         sendV3(
             "file_volumes_request",
             "fileVolumesRequest",
             JSONObject().apply { put("requestId", requestId) },
         )
+        viewModelScope.launch {
+            // Every wait this starts must end: approved/refused/failed all arrive as ANSWERED (and are
+            // told apart by handleVolumesResponse's own classification), a dropped connection ends it
+            // as DISCONNECTED, and a host that never answers at all ends it as TIMED_OUT.
+            when (volumesTracker.awaitResponse(RemexClientManager.isConnected)) {
+                VolumesWaitTracker.VolumesWaitOutcome.TIMED_OUT ->
+                    replaceRequestingVolumesStatus(R.string.file_manager_full_browse_timed_out)
+                VolumesWaitTracker.VolumesWaitOutcome.DISCONNECTED ->
+                    replaceRequestingVolumesStatus(R.string.file_manager_full_browse_unreachable)
+                VolumesWaitTracker.VolumesWaitOutcome.ANSWERED -> Unit
+            }
+        }
     }
 
     // ── Properties sheet ──────────────────────────────────────────────────────
@@ -862,6 +1163,308 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    // ── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
+    //
+    // A folder download is not a new kind of transfer. The host pages out a flat manifest of the
+    // subtree, this side recreates the folder shape under the tree the user picked, and then enqueues
+    // the SAME per-file downloads the engine already runs — keeping resume, pause, notifications and
+    // integrity checking exactly as they are for one file.
+
+    /** True when the host answers `file_manifest_request`, i.e. a remote folder can be downloaded. */
+    val supportsFolderTransfer: StateFlow<Boolean> =
+        _capabilities
+            .map { it?.ops?.contains("manifest") == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private var pendingManifestRequestId: String? = null
+    private var pendingManifestDeferred: CompletableDeferred<JSONObject>? = null
+
+    /**
+     * Downloads a remote FOLDER into [treeUri] (a SAF tree the user granted). The folder lands as a
+     * child of that tree under its own name, so two folder downloads into the same place do not merge.
+     */
+    fun downloadFolderTo(entry: RemoteFileEntry, treeUri: Uri) {
+        val rootId = _selectedRootId.value
+        if (rootId.isNullOrBlank()) {
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
+            return
+        }
+        if (!entry.isDirectory) return
+
+        val base = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusText.value = app().getString(R.string.file_manager_folder_scanning)
+            try {
+                val subtree = fetchSubtree(rootId, base)
+                if (subtree == null) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val destinationRoot = withContext(Dispatchers.IO) {
+                    DocumentFile.fromTreeUri(app(), treeUri)?.let { tree ->
+                        tree.findFile(entry.name)?.takeIf { it.isDirectory } ?: tree.createDirectory(entry.name)
+                    }
+                }
+                if (destinationRoot == null) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val queued = withContext(Dispatchers.IO) {
+                    enqueueSubtreeDownloads(rootId, base, subtree.entries, destinationRoot)
+                }
+
+                if (queued == 0) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_empty)
+                    return@launch
+                }
+
+                FileTransferJobService.schedule(app())
+                // A truncated manifest means what was queued is NOT the folder. Saying so matters:
+                // a partial transfer looks exactly like a complete one until something is missing.
+                _statusText.value =
+                    if (subtree.truncated) {
+                        app().getString(R.string.file_manager_folder_queued_truncated, queued)
+                    } else {
+                        app().getString(R.string.file_manager_folder_queued_download, queued)
+                    }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Uploads a local FOLDER (a SAF tree the user granted) into the current remote folder. No manifest
+     * is involved in this direction — the tree is right here, so this side walks it and enqueues the
+     * same per-file uploads a single file produces.
+     */
+    fun uploadFolderFromTree(treeUri: Uri) {
+        val rootId = _selectedRootId.value
+        if (rootId.isNullOrBlank()) {
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusText.value = app().getString(R.string.file_manager_folder_scanning)
+            try {
+                val tree = withContext(Dispatchers.IO) { DocumentFile.fromTreeUri(app(), treeUri) }
+                if (tree == null || !tree.isDirectory) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val folderName = tree.name ?: "folder"
+                val currentFolder = _remotePath.value.replace('\\', '/').trim('/')
+                val destBase = if (currentFolder.isEmpty()) folderName else "$currentFolder/$folderName"
+
+                val files = withContext(Dispatchers.IO) { collectTreeFiles(tree) }
+                if (files.isEmpty()) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_empty)
+                    return@launch
+                }
+                if (files.size > FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_too_large)
+                    return@launch
+                }
+
+                for ((file, parentRelative) in files) {
+                    // destRelativePath is the DIRECTORY only — the host appends the file name itself
+                    // (RemEx-y6x6). Passing the full path here doubles it into 'name/name'.
+                    val destDirectory = if (parentRelative.isEmpty()) destBase else "$destBase/$parentRelative"
+                    FileTransferEngine.enqueueUpload(
+                        localUri = file.uri.toString(),
+                        fileName = file.name ?: continue,
+                        size = file.length(),
+                        destRoot = rootId,
+                        destRelativePath = destDirectory,
+                    )
+                }
+
+                FileTransferJobService.schedule(app())
+                _statusText.value = app().getString(R.string.file_manager_folder_queued_upload, files.size)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Flattens a SAF tree into (file, directory-relative-to-the-tree) pairs, breadth-first. Bounded by
+     * [FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES] so a pathological tree cannot walk forever.
+     */
+    private fun collectTreeFiles(tree: DocumentFile): List<Pair<DocumentFile, String>> {
+        val found = mutableListOf<Pair<DocumentFile, String>>()
+        val pending = ArrayDeque<Pair<DocumentFile, String>>()
+        pending.add(tree to "")
+        var visited = 0
+
+        while (pending.isNotEmpty()) {
+            val (directory, relative) = pending.removeFirst()
+            for (child in directory.listFiles()) {
+                if (++visited > FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) return found
+                val name = child.name ?: continue
+                if (child.isDirectory) {
+                    pending.add(child to if (relative.isEmpty()) name else "$relative/$name")
+                } else {
+                    found.add(child to relative)
+                }
+            }
+        }
+
+        return found
+    }
+
+    /** A whole subtree, paged to the end. */
+    private class SubtreeListing(val entries: List<ManifestNode>, val truncated: Boolean)
+
+    /** One manifest row. [relativePath] is ROOT-relative, i.e. already a valid transfer source. */
+    private class ManifestNode(
+        val relativePath: String,
+        val isDirectory: Boolean,
+        val sizeBytes: Long,
+    )
+
+    /** Pages `file_manifest_request` to its end. Null when the host errored or went quiet. */
+    private suspend fun fetchSubtree(rootId: String, relativePath: String): SubtreeListing? {
+        val entries = mutableListOf<ManifestNode>()
+        var cursor: String? = null
+        var truncated = false
+
+        do {
+            val response = requestManifestPage(rootId, relativePath, cursor) ?: return null
+            val error = response.optMeaningfulString("errorMessage")
+            if (error != null) {
+                Log.w(TAG, "Folder listing failed: $error")
+                return null
+            }
+
+            val array = response.optJSONArray("entries") ?: JSONArray()
+            for (i in 0 until array.length()) {
+                val node = array.getJSONObject(i)
+                entries.add(
+                    ManifestNode(
+                        relativePath = node.optString("relativePath"),
+                        isDirectory = node.optBoolean("isDirectory"),
+                        sizeBytes = node.optLong("sizeBytes"),
+                    )
+                )
+            }
+
+            truncated = truncated || response.optBoolean("truncated", false)
+            cursor = response.optMeaningfulString("nextCursor")
+        } while (cursor != null)
+
+        return SubtreeListing(entries, truncated)
+    }
+
+    /** Sends one page request and awaits its correlated reply, or null on timeout. */
+    private suspend fun requestManifestPage(rootId: String, relativePath: String, cursor: String?): JSONObject? {
+        val requestId = newRequestId()
+        val deferred = CompletableDeferred<JSONObject>()
+        pendingManifestRequestId = requestId
+        pendingManifestDeferred = deferred
+
+        sendV3(
+            "file_manifest_request",
+            "fileManifestRequest",
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relativePath)
+                if (cursor != null) put("cursor", cursor)
+                put("maxEntries", FileTransferLimits.MANIFEST_MAX_ENTRIES_PER_PAGE)
+            },
+        )
+
+        return try {
+            withTimeout(MANIFEST_PAGE_TIMEOUT_MS) { deferred.await() }
+        } catch (_: TimeoutCancellationException) {
+            Log.w(TAG, "Folder listing page timed out.")
+            null
+        } finally {
+            if (pendingManifestDeferred === deferred) {
+                pendingManifestDeferred = null
+                pendingManifestRequestId = null
+            }
+        }
+    }
+
+    /**
+     * Recreates the folder shape under [destinationRoot] and enqueues one download per file. Returns
+     * how many transfers were queued.
+     */
+    private fun enqueueSubtreeDownloads(
+        rootId: String,
+        base: String,
+        entries: List<ManifestNode>,
+        destinationRoot: DocumentFile,
+    ): Int {
+        val basePrefix = base.trim('/')
+        // Directories are created up front, empty ones included — no file implies an empty folder, so
+        // leaving them to the downloads would silently drop them.
+        val directories = mutableMapOf("" to destinationRoot)
+
+        fun directoryFor(path: String): DocumentFile? {
+            if (path.isEmpty()) return destinationRoot
+            directories[path]?.let { return it }
+            val cut = path.lastIndexOf('/')
+            val parentPath = if (cut < 0) "" else path.substring(0, cut)
+            val name = if (cut < 0) path else path.substring(cut + 1)
+            val parent = directoryFor(parentPath) ?: return null
+            val made = parent.findFile(name)?.takeIf { it.isDirectory } ?: parent.createDirectory(name)
+            if (made != null) directories[path] = made
+            return made
+        }
+
+        fun toDestinationRelative(node: ManifestNode): String? {
+            val relative =
+                when {
+                    basePrefix.isEmpty() -> node.relativePath
+                    node.relativePath.startsWith("$basePrefix/") -> node.relativePath.substring(basePrefix.length + 1)
+                    else -> return null
+                }
+            // The host's paths are input, not truth: refuse anything that could climb out of the tree
+            // the user granted before it reaches SAF.
+            val segments = relative.split('/').filter { it.isNotEmpty() }
+            if (segments.isEmpty() || segments.any { it == "." || it == ".." }) return null
+            return segments.joinToString("/")
+        }
+
+        for (node in entries.filter { it.isDirectory }) {
+            val relative = toDestinationRelative(node) ?: continue
+            directoryFor(relative)
+        }
+
+        var queued = 0
+        for (node in entries.filter { !it.isDirectory }) {
+            val relative = toDestinationRelative(node) ?: continue
+            val cut = relative.lastIndexOf('/')
+            val parentPath = if (cut < 0) "" else relative.substring(0, cut)
+            val fileName = if (cut < 0) relative else relative.substring(cut + 1)
+            val parent = directoryFor(parentPath) ?: continue
+
+            val existing = parent.findFile(fileName)?.takeIf { !it.isDirectory }
+            val target = existing ?: parent.createFile("application/octet-stream", fileName) ?: continue
+
+            FileTransferEngine.enqueueDownload(
+                destUri = target.uri.toString(),
+                fileName = fileName,
+                size = node.sizeBytes,
+                sourceRoot = rootId,
+                sourceRelativePath = node.relativePath,
+            )
+            queued++
+        }
+
+        return queued
+    }
+
     // ── v3 queue controls ─────────────────────────────────────────────────────
 
     fun pauseTransfer(id: String) = FileTransferEngine.pause(id)
@@ -1004,6 +1607,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 "file_root_manage_response" -> handleRootManageResponse(obj)
                 "file_volumes_response" -> handleVolumesResponse(obj)
                 "file_search_response" -> handleSearchResponse(obj)
+                "file_manifest_response" -> handleManifestResponse(obj)
                 "file_metadata_response" -> handleMetadataResponse(obj)
                 "file_thumbnail_response" -> handleThumbnailResponse(obj)
                 // Legacy (v2) transfer stream:
@@ -1126,13 +1730,54 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun handleVolumesResponse(obj: JSONObject) {
-        val response = obj.optJSONObject("fileVolumesResponse") ?: return
-        _fullBrowseGranted.value = response.optBoolean("fullBrowseGranted", false)
-        val error = response.optMeaningfulString("errorMessage")
-        if (error != null) {
-            Log.w(TAG, "Browse failed: $error")
-            _statusText.value = app().getString(R.string.file_transfer_browse_error)
+        // Resolve the pending wait FIRST, unconditionally — a malformed response with no
+        // "fileVolumesResponse" body still means the host answered, and the wait must not be left
+        // hanging on a message this handler otherwise can't parse.
+        volumesTracker.onAnswered()
+        val response = obj.optJSONObject("fileVolumesResponse") ?: run {
+            // The wait is already resolved by onAnswered() above; without this the spinner (or
+            // whatever it already reads) is left stuck permanently, since nothing else will ever
+            // resolve it (review, RemEx-c7v4n round 2) — exactly the failure this bead exists to kill.
+            replaceRequestingVolumesStatus(R.string.file_transfer_browse_error)
+            return
         }
+        // Classified from the value just PARSED, not from the flow it was written to (review): the
+        // outcome must describe the message in hand, not whatever shared state happens to hold when
+        // the next line runs.
+        val granted = response.optBoolean("fullBrowseGranted", false)
+        _fullBrowseGranted.value = granted
+        val error = response.optMeaningfulString("errorMessage")
+
+        // SAY WHICH OF THE THREE THIS IS (RemEx-3qmd). Until RemEx-l580 the wire could not tell a
+        // refusal somebody made from one the host had to make because it could not reach this phone,
+        // so this end said nothing at all — it cleared "Loading drives…" and left the screen blank.
+        // The unreachable case is the one worth distinguishing: it is the only one the person holding
+        // the phone can actually fix.
+        val outcome = FileManagerLogic.classifyVolumesResponse(
+            fullBrowseGranted = granted,
+            denyReason = response.optMeaningfulString("denyReason"),
+            errorMessage = error,
+        )
+        if (error != null) Log.w(TAG, "Browse failed: $error")
+        when (outcome) {
+            FileManagerLogic.VolumesOutcome.FAILED ->
+                _statusText.value = app().getString(R.string.file_transfer_browse_error)
+            // Only overwrite the status while it is still OUR spinner, the same rule the tail of this
+            // method already follows (review). The host holds this response for up to 60 seconds
+            // waiting on consent, and a user who gave up waiting and renamed a file should not have
+            // the rename result replaced by an answer to a question they stopped caring about.
+            FileManagerLogic.VolumesOutcome.PHONE_UNREACHABLE ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_unreachable)
+            // SAME STRING THE CLIENT-SIDE WAIT TIMEOUT ALREADY USES (RemEx-c7v4n): "Your PC didn't
+            // answer in time" is exactly true whether the phone gave up waiting or the host's own
+            // 60s auto-deny fired first and said so explicitly. Reusing it needed zero new strings.
+            FileManagerLogic.VolumesOutcome.HOST_PROMPT_TIMED_OUT ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_timed_out)
+            FileManagerLogic.VolumesOutcome.REFUSED ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_refused)
+            FileManagerLogic.VolumesOutcome.GRANTED -> Unit
+        }
+
         val arr = response.optJSONArray("volumes") ?: JSONArray()
         val list = mutableListOf<RemoteVolume>()
         for (i in 0 until arr.length()) {
@@ -1149,7 +1794,37 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             )
         }
         _volumes.value = list
-        if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) _statusText.value = ""
+        when {
+            // A late GRANTED can arrive after this wait's own client-side timeout already replaced the
+            // spinner with "didn't answer in time" — e.g. approval right at the host's ~60s deadline
+            // plus a slow VolumeEnumerator.Enumerate() (review, RemEx-c7v4n round 2). GRANTED alone
+            // already proves that message wrong, whether or not the host happens to report any ready
+            // drives (round 3) — an empty list is not evidence the grant didn't happen.
+            outcome == FileManagerLogic.VolumesOutcome.GRANTED -> _statusText.value = ""
+            _statusText.value == app().getString(R.string.file_manager_full_browse_pending) -> _statusText.value = ""
+        }
+    }
+
+    /**
+     * Swaps the "Waiting for approval on your PC…" message for [messageRes], and leaves anything else
+     * alone.
+     *
+     * The full-browse answer can arrive up to a minute after the tap, because the host holds it while
+     * a consent prompt is open. By then the user may well have done something else on this screen, and
+     * clobbering that operation's result to answer a question they abandoned is a worse outcome than
+     * saying nothing (review of RemEx-3qmd). Same rule the end of [handleVolumesResponse] already
+     * applies when it clears the spinner on success.
+     */
+    private fun replaceRequestingVolumesStatus(messageRes: Int) {
+        if (_statusText.value == app().getString(R.string.file_manager_full_browse_pending)) {
+            _statusText.value = app().getString(messageRes)
+        }
+    }
+
+    private fun handleManifestResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileManifestResponse") ?: return
+        if (response.optString("requestId") != pendingManifestRequestId) return
+        pendingManifestDeferred?.complete(response)
     }
 
     private fun handleSearchResponse(obj: JSONObject) {
@@ -1220,18 +1895,56 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (progress.optString("transferId") != activeTransferId) return
         val total = progress.optLong("totalBytes", 0)
         val transferred = progress.optLong("bytesTransferred", 0)
+
+        // SystemClock.elapsedRealtime(), never System.currentTimeMillis(). A wall clock steps
+        // backwards on an NTP correction, and the estimator correctly refuses a negative interval -
+        // so a wall clock would not produce a wrong speed, it would silently stop producing one.
+        transferRate.update(transferred, SystemClock.elapsedRealtime())
+
         val action = if (activeDownload != null) app().getString(R.string.file_transfer_action_downloading)
             else app().getString(R.string.file_transfer_action_uploading)
         if (total > 0) {
             _transferProgress.value = (transferred.toFloat() / total).coerceIn(0f, 1f)
-            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, "${(transferred * 100 / total)}%")
+            _statusText.value = app().getString(
+                R.string.file_transfer_progress_status,
+                action,
+                withRateAndEta("${(transferred * 100 / total)}%", transferred, total),
+            )
         } else if (transferred > 0) {
             _transferProgress.value = 0f
-            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, FileManagerLogic.formatBytes(transferred))
+            // Total unknown, so there is no ETA to offer - but the speed is still known, and it is
+            // the only evidence the user has that a sizeless transfer is moving at all.
+            _statusText.value = app().getString(
+                R.string.file_transfer_progress_status,
+                action,
+                withRateAndEta(FileManagerLogic.formatBytes(transferred), transferred, null),
+            )
         } else return
         FileTransferNotificationManager.showTransferProgress(
             app(), activeTransferFileName ?: "File transfer", activeDownload != null, transferred, total,
+            bytesPerSecond = transferRate.bytesPerSecondAt(SystemClock.elapsedRealtime()),
+            secondsRemaining = transferRate.secondsRemainingAt(
+                transferred, total.takeIf { it > 0L }, SystemClock.elapsedRealtime()),
         )
+    }
+
+    /**
+     * Appends "12.4 MB/s · 38 seconds left" to a progress figure, or returns it untouched.
+     *
+     * Untouched is the common early case and is deliberate: the estimator needs two observations
+     * before it can say anything, and padding the gap with a placeholder number is what the parent
+     * bead ruled out - a user plans around "14 hours remaining" even when it is about to become
+     * "30 seconds".
+     */
+    private fun withRateAndEta(base: String, transferred: Long, total: Long?): String {
+        val now = SystemClock.elapsedRealtime()
+        val suffix = TransferProgressText.progressSuffix(
+            app(),
+            TransferProgressFormat.rate(transferRate.bytesPerSecondAt(now)),
+            TransferProgressFormat.eta(transferRate.secondsRemainingAt(transferred, total, now)),
+        ) ?: return base
+
+        return app().getString(R.string.file_transfer_detail_separator, base, suffix)
     }
 
     private fun handleChunk(obj: JSONObject) {
@@ -1333,6 +2046,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         activeUploadJob = null
         _isTransferring.value = false
         _transferProgress.value = 0f
+
+        // The estimate belongs to ONE transfer. Carrying it into the next would describe the last
+        // one, and the gap between them would read as a long stall - so the first seconds of every
+        // subsequent transfer would show a speed nobody is achieving.
+        transferRate.resetRate()
     }
 
     private fun queryMetadata(uri: Uri): Pair<String?, Long?> {

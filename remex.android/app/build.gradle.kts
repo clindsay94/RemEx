@@ -1,13 +1,16 @@
 import com.android.build.api.variant.VariantOutputConfiguration
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
+import javax.inject.Inject
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("kotlin-parcelize")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
@@ -22,7 +25,7 @@ val androidLocalProperties = Properties().apply {
 // ── Version management ──────────────────────────────────────────────────────
 // Source of truth: app/version.properties (tracked in git).
 // - remexFreshAssembleRelease  → builds with current version, no changes.
-// - remexPublishRelease        → bumps versionCode+1, minor+1 (patch→0),
+// - remexPublishRelease        → bumps versionCode+1, PATCH+1 (2.5.0 → 2.5.1),
 //                                writes back to version.properties, then builds.
 val versionPropsFile = file("version.properties")
 val versionProps = Properties().apply {
@@ -54,6 +57,77 @@ if (isPublishBuild) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Build id ────────────────────────────────────────────────────────────────
+// An identity for THIS BUILD, distinct from versionName. NOT a version bump:
+// versionCode and versionName above are untouched and stay Connor's call.
+//
+// WHY: both heads shipped 2.4.0 for months, so the version number could not tell two binaries
+// apart — which is exactly when "is the fix in this build?" starts getting asked and cannot be
+// answered. On the PC that question was settled twice by comparing a file timestamp against a
+// commit timestamp, and one of those answers was wrong.
+//
+// SAME SHAPE AS THE DESKTOP (build/BuildId.targets, RemEx-2ckhm): seven hex for the short commit
+// sha, and when the working tree has uncommitted changes, "+" and four more characters. Read the
+// SHA HALF when comparing the phone against the PC — that half is git's and is identical on both.
+// The four characters after "+" are computed independently on each platform and are only
+// comparable against other builds of the SAME platform. Unifying them would mean reimplementing
+// one build system's hash in the other for a suffix that only ever distinguishes local rebuilds.
+//
+// A VALUE SOURCE, NOT A BARE exec: org.gradle.configuration-cache is on (gradle.properties:17), so
+// shelling out at configuration time has to go through an interface Gradle can track, or the cache
+// is either poisoned or silently disabled. It also re-runs each build to decide whether the cached
+// configuration is still valid, which is precisely the invalidation this wants — a new commit
+// changes the id, which changes BuildConfig, which rebuilds.
+abstract class RemexBuildIdSource : ValueSource<String, RemexBuildIdSource.Params> {
+    interface Params : ValueSourceParameters {
+        val repoRoot: Property<String>
+    }
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): String {
+        val sha = git("rev-parse", "--short=7", "HEAD")?.trim().orEmpty()
+        // No git, no .git, a source drop, a build agent without git on PATH: all of these are facts
+        // about the MACHINE, not the build, and none of them may fail the build. The About screen
+        // hides the row instead.
+        if (sha.isEmpty()) return UNKNOWN
+
+        val status = git("status", "--porcelain") ?: return sha
+        if (status.isBlank()) return sha
+
+        // String.hashCode is SPECIFIED by the JVM and stable across runs and machines, unlike
+        // .NET's, which is randomised per process — the desktop side needs MSBuild's
+        // StableStringHash for the same reason this needs nothing special.
+        return sha + "+" + String.format("%08x", status.hashCode()).substring(0, 4)
+    }
+
+    private fun git(vararg args: String): String? = try {
+        val out = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine(listOf("git", "-C", parameters.repoRoot.get()) + args)
+            standardOutput = out
+            errorOutput = ByteArrayOutputStream()
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue == 0) out.toString(Charsets.UTF_8.name()) else null
+    } catch (_: Exception) {
+        // Deliberately broad. The failure modes here are "git is not installed", "git is not on
+        // PATH for this user", "the process could not be started at all" — an open-ended set whose
+        // only correct handling is identical, and none of which is worth a stack trace in a build log.
+        null
+    }
+
+    companion object {
+        const val UNKNOWN = "unknown"
+    }
+}
+
+val remexBuildId: String = providers.of(RemexBuildIdSource::class.java) {
+    parameters.repoRoot.set(repoRootDir.absolutePath)
+}.get()
+// ─────────────────────────────────────────────────────────────────────────────
+
 android {
     namespace = remexAndroidApplicationId
     //noinspection GradleDependency
@@ -68,6 +142,9 @@ android {
         //noinspection OldTargetApi
         versionCode = remexVersionCode
         versionName = remexVersionName
+
+        // Which BUILD, as opposed to which release. See the RemexBuildIdSource block above.
+        buildConfigField("String", "BUILD_ID", "\"$remexBuildId\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -134,6 +211,24 @@ android {
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
+    // Unit tests run against the RELEASE variant, which is what actually ships and gets
+    // installed on device. Without this line AGP 9 generates a unit-test component for the
+    // default testBuildType ("debug") and for NO other variant, so `testReleaseUnitTest`
+    // simply does not exist - `scripts/verify.ps1 -Scope android` invoked it for weeks and
+    // failed every time with "task not found", which was swallowed and reported as "Android
+    // unit tests failed" (RemEx-thvf). Under AGP 8 both variants got one, which is why the
+    // task name looked reasonable when it was written.
+    //
+    // Consequences, so they are not a surprise later:
+    //  - `testDebugUnitTest` no longer exists. Android Studio's default run configurations
+    //    follow the Build Variants panel, so select "release" there to run tests from the IDE.
+    //  - testBuildType also steers INSTRUMENTED tests. app/src/androidTest holds 7 Compose UI
+    //    tests; they now target the minified release build and may need testProguardFiles
+    //    rules if they are ever wired into an automated path. Nothing runs them today.
+    //
+    // Verified at the time of the change: 530 unit tests, 0 failures, on both variants.
+    testBuildType = "release"
+
     testOptions {
         unitTests {
             // Return defaults instead of throwing on unmocked android.* framework calls
@@ -163,12 +258,50 @@ android {
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
+                // Same reasoning for the source-scanning guards, which read Kotlin main sources
+                // off disk (DeadSdkGuardTest, SendCommandThreadingTest and friends).
+                it.inputs
+                        .files(fileTree("src/main/java") { include("**/*.kt") })
+                        .withPropertyName("scannedKotlinMainSources")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+                // And this build script, because DeadSdkGuardTest parses minSdk out of it rather
+                // than hardcoding 34. A minSdk bump is the change that guard has the most to say
+                // about — every `>= VANILLA_ICE_CREAM` in the tree becomes dead the moment minSdk
+                // reaches 35 — and it is also a change that need not alter a single .class byte,
+                // so without this it is precisely the run Gradle would skip. (RemEx-jcl4p.)
+                it.inputs
+                        .file(File(projectDir, "build.gradle.kts"))
+                        .withPropertyName("appBuildScriptForMinSdk")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+                // And for the pairing PHASE tokens, which live in a third C# file. PairingPhaseTest
+                // reads AndroidNativeExports.cs to prove every token the native side emits is mapped
+                // to a localized sentence here, and that every token it declares is actually emitted.
+                // Without this line, renaming a token or deleting an emission changes only C# — so
+                // testDebugUnitTest reports UP-TO-DATE and the guard never runs. (RemEx-g87x.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Native/AndroidNativeExports.cs"))
+                        .withPropertyName("pairingPhasesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
                 // Same arrangement for the "end process" failure codes, and for the same reason:
                 // ProcessKillErrorCodesCoverageTest reads this file to prove every code the host
                 // can send is mapped to a localized string here. (RemEx-r37a.)
                 it.inputs
                         .file(File(repoRoot, "remex.core/Models/ProcessKillErrorCodes.cs"))
                         .withPropertyName("processKillErrorCodesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
+                // And for the file-consent DENY reasons. VolumesOutcomeTest reads
+                // FileConsentDenyReasons out of this file to prove the phone still matches the token
+                // the PC sends, and that no code has been added on the host that this screen would
+                // silently render as a plain "declined". (RemEx-3qmd, review.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Models/FileTransferMessages.cs"))
+                        .withPropertyName("fileConsentDenyReasonsSource")
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
@@ -692,7 +825,7 @@ val remexFreshAssembleRelease by project.tasks.registering {
 val remexPublishRelease by project.tasks.registering {
     group = "remex"
     description =
-        "Bump version (versionCode+1, minor+1, patch→0), clean build release APK + AAB, and verify"
+        "Bump version (versionCode+1, patch+1), clean build release APK + AAB, and verify"
     dependsOn("clean")
     dependsOn("mergeReleaseAssets") // Force assets to be merged first
     dependsOn("assembleRelease")
@@ -859,6 +992,9 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    // The typed routes in ui/navigation reference @Serializable directly, so the runtime is a
+    // direct dependency rather than a ride on navigation-compose's transitive (RemEx-mt43).
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
@@ -871,6 +1007,11 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     // org.json is an Android stub in unit tests; use the real implementation
     testImplementation("org.json:json:20260522")
+    // runTest/StandardTestDispatcher for ThemeSyncSenderTest (RemEx-y06a0.1). Pinned to the
+    // kotlinx-coroutines-core version this project actually resolves transitively (checked via
+    // `:app:dependencies --configuration releaseRuntimeClasspath`) rather than left to whatever a
+    // future transitive bump picks, since coroutines-test asserts its version matches core's.
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

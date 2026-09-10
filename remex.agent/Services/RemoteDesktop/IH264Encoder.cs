@@ -18,10 +18,13 @@ public interface IH264Encoder : IDisposable
     int ExpectedInputByteCount { get; }
 
     /// <summary>
-    /// Initializes the encoder with target stream specifications.
+    /// Initializes the encoder. <paramref name="inputWidth"/>/<paramref name="inputHeight"/> describe
+    /// the raw BGRA frames the caller will write; <paramref name="width"/>/<paramref name="height"/>
+    /// are the encoded dimensions. Where they differ the implementation is responsible for the
+    /// downscale — done inside ffmpeg rather than on the capture thread (RemEx-evzv).
     /// <paramref name="qp"/> is the constant quantization parameter (lower = higher quality/bitrate).
     /// </summary>
-    bool Initialize(int width, int height, int fps, int qp);
+    bool Initialize(int inputWidth, int inputHeight, int width, int height, int fps, int qp);
 
     /// <summary>
     /// Encodes a raw 32-bit BGRA pixel frame to H.264 Annex B packets.
@@ -29,7 +32,7 @@ public interface IH264Encoder : IDisposable
     /// <param name="rawPixelsBGRA">Raw 32-bit BGRA bytes of the screen frame.</param>
     /// <param name="forceKeyframe">If true, forces the encoder to produce a keyframe (I-frame) for this frame.</param>
     /// <returns>H.264 Annex B bytes (including start codes), or null if encoding failed.</returns>
-    byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe);
+    byte[]? EncodeFrame(ReadOnlyMemory<byte> rawPixelsBGRA, bool forceKeyframe);
 
     /// <summary>
     /// Requests an on-demand keyframe (IDR with fresh SPS/PPS). A client whose decoder desynced

@@ -82,6 +82,7 @@ hwinfo_reg.txt
 publish/
 remex.android/app/src/main/jniLibs/
 remex.android/conductor/
+.token-savior-cache.json
 
 # AI tool directories
 .gemini/
@@ -112,10 +113,9 @@ build/tmp-host-verify/
 *.xml~
 
 # Planning and review documents
-docs/android-ui-refactor-prd-notes.md
-docs/android-ui-refactor-tech.md
-docs/ui-evaluation-report.md
-docs/prd-*.md
+docs/assets/
+docs/plans/
+docs/old-docs/
 docs/superpowers/
 review-report.md
 
@@ -124,8 +124,26 @@ review-report.md
 /installer/output/
 /build_output/
 
-# Claude agent files
-/.claude/
+# Claude agent files.
+#
+# Most of this directory is per-machine state, but three things in it are PROJECT TOOLING and
+# have to travel with the repo: the shared settings (which wire up the PostToolUse edit guard),
+# the hook scripts themselves, and the skills. Ignoring them wholesale meant they existed only on
+# the machine that wrote them - invisible to a fresh clone, to the CachyOS install, and to any
+# `git worktree` (which does not copy ignored files at all). CLAUDE.md already cites
+# `.claude/skills/gitnexus/*/SKILL.md` by path, and those citations pointed at nothing for anyone
+# who had not generated them locally.
+#
+# Note on the syntax: git does not descend into an excluded DIRECTORY, so `!` on a file inside an
+# ignored directory has no effect. Excluding the children with `/*` and then re-including the
+# specific subdirectories is what makes the negations work.
+/.claude/*
+!/.claude/settings.json
+!/.claude/scripts/
+!/.claude/skills/
+# The project's own review-gate agents. Shared for the same reason as skills/: they encode this
+# repo's rules, and a reviewer that only exists on one machine is not a gate.
+!/.claude/agents/
 # Firebase
 remex.android/app/google-services.json
 
@@ -148,6 +166,15 @@ remex.android/app/google-services.json
 FINAL_AUDIT_OPUS.md
 FINAL_AUDIT_SONNET.md
 /.beads/
-/docs/OLD DOCS
-.token-savior-cache.json
-.token-savior-cache.json
+.agents/
+
+# Local ralph loop procedure. Untracked on purpose: it carries the device unlock PIN so the loop
+# can drive the physical phone, and that does not belong in a repo with a remote.
+/docs/ralph-serial-drain.md
+
+# Editor swap and backup files. Kate writes .<name>.kate-swp next to the file being edited;
+# one of these was committed by accident in the "Fix dead backdrop and build flow" commit.
+*.kate-swp
+*.sw[a-p]
+*~
+*.orig

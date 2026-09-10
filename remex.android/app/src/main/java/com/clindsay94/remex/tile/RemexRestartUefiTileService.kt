@@ -3,15 +3,11 @@ package com.clindsay94.remex.tile
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.RemexCoreClient
-import org.json.JSONObject
 
 class RemexRestartUefiTileService : TileService() {
 
-    private fun executeCommand() {
-        val commandJson = JSONObject().apply { put("action", "RestartToUefi") }.toString()
-        RemexCoreClient.SendCommand(commandJson).getOrNull()
-    }
+    private fun executeCommand() =
+        confirmTileCommand("RestartToUefi", com.clindsay94.remex.R.string.tile_restart_uefi_label)
 
     override fun onClick() {
         super.onClick()

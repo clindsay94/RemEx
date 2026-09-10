@@ -10,18 +10,71 @@ using Remex.Desktop.ViewModels;
 namespace Remex.Desktop.Services.FileTransfer;
 
 /// <summary>
-/// Client-side file transfer service. Uses the existing WebSocket connection
-/// in <see cref="ConnectionViewModel"/> to send/receive file transfer messages.
+/// Opens the local destination file a download writes into.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A SEAM FOR ONE FAILURE THAT LIVES ON THE FILESYSTEM SIDE (RemEx-04p8).
+/// <see cref="IFileTransferConnection"/> fakes the PEER, so it can reach every way the host or the
+/// socket can go wrong — and none of the ways the DESTINATION can. The flush before a download is
+/// declared successful exists because a disk that filled up or a stick that was unplugged would
+/// otherwise lose the tail while the transfer reported success (RemEx-owc3), and nothing on the
+/// connection side can produce that.
+/// </para>
+/// <para>
+/// Chosen over the two alternatives the bead listed. A Linux-only ENOSPC test on a loopback or
+/// tmpfs mount would break the cross-platform parity rule and skip on Windows, which is the platform
+/// this is actually developed on — so the case would be untested exactly where it is most often run.
+/// A filesystem shim is strictly more machinery for the same result.
+/// </para>
+/// <para>
+/// The point that makes this seam honest rather than a mock of itself: a fake here is expected to
+/// WRAP A REAL FILE. The behaviour being pinned is "Failed, with the partial deleted", and the delete
+/// is a genuine <c>File.Delete</c> on a genuine path — so a test overrides only the one operation it
+/// needs to fail and lets everything else touch the disk.
+/// </para>
+/// </remarks>
+internal delegate Stream DownloadFileOpener(string localPath);
+
+/// <summary>
+/// Client-side file transfer service. Sends and receives file transfer messages over an existing
+/// connection, supplied as <see cref="IFileTransferConnection"/> — in production that is
+/// <see cref="ConnectionViewModel"/>, which already satisfies the interface.
 /// </summary>
 public sealed class FileTransferClient : IDisposable
 {
-    private readonly ConnectionViewModel _connection;
+    private readonly IFileTransferConnection _connection;
+    private readonly DownloadFileOpener _openDownloadFile;
     private TaskCompletionSource<RemexMessage>? _rootsWaiter;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
-    private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
+    private readonly ConcurrentDictionary<string, IProgress<TransferProgress>?> _progressReporters = new();
     private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
+
+    /// <summary>
+    /// Bytes accepted for a download but not yet written to disk, per transfer.
+    /// </summary>
+    /// <remarks>
+    /// A separate dictionary rather than a field on the channel because the producer and the writer
+    /// live in different methods and only share a transfer id — the same reason the hashers and the
+    /// end-waiters are kept this way. Reaped in the same finally as all of them.
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, StrongBox<long>> _downloadBacklogBytes = new();
     private readonly ConcurrentDictionary<string, IncrementalHash> _downloadHashers = new();
+
+    /// <summary>
+    /// Ceiling on unwritten download backlog before the transfer is abandoned (RemEx-gyf4).
+    /// </summary>
+    /// <remarks>
+    /// Chosen to be far above any transient stall — a disk pausing for a second at 100 MB/s queues
+    /// a tenth of this — and far below the point where the process is in trouble. It does NOT rescue
+    /// a destination that is persistently slower than the connection: nothing can, without flow
+    /// control in the protocol, because the backlog then grows without limit by construction. What
+    /// it buys is that such a transfer fails in seconds with a message naming the cause, instead of
+    /// consuming RAM proportional to the whole speed difference and taking the application with it.
+    /// </remarks>
+    internal const long MaxQueuedDownloadBytes = 256L * 1024 * 1024;
+
 
     /// <summary>
     /// Fails a transfer whose peer has gone silent, without bounding how long a large transfer
@@ -35,6 +88,7 @@ public sealed class FileTransferClient : IDisposable
     // ── 2.1 File Sharing Overhaul (protocolVersion 3) response waiters ──
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _volumesWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _searchWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manifestWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _metadataWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _thumbnailWaiters = new();
 
@@ -45,11 +99,52 @@ public sealed class FileTransferClient : IDisposable
     /// </summary>
     public FileCapabilities? Capabilities { get; private set; }
 
-    public FileTransferClient(ConnectionViewModel connection)
+    /// <summary>
+    /// Transfers the idle watchdog still considers live. Zero when nothing is in flight.
+    /// </summary>
+    /// <remarks>
+    /// Exposed for tests: a leased-but-never-released transfer is invisible from outside otherwise,
+    /// which is how RemEx-kdly survived. <c>TransferIdleWatchdog</c> documents this counter as
+    /// existing for exactly that kind of assertion.
+    /// </remarks>
+    internal int ActiveTransferCount => _idleWatchdog.ActiveTransferCount;
+
+    /// <summary>
+    /// Entries the download path registers per transfer, across all five of its dictionaries.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="ActiveTransferCount"/> because that one watches the WATCHDOG, which is
+    /// a single registration out of six. A test asserting only on it stays green while the other five
+    /// are moved back outside the region that reaps them — which is five sixths of the leak returning
+    /// invisibly. Counting them all is what makes the assertion match the claim. (RemEx-kdly)
+    /// </remarks>
+    internal int PendingDownloadRegistrationCount =>
+        _transferEndWaiters.Count + _progressReporters.Count +
+        _downloadChannels.Count + _downloadBacklogBytes.Count + _downloadHashers.Count;
+
+    public FileTransferClient(IFileTransferConnection connection)
+        : this(connection, downloadFileOpener: null)
+    {
+    }
+
+    /// <summary>
+    /// Test seam: substitutes how the destination file is opened, so a failure on the filesystem
+    /// side of a download can be produced deterministically (RemEx-04p8).
+    /// </summary>
+    /// <remarks>
+    /// Null in production, which is the whole surface of the change — the default is the same
+    /// <c>FileStream</c> the inline construction built, with the same mode, share and buffer.
+    /// </remarks>
+    internal FileTransferClient(IFileTransferConnection connection, DownloadFileOpener? downloadFileOpener)
     {
         _connection = connection;
+        _openDownloadFile = downloadFileOpener ?? OpenDownloadFile;
         _connection.FileTransferMessageReceived += OnFileTransferMessage;
     }
+
+    /// <summary>The production destination: buffered, async, and exclusive for the transfer.</summary>
+    private static Stream OpenDownloadFile(string localPath) =>
+        new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
 
     /// <summary>
     /// Sends <paramref name="request"/> and awaits the reply on <paramref name="tcs"/>, bounded by
@@ -166,15 +261,23 @@ public sealed class FileTransferClient : IDisposable
             new RemexMessage
             {
                 Type = MessageTypes.FileManageRequest,
-                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = FileManageOperations.Delete }
             },
             tcs,
             () => _manageWaiters.TryRemove(requestId, out _),
             TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
+        // THE SAME TYPED THROW THE OTHER NINE HOST-REFUSAL SITES USE (RemEx-mznc). This one raised a
+        // bare IOException carrying a hardcoded English prefix, so FileTransferViewModel's
+        // `catch (FileTransferHostException)` never saw it and the host's own advice — the copy that
+        // tells the user what to do next — was replaced by a generic sentence. Worse, a host that
+        // set ErrorMessage to the empty string produced the literal "Delete failed: " on screen,
+        // which is precisely the blank-reply case ForHostError exists to catch.
         if (response.FileManageResponse?.Success == false)
-            throw new IOException($"Delete failed: {response.FileManageResponse.ErrorMessage}");
+            throw FileTransferHostException.ForHostError(
+                response.FileManageResponse.ErrorMessage,
+                $"{FileManageOperations.Delete} failed without the host giving a reason.");
     }
 
     public async Task RenameRemoteAsync(string rootId, string relativePath, string newName, CancellationToken ct)
@@ -188,15 +291,18 @@ public sealed class FileTransferClient : IDisposable
             new RemexMessage
             {
                 Type = MessageTypes.FileManageRequest,
-                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = FileManageOperations.Rename, NewName = newName }
             },
             tcs,
             () => _manageWaiters.TryRemove(requestId, out _),
             TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
+        // Same conversion, same reason, as DeleteRemoteAsync above.
         if (response.FileManageResponse?.Success == false)
-            throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
+            throw FileTransferHostException.ForHostError(
+                response.FileManageResponse.ErrorMessage,
+                $"{FileManageOperations.Rename} failed without the host giving a reason.");
     }
 
     /// <summary>
@@ -223,6 +329,11 @@ public sealed class FileTransferClient : IDisposable
 
     /// <inheritdoc cref="ControlRequestTimeoutSeconds"/>
     private const int SearchRequestTimeoutSeconds = 120;
+    /// <summary>
+    /// Enumerating a subtree is a full metadata walk of the folder, and the first page pays for the
+    /// whole-subtree count on top of it — so this is generous where search's cap keeps it short.
+    /// </summary>
+    private const int ManifestRequestTimeoutSeconds = 180;
 
     public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -259,19 +370,81 @@ public sealed class FileTransferClient : IDisposable
     // Callers must gate on Capabilities so these are never sent to a v2 host.
     // ──────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Copies <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
-    public Task CopyRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
-        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Copy, newName: null, destinationRelativePath, overwrite, ct);
+    /// <summary>
+    /// Copies <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within
+    /// the same root, returning what the host said about a filename collision.
+    /// </summary>
+    /// <param name="conflictResolution">
+    /// One of <see cref="FileConflictResolutions"/> when the user has already answered a collision
+    /// for this item, else null. NULL IS NOT A DEFAULT ANSWER — the host reads it as "nobody was
+    /// asked" and refuses rather than guessing, which is the behaviour every earlier build had.
+    /// </param>
+    /// <returns>
+    /// The outcome. A collision comes back as <see cref="FileManageOutcome.IsConflict"/> rather
+    /// than as a throw; every other refusal still throws <see cref="FileTransferHostException"/>,
+    /// so the existing catch sites are unaffected.
+    /// </returns>
+    public Task<FileManageOutcome> CopyRemoteAsync(
+        string rootId, string relativePath, string destinationRelativePath, bool overwrite, string? conflictResolution, CancellationToken ct)
+        => ManageOrThrowAsync(rootId, relativePath, FileManageOperations.Copy, newName: null, destinationRelativePath, overwrite, conflictResolution, ct);
 
-    /// <summary>Moves <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
-    public Task MoveRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
-        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Move, newName: null, destinationRelativePath, overwrite, ct);
+    /// <summary>
+    /// Moves <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within
+    /// the same root. Same conflict contract as <c>CopyRemoteAsync</c> above.
+    /// </summary>
+    public Task<FileManageOutcome> MoveRemoteAsync(
+        string rootId, string relativePath, string destinationRelativePath, bool overwrite, string? conflictResolution, CancellationToken ct)
+        => ManageOrThrowAsync(rootId, relativePath, FileManageOperations.Move, newName: null, destinationRelativePath, overwrite, conflictResolution, ct);
 
     /// <summary>Creates a new folder named <paramref name="folderName"/> under <paramref name="parentRelativePath"/> (wire: RelativePath=parent, NewName=folder).</summary>
-    public Task MakeDirectoryRemoteAsync(string rootId, string parentRelativePath, string folderName, CancellationToken ct)
-        => ManageAsync(rootId, parentRelativePath, Remex.Core.Models.FileManageOperations.Mkdir, newName: folderName, destinationPath: null, overwrite: false, ct);
+    /// <remarks>
+    /// REFUSAL-ONLY, AND STILL A THROW EVEN WHEN THE HOST SENDS A CODE. The host's
+    /// <c>CreateDirectoryAsync</c> accepts no <c>conflictResolution</c>, so a Replace or Keep-both
+    /// retry re-fails identically — offering either would be a prompt the user can never answer
+    /// their way out of. The code still earns its place on the wire by saying WHY the mkdir failed,
+    /// which is what <see cref="FileTransferHostException"/> then puts on screen.
+    /// </remarks>
+    public async Task MakeDirectoryRemoteAsync(string rootId, string parentRelativePath, string folderName, CancellationToken ct)
+    {
+        var outcome = await ManageAsync(
+            rootId, parentRelativePath, FileManageOperations.Mkdir, newName: folderName,
+            destinationPath: null, overwrite: false, conflictResolution: null, ct);
 
-    private async Task ManageAsync(string rootId, string relativePath, string operation, string? newName, string? destinationPath, bool overwrite, CancellationToken ct)
+        if (!outcome.Success)
+            throw FileTransferHostException.ForHostError(
+                outcome.ErrorMessage,
+                $"{FileManageOperations.Mkdir} failed without the host giving a reason.");
+    }
+
+    /// <summary>
+    /// Runs a manage operation and turns everything EXCEPT a collision into the usual throw.
+    /// </summary>
+    /// <remarks>
+    /// **THE SPLIT IS THE CONTRACT, so state it once here rather than at each call site.** A
+    /// collision is a QUESTION: the caller has answers to offer and a retry to issue with the one
+    /// the user picks. Every other refusal — read-only root, disk full, vanished source — is a
+    /// failure with nothing to ask about, and those must keep arriving as
+    /// <see cref="FileTransferHostException"/> so <c>FileTransferViewModel</c>'s existing catch
+    /// still shows the host's own advice verbatim.
+    /// </remarks>
+    private async Task<FileManageOutcome> ManageOrThrowAsync(
+        string rootId, string relativePath, string operation, string? newName, string? destinationPath,
+        bool overwrite, string? conflictResolution, CancellationToken ct)
+    {
+        var outcome = await ManageAsync(
+            rootId, relativePath, operation, newName, destinationPath, overwrite, conflictResolution, ct);
+
+        if (!outcome.Success && !outcome.IsConflict)
+            throw FileTransferHostException.ForHostError(
+                outcome.ErrorMessage,
+                $"{operation} failed without the host giving a reason.");
+
+        return outcome;
+    }
+
+    private async Task<FileManageOutcome> ManageAsync(
+        string rootId, string relativePath, string operation, string? newName, string? destinationPath,
+        bool overwrite, string? conflictResolution, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -299,6 +472,11 @@ public sealed class FileTransferClient : IDisposable
                     NewName = newName,
                     DestinationPath = destinationPath,
                     Overwrite = overwrite,
+
+                    // CARRIED ON THE RETRY RATHER THAN ANSWERED IN A SEPARATE ROUND TRIP, which is
+                    // the shape remex.core documents on this field: a two-step exchange could race
+                    // another client writing the same name between the question and the answer.
+                    ConflictResolution = conflictResolution,
                 }
             },
             tcs,
@@ -306,10 +484,10 @@ public sealed class FileTransferClient : IDisposable
             scalesWithFileSize ? null : TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
-        if (response.FileManageResponse?.Success == false)
-            throw FileTransferHostException.ForHostError(
-                response.FileManageResponse.ErrorMessage,
-                $"{operation} failed without the host giving a reason.");
+        // THE REPLY IS READ WHOLE NOW. This used to test Success and discard the rest, so errorCode,
+        // conflictingName and resolvedName — everything the host says that a client can act on —
+        // were deserialized and dropped on the floor.
+        return FileManageOutcome.From(response.FileManageResponse);
     }
 
     /// <summary>Bounded recursive search under a root subtree. Returns hits plus whether results were capped.</summary>
@@ -344,6 +522,100 @@ public sealed class FileTransferClient : IDisposable
 
         var resp = response.FileSearchResponse;
         return (resp?.Entries ?? [], resp?.Truncated ?? false);
+    }
+
+    /// <summary>
+    /// Fetches ONE page of a recursive subtree listing. Callers normally want
+    /// <see cref="EnumerateRemoteSubtreeAsync"/>, which pages to the end for them.
+    /// </summary>
+    public async Task<FileManifestResponse> ManifestRemotePageAsync(
+        string rootId, string? relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _manifestWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileManifestRequest,
+                FileManifestRequest = new FileManifestRequest
+                {
+                    RequestId = requestId,
+                    RootId = rootId,
+                    RelativePath = relativePath,
+                    Cursor = cursor,
+                    MaxEntries = maxEntries,
+                }
+            },
+            tcs,
+            () => _manifestWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ManifestRequestTimeoutSeconds),
+            ct);
+
+        if (response.FileManifestResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw FileTransferHostException.ForHostError(err, "The host could not list that folder.");
+
+        return response.FileManifestResponse
+            ?? throw new IOException("The host answered a folder listing with no manifest body.");
+    }
+
+    /// <summary>
+    /// Pages a whole remote subtree into one flat, pre-order list — the client half of folder transfer
+    /// (RemEx-q3twg). Paths are ROOT-relative and can be handed straight to
+    /// <see cref="DownloadAsync"/>; <see cref="RemoteSubtree.BasePath"/> is the prefix to strip when
+    /// building local destinations.
+    /// </summary>
+    /// <remarks>
+    /// <b>THIS ENQUEUES NOTHING AND MOVES NO BYTES.</b> It exists so the caller can fan a folder out
+    /// into the per-file transfers the queue already knows how to run, with all their resume, conflict
+    /// and progress behaviour intact. Growing a bespoke "folder transfer" past this point would mean a
+    /// second implementation of every one of those.
+    /// </remarks>
+    public async Task<RemoteSubtree> EnumerateRemoteSubtreeAsync(
+        string rootId, string? relativePath, IProgress<int>? discovered, CancellationToken ct)
+    {
+        var entries = new List<FileManifestEntry>();
+        string? cursor = null;
+        long? totalFiles = null, totalDirectories = null, totalBytes = null;
+        var totalsComplete = false;
+        var truncated = false;
+        var basePath = (relativePath ?? string.Empty).Trim('/');
+
+        do
+        {
+            ct.ThrowIfCancellationRequested();
+            var page = await ManifestRemotePageAsync(
+                rootId, relativePath, cursor, FileTransferLimits.ManifestMaxEntriesPerPage, ct);
+
+            entries.AddRange(page.Entries);
+            if (cursor is null)
+            {
+                // Totals ride on the first page only, so capture them before the loop overwrites cursor.
+                totalFiles = page.TotalFiles;
+                totalDirectories = page.TotalDirectories;
+                totalBytes = page.TotalBytes;
+                totalsComplete = page.TotalsComplete;
+                basePath = (page.RelativePath ?? basePath).Trim('/');
+            }
+
+            truncated |= page.Truncated;
+            cursor = page.NextCursor;
+            discovered?.Report(entries.Count);
+        }
+        while (!string.IsNullOrEmpty(cursor));
+
+        return new RemoteSubtree
+        {
+            BasePath = basePath,
+            Entries = entries,
+            TotalFiles = totalFiles,
+            TotalDirectories = totalDirectories,
+            TotalBytes = totalBytes,
+            TotalsComplete = totalsComplete,
+            Truncated = truncated,
+        };
     }
 
     /// <summary>Detailed metadata (size, timestamps, item count, mime, read-only) for a single item.</summary>
@@ -395,7 +667,8 @@ public sealed class FileTransferClient : IDisposable
     }
 
     /// <summary>Enumerates the host's mounted volumes/drives once full-browse consent is granted (plan §1.2).</summary>
-    public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted)> ListVolumesAsync(CancellationToken ct)
+    public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted, string? DenyReason)>
+        ListVolumesAsync(CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -416,7 +689,11 @@ public sealed class FileTransferClient : IDisposable
         var resp = response.FileVolumesResponse;
         if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw FileTransferHostException.ForHostError(err, $"Volumes error: {err}");
-        return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false);
+
+        // THE REASON TRAVELS WITH THE REFUSAL (RemEx-jc4q). It used to be dropped here, which left
+        // the caller unable to tell "somebody said no" from "nobody could be asked" — and only the
+        // second of those has anything the user can do about it.
+        return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false, resp?.DenyReason);
     }
 
     public async Task<IReadOnlyList<FileSharedRoot>> AddRemoteRootAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
@@ -467,7 +744,7 @@ public sealed class FileTransferClient : IDisposable
         return response.FileRootManageResponse?.Roots ?? [];
     }
 
-    public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<double>? progress, CancellationToken ct)
+    public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<TransferProgress>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
 
@@ -479,7 +756,18 @@ public sealed class FileTransferClient : IDisposable
         _progressReporters[transferId] = progress;
         var lastActivity = _idleWatchdog.Begin(transferId);
 
-        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+        // Before RemEx-o5cz this registration only cancelled the local wait, so an upload the user
+        // stopped told the host NOTHING. The host holds an open write handle and a partial file at
+        // the destination path in _activeTransfers, and reaps them only when the WebSocket session
+        // ends - there is no idle timeout - so the fragment sat on the PC under the user's intended
+        // filename, locked, for as long as the app stayed connected.
+        var cancelGate = new TransferCancelGate(this, transferId);
+
+        using var reg = ct.Register(() =>
+        {
+            tcs.TrySetCanceled(ct);
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
+        });
 
         // Registration through the final await is wrapped in try/finally so a throw from ANY of
         // the sends below (Start, a chunk, or End) — not just the request/response shape
@@ -489,6 +777,11 @@ public sealed class FileTransferClient : IDisposable
         // failure left the waiter and progress reporter stranded forever.
         try
         {
+            // Say nothing at all if the request was already cancelled: the host has not heard of
+            // this transfer, so announcing and retracting it is strictly worse than silence. Inside
+            // the try so the registrations above are still reaped. (RemEx-o5cz)
+            ct.ThrowIfCancellationRequested();
+
             // Send Start with empty hash — hash is computed incrementally and sent in End
             await _connection.SendAsync(new RemexMessage
             {
@@ -505,6 +798,9 @@ public sealed class FileTransferClient : IDisposable
                     Sha256Base64 = string.Empty
                 }
             });
+
+            cancelGate.MarkStartSent();
+            if (ct.IsCancellationRequested) cancelGate.SendCancelIfHostKnowsTheTransfer();
 
             const int chunkSize = 65536;
             var buffer = new byte[chunkSize];
@@ -558,40 +854,122 @@ public sealed class FileTransferClient : IDisposable
         }
     }
 
-    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
+    /// <summary>
+    /// Ensures a <c>FileTransferCancel</c> is sent once, and only after the host has been told the
+    /// transfer exists.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A cancel is only MEANINGFUL once the peer has heard of the transfer: one naming an unknown id
+    /// is discarded, and the <c>Start</c> that follows is then never cancelled again. On a download
+    /// that left the host streaming a whole file to a client that had already given up; on an upload
+    /// it left an open write handle and a partial file at the destination, reaped only when the
+    /// connection itself ends. (RemEx-mubp, RemEx-o5cz)
+    /// </para>
+    /// <para>
+    /// SHARED BY BOTH DIRECTIONS ON PURPOSE. The two used to differ by accident rather than by
+    /// design - download sent a cancel too early, upload sent none at all - and each was found
+    /// separately, months apart. One object means the next change cannot fix one direction and miss
+    /// the other.
+    /// </para>
+    /// </remarks>
+    private sealed class TransferCancelGate(FileTransferClient owner, string transferId)
     {
-        var transferId = Guid.NewGuid().ToString("N");
-        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _transferEndWaiters[transferId] = tcs;
-        _progressReporters[transferId] = progress;
-        var lastActivity = _idleWatchdog.Begin(transferId);
+        private const int NotStarted = 0;
+        private const int StartSent = 1;
+        private const int CancelSent = 2;
 
-        using var reg = ct.Register(() =>
+        private int _state = NotStarted;
+
+        /// <summary>Opens the gate: the host now knows this transfer id.</summary>
+        public void MarkStartSent() => Interlocked.CompareExchange(ref _state, StartSent, NotStarted);
+
+        /// <summary>
+        /// Sends the cancel if - and only if - the start has gone out and no cancel has yet.
+        /// </summary>
+        /// <remarks>
+        /// Cannot be awaited, because a caller may be inside <c>ct.Register</c>, but a failure
+        /// matters: a cancel that never reaches the peer leaves it holding the transfer open.
+        /// </remarks>
+        public void SendCancelIfHostKnowsTheTransfer()
         {
-            tcs.TrySetCanceled(ct);
-            // Cannot be awaited - this runs inside ct.Register - but a failure matters: if the
-            // cancel never reaches the peer it keeps streaming a transfer the user stopped.
-            _connection.SendAsync(new RemexMessage
+            if (Interlocked.CompareExchange(ref _state, CancelSent, StartSent) != StartSent) return;
+
+            owner._connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferCancel,
                 FileTransferCancel = new FileTransferCancel { TransferId = transferId }
             }).FireAndForget($"send cancel for transfer {transferId}");
+        }
+    }
+
+    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<TransferProgress>? progress, CancellationToken ct)
+    {
+        var transferId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var cancelGate = new TransferCancelGate(this, transferId);
+
+        using var reg = ct.Register(() =>
+        {
+            tcs.TrySetCanceled(ct);
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
         });
 
-        await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+        await using var fileStream = _openDownloadFile(localPath);
 
         // Unbounded channel ensures chunk ordering: the consumer writes sequentially,
         // eliminating the race condition that would exist with fire-and-forget WriteAsync.
         var channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
-        _downloadChannels[transferId] = channel;
+        var backlogBytes = new StrongBox<long>(0);
         var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        _downloadHashers[transferId] = hasher;
 
+        // Cancellable so an abandoned transfer can stop the writer without draining: completing the
+        // channel instead makes ReadAllAsync flush everything still queued, which on the backlog path
+        // means writing the whole ceiling to the very disk that could not keep up, into a file about
+        // to be deleted.
+        //
+        // DELIBERATELY NOT LINKED TO ct, and that is the whole safety argument. Linked, a ct fired
+        // during the FINAL drain stops the writer mid-flush — and nothing downstream notices, because
+        // the digest is accumulated from bytes as they are RECEIVED, never re-read from the file. The
+        // integrity check would compare a complete hash against a truncated file and pass, and the
+        // queue would mark the transfer Done: a short file under the user's chosen name, reported as
+        // a finished download. Only DiscardPartialFileAsync may cancel this, so a successful drain
+        // cannot be interrupted.
+        using var writerCts = new CancellationTokenSource();
         var writeTask = Task.Run(async () =>
         {
-            await foreach (var data in channel.Reader.ReadAllAsync())
-                await fileStream.WriteAsync(data);
-        }, ct);
+            await foreach (var data in channel.Reader.ReadAllAsync(writerCts.Token))
+            {
+                await fileStream.WriteAsync(data, writerCts.Token);
+                // Retire the bytes only once they are actually on the stream, so the backlog
+                // measures what is genuinely outstanding rather than what has been dequeued.
+                RetireBacklog(backlogBytes, data.Length);
+            }
+        }, writerCts.Token);
+
+        // Every failure exit deletes the partial download through here — driven from the finally so
+        // a new exit cannot forget to call it.
+        async Task DiscardPartialFileAsync()
+        {
+            await writerCts.CancelAsync();
+            try { await writeTask; } catch { /* stopping it IS the point; nothing to report */ }
+
+            // THE FILE MUST BE CLOSED BEFORE IT CAN BE DELETED. It is opened FileShare.None, so a
+            // File.Delete while the stream is still alive throws a sharing violation — and the
+            // best-effort catch then swallowed it, leaving a truncated file under the FINAL name
+            // looking complete. That applied to the host-error and integrity paths too, so this is a
+            // pre-existing bug the RemEx-gyf4 review turned up rather than one the backlog ceiling
+            // introduced. ON WINDOWS: Linux maps FileShare to an advisory flock and unlink ignores
+            // it, so the delete already succeeded there (leaving the stream writing to an unlinked
+            // inode). Disposing twice is safe; the await using below disposes again.
+            // Best-effort like the delete below it, and for the same reason: DisposeAsync FLUSHES,
+            // and the realistic trigger is the exact scenario this feature exists for — a full or
+            // yanked USB stick. Unguarded it would skip the delete and replace the caller's real
+            // exception, so a "destination too slow" abandon would surface as a generic failure.
+            try { await fileStream.DisposeAsync(); } catch { /* best-effort */ }
+            try { File.Delete(localPath); } catch { /* best-effort */ }
+        }
 
         // Registration through the final await is wrapped in try/finally so a throw from EITHER
         // send (Start here — download has no per-chunk send, chunks arrive via OnFileTransferMessage)
@@ -601,8 +979,36 @@ public sealed class FileTransferClient : IDisposable
         // way (RemEx-w9lj): before this fix, a failed Start send left the transfer-end waiter,
         // progress reporter, channel, and hasher all stranded forever, and the writer task blocked
         // on the channel with nothing left to complete it.
+        // REGISTERED HERE, NOT AT THE TOP, so that everything registered is inside the try/finally
+        // that reaps it. The destination FileStream is opened above and can fail for entirely ordinary
+        // reasons — a read-only target file, a protected folder, a path that no longer exists — and
+        // when it did, the three entries registered before it were stranded permanently: a
+        // transfer-end waiter, a progress reporter, and a LIVE idle-watchdog lease, once per attempt.
+        // A user who now understands the error (RemEx-60li gave it a real message) will retry, and
+        // every retry leaked again.
+        //
+        // The comment below already stated the invariant — reap on every exit path the same way — but
+        // the registrations sat above the guarded region, so the invariant had a hole in exactly the
+        // window where local setup fails. UploadAsync never had it: its FileStream opens BEFORE its
+        // registrations, which is the asymmetry that gave this away. Registering last also makes the
+        // watchdog lease's lifetime equal to the period a transfer can actually stall, rather than
+        // starting it while opening a local file the peer is not involved in. (RemEx-kdly)
+        _transferEndWaiters[transferId] = tcs;
+        _progressReporters[transferId] = progress;
+        _downloadChannels[transferId] = channel;
+        _downloadBacklogBytes[transferId] = backlogBytes;
+        _downloadHashers[transferId] = hasher;
+        var lastActivity = _idleWatchdog.Begin(transferId);
+
+        bool completed = false;
         try
         {
+            // Nothing has been said to the host yet, so a request that is ALREADY cancelled says
+            // nothing at all rather than announcing a transfer and retracting it. Inside the try on
+            // purpose: the registrations above are reaped by the finally, and throwing above it
+            // would strand every one of them. (RemEx-mubp)
+            ct.ThrowIfCancellationRequested();
+
             await _connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferStart,
@@ -619,35 +1025,86 @@ public sealed class FileTransferClient : IDisposable
                 }
             });
 
+            cancelGate.MarkStartSent();
+            if (ct.IsCancellationRequested) cancelGate.SendCancelIfHostKnowsTheTransfer();
+
             var result = await _idleWatchdog.AwaitCompletionAsync(tcs, lastActivity, ct);
+
+            // Honour a cancel that landed during the wait rather than finishing the download anyway.
+            ct.ThrowIfCancellationRequested();
 
             // Signal the consumer that no more chunks are coming, then wait for all writes to
             // complete before the fileStream is disposed — prevents ObjectDisposedException on
             // pending writes.
             channel.Writer.TryComplete();
-            try { await writeTask; } catch (OperationCanceledException) { /* draining the writer after cancelling it - the cancel is the reason it stopped */ }
+            // Deliberately NOT catching OperationCanceledException here. Nothing can have cancelled
+            // the writer at this point — only DiscardPartialFileAsync does, and that runs in the
+            // finally — so a swallow would be unreachable today and a trap tomorrow: this exact
+            // catch is what hid the truncated-file bug while writerCts was linked to ct. A writer
+            // fault that DOES reach here (a full disk faulting WriteAsync) must propagate.
+            await writeTask;
 
             if (result.FileTransferEnd?.Success == false)
             {
-                try { File.Delete(localPath); } catch { /* best-effort */ }
                 throw FileTransferHostException.ForHostError(
                     result.FileTransferEnd.ErrorMessage,
                     $"Download failed: {result.FileTransferEnd.ErrorMessage}");
             }
 
+            // FLUSH BEFORE DECLARING SUCCESS. The writer having returned means every chunk reached
+            // the FileStream, not the disk: up to the 64 KB buffer can still be sitting in memory.
+            // The only other flush is the implicit one when `await using` disposes at method exit,
+            // and DISPOSAL DOES NOT REPORT WRITE FAILURES — measured on .NET 10.0.10, a FileStream
+            // whose underlying handle had been killed returned normally from `DisposeAsync` while
+            // `FlushAsync` on an identically-broken stream threw. Without this a destination that
+            // filled up or was unplugged in that window lost the tail while the transfer reported
+            // success, because the digest below is computed from bytes as RECEIVED. (RemEx-owc3)
+            //
+            // KNOW WHAT THIS DOES AND DOES NOT BUY. FlushAsync hands the managed buffer to the OS
+            // with a write call; it does NOT fsync. So it surfaces the errors the write itself
+            // reports — out of space, device gone, which are the two cases this bead is about — but
+            // once bytes are in the OS cache a later write-back failure is still invisible and the
+            // transfer still reports success. Do NOT "improve" this to Flush(flushToDisk: true): it
+            // blocks synchronously, and the host does not fsync its side either, so a plain flush is
+            // the honest parity rather than a false guarantee on one end.
+            //
+            // Deliberately untokenised. FlushAsync(ct) with an already-cancelled token returns a
+            // cancelled task WITHOUT flushing, abandoning the buffer — the identical failure this
+            // exists to remove. Cancellation is already honoured a few lines above.
+            await fileStream.FlushAsync();
+
             // Verify the host-supplied SHA-256 against the bytes we actually received.
             // Master plan §996 calls this out as the recommended download-side parity
             // with upload integrity verification.
+            //
+            // KNOW WHAT THIS DOES NOT COVER. The digest is accumulated in OnFileTransferMessage from
+            // chunks as they ARRIVE; nothing here re-reads the file. So it proves the transport was
+            // faithful and cannot prove the bytes reached the disk — which is exactly why a writer
+            // that stopped early once passed this check with a truncated file on disk (RemEx-gyf4).
+            // The flush above is what closes that gap; do not mistake this check for covering it.
             var expectedHash = result.FileTransferEnd?.Sha256Base64;
             var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
             if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
             {
-                try { File.Delete(localPath); } catch { /* best-effort */ }
                 throw new FileTransferIntegrityException();
             }
+
+            completed = true;
         }
         finally
         {
+            // ONE cleanup decision for every exit, rather than a delete at each throw site. The
+            // paths that were missing it are the ordinary ones — user cancellation and the idle
+            // timeout both went straight to this finally and left a truncated file under the FINAL
+            // chosen filename, with no .part suffix to hint at it. Doing it here also means the next
+            // failure exit somebody adds is covered without having to remember.
+            if (!completed)
+            {
+                // Before the drain below, not after: abandoning must not flush a backlog into a file
+                // that is about to be deleted.
+                await DiscardPartialFileAsync();
+            }
+
             // Unblock the writer task even when we got here via a throw before the normal
             // TryComplete()/await above ran (e.g. SendAsync or tcs.Task faulted), then reap every
             // dictionary this transfer touched. Any writer-task fault surfaced here is swallowed
@@ -656,7 +1113,13 @@ public sealed class FileTransferClient : IDisposable
             channel.Writer.TryComplete();
             try { await writeTask; } catch { /* cleanup only; real errors already propagated above */ }
 
+            // ORDER IS LOAD-BEARING, do not sort these. The producer looks up the channel first and
+            // the hasher last, so removing the channel first means no later chunk can be hashed
+            // without being queued. Removing the hasher first would open a window where a chunk is
+            // folded into the digest and never written, which surfaces as an integrity failure
+            // blaming the file rather than the teardown. Backlog box after the channel, same reason.
             _downloadChannels.TryRemove(transferId, out _);
+            _downloadBacklogBytes.TryRemove(transferId, out _);
             _transferEndWaiters.TryRemove(transferId, out _);
             _progressReporters.TryRemove(transferId, out _);
             _downloadHashers.TryRemove(transferId, out _);
@@ -664,6 +1127,41 @@ public sealed class FileTransferClient : IDisposable
             hasher.Dispose();
         }
     }
+
+    /// <summary>
+    /// Accounts <paramref name="byteCount"/> against a download's unwritten backlog, accepting it
+    /// only while the total stays within <paramref name="limitBytes"/>.
+    /// </summary>
+    /// <param name="wouldQueue">What the backlog WOULD have become; meaningful only on rejection.</param>
+    /// <returns><c>true</c> when the chunk may be queued.</returns>
+    /// <remarks>
+    /// Pulled out of the dispatch handler so the accounting can be tested without a live connection
+    /// (RemEx-gyf4). The part worth pinning is not the comparison but the ROLLBACK: the counter is
+    /// bumped optimistically because the common path is acceptance, so a rejection has to put the
+    /// bytes back. Miss that and every refused chunk leaks a little of the ceiling, so a transfer
+    /// that recovers is abandoned anyway on a backlog that has never actually existed.
+    /// </remarks>
+    internal static bool TryReserveBacklog(
+        StrongBox<long> backlog, int byteCount, long limitBytes, out long wouldQueue)
+    {
+        wouldQueue = Interlocked.Add(ref backlog.Value, byteCount);
+        if (wouldQueue <= limitBytes)
+        {
+            return true;
+        }
+
+        Interlocked.Add(ref backlog.Value, -byteCount);
+        return false;
+    }
+
+    /// <summary>Retires bytes from a download's backlog once they are on the stream.</summary>
+    /// <remarks>
+    /// Trivial, and extracted anyway: it is the other half of <see cref="TryReserveBacklog"/> and the
+    /// only thing that makes the ceiling releasable. Inline in the writer loop it was a line no test
+    /// could reach — deleting it left every test green while every download over the ceiling failed.
+    /// </remarks>
+    internal static void RetireBacklog(StrongBox<long> backlog, int byteCount)
+        => Interlocked.Add(ref backlog.Value, -byteCount);
 
     private void OnFileTransferMessage(RemexMessage message)
     {
@@ -687,6 +1185,31 @@ public sealed class FileTransferClient : IDisposable
                 if (_downloadChannels.TryGetValue(chunk.TransferId, out var ch))
                 {
                     var bytes = Convert.FromBase64String(chunk.DataBase64);
+
+                    // The channel stays UNBOUNDED and this stays a TryWrite that always succeeds.
+                    // Bounding it would be the obvious move and it is the wrong one here: this runs
+                    // on the connection's synchronous message dispatch, so there is no way to await
+                    // room, and a bounded TryWrite would return false and DROP the chunk — a
+                    // corrupt file reported later as an integrity failure, which is the worst
+                    // available outcome. Accounting for the backlog and abandoning the transfer
+                    // deliberately keeps the ordering guarantee the channel exists for while still
+                    // refusing to grow forever.
+                    if (_downloadBacklogBytes.TryGetValue(chunk.TransferId, out var backlog) &&
+                        !TryReserveBacklog(backlog, bytes.Length, MaxQueuedDownloadBytes, out var wouldQueue))
+                    {
+                        // Fail through the same waiter every other download failure uses, so the
+                        // existing finally reaps the channel, the writer task and the partial file.
+                        if (_transferEndWaiters.TryGetValue(chunk.TransferId, out var overflowWaiter))
+                        {
+                            overflowWaiter.TrySetException(
+                                new FileTransferBacklogException(wouldQueue, MaxQueuedDownloadBytes));
+                        }
+                        break;
+                    }
+
+                    // Hash only what is actually queued. Appending before the backlog check would
+                    // fold a chunk we then refused into the digest, turning an abandoned transfer
+                    // into an integrity error that blames the wrong thing.
                     if (_downloadHashers.TryGetValue(chunk.TransferId, out var hasher))
                         hasher.AppendData(bytes);
                     ch.Writer.TryWrite(bytes);
@@ -699,7 +1222,10 @@ public sealed class FileTransferClient : IDisposable
                 // emits one of these every ProgressChunkInterval chunks while receiving.
                 _idleWatchdog.Mark(prog.TransferId);
                 if (_progressReporters.TryGetValue(prog.TransferId, out var reporter) && prog.TotalBytes > 0)
-                    reporter?.Report((double)prog.BytesTransferred / prog.TotalBytes);
+                    // The counts travel now instead of being divided away here. This one line was
+                    // the whole loss: speed and time-remaining are both derivable from bytes and a
+                    // clock, and from a ratio neither is.
+                    reporter?.Report(new TransferProgress(prog.BytesTransferred, prog.TotalBytes));
                 break;
 
             case MessageTypes.FileTransferEnd when message.FileTransferEnd is { } end:
@@ -731,6 +1257,11 @@ public sealed class FileTransferClient : IDisposable
             case MessageTypes.FileSearchResponse when message.FileSearchResponse is { } search:
                 if (_searchWaiters.TryGetValue(search.RequestId, out var searchTcs))
                     searchTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileManifestResponse when message.FileManifestResponse is { } manifest:
+                if (_manifestWaiters.TryGetValue(manifest.RequestId, out var manifestTcs))
+                    manifestTcs.TrySetResult(message);
                 break;
 
             case MessageTypes.FileMetadataResponse when message.FileMetadataResponse is { } metadata:

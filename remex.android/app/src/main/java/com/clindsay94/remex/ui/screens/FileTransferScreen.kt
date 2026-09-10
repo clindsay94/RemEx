@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Button
@@ -65,6 +66,7 @@ import com.clindsay94.remex.ui.components.FileManagerDestinationSheet
 import com.clindsay94.remex.ui.components.FileManagerGridItem
 import com.clindsay94.remex.ui.components.FileManagerListItem
 import com.clindsay94.remex.ui.components.FileManagerPropertiesSheet
+import com.clindsay94.remex.ui.components.FileConflictSheet
 import com.clindsay94.remex.ui.components.FileManagerQueuePanel
 import com.clindsay94.remex.ui.components.FileManagerQuickAccess
 import com.clindsay94.remex.ui.components.FileManagerSelectionBar
@@ -85,6 +87,8 @@ fun FileTransferScreen(
     val displayedEntries by vm.displayedEntries.collectAsStateWithLifecycle()
     val remoteRoots by vm.remoteRoots.collectAsStateWithLifecycle()
     val volumes by vm.volumes.collectAsStateWithLifecycle()
+    val volumesPending by vm.volumesPending.collectAsStateWithLifecycle()
+    val supportsFolderTransfer by vm.supportsFolderTransfer.collectAsStateWithLifecycle()
     val selectedRootId by vm.selectedRootId.collectAsStateWithLifecycle()
     val capabilities by vm.capabilities.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
@@ -99,6 +103,7 @@ fun FileTransferScreen(
     val searchTruncated by vm.searchTruncated.collectAsStateWithLifecycle()
     val thumbnails by vm.thumbnails.collectAsStateWithLifecycle()
     val transferQueue by vm.transferQueue.collectAsStateWithLifecycle()
+    val conflictPrompt by vm.conflictPrompt.collectAsStateWithLifecycle()
     val properties by vm.properties.collectAsStateWithLifecycle()
     val propertiesLoading by vm.propertiesLoading.collectAsStateWithLifecycle()
     val destinationPath by vm.destinationPath.collectAsStateWithLifecycle()
@@ -135,6 +140,23 @@ fun FileTransferScreen(
     fun startDownload(entry: RemoteFileEntry) {
         pendingDownloadEntry = entry
         createDocumentLauncher.launch(entry.name)
+    }
+
+    // A folder needs a TREE grant, not a single created document: the whole subtree is written under
+    // it, so the picker has to hand back somewhere this app may create files and folders (RemEx-q3twg).
+    val uploadTreeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) vm.uploadFolderFromTree(uri)
+    }
+    var pendingFolderEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
+    val openTreeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        val entry = pendingFolderEntry
+        pendingFolderEntry = null
+        if (uri != null && entry != null) vm.downloadFolderTo(entry, uri)
+    }
+
+    fun startFolderDownload(entry: RemoteFileEntry) {
+        pendingFolderEntry = entry
+        openTreeLauncher.launch(null)
     }
 
     // ── Dialogs / sheets ────────────────────────────────────────────────────────
@@ -185,6 +207,8 @@ fun FileTransferScreen(
             canDelete = canDelete,
             onDismiss = { contextMenuEntry = null },
             onDownload = { contextMenuEntry = null; startDownload(entry) },
+            supportsFolderTransfer = supportsFolderTransfer,
+            onDownloadFolder = { contextMenuEntry = null; startFolderDownload(entry) },
             onRename = { contextMenuEntry = null; renameTarget = entry },
             onDelete = { contextMenuEntry = null; vm.deleteEntry(entry) },
             onProperties = { contextMenuEntry = null; vm.showProperties(entry) },
@@ -236,6 +260,7 @@ fun FileTransferScreen(
                         canWrite = canWrite && !searchActive,
                         onNewFolder = { showNewFolder = true },
                         onUpload = { uploadLauncher.launch("*/*") },
+                        onUploadFolder = { uploadTreeLauncher.launch(null) },
                         modifier = Modifier.padding(vertical = 4.dp),
                     )
 
@@ -244,6 +269,7 @@ fun FileTransferScreen(
                         volumes = volumes,
                         selectedRootId = selectedRootId,
                         canBrowseDevice = capabilities?.fullBrowse == true,
+                        browseDevicePending = volumesPending,
                         onSelectRoot = vm::selectRoot,
                         onSelectVolume = vm::selectVolume,
                         onBrowseDevice = vm::loadVolumes,
@@ -441,6 +467,13 @@ fun FileTransferScreen(
                         onCancel = vm::cancelTransfer,
                         onClearFinished = vm::clearFinishedTransfers,
                     )
+
+                    // Raised by the copy/move loop when the host reports a filename collision
+                    // (RemEx-agpn). Hosted here rather than inside the queue panel because it
+                    // belongs to the manage operation, which the panel knows nothing about.
+                    conflictPrompt?.let { prompt ->
+                        FileConflictSheet(prompt = prompt, onResolved = vm::onConflictResolved)
+                    }
                 }
             }
         }
@@ -500,6 +533,8 @@ private fun ContextMenuSheet(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onDownload: () -> Unit,
+    supportsFolderTransfer: Boolean,
+    onDownloadFolder: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onProperties: () -> Unit,
@@ -520,6 +555,13 @@ private fun ContextMenuSheet(
                     text = { Text(stringResource(R.string.file_transfer_download)) },
                     leadingIcon = { Icon(Icons.Default.Download, null) },
                     onClick = onDownload,
+                )
+            }
+            if (entry.isDirectory && entry.name != FileManagerLogic.PARENT_ENTRY && supportsFolderTransfer) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.file_manager_download_folder)) },
+                    leadingIcon = { Icon(Icons.Default.FolderZip, null) },
+                    onClick = onDownloadFolder,
                 )
             }
             DropdownMenuItem(

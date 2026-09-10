@@ -4,7 +4,7 @@
     <string name="widget_hardware_description">Lecturas en tiempo real de los sensores de hardware de tu PC conectado.</string>
     <string name="widget_launcher_description">Lanza tus aplicaciones favoritas del PC directamente desde tu pantalla de inicio.</string>
     <string name="widget_remote_label">RemEx Remoto</string>
-    <string name="widget_hardware_label">RemEx Hardware</string>
+    <string name="widget_hardware_label">Hardware RemEx</string>
     <string name="widget_launcher_label">RemEx Lanzador</string>
     <string name="splash_tagline">Ejecución Remota</string>
     <string name="snackbar_no_pc_connected">Ningún PC conectado</string>
@@ -88,9 +88,9 @@
     <string name="settings_tab_input">Entrada</string>
     <string name="settings_tab_file_transfer">Transferencia de Archivos</string>
     <string name="settings_tab_help">Ayuda</string>
-    <string name="settings_help_title">Ayuda e Información</string>
+    <string name="settings_help_title">Ayuda</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
-    <string name="settings_replay_tutorial_body">Vuelve a ver la guía de inicio que cubre la configuración, el descubrimiento automático y cómo conectar con tu PC.</string>
+    <string name="settings_replay_tutorial_body">Vuelve a ver la guía de introducción sobre la configuración, el emparejamiento por QR, la conexión manual y consejos de uso diario.</string>
     <string name="settings_faq_hint">¿Tienes alguna duda? Consulta las FAQ disponibles en el menú (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lanzador de Apps</string>
     <string name="app_launcher_no_apps">No se encontraron apps</string>
@@ -117,6 +117,24 @@
     <string name="rc_category_session">Sesión</string>
     <string name="rc_category_power">Energía</string>
     <string name="rc_category_energy">Ahorro</string>
+    <string name="rc_media_volume_down">Bajar volumen</string>
+    <string name="rc_media_volume_up">Subir volumen</string>
+    <string name="rc_media_mute">Silenciar</string>
+    <string name="rc_media_previous">Pista anterior</string>
+    <string name="rc_media_play_pause">Reproducir o pausar</string>
+    <string name="rc_media_play">Reproducir</string>
+    <string name="rc_media_pause">Pausar</string>
+    <string name="rc_media_next">Pista siguiente</string>
+    <string name="rc_media_hint">Mantén pulsados los botones de volumen para seguir cambiándolo.</string>
+    <string name="rc_media_unavailable">Este PC no está configurado para aceptar pulsaciones de teclas, así que estos botones no harán nada.</string>
+    <string name="rc_media_disconnected">Conéctate a tu PC para usar estos controles.</string>
+    <string name="rc_media_state_playing">Reproduciendo</string>
+    <string name="rc_media_state_paused">En pausa</string>
+    <string name="rc_media_state_idle">No se está reproduciendo nada</string>
+    <string name="rc_media_now_playing">Reproduciendo ahora</string>
+    <string name="rc_media_open_now_playing">Abrir Reproduciendo ahora</string>
+    <string name="rc_media_artwork">Carátula del álbum</string>
+    <string name="rc_media_seek">Buscar posición de reproducción</string>
     <string name="screen_remote_desktop_title">Escritorio Remoto</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
     <string name="cd_key_escape">Esc</string>
@@ -129,7 +147,7 @@
     <string name="cd_key_arrow_right">Flecha derecha</string>
     <string name="cd_key_delete">Del (Suprimir)</string>
     <string name="cd_key_windows">Tecla Windows</string>
-    <string name="cd_key_ctrl">Ctrl (Control)</string>
+    <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift (Mayús)</string>
     <string name="cd_key_altgr">AltGr</string>
@@ -167,7 +185,7 @@
     <string name="dashboard_pc_status">Estado del PC</string>
     <string name="dashboard_pc_status_subtitle">Orbe de estado de conexión</string>
     <string name="dashboard_wake_pc">Encender PC</string>
-    <string name="dashboard_wake_pc_subtitle">Enviar paquete mágico WOL</string>
+    <string name="dashboard_wake_pc_subtitle">Enviar señal de reactivación WOL</string>
     <string name="dashboard_telemetry_fallback">Telemetría</string>
     <string name="dashboard_card_drawer_title">Cajón de Tarjetas</string>
     <string name="dashboard_card_drawer_hint">Marca para añadir, desmarca para quitar, o arrastra una tarjeta al lienzo.</string>
@@ -175,11 +193,10 @@
     <string name="dashboard_host_online">PC EN LÍNEA</string>
     <string name="dashboard_connecting">CONECTANDO…</string>
     <string name="dashboard_tap_to_connect">TOCA PARA CONECTAR</string>
+    <string name="dashboard_connection_card_action">conectar con tu PC</string>
     <string name="dashboard_wake_pc_button">ENCENDER PC</string>
     <string name="dashboard_collecting_data">Recopilando datos…</string>
     <string name="screen_connection_title">Conexión</string>
-    <string name="screen_splash_title">Cargando</string>
-    <string name="screen_tutorial_title">Tutorial</string>
     <string name="connection_auto_discover_title">Autodescubrimiento en LAN</string>
     <string name="connection_auto_discover_hint">Asegúrate de que la aplicación RemEx se esté ejecutando en tu PC y de que ambos dispositivos estén en la misma red Wi-Fi.</string>
     <string name="connection_searching">Buscando tu PC…</string>
@@ -221,6 +238,21 @@
     <string name="connection_status_label">Estado: %1$s</string>
     <string name="connection_paired">Emparejado</string>
     <string name="connection_unpair">Desemparejar</string>
+    <string name="connection_known_pcs_title">PC conocidos</string>
+    <string name="connection_known_pcs_hint">Toca una dirección para conectarte.</string>
+    <string name="connection_known_pc_last_connected">Última conexión: %1$s</string>
+    <string name="connection_known_pc_never_connected">Sin conexiones todavía</string>
+    <string name="connection_known_pc_actions">Opciones de %1$s</string>
+    <string name="connection_known_pc_rename">Cambiar nombre</string>
+    <string name="connection_known_pc_rename_title">Ponle nombre a este PC</string>
+    <string name="connection_known_pc_nickname_label">Nombre</string>
+    <string name="connection_known_pc_unpair_title">¿Desemparejar %1$s?</string>
+    <string name="connection_known_pc_unpair_message">Este teléfono olvidará este PC en todas las direcciones en las que responde. Necesitarás el PIN que aparece en el PC para volver a emparejarlo.</string>
+    <string name="connection_known_pc_needs_pairing">Requiere emparejamiento</string>
+    <string name="connection_known_pc_forget">Quitar de la lista</string>
+    <string name="connection_known_pc_pair_title">¿Emparejar con %1$s?</string>
+    <string name="connection_known_pc_pair_message">Este teléfono no está emparejado en esta dirección. Introduce el PIN de 6 dígitos que aparece en el PC.</string>
+    <string name="connection_known_pc_pair_confirm">Emparejar</string>
     <string name="pairing_title">Emparejamiento seguro</string>
     <string name="pairing_prompt">Introduce el PIN de 6 dígitos que se muestra en tu PC</string>
     <string name="pairing_auto_pin_failed">No se pudo obtener el PIN automáticamente — escribe el PIN que aparece en tu PC.</string>
@@ -315,6 +347,8 @@
     <string name="tile_hibernate_label">Hibernar PC</string>
     <string name="tile_monitor_off_label">Apagar Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Confirmar acción</string>
+    <string name="tile_confirm_message">¿Enviar \"%1$s\" a tu PC ahora?</string>
     <string name="screen_file_transfer_title">Transferencia de Archivos</string>
     <string name="file_transfer_upload">Subir ↑</string>
     <string name="file_transfer_download">Descargar ↓</string>
@@ -329,6 +363,54 @@
     <string name="file_transfer_notification_download_title">Descargando %1$s</string>
     <string name="file_transfer_notification_preparing">Preparando transferencia…</string>
     <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d copiado</item>
+        <item quantity="other">%1$d copiados</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d movido</item>
+        <item quantity="other">%1$d movidos</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d con error</item>
+        <item quantity="other">%1$d con errores</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d omitido</item>
+        <item quantity="other">%1$d omitidos</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s ya existe</string>
+    <string name="file_conflict_body_exists">Ya hay un archivo o una carpeta con este nombre en la carpeta de destino.</string>
+    <string name="file_conflict_body_different_kind">Ya hay algo de otro tipo con este nombre en la carpeta de destino.</string>
+    <string name="file_conflict_body_name_unusable">Este nombre es demasiado largo para la carpeta de destino.</string>
+    <string name="file_conflict_body_name_taken">Otro elemento ocupó el nombre nuevo antes de poder guardarlo. Si lo intentas de nuevo, se elegirá otro nombre.</string>
+    <string name="file_conflict_body_unknown">Esto no se puede completar.</string>
+    <string name="file_conflict_replace">Reemplazar</string>
+    <string name="file_conflict_keep_both">Conservar ambos</string>
+    <string name="file_conflict_skip">Omitir</string>
+    <string name="file_conflict_apply_to_all">Aplicar a todos los restantes</string>
+    <string name="file_conflict_saved_as">Guardado como %1$s</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Finalizando…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">queda %1$d segundo</item>
+        <item quantity="other">quedan %1$d segundos</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">queda %1$d minuto</item>
+        <item quantity="other">quedan %1$d minutos</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">queda %1$d hora</item>
+        <item quantity="other">quedan %1$d horas</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transferencia completada</string>
     <string name="file_transfer_notification_upload_complete">%1$s subido</string>
     <string name="file_transfer_notification_upload_failed">No se pudo enviar %1$s</string>
@@ -418,7 +500,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN enviado</string>
     <string name="widget_toast_not_connected">No conectado: abra RemEx para conectarse</string>
     <string name="widget_toast_command_sent">%1$s enviado</string>
-    <string name="widget_toast_launching">Iniciando %1$s…</string>
     <string name="widget_hardware_title">Info. de hardware</string>
     <string name="sensor_cpu_usage">Uso de CPU</string>
     <string name="sensor_gpu_usage">Uso de GPU</string>
@@ -428,19 +509,20 @@
     <string name="sensor_gpu_temp">Temperatura de GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Cliente de Android</string>
+    <string name="about_build_id">Compilación %1$s</string>
     <string name="about_pc_host_label">Tu PC</string>
     <string name="about_status_unknown">Desconocido</string>
     <string name="about_view_github">Ver código fuente en GitHub</string>
-    <string name="about_whats_new_1_label">Panel 2.0</string>
-    <string name="about_whats_new_1_body">El panel de inicio se rediseñó por completo: elige un estilo de gráfico por tarjeta, renombra tarjetas, elige sus formas y reorganiza con gestos de arrastre y selección múltiple. Un recorrido guiado lo enseña en la primera visita.</string>
-    <string name="about_whats_new_2_label">Tarjetas de sensores más inteligentes</string>
-    <string name="about_whats_new_2_body">Las tarjetas entienden lo que miden: la vista se ajusta automáticamente a cada métrica, los títulos son personalizables y lecturas como la RAM total ya no se quedan en “Recopilando datos”.</string>
-    <string name="about_whats_new_3_label">Compartir archivos</string>
-    <string name="about_whats_new_3_body">Mueve archivos en ambos sentidos con reanudación, verificación SHA-256 y progreso en vivo. Compartir a RemEx desde otra aplicación ahora funciona aunque RemEx no esté abierta.</string>
-    <string name="about_whats_new_4_label">Animaciones expresivas</string>
-    <string name="about_whats_new_4_body">Los resortes de Material 3 Expressive animan toda la aplicación, de los tutoriales a las transferencias — y cada animación respeta el ajuste de accesibilidad Reducir movimiento del sistema.</string>
-    <string name="about_whats_new_5_label">Refuerzo de seguridad</string>
-    <string name="about_whats_new_5_body">Los antiguos endpoints de emparejamiento por HTTP sin cifrar desaparecieron, cerrando la última vía no cifrada al PIN. El emparejamiento sigue cifrado con ECDH de extremo a extremo, con la huella del certificado del PC fijada en cada reconexión.</string>
+    <string name="about_whats_new_1_label">Alertas de sensores</string>
+    <string name="about_whats_new_1_body">En tu PC, define un umbral en cualquier sensor y su tarjeta mostrará una campana que se pone roja en cuanto se supera. La alerta permanece encendida hasta que la reconozcas, así que un pico que te perdiste mientras estabas fuera sigue marcado, y una alerta crítica también genera una notificación de escritorio mientras la ventana está fuera de vista.</string>
+    <string name="about_whats_new_2_label">Igualar mi tema</string>
+    <string name="about_whats_new_2_body">Tu teléfono ahora comparte su tema con tu PC, así que Personalización puede igualar tus colores, claros u oscuros, con un toque. Cambia el tema de tu teléfono más tarde y el PC puede volver a adoptarlo cuando quieras.</string>
+    <string name="about_whats_new_3_label">Sincronización del portapapeles</string>
+    <string name="about_whats_new_3_body">Copia texto en tu teléfono y envíalo al portapapeles de tu PC desde la pantalla Control Remoto — queda listo para pegar en cuanto llega. Nada se guarda por el camino, así que una contraseña o un código de acceso pasa y desaparece.</string>
+    <string name="about_whats_new_4_label">PC conocidos</string>
+    <string name="about_whats_new_4_body">La pantalla Conexión ahora enumera todos los PC con los que te has emparejado, así que cambiar de equipo es un toque en vez de volver a escribir una dirección. Cada uno recuerda su propio nombre y cuándo te conectaste por última vez.</string>
+    <string name="about_whats_new_5_label">Transferencia de carpetas</string>
+    <string name="about_whats_new_5_body">Envía o recibe una carpeta entera de una vez, subcarpetas vacías incluidas, en lugar de elegir archivos uno por uno. Una conexión perdida simplemente se reanuda, igual que con un solo archivo.</string>
     <string name="about_whats_new_title">Novedades de la versión %1$s</string>
     <string name="app_launcher_recent">Recientes</string>
     <string name="cd_close_settings">Cerrar configuración</string>
@@ -531,17 +613,23 @@
     <string name="task_manager_host_unresponsive">El PC no responde a las solicitudes de la lista de procesos. Verifique que se haya completado el emparejamiento y que el PC tenga permiso para leer la información del proceso.</string>
     <string name="task_manager_kill_failed_format">No se pudo finalizar el proceso %1$d</string>
     <string name="task_manager_retry">Reintentar</string>
-    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en tu PC.</string>
-    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Es posible que tu PC se haya bloqueado o se haya cerrado la sesión.</string>
-    <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible.</string>
-    <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla durante la transmisión.</string>
-    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC en este momento.</string>
+    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en tu PC. Intenta iniciar la transmisión de nuevo; si sigue fallando, reinicia RemEx en el PC.</string>
+    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Puede que el PC se haya bloqueado o cerrado sesión. Desbloquéalo e inicia la transmisión de nuevo.</string>
+    <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible. Elige otra e inicia la transmisión de nuevo.</string>
+    <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla mientras transmite. Detén la transmisión y vuelve a iniciarla en la pantalla que quieras.</string>
+    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC ahora mismo. Suele significar que RemEx del PC necesita actualizarse o le faltan los componentes necesarios.</string>
+    <string name="rd_err_input_unavailable">Tu PC no acepta entradas de teclado ni ratón. Puede que se haya rechazado un aviso de permiso en el PC: toca Preguntar de nuevo para que vuelva a aparecer allí. Todavía puedes ver la pantalla.</string>
+    <string name="rd_input_retry_button">Preguntar de nuevo</string>
+    <string name="rd_input_retry_sent">Se le volvió a preguntar a tu PC: acepta el aviso allí.</string>
+    <string name="rd_err_connect_timeout">Tu PC en %1$s no respondió. Asegúrate de que esté encendido y conectado a la misma red Wi‑Fi que este teléfono, y vuelve a intentarlo.</string>
+    <string name="rd_err_handshake_timeout">Tu PC en %1$s respondió, pero dejó de hacerlo mientras verificaba este dispositivo. Puede que se haya suspendido. Intenta conectarte de nuevo.</string>
     <string name="cd_clear_search">Borrar búsqueda</string>
     <string name="pairing_error_timeout">El PC no respondió. Comprueba que esté encendido y conectado a la misma red y vuelve a intentarlo.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
     <string name="widget_refresh">Actualizar</string>
     <string name="widget_toast_refreshing">Actualizando…</string>
     <string name="widget_toast_refreshed">Telemetría actualizada</string>
+    <string name="widget_toast_refresh_failed">No se pudo actualizar la telemetría</string>
     <string name="widget_toast_connecting">Conectando al PC…</string>
     <string name="widget_config_poll_interval_label">Actualizar cada %1$d s</string>
     <string name="widget_config_poll_interval_hint">Frecuencia con la que el widget consulta al PC para obtener telemetría actualizada mientras está conectado.</string>
@@ -554,6 +642,20 @@
     <string name="connection_error_generic">Error de conexión.</string>
     <string name="connection_error_native_missing">No se pudo iniciar el motor de conexión de RemEx. Intenta reiniciar la app; si esto sigue ocurriendo, reinstala RemEx.</string>
     <string name="connection_action_repair">Volver a emparejar</string>
+    <string name="connection_cert_repair_title">¿Volver a emparejar este PC?</string>
+    <string name="connection_cert_repair_title_unchanged">No hay nada que reparar</string>
+    <string name="connection_cert_repair_changed">Este PC responde con una identidad de seguridad distinta de aquella con la que se emparejó tu teléfono.</string>
+    <string name="connection_cert_repair_when_safe">Es lo esperado si reinstalaste RemEx o Windows en el PC, o si cambiaste su hardware.</string>
+    <string name="connection_cert_repair_when_unsafe">Si no ha ocurrido nada de eso, detente. Puede que otra cosa esté respondiendo en esta dirección y leyendo lo que envías.</string>
+    <string name="connection_cert_repair_effect">Volver a emparejar hace que tu teléfono olvide la identidad en la que confía y empieza el emparejamiento de nuevo. Necesitarás el PIN que aparece en el PC.</string>
+    <string name="connection_cert_repair_label_pinned">Emparejado con</string>
+    <string name="connection_cert_repair_label_presented">Responde ahora</string>
+    <string name="connection_cert_repair_checking">Comprobando con qué responde esta dirección…</string>
+    <string name="connection_cert_repair_unknown">Este PC no respondió, así que no se pudo leer su identidad actual. Vuelve a emparejar solo si sabes por qué ha cambiado.</string>
+    <string name="connection_cert_repair_unchanged">Este PC responde con la identidad en la que tu teléfono ya confía, así que no hay nada que reparar. La conexión falló por otro motivo.</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(desconocida)</string>
+    <string name="connection_cert_repair_fingerprint_checking">Comprobando…</string>
+    <string name="connection_cert_repair_confirm">Olvidar y volver a emparejar</string>
     <string name="wake_pc_sent">Señal de encendido enviada</string>
     <string name="wake_pc_failed">Error al enviar la señal de encendido</string>
     <string name="wake_pc_mac_not_configured">Dirección MAC no configurada — configúrala en Ajustes</string>
@@ -606,9 +708,21 @@
     <string name="file_manager_prop_readonly">Solo lectura</string>
     <string name="file_manager_prop_yes">Sí</string>
     <string name="file_manager_prop_no">No</string>
-    <string name="file_manager_requesting_volumes">Cargando unidades…</string>
+    <string name="file_manager_full_browse_pending">Esperando la aprobación en tu PC…</string>
+    <string name="file_manager_full_browse_unreachable">Tu PC no pudo contactar con este teléfono para preguntar. Vuelve a conectar e inténtalo de nuevo.</string>
+    <string name="file_manager_full_browse_refused">Se rechazó la exploración de todo el dispositivo.</string>
+    <string name="file_manager_full_browse_timed_out">Tu PC no respondió a tiempo. Inténtalo de nuevo.</string>
     <string name="file_manager_queued_upload">Subida en cola: %1$s</string>
     <string name="file_manager_queued_download">Descarga en cola: %1$s</string>
+    <string name="file_manager_download_folder">Descargar carpeta</string>
+    <string name="file_manager_folder_scanning">Listando la carpeta…</string>
+    <string name="file_manager_folder_scan_failed">No se pudo listar la carpeta.</string>
+    <string name="file_manager_folder_empty">Esa carpeta no tiene archivos que transferir.</string>
+    <string name="file_manager_folder_queued_download">%1$d archivos en cola para descargar.</string>
+    <string name="file_manager_upload_folder">Subir carpeta</string>
+    <string name="file_manager_folder_queued_upload">%1$d archivos en cola para subir.</string>
+    <string name="file_manager_folder_too_large">Esa carpeta tiene demasiados archivos para transferirlos de una vez.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d archivos en cola, pero la carpeta era demasiado grande para listarla por completo: se omitieron algunos archivos.</string>
     <string name="file_manager_transfers_title">Transferencias (%1$d)</string>
     <string name="file_manager_clear_finished">Borrar finalizadas</string>
     <string name="file_manager_pause">Pausar</string>
@@ -652,6 +766,11 @@
     <string name="file_consent_push_message_generic">Tu PC quiere enviar archivos a este teléfono. ¿Permitir?</string>
     <string name="file_consent_full_browse_title">Solicitud de exploración del dispositivo</string>
     <string name="file_consent_full_browse_message">Tu PC quiere explorar el almacenamiento de este teléfono. ¿Permitir?</string>
+    <string name="file_consent_remote_full_browse_title">¿Explorar los archivos de tu PC?</string>
+    <string name="file_consent_remote_full_browse_message">Este teléfono pide explorar todo el contenido de tu PC, no solo sus carpetas compartidas. ¿Permitir?</string>
+    <string name="file_consent_remote_push_title">¿Enviar archivos a tu PC?</string>
+    <string name="file_consent_remote_push_message">Este teléfono pide enviar: %1$s. ¿Permitir?</string>
+    <string name="file_consent_remote_push_message_generic">Este teléfono pide enviar archivos a tu PC. ¿Permitir?</string>
     <string name="file_consent_allow">Permitir</string>
     <string name="file_consent_deny">Denegar</string>
     <string name="file_consent_remember">Recordar mi elección para este PC</string>
@@ -754,4 +873,53 @@
     <string name="personalization_shape_cat_network">Tarjetas de red</string>
     <string name="personalization_shape_cat_action">Tarjetas de acción</string>
     <string name="personalization_shape_cat_other">Otras tarjetas</string>
+
+    <string name="action_take_screenshot">Hacer una captura de pantalla del PC</string>
+    <string name="screenshot_taken">Captura de pantalla hecha en el PC. Consulta tus notificaciones para recibirla.</string>
+    <string name="screenshot_failed">El PC no pudo hacer la captura de pantalla.</string>
+    <string name="file_push_failed_no_folder">No se pudo guardar un archivo: no hay ninguna carpeta de este teléfono compartida con permiso de escritura. Comparte una en RemEx para recibir archivos.</string>
+    <string name="file_push_failed_bad_name">No se pudo guardar un archivo por su nombre.</string>
+    <string name="file_push_failed_destination">No se pudo guardar un archivo: la carpeta a la que iba ya no está disponible.</string>
+    <string name="file_push_failed_wrong_file">No se pudo guardar un archivo: no era el archivo que aceptaste recibir.</string>
+    <string name="file_push_failed_not_saved">No se pudo guardar un archivo del PC. Pide al PC que lo envíe de nuevo.</string>
+    <string name="file_push_failed_no_channel">No se pudo recibir un archivo del PC: este teléfono no pudo abrir su conexión de archivos. Inténtalo de nuevo y vuelve a emparejar si sigue fallando.</string>
+    <string name="file_received_title">Archivo recibido</string>
+    <string name="file_received_text">%1$s ha llegado desde tu PC.</string>
+    <string name="file_received_share">Compartir</string>
+    <string name="pairing_phase_probe">Comprobando que se puede acceder a tu PC…</string>
+    <string name="pairing_phase_securing">Estableciendo una conexión segura…</string>
+    <string name="pairing_phase_awaiting_host">Esperando a que tu PC muestre un PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Compartir diagnóstico</string>
+    <string name="settings_share_diagnostics_body">Crea un informe sobre esta aplicación y su conexión con tu PC que puedes enviar a quien te esté ayudando. Lo lees entero antes, y nada sale de tu teléfono hasta que lo envías.</string>
+    <string name="screen_share_diagnostics_title">Compartir diagnóstico</string>
+    <string name="share_diagnostics_explainer">Este informe contiene la versión de la aplicación, el modelo del teléfono, la versión de Android, lo último que dijo tu PC sobre sí mismo y las líneas de registro recientes de esta aplicación. Las claves de emparejamiento se eliminan y las rutas de archivos se reducen solo al nombre del archivo. Lo que ves abajo es exactamente lo que se envía.</string>
+    <string name="share_diagnostics_network_toggle">Incluir direcciones de red</string>
+    <string name="share_diagnostics_network_toggle_body">Desactivado de forma predeterminada. Actívalo solo si el problema es de conexión: mantiene las direcciones IP en el informe.</string>
+    <string name="share_diagnostics_preview_title">Vista previa del informe</string>
+    <string name="share_diagnostics_collecting">Creando el informe…</string>
+    <string name="share_diagnostics_send">Compartir informe</string>
+    <string name="share_diagnostics_chooser">Compartir diagnóstico</string>
+    <string name="share_diagnostics_failed">No se pudo preparar el informe para compartirlo.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Enviar portapapeles al PC</string>
+    <string name="clipboard_send_ok">Enviado al portapapeles del PC</string>
+    <string name="clipboard_send_empty">No hay nada en el portapapeles para enviar</string>
+    <string name="clipboard_send_too_large">Es demasiado grande para enviarlo. El límite es %1$d KB.</string>
+    <string name="clipboard_send_failed">No se pudo enviar el portapapeles</string>
+    <string name="clipboard_send_refused">El PC lo rechazó: primero empareja el teléfono con tu PC</string>
+    <string name="clipboard_send_not_connected">Conéctate primero a tu PC</string>
+    <string name="clipboard_send_unsupported">Solo se puede enviar texto copiado</string>
+    <string name="clipboard_fetch_button">Obtener portapapeles del PC</string>
+    <string name="clipboard_fetch_ok">Copiado desde el PC</string>
+    <string name="clipboard_fetch_empty">No hay nada copiado en el PC</string>
+    <string name="clipboard_fetch_too_large">El portapapeles del PC es demasiado grande para copiarlo</string>
+    <string name="clipboard_fetch_failed">No se pudo obtener el portapapeles del PC</string>
+    <string name="clipboard_fetch_label">Portapapeles del PC</string>
 </resources>

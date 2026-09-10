@@ -173,6 +173,8 @@ class FileConsentCoordinatorTest {
         assertEquals(FileConsentKinds.INCOMING_PUSH, prompt.kind)
         assertEquals("a.txt (1 KB)", prompt.detail)
         assertEquals("pc", prompt.deviceId)
-        assertEquals(start + 60_000, prompt.expiresAtUnixMs)
+        assertEquals(start + 60_000L, checkNotNull(prompt.expiresAtUnixMs))
+        // A locally served prompt is about THIS phone's files, and the wording depends on it.
+        assertEquals(FileConsentOrigin.THIS_PHONE, prompt.origin)
     }
 }

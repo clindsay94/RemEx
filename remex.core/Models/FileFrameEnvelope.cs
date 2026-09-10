@@ -54,20 +54,99 @@ public static class FileFrameCodec
     public const int HeaderLengthPrefixSize = sizeof(int);
 
     /// <summary>
+    /// Serializes the envelope's UTF-8 JSON header on its own, so a caller can size a destination
+    /// buffer before writing the frame into it.
+    /// </summary>
+    /// <remarks>
+    /// Split out because the header's length is not knowable until it is serialized, and a sender
+    /// that wants to write into a POOLED buffer has to know the total frame size first. Serializing
+    /// twice to find out would defeat the point (RemEx-npdm).
+    /// </remarks>
+    public static byte[] SerializeHeader(FileFrameEnvelope envelope)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        return RemexJson.SerializeToUtf8Bytes(envelope, RemexJsonSerializerContext.Default.FileFrameEnvelope);
+    }
+
+    /// <summary>
+    /// Total frame size for a header and payload of the given lengths.
+    /// </summary>
+    public static int GetFrameLength(int headerLength, int payloadLength) =>
+        HeaderLengthPrefixSize + headerLength + payloadLength;
+
+    /// <summary>
+    /// Writes <c>[header-length][UTF-8 JSON envelope][payload]</c> into <paramref name="destination"/>
+    /// and returns the number of bytes written.
+    /// </summary>
+    /// <remarks>
+    /// THE SINGLE DEFINITION OF THE FRAME LAYOUT. <see cref="Wrap"/> calls this rather than repeating
+    /// the three writes — it is now test-only (the host's sender writes into a pooled buffer through
+    /// here), and it is kept as the reference implementation the pooled path is measured against.
+    /// <paramref name="destination"/> may be LONGER than the frame (a pooled array is), which is why
+    /// the written length is RETURNED rather than inferred from the buffer: a caller that bounds on
+    /// the buffer instead ships whatever the previous renter of that array left behind.
+    /// </remarks>
+    public static int WriteFrame(ReadOnlySpan<byte> header, ReadOnlySpan<byte> payload, Span<byte> destination)
+    {
+        var frameLength = GetFrameLength(header.Length, payload.Length);
+        if (destination.Length < frameLength)
+            throw new ArgumentException(
+                $"Destination is {destination.Length} bytes; the frame needs {frameLength}.", nameof(destination));
+
+        BinaryPrimitives.WriteInt32LittleEndian(destination[..HeaderLengthPrefixSize], header.Length);
+        header.CopyTo(destination[HeaderLengthPrefixSize..]);
+        payload.CopyTo(destination[(HeaderLengthPrefixSize + header.Length)..]);
+        return frameLength;
+    }
+
+    /// <summary>
     /// Wraps a <see cref="FileFrameEnvelope"/> and its (optional) raw payload into a single binary frame:
     /// <c>[header-length][UTF-8 JSON envelope][payload]</c>.
     /// </summary>
     public static byte[] Wrap(FileFrameEnvelope envelope, ReadOnlySpan<byte> payload)
     {
-        ArgumentNullException.ThrowIfNull(envelope);
-
-        var headerBytes = RemexJson.SerializeToUtf8Bytes(envelope, RemexJsonSerializerContext.Default.FileFrameEnvelope);
-        var frame = new byte[HeaderLengthPrefixSize + headerBytes.Length + payload.Length];
-
-        BinaryPrimitives.WriteInt32LittleEndian(frame.AsSpan(0, HeaderLengthPrefixSize), headerBytes.Length);
-        headerBytes.CopyTo(frame.AsSpan(HeaderLengthPrefixSize));
-        payload.CopyTo(frame.AsSpan(HeaderLengthPrefixSize + headerBytes.Length));
+        var headerBytes = SerializeHeader(envelope);
+        var frame = new byte[GetFrameLength(headerBytes.Length, payload.Length)];
+        WriteFrame(headerBytes, payload, frame);
         return frame;
+    }
+
+    /// <summary>
+    /// Reads a binary frame produced by <see cref="Wrap"/>, yielding the payload as
+    /// <see cref="ReadOnlyMemory{T}"/> so it can be passed ACROSS AN AWAIT.
+    /// </summary>
+    /// <remarks>
+    /// The span overload cannot serve an async consumer at all: <c>ReadOnlySpan</c> is a
+    /// <c>ref struct</c> and may not live across an <c>await</c>, which is the ONLY reason the
+    /// <c>/ws/files</c> receive loop used to copy every payload with <c>ToArray()</c> before handing
+    /// it on. That copy was never defending anything — it was working around the language — and at
+    /// the 256 KB frame cap it was a Large Object Heap allocation per frame (RemEx-8su9).
+    ///
+    /// The payload is a VIEW into <paramref name="frame"/>, so the caller owns the lifetime: it must
+    /// not reuse the frame buffer until every consumer of the payload has completed. The receive
+    /// loop satisfies that by awaiting its handler before receiving again.
+    ///
+    /// Parsing is delegated to the span overload rather than repeated, so the two cannot disagree
+    /// about what a valid frame is.
+    /// </remarks>
+    public static bool TryRead(
+        ReadOnlyMemory<byte> frame,
+        out FileFrameEnvelope? envelope,
+        out ReadOnlyMemory<byte> payload)
+    {
+        payload = default;
+        if (!TryRead(frame.Span, out envelope, out var payloadSpan))
+            return false;
+
+        // The payload always sits at the TAIL — the span overload slices to the end of the frame —
+        // so its offset is derivable from the lengths without pointer arithmetic on the span.
+        //
+        // Nothing enforces that invariant structurally: if the format ever grew a trailer, this would
+        // point at the wrong offset while both overloads still reported success. The parity tests in
+        // FileFrameWriteIntoPooledBufferTests cover it at three payload lengths including zero; a
+        // trailer would mean giving the parse a private core that also yields the payload offset.
+        payload = frame[(frame.Length - payloadSpan.Length)..];
+        return true;
     }
 
     /// <summary>

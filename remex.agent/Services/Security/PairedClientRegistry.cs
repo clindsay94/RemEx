@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
 
 namespace Remex.Agent.Services.Security;
 
@@ -36,11 +37,20 @@ public sealed class PairedClientRegistry
         _logger = logger;
 
         // storePath is only supplied by tests; production resolves the default machine-wide path.
-        // Only attempt legacy migration for the production path so tests stay hermetic.
-        var useDefaultPath = storePath is null;
+        // Only attempt legacy migration for the production path so tests stay hermetic — and NOT
+        // under the host-state redirect either, even though that path is also "the default one".
+        // The migration's SOURCE is the developer's real %LOCALAPPDATA%\Remex store, which the move
+        // to ProgramData copied rather than deleted, so it still exists on every machine that ran an
+        // older build. Migrating under the redirect would import their actual client ids and
+        // reconnect secrets into the test directory: the redirect would stop tests writing real
+        // credentials while quietly starting to feed them real ones, and "no clients are paired"
+        // would fail on whichever machine had a pairing. Same reasoning as, and found missing
+        // against, RemexDataPaths.TryMigrateWindowsFile (RemEx-4u29).
+        var shouldMigrateLegacyStore =
+            storePath is null && RemexDataPaths.HostStateDirectoryOverride is null;
         _storePath = storePath ?? GetDefaultStorePath();
 
-        if (useDefaultPath)
+        if (shouldMigrateLegacyStore)
         {
             MigrateLegacyStoreIfNeeded();
         }
@@ -95,6 +105,25 @@ public sealed class PairedClientRegistry
     }
 
     /// <summary>
+    /// Every paired client id, for listing devices to the user (RemEx-nrsv).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **IDS ONLY. THIS MUST NEVER RETURN, OR BE WIDENED TO RETURN, THE SECRETS.** The values in this
+    /// map are reconnect secrets and the whole registry is the only authentication path in production
+    /// (<c>docs/REGRESSION-GUARDS.md</c>). A "convenient" overload handing out the pairs, for a UI
+    /// that only ever needed the keys, is how a credential ends up in a log line or a diagnostics
+    /// export. The one caller wants a list of devices to show a person.
+    /// </para>
+    /// <para>
+    /// A SNAPSHOT, not a live view: the caller is UI code that will iterate it while connections come
+    /// and go. Ordered so a list does not reshuffle itself between reads for no visible reason.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<string> PairedClientIds() =>
+        [.. _pairedClients.Keys.OrderBy(id => id, StringComparer.Ordinal)];
+
+    /// <summary>
     /// Returns whether a clientId has a paired entry. This is a presence check only — it does NOT
     /// authenticate. Reconnect authentication must use the proof-of-possession challenge
     /// (<see cref="TryGetReconnectSecret"/> + HMAC verification). Retained for the desktop-stream
@@ -144,6 +173,15 @@ public sealed class PairedClientRegistry
 
     private void LoadFromDisk()
     {
+        // BEFORE THE EXISTENCE CHECK, NOT AFTER IT (RemEx-jegp). A killed process leaves a staging
+        // sibling holding every reconnect secret in this store, carrying the inherited ProgramData
+        // ACL rather than the one RestrictStorePermissions applies — and it applies that only to the
+        // final path, after the rename an orphan never reached. The case where the store itself is
+        // ABSENT is exactly the one where an orphan is most likely: a first write that died between
+        // staging and rename leaves the copy and no store at all, and returning early would walk past
+        // it every startup for the life of the machine.
+        RemexDataPaths.SweepStagingOrphans(_storePath);
+
         try
         {
             if (!File.Exists(_storePath))
@@ -204,14 +242,17 @@ public sealed class PairedClientRegistry
                 Directory.CreateDirectory(directory);
             }
 
-            var tempPath = _storePath + ".tmp";
             var entries = _pairedClients
                 .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.Ordinal);
             var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
 
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _storePath, overwrite: true);
+            // The lock above orders writers inside ONE registry; it says nothing about a second
+            // process — an installed agent, or another test host — writing the same file. Staging
+            // through a per-write temp name rather than a fixed <store>.tmp is what keeps those from
+            // truncating each other's staging file and publishing a corrupt registry, which would
+            // unpair every device (RemEx-kow1).
+            RemexDataPaths.WriteAllTextAtomic(_storePath, json);
 
             // PAIR-4: the store now holds per-client reconnect secrets, so it is sensitive key
             // material. Restrict it to the host's own account (+ LocalSystem and admins on Windows).
@@ -302,8 +343,19 @@ public sealed class PairedClientRegistry
         fileInfo.SetAccessControl(security);
     }
 
+    /// <summary>Exposes the resolved store path so tests can pin the names file beside it.</summary>
+    internal static string DefaultStorePathForTests => GetDefaultStorePath();
+
     private static string GetDefaultStorePath()
     {
+        // Ahead of every platform branch: a redirected run must not reach the real store on ANY of
+        // them, and this file is the one the bead was filed over — seven test fixture identities,
+        // each with a stored key, sitting in the developer's machine-wide registry (RemEx-4u29).
+        if (RemexDataPaths.HostStateDirectoryOverride is { } stateDirectory)
+        {
+            return Path.Combine(stateDirectory, "paired_clients.json");
+        }
+
         if (OperatingSystem.IsAndroid())
         {
             return Path.Combine(

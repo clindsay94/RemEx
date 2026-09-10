@@ -14,6 +14,69 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Kontrast</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Ostrzejszy</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Łagodniejszy</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Jak mocno wygenerowana paleta odsuwa tekst od powierzchni za nim.</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Ostatnie</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Baza</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Odcień</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Koło koloru bazowego</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Przeciągnij, aby wybrać kolor bazowy. Odcień biegnie wokół koła, chroma od środka na zewnątrz. Klawisze strzałek też działają.</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Pobierz folder</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Zapisuje wybrany folder wraz z całą jego zawartością</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Wybierz miejsce zapisu folderu</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki pobierania.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki wysyłania.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki, ale folder był zbyt duży, aby odczytać go w całości — część plików pominięto.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Nie udało się odczytać folderu: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Odczytywanie folderu…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Ten folder zawiera zbyt wiele plików, aby przesłać je naraz.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Wybierz folder do wysłania</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Wyślij folder</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>Wysyła cały folder wraz z całą jego zawartością</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Główna</value>
   </data>
@@ -21,13 +84,16 @@
     <value>Czujniki</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Launcher</value>
+    <value>Program uruchamiający</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Ustawienia</value>
   </data>
   <data name="Nav_Files" xml:space="preserve">
     <value>Pliki</value>
+  </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>Pulpit zdalny</value>
   </data>
 
   
@@ -53,10 +119,10 @@
     <value>Odkryj</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Start</value>
+    <value>▶ Uruchom</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Stop</value>
+    <value>⏹ Zatrzymaj</value>
   </data>
 
   
@@ -73,31 +139,31 @@
     <value>WYMUSZONE (NATYCHMIASTOWE)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒  Zablokuj PC</value>
+    <value>Zablokuj PC</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪  Wyloguj</value>
+    <value>Wyloguj</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻  Wyłącz</value>
+    <value>Wyłącz</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄  Uruchom ponownie</value>
+    <value>Uruchom ponownie</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤  Uśpij</value>
+    <value>Uśpij</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄  Hibernacja</value>
+    <value>Hibernacja</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠  Wymuś wyłączenie</value>
+    <value>Wymuś wyłączenie</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠  Wymuś restart</value>
+    <value>Wymuś restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧  Uruchom do UEFI</value>
+    <value>Uruchom do UEFI</value>
   </data>
 
   
@@ -225,12 +291,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>GŁÓWNA</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>OBSZAR ROBOCZY</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Szybki podgląd</value>
   </data>
@@ -252,7 +312,7 @@
     <value>ŚR</value>
   </data>
   <data name="Canvas_Max" xml:space="preserve">
-    <value>MAX</value>
+    <value>MAKS</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
     <value>AKTYWNE CZUJNIKI</value>
@@ -273,13 +333,13 @@
     <value>Czujniki ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ Anuluj</value>
+    <value>Anuluj</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Rozłącz</value>
+    <value>Rozłącz</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Połącz</value>
@@ -330,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>PODSTAWOWE PRESETY</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>ZAAWANSOWANE DOSTRAJANIE</value>
   </data>
@@ -345,29 +402,32 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Siła poświaty</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Kolor akcentu</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Tryb tła</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>ATMOSFERA KANWY</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Resetuj do domyślnych motywu</value>
   </data>
-  <data name="Custom_PresetStandardGlass" xml:space="preserve">
-    <value>Standard Glass</value>
+  <data name="Custom_PresetGlass" xml:space="preserve">
+    <value>Glass</value>
   </data>
-  <data name="Custom_PresetCyberNOC" xml:space="preserve">
-    <value>Cyber-NOC</value>
+  <data name="Custom_PresetNeon" xml:space="preserve">
+    <value>Neon</value>
   </data>
-  <data name="Custom_PresetSolarFlare" xml:space="preserve">
-    <value>Solar-Flare</value>
+  <data name="Custom_PresetEmber" xml:space="preserve">
+    <value>Ember</value>
   </data>
-  <data name="Custom_PresetMonolith" xml:space="preserve">
-    <value>Monolith</value>
+  <data name="Custom_PresetSlate" xml:space="preserve">
+    <value>Slate</value>
+  </data>
+  <data name="Custom_PresetDaybreak" xml:space="preserve">
+    <value>Daybreak</value>
+  </data>
+  <data name="Custom_PresetVoltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Custom_PresetSorbet" xml:space="preserve">
+    <value>Sorbet</value>
   </data>
 
   
@@ -460,6 +520,18 @@
   <data name="Status_HostNotConnected" xml:space="preserve">
     <value>PC nie jest połączony</value>
   </data>
+  <data name="Status_PlatformWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Status_PlatformLinux" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="Status_PlatformMacOs" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="Status_HostRuntimeOnPlatform" xml:space="preserve">
+    <value>{0} w systemie {1}</value>
+  </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
     <value>PC interaktywny</value>
   </data>
@@ -513,6 +585,9 @@
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN musi składać się z dokładnie 6 cyfr.</value>
+  </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Sparowano</value>
   </data>
 
   
@@ -693,7 +768,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>O programie</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Otwórz Ustawienia</value>
@@ -705,17 +780,17 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>Kod QR</value>
   </data>
+  <data name="Home_PairPhoneButton" xml:space="preserve">
+    <value>Sparuj telefon</value>
+  </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Parowanie nie powiodło się</value>
+  </data>
+  <data name="Home_PairPhoneTooltip" xml:space="preserve">
+    <value>Pokaż kod QR i PIN, których telefon potrzebuje do sparowania z tym komputerem</value>
+  </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
     <value>Skanuj aplikacją RemEx Android</value>
-  </data>
-  <data name="Home_QrCodeTooltip" xml:space="preserve">
-    <value>Wygeneruj kod QR, aby połączyć aplikację RemEx Android</value>
-  </data>
-  <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Pokaż kod PIN parowania</value>
-  </data>
-  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Wyświetl 6-cyfrowy kod, którego telefon potrzebuje do sparowania z tym PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>KOD PIN PAROWANIA</value>
@@ -748,6 +823,9 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Uruchamia RemEx zminimalizowany do zasobnika przy logowaniu, aby Twój komputer był zawsze dostępny.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy jest ustawiony do uruchamiania przy logowaniu. Przełącznik poniżej pokazuje Twój ostatni wybór, który może nie odpowiadać stanowi komputera.</value>
   </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Wybierz, czy RemEx ma uruchamiać się automatycznie przy logowaniu.</value>
@@ -983,6 +1061,51 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Nie udało się usunąć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Kończenie…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>pozostała {0} sekunda</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>pozostały {0} sekundy</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>pozostało {0} sekund</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>pozostało {0} sekundy</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>pozostała {0} minuta</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>pozostały {0} minuty</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>pozostało {0} minut</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>pozostało {0} minuty</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>pozostała {0} godzina</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>pozostały {0} godziny</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>pozostało {0} godzin</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>pozostało {0} godziny</value>
+  </data>
 
   
 
@@ -999,7 +1122,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Panel</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Tryb pióra: dotknięcie = kliknięcie, przeciągnięcie = kliknij i przeciągnij</value>
@@ -1037,16 +1160,16 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Typ wykresu</value>
+    <value>Typ wykresu</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 Zablokuj komputer</value>
+    <value>Zablokuj komputer</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 Uruchom do UEFI</value>
+    <value>Uruchom do UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Przypnij/Odepnij od strony głównej</value>
+    <value>Przypnij/Odepnij od strony głównej</value>
   </data>
 
   
@@ -1076,6 +1199,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>Kompilacja</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx na tym komputerze</value>
   </data>
@@ -1083,7 +1209,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Twój komputer</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Rozważ danie gwiazdki na GitHubie!</value>
+    <value>Rozważ danie gwiazdki na GitHubie!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Otwarte oprogramowanie i darmowe. (proszę daj gwiazdkę, mają mojego kota!)</value>
@@ -1213,23 +1339,14 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Intensywny</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Dodaj własny kolor</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Własny kolor akcentu</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Wariant schematu</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Ekran startowy</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Synchronizacja sprzętowa</value>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Ograniczony ruch</value>
   </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Synchronizuj kolor akcentu z fizycznym RGB</value>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Ogranicza animacje do minimum. Strony zmieniają się bez przesuwania, a ruch dekoracyjny zostaje zatrzymany.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Włączone</value>
@@ -1249,6 +1366,24 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Odśwież</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Kopiuj zaznaczone</value>
+  </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Kopiuj wiadomość</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Kopiuj ze stosem</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Śledź koniec</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Przejdź do najnowszego</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Otwórz folder</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Wyczyść logi</value>
   </data>
@@ -1257,6 +1392,26 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Ostatnie zapytanie o logi zdarzeń z Podglądu zdarzeń systemu Windows lub dziennika systemd systemu Linux.</value>
+  </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Odczytywanie wpisów dziennika zdarzeń systemowych zapisanych przez RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Nie znaleziono wpisów dziennika zdarzeń systemu Windows dla RemEx.
+To normalne — RemEx zapisuje tutaj wyłącznie poważne problemy z uruchamianiem, więc pusta lista zwykle oznacza, że nic złego się nie wydarzyło.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Nie udało się odpytać journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Dzienniki zdarzeń systemowych są dostępne tylko w systemach Windows i Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Nie można odczytać dziennika zdarzeń systemowych: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Brak wpisów dziennika użytkownika zarejestrowanych dla Remex.Agent.
+Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autostartu XDG, a nie przez systemd — system operacyjny nigdy nie przechwytuje tam jego danych wyjściowych. Sekcja {0} powyżej to własny zapis RemEx i działa wszędzie.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Pobierz dziennik zdarzeń systemu</value>
@@ -1384,6 +1539,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>RemEx Pulpit - Zdalne uruchamianie</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Paleta poleceń</value>
   </data>
@@ -1492,6 +1650,63 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Krytyczne</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Alerty czujników</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Nie skonfigurowano żadnych alertów. Kliknij prawym przyciskiem myszy kartę czujnika na płótnie, aby ustawić alert.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Edytuj</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Kopiuj do…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Potwierdź wszystkie</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Zresetuj wszystkie alerty</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Zresetować wszystkie alerty czujników?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>To usunie {0} alertów. Nic innego w Twoim profilu się nie zmieni.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Uruchomiono o {0} · {1}</value>
+  </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Kopiuj alert z {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Filtruj czujniki…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Pokaż wszystkie czujniki</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Zastosuj do {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Nadpisuje istniejący alert na wybranych czujnikach</value>
+  </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} osiągnął {1}</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Alarm: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Alarm: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Uruchomiono o {0} ({1}). Kliknij, aby potwierdzić.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Cofnij (Ctrl+Z)</value>
   </data>
@@ -1525,27 +1740,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Grubość poświaty neonowej w pikselach</value>
   </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Wybierz motyw kolorystyczny</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Wybierz fioletowy motyw</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Wybierz cyjanowy motyw</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Wybierz różowy motyw</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Wybierz złoty motyw</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Wybierz zielony motyw</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Wybierz czerwony motyw</value>
-  </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Wybierz styl animacji ekranu powitalnego</value>
   </data>
@@ -1568,7 +1762,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Granice przyrostu siatki w pikselach</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Otwórz paletę poleceń (Ctrl+Shift+P)</value>
+    <value>Otwórz paletę poleceń (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Przełącz pasek boczny</value>
@@ -1579,23 +1773,53 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Czy chcesz ponownie zobaczyć samouczek?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX NA ŻYWO</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Pokaż główne okno</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Szybki podgląd na żywo</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Przełącz na tryb ciemny</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Przełącz na tryb jasny</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Wyjdź</value>
+  </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>Zablokuj</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>Uśpij</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>Zdalny</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>Wyślij</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>Hibernuj</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>Podłącz telefon, aby z tego korzystać</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>Przypnij to okno</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>Odepnij to okno</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>Otwórz transfery</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>Sparuj urządzenie</value>
+  </data>
+  <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
+    <value>Otwórz folder dzienników</value>
+  </data>
+  <data name="Busy_Loading" xml:space="preserve">
+    <value>Ładowanie…</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>Stan RemEx</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>Przypnij lub odepnij okno RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Auto (inteligentne)</value>
@@ -1832,6 +2056,12 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Pokaż szczegóły i podgląd zaznaczonego elementu.</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Anuluj wszystkie</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Anuluj wszystkie trwające i oczekujące transfery</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Wyczyść zakończone</value>
   </data>
@@ -1889,12 +2119,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Przeszukaj ten folder…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Wyślij na telefon</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Wybierz pliki na tym komputerze i wyślij je do bieżącego folderu na połączonym urządzeniu.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Data</value>
   </data>
@@ -1909,6 +2133,12 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>Nie udzielono pełnego dostępu do urządzenia.</value>
+  </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>Nie można zapytać tego urządzenia — nie jest teraz połączone. Połącz je ponownie i spróbuj jeszcze raz.</value>
+  </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>Monit na drugim urządzeniu nie doczekał się odpowiedzi na czas. Spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Nie udało się wyświetlić listy dysków. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
@@ -2057,6 +2287,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Nie pokazuj tego samouczka ponownie</value>
   </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>Postęp samouczka</value>
+  </data>
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
     <value>Parowanie kodem QR</value>
   </data>
@@ -2164,7 +2397,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Słownik: Paleta poleceń</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Naciśnij Ctrl+Shift+P, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
+    <value>Naciśnij Ctrl+K, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Słownik: Launcher aplikacji</value>
@@ -2313,9 +2546,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Czcionka dużych tytułów stron. Obejmuje czcionki wyświetlacza aplikacji oraz wszystkie czcionki zainstalowane w tym systemie.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TYPOGRAFIA</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Rozmiar interfejsu</value>
   </data>
@@ -2412,11 +2642,14 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Eksportuj jako:</value>
   </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Zakres:</value>
+  </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
     <value>Eksportuj logi</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
-    <value>Preset:</value>
+    <value>Ustawienie wstępne:</value>
   </data>
   <data name="Logs_PresetAll" xml:space="preserve">
     <value>Wszystko</value>
@@ -2517,6 +2750,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Biblioteka czujników</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Nie widziano ostatnio</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Dlaczego RemEx potrzebuje specjalnych uprawnień, aby działać?</value>
   </data>
@@ -2603,9 +2839,6 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochromatyczny</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2636,11 +2869,26 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Sałatka owocowa</value>
   </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>Na podstawie zawartości</value>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Podstawowy</value>
   </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Drugorzędny</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Trzeciorzędny</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Neutralny</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Podstawowy / Na podstawowym</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Powierzchnia / Na powierzchni</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Błąd / Na błędzie</value>
   </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Nie udało się zakończyć procesu "{0}" (PID {1}). Nic nie zostało zmienione. Odśwież listę i spróbuj ponownie.</value>
@@ -2748,14 +2996,15 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Jak zmienić wygląd RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Użyj przycisku „Personalize appearance”, aby otworzyć panel Personalizacji.
+    <value>Użyj przycisku „Personalizuj wygląd”, aby otworzyć panel Personalizacji.
 
 Możesz zmienić:
-• Motyw (CyberNOC, Monolith, SolarFlare lub BaseDarkGlass)
-• Kolor akcentu i paletę
-• Promień i kształt narożników kart
-• Krój i rozmiar czcionki
-• Przezroczystość kart
+• Kolor bazowy (seed) swojej palety — wybierz go z koła kolorów, wpisz kod hex, dopasuj do akcentu systemu Windows lub pobierz z tapety
+• Tryb jasny, ciemny lub systemowy oraz kontrast
+• Wariant schematu i materiał tła
+• Promień narożników, przezroczystość szkła i intensywność poświaty
+• Styl ekranu powitalnego
+• Czcionki tytułu strony i treści oraz skalę interfejsu
 • Język aplikacji, niezależnie od języka systemu Windows lub Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -2763,6 +3012,21 @@ Możesz zmienić:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Tak. Otwórz Ustawienia i użyj opcji „Powtórz samouczek” w sekcji Pomoc. Możesz to robić dowolnie często.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>Plik przychodzi szybciej, niż wybrany folder może go zapisać, więc pobieranie nie mogło się zakończyć. Spróbuj zapisać w folderze na dysku głównym tego komputera zamiast na pendrivie lub w folderze sieciowym.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Nie udało się zapisać pobranego pliku. Na wybranym dysku może brakować miejsca lub pendrive mógł zostać odłączony. Sprawdź, czy jest wolne miejsce i czy dysk jest nadal podłączony, a potem spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Nie udało się odczytać pliku. Może być otwarty w innym programie lub dysk, na którym się znajduje, został odłączony. Zamknij go w innych programach, sprawdź, czy dysk jest podłączony, a potem spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx nie ma uprawnień, aby zapisać pobrany plik w tym miejscu. Folder może być chroniony lub zastępowany plik jest tylko do odczytu. Wybierz inny folder albo inną nazwę pliku — zwykle działa Dokumenty lub Pobrane.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx nie ma uprawnień, aby odczytać ten plik. Może należeć do innego użytkownika lub jego uprawnienia na to nie pozwalają. Wybierz plik z własnych folderów albo poproś o dostęp właściciela komputera.</value>
   </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Pobrany plik nie zgadzał się z tym, co wysłał komputer, więc został usunięty. Pobierz go ponownie.</value>
@@ -2778,5 +3042,428 @@ Możesz zmienić:
   </data>
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Stan połączenia: brak połączenia</value>
+  </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Stan systemu</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Wszystko, czego potrzebuje RemEx, działa.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Co to znaczy</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx musi działać jako administrator. Bez tego parowanie i zdalne sterowanie nie zadziałają. Zamknij RemEx i uruchom go ponownie przez Uruchom jako administrator.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx nie mógł odczytać certyfikatu potwierdzającego tożsamość tego komputera wobec telefonu. Ponowne uruchomienie RemEx jako administrator utworzy go na nowo.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Nic nie nasłuchuje na porcie, z którym łączy się telefon. RemEx może się jeszcze uruchamiać albo inny program zajął ten port. Uruchom RemEx ponownie, a jeśli to się powtarza, zmień port w Ustawieniach.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Zapora blokuje połączenia przychodzące, więc telefon widzi ten komputer, ale nie może się połączyć. Zezwól RemEx w zaporze dla sieci prywatnych. To najczęstsza przyczyna, gdy telefon nie może dosięgnąć włączonego komputera.</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Napraw to</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Sprawdź ponownie</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Uprawnienia administratora</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx działa z uprawnieniami administratora, których potrzebuje.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx może nie mieć pełnych uprawnień administratora. Niektóre działania mogą się nie udać bez ostrzeżenia.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx nie działa jako administrator. Parowanie telefonu i sterowanie tym komputerem nie będą działać, dopóki się to nie zmieni.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy ma uprawnienia administratora. Jeśli parowanie lub zdalne sterowanie zawiedzie, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Certyfikat zabezpieczeń</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Certyfikat zabezpieczeń tego komputera jest na miejscu i można go odczytać.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Z certyfikatem zabezpieczeń tego komputera jest coś nie tak. Telefony mogą nie móc się połączyć.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Nie udało się odczytać certyfikatu zabezpieczeń tego komputera, więc żaden telefon nie może się połączyć. Nie usuwaj go ani nie zastępuj — to odłączyłoby wszystkie sparowane telefony i każdy trzeba by sparować od nowa.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić certyfikatu zabezpieczeń tego komputera. Jeśli telefony nie mogą się połączyć, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Przyjmowanie połączeń</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx działa i przyjmuje połączenia na tym komputerze.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx może nie przyjmować połączeń. Twój telefon może nie móc się połączyć.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx nie przyjmuje połączeń, więc żaden telefon nie może połączyć się z tym komputerem.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy przyjmuje połączenia. Jeśli telefon nie może się połączyć, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Zapora sieciowa</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Zapora sieciowa jest ustawiona tak, aby przepuszczać RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Zapora sieciowa może blokować RemEx. Jeśli telefon nie znajduje tego komputera, zacznij od tego.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Zapora sieciowa blokuje RemEx, więc telefon nie zdoła dotrzeć do tego komputera.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić zapory sieciowej. Jeśli telefon nie znajduje tego komputera, sprawdź ją samodzielnie.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Uruchamianie przy logowaniu</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx uruchamia się automatycznie, gdy logujesz się na tym komputerze.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx nie jest ustawiony tak, aby uruchamiał się przy logowaniu, więc musisz otworzyć go samodzielnie, zanim telefon będzie mógł się połączyć.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>Nie udało się ustawić RemEx tak, aby uruchamiał się przy logowaniu, więc musisz otwierać go samodzielnie za każdym razem.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy uruchamia się przy logowaniu. To, co tu widzisz, może nie odpowiadać ustawieniom komputera.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić tego komputera, ponieważ część RemEx odpowiedzialna za sprawdzanie nie działa. Twój telefon nie zdoła się połączyć, dopóki to się nie zmieni.</value>
+  </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Odebrano plik</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} dotarł z Twojego telefonu.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Wyeksportowano diagnostykę</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Zapisano w {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx nie uruchomił się poprawnie</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Część RemEx nie wystartowała, więc niektóre funkcje nie zadziałają. Szczegóły są w Diagnostyce.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Odrzucono prośbę o plik</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx nie mógł pokazać prośby o zgodę, więc odrzucił transfer za Ciebie.</value>
+  </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Odcisk palca certyfikatu</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Jeśli telefon ostrzega, że certyfikat tego komputera się zmienił, porównaj pokazaną tam wartość z tą.</value>
+  </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Brak połączonego telefonu</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 telefon połączony</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} połączony</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>Połączone telefony: {0}</value>
+  </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Stan telefonu: połączony</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Stan telefonu: brak połączonego telefonu</value>
+  </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx nie działa na tym komputerze</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>TELEFON</value>
+  </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Sparowane urządzenia</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Z tym komputerem nie sparowano jeszcze żadnego telefonu.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Nieznane</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>Pierwsze sparowanie</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Ostatnio widziano</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Odśwież</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Stan urządzenia: połączone</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Stan urządzenia: niepołączone</value>
+  </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Ten kod PIN wygasł.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Uzyskaj nowy PIN</value>
+  </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Zmień nazwę</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Nowa nazwa</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Wyczyść nazwę, aby wrócić do identyfikatora urządzenia.</value>
+  </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Rozparować ten telefon?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} nie będzie już mógł łączyć się z tym komputerem. Aby użyć go ponownie, trzeba go sparować od nowa z nowym kodem PIN. Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Rozparuj</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Urządzenie rozparowane</value>
+  </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Nie udało się dokończyć rozparowania: {0}. To urządzenie może wrócić przy następnym uruchomieniu RemEx — rozparuj je wtedy ponownie.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Tryb bazowy</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Jasny, ciemny lub zgodny z ustawieniem systemu operacyjnego.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Jasny</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Ciemny</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
+    <value>{0}&#xD;&#xA;Adres: {1}</value>
+  </data>
+  <data name="Shell_StatusFlyoutAddress" xml:space="preserve">
+    <value>Adres</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
+    <value>Połączenie z hostem</value>
+  </data>
+  <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
+    <value>Opóźnienie</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostRuntime" xml:space="preserve">
+    <value>Środowisko uruchomieniowe</value>
+  </data>
+  <data name="A11y_ConnectionStatusButton" xml:space="preserve">
+    <value>Stan połączenia</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>Kopiuj jako AXAML</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>Eksportuj jako JSON</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>Importuj JSON</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>Paleta RemEx</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Skopiowano paletę</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Wklej ją do dowolnego ResourceDictionary Avalonia.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Zaimportowano paletę</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>Zastosowano {0}, {1}.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Ten plik nie jest paletą RemEx.</value>
+  </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Neutralny</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Monochromatyczny</value>
+  </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Zorza</value>
+  </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Źródło tapety</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Tapeta pulpitu</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Wybierz obraz</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Wybierz plik obrazu…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Rozmycie</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Nie udało się wczytać obrazu tapety, więc na razie wyświetlane jest jednolite tło. Wybierz inny obraz, aby spróbować ponownie.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Nie udało się skopiować tego obrazu, więc zachowano poprzedni.</value>
+  </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Zapisz bieżącą</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Twoje palety</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Wbudowane</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Usuń paletę</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Nazwa palety</value>
+  </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>KOLOR</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>TRYB</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>WYGLĄD</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>ZACHOWANIE</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>ZAPISANE PALETY</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Źródło</value>
+  </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Dopasuj do telefonu</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Akcent Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Tapeta</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Własny</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Bieżący kolor akcentu Windows</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Odśwież</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Żywość</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strategia</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Przykładowa karta</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Karty i tekst będą wyglądać tak.</value>
+  </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Nazwa jest już używana</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>„{0}” już znajduje się w tym folderze. Możesz zachować oba pliki, zastąpić ten, który tam jest, albo pominąć ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>„{0}” już tu jest, ale to inny rodzaj elementu — folder tam, gdzie wklejasz plik, albo odwrotnie. Zachowaj oba albo pomiń ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Nowa nazwa dla „{0}” została zajęta przez coś innego tuż przed jej utworzeniem. Spróbuj ponownie „Zachowaj oba”, aby wybrać wolną nazwę, albo pomiń ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>Nie można nadać tutaj nowej nazwy elementowi „{0}”, ponieważ nowa nazwa byłaby za długa dla tego folderu. Pomiń ten element albo zatrzymaj wklejanie i najpierw skróć nazwę.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>Nie udało się wkleić tutaj elementu „{0}”, a ten komputer nie rozpoznaje powodu podanego przez urządzenie. Pomiń ten element albo zatrzymaj wklejanie.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Zachowaj oba</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Twoje urządzenie wybierze nową nazwę, więc nic nie zostanie nadpisane.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Zastąp</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Nadpisuje element, który już tam jest. Tego nie da się cofnąć.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Pomiń</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Zostaw ten element bez zmian i przejdź do kolejnych.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Zatrzymaj wklejanie</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Zatrzymaj się tutaj. Wszystko, co nie zostało jeszcze wklejone, pozostaje bez zmian.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Wklejanie zatrzymane. Elementy, których nie wklejono, nadal są w schowku.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Zapisano jako „{0}”, więc element, który już tam był, został zachowany.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Zrezygnowano z elementu „{0}” po kilku próbach. Nic w nim nie zostało zmienione.</value>
   </data>
 </root>

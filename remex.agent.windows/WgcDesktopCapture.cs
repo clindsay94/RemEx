@@ -204,6 +204,49 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         return Marshal.GetDelegateForFunctionPointer<T>(fn);
     }
 
+    // ── cached per-frame vtable delegates + reused scratch (RemEx-8c1l) ───────
+    //
+    // Same change, same reasons, as DxgiDesktopCapture: GetSlot builds a fresh marshalling stub on
+    // every call and these three run per frame, alongside a malloc/free of a fixed-size struct that
+    // exists only to give Map somewhere to write.
+    //
+    // The cache is keyed on the COM pointer it was read from rather than invalidated by hand at
+    // release sites. Two reasons, and the second is the one that actually makes it safe: a release
+    // site can be added later without anyone remembering this cache exists, and — more fundamentally —
+    // the delegate is never invoked against a captured pointer. Every call below passes the LIVE
+    // _d3dContext field, re-read at the call, so a freed object is structurally unreachable through
+    // here. The owner check exists to stop a delegate read from one object being used against a
+    // different one, and since _d3dContext has a single assignment site any non-zero value there is
+    // the same COM type, whose vtable is the type's static table.
+
+    private IntPtr _contextDelegateOwner = IntPtr.Zero;
+    private CopyResourceFn? _copyResourceFn;
+    private MapFn? _mapFn;
+    private UnmapFn? _unmapFn;
+
+    private CopyResourceFn CopyResource { get { EnsureContextDelegates(); return _copyResourceFn!; } }
+    private MapFn MapResource { get { EnsureContextDelegates(); return _mapFn!; } }
+    private UnmapFn UnmapResource { get { EnsureContextDelegates(); return _unmapFn!; } }
+
+    private void EnsureContextDelegates()
+    {
+        if (_contextDelegateOwner == _d3dContext && _copyResourceFn is not null)
+            return;
+
+        _copyResourceFn = GetSlot<CopyResourceFn>(_d3dContext, 47);
+        _mapFn = GetSlot<MapFn>(_d3dContext, 14);
+        _unmapFn = GetSlot<UnmapFn>(_d3dContext, 15);
+        _contextDelegateOwner = _d3dContext;
+    }
+
+    /// <summary>Reused across frames; every use is under _lock. Freed in Dispose.</summary>
+    private IntPtr _mappedScratch = IntPtr.Zero;
+
+    private IntPtr MappedScratch =>
+        _mappedScratch != IntPtr.Zero
+            ? _mappedScratch
+            : _mappedScratch = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
+
     private static int QueryInterface(IntPtr com, Guid iid, out IntPtr result)
     {
         var fn = GetSlot<QueryInterfaceFn>(com, 0);
@@ -692,7 +735,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             }
 
             // ID3D11DeviceContext::CopyResource = slot 47.
-            GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+            CopyResource(_d3dContext, _stagingTexture, srcTex);
             _stagingHasFrame = true;
         }
         finally
@@ -710,12 +753,11 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
     // static-desktop rescale path (scale changed, no new WGC frame — RemEx-wmm8).
     private byte[]? MapStagingAndEncode(double scale, out bool isLive)
     {
-        IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
+        IntPtr mappedPtr = MappedScratch;
         // ID3D11DeviceContext::Map = slot 14.
-        int mapHr = GetSlot<MapFn>(_d3dContext, 14)(_d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
+        int mapHr = MapResource(_d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
         if (mapHr != S_OK)
         {
-            Marshal.FreeHGlobal(mappedPtr);
             isLive = false;
             return _lastRawFrame;
         }
@@ -731,8 +773,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         finally
         {
             // ID3D11DeviceContext::Unmap = slot 15.
-            GetSlot<UnmapFn>(_d3dContext, 15)(_d3dContext, _stagingTexture, 0);
-            Marshal.FreeHGlobal(mappedPtr);
+            UnmapResource(_d3dContext, _stagingTexture, 0);
         }
     }
 
@@ -875,6 +916,13 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         {
             TearDownSession();
             ReleaseDevice();
+
+            // Outlives every frame now, so nothing else will ever release it (RemEx-8c1l).
+            if (_mappedScratch != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_mappedScratch);
+                _mappedScratch = IntPtr.Zero;
+            }
         }
         finally
         {

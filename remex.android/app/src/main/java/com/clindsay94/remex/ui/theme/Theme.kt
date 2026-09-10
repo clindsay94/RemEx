@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.UiModeManager
 import android.content.Context
 import android.database.ContentObserver
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -106,6 +105,7 @@ val LocalCustomColors = staticCompositionLocalOf {
  * A function rather than top-level vals: Theme.kt top-level property init order is fragile
  * (see the DarkColorScheme lazy note above) and callers cache via remember anyway.
  */
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 internal fun customColorsForScheme(darkTheme: Boolean, contrast: Double): CustomColors {
     val successSeed = Hct.fromInt(0xFF386A20.toInt())
     val scheme = SchemeTonalSpot(successSeed, darkTheme, contrast)
@@ -133,6 +133,7 @@ val remexShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -316,6 +317,7 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety) * fontScale
 }
 
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 fun colorSchemeFromSeed(
     seedColor: Color,
     darkTheme: Boolean,
@@ -454,13 +456,13 @@ private fun rememberAnimatorDurationScale(): Float {
 }
 
 /**
- * System contrast (-1..1) from UiModeManager on API 34+, kept live via a
- * ContrastChangeListener; 0 (default) below API 34. Lets the success palette track the SAME
- * contrast source as the main scheme when dynamic color is active (RemEx-84dj).
+ * System contrast (-1..1) from UiModeManager, kept live via a ContrastChangeListener. Lets the
+ * success palette track the SAME contrast source as the main scheme when dynamic color is active
+ * (RemEx-84dj). The "0 below API 34" default this used to document was unreachable at minSdk 34,
+ * and as an early return before the remember calls it was also a slot-table hazard (RemEx-jcl4p).
  */
 @Composable
 private fun rememberSystemContrast(): Float {
-    if (Build.VERSION.SDK_INT < 34) return 0f
     val context = LocalContext.current
     val uiModeManager = remember(context) {
         context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
@@ -531,7 +533,7 @@ fun RemExTheme(
                 )
             }
 
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor -> {
             val context = LocalContext.current
             remember(darkTheme, context) {
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -545,8 +547,7 @@ fun RemExTheme(
     // When dynamic color drives the main scheme, the success palette follows the SYSTEM
     // contrast (the same source the dynamic scheme responds to); otherwise the app's
     // themeContrast, matching the custom/static paths (RemEx-84dj).
-    val usesDynamicScheme = !themePalette.equals("custom", ignoreCase = true) &&
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val usesDynamicScheme = !themePalette.equals("custom", ignoreCase = true) && dynamicColor
     val successContrast = if (usesDynamicScheme) rememberSystemContrast() else themeContrast
     val customColors = remember(darkTheme, successContrast) {
         customColorsForScheme(darkTheme, successContrast.toDouble())

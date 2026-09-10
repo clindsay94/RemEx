@@ -1,0 +1,199 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Threading;
+using Material.Icons;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
+using Remex.Desktop.Services;
+using Remex.Desktop.ViewModels;
+
+namespace Remex.Desktop.Views;
+
+/// <summary>
+/// RemEx's tray balloon: a small undecorated window that appears in the tray corner, announces one
+/// event and dismisses itself.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>THIS IS DRAWN BY REMEX BECAUSE AVALONIA HAS NO BALLOON TO BORROW.</b> As of Avalonia 11.3.11
+/// <see cref="TrayIcon"/> exposes exactly <c>Icon</c>, <c>IsVisible</c>, <c>Menu</c>,
+/// <c>ToolTipText</c>, <c>Command</c> and <c>CommandParameter</c> — there is no balloon API on any
+/// platform, so the question was never "which platforms support it" but "what do we show instead".
+/// A native balloon would also have meant a second <c>Shell_NotifyIcon</c> registration on Windows
+/// (RemEx's tray icon belongs to Avalonia and cannot be addressed from outside it) and a second,
+/// differently-shaped path on Linux. Drawing it here is one code path for Windows and CachyOS
+/// alike, and it is the only version of this surface that can follow the four PC themes.
+/// </para>
+/// <para>
+/// It is positioned like <see cref="TrayFlyoutWindow"/> and shown without activation, so it never
+/// steals focus from whatever the user is actually doing.
+/// </para>
+/// <para>
+/// The surface is the app-wide Material <c>Card</c>, and the severity glyph and its colour come
+/// from <c>SnackbarSeverityMapping</c> — the same mapping the in-app snackbar renders with
+/// (RemEx-uedna), so an out-of-app balloon and its in-app equivalent read as one visual language.
+/// </para>
+/// </remarks>
+public partial class TrayBalloonWindow : Window
+{
+    /// <summary>How long a balloon stays up. A problem lingers, because it is the one the user
+    /// cannot reconstruct from the app itself once it is gone.</summary>
+    private static readonly TimeSpan OutcomeDuration = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan ProblemDuration = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// How long the balloon lingers after a press so the ripple (RemEx-alwfa.3) gets a frame to draw.
+    /// Calling <c>Hide()</c> in the same dispatcher turn as PointerPressed tears the window down
+    /// before anything is composited, which made the ripple a no-op (review of RemEx-alwfa.3).
+    /// </summary>
+    private static readonly TimeSpan PressSettleDuration = TimeSpan.FromMilliseconds(180);
+
+    private readonly DispatcherTimer _dismissTimer;
+    private IDisposable? _pendingHide;
+
+    public TrayBalloonWindow()
+    {
+        InitializeComponent();
+
+        _dismissTimer = new DispatcherTimer();
+        _dismissTimer.Tick += OnDismissTick;
+    }
+
+    // No hand-written InitializeComponent: a parameterless one shadows the generated
+    // InitializeComponent(bool loadXaml = true) override, so AvaloniaXamlLoader.Load(this) never runs
+    // and every x:Name field — AccentStripe, GlyphIcon, TitleText and MessageText here — stays null.
+    // That exact NullReferenceException, in ConfirmationDialog's TitleText field, is what froze RemEx
+    // on every destructive action (RemEx-wdqx; ConfirmationDialog.axaml.cs itself is gone, deleted on
+    // this branch). This one was the least likely to be noticed: the fields are read when a balloon
+    // is SHOWN, not when the window is constructed, so the failure waits for the first tray
+    // notification rather than arriving at startup.
+
+    /// <summary>
+    /// Shows (or re-uses) the balloon for one event. Call on the UI thread.
+    /// </summary>
+    /// <remarks>
+    /// One window is re-used rather than one per event: two balloons would be drawn on top of each
+    /// other in the same corner, and a stack of them in the corner the user is not looking at is
+    /// noise rather than information. The newest event wins and the dismissal clock restarts.
+    /// </remarks>
+    public void Present(NotificationImportance importance, string title, string message)
+    {
+        var isProblem = importance == NotificationImportance.Problem;
+
+        Title = title;
+        TitleText.Text = title;
+        MessageText.Text = message;
+        var (icon, brushKey) = SnackbarSeverityMapping.For(importance);
+        GlyphIcon.Kind = icon;
+        GlyphIcon.Foreground = ThemeResources.Brush(brushKey, Brushes.White);
+
+        if (isProblem)
+            AccentStripe.Classes.Add("problem");
+        else
+            AccentStripe.Classes.Remove("problem");
+
+        // A press-settle hide still pending from the previous balloon must not take this one down.
+        _pendingHide?.Dispose();
+        _pendingHide = null;
+
+        PositionAtTray();
+        Show();
+
+        _dismissTimer.Stop();
+        _dismissTimer.Interval = isProblem ? ProblemDuration : OutcomeDuration;
+        _dismissTimer.Start();
+    }
+
+    /// <summary>Parks the balloon just inside the bottom-right of the primary screen's work area.</summary>
+    /// <remarks>
+    /// <c>WorkingArea</c> is in physical pixels and <c>Width</c> is in logical
+    /// units, so the window size is scaled INTO the screen's space rather than the result being
+    /// scaled afterwards. Doing it the other way round lands correctly at 100% and drifts off the
+    /// bottom-right corner on every scaled display.
+    /// </remarks>
+    private void PositionAtTray()
+    {
+        if (Screens.Primary is not { } screen)
+            return;
+
+        // Through the shared placement since RemEx-q7ak. This copy was already correct — the
+        // flyout's was not — and two copies of the same arithmetic with one of them wrong is the
+        // whole argument for there being one.
+        Position = Remex.Desktop.Services.TrayPlacement.BottomRight(
+            screen.WorkingArea, Width, Height, screen.Scaling, marginLogical: 8);
+    }
+
+    private void OnDismissTick(object? sender, EventArgs e) => HideNow();
+
+    private void OnBalloonPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _dismissTimer.Stop();
+
+        // The main window comes up straight away; the balloon itself stays one ripple beat (it is
+        // Topmost, so it remains visible over the main window for that beat) and then hides. A
+        // Present() during the beat cancels the pending hide so it cannot take the new balloon down.
+        App.BringMainWindowToFront();
+
+        _pendingHide?.Dispose();
+        _pendingHide = DispatcherTimer.RunOnce(() =>
+        {
+            _pendingHide = null;
+            Hide();
+        }, PressSettleDuration);
+    }
+
+    private void OnCloseBalloon(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => HideNow();
+
+    private void HideNow()
+    {
+        _pendingHide?.Dispose();
+        _pendingHide = null;
+        _dismissTimer.Stop();
+        Hide();
+    }
+}
+
+/// <summary>
+/// The <see cref="ITrayBalloonSink"/> the notification service talks to. Owns the single
+/// <see cref="TrayBalloonWindow"/> and creates it on first use.
+/// </summary>
+/// <remarks>
+/// Lazy because the balloon is a window: constructing one during startup would run before the
+/// windowing platform is ready, and most sessions never raise a notification while hidden at all.
+/// The window is only ever hidden, never closed — but if something else closes it (application
+/// shutdown does), the reference is dropped so the next balloon builds a fresh one instead of
+/// throwing on a dead window.
+/// </remarks>
+public sealed class TrayBalloonSink : ITrayBalloonSink
+{
+    private TrayBalloonWindow? _window;
+
+    /// <inheritdoc />
+    public bool TryShow(NotificationImportance importance, string title, string message)
+    {
+        try
+        {
+            if (_window is null)
+            {
+                _window = new TrayBalloonWindow();
+                _window.Closed += (_, _) => _window = null;
+            }
+
+            _window.Present(importance, title, message);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // SAY SO RATHER THAN RETURN A QUIET false. The caller records the failure, but only this
+            // frame knows WHY, and a balloon that cannot be drawn on one machine is exactly the kind
+            // of report the diagnostics export exists to answer.
+            InMemoryLogSink.Append(LogLevel.Warning, "Notification", "Tray balloon could not be shown", ex);
+            _window = null;
+            return false;
+        }
+    }
+}

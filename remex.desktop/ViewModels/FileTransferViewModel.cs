@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -26,7 +27,7 @@ public sealed record BreadcrumbSegment(string Label, string Path);
 /// <summary>
 /// Rich remote file-manager view-model (plan §WP10). Browses the connected host's shared roots with
 /// breadcrumbs, sort, search, multi-select copy/move/mkdir/delete, a properties + thumbnail pane, a
-/// full-device volumes list, a local transfer queue, and send-to-device / drag-drop upload. New v3
+/// full-device volumes list, a local transfer queue, and drag-drop upload. New v3
 /// features are gated on the host's advertised <see cref="FileTransferClient.Capabilities"/> so nothing v3
 /// is ever sent to a v2 peer.
 /// </summary>
@@ -47,23 +48,52 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private string _clipboardFolder = string.Empty;
     private bool _clipboardIsMove;
 
-    /// <summary>Wired by the view to a native file-open picker (for upload / send-to-device).</summary>
+    /// <summary>Wired by the view to a native file-open picker (for upload).</summary>
     public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickUploadFileAsync { get; set; }
 
     /// <summary>Wired by the view to a native file-save picker (for download).</summary>
     public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickDownloadDestinationAsync { get; set; }
 
+    /// <summary>Wired by the view to a native folder picker (for folder upload / folder download).</summary>
+    public Func<FolderPickerOpenOptions, Task<IReadOnlyList<IStorageFolder>>>? PickLocalFolderAsync { get; set; }
+
     /// <summary>Wired by the view so the VM can select every entry in the list for a multi-select op.</summary>
     public Action? SelectAllEntries { get; set; }
 
+    /// <summary>
+    /// Whether this view model built <see cref="TransferQueue"/> itself and must dispose it, versus
+    /// receiving ShellViewModel's shared instance (RemEx-rjnbo.1) - a shared queue outlives any one
+    /// page and belongs to whoever constructed it.
+    /// </summary>
+    private readonly bool _ownsTransferQueue;
+
     public FileTransferViewModel(
         ConnectionViewModel connection,
-        ILogger<FileTransferViewModel>? logger = null)
+        ILogger<FileTransferViewModel>? logger = null,
+        ILogger<FileTransferQueue>? queueLogger = null,
+        FileTransferQueue? transferQueue = null,
+        FileTransferClient? client = null)
     {
         _connection = connection;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
-        _client = new FileTransferClient(connection);
-        TransferQueue = new FileTransferQueue();
+
+        // THE SEAM THAT LETS THE CONFLICT FLOW BE TESTED AT ALL, and it is the join this repo's own
+        // splitting rule insists on landing with the logic (AGENTS.md). FileTransferClient already
+        // takes IFileTransferConnection so a test can answer a paste with `destination_exists`; what
+        // was missing was any way to hand that client to this view model, which built its own from a
+        // ConnectionViewModel that no test can make speak. Production passes nothing and is unchanged.
+        _client = client ?? new FileTransferClient(connection);
+
+        // SHARED WITH ShellViewModel WHEN SUPPLIED (RemEx-rjnbo.1). The Files-nav badge needs a live
+        // transfer count before this view model has ever been built - it is lazily constructed on
+        // first navigation - so ShellViewModel owns one queue eagerly and hands it in here instead of
+        // this view model building a second, disagreeing one. Every other caller (every existing
+        // test) still gets its own queue, passed explicitly for the reason ShellViewModel's own
+        // construction site already documents: this view model is hand-constructed rather than
+        // DI-resolved, so a constructor default silently degrades to no logger and discards every
+        // transfer-failure diagnostic (RemEx-6tvh).
+        _ownsTransferQueue = transferQueue is null;
+        TransferQueue = transferQueue ?? new FileTransferQueue(post: null, logger: queueLogger);
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
@@ -91,6 +121,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         OnPropertyChanged(nameof(HasQueueItems));
         OnPropertyChanged(nameof(HasActiveTransfer));
+        CancelAllTransfersCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>Records a successful user-driven transfer in the Home "Recent activity" feed.</summary>
@@ -108,6 +139,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [RelayCommand]
     private void ClearCompletedTransfers() => TransferQueue.ClearCompleted();
+
+    /// <summary>Stops everything still in flight or waiting. Enabled only while there is something to stop.</summary>
+    [RelayCommand(CanExecute = nameof(HasCancellableTransfers))]
+    private void CancelAllTransfers() => TransferQueue.CancelAll();
+
+    private bool HasCancellableTransfers() => TransferQueue.Items.Any(item => !item.IsTerminal);
 
     // ─── Capabilities (v3 gating) ─────────────────────────────────────────────
 
@@ -128,12 +165,22 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private bool _supportsFullBrowse;
 
+    /// <summary>
+    /// True when the host answers <c>file_manifest_request</c>, i.e. a remote FOLDER can be downloaded.
+    /// Folder UPLOAD deliberately does not read this: the client walks its own tree and sends ordinary
+    /// per-file uploads, which every v2 host already accepts.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DownloadFolderCommand))]
+    private bool _supportsFolderTransfer;
+
     private void RefreshCapabilityFlags()
     {
         SupportsCopyMove = _client.SupportsOp(FileManageOperations.Copy) && _client.SupportsOp(FileManageOperations.Move);
         SupportsMkdir = _client.SupportsOp(FileManageOperations.Mkdir);
         SupportsSearch = _client.SupportsV3 && _client.SupportsOp("search");
         SupportsFullBrowse = _client.SupportsFullBrowse;
+        SupportsFolderTransfer = _client.SupportsV3 && _client.SupportsOp("manifest");
     }
 
     // ─── Roots ────────────────────────────────────────────────────────────────
@@ -142,7 +189,6 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(UploadCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SendFileCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveCurrentRootCommand))]
     [NotifyCanExecuteChangedFor(nameof(NewFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(PasteCommand))]
@@ -367,6 +413,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DownloadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenSelectedRemoteCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteRemoteCommand))]
     [NotifyCanExecuteChangedFor(nameof(StartRenameCommand))]
@@ -436,7 +483,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     /// <summary>True when the current folder is genuinely empty, rather than still arriving.</summary>
     /// <remarks>
-    /// The <see cref="IsLoading"/> term is not defensive padding — without it this flashes "this
+    /// The <c>IsLoading</c> term is not defensive padding — without it this flashes "this
     /// folder is empty" on every navigation, in the gap before the listing arrives, which looks
     /// exactly like a bug to the user. (RemEx-n69m.)
     /// </remarks>
@@ -572,12 +619,22 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         await PickAndEnqueueUploadsAsync(FileTransferQueueKind.Upload);
     }
 
-    [RelayCommand(CanExecute = nameof(CanUpload))]
-    private async Task SendFileAsync()
-    {
-        if (SelectedRemoteRoot is null) return;
-        await PickAndEnqueueUploadsAsync(FileTransferQueueKind.SendToPhone);
-    }
+    // SendFileAsync REMOVED with its button (RemEx-74kfg). It was UploadAsync with a different queue
+    // label: same picker, same PickAndEnqueueUploadsAsync, same upload into the host's own shared root
+    // over loopback. Nothing was ever offered to a phone, and when the picked file already lived in a
+    // shared root the host opened that same path for write while the client held it for read, failing
+    // the transfer with a sharing violation that named a local file.
+    //
+    // THAT COMMENT USED TO SAY DRAG-AND-DROP STILL REACHED THIS, VIA DropZoneResolver's UPPER ZONE.
+    // It did not (RemEx-bkmn9). DropZoneResolver was written for a two-zone drop surface that was
+    // never built: FileTransferView.OnDrop enqueues Upload unconditionally and never called it, so
+    // the class had no caller outside its own tests. It is deleted, and with it the last thing that
+    // could produce a SendToPhone queue item.
+    //
+    // FileTransferQueueKind.SendToPhone is therefore UNREACHABLE at runtime today. It is kept rather
+    // than deleted because RemEx-uov9y (the PC-to-phone command channel) is open and is what would
+    // give it a real meaning; removing it now would churn the enum, its label and nine locale files
+    // to put them all back. Nothing should resolve to it until something can actually send.
 
     private async Task PickAndEnqueueUploadsAsync(FileTransferQueueKind kind)
     {
@@ -614,7 +671,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private bool CanUpload() => SelectedRemoteRoot is { IsWritable: true } && _connection.IsConnected;
 
     /// <summary>Enqueues an upload of each local file into the current remote folder. Shared by the
-    /// upload button, the send-to-device button, and drag-drop from the desktop.</summary>
+    /// upload button and drag-drop from the desktop. The send-to-device button was removed with
+    /// RemEx-74kfg and nothing has replaced it, so <c>kind</c> is always Upload today (RemEx-bkmn9).</summary>
     public void EnqueueUploads(IEnumerable<string> localPaths, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
     {
         var root = SelectedRemoteRoot;
@@ -685,6 +743,411 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, (progress, ct) =>
             _client.DownloadAsync(root.RootId, remoteFile, localFile!, progress, ct));
         StatusText = LocalizationService.Instance["FileTransfer_QueuedForDownload"];
+    }
+
+    // ─── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
+    //
+    // Both directions end in the SAME per-file queue items an individual transfer produces. The only
+    // difference is where the list of files comes from: the host's paged manifest going down, a local
+    // directory walk going up. Nothing below owns bytes, progress, resume or conflicts — that all stays
+    // with the queue, which is the entire reason a folder transfer is cheap to have.
+
+    /// <summary>
+    /// Downloads the selected remote FOLDER: pages the host's manifest, recreates the directory shape
+    /// locally, then enqueues one ordinary download per file.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanDownloadFolder))]
+    private async Task DownloadFolderAsync()
+    {
+        var root = SelectedRemoteRoot;
+        var entry = SelectedRemoteEntry;
+        if (root is null || entry is not { IsDirectory: true })
+            return;
+
+        if (PickLocalFolderAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            return;
+        }
+
+        var chosen = await PickLocalFolderAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_FolderDownloadPickerTitle"],
+            AllowMultiple = false,
+        });
+
+        var destinationRoot = chosen.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(destinationRoot))
+            return;
+
+        // The picked folder is the PARENT: a folder named "photos" lands as <chosen>/photos, matching
+        // what every file manager does on a drag-drop and keeping two downloads of different folders
+        // from merging into one another.
+        var localRoot = Path.Combine(destinationRoot!, SanitizeLocalName(entry.Name));
+        var remoteFolder = CombineRemotePath(RemotePath, entry.Name);
+
+        RemoteSubtree subtree;
+        IsLoading = true;
+        StatusText = LocalizationService.Instance["FileTransfer_FolderScanning"];
+        try
+        {
+            subtree = await _client.EnumerateRemoteSubtreeAsync(root.RootId, remoteFolder, null, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            StatusText = string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            return;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+
+        var queued = EnqueueSubtreeDownloads(root, subtree, localRoot);
+        if (queued == 0)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_FolderEmpty"];
+            return;
+        }
+
+        // A truncated manifest means the host stopped describing the folder, so what was just queued is
+        // NOT the folder. Saying so is the whole point — silently transferring a prefix looks identical
+        // to success right up until something is missing.
+        StatusText = subtree.Truncated
+            ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedTruncated"], queued)
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForDownload"], queued);
+    }
+
+    private bool CanDownloadFolder()
+        => SupportsFolderTransfer && SelectedRemoteEntry is { IsDirectory: true } && SelectedRemoteRoot is not null && _connection.IsConnected;
+
+    /// <summary>
+    /// Creates the local directory shape and enqueues one download per file. Returns how many transfers
+    /// were queued.
+    /// </summary>
+    private int EnqueueSubtreeDownloads(FileSharedRoot root, RemoteSubtree subtree, string localRoot)
+    {
+        // Directories are created up front, empty ones included. Leaving them to the file downloads
+        // would quietly drop every empty folder — the one part of the shape no file can imply.
+        foreach (var directory in subtree.Entries.Where(candidate => candidate.IsDirectory))
+        {
+            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(directory));
+            if (relative is null)
+                continue;
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(localRoot, relative));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A folder that cannot be made will fail its own files' downloads with a real message;
+                // aborting the whole fan-out here would lose the ones that are fine.
+            }
+        }
+
+        var queued = 0;
+        foreach (var file in subtree.Files)
+        {
+            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(file));
+            if (relative is null)
+                continue;
+
+            var localPath = Path.Combine(localRoot, relative);
+            var parent = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrEmpty(parent))
+            {
+                try
+                {
+                    Directory.CreateDirectory(parent);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    continue;
+                }
+            }
+
+            var remotePath = file.RelativePath;
+            TransferQueue.Enqueue(FileTransferQueueKind.Download, Path.GetFileName(localPath), (progress, ct) =>
+                _client.DownloadAsync(root.RootId, remotePath, localPath, progress, ct));
+            queued++;
+        }
+
+        return queued;
+    }
+
+    /// <summary>
+    /// Uploads a local FOLDER into the current remote folder. No manifest is involved — the tree is
+    /// right here, so the client walks it directly and enqueues the same per-file uploads.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUpload))]
+    private async Task UploadFolderAsync()
+    {
+        var root = SelectedRemoteRoot;
+        if (root is not { IsWritable: true })
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            return;
+        }
+
+        if (PickLocalFolderAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            return;
+        }
+
+        var chosen = await PickLocalFolderAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_FolderUploadPickerTitle"],
+            AllowMultiple = false,
+        });
+
+        var localRoot = chosen.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(localRoot) || !Directory.Exists(localRoot))
+            return;
+
+        await EnqueueFolderUploadAsync(localRoot!, FileTransferQueueKind.Upload);
+    }
+
+    /// <summary>
+    /// Enqueues an upload of every file under <paramref name="localRoot"/>, preserving the folder shape
+    /// under the current remote folder. Shared by the upload-folder button and folder drag-drop.
+    /// </summary>
+    public async Task EnqueueFolderUploadAsync(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
+    {
+        var root = SelectedRemoteRoot;
+        if (root is not { IsWritable: true })
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            return;
+        }
+
+        List<string> localFiles;
+        try
+        {
+            localFiles = [.. Directory.EnumerateFiles(localRoot, "*", new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                // Symlinked directories are not followed, for the same reason the host does not follow
+                // them: one loop turns a folder upload into an unbounded one.
+                AttributesToSkip = FileAttributes.ReparsePoint,
+                IgnoreInaccessible = true,
+            })];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            StatusText = string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            return;
+        }
+
+        if (localFiles.Count > FileTransferLimits.ManifestMaxTotalEntries)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_FolderTooLarge"];
+            return;
+        }
+
+        var folderName = SanitizeLocalName(new DirectoryInfo(localRoot).Name);
+        var targetFolder = CombineRemotePath(RemotePath, folderName);
+
+        // THE REMOTE DIRECTORIES HAVE TO EXIST BEFORE THE FIRST FILE IS ENQUEUED, and nothing else
+        // creates them. The download direction says so out loud - EnqueueSubtreeDownloads calls
+        // Directory.CreateDirectory for every entry - but the upload direction had no counterpart,
+        // and the two hosts disagree about whether that matters. The PC host creates the parent on
+        // write (FileTransferService.EnsureParentDirectory), so a PC destination hid this; the
+        // Android host resolves the parent and refuses when it is missing
+        // (AndroidFileTransferHost.handleTransferStart, FileHostHandler at the v3 path), so a phone
+        // destination failed EVERY file in the folder. Uploading a folder to a phone could not work
+        // at all. (RemEx-0xves)
+        if (!await EnsureRemoteFolderShapeAsync(root, targetFolder, localRoot, localFiles))
+            return;
+
+        var queued = 0;
+
+        foreach (var localPath in localFiles)
+        {
+            var relative = Path.GetRelativePath(localRoot, localPath).Replace('\\', '/');
+            var remoteFile = CombineRemotePath(targetFolder, relative);
+            TransferQueue.Enqueue(kind, Path.GetFileName(localPath), (progress, ct) =>
+                _client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct));
+            queued++;
+        }
+
+        StatusText = queued == 0
+            ? LocalizationService.Instance["FileTransfer_FolderEmpty"]
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForUpload"], queued);
+    }
+
+    /// <summary>
+    /// Creates <paramref name="targetFolder"/> and every subdirectory the upload will write into.
+    /// Returns false when the shape could not be made, in which case nothing is enqueued.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SHALLOWEST FIRST. mkdir names a parent and a child, so a nested folder cannot be created
+    /// before the folder above it; ordering by depth is what makes one pass enough.
+    /// </para>
+    /// <para>
+    /// AN EXISTING FOLDER IS NOT AN ERROR, and it has to be tolerated here rather than avoided.
+    /// The hosts refuse a mkdir onto a name that is already taken - that refusal is right for the
+    /// New-folder button, which is a user naming something - but uploading into a folder that is
+    /// already there is the ordinary case, not a collision. There is no "create if missing" on the
+    /// wire and adding one would be a protocol change, so the refusal is absorbed and the upload
+    /// proceeds; if the name is a FILE rather than a folder, the per-file transfers fail with the
+    /// host's own message, which is more specific than anything guessed here.
+    /// </para>
+    /// <para>
+    /// A failure to reach the host at all is different, and stops the whole thing: enqueuing several
+    /// hundred transfers that are all going to fail is precisely the outcome this feature keeps
+    /// producing, and it costs the user a queue they then have to clear.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> EnsureRemoteFolderShapeAsync(
+        FileSharedRoot root, string targetFolder, string localRoot, IReadOnlyList<string> localFiles)
+    {
+        // Empty directories are included deliberately: a file list cannot imply them, and losing
+        // them silently is the same shape of bug the download side calls out.
+        var localDirectories = Directory.EnumerateDirectories(localRoot, "*", new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
+        });
+
+        foreach (var remoteFolder in PlanRemoteFolderCreation(localRoot, localDirectories, localFiles, targetFolder))
+        {
+            var trimmed = remoteFolder.Trim('/');
+            var parent = trimmed.Contains('/') ? trimmed[..trimmed.LastIndexOf('/')] : string.Empty;
+            var name = trimmed.Contains('/') ? trimmed[(trimmed.LastIndexOf('/') + 1)..] : trimmed;
+            if (name.Length == 0)
+                continue;
+
+            try
+            {
+                await _client.MakeDirectoryRemoteAsync(root.RootId, parent, name, CancellationToken.None);
+            }
+            catch (FileTransferHostException ex)
+            {
+                // Already there, read-only, or a file in the way. Only the first is benign, and the
+                // host does not distinguish them in a way worth branching on - the per-file transfers
+                // report the other two accurately.
+                _logger.LogDebug(ex, "Creating remote folder {Folder} was refused; continuing.", remoteFolder);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Creating remote folder {Folder} failed.", remoteFolder);
+                StatusText = string.Format(
+                    CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Works out which remote folders a folder upload needs, and in what order to ask for them.
+    /// Returns full remote paths, shallowest first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Separated from the sending so it can be tested: the view model itself needs a live client and
+    /// connection, and the part with any judgement in it is this one.
+    /// </para>
+    /// <para>
+    /// ORDER IS THE CONTRACT. mkdir names a parent and a child, so <c>a/b/c</c> is unaskable until
+    /// <c>a/b</c> exists. Sorting by depth is what lets a single forward pass work regardless of the
+    /// order the local walk happened to produce, and the ordinal tiebreak only exists so the sequence
+    /// is stable enough to assert on.
+    /// </para>
+    /// <para>
+    /// Both sources are unioned rather than either taken alone. The directory walk is what preserves
+    /// EMPTY folders, which no file can imply; the file parents are what survive a directory the walk
+    /// could not read but whose files it still reached. Names are compared case-insensitively because
+    /// the destinations are Windows and SAF, neither of which would treat two casings as two folders.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyList<string> PlanRemoteFolderCreation(
+        string localRoot,
+        IEnumerable<string> localDirectories,
+        IEnumerable<string> localFiles,
+        string targetFolder)
+    {
+        var relativeDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // EVERY ANCESTOR, not just the folder itself. Neither source is guaranteed to name the whole
+        // chain - a walk may skip an unreadable level, and a file only ever names its immediate
+        // parent - and mkdir cannot create "2024/may" while "2024" is missing. Adding the ancestors
+        // here is what makes the single ordered pass below sufficient.
+        void AddWithAncestors(string relative)
+        {
+            var path = relative.Replace('\\', '/').Trim('/');
+            while (path.Length > 0 && path != ".")
+            {
+                relativeDirectories.Add(path);
+                var cut = path.LastIndexOf('/');
+                path = cut < 0 ? string.Empty : path[..cut];
+            }
+        }
+
+        foreach (var directory in localDirectories)
+            AddWithAncestors(Path.GetRelativePath(localRoot, directory));
+
+        foreach (var localPath in localFiles)
+        {
+            var relative = Path.GetRelativePath(localRoot, localPath).Replace('\\', '/').Trim('/');
+            var cut = relative.LastIndexOf('/');
+            if (cut > 0)
+                AddWithAncestors(relative[..cut]);
+        }
+
+        return relativeDirectories
+            .Select(path => CombineRemotePath(targetFolder, path))
+            .Prepend(targetFolder)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path.Trim('/').Count(character => character == '/'))
+            .ThenBy(path => path, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Turns a host-supplied subtree-relative path into one that is safe to combine with a local folder,
+    /// or null when it is not.
+    /// </summary>
+    /// <remarks>
+    /// <b>THE HOST'S PATHS ARE INPUT, NOT TRUTH.</b> A folder download is the one flow that takes remote
+    /// strings and writes to arbitrary local paths built from them, so <c>..</c>, a rooted path, or a
+    /// drive-qualified segment must be refused here rather than reaching <c>Path.Combine</c> —
+    /// which would happily let a rooted segment discard the destination folder entirely.
+    /// </remarks>
+    private static string? ToSafeLocalRelativePath(string subtreeRelative)
+    {
+        if (string.IsNullOrWhiteSpace(subtreeRelative))
+            return null;
+
+        var segments = subtreeRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+            return null;
+
+        foreach (var segment in segments)
+        {
+            if (segment is "." or "..")
+                return null;
+            if (Path.IsPathRooted(segment) || segment.Contains(':', StringComparison.Ordinal))
+                return null;
+            if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                return null;
+        }
+
+        return Path.Combine(segments);
+    }
+
+    /// <summary>Folder name usable as a local directory, falling back when the remote name is not.</summary>
+    private static string SanitizeLocalName(string name)
+    {
+        var cleaned = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).Trim(' ', '.');
+        return string.IsNullOrEmpty(cleaned) ? "folder" : cleaned;
     }
 
     private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && SelectedRemoteRoot is not null && _connection.IsConnected;
@@ -803,6 +1266,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var rootId = SelectedRemoteRoot.RootId;
         var isMove = _clipboardIsMove;
         var items = _clipboard.ToList();
+        var cancelled = false;
+
+        // WHAT THE HOST RENAMED, AND WHAT NOBODY COULD PLACE, BOTH HAVE TO OUTLIVE THE LOOP. The
+        // status line is one line and the last write wins, so a "saved as report (2).pdf" set inside
+        // the loop is erased a moment later by "Copy complete" — the user is told the paste worked
+        // and never told under what name. Collected here and reported once, at the end.
+        var renamed = new List<string>();
+        var abandoned = new List<string>();
 
         try
         {
@@ -818,17 +1289,21 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 if (string.Equals(source, destination, StringComparison.Ordinal))
                     continue; // no-op paste into the same folder
 
-                if (isMove)
-                    await _client.MoveRemoteAsync(rootId, source, destination, overwrite: false, CancellationToken.None);
-                else
-                    await _client.CopyRemoteAsync(rootId, source, destination, overwrite: false, CancellationToken.None);
+                var (outcome, resolvedName) = await PasteOneAsync(rootId, source, destination, isMove, entry.Name);
+
+                if (!string.IsNullOrWhiteSpace(resolvedName)) renamed.Add(resolvedName);
+                if (outcome is PasteItemOutcome.GaveUp) abandoned.Add(entry.Name);
+                if (outcome is PasteItemOutcome.Cancelled)
+                {
+                    cancelled = true;
+                    break;
+                }
             }
 
-            StatusText = isMove
-                ? LocalizationService.Instance["FileTransfer_MoveComplete"]
-                : LocalizationService.Instance["FileTransfer_CopyComplete"];
-
-            if (isMove)
+            // THE CLIPBOARD SURVIVES A CANCELLED CUT. Clearing it after the user stopped the paste
+            // half way would leave the un-moved items with nowhere to be pasted from, which is a
+            // worse outcome than the collision they were trying to avoid.
+            if (isMove && !cancelled)
             {
                 _clipboard.Clear();
                 OnPropertyChanged(nameof(HasClipboard));
@@ -836,6 +1311,31 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             }
 
             await BrowseRemoteAsync();
+
+            // AFTER THE REFRESH, NOT BEFORE, and this was a real defect rather than a tidy-up.
+            // BrowseRemoteAsync opens with `StatusText = string.Empty`, so a result written before it
+            // is erased milliseconds later and nobody ever sees it — which is why "Copy complete" has
+            // never actually appeared on screen. It matters more now than it did: the name the host
+            // chose for a "keep both" is something the user CANNOT work out for themselves, and a
+            // blanked line is the difference between knowing they have report (2).pdf and believing
+            // they have report.pdf.
+            //
+            // MOST SURPRISING FIRST. Stopping is what the user just did, so it is what they expect to
+            // read; an item nobody could place is the thing they would otherwise never learn about;
+            // a rename they did ask for still has to name the file they now have. Plain completion
+            // is the only one of the four that tells them nothing they did not already know.
+            if (cancelled)
+                StatusText = LocalizationService.Instance["FileTransfer_ConflictCancelled"];
+            else if (abandoned.Count > 0)
+                StatusText = string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictGaveUpFormat"], string.Join(", ", abandoned));
+            else if (renamed.Count > 0)
+                StatusText = string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictSavedAsFormat"], string.Join(", ", renamed));
+            else
+                StatusText = isMove
+                    ? LocalizationService.Instance["FileTransfer_MoveComplete"]
+                    : LocalizationService.Instance["FileTransfer_CopyComplete"];
         }
         catch (FileTransferHostException ex)
         {
@@ -850,16 +1350,205 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         finally
         {
+            EndConflictPrompt(FileConflictAction.Cancel);
             IsLoading = false;
         }
     }
+
+    /// <summary>How one item's paste ended, as far as the rest of the batch is concerned.</summary>
+    private enum PasteItemOutcome
+    {
+        /// <summary>The host did it, possibly under a name it chose.</summary>
+        Done,
+
+        /// <summary>The user declined this one. The batch carries on.</summary>
+        Skipped,
+
+        /// <summary>
+        /// The round cap ran out before the host would take it. The batch carries on, but the user
+        /// is told which item was left behind — SEPARATE FROM <c>Skipped</c> for exactly that
+        /// reason: a skip is something they chose and already know about.
+        /// </summary>
+        GaveUp,
+
+        /// <summary>The user stopped the whole paste. Nothing after this item is attempted.</summary>
+        Cancelled,
+    }
+
+    /// <summary>
+    /// How many requests one item may cost before the paste gives up on it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **A CAP RATHER THAN A LOOP, because one of the host's codes is genuinely retryable and could
+    /// therefore repeat forever.** <c>resolved_name_taken</c> means the host lost a race for the
+    /// name it invented, and the honest answer is "ask again" — which works, unless something is
+    /// creating names as fast as the host picks them. Without a bound the user is handed the same
+    /// prompt indefinitely with no way out but Cancel; with one, the item is reported as left behind
+    /// and the batch moves on. Three is enough for a real race and short enough that a pathological
+    /// one is over in a moment.
+    /// </para>
+    /// <para>
+    /// IT COUNTS REQUESTS, NOT PROMPTS, and that distinction is the whole reason the loop asks
+    /// before it decides whether a retry is left. Counting prompts would show the user a question on
+    /// the last round, take their answer, and then discard it unsent — the single worst way to end
+    /// this, because the user watched themselves choose and the choice did nothing.
+    /// </para>
+    /// </remarks>
+    private const int ConflictRoundCap = 3;
+
+    /// <summary>Copies or moves one item, asking the user about a collision and retrying with their answer.</summary>
+    /// <returns>
+    /// How it ended, and the name the host used when it differed from the one that was asked for.
+    /// The name is returned rather than written to the status line here: the caller writes that line
+    /// once, after the loop, or the last item silently erases what every earlier one reported.
+    /// </returns>
+    private async Task<(PasteItemOutcome Outcome, string? ResolvedName)> PasteOneAsync(
+        string rootId, string source, string destination, bool isMove, string entryName)
+    {
+        string? resolution = null;
+
+        for (var attempt = 0; attempt < ConflictRoundCap; attempt++)
+        {
+            // The resolution rides on the request itself; see FileManageRequest.ConflictResolution.
+            var outcome = isMove
+                ? await _client.MoveRemoteAsync(rootId, source, destination, overwrite: false, resolution, CancellationToken.None)
+                : await _client.CopyRemoteAsync(rootId, source, destination, overwrite: false, resolution, CancellationToken.None);
+
+            // THE HOST CHOSE THE NAME, SO THE HOST HAS TO SAY SO. A "keep both" that succeeded
+            // silently leaves the user believing they have report.pdf when the file on disk is
+            // report (2).pdf — and the PC cannot compute that name itself, because only the host
+            // knows what else is in the folder and whether its filesystem is case-sensitive.
+            if (outcome.Success)
+                return (PasteItemOutcome.Done, outcome.ResolvedName);
+
+            // NEVER ASK A QUESTION THERE IS NO REQUEST LEFT TO CARRY THE ANSWER. On the last attempt
+            // the loop is about to end, so putting the prompt up would collect a choice, close the
+            // prompt, and send nothing — the user watches themselves press Replace and watches it do
+            // nothing, which is worse than being told plainly that the item was left behind.
+            if (attempt == ConflictRoundCap - 1)
+                break;
+
+            // Anything that is not a collision already threw out of the client, so reaching here
+            // means the host asked a question. Non-conflict refusals are still FileTransferHostException.
+            var answer = await AskAboutConflictAsync(outcome, entryName);
+
+            if (answer is FileConflictAction.Cancel) return (PasteItemOutcome.Cancelled, null);
+            if (answer is FileConflictAction.Skip) return (PasteItemOutcome.Skipped, null);
+
+            resolution = FileConflictPolicy.ResolutionFor(answer);
+        }
+
+        _logger.LogWarning(
+            "Gave up on pasting {Entry} after {Attempts} attempts", entryName, ConflictRoundCap);
+        return (PasteItemOutcome.GaveUp, null);
+    }
+
+    // ─── Filename collisions (RemEx-6vd8 protocol, PC half) ─────────────────────
+
+    /// <summary>
+    /// The collision currently being put to the user, or null when there is none.
+    /// </summary>
+    /// <remarks>
+    /// **A TYPED STATE, NOT A SENTENCE.** Every earlier build wrote the host's own English into
+    /// <c>StatusText</c> and stopped there, so the one refusal the user can actually answer
+    /// looked exactly like the ones they cannot. What the host sends is a code
+    /// (<c>FileTransferErrorCodes</c>); what this holds is that code plus the name it is about, and
+    /// the view renders localized copy from both.
+    /// </remarks>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasConflictPrompt))]
+    [NotifyCanExecuteChangedFor(nameof(PasteCommand))]
+    private FileConflictPrompt? _pendingConflict;
+
+    /// <summary>Whether the collision prompt is on screen. Bound by the view.</summary>
+    public bool HasConflictPrompt => PendingConflict is not null;
+
+    /// <summary>
+    /// Completed by whichever button the user presses, so the paste loop can resume where it stopped.
+    /// </summary>
+    private TaskCompletionSource<FileConflictAction>? _conflictAnswer;
+
+    /// <summary>Puts one collision to the user and waits for their answer.</summary>
+    private async Task<FileConflictAction> AskAboutConflictAsync(FileManageOutcome outcome, string entryName)
+    {
+        // The host names the file that collided; an older host sends the code and nothing else, and
+        // a prompt that cannot say WHICH file is worse than the prose it replaced. The entry's own
+        // name is the right fallback because the destination was built from it.
+        var conflictingName = outcome.ConflictingName;
+        var prompt = new FileConflictPrompt(
+            outcome.ErrorCode,
+            string.IsNullOrWhiteSpace(conflictingName) ? entryName : conflictingName);
+
+        var answer = new TaskCompletionSource<FileConflictAction>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _conflictAnswer = answer;
+        PendingConflict = prompt;
+
+        // THE SPINNER COMES DOWN WHILE THE APP IS WAITING ON A PERSON. Nothing is on the wire, and a
+        // progress ring over a question the user is being asked reads as "working, do not touch" —
+        // which is the opposite of what has to happen next.
+        IsLoading = false;
+
+        try
+        {
+            return await answer.Task;
+        }
+        finally
+        {
+            PendingConflict = null;
+            _conflictAnswer = null;
+            IsLoading = true;
+        }
+    }
+
+    /// <summary>
+    /// Delivers <paramref name="action"/> to whatever paste is waiting, if any.
+    /// </summary>
+    /// <remarks>
+    /// THE OFFER LIST IS RE-CHECKED HERE, not merely used to draw buttons. A view that binds the
+    /// wrong visibility, or a keyboard route reaching a collapsed button, would otherwise deliver an
+    /// answer the policy withheld — and the answer withheld most often is the one that deletes a
+    /// directory tree to make room for a file. Cancel is exempt: stopping is always allowed.
+    /// </remarks>
+    private void AnswerConflict(FileConflictAction action)
+    {
+        if (_conflictAnswer is not { } pending) return;
+        if (action is not FileConflictAction.Cancel && PendingConflict is { } prompt && !prompt.Allows(action)) return;
+
+        pending.TrySetResult(action);
+    }
+
+    /// <summary>
+    /// Ends any open prompt with <paramref name="action"/>, for paths where nobody will answer it.
+    /// </summary>
+    /// <remarks>
+    /// Disposal and a dropped connection both land here. Without it the paste loop stays parked on a
+    /// <see cref="TaskCompletionSource{TResult}"/> nothing will ever complete, holding
+    /// <c>IsLoading</c> on and the page in a state no button can leave.
+    /// </remarks>
+    private void EndConflictPrompt(FileConflictAction action) => _conflictAnswer?.TrySetResult(action);
+
+    [RelayCommand]
+    private void ReplaceOnConflict() => AnswerConflict(FileConflictAction.Replace);
+
+    [RelayCommand]
+    private void KeepBothOnConflict() => AnswerConflict(FileConflictAction.KeepBoth);
+
+    [RelayCommand]
+    private void SkipOnConflict() => AnswerConflict(FileConflictAction.Skip);
+
+    [RelayCommand]
+    private void CancelOnConflict() => AnswerConflict(FileConflictAction.Cancel);
 
     private bool CanPaste() =>
         SupportsCopyMove
         && HasClipboard
         && SelectedRemoteRoot is { IsWritable: true }
         && !IsRenaming
-        && !IsCreatingFolder;
+        && !IsCreatingFolder
+        // A second paste started while the first is parked on a collision would answer the open
+        // prompt's question with the wrong batch's items.
+        && !HasConflictPrompt;
 
     // ─── Rename ──────────────────────────────────────────────────────────────────
 
@@ -1086,15 +1775,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             IsLoading = true;
             StatusText = LocalizationService.Instance["FileTransfer_VolumesRequesting"];
-            var (volumes, granted) = await _client.ListVolumesAsync(CancellationToken.None);
+            var (volumes, granted, denyReason) = await _client.ListVolumesAsync(CancellationToken.None);
             Volumes.Clear();
             foreach (var volume in volumes)
                 Volumes.Add(volume);
             FullBrowseGranted = granted;
             OnPropertyChanged(nameof(HasVolumes));
-            StatusText = granted
-                ? string.Format(LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count)
-                : LocalizationService.Instance["FileTransfer_VolumesDenied"];
+            // A REFUSAL NOBODY WAS ASKED FOR READS DIFFERENTLY (RemEx-jc4q). "Not granted" is true of
+            // both and useful for only one: the peer being unreachable is the case with an action
+            // attached, and it used to arrive as the same flat no.
+            StatusText = VolumesResponseClassifier.Classify(granted, denyReason, errorMessage: null) switch
+            {
+                VolumesOutcome.Granted => string.Format(
+                    LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count),
+                VolumesOutcome.PeerUnreachable => LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"],
+                VolumesOutcome.HostPromptTimedOut => LocalizationService.Instance["FileTransfer_VolumesHostPromptTimedOut"],
+                _ => LocalizationService.Instance["FileTransfer_VolumesDenied"],
+            };
         }
         catch (FileTransferHostException ex)
         {
@@ -1254,9 +1951,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
-        TransferQueue.Dispose();
         TransferQueue.ItemCompleted -= OnTransferCompleted;
+        // Only disposed when this view model actually owns it (RemEx-rjnbo.1) - a queue handed in
+        // by ShellViewModel outlives this page and is ShellViewModel's to dispose.
+        if (_ownsTransferQueue)
+            TransferQueue.Dispose();
         _searchCts?.Cancel();
+
+        // A paste parked on an unanswered collision would never resume, so its continuation — and
+        // the IsLoading it restores — would be stranded for the life of the process.
+        EndConflictPrompt(FileConflictAction.Cancel);
         _client.Dispose();
     }
 
@@ -1268,11 +1972,18 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             UploadCommand.NotifyCanExecuteChanged();
-            SendFileCommand.NotifyCanExecuteChanged();
             DownloadCommand.NotifyCanExecuteChanged();
+            DownloadFolderCommand.NotifyCanExecuteChanged();
+            UploadFolderCommand.NotifyCanExecuteChanged();
             VerifyHashCommand.NotifyCanExecuteChanged();
             SearchCommand.NotifyCanExecuteChanged();
             LoadVolumesCommand.NotifyCanExecuteChanged();
+
+            // NOBODY IS LEFT TO ANSWER A COLLISION ONCE THE PHONE IS GONE. The retry would fail on a
+            // dead socket anyway, and leaving the prompt up asks the user to choose between three
+            // buttons that can no longer do anything.
+            if (!_connection.IsConnected)
+                EndConflictPrompt(FileConflictAction.Cancel);
 
             if (_connection.IsConnected && RemoteRoots.Count == 0)
                 _ = LoadRemoteRootsAsync();

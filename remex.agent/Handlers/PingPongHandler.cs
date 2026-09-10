@@ -1,8 +1,12 @@
+using System.Globalization;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Theme;
+using Remex.Core.Validation;
 using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
 using Remex.Agent.Services.Telemetry;
@@ -26,13 +30,52 @@ public sealed class PingPongHandler(
     Remex.Core.Services.IProcessMonitorService processMonitorService,
     IHostCapabilitiesProvider hostCapabilitiesProvider,
     IInputSimulationService inputSimulation,
+    Remex.Agent.Services.Screenshot.IScreenshotService screenshotService,
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler,
     TransferSessionManager transferSessionManager,
-    PairedClientRegistry pairedClientRegistry)
+    PairedClientRegistry pairedClientRegistry,
+    Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator,
+    ClientSessionRegistry sessionRegistry,
+    PairedClientNameStore nameStore,
+    PairedDeviceActivityStore activityStore,
+    Remex.Core.Services.Clipboard.IHostClipboard hostClipboard,
+    Remex.Agent.Services.Media.IMediaSessionMonitor mediaSessionMonitor,
+    IPhoneThemeSnapshotStore phoneThemeStore) : IDisposable
 {
-    public async Task HandleAsync(WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch, CancellationToken ct)
+    /// <summary>
+    /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
+    /// </summary>
+    /// <remarks>
+    /// The same hazard RemEx-e2p4 fixed for the Remote Desktop stream: a key press is two messages
+    /// and a chord is six, so a client that vanishes between them leaves the modifier physically held
+    /// on the user's desktop, and only the host can clean that up because the client is what went
+    /// away.
+    ///
+    /// THIS IS NOW A LIVE PATH, AND IT WAS WRITTEN BEFORE IT HAD A CLIENT. The note here used to say
+    /// no shipping client sent <c>desktop_input</c> over this socket — the Android side routed every
+    /// one of them through <c>HandleDesktopMessage</c> to <c>/ws/desktop</c> — and that it was
+    /// defensive symmetry rather than a live user-facing bug. The Remote Control screen sends here
+    /// now (RemEx-035d6): its media and volume row has no stream to ride, and routing it down the
+    /// Remote Desktop path made it either silently dead or a reason to start capturing the user's
+    /// screen. So the cleanup this tracker performs is load-bearing today, not a precaution.
+    /// </remarks>
+    private readonly HeldKeyTracker _heldKeys = new();
+    public async Task HandleAsync(
+        WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch,
+        string? remoteAddress, CancellationToken ct)
     {
+        // Recorded for as long as this connection lives (RemEx-xuyu). A handle rather than a
+        // matching unregister call, because this method has several exit paths and a missed one
+        // would leave a phantom session behind - which is precisely the "1 phone connected" with
+        // nothing attached that the presence work exists to fix.
+        using var session = sessionRegistry.Register(remoteAddress, webSocket);
+
+        // Loopback is the PC's own UI talking to itself and skips pairing by construction, so it is
+        // authenticated the moment it connects — the same reasoning that seeds isPaired below. Every
+        // other connection stays invisible in the registry until it clears the gate.
+        if (isLoopback) sessionRegistry.MarkAuthenticated(session, identityProven: false);
+
         // Per-connection pairing gate. Loopback connections come from the embedded host on the
         // same machine, where pairing adds no security and is intentionally skipped on the client
         // side as well — see ConnectionViewModel.IsLoopbackHost. All other connections must
@@ -51,6 +94,23 @@ public sealed class PingPongHandler(
         // file_volumes_request) can identify the paired device even on a message that omits it. The
         // connection is already authenticated via pairing / reconnect proof before any gated handler runs.
         string? connectionClientId = null;
+
+        // WHY it ended, defaulting to the clean case: falling out of the receive loop without an
+        // exception IS the peer closing. Each catch below overwrites it with what it knows.
+        var disconnectReason = "closed";
+
+        // Whether this connection has PROVED which client it is. Until it has, connectionClientId is
+        // just the last thing the sender wrote — and every file-transfer handler below is given it.
+        // Freezing it at the proof points is what stops one paired device claiming another's id and
+        // being handed that device's consent prompts and grants (RemEx-220r).
+        var identityProven = false;
+
+        // The device name and the moment it becomes safe to keep are in DIFFERENT MESSAGES.
+        // pairing_request carries the name but is unauthenticated — anything on the network can send
+        // one, choosing both the id and the name — while pairing_complete is where the pairing
+        // verifies but carries no name. So the name is held here across the two and only written once
+        // the handshake has proved itself.
+        string? reportedDeviceName = null;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -115,9 +175,26 @@ public sealed class PingPongHandler(
             logger.LogWarning(ex, "Failed to sync layout on connect (JSON error).");
         }
 
-        // Start background telemetry stream
+        // Start background telemetry stream — but NOT for the PC's own UI. That connection is this
+        // same process talking to itself over loopback TLS, so streaming to it meant serializing the
+        // payload, encrypting it, sending it through the loopback adapter, decrypting it and rebuilding
+        // the whole record graph, once a second, forever, to hand a component in this process data it
+        // could already reach by reference. It subscribes to TelemetryBackgroundService directly
+        // instead (RemEx-ite8).
+        //
+        // The two sides agree by construction: a client reaching a localhost/127.0.0.1/::1 URI is
+        // routed over loopback, which is exactly what IPAddress.IsLoopback sees here, and
+        // ConnectionViewModel gates its in-process subscription on the same test it already uses to
+        // bypass pairing. The "some other process owns port 5005" case cannot arise — Program.cs holds
+        // a Local\RemExGuiHost single-instance mutex.
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var streamTask = StreamTelemetryAsync(webSocket, streamCts.Token);
+        var streamTask = isLoopback ? Task.CompletedTask : StreamTelemetryAsync(webSocket, streamCts.Token);
+
+        // What the PC is playing, on the same terms as telemetry: pushed, not polled, and not to the
+        // PC's own UI (RemEx-xx6xf). A SEPARATE LOOP RATHER THAN A BRANCH INSIDE THE TELEMETRY ONE,
+        // because the two have unrelated cadences — telemetry ticks every second by construction while
+        // this sends only when the reading actually changes, which on a quiet machine is never.
+        var mediaTask = isLoopback ? Task.CompletedTask : StreamMediaStateAsync(webSocket, streamCts.Token);
 
         try
         {
@@ -134,8 +211,42 @@ public sealed class PingPongHandler(
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
 
-                if (!string.IsNullOrWhiteSpace(message.ClientId))
+                // LOOPBACK IS EXCLUDED BECAUSE IT NEVER REACHES A FREEZE POINT (RemEx-4215). It is
+                // authenticated by construction — the PC talking to itself — and has no pairing to
+                // prove, so identityProven stays false for its whole session and this assignment would
+                // run on every message. RemEx-220r stopped loopback being REACHED by a phone's client
+                // id (Find requires IdentityProven); it did not stop loopback ACTING AS one, and that
+                // is one call away: any local process, INCLUDING AN UNELEVATED ONE, could open /ws on
+                // 127.0.0.1, name itself a paired phone, and inherit that phone's remembered
+                // fullBrowseGranted / autoAcceptIncoming through file_volumes_request and
+                // file_push_offer. So loopback is frozen at NO identity, which is the same honest state
+                // the pair-with-no-id branch below settles on, and every per-client handler already
+                // refuses a blank. The PC's own UI never sets ClientId on an outbound message, so it
+                // loses nothing — and a local connection that DOES prove an id (a real PIN pairing)
+                // still gets one from the freeze points below.
+                if (!string.IsNullOrWhiteSpace(message.ClientId) && !identityProven && !isLoopback)
+                {
                     connectionClientId = message.ClientId;
+                    // The registry learns the identity at the same moment this connection does,
+                    // and the name comes from the store rather than the wire: pairing_request is the
+                    // only message that carries one, and it is sent once in a device's life. This is
+                    // where every connection after the first went nameless (RemEx-yzqs). A device
+                    // that has never reported a name still resolves to null, which ClientSession
+                    // documents as "not named" and PhonePresence degrades to a count for.
+                    sessionRegistry.Identify(session, message.ClientId, nameStore.Resolve(message.ClientId));
+                }
+
+                // WHAT THIS CLIENT CAN DO, read from any message that carries it (RemEx-220r).
+                //
+                // Not gated on authentication, and that is safe rather than sloppy: the flag only
+                // ever moves a consent question from the PC to the phone, and the registry refuses to
+                // find an unauthenticated session at all — so an unpaired peer setting it changes
+                // nothing about who gets asked. Absent means false, which is every build before this
+                // one and is the compatibility path.
+                if (message.ClientCapabilities is { } capabilities)
+                {
+                    sessionRegistry.SetSupportsPhonePrompt(session, capabilities.SupportsConsentPrompt);
+                }
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
                 // presence, challenge the reconnecting client to prove possession of the reconnect
@@ -214,6 +325,34 @@ public sealed class PingPongHandler(
                         CorrelationId = message.CorrelationId,
                     };
                     await MessageSerializer.SendAsync(webSocket, unauthorized, ct);
+
+                    // AND AGAIN IN A FORM THE PHONE WILL ACTUALLY RECEIVE. The command_response
+                    // above is correlated by the native client against a pending command, and a
+                    // clipboard push is sent fire-and-forget, so it registers nothing to correlate
+                    // against and this refusal reached nobody. That is not a hypothesis: a real
+                    // emulator push was refused here and the phone told the user "Sent to the PC's
+                    // clipboard" (RemEx-s1ay7). clipboard_push_result is carried by the clipboard_
+                    // prefix forward, which is the whole point of routing the family rather than
+                    // the type.
+                    if (message.Type == MessageTypes.ClipboardPush)
+                    {
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult { Reason = "refused" },
+                                // Echoed here TOO. An earlier version of this omitted it and said
+                                // the gate lacked the context - which was simply untrue, the id is
+                                // in scope and the command_response above already uses it. With
+                                // only one of the two answer paths carrying an id the phone cannot
+                                // key on it at all, which is why it matches the first answer it
+                                // sees and two pushes in flight can be told each other's outcome.
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                    }
+
                     continue;
                 }
 
@@ -259,7 +398,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.Command when message.CommandAction is not null:
-                        var cmdResponse = await ExecuteCommandAsync(message);
+                        var cmdResponse = await ExecuteCommandAsync(message, webSocket, connectionClientId, ct);
                         // Echo the correlation ID so the client can match the response to the request
                         if (message.CorrelationId is not null)
                             cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
@@ -327,8 +466,166 @@ public sealed class PingPongHandler(
                         DispatchInput(message.InputEvent);
                         break;
 
+                    // PULL, NOT PUSH — see MediaArtworkRequest's own remarks. An unknown or evicted id
+                    // still answers, with PngBase64 null, so the client stops asking rather than
+                    // retrying an id that will never resolve.
+                    case MessageTypes.MediaArtworkRequest when message.MediaArtworkRequest is not null:
+                        // ArtworkId is non-nullable in the model, but System.Text.Json does not
+                        // honour that for a paired client sending an explicit JSON null — guard
+                        // defensively rather than let a blank id reach the store lookup.
+                        var requestedArtworkId = message.MediaArtworkRequest.ArtworkId ?? string.Empty;
+                        var artworkBytes = string.IsNullOrWhiteSpace(requestedArtworkId)
+                            ? null
+                            : mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.MediaArtwork,
+                                MediaArtwork = new Remex.Core.Models.MediaArtwork
+                                {
+                                    ArtworkId = requestedArtworkId,
+                                    PngBase64 = artworkBytes is null ? null : Convert.ToBase64String(artworkBytes),
+                                },
+                            },
+                            ct);
+                        break;
+
+                    // NOTHING IS SENT BACK, AND THE PUBLISH IS THE REPLY (RemEx-vtorl). The seek is
+                    // handed to the platform and this case ends: no anchor is stamped here, and the
+                    // snapshot gate is not touched. The sampler's next poll reads the moved position,
+                    // PlaybackAnchorTracker re-anchors because the reading diverged past tolerance,
+                    // and the gate publishes one media_state to EVERY connected client — which is
+                    // what a second phone watching the same PC needs and a point-to-point
+                    // acknowledgement would not give it.
+                    //
+                    // It also means a seek the player ignored produces no message at all. That is
+                    // load-bearing rather than a gap: it is how the phone learns to put its own
+                    // optimistic position back, and an ack here would tell it the opposite.
+                    case MessageTypes.MediaSeek when message.MediaSeek is not null:
+                        var seeked = await mediaSessionMonitor.TrySeekAsync(message.MediaSeek.PositionMs, ct);
+                        if (!seeked)
+                        {
+                            // Debug, not warning. A session that declines the call is ordinary — it is
+                            // most media on a PC that has none playing — and this arrives once per
+                            // scrubber gesture, so a warning would be noise with a rate limit
+                            // attached to it.
+                            logger.LogDebug(
+                                "Media seek to {PositionMs}ms was not accepted by the current session.",
+                                message.MediaSeek.PositionMs);
+                        }
+
+                        break;
+
+                    // A phone's palette, CLIENT -> HOST (RemEx-y06a0.1, RemEx-sudp8). Validated here
+                    // rather than trusted verbatim: this arrives over the same channel as every
+                    // other client-originated message, and a malformed contrast or a garbage hex
+                    // would otherwise sit in the store waiting for "Match my phone" to paint the
+                    // sheet with it. Stamped with the SESSION clientId (not whatever the payload
+                    // might claim) so the store always attributes a snapshot to the connection that
+                    // actually sent it.
+                    case MessageTypes.ThemeSync when message.ThemeSync is not null:
+                        if (IsValidThemeSync(message.ThemeSync))
+                        {
+                            phoneThemeStore.Set(message.ThemeSync with
+                            {
+                                ClientId = connectionClientId,
+                                ReceivedUtc = DateTimeOffset.UtcNow,
+                            });
+                        }
+                        else
+                        {
+                            // LogWarning, not LogDebug: Debug is filtered out under the default
+                            // "Information" minimum level (appsettings.json), so a Debug line here
+                            // would never surface — leaving "why didn't the button appear" with
+                            // nothing in any log to answer it, the exact failure shape RemEx-y6x6
+                            // and friends exist to avoid.
+                            logger.LogWarning(
+                                "Ignored malformed theme_sync from {ClientId}.", connectionClientId);
+                        }
+
+                        break;
+
+                    // ── 2.5 Clipboard ──
+                    // Pairing-gated for free: RequiresPairing defaults unknown types to true, and
+                    // writing the PC's clipboard is exactly the kind of thing that default exists
+                    // for. Nothing extra is needed here, but it is worth stating, because a reader
+                    // scanning this switch for a gate will not find one.
+                    //
+                    // NOTHING IS SENT BACK, AND THAT IS A FINDING RATHER THAN AN OMISSION. The
+                    // obvious reply is a command_response, which is already routed to the phone -
+                    // but only for a message sent via SendCommand, whose native export BLOCKS
+                    // waiting to correlate one (RemexCoreClient.kt:172-193). The phone sends this
+                    // through SendMessage, which is fire-and-forget and never waits, so a reply
+                    // would reach the correlation layer with no pending command to match and be
+                    // dropped exactly as silently as an unrouted type. Every outcome the user can
+                    // act on - nothing copied, too large - is decidable on the phone BEFORE the
+                    // send, using this same shared rule through the native export, so the phone
+                    // reports those itself. What is left here is a defence against a client that
+                    // did not check, and its audience is the log.
+                    case MessageTypes.ClipboardPush when message.ClipboardPush is not null:
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult
+                                {
+                                    Reason = await HandleClipboardPushAsync(message.ClipboardPush, ct),
+                                },
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                        break;
+
+                    // A clipboard_push whose payload did not survive deserialization. Answered
+                    // rather than dropped: falling through to default: leaves the phone waiting out
+                    // its full timeout for news the host already has.
+                    case MessageTypes.ClipboardPush:
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult { Reason = "empty" },
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                        break;
+
+                    // UNLIKE THE PUSH, THIS ONE ANSWERS - and the answer only arrives because
+                    // AndroidNativeExports routes the clipboard_ family to a JNI callback. That
+                    // routing is the whole risk of this direction and it is not visible from here.
+                    case MessageTypes.ClipboardRequest:
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardContent,
+                                ClipboardContent = await ReadClipboardForClientAsync(ct),
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                        break;
+
                     // ── 2.0 Pairing ──
                     case MessageTypes.PairingRequest:
+                        // The ONLY message that carries a device name, so this is the only chance to
+                        // learn one.
+                        //
+                        // BE HONEST ABOUT WHAT THIS BUYS TODAY: NOTHING VISIBLE. Android pairs over a
+                        // dedicated throwaway socket that AndroidNativeExports disposes the moment
+                        // pairing succeeds, and the long-lived session RemexClientManager then opens
+                        // never sends pairing_request. So the sessions a presence UI would display are
+                        // never the ones that carried a name, and PairedClientRegistry stores
+                        // clientId → secret with nowhere to keep it. RemEx-yzqs is therefore a hard
+                        // prerequisite for showing a name at all, not a polish item. Android used
+                        // to send the constant "Android Client" here too, which RemEx-8m3r fixed —
+                        // so what arrives now is the real device. Recording it here is what made
+                        // fixing that sufficient instead of also needing a wire change.
+                        reportedDeviceName = message.PairingRequest?.ClientName;
+                        sessionRegistry.Identify(session, message.ClientId, reportedDeviceName);
+
                         var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
                         if (pairingResponse is not null)
                         {
@@ -354,8 +651,57 @@ public sealed class PingPongHandler(
                         {
                             isPaired = true;
                             pairingStarted = false;
+                            // Only now is this connection allowed to be counted, found or sent to —
+                            // and only now is the name it claimed on pairing_request safe to keep.
+                            //
+                            // BE PRECISE ABOUT WHAT WAS VERIFIED: the PIN HMAC, and nothing else.
+                            // PairingComplete.ClientId is still client-chosen text. The reason to key
+                            // on it anyway is that it is the SAME key HandlePairingCompleteAsync just
+                            // filed the reconnect secret under, so a name and a secret can never end
+                            // up under different ids. NO FALLBACK to connectionClientId, deliberately:
+                            // that id is unauthenticated, and the registry skips its own write when
+                            // this one is blank — so falling back would file a name against an id
+                            // that was never paired, which is the one case worth excluding.
+                            var pairedClientId = message.PairingComplete?.ClientId;
+                            if (!identityProven && !string.IsNullOrWhiteSpace(pairedClientId))
+                            {
+                                nameStore.Remember(pairedClientId, reportedDeviceName);
+                                // Alongside the name, and gated by the same condition for the same
+                                // reason: the id on an unauthenticated message is whatever the sender
+                                // wrote, so recording here and nowhere earlier is what stops anything
+                                // on the network minting rows for ids it merely overheard (RemEx-nrsv).
+                                activityStore.RecordPaired(pairedClientId, DateTimeOffset.UtcNow);
+                                sessionRegistry.Identify(session, pairedClientId, reportedDeviceName);
+
+                                // FROM HERE THE IDENTITY IS FROZEN. See the assignment further up:
+                                // until this point connectionClientId is whatever the sender last
+                                // wrote, which is fine while nothing trusts it and a hole the moment
+                                // anything does (RemEx-220r).
+                                connectionClientId = pairedClientId;
+                                identityProven = true;
+                            }
+                            else if (!identityProven)
+                            {
+                                // AUTHENTICATED WITH NO IDENTITY, WHICH MUST STILL FREEZE. A verified
+                                // PIN HMAC is enough for CommandSuccess even when the client omitted
+                                // its id — HandlePairingCompleteAsync only consults the id to file the
+                                // reconnect secret. Leaving identityProven false there would keep the
+                                // id malleable for the whole authenticated session, so a client could
+                                // pair once with the field deleted and then name itself anything on
+                                // every later message: inheriting another device's remembered grants,
+                                // and self-approving its own consent prompt because both sides of the
+                                // ownership check would read the id it just supplied.
+                                //
+                                // A pairing that files no id registers no reconnect secret, so that
+                                // device could never come back anyway. Freezing to NO identity is the
+                                // honest state, and every per-client handler already refuses a blank.
+                                connectionClientId = null;
+                                identityProven = true;
+                            }
+
+                            sessionRegistry.MarkAuthenticated(session, identityProven: !string.IsNullOrWhiteSpace(connectionClientId));
                             logger.LogInformation("Pairing verified — connection authenticated.");
-                            RecordDeviceConnectedActivity();
+                            RecordDeviceConnectedActivity(message.PairingRequest?.ClientName, connectionClientId);
                         }
                         break;
 
@@ -377,13 +723,45 @@ public sealed class PingPongHandler(
                         // PAIR-1: verify the client's proof-of-possession against the nonce we issued.
                         // A correct HMAC-SHA256(reconnectSecret, nonce) authenticates the reconnect; a
                         // missing/incorrect proof (or a clientId with no stored secret) is rejected.
-                        if (TryAuthenticateReconnect(message, pendingChallengeNonce, pairedClientRegistry, logger))
+                        if (TryAuthenticateReconnect(
+                                message, pendingChallengeNonce, pairedClientRegistry, logger,
+                                out var verifiedClientId))
                         {
                             isPaired = true;
+                            // RE-KEYS TO THE VERIFIED ID, and that is why this call exists rather
+                            // than leaving it to the generic identify above. The id on the wire is
+                            // whatever the client last said; this one is the id whose stored secret
+                            // produced the HMAC, handed back by the verifier rather than re-derived
+                            // here. Setting it BEFORE MarkAuthenticated matters — Identify freezes an
+                            // authenticated session's id, so afterwards would be too late.
+                            //
+                            // The name lookup is belt-and-braces: the generic identify already
+                            // resolved it from the store on the message that triggered the challenge.
+                            // Verified by deleting each in turn — either alone keeps the reconnect
+                            // named, and only removing both loses the name.
+                            sessionRegistry.Identify(
+                                session, verifiedClientId, nameStore.Resolve(verifiedClientId));
+
+                            // The id whose stored secret produced the HMAC — proven, and frozen from
+                            // here on. Guarded like the pairing path so the freeze is enforced HERE
+                            // rather than relying on PairingService refusing a second handshake, which
+                            // is a property of a different class and not visible from this one.
+                            if (!identityProven)
+                            {
+                                connectionClientId = verifiedClientId;
+                                identityProven = true;
+                            }
+                            sessionRegistry.MarkAuthenticated(session, identityProven: true);
+                            // LAST-SEEN IS RECORDED ONLY WHERE THE IDENTITY IS PROVEN. A client id
+                            // rides on ping and needs no pairing, so stamping on a claimed id would
+                            // let anything on the network keep another device's "last seen" fresh —
+                            // and a stale date is the one signal a user has that a phone they lost
+                            // stopped connecting (RemEx-nrsv).
+                            activityStore.RecordSeen(verifiedClientId, DateTimeOffset.UtcNow);
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
-                            RecordDeviceConnectedActivity();
+                            RecordDeviceConnectedActivity(nameStore.Resolve(connectionClientId), connectionClientId);
                         }
                         else
                         {
@@ -454,6 +832,18 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
+                    // Detached like file_volumes_request: enumerating a large subtree can take a while
+                    // and it must not stall the control socket's read loop behind it (RemEx-q3twg).
+                    case MessageTypes.FileManifestRequest:
+                    {
+                        var manifestMsg = message;
+                        var manifestClientId = connectionClientId;
+                        _ = RunDetachedAsync(
+                            () => fileTransferHandler.HandleFileManifestRequestAsync(manifestMsg, webSocket, manifestClientId, ct),
+                            "file_manifest_request");
+                        break;
+                    }
+
                     case MessageTypes.FileMetadataRequest:
                         await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
@@ -462,28 +852,15 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
-                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response + push ──
-                    // file_consent_response resolves a consent prompt this host raised (full-browse or
-                    // incoming-push); file_push_offer raises an incoming-push consent and replies with the
-                    // receiver-assigned transfer ids. connectionClientId identifies the paired device even
-                    // when the message body omits clientId — the connection is already authenticated above.
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response ──
+                    // file_consent_response resolves a consent prompt this host raised. Only full-browse
+                    // raises one now: the incoming-push prompt went with the file_push_offer arm
+                    // (RemEx-e11w — a phone-initiated push IS an upload, and a shared writable root is the
+                    // consent). connectionClientId identifies the paired device even when the message body
+                    // omits clientId — the connection is already authenticated above.
                     case MessageTypes.FileConsentResponse:
-                        fileTransferHandler.HandleFileConsentResponse(message);
+                        fileTransferHandler.HandleFileConsentResponse(message, connectionClientId);
                         break;
-
-                    case MessageTypes.FilePushOffer:
-                    {
-                        // Consent-gated: this awaits a user consent decision (up to 60s). Run it OFF the
-                        // reader loop so a pending consent cannot block file_transfer_offer / volumes / etc.
-                        // on this same connection. Per-socket send serialization (MessageSerializer) makes
-                        // the deferred response safe against the loop's own concurrent sends.
-                        var pushMsg = message;
-                        var pushClientId = connectionClientId;
-                        _ = RunDetachedAsync(
-                            () => fileTransferHandler.HandleFilePushOfferAsync(pushMsg, webSocket, pushClientId, ct),
-                            "file_push_offer");
-                        break;
-                    }
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: v3 transfer negotiation ──
                     // Control plane for the binary /ws/files channel. The bulk data itself never touches this
@@ -494,20 +871,30 @@ public sealed class PingPongHandler(
                         await transferSessionManager.HandleOfferAsync(connectionClientId, message.FileTransferOffer, webSocket, ct);
                         break;
 
+                    case MessageTypes.FilePushResponse when message.FilePushResponse is not null:
+                        // The answer to an offer THIS host made (RemEx-y7my). Every other file_* case
+                        // here serves a request the phone started; this one completes one we started.
+                        pushOriginator.Complete(message.FilePushResponse);
+                        break;
                     case MessageTypes.FileTransferReady when message.FileTransferReady is not null:
-                        transferSessionManager.HandleReady(message.FileTransferReady);
+                        transferSessionManager.HandleReady(message.FileTransferReady, connectionClientId ?? string.Empty);
                         break;
 
+                    // connectionClientId ?? string.Empty on all three: a connection that has proved
+                    // no identity gets the empty key, which is exactly what a loopback /ws connection
+                    // is since RemEx-4215 froze it there. That key owns no paired client's transfer,
+                    // so these refuse for anyone else's and permit for its own (RemEx-juas).
                     case MessageTypes.FileTransferComplete when message.FileTransferComplete is not null:
-                        await transferSessionManager.HandleCompleteAsync(message.FileTransferComplete, webSocket, isLoopback, ct);
+                        await transferSessionManager.HandleCompleteAsync(
+                            message.FileTransferComplete, webSocket, isLoopback, connectionClientId ?? string.Empty, ct);
                         break;
 
                     case MessageTypes.FileTransferResult when message.FileTransferResult is not null:
-                        transferSessionManager.HandleResult(message.FileTransferResult);
+                        transferSessionManager.HandleResult(message.FileTransferResult, connectionClientId ?? string.Empty);
                         break;
 
                     case MessageTypes.FileTransferControl when message.FileTransferControl is not null:
-                        transferSessionManager.HandleControl(message.FileTransferControl);
+                        transferSessionManager.HandleControl(message.FileTransferControl, connectionClientId ?? string.Empty);
                         break;
 
                     default:
@@ -519,10 +906,12 @@ public sealed class PingPongHandler(
         catch (OperationCanceledException)
         {
             // Graceful shutdown.
+            disconnectReason = "shutting down";
         }
         catch (WebSocketException ex)
         {
             logger.LogWarning(ex, "WebSocket error.");
+            disconnectReason = "connection lost";
         }
         catch (InvalidOperationException ex)
         {
@@ -531,9 +920,24 @@ public sealed class PingPongHandler(
             // WebSocketException. Catch it here so it can never escape the receive loop and skip
             // the cleanup in the finally block below.
             logger.LogWarning(ex, "WebSocket session ended with an invalid-state error.");
+            disconnectReason = "connection lost";
         }
         finally
         {
+            // THE DEPARTURE, recorded from the one place every exit path passes through (RemEx-2xjv).
+            // Anywhere else and a feed that shows arrivals but not departures reads as though every
+            // phone that ever connected is still attached — and the reason is what tells a flapping
+            // network from a device somebody walked away with.
+            //
+            // ONLY FOR A CONNECTION THAT AUTHENTICATED. An unpaired probe that was refused never
+            // produced an arrival row, so a departure row for it would be a disconnection from
+            // nothing.
+            if (!string.IsNullOrWhiteSpace(connectionClientId))
+            {
+                RecordDeviceDisconnectedActivity(
+                    nameStore.Resolve(connectionClientId), connectionClientId, disconnectReason);
+            }
+
             // Cleanup MUST run for every exit path — graceful close, cancellation, socket abort, or
             // an unexpected exception type. Previously this lived after the catch blocks (outside a
             // finally), so an exception that didn't match the catch clauses would leak the file
@@ -548,9 +952,14 @@ public sealed class PingPongHandler(
                 logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
             }
 
-            // Cancel background stream
+            // Cancel background streams
             streamCts.Cancel();
             try { await streamTask; } catch (OperationCanceledException) { /* expected on cancel; the sibling catch below reports anything else */ } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
+            // AWAITED SEPARATELY, NOT VIA Task.WhenAll WITH THE ONE ABOVE. WhenAll surfaces only the
+            // first exception, and these two fail for unrelated reasons; more importantly a media task
+            // left unawaited would outlive the connection it writes to and go on calling SendAsync on a
+            // disposed socket.
+            try { await mediaTask; } catch (OperationCanceledException) { /* expected on cancel */ } catch (Exception ex) { logger.LogTrace(ex, "Media state stream ended with error."); }
 
             if (webSocket.State == WebSocketState.Open)
             {
@@ -565,49 +974,107 @@ public sealed class PingPongHandler(
     }
 
 
-    private async Task<RemexMessage> ExecuteCommandAsync(RemexMessage message)
+    /// <remarks>
+    /// Takes the connection's token so a command that does real work - the screenshot capture writes
+    /// a file - stops when the client goes away, rather than finishing into a socket nobody is
+    /// reading. The power verbs ignore it, which is correct: a shutdown that has been asked for
+    /// should not be abandoned because the phone dropped off mid-request.
+    /// </remarks>
+    // INTERNAL AS A TEST SEAM (RemEx-hn23), following the OfferTimeout/ReadyTimeout precedent: the
+    // property "the SCREENSHOT response does not wait for the push" cannot be observed through
+    // HandleAsync without a full pairing exchange (command is pairing-gated for remote peers, and
+    // loopback is identity-frozen so its push arm is dead). clientId being a parameter here is what
+    // lets the regression test arm the push without one.
+    internal async Task<RemexMessage> ExecuteCommandAsync(
+        RemexMessage message, WebSocket webSocket, string? clientId, CancellationToken ct)
     {
         try
         {
+            // THE ELEVEN SHARED VERBS HAVE ONE IMPLEMENTATION NOW (RemEx-pmb4). They used to be
+            // written out here AND in RemexNetworkListener, which is exactly how the two tables
+            // drifted - RemEx-q7l0c added a guard that DETECTS that drift; this removes the second
+            // copy so it cannot start. What remains below is deliberately NOT shared: each of those
+            // acts on something the caller chose, needs per-connection state, and is withheld from
+            // the external 8338 ingress on purpose.
+            var shared = await Remex.Core.Services.Command.SharedCommandVerbs.TryExecuteAsync(
+                message.CommandAction!.ToUpperInvariant(),
+                message.CommandParameters,
+                commandService,
+                wakeOnLanService);
+
+            if (shared is { } outcome)
+            {
+                // ErrorDetails is deliberately not carried onto this channel: MakeCommandResponse
+                // has no field for it, and the only shared verb that produces one - WAKEONLAN
+                // without a MacAddress - now says the actionable thing in Message itself, which is
+                // what the phone displays. 8338 keeps the extra detail in its own envelope.
+                return MakeCommandResponse(outcome.Success, outcome.Message);
+            }
+
             switch (message.CommandAction!.ToUpperInvariant())
             {
-                case "SHUTDOWN":
-                    await commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Shutdown executed.");
-                case "FORCESHUTDOWN":
-                    await commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Force shutdown executed.");
-                case "RESTART":
-                    await commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Restart executed.");
-                case "FORCERESTART":
-                    await commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Force restart executed.");
-                case "RESTARTTOUEFI":
-                    await commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Restart to UEFI executed.");
-                case "SLEEP":
-                    await commandService.Sleep();
-                    return MakeCommandResponse(true, "Sleep executed.");
-                case "HIBERNATE":
-                    await commandService.Hibernate();
-                    return MakeCommandResponse(true, "Hibernate executed.");
-                case "MONITOROFF":
-                    await commandService.MonitorOff();
-                    return MakeCommandResponse(true, "Monitor off executed.");
-                case "SIGNOUT":
-                    await commandService.SignOut();
-                    return MakeCommandResponse(true, "Sign out executed.");
+                case "SCREENSHOT":
+                {
+                    // SAVES ON THIS PC FIRST, THEN OFFERS IT TO THE PHONE (below, RemEx-y7my). The
+                    // file exists on this machine either way; whether it also reaches the phone is
+                    // the phone's decision, because a screenshot carries whatever happened to be on
+                    // the screen.
+                    //
+                    // The label is optional and comes from the client; ScreenshotFileName sanitises
+                    // it to ASCII letters, digits and dashes and truncates it to 16 characters, so a
+                    // monitor name like ".\DISPLAY1" cannot put a separator inside the file name.
+                    string? displayLabel = null;
+                    message.CommandParameters?.TryGetValue("DisplayLabel", out displayLabel);
+                    var saved = await screenshotService.CaptureAsync(displayLabel, ct);
+
+                    // THE NAME, NOT THE PATH. The full path carries the account name, and a path on
+                    // THIS machine is not something the phone can open - when the push below runs it
+                    // identifies the file by name alone, so a path buys the client nothing and
+                    // discloses the user's login. The host log keeps the full path for anyone actually
+                    // diagnosing this machine.
+                    logger.LogInformation("Screenshot saved to {Path}", saved);
+
+                    // OFFERED TO THE PHONE, NOT PUSHED AT IT (RemEx-y7my). A screenshot carries
+                    // whatever was on the screen, so the phone gates it before a byte moves.
+                    //
+                    // **DETACHED, AND THE FIRST VERSION DEADLOCKED FOR WANT OF THIS.** This runs
+                    // inline in the single control-socket reader loop, and the phone's answer arrives
+                    // ON THAT SOCKET - so awaiting it here meant waiting for a message only this loop
+                    // could read. It timed out after 70 seconds every time, and stalled every other
+                    // inbound message meanwhile. The mirror-image case eleven lines above already
+                    // runs detached for exactly this reason.
+                    //
+                    // The response therefore reports the CAPTURE, which has already happened. How the
+                    // transfer went reaches the phone through the file_transfer_* messages it already
+                    // renders - it cannot be a value this method waits for.
+                    var name = Path.GetFileName(saved);
+                    if (!string.IsNullOrWhiteSpace(clientId))
+                    {
+                        _ = RunDetachedAsync(
+                            () => TryPushScreenshotAsync(saved, name, webSocket, clientId, ct),
+                            "screenshot_push");
+                    }
+
+                    return MakeCommandResponse(
+                        true, $"Screenshot saved to your Pictures folder as {name}.");
+                }
                 case "KILLPROCESS":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
-                        && int.TryParse(pidStr, out var pid))
+                        && int.TryParse(pidStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
                     {
+                        // INVARIANT, like every other parse of a wire value in this area. The
+                        // command parameters are strings the phone formatted with its OWN locale
+                        // rules; reading them back under the HOST's is how the two ends disagree
+                        // about the same number. Six sibling parse sites nearby already pass
+                        // InvariantCulture — these four did not.
                         // ExpectedName is optional on the wire: a client older than RemEx-druh
                         // simply omits it and is killed unverified, exactly as before. Nothing
                         // breaks on an older phone; it just does not gain the protection.
                         message.CommandParameters.TryGetValue("ExpectedName", out var expectedName);
                         message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var startStr);
-                        var expectedStart = long.TryParse(startStr, out var parsedStart) ? parsedStart : (long?)null;
+                        var expectedStart = long.TryParse(startStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedStart)
+                            ? parsedStart
+                            : (long?)null;
                         var killResult = processMonitorService.KillProcess(pid, expectedName, expectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
@@ -618,11 +1085,13 @@ public sealed class PingPongHandler(
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "KILLPROCESSELEVATED":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
-                        && int.TryParse(epidStr, out var epid))
+                        && int.TryParse(epidStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var epid))
                     {
                         message.CommandParameters.TryGetValue("ExpectedName", out var eExpectedName);
                         message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var eStartStr);
-                        var eExpectedStart = long.TryParse(eStartStr, out var eParsedStart) ? eParsedStart : (long?)null;
+                        var eExpectedStart = long.TryParse(eStartStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var eParsedStart)
+                            ? eParsedStart
+                            : (long?)null;
                         var killResult = processMonitorService.KillProcess(epid, eExpectedName, eExpectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
@@ -631,9 +1100,6 @@ public sealed class PingPongHandler(
                                 : killResult.Message);
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
-                case "LOCK":
-                    await commandService.Lock();
-                    return MakeCommandResponse(true, "Lock executed.");
                 case "LAUNCHAPP":
                     if (message.CommandParameters?.TryGetValue("TargetPath", out var targetPath) == true
                         && !string.IsNullOrWhiteSpace(targetPath))
@@ -642,15 +1108,6 @@ public sealed class PingPongHandler(
                         return MakeCommandResponse(true, "App launched.");
                     }
                     return MakeCommandResponse(false, "Missing TargetPath parameter.");
-                case "WAKEONLAN":
-                    if (message.CommandParameters?.TryGetValue("MacAddress", out var mac) == true)
-                    {
-                        var bip = message.CommandParameters.TryGetValue("BroadcastIp", out var b) ? b : "255.255.255.255";
-                        var port = message.CommandParameters.TryGetValue("Port", out var ps) && int.TryParse(ps, out var p) ? p : 9;
-                        await wakeOnLanService.WakeAsync(mac, bip, port);
-                        return MakeCommandResponse(true, $"WoL sent to {mac}.");
-                    }
-                    return MakeCommandResponse(false, "Missing MacAddress parameter.");
                 default:
                     return MakeCommandResponse(false, $"Unknown command: {message.CommandAction}");
             }
@@ -682,6 +1139,78 @@ public sealed class PingPongHandler(
         }
     }
 
+    /// <summary>
+    /// Offers the screenshot to the phone and, if it agrees, sends it (RemEx-y7my).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE PHONE DECIDES.** A screenshot is whatever happened to be on the screen - a document, an
+    /// inbox, a password manager - so it is offered rather than pushed. Usually that means a prompt;
+    /// where the user has already ticked "remember" for incoming files from this PC, their standing
+    /// grant answers instead. Either way the decision is the phone's and was made by its owner - it is
+    /// NOT asked afresh every time, which an earlier version of this comment claimed.
+    /// </para>
+    /// <para>
+    /// FAILING TO SEND IS NOT FAILING TO CAPTURE. The file is already safely on the PC by the time
+    /// this runs, so every outcome here returns false and lets the caller say so, rather than turning
+    /// a successful screenshot into a failed command.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> TryPushScreenshotAsync(
+        string absolutePath, string fileName, WebSocket webSocket, string? clientId, CancellationToken ct)
+    {
+        try
+        {
+            return await PushScreenshotCoreAsync(absolutePath, fileName, webSocket, clientId, ct);
+        }
+        catch (Exception ex)
+        {
+            // CATCHES EVERYTHING SO THE STATED INVARIANT IS TRUE. The remarks promise that failing to
+            // send never turns a successful capture into a failure, and the typed catches inside let
+            // an OperationCanceledException - the ordinary shape of a dropping connection - escape
+            // and do exactly that.
+            logger.LogWarning(ex, "Could not offer the screenshot to the phone.");
+            return false;
+        }
+    }
+
+    private async Task<bool> PushScreenshotCoreAsync(
+        string absolutePath, string fileName, WebSocket webSocket, string? clientId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            // An unidentified peer has nothing to grant consent AS, and the receiver mints its ids
+            // against a device identity. Nothing to push to.
+            return false;
+        }
+
+        long size;
+        try
+        {
+            size = new FileInfo(absolutePath).Length;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not measure the screenshot before offering it.");
+            return false;
+        }
+
+        var outcome = await pushOriginator.OfferFileAsync(webSocket, fileName, size, ct);
+        if (!outcome.Accepted)
+        {
+            return false;
+        }
+
+        // One file offered, so one id back - the negotiation refuses any other count precisely so
+        // this index is safe.
+        // THE SAME NAME AND SIZE THE OFFER CARRIED, not values re-derived from the path. Deriving the
+        // name twice let the consent prompt show one name while the transfer carried another; the
+        // size had the same shape of bug until RemEx-ccqb, and re-measuring it also left the phone
+        // with nothing to check the transfer's claim against.
+        return await transferSessionManager.PushFileAsync(
+            clientId, outcome.TransferIds[0], absolutePath, fileName, size, webSocket, ct);
+    }
+
     private static RemexMessage MakeCommandResponse(bool success, string msg) => new()
     {
         Type = MessageTypes.CommandResponse,
@@ -698,7 +1227,7 @@ public sealed class PingPongHandler(
     /// process-wide: with the connect-time kickoff ping (RemEx-moqo) every reconnect authenticates,
     /// and a flapping network must not flood the 60-entry feed.
     /// </summary>
-    private static void RecordDeviceConnectedActivity()
+    private static void RecordDeviceConnectedActivity(string? deviceName, string? clientId)
     {
         var now = DateTime.UtcNow.Ticks;
         var last = Interlocked.Read(ref _lastDeviceConnectedTicks);
@@ -706,7 +1235,40 @@ public sealed class PingPongHandler(
         if (Interlocked.CompareExchange(ref _lastDeviceConnectedTicks, now, last) != last) return;
 
         Remex.Desktop.Services.ActivityService.Instance.Record(
-            Remex.Desktop.Services.ActivityKind.DeviceConnected, string.Empty);
+            Remex.Desktop.Services.ActivityKind.DeviceConnected, DescribeDevice(deviceName, clientId));
+    }
+
+    /// <summary>
+    /// Records that a phone's connection ended, and why where the host knows (RemEx-2xjv).
+    /// </summary>
+    /// <remarks>
+    /// NOT THROTTLED, unlike its arrival counterpart. The throttle there exists because the
+    /// connect-time kickoff ping means every reconnect authenticates, so a flapping network would
+    /// flood the feed with arrivals. A departure is the OTHER half of that pair — dropping them on a
+    /// timer is what would produce the very reading this bead exists to remove, a feed showing three
+    /// arrivals and one departure and implying two phones are still attached.
+    /// </remarks>
+    private static void RecordDeviceDisconnectedActivity(string? deviceName, string? clientId, string reason) =>
+        Remex.Desktop.Services.ActivityService.Instance.Record(
+            Remex.Desktop.Services.ActivityKind.DeviceDisconnected,
+            $"{DescribeDevice(deviceName, clientId)} ({reason})");
+
+    /// <summary>
+    /// The device as a person would recognise it, and NEVER BLANK (RemEx-2xjv).
+    /// </summary>
+    /// <remarks>
+    /// The connected row used to record an empty detail, so the feed said something connected without
+    /// saying what. The name is available now — ClientSessionRegistry carries it (RemEx-xuyu) and it
+    /// was not there when this was written. Falling back to the client id and then to a generic
+    /// phrase is the same rule PairedDeviceDisplayName follows and for the same reason (RemEx-nrsv):
+    /// a row showing nothing is worse than a row showing a raw id, because a raw id at least tells
+    /// you WHICH device and can be matched against the paired list.
+    /// </remarks>
+    private static string DescribeDevice(string? deviceName, string? clientId)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceName)) return deviceName.Trim();
+        if (!string.IsNullOrWhiteSpace(clientId)) return clientId.Trim();
+        return "a device";
     }
 
     /// <summary>
@@ -734,7 +1296,96 @@ public sealed class PingPongHandler(
              or MessageTypes.LauncherRemove
              or MessageTypes.LauncherSync;
 
-    private static bool RequiresPairing(string type) => type switch
+    /// <summary>
+    /// Validates a pushed clipboard payload and writes it to the PC (RemEx-hgqs).
+    /// </summary>
+    /// <returns>True when the PC clipboard now holds <paramref name="push"/>'s text.</returns>
+    /// <remarks>
+    /// <para>
+    /// **THE HOST RE-VALIDATES WHAT THE PHONE ALREADY CHECKED, ON PURPOSE.** The Android sender calls
+    /// the same rule through the native export before sending, so in normal use this never refuses
+    /// anything. That is not a reason to drop it: the cap exists to bound what a peer can make this
+    /// machine hold, and a bound enforced only by the peer is not a bound. An older, modified or
+    /// simply buggy client is exactly the case it is here for.
+    /// </para>
+    /// <para>
+    /// **INTERNAL SO A TEST CAN DRIVE IT WITHOUT A SOCKET**, the same seam and the same reason as
+    /// <see cref="DispatchInput"/>. The residual gap is honest and worth stating: this being correct
+    /// does not prove the <c>switch</c> still routes <c>clipboard_push</c> here, and deleting that
+    /// one case would leave every test green. That is the RemEx-y6x6 shape, and the check that
+    /// actually closes it is a round trip from a real phone.
+    /// </para>
+    /// <para>
+    /// NEVER LOGS THE TEXT — a byte count and an outcome. A clipboard holds whatever the user last
+    /// copied, and a log line is the easiest place in the system for it to escape to.
+    /// </para>
+    /// </remarks>
+    internal async Task<string> HandleClipboardPushAsync(
+        Remex.Core.Models.ClipboardPush push, CancellationToken ct)
+    {
+        var reason = ClipboardValidation.Validate(push.Text, out var bytes);
+
+        var written = reason == ClipboardRejectReason.None
+            && await hostClipboard.SetTextAsync(push.Text, ct);
+
+        // The SAME TOKEN VOCABULARY the rest of the feature uses, so the phone maps clipboard
+        // outcomes in one place rather than two that drift. This value was already being computed
+        // for the log line below and thrown away, which is precisely why the phone had nothing to
+        // report (RemEx-s1ay7).
+        // EXHAUSTIVE ON PURPOSE. The obvious `_ => written ? ...` catch-all quietly relabels any
+        // reason added to the enum later as "unavailable", telling the user the PC could not be
+        // reached when in fact their payload was refused - and the log line would repeat the same
+        // wrong story, leaving nothing pointing at the real cause. The code this replaced logged
+        // reason.ToString(), which named an unknown reason accurately; losing that is not a trade
+        // worth making for a shorter switch.
+        var outcome = reason switch
+        {
+            ClipboardRejectReason.None => written ? "none" : "unavailable",
+            ClipboardRejectReason.Empty => "empty",
+            ClipboardRejectReason.TooLarge => "too_large",
+            _ => reason.ToString().ToLowerInvariant(),
+        };
+
+        logger.LogInformation(
+            "Clipboard push from client: {Bytes} bytes, outcome {Outcome}.", bytes, outcome);
+
+        return outcome;
+    }
+
+    /// <summary>Hex colour, case-insensitive: the phone's <c>Theme.toHexRgb</c> emits upper-case, but nothing here depends on that.</summary>
+    private static readonly Regex HexColorPattern = new(@"^#[0-9A-Fa-f]{6}$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Format-level sanity for an inbound <c>theme_sync</c> (RemEx-y06a0.1, RemEx-sudp8). This is
+    /// NOT where an unrecognised style is mapped to a PC scheme variant — that lookup, including its
+    /// unknown-style fallback, belongs to <c>CustomizationViewModel.TryMapPhoneTheme</c> on the
+    /// reading side; here a style is accepted as long as it is present, because the host has no
+    /// business rejecting a message over a style name it does not itself have to interpret.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// CONTRAST IS -1.0..1.0, NOT 0.0..1.0. Android's M3 contrast is signed (negative means reduced
+    /// contrast); the PC's own <c>ThemeContrast</c> has no room below zero, but clamping that away is
+    /// a mapping decision for the reader, not a reason to drop the whole message here.
+    /// </para>
+    /// <para>
+    /// <c>sync.SeedHex is { } seed</c>, NOT A BARE NULL-FORGIVING READ (Opus review, RemEx-sudp8 fix
+    /// round). No wire field on <see cref="PhoneThemeSnapshot"/> is <c>required</c> any more, so a
+    /// <c>theme_sync</c> missing "seed" deserializes with <c>SeedHex</c> genuinely null at runtime —
+    /// the property's own <c>= string.Empty</c> initializer only applies to a plain C# construction,
+    /// not to System.Text.Json filling in an absent record property. <c>Regex.IsMatch(null)</c>
+    /// throws, and an exception escaping this switch case would take the whole receive loop with it:
+    /// the exact "one absent field drops the phone's whole control session" failure this validator
+    /// exists to prevent, just moved one call deeper.
+    /// </para>
+    /// </remarks>
+    private static bool IsValidThemeSync(PhoneThemeSnapshot sync) =>
+        sync.SeedHex is { } seed && HexColorPattern.IsMatch(seed)
+        && sync.Contrast is >= -1.0 and <= 1.0
+        && sync.Mode is "light" or "dark" or "system"
+        && !string.IsNullOrWhiteSpace(sync.Style);
+
+    internal static bool RequiresPairing(string type) => type switch
     {
         MessageTypes.Ping => false,
         MessageTypes.PairingRequest => false,
@@ -755,12 +1406,26 @@ public sealed class PingPongHandler(
     /// Returns false (without leaking timing) when there is no outstanding challenge, the proof or
     /// clientId is missing/malformed, the client has no stored secret, or the HMAC does not match.
     /// </summary>
+    /// <param name="verifiedClientId">
+    /// On success, the id whose stored secret produced the HMAC — the only id this connection has
+    /// actually proved it owns.
+    /// </param>
+    /// <remarks>
+    /// HANDING THE ID BACK IS THE POINT OF THE OUT PARAMETER. The caller needs to know who it just
+    /// authenticated, and deriving that a second time from the same message is how the two answers
+    /// drift apart: this method's own rule is <c>proof.ClientId ?? message.ClientId</c>, and any
+    /// caller re-deriving it is guessing at a rule it does not own. Empty on failure, so a caller
+    /// that ignores the return value still has nothing usable.
+    /// </remarks>
     private static bool TryAuthenticateReconnect(
         RemexMessage message,
         byte[]? pendingChallengeNonce,
         PairedClientRegistry pairedClientRegistry,
-        ILogger logger)
+        ILogger logger,
+        out string verifiedClientId)
     {
+        verifiedClientId = string.Empty;
+
         if (pendingChallengeNonce is null)
         {
             logger.LogWarning("Received reconnect_proof with no outstanding challenge.");
@@ -796,11 +1461,81 @@ public sealed class PingPongHandler(
                 return false;
             }
 
-            return CryptographicOperations.FixedTimeEquals(expected, provided);
+            if (!CryptographicOperations.FixedTimeEquals(expected, provided)) return false;
+
+            verifiedClientId = clientId!;
+            return true;
         }
         finally
         {
             CryptographicOperations.ZeroMemory(reconnectSecret);
+        }
+    }
+
+    /// <summary>
+    /// Pushes <c>media_state</c> to this client whenever the PC's playback changes (RemEx-xx6xf).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE FIRST SEND IS THE ONE THAT MATTERS AND IT IS NOT SPECIAL-CASED. <c>WaitForNextAsync(null,
+    /// …)</c> returns immediately when a reading already exists, so a phone connecting mid-song gets
+    /// the current state at once rather than waiting for the next change — which on a machine playing
+    /// one long album could be twenty minutes of the icon being wrong, the exact complaint this
+    /// feature answers.
+    /// </para>
+    /// <para>
+    /// NO LOOP OF ITS OWN AND NO TIMER. The sampler publishes only on a real change, so this loop
+    /// sends exactly as often as the PC's playback actually changes: nothing at all while a track
+    /// plays out, one message when it is paused.
+    /// </para>
+    /// <para>
+    /// GATED ON THE CAPABILITY, so an unsupported host opens no task at all rather than parking one
+    /// forever on a gate nobody will ever publish to.
+    /// </para>
+    /// </remarks>
+    private async Task StreamMediaStateAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        if (!mediaSessionMonitor.IsSupported)
+        {
+            return;
+        }
+
+        Remex.Core.Models.MediaPlaybackState? lastSent = null;
+
+        while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        {
+            try
+            {
+                var state = await mediaSessionMonitor.WaitForNextAsync(lastSent, ct);
+
+                // lastSent KEEPS TRACKING THE ANCHOR OBJECT THE GATE HANDED BACK, NEVER THE
+                // PROJECTION BELOW. TelemetrySnapshotGate.WaitForNextAsync compares by reference, so
+                // handing it the projected copy next time round would make every send look "new"
+                // even when nothing actually changed.
+                var projected = Remex.Agent.Services.Media.MediaPositionProjection.Project(
+                    state, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+                await MessageSerializer.SendAsync(
+                    webSocket,
+                    new RemexMessage { Type = MessageTypes.MediaState, MediaState = projected },
+                    ct);
+
+                lastSent = state;
+            }
+            catch (OperationCanceledException) { return; }
+            catch (WebSocketException ex)
+            {
+                logger.LogDebug(ex, "Media state stream halted: WebSocket error.");
+                return;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // A concurrent send on the same socket, or one closing underneath this. Ending is
+                // right: unlike telemetry there is nothing to catch up on later, and the next
+                // connection re-sends the current reading on its first tick anyway.
+                logger.LogDebug(ex, "Media state stream halted: socket not in a sendable state.");
+                return;
+            }
         }
     }
 
@@ -810,21 +1545,29 @@ public sealed class PingPongHandler(
         // hwmon entry briefly unreadable, websocket send hiccup) used to kill the loop
         // forever — the user would see "connected but telemetry never updates". Now
         // we log a warning and keep going; only WebSocket-state failures end the stream.
+        TelemetryBackgroundService.TelemetrySnapshot? lastSentSnapshot = null;
+
+        // Set in the generic catch, consumed and reset at the single point below that reads it. Its
+        // lifetime is wider than its meaning, so: DO NOT INTRODUCE A `continue` BETWEEN THE CATCH AND
+        // THAT READ. One would carry a stale `true` into the next iteration and insert a spurious
+        // one-second backoff after a perfectly healthy tick, halving that client's update rate.
+        var tickFailed = false;
+
         while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             try
             {
-                var payload = telemetryBackgroundService.CurrentPayload;
-                if (payload != null)
-                {
-                    var message = new RemexMessage
-                    {
-                        Type = MessageTypes.Telemetry,
-                        Telemetry = payload,
-                        Timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
-                    };
+                var snapshot = telemetryBackgroundService.CurrentSnapshot;
 
-                    await MessageSerializer.SendAsync(webSocket, message, ct);
+                // Only send a sample this connection has not already had. Normally every tick brings
+                // a new one, so this changes nothing; it matters when the sampler stalls — WMI can
+                // block for seconds — where the old code cheerfully re-sent an identical 60-100 KB
+                // envelope every second to every client. Reference equality is the right test: the
+                // sampler publishes a new snapshot object per successful poll. (RemEx-0zbj)
+                if (snapshot != null && !ReferenceEquals(snapshot, lastSentSnapshot))
+                {
+                    await MessageSerializer.SendRawAsync(webSocket, snapshot.Frame, ct);
+                    lastSentSnapshot = snapshot;
                 }
             }
             catch (OperationCanceledException) { return; }
@@ -838,17 +1581,61 @@ public sealed class PingPongHandler(
             {
                 // Transient failure (e.g. /proc parse, hwmon read). Log loudly and keep going.
                 logger.LogWarning(ex, "Telemetry stream tick failed; continuing.");
+                tickFailed = true;
             }
 
             try
             {
-                await Task.Delay(1000, ct);
+                // **WAITS FOR THE SAMPLER RATHER THAN RUNNING ITS OWN CLOCK (RemEx-uj7s).** This was
+                // Task.Delay(1000), which drifts against the sampler's 1000 ms plus sample duration -
+                // so this loop was systematically the faster one, routinely woke to find the snapshot
+                // it had already sent, and skipped. The skip is correct and the drift is not: a
+                // client's updates became mostly one second apart with a two-second gap whenever the
+                // phase caught up, and the phone plots its history against an index axis, so those
+                // gaps render as uniform and the chart's x-axis quietly stops being linear in time.
+                //
+                // The loop body above is unchanged and still sends before waiting, so a client that
+                // connects mid-cycle gets the current reading immediately rather than after a second.
+                //
+                // **THE RETURN VALUE IS DISCARDED ON PURPOSE, AND ASSIGNING IT IS A SILENT KILL.** It
+                // is the snapshot that ended the wait, not one this loop has sent - assign it to
+                // lastSentSnapshot and the send above sees ReferenceEquals and skips, so the stream
+                // emits its first sample and then, in practice, nothing again - with no error
+                // anywhere. (Strictly, a sample landing in the microseconds between the wait returning
+                // and the re-read would get through; at 1 Hz that is never.) The wait
+                // means only "block until something newer than what I sent exists"; re-reading
+                // CurrentSnapshot at the top is what picks up the newest one, including any that
+                // landed while this line was returning.
+                //
+                // **A FAILED TICK BACKS OFF INSTEAD OF WAITING, BECAUSE THE WAIT WOULD NOT WAIT.** A
+                // transient send failure leaves lastSentSnapshot un-advanced (it is assigned only
+                // after the send returns), so a newer snapshot already satisfies the wait and it
+                // returns instantly - retrying the failing send in a hot loop, one warning per pass,
+                // for as long as the fault lasts. Task.Delay(1000) used to provide that spacing for
+                // free by pacing every iteration; once the wait replaced the clock, the error path
+                // was the one case left with no pacing at all. This is a backoff, not a clock.
+                if (tickFailed)
+                {
+                    tickFailed = false;
+                    await Task.Delay(1000, ct);
+                }
+                else
+                {
+                    await telemetryBackgroundService.WaitForNextSnapshotAsync(lastSentSnapshot, ct);
+                }
             }
             catch (OperationCanceledException) { return; }
         }
     }
 
-    private void DispatchInput(InputEvent input)
+    /// <summary>Applies one input event to the host.</summary>
+    /// <remarks>
+    /// Internal rather than private so the held-key bookkeeping can be tested end to end — the path
+    /// that normally feeds it is a WebSocket, so without a seam the wiring between here and
+    /// <see cref="Dispose"/> is the kind of link that can be deleted with every test still green
+    /// (RemEx-73dc, and RemEx-y6x6 for why that matters).
+    /// </remarks>
+    internal void DispatchInput(InputEvent input)
     {
         try
         {
@@ -874,13 +1661,19 @@ public sealed class PingPongHandler(
                     inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
-                    inputSimulation.MouseScroll(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    // See the note on the identical case in RemoteDesktopHandler: an unclamped
+                    // delta off the wire can throw out of the Linux backends (RemEx-hnin).
+                    inputSimulation.MouseScroll(
+                        CoordinateValidation.ClampScrollDelta(input.DeltaX),
+                        CoordinateValidation.ClampScrollDelta(input.DeltaY));
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     inputSimulation.KeyDown(input.KeyCode.Value);
+                    _heldKeys.Pressed(input.KeyCode.Value);
                     break;
                 case InputEventTypes.KeyUp when input.KeyCode.HasValue:
                     inputSimulation.KeyUp(input.KeyCode.Value);
+                    _heldKeys.Released(input.KeyCode.Value);
                     break;
                 case InputEventTypes.TypeText when input.Text is not null:
                     inputSimulation.TypeText(input.Text);
@@ -889,7 +1682,103 @@ public sealed class PingPongHandler(
         }
         catch (Exception ex)
         {
+            // Deliberately broader than the Remote Desktop dispatcher's list, and it always was —
+            // which is why this path never had that one's failure mode. Checked as part of RemEx-q4wm
+            // rather than changed: here the switch runs INLINE on the receive loop, so a swallowed
+            // event costs that event and the next message is read normally. There is no consumer
+            // thread to lose. RemoteDesktopHandler queues instead, and an escape there ended the
+            // consuming loop and every remaining input for the session.
+            //
+            // No cancellation carve-out here, and none in the other dispatcher either. One was
+            // written into the first draft of RemEx-q4wm on the theory that excluding
+            // OperationCanceledException preserved a graceful-shutdown path; it does not. Neither
+            // handler shuts down that way — this one ends when the receive loop ends, and the other
+            // when Dispose calls CompleteAdding on an untokened queue — so the only thing such a
+            // filter can do is give a backend exception an unguarded route out.
             logger.LogWarning(ex, "Failed to dispatch input: {Type}", input.EventType);
         }
     }
+
+    /// <summary>
+    /// Releases every key this client still had down when its connection ended (RemEx-73dc).
+    /// </summary>
+    /// <remarks>
+    /// Reached because the connection site holds this in a <c>using</c>, so it runs on a clean close,
+    /// a dropped socket and an exception alike. Best-effort per key: one failing release must not
+    /// strand the rest, which for modifiers is the difference between a stuck Ctrl and a stuck
+    /// Ctrl+Shift+Alt.
+    ///
+    /// Unlike the Remote Desktop handler there is no input queue to drain first — this path
+    /// dispatches inline on the receive loop, so by the time the connection is being disposed no
+    /// further input can arrive.
+    /// </remarks>
+    public void Dispose()
+    {
+        var held = _heldKeys.TakeAll();
+        if (held.Count == 0)
+        {
+            return;
+        }
+
+        logger.LogInformation(
+            "Releasing {Count} key(s) still held by the client at disconnect: {Keys}",
+            held.Count, string.Join(", ", held));
+
+        foreach (var keyCode in held)
+        {
+            try
+            {
+                inputSimulation.KeyUp(keyCode);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to release held key {KeyCode} at disconnect.", keyCode);
+            }
+        }
+    }
+    /// <summary>
+    /// Reads the PC clipboard and packages it for the phone (RemEx-ci98m).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE SAME CAP APPLIES IN THIS DIRECTION, AND IT IS NOT SYMMETRY FOR ITS OWN SAKE.** A PC
+    /// clipboard can hold a whole document someone copied out of an editor; shipping that to a phone
+    /// on a slow link is the same stall the push direction refuses, pointed the other way. The rule
+    /// is <see cref="ClipboardValidation"/> either way, so there is one definition of "too large".
+    /// </para>
+    /// <para>
+    /// **A REFUSAL CARRIES NO TEXT AT ALL.** Not an empty string — null. A phone that put an empty
+    /// string on its clipboard would destroy whatever the user had copied there, which is exactly the
+    /// harm the empty-payload rule exists to prevent, arriving from the other side.
+    /// </para>
+    /// <para>
+    /// NULL FROM THE CLIPBOARD IS "COULD NOT READ", NOT "EMPTY". They are different answers and the
+    /// phone says different things about them; collapsing them would report a PC whose window has not
+    /// started as a PC with nothing copied.
+    /// </para>
+    /// <para>NEVER LOGS THE TEXT — a byte count and an outcome, as everywhere else in this feature.</para>
+    /// </remarks>
+    internal async Task<Remex.Core.Models.ClipboardContent> ReadClipboardForClientAsync(CancellationToken ct)
+    {
+        var text = await hostClipboard.GetTextAsync(ct);
+        if (text is null)
+        {
+            logger.LogInformation("Clipboard fetch from client: the PC clipboard could not be read.");
+            return new Remex.Core.Models.ClipboardContent { Reason = "unavailable" };
+        }
+
+        var reason = ClipboardValidation.Validate(text, out var bytes);
+        logger.LogInformation(
+            "Clipboard fetch from client: {Bytes} bytes, outcome {Outcome}.",
+            bytes,
+            reason == ClipboardRejectReason.None ? "sent" : reason.ToString());
+
+        return reason switch
+        {
+            ClipboardRejectReason.None => new Remex.Core.Models.ClipboardContent { Reason = "none", Text = text },
+            ClipboardRejectReason.Empty => new Remex.Core.Models.ClipboardContent { Reason = "empty" },
+            _ => new Remex.Core.Models.ClipboardContent { Reason = "too_large" },
+        };
+    }
+
 }

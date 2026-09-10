@@ -1,0 +1,127 @@
+<ContentControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    x:Class="Remex.Desktop.Controls.BusyPlaceholder">
+
+    <!-- ═══ BusyPlaceholder (RemEx-kjdi) ═══
+         Two visual states, selected by plain Classes toggled in the code-behind (NOT pseudo-classes
+         matched by this type's own name — verified live via ui-hotreload that a pseudo-class
+         selector matching "controls|BusyPlaceholder" from inside this same file's own template does
+         not reliably apply; Classes.busy/skeleton/reduced-motion, matched the way
+         DashboardBackgroundControl.axaml already does successfully, does):
+         - .busy:not(.skeleton)  -> Spinner mode: dim the real Content, show a small indeterminate ring.
+         - .busy.skeleton        -> Skeleton mode: hide the real Content, show 4 placeholder bars.
+         - neither               -> Content shown normally, both placeholders hidden.
+         The shimmer on the skeleton bars is an Opacity keyframe animation, gated off entirely
+         (falling back to a static, evenly-dim bar) whenever .reduced-motion is set — see the two
+         mutually exclusive Style blocks below. No hex colours anywhere: every brush is a
+         DynamicResource theme token so the shimmer reads correctly on every palette-sweep cell
+         (Default/Chalk-Light/Ink-Dark), not just the one this was designed against. -->
+
+    <ContentControl.Template>
+        <ControlTemplate>
+            <Grid>
+                <ContentPresenter Name="PART_ContentPresenter"
+                                   Content="{TemplateBinding Content}"
+                                   ContentTemplate="{TemplateBinding ContentTemplate}"
+                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                <!-- Spinner mode overlay: a small indeterminate ring, centered over the (dimmed) content.
+                     No Foreground/Background here: ProgressBar colour is one rule in App.axaml
+                     (RemEx-rcgmc) - a per-view/per-control override is exactly the mistake that bead
+                     fixed. AutomationProperties.Name forwards the caller's own label (already
+                     localized, set on the BusyPlaceholder itself) rather than duplicating a second
+                     string: an indeterminate ring announces nothing without SOME name.
+                     IsVisible is deliberately absent here (and on PART_Skeleton/PART_ContentPresenter
+                     below): an attribute set directly in a ControlTemplate becomes a LOCAL value,
+                     which outranks a Style Setter — the exact trap DashboardBackgroundControl.axaml's
+                     own Transitions comment documents for this codebase. Visibility for every part
+                     below is Style-driven, full stop; the "Resting state" rules are load-bearing. -->
+                <!-- Classes="circular" is load-bearing, not decorative: TheCircularClassActuallySwapsTheTemplate
+                     (ProgressIndicatorTests) documents that .circular is a TEMPLATE SWAP
+                     (MaterialCircularProgressBar), not a resize - without it this renders as the
+                     default 16px-wide LINEAR bar, not the ring the design calls for (review finding). -->
+                <ProgressBar Name="PART_Spinner"
+                             Classes="circular"
+                             IsIndeterminate="True"
+                             Width="16" Height="16"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             AutomationProperties.Name="{TemplateBinding (AutomationProperties.Name)}"/>
+
+                <!-- Skeleton mode: 4 rounded bars standing in for a list's first fill. Widths vary so
+                     the group reads as placeholder text rather than a solid block. -->
+                <StackPanel Name="PART_Skeleton" Spacing="10" VerticalAlignment="Top">
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="320" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="260" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="300" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                    <Border Classes="skeleton-bar" Height="14" MaxWidth="180" HorizontalAlignment="Stretch" CornerRadius="7"/>
+                </StackPanel>
+            </Grid>
+        </ControlTemplate>
+    </ContentControl.Template>
+
+    <ContentControl.Styles>
+        <Style Selector="Border.skeleton-bar">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Opacity" Value="0.55"/>
+        </Style>
+
+        <!-- Resting state (not busy): the real content shows, both placeholders are hidden. Every
+             property these three parts carry is set HERE, on purpose (see the template comment) -
+             the busy-state rules below only ever add to this baseline, never compete with a local
+             value for it. -->
+        <Style Selector="ContentControl /template/ StackPanel#PART_Skeleton">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="ContentControl /template/ ProgressBar#PART_Spinner">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="ContentControl /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="IsVisible" Value="True"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <!-- Skeleton mode visibility: show the bars, hide the real content underneath them. -->
+        <Style Selector="ContentControl.busy.skeleton /template/ StackPanel#PART_Skeleton">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="ContentControl.busy.skeleton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+
+        <!-- Spinner mode: show the ring, dim (not hide) the content it sits over. -->
+        <Style Selector="ContentControl.busy:not(.skeleton) /template/ ProgressBar#PART_Spinner">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="ContentControl.busy:not(.skeleton) /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+
+        <!-- Shimmer: only while busy AND in skeleton mode AND motion is not reduced. -->
+        <Style Selector="ContentControl.busy.skeleton:not(.reduced-motion) /template/ Border.skeleton-bar">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.35"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="0.8"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.35"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Reduced motion: a static placeholder, no animation - just a fixed, slightly higher
+             opacity than the resting 0.55 so it still reads as "something is loading". -->
+        <Style Selector="ContentControl.busy.skeleton.reduced-motion /template/ Border.skeleton-bar">
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+    </ContentControl.Styles>
+</ContentControl>

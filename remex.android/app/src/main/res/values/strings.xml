@@ -91,6 +91,20 @@
     <string name="connection_error_generic">Connection failed.</string>
     <string name="connection_error_native_missing">Couldn\'t start RemEx\'s connection engine. Try restarting the app; if this keeps happening, reinstall RemEx.</string>
     <string name="connection_action_repair">Re-pair</string>
+    <string name="connection_cert_repair_title">Re-pair with this PC?</string>
+    <string name="connection_cert_repair_title_unchanged">Nothing to repair</string>
+    <string name="connection_cert_repair_changed">This PC is answering with a different security identity than the one your phone paired with.</string>
+    <string name="connection_cert_repair_when_safe">That is expected if you reinstalled RemEx or Windows on the PC, or replaced its hardware.</string>
+    <string name="connection_cert_repair_when_unsafe">If none of that happened, stop. Something else may be answering at this address and reading what you send.</string>
+    <string name="connection_cert_repair_effect">Re-pairing forgets the identity your phone trusts and starts pairing again. You\'ll need the PIN shown on the PC.</string>
+    <string name="connection_cert_repair_label_pinned">Paired with</string>
+    <string name="connection_cert_repair_label_presented">Answering now</string>
+    <string name="connection_cert_repair_checking">Checking what this address is answering with…</string>
+    <string name="connection_cert_repair_unknown">This PC didn\'t answer, so its current identity couldn\'t be read. Only re-pair if you know why it changed.</string>
+    <string name="connection_cert_repair_unchanged">This PC is answering with the identity your phone already trusts, so there is nothing to repair. The connection failed for some other reason.</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(not known)</string>
+    <string name="connection_cert_repair_fingerprint_checking">Checking…</string>
+    <string name="connection_cert_repair_confirm">Forget and re-pair</string>
     <string name="wake_pc_sent">Wake signal sent</string>
     <string name="wake_pc_failed">Failed to send wake signal</string>
     <string name="wake_pc_mac_not_configured">MAC address not configured — set it in Settings</string>
@@ -173,6 +187,24 @@
     <string name="rc_category_session">Session</string>
     <string name="rc_category_power">Power</string>
     <string name="rc_category_energy">Energy</string>
+    <string name="rc_media_volume_down">Volume down</string>
+    <string name="rc_media_volume_up">Volume up</string>
+    <string name="rc_media_mute">Mute</string>
+    <string name="rc_media_previous">Previous track</string>
+    <string name="rc_media_play_pause">Play or pause</string>
+    <string name="rc_media_play">Play</string>
+    <string name="rc_media_pause">Pause</string>
+    <string name="rc_media_next">Next track</string>
+    <string name="rc_media_hint">Hold the volume buttons to keep changing the volume.</string>
+    <string name="rc_media_unavailable">This PC is not set up to accept key presses, so these buttons will not do anything.</string>
+    <string name="rc_media_disconnected">Connect to your PC to use these controls.</string>
+    <string name="rc_media_state_playing">Playing</string>
+    <string name="rc_media_state_paused">Paused</string>
+    <string name="rc_media_state_idle">Nothing playing</string>
+    <string name="rc_media_now_playing">Now playing</string>
+    <string name="rc_media_open_now_playing">Open now playing</string>
+    <string name="rc_media_artwork">Album art</string>
+    <string name="rc_media_seek">Seek playback position</string>
 
     
     <string name="screen_remote_desktop_title">Remote Desktop</string>
@@ -273,6 +305,7 @@
     <string name="dashboard_host_online">PC ONLINE</string>
     <string name="dashboard_connecting">CONNECTING…</string>
     <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
+    <string name="dashboard_connection_card_action">connect to your PC</string>
     <string name="dashboard_wake_pc_button">WAKE PC</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
     <string name="cd_open_view_picker">Choose display view</string>
@@ -303,8 +336,6 @@
 
     
     <string name="screen_connection_title">Connection</string>
-    <string name="screen_splash_title">Loading</string>
-    <string name="screen_tutorial_title">Tutorial</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>
@@ -346,6 +377,21 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
+    <string name="connection_known_pcs_title">Known PCs</string>
+    <string name="connection_known_pcs_hint">Tap an address to connect.</string>
+    <string name="connection_known_pc_last_connected">Last connected %1$s</string>
+    <string name="connection_known_pc_never_connected">Not connected yet</string>
+    <string name="connection_known_pc_actions">Options for %1$s</string>
+    <string name="connection_known_pc_rename">Rename</string>
+    <string name="connection_known_pc_rename_title">Name this PC</string>
+    <string name="connection_known_pc_nickname_label">Nickname</string>
+    <string name="connection_known_pc_unpair_title">Unpair %1$s?</string>
+    <string name="connection_known_pc_unpair_message">This phone will forget this PC, at every address it answers on. You\'ll need the PIN shown on the PC to pair again.</string>
+    <string name="connection_known_pc_needs_pairing">Needs pairing</string>
+    <string name="connection_known_pc_forget">Remove from list</string>
+    <string name="connection_known_pc_pair_title">Pair with %1$s?</string>
+    <string name="connection_known_pc_pair_message">This phone isn\'t paired at this address. Enter the 6-digit PIN shown on the PC.</string>
+    <string name="connection_known_pc_pair_confirm">Pair</string>
 
     
     <string name="pairing_title">Security Pairing</string>
@@ -369,6 +415,7 @@
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_android_client_label">Android Client</string>
+    <string name="about_build_id">Build %1$s</string>
     <string name="about_pc_host_label">Your PC</string>
     <string name="about_view_github">View Source on GitHub</string>
     <string name="about_status_unknown">Unknown</string>
@@ -376,16 +423,16 @@
     <string name="about_github_cat">Browse releases, report issues, and star the project if RemEx helps you.</string>
     <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
     <string name="about_whats_new_title">What\'s New in %1$s</string>
-    <string name="about_whats_new_1_label">Dashboard 2.0</string>
-    <string name="about_whats_new_1_body">The home dashboard was rebuilt: choose a graph style per card, rename cards, pick card shapes, and reorganize with drag and multi-select gestures. A guided tour teaches it on first visit.</string>
-    <string name="about_whats_new_2_label">Smarter Sensor Cards</string>
-    <string name="about_whats_new_2_body">Cards understand what they measure: views auto-match each metric\'s kind, titles are customizable, and readings like RAM Total no longer sit stuck on “Collecting Data”.</string>
-    <string name="about_whats_new_3_label">File Sharing</string>
-    <string name="about_whats_new_3_body">Move files both ways with resume support, SHA-256 verification, and live progress. Sharing to RemEx from another app now works even when RemEx isn\'t already running.</string>
-    <string name="about_whats_new_4_label">Expressive Motion</string>
-    <string name="about_whats_new_4_body">Material 3 Expressive springs animate the whole app, from coach marks to transfers — and every animation honors your system\'s Reduce Motion accessibility setting.</string>
-    <string name="about_whats_new_5_label">Security Hardening</string>
-    <string name="about_whats_new_5_body">The old plain-HTTP pairing endpoints are gone, closing the last unencrypted path to the pairing PIN. Pairing stays ECDH-encrypted end to end, with the PC\'s certificate fingerprint pinned on every reconnect.</string>
+    <string name="about_whats_new_1_label">Sensor Alerts</string>
+    <string name="about_whats_new_1_body">On your PC, set a threshold on any sensor and its card shows a bell that turns red the moment it\'s crossed. The alert stays lit until you acknowledge it, so a spike you missed while you were away is still marked, and a critical one also raises a desktop notification while the window is out of sight.</string>
+    <string name="about_whats_new_2_label">Match My Theme</string>
+    <string name="about_whats_new_2_body">Your phone now shares its theme with your PC, so Personalize can match your colors, light or dark, with one tap. Change your phone\'s theme later and the PC can pick it up again whenever you ask.</string>
+    <string name="about_whats_new_3_label">Clipboard Sync</string>
+    <string name="about_whats_new_3_body">Copy text on your phone and send it to your PC\'s clipboard from the Remote Control screen — it\'s ready to paste the moment it lands. Nothing is stored along the way, so a password or login code passes through and is gone.</string>
+    <string name="about_whats_new_4_label">Known PCs</string>
+    <string name="about_whats_new_4_body">The Connection screen now lists every PC you\'ve paired with, so switching machines is a tap instead of retyping an address. Each one remembers its own name and when you last connected.</string>
+    <string name="about_whats_new_5_label">Folder Transfers</string>
+    <string name="about_whats_new_5_body">Send or receive a whole folder at once, empty subfolders included, instead of picking files one by one. A dropped connection just resumes, the same as it does for a single file.</string>
     <string name="faq_header">Frequently Asked Questions</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>
@@ -495,6 +542,8 @@
     <string name="tile_hibernate_label">Hibernate PC</string>
     <string name="tile_monitor_off_label">Monitor Off</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Confirm action</string>
+    <string name="tile_confirm_message">Send \"%1$s\" to your PC now?</string>
 
     
     <string name="screen_file_transfer_title">File Transfer</string>
@@ -511,6 +560,54 @@
     <string name="file_transfer_notification_download_title">Downloading %1$s</string>
     <string name="file_transfer_notification_preparing">Preparing transfer…</string>
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d copied</item>
+        <item quantity="other">%1$d copied</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d moved</item>
+        <item quantity="other">%1$d moved</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d failed</item>
+        <item quantity="other">%1$d failed</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d skipped</item>
+        <item quantity="other">%1$d skipped</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s already exists</string>
+    <string name="file_conflict_body_exists">There is already a file or folder with this name in the destination folder.</string>
+    <string name="file_conflict_body_different_kind">Something of a different kind already has this name in the destination folder.</string>
+    <string name="file_conflict_body_name_unusable">This name is too long for the destination folder.</string>
+    <string name="file_conflict_body_name_taken">Something else took the new name before this could be saved. Trying again will pick a different name.</string>
+    <string name="file_conflict_body_unknown">This cannot be completed.</string>
+    <string name="file_conflict_replace">Replace</string>
+    <string name="file_conflict_keep_both">Keep both</string>
+    <string name="file_conflict_skip">Skip</string>
+    <string name="file_conflict_apply_to_all">Apply to all remaining</string>
+    <string name="file_conflict_saved_as">Saved as %1$s</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Finishing…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d second left</item>
+        <item quantity="other">%1$d seconds left</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d minute left</item>
+        <item quantity="other">%1$d minutes left</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d hour left</item>
+        <item quantity="other">%1$d hours left</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
     <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
     <string name="file_transfer_notification_upload_failed">Could not send %1$s</string>
@@ -557,6 +654,11 @@
     <string name="file_consent_push_message_generic">Your PC wants to send files to this phone. Allow?</string>
     <string name="file_consent_full_browse_title">Full-device browse request</string>
     <string name="file_consent_full_browse_message">Your PC wants to browse this phone\'s storage. Allow?</string>
+    <string name="file_consent_remote_full_browse_title">Browse your PC\'s files?</string>
+    <string name="file_consent_remote_full_browse_message">This phone is asking to browse everything on your PC, not just its shared folders. Allow?</string>
+    <string name="file_consent_remote_push_title">Send files to your PC?</string>
+    <string name="file_consent_remote_push_message">This phone is asking to send: %1$s. Allow?</string>
+    <string name="file_consent_remote_push_message_generic">This phone is asking to send files to your PC. Allow?</string>
     <string name="file_consent_allow">Allow</string>
     <string name="file_consent_deny">Deny</string>
     <string name="file_consent_remember">Remember my choice for this PC</string>
@@ -630,10 +732,10 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN sent</string>
     <string name="widget_toast_not_connected">Not connected — open RemEx to connect</string>
     <string name="widget_toast_command_sent">%1$s sent</string>
-    <string name="widget_toast_launching">Launching %1$s…</string>
     <string name="widget_refresh">Refresh</string>
     <string name="widget_toast_refreshing">Refreshing…</string>
     <string name="widget_toast_refreshed">Telemetry refreshed</string>
+    <string name="widget_toast_refresh_failed">Couldn\'t refresh telemetry</string>
     <string name="widget_toast_connecting">Connecting to PC…</string>
     <string name="widget_config_poll_interval_label">Refresh every %1$d s</string>
     <string name="widget_config_poll_interval_hint">How often the widget polls the PC for fresh telemetry while connected.</string>
@@ -720,11 +822,16 @@
     <string name="remote_desktop_display_numbered">Display %1$d</string>
     <string name="remote_desktop_display_both">Both screens</string>
     
-    <string name="rd_err_capture_unavailable">Screen capture isn’t working on your PC.</string>
-    <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. Your PC may have been locked or signed out.</string>
-    <string name="rd_err_target_unavailable">The selected display is no longer available.</string>
-    <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming.</string>
-    <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on your PC right now.</string>
+    <string name="rd_err_capture_unavailable">Screen capture isn’t working on your PC. Try starting the stream again — if it keeps failing, restart RemEx on the PC.</string>
+    <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. Your PC may have been locked or signed out. Unlock it, then start the stream again.</string>
+    <string name="rd_err_target_unavailable">The selected display is no longer available. Pick another display and start the stream again.</string>
+    <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming. Stop the stream, then start it again on the display you want.</string>
+    <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on your PC right now. This usually means RemEx on the PC needs updating, or it’s running without the components remote desktop requires.</string>
+    <string name="rd_err_input_unavailable">Your PC isn’t accepting keyboard or mouse input. A permission prompt on the PC may have been declined — tap Ask again to have it shown there again. You can still see the screen.</string>
+    <string name="rd_input_retry_button">Ask again</string>
+    <string name="rd_input_retry_sent">Asked your PC again — accept the prompt there.</string>
+    <string name="rd_err_connect_timeout">Your PC at %1$s didn’t answer. Make sure it’s awake and connected to the same Wi‑Fi network as this phone, then try again.</string>
+    <string name="rd_err_handshake_timeout">Your PC at %1$s answered but then stopped responding while checking this device. It may have gone to sleep. Try connecting again.</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="pairing_error_timeout">The PC didn’t respond. Check that it’s turned on and connected to the same network, then try again.</string>
     <string name="host_discovered_snackbar">PC found: %1$s</string>
@@ -774,9 +881,21 @@
     <string name="file_manager_prop_readonly">Read-only</string>
     <string name="file_manager_prop_yes">Yes</string>
     <string name="file_manager_prop_no">No</string>
-    <string name="file_manager_requesting_volumes">Loading drives…</string>
+    <string name="file_manager_full_browse_pending">Waiting for approval on your PC…</string>
+    <string name="file_manager_full_browse_unreachable">Your PC could not reach this phone to ask. Reconnect and try again.</string>
+    <string name="file_manager_full_browse_refused">Full-device browsing was declined.</string>
+    <string name="file_manager_full_browse_timed_out">Your PC didn\'t answer in time. Try again.</string>
     <string name="file_manager_queued_upload">Queued upload: %1$s</string>
     <string name="file_manager_queued_download">Queued download: %1$s</string>
+    <string name="file_manager_download_folder">Download folder</string>
+    <string name="file_manager_folder_scanning">Listing the folder…</string>
+    <string name="file_manager_folder_scan_failed">The folder could not be listed.</string>
+    <string name="file_manager_folder_empty">That folder has no files to transfer.</string>
+    <string name="file_manager_folder_queued_download">Queued %1$d files for download.</string>
+    <string name="file_manager_upload_folder">Upload folder</string>
+    <string name="file_manager_folder_queued_upload">Queued %1$d files for upload.</string>
+    <string name="file_manager_folder_too_large">That folder holds too many files to transfer at once.</string>
+    <string name="file_manager_folder_queued_truncated">Queued %1$d files, but the folder was too large to list in full — some files were left out.</string>
     <string name="file_manager_transfers_title">Transfers (%1$d)</string>
     <string name="file_manager_clear_finished">Clear finished</string>
     <string name="file_manager_pause">Pause</string>
@@ -847,4 +966,60 @@
     <string name="personalization_shape_cat_network">Network cards</string>
     <string name="personalization_shape_cat_action">Action cards</string>
     <string name="personalization_shape_cat_other">Other cards</string>
+
+    <!-- Screenshot (RemEx-byij, wording corrected by RemEx-66rf). "Taken" is now accurate: the PC's
+         real answer reaches the phone, so this only shows after the PNG has been written. It still
+         stops short of "received" - the file is offered separately and the user may decline it. -->
+    <string name="action_take_screenshot">Take a screenshot of the PC</string>
+    <string name="screenshot_taken">Screenshot taken on the PC. Check your notifications to receive it.</string>
+    <string name="screenshot_failed">The PC could not take a screenshot.</string>
+
+    <!-- Shown when a file the user ALREADY ACCEPTED cannot be received (RemEx-gipu). Before these,
+         accepting a file and receiving nothing looked exactly like the app being broken. Only the
+         first is something the user can act on; the other two exist so the silence is explained. -->
+    <string name="file_push_failed_no_folder">A file could not be saved: no folder on this phone is shared for writing. Share one in RemEx to receive files.</string>
+    <string name="file_push_failed_bad_name">A file could not be saved because of its name.</string>
+    <string name="file_push_failed_destination">A file could not be saved: the folder it was going to is no longer available.</string>
+    <string name="file_push_failed_wrong_file">A file could not be saved: it was not the file you agreed to receive.</string>
+    <string name="file_push_failed_not_saved">A file from the PC could not be saved. Ask the PC to send it again.</string>
+    <string name="file_push_failed_no_channel">A file from the PC could not be received: this phone could not open its file connection. Try again, and re-pair if it keeps failing.</string>
+    <string name="file_received_title">File received</string>
+    <string name="file_received_text">%1$s arrived from your PC.</string>
+    <string name="file_received_share">Share</string>
+    <string name="pairing_phase_probe">Checking your PC is reachable…</string>
+    <string name="pairing_phase_securing">Setting up a secure connection…</string>
+    <string name="pairing_phase_awaiting_host">Waiting for your PC to show a PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Share diagnostics</string>
+    <string name="settings_share_diagnostics_body">Build a report about this app and its connection to your PC that you can send to whoever is helping you. You read all of it first, and nothing leaves your phone until you send it.</string>
+    <string name="screen_share_diagnostics_title">Share diagnostics</string>
+    <string name="share_diagnostics_explainer">This report contains your app version, phone model, Android version, what your PC last said about itself, and recent log lines from this app. Pairing keys are removed and file paths are shortened to just the file name. What you see below is exactly what gets sent.</string>
+    <string name="share_diagnostics_network_toggle">Include network addresses</string>
+    <string name="share_diagnostics_network_toggle_body">Off by default. Turn it on only for a connection problem: it keeps IP addresses in the report.</string>
+    <string name="share_diagnostics_preview_title">Report preview</string>
+    <string name="share_diagnostics_collecting">Building the report…</string>
+    <string name="share_diagnostics_send">Share report</string>
+    <string name="share_diagnostics_chooser">Share diagnostics</string>
+    <string name="share_diagnostics_failed">The report could not be prepared for sharing.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Send clipboard to PC</string>
+    <string name="clipboard_send_ok">Sent to the PC’s clipboard</string>
+    <string name="clipboard_send_empty">There is nothing on the clipboard to send</string>
+    <string name="clipboard_send_too_large">That is too large to send. The limit is %1$d KB.</string>
+    <string name="clipboard_send_failed">Could not send the clipboard</string>
+    <string name="clipboard_send_refused">The PC refused it — pair the phone with your PC first</string>
+    <string name="clipboard_send_not_connected">Connect to your PC first</string>
+    <string name="clipboard_send_unsupported">Only copied text can be sent</string>
+    <string name="clipboard_fetch_button">Get clipboard from PC</string>
+    <string name="clipboard_fetch_ok">Copied from the PC</string>
+    <string name="clipboard_fetch_empty">Nothing is copied on the PC</string>
+    <string name="clipboard_fetch_too_large">The PC’s clipboard is too large to copy</string>
+    <string name="clipboard_fetch_failed">Could not get the PC’s clipboard</string>
+    <string name="clipboard_fetch_label">Clipboard from PC</string>
 </resources>

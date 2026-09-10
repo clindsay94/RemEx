@@ -2,6 +2,7 @@ package com.clindsay94.remex.service
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Base64
@@ -164,6 +165,15 @@ object FileTransferEngine {
      */
     fun pause(transferId: String) {
         sendControl(transferId, FileTransferControlActions.PAUSE)
+
+        // NOT A GUARANTEE THAT NOTHING IS MEASURED ACROSS THE PAUSE, and the docstring above says
+        // why: an Active item's pause is best-effort and the current stream runs to its natural
+        // end, so the send loop's next frame recreates this estimator microseconds later. What
+        // makes the resume correct is the terminal-state cleanup plus the estimator's own
+        // negative-delta guard, which drops the average when a resumed transfer restarts its
+        // byte count. This call is the cheap, immediate half of that.
+        forgetRate(transferId)
+
         updateState(transferId) {
             if (it.state == TransferState.Queued ||
                 it.state == TransferState.Negotiating ||
@@ -285,25 +295,22 @@ object FileTransferEngine {
                         sent += r
                     }
                 }
-                val buf = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
-                while (true) {
-                    val read = it.read(buf)
-                    if (read <= 0) break
-                    while (sent - committed.get() > FileTransferLimits.MAX_UNACKED_BYTES) {
-                        // receiveCatching is stable API (unlike isClosedForReceive); a closed channel
-                        // means the peer/socket dropped, so abort and let the queue mark this failed.
-                        if (ackSignal.receiveCatching().isClosed) {
-                            throw IllegalStateException("Channel closed.")
-                        }
-                    }
-                    val isFinal = sent + read >= t.size
-                    if (!FileTransferChannelClient.sendData(t.id, sent, buf, read, isFinal)) {
-                        throw IllegalStateException("Binary channel closed mid-transfer.")
-                    }
-                    digest.update(buf, 0, read)
-                    sent += read
-                    updateProgress(t.id, sent)
-                }
+                // The send loop itself is extracted to UploadSendLoop (RemEx-yi7id): this object is a
+                // singleton driving the FileTransferChannelClient singleton directly, so it has no
+                // constructor to seam a defaulted cap onto the way FileHostHandler does — the
+                // collaborator is what makes the loop (and its cap) unit-testable without mutable
+                // global state.
+                sent =
+                    UploadSendLoop(FileTransferChannelClient::sendData).run(
+                        transferId = t.id,
+                        input = it,
+                        size = t.size,
+                        initialSent = sent,
+                        committed = committed,
+                        ackSignal = ackSignal,
+                        digest = digest,
+                        onProgress = { bytes -> updateProgress(t.id, bytes) },
+                    )
                 // Drain before completing (RemEx-y6x6): the bulk data frames and file_transfer_complete
                 // travel on SEPARATE sockets (/ws/files vs the control /ws). If we announce completion the
                 // instant the last frame is enqueued, the tiny complete overtakes the still-in-flight bulk
@@ -614,11 +621,19 @@ object FileTransferEngine {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun ensureChannel(): Boolean {
-        if (FileTransferChannelClient.isOpen) return true
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
         if (host.isBlank()) return false
         val clientId = settings.getOrCreateClientId()
+
+        // **ASKED OF THIS HOST, NOT OF THE WORLD (RemEx-5t4k9).** This shortcut used to be a bare
+        // isOpen taken before any of the settings above were read, so a channel still open to a PC
+        // the user had stopped using answered yes and ensureConnected - which does compare the host -
+        // was never reached. This is the upload path, so the effect was that the offer was negotiated
+        // with the PC the control plane had reconnected to while the bytes went down a socket to the
+        // previous one. Found by review of the identical defect in AndroidFileTransferHost, which is
+        // what the bead was actually filed for.
+        if (FileTransferChannelClient.isOpenTo(host, port, clientId)) return true
         val spki = PinnedHostStore.getPin(appContext, host)?.takeIf { it.isNotBlank() } ?: return false
         return FileTransferChannelClient.ensureConnected(appContext, host, port, clientId, spki)
     }
@@ -627,15 +642,72 @@ object FileTransferEngine {
 
     private fun updateState(id: String, transform: (QueuedTransfer) -> QueuedTransfer) {
         val current = _queue.value.firstOrNull { it.id == id } ?: return
-        _queue.value = queueStore.upsert(transform(current))
+        val updated = transform(current)
+        _queue.value = queueStore.upsert(updated)
+
+        // RATE CLEANUP LIVES HERE RATHER THAN AT THE ELEVEN TERMINAL CALL SITES, because a
+        // per-site version is a list that a future state transition silently drops off — and the
+        // leak it would cause is unbounded: this is a process-lifetime singleton, so one orphaned
+        // estimator per finished transfer accumulates for as long as the app runs.
+        if (updated.state in TerminalStates) forgetRate(id)
     }
+
+    private val TerminalStates = setOf(
+        TransferState.Done,
+        TransferState.Failed,
+        TransferState.Cancelled,
+    )
 
     /**
      * In-memory-only progress update (no disk write). Called per data frame, which would otherwise
      * thrash the queue file; the durable checkpoints are the state transitions via [updateState].
      */
     private fun updateProgress(id: String, bytes: Long) {
+        // SystemClock.elapsedRealtime(), never System.currentTimeMillis(). A wall clock steps
+        // backwards on an NTP correction, and the estimator correctly refuses a negative interval -
+        // so a wall clock would not produce a wrong speed, it would silently stop producing one.
+        estimatorFor(id).update(bytes, SystemClock.elapsedRealtime())
+
         _queue.value = _queue.value.map { if (it.id == id) it.copy(bytesTransferred = bytes) else it }
+    }
+
+    // ── Throughput and time-remaining (RemEx-qmiv) ────────────────────────────
+
+    /**
+     * One estimator per in-flight transfer, DELIBERATELY NOT PART OF [QueuedTransfer].
+     *
+     * The queue model is serialized to disk on every state transition, and a rate is the one thing
+     * in this system that is meaningless the moment it is reloaded — restoring "12.4 MB/s" from a
+     * file written before the app was killed would describe a transfer that is not running.
+     * Throughput is live-only state, so it lives beside the queue rather than inside it.
+     */
+    private val rateEstimators = java.util.concurrent.ConcurrentHashMap<String, TransferRateEstimator>()
+
+    private fun estimatorFor(id: String): TransferRateEstimator =
+        rateEstimators.getOrPut(id) { TransferRateEstimator() }
+
+    /** Current throughput for [transferId] in bytes per second, or null when it is not known. */
+    fun bytesPerSecond(transferId: String): Double? =
+        rateEstimators[transferId]?.bytesPerSecondAt(SystemClock.elapsedRealtime())
+
+    /** Seconds until [transferId] finishes, or null when that cannot honestly be said. */
+    fun secondsRemaining(transferId: String): Double? {
+        val estimator = rateEstimators[transferId] ?: return null
+        val item = _queue.value.firstOrNull { it.id == transferId } ?: return null
+
+        return estimator.secondsRemainingAt(
+            item.bytesTransferred, item.size.takeIf { it > 0L }, SystemClock.elapsedRealtime())
+    }
+
+    /**
+     * Forgets a transfer's rate.
+     *
+     * Called on pause and on every terminal state. A paused transfer that resumed against a live
+     * estimator would measure across the gap and read as a long stall — and since the gap can be
+     * hours, the first ETA after resuming would be the absurd kind the display refuses to show.
+     */
+    private fun forgetRate(transferId: String) {
+        rateEstimators.remove(transferId)
     }
 
     private fun safeStem(id: String): String =

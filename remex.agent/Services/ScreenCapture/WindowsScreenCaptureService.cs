@@ -205,10 +205,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 DisplayListVersion = _displayListVersion,
                 SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop, DesktopCaptureMode.Monitor],
                 Displays = _displays
-                    .Select(display => new DesktopDisplayInfo
+                    .Select((display, index) => new DesktopDisplayInfo
                     {
                         DisplayId = display.DisplayId,
-                        PersistentDisplayKey = display.PersistentDisplayKey,
+                        PersistentDisplayKey =
+                            ChoosePersistentDisplayKey(TryGetMonitorInterfacePath(display.DeviceName)),
                         Name = display.Name,
                         IsPrimary = display.IsPrimary,
                         Left = display.Bounds.Left,
@@ -260,7 +261,24 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-        => Task.FromResult(CaptureRawCore(scale, drawCursor, ct).Pixels);
+        => Task.FromResult(ToArrayOrNull(CaptureRawCore(scale, drawCursor, ct).Pixels));
+
+    /// <summary>
+    /// Materialises a capture result for the legacy <c>byte[]</c>-returning API.
+    /// </summary>
+    /// <remarks>
+    /// The RAW producers here already hand back an exact-size array, so this is a no-copy unwrap in
+    /// practice; the fallback exists only so a future producer returning a slice cannot silently ship
+    /// the wrong bytes through this older signature (RemEx-hgox).
+    /// </remarks>
+    private static byte[]? ToArrayOrNull(ReadOnlyMemory<byte> pixels)
+    {
+        if (pixels.IsEmpty) return null;
+        return System.Runtime.InteropServices.MemoryMarshal.TryGetArray(pixels, out var segment)
+            && segment.Array is { } array && segment.Offset == 0 && segment.Count == array.Length
+                ? array
+                : pixels.ToArray();
+    }
 
     public Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
         => Task.FromResult(CaptureRawCore(scale, drawCursor, ct));
@@ -335,8 +353,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
 
-    public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct).Pixels ?? Array.Empty<byte>());
+    public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct).Pixels);
 
     public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
         => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct));
@@ -397,7 +415,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             bitmap.Save(ms, jpegEncoder, encoderParams);
             LastCaptureFailureReason = null;
             // GDI BitBlt produces a fresh frame whenever it succeeds.
-            return new ScreenCaptureResult(ms.ToArray(), isLive: true);
+            // GetBuffer, not ToArray: ToArray allocates a second array the size of the frame and
+            // copies into it, and at MJPEG sizes that is a Large Object Heap allocation on every
+            // frame. The stream is local, fresh per call and never reused, so its buffer is
+            // single-use and safely outlives it. The LENGTH is what makes this safe to expose -
+            // GetBuffer returns the whole capacity, so anything reading .Length on the raw array
+            // would ship the zero-padded tail. (RemEx-hgox)
+            return new ScreenCaptureResult(ms.GetBuffer().AsMemory(0, (int)ms.Length), isLive: true);
         }
         catch (Exception ex)
         {
@@ -633,7 +657,6 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
             displays.Add(new DisplayDefinition(
                 displayId,
-                displayId,
                 deviceName,
                 name,
                 bounds,
@@ -646,6 +669,108 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         return displays;
     }
 
+    /// <summary>
+    /// Asks Windows for the device interface path of the monitor attached to <paramref name="adapterDeviceName"/>
+    /// (an adapter output such as <c>\.\DISPLAY1</c>), e.g.
+    /// <c>\?\DISPLAY#GSM5B09#5&amp;1a2b3c4d&amp;0&amp;UID4353#{e6f07b5f-...}</c>.
+    /// </summary>
+    /// <remarks>
+    /// This is the stable half of <see cref="ChoosePersistentDisplayKey"/>. The path embeds the monitor's
+    /// EDID hardware id, so it identifies the physical panel rather than its position in an enumeration
+    /// — which is the entire point of RemEx-zftu. It is stable across reboots and across unplugging and
+    /// replugging the same monitor into the same port. It is NOT stable across moving that monitor to a
+    /// different port, because the <c>UID</c> component is the output's, not the panel's. The EDID
+    /// serial IS reachable (WMI <c>root\wmi</c> <c>WmiMonitorID.SerialNumberID</c>, or the raw EDID
+    /// blob in the registry) but plenty of panels report it blank or constant, so it is not the more
+    /// reliable source it looks like — and this is still enormously better than an enumeration ordinal.
+    ///
+    /// Skips inactive entries, and takes the first active one: an adapter output drives one panel in
+    /// every normal configuration. Returns null when nothing usable is available, which the caller
+    /// treats as the unstable case rather than inventing a key.
+    /// </remarks>
+    private static string? TryGetMonitorInterfacePath(string adapterDeviceName)
+    {
+        if (string.IsNullOrWhiteSpace(adapterDeviceName))
+        {
+            return null;
+        }
+
+        return ResolveMonitorInterfacePath(index =>
+        {
+            var device = new DISPLAY_DEVICE();
+            device.cb = Marshal.SizeOf<DISPLAY_DEVICE>();
+            bool enumerated = EnumDisplayDevices(
+                adapterDeviceName, index, ref device, EDD_GET_DEVICE_INTERFACE_NAME);
+            return new MonitorDeviceEntry(enumerated, device.StateFlags, device.DeviceID);
+        });
+    }
+
+    /// <summary>One <see cref="EnumDisplayDevices"/> result, reduced to what the walk actually needs.</summary>
+    internal readonly record struct MonitorDeviceEntry(bool Enumerated, int StateFlags, string? DeviceId);
+
+    /// <summary>
+    /// Walks an adapter output's monitor children and returns the first usable device interface path.
+    /// </summary>
+    /// <remarks>
+    /// Separated from the P/Invoke so the WALK is testable without a monitor attached. The
+    /// marshalling genuinely needs hardware, but the loop has its own failure modes that hardware
+    /// would not reliably expose either — swapping the skip for a stop would silently take the wrong
+    /// panel in a clone-mode setup, and continuing past a false return would read uninitialised
+    /// entries. Those are pinned by tests; the marshalling is not, and is not pretended to be.
+    ///
+    /// Stopping at the first false is the documented contract: indices are consecutive from 0 and the
+    /// call fails once there are no more monitors for the adapter.
+    /// </remarks>
+    internal static string? ResolveMonitorInterfacePath(Func<uint, MonitorDeviceEntry> enumerate)
+    {
+        for (uint index = 0; index < MaxMonitorsPerAdapter; index++)
+        {
+            var entry = enumerate(index);
+
+            if (!entry.Enumerated)
+            {
+                break;
+            }
+
+            if ((entry.StateFlags & DISPLAY_DEVICE_ACTIVE) == 0)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.DeviceId))
+            {
+                return entry.DeviceId.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The stable identity for this monitor, or EMPTY when there is not one.
+    /// </summary>
+    /// <remarks>
+    /// Pure so the choice can be tested without a monitor attached (RemEx-zftu). The bug it replaced
+    /// was not a subtle one: the Windows host assigned <c>PersistentDisplayKey</c> the SAME string as
+    /// <c>DisplayId</c>, i.e. <c>\.\DISPLAY1</c> or a <c>monitor-N</c> ordinal — both enumeration
+    /// artefacts. A client that persisted it and reselected that monitor later could silently land on a
+    /// DIFFERENT physical screen after a replug, and it failed QUIETLY, because the key still resolved.
+    ///
+    /// THERE IS NO LONGER A FALLBACK LADDER, and removing it was the point of RemEx-i50k. This used
+    /// to degrade to the adapter output name and then to an ordinal — but the adapter name is exactly
+    /// what <c>DisplayId</c> already is, so in that case the "persistent" key was BYTE-IDENTICAL to
+    /// the session-scoped id it exists to outlive. A client cannot tell the two apart: nothing on the
+    /// wire says how much to trust the value, so a degraded key looks exactly like a good one and
+    /// gets stored as though it were stable, resurrecting the wrong-monitor bug the key was added to
+    /// fix (RemEx-zftu, RemEx-ynur).
+    ///
+    /// So an empty string is the honest answer, and it is a better one: the Android client already
+    /// treats a missing key as "do not remember this display", which turns a silent wrong answer into
+    /// a visible loss of a preference. Returning something usable-looking was the mistake.
+    /// </remarks>
+    internal static string ChoosePersistentDisplayKey(string? monitorInterfacePath)
+        => string.IsNullOrWhiteSpace(monitorInterfacePath) ? string.Empty : monitorInterfacePath.Trim();
+
     private static Rectangle GetVirtualDesktopBounds()
         => new(
             GetSystemMetrics(SM_XVIRTUALSCREEN),
@@ -656,7 +781,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     // JPEG-encodes a tightly-packed BGRA buffer (as produced by the WGC backend) for the MJPEG path.
     // BGRA byte order matches Format32bppArgb's in-memory layout, and 32bpp has no row padding, so the
     // width*height*4 bytes copy directly into the locked bitmap. Returns null if the buffer is undersized.
-    private static byte[]? EncodeBgraToJpeg(byte[] bgra, int width, int height, int quality)
+    private static ReadOnlyMemory<byte> EncodeBgraToJpeg(byte[] bgra, int width, int height, int quality)
     {
         if (width <= 0 || height <= 0 || bgra.Length < width * height * 4)
         {
@@ -679,7 +804,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         var encoderParams = new EncoderParameters(1);
         encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
         bitmap.Save(ms, GetJpegEncoder(), encoderParams);
-        return ms.ToArray();
+        // See the note at the other JPEG site: GetBuffer avoids an LOH allocation per frame, and the
+        // length must travel with it. (RemEx-hgox)
+        return ms.GetBuffer().AsMemory(0, (int)ms.Length);
     }
 
     private static ImageCodecInfo? _cachedJpegEncoder;
@@ -753,6 +880,32 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         IntPtr lprcClip,
         MonitorEnumProc lpfnEnum,
         IntPtr dwData);
+
+    private const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x00000001;
+    private const int DISPLAY_DEVICE_ACTIVE = 0x00000001;
+    /// <summary>Loop bound for <see cref="EnumDisplayDevices"/>; an adapter output drives one panel in practice.</summary>
+    private const uint MaxMonitorsPerAdapter = 16;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAY_DEVICE
+    {
+        public int cb;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceString;
+        public int StateFlags;
+        /// <summary>With EDD_GET_DEVICE_INTERFACE_NAME this is the monitor's device interface path.</summary>
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceID;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceKey;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplayDevices(
+        string? lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -839,9 +992,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     #endregion
 
+    // NOTE: no PersistentDisplayKey here on purpose. EnumerateDisplays is reached from
+    // GetActiveBounds, which runs on the per-frame capture path, whereas the key is read only by
+    // GetDisplayCatalog. Resolving it here would mean an EnumDisplayDevices call per monitor per
+    // frame, marshalling an 840-byte struct into four managed strings, for a value nothing reads at
+    // that point. It is computed where it is consumed instead.
     private sealed record DisplayDefinition(
         string DisplayId,
-        string PersistentDisplayKey,
         string DeviceName,
         string Name,
         Rectangle Bounds,

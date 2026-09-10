@@ -4,11 +4,11 @@ using Avalonia.Platform.Storage;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Remex.Core.Models;
+using Remex.Desktop.Controls;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
@@ -16,9 +16,11 @@ namespace Remex.Desktop.Views;
 
 public partial class AppLauncherView : UserControl
 {
-    // Must match the WrapPanel's ItemWidth/ItemHeight in AppLauncherView.axaml.
-    private const double ItemWidth = 160;
-    private const double ItemHeight = 160;
+    // Must match the WrapPanel's ItemWidth/ItemHeight in AppLauncherView.axaml. Guarded by
+    // LauncherTileSizeTests: drift here does not throw, it silently drops a dragged tile in the
+    // wrong slot, and the offset grows with every row down the grid.
+    internal const double ItemWidth = 176;
+    internal const double ItemHeight = 176;
     private const double MouseDragThreshold = 8;
     private const double TouchLongPressMoveThreshold = 10;
     private const int TouchLongPressDelayMs = 250;
@@ -54,9 +56,28 @@ public partial class AppLauncherView : UserControl
         AddHandler(DragDrop.DropEvent, OnFileDrop);
     }
 
-    private void InitializeComponent()
+    // No hand-written InitializeComponent: a parameterless one shadows the generated
+    // InitializeComponent(bool loadXaml = true) override, so AvaloniaXamlLoader.Load(this) never
+    // runs and every x:Name field — LauncherGrid here — stays null. That exact NullReferenceException,
+    // in ConfirmationDialog's TitleText field, is what froze RemEx on every destructive action
+    // (RemEx-wdqx; ConfirmationDialog.axaml.cs itself is gone, deleted on this branch). This file
+    // happened to survive it by reaching the control through FindControl<T> instead of the generated
+    // field, so it was latent rather than live here. Both now work.
+
+    /// <summary>
+    /// Arms this view's first-paint entrance (RemEx-alwfa.2), reusing the dashboard's once-per-
+    /// process gate (RemEx-dnfq0). Attachment, not the constructor, because DataContext is not yet
+    /// set when the control is constructed.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        AvaloniaXamlLoader.Load(this);
+        base.OnAttachedToVisualTree(e);
+
+        if (DataContext is AppLauncherViewModel vm
+            && StaggeredEntrance.ShouldPlay(nameof(AppLauncherView), vm.Shell.IsReducedMotion))
+        {
+            LauncherSections.Classes.Add(StaggeredEntrance.Class);
+        }
     }
 
     private void OnFileDragOver(object? sender, DragEventArgs e)

@@ -1,23 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:converters="using:Remex.Desktop.Converters"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel" DragDrop.AllowDrop="True">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:mi="using:Material.Icons.Avalonia" x:Class="Remex.Desktop.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel" DragDrop.AllowDrop="True">
 
     <UserControl.Resources>
         <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <!-- Scoped to this view (via the .launcher-card class) so it doesn't affect glass-card
+        <!-- Scoped to this view (via the .launcher-card class) so it doesn't affect every Card
              usages elsewhere in the app. The card's BorderBrush is already bound to the entry's
              HexColor (at 0.3 opacity) in the DataTemplate below; doubling BorderThickness here
              makes that same tinted border read as brighter/bolder on hover without needing a
              second per-item color binding declared inside a Style (Style Setters resolve
              bindings against the UserControl's own x:DataType, not the DataTemplate item, so a
              HexColor binding here would not resolve). -->
-        <Style Selector="Border.glass-card.launcher-card:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.03)"/>
+        <Style Selector="material|Card.launcher-card:pointerover">
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
 
@@ -30,7 +31,7 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Border.glass-card.launcher-card:pointerover Border.card-actions">
+        <Style Selector="material|Card.launcher-card:pointerover Border.card-actions">
             <Setter Property="Opacity" Value="1"/>
         </Style>
 
@@ -43,10 +44,87 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
         </Style>
+
+        <!-- App Launcher entrance (RemEx-alwfa.2), reusing the dashboard's once-per-process
+             staggered entrance (RemEx-dnfq0). Opacity + TranslateTransform.Y only - RenderTransform
+             keyframes crash Avalonia at startup (RemEx-qolhg). 5 direct children, 25ms step so the
+             budget (max Delay 100ms + Duration 175ms = 275ms) stays under the 300ms ceiling. The
+             class is added by AppLauncherView.axaml.cs only on the first visit this process, when
+             reduced motion is off. -->
+        <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(1)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(2)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(3)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(4)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(5)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+        <StackPanel Name="LauncherSections" Margin="32" Spacing="24">
 
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="*, Auto, Auto">
@@ -55,7 +133,7 @@
                     <TextBlock Classes="page-subtitle" Text="{local:Localize AppLauncher_Subheader}"/>
                 </StackPanel>
 
-                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
+                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="tertiary" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
                     <DropDownButton.Flyout>
                         <MenuFlyout>
                             <MenuItem Header="{local:Localize AppLauncher_SortNameAsc}" Command="{Binding SortByNameCommand}" CommandParameter="asc"/>
@@ -64,54 +142,94 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
-                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
+                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="tertiary" Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
 
             <!-- ═══ Search ═══ -->
-            <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
+            <TextBox PlaceholderText="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}" AutomationProperties.Name="{local:Localize AppLauncher_SearchWatermark}"/>
 
             <!-- ═══ Apps Grid ═══ -->
+            <!-- NOT VIRTUALIZED, DELIBERATELY DEFERRED (RemEx-cgrv3 review; tracked as RemEx-xvy7a).
+                 The repo's known 3-part fix (bd memories itemscontrol / RemEx-u3abk) is ScrollViewer
+                 + MaxHeight + an ItemsPanel of VirtualizingStackPanel. That panel is strictly
+                 single-column, so dropping it in here would collapse this WrapPanel tile grid into
+                 one vertical column and break the drag-to-rearrange grid this view exists for.
+                 Avalonia ships no stock virtualizing wrap/grid panel; a real fix needs either a
+                 custom one or a third-party dependency, both bigger and riskier than a same-day
+                 paint-sweep fix, and both need their own build+ui-verify pass this bead's "no
+                 build" constraint can't do. Wrapping in a plain bounded ScrollViewer without
+                 virtualization was considered and rejected: WrapPanel still realizes every item
+                 regardless of the ScrollViewer's clip, so it would add scroll-in-scroll UX risk on
+                 an already-tested drag surface for zero actual performance benefit. -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" ItemWidth="160" ItemHeight="160" />
+                        <!-- 176, up from 160 (RemEx-u4244). The 80px icon plus its label no longer
+                             fits the old cell: 160 leaves the button 102px of inner height for
+                             104px of content, so the label clips. MUST stay in step with
+                             AppLauncherView.axaml.cs ItemWidth/ItemHeight — LauncherTileSizeTests
+                             asserts the two agree, because a drift here misplaces every drop target
+                             during a drag-to-rearrange without anything throwing. -->
+                        <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="176" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Classes="glass-card launcher-card" Margin="8" Padding="0" ClipToBounds="True">
-                            <Border.Background>
+                        <material:Card Classes="launcher-card interactive" Margin="8" Padding="0" InsideClipping="True">
+                            <material:Card.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
+                                    <MenuItem Header="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
+                                    <MenuItem Header="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
+                                    <Separator/>
+                                    <MenuItem Header="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" Foreground="{DynamicResource SystemErrorBrush}" />
+                                </ContextMenu>
+                            </material:Card.ContextMenu>
+                            <material:Card.Background>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.1" />
-                            </Border.Background>
-                            <Border.BorderBrush>
+                            </material:Card.Background>
+                            <material:Card.BorderBrush>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.3" />
-                            </Border.BorderBrush>
+                            </material:Card.BorderBrush>
 
                             <Grid RowDefinitions="*, Auto">
-                                <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <!-- Main Launch Button (Top Area). tertiary: the click target is
+                                     transparent chrome over the Card's own per-app colour, which is
+                                     already the tile's whole look (RemEx-z7pnx.1). -->
+                                <Button Grid.Row="0" Classes="tertiary" Cursor="Hand" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
-                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        <!-- 80px, up from 64 (RemEx-u4244). The source is now a 256px
+                                             shell icon rather than a 32px one, so the art can carry
+                                             the extra weight inside the same 160x160 tile. -->
+                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="80" Height="80" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
-                                        <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
+                                        <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
                                     </Grid>
                                 </Button>
 
                                 <!-- Action Toolbar (Bottom Area) -->
-                                <Border Grid.Row="1" Classes="card-actions" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
+                                <Border Grid.Row="1" Classes="card-actions" Background="{DynamicResource GlassOverlayBrush}" Padding="4,0">
                                     <Grid ColumnDefinitions="*, *, *, *">
-                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" AutomationProperties.Name="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="0" Classes="tertiary icon-button compact" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" AutomationProperties.Name="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}">
+                                            <mi:MaterialIcon Kind="ChevronLeft" Width="16" Height="16"/>
+                                        </Button>
 
-                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" AutomationProperties.Name="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="1" Classes="tertiary icon-button compact" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" AutomationProperties.Name="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}">
+                                            <mi:MaterialIcon Kind="ChevronRight" Width="16" Height="16"/>
+                                        </Button>
 
-                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" AutomationProperties.Name="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="2" Classes="tertiary icon-button compact" ToolTip.Tip="{local:Localize AppLauncher_Edit}" AutomationProperties.Name="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}">
+                                            <mi:MaterialIcon Kind="Pencil" Width="16" Height="16"/>
+                                        </Button>
 
-                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" AutomationProperties.Name="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="3" Classes="tertiary danger icon-button compact" ToolTip.Tip="{local:Localize AppLauncher_Remove}" AutomationProperties.Name="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}">
+                                            <mi:MaterialIcon Kind="Close" Width="16" Height="16"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </Grid>
-                        </Border>
+                        </material:Card>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -120,9 +238,9 @@
                  matching the current search. Keying the second on ShowNoSearchResults rather than
                  on an empty FilteredApps is what keeps them from both firing at once and telling a
                  user with no apps to refine a search they never made (RemEx-n69m). -->
-            <TextBlock Text="{local:Localize AppLauncher_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,24"/>
+            <TextBlock Text="{local:Localize AppLauncher_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,24"/>
 
-            <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
+            <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 
         </StackPanel>
     </ScrollViewer>

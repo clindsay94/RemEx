@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -111,7 +112,8 @@ enum class SettingsCategory : Parcelable {
 fun SettingsScreen(
     onReplayTutorial: (() -> Unit)? = null,
     onNavigateToAbout: (() -> Unit)? = null,
-    onNavigateToQrScanner: (() -> Unit)? = null
+    onNavigateToQrScanner: (() -> Unit)? = null,
+    onNavigateToShareDiagnostics: (() -> Unit)? = null
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsCategory>()
     val scope = rememberCoroutineScope()
@@ -137,7 +139,8 @@ fun SettingsScreen(
                     category = category,
                     onReplayTutorial = onReplayTutorial,
                     onNavigateToAbout = onNavigateToAbout,
-                    onNavigateToQrScanner = onNavigateToQrScanner
+                    onNavigateToQrScanner = onNavigateToQrScanner,
+                    onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
                 )
             }
         }
@@ -183,7 +186,11 @@ private fun FileTransferSettingsTabPreview() {
 @Composable
 private fun HelpTabPreview() {
     RemExTheme {
-        HelpTab(onReplayTutorial = {}, onNavigateToAbout = {})
+        HelpTab(
+            onReplayTutorial = {},
+            onNavigateToAbout = {},
+            onNavigateToShareDiagnostics = {}
+        )
     }
 }
 
@@ -314,7 +321,8 @@ private fun SettingsDetailContent(
     category: SettingsCategory,
     onReplayTutorial: (() -> Unit)?,
     onNavigateToAbout: (() -> Unit)?,
-    onNavigateToQrScanner: (() -> Unit)?
+    onNavigateToQrScanner: (() -> Unit)?,
+    onNavigateToShareDiagnostics: (() -> Unit)?
 ) {
     // Each tab provides its own layout/scrolling
     when (category) {
@@ -326,7 +334,8 @@ private fun SettingsDetailContent(
         SettingsCategory.FILE_TRANSFER -> FileTransferSettingsTab()
         SettingsCategory.HELP -> HelpTab(
             onReplayTutorial = onReplayTutorial,
-            onNavigateToAbout = onNavigateToAbout
+            onNavigateToAbout = onNavigateToAbout,
+            onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
         )
     }
 }
@@ -576,7 +585,8 @@ private fun FileTransferSettingsTab() {
                                                 text = displayName,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 modifier = Modifier.weight(1f),
-                                                maxLines = 1
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                         )
                                         IconButton(
                                                 onClick = {
@@ -749,7 +759,11 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 }
 
 @Composable
-private fun HelpTab(onReplayTutorial: (() -> Unit)?, onNavigateToAbout: (() -> Unit)?) {
+private fun HelpTab(
+    onReplayTutorial: (() -> Unit)?,
+    onNavigateToAbout: (() -> Unit)?,
+    onNavigateToShareDiagnostics: (() -> Unit)? = null
+) {
     val view = LocalView.current
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
@@ -799,6 +813,23 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?, onNavigateToAbout: (() -> U
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (onNavigateToShareDiagnostics != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                        onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            onNavigateToShareDiagnostics()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.settings_share_diagnostics)) }
+
+                Text(
+                        text = stringResource(R.string.settings_share_diagnostics_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             if (onNavigateToAbout != null) {
                 Spacer(modifier = Modifier.height(8.dp))

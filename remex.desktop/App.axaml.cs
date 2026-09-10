@@ -1,9 +1,13 @@
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using System.IO;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Desktop.Configuration;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -19,9 +23,28 @@ namespace Remex.Desktop;
 public partial class App : Application
 {
     private TrayFlyoutWindow? _flyout;
-    private NativeMenuItem? _themeToggleMenuItem;
+    /// <summary>The two tray-menu items whose text or enablement follows phone presence.</summary>
+    private NativeMenuItem? _statusHeaderItem;
+    private NativeMenuItem? _remoteDesktopItem;
     public static IServiceProvider Services { get; private set; } = null!;
     public static bool IsShuttingDown { get; set; }
+
+    /// <summary>
+    /// Test-only seam (RemEx-0e9eq, remex.desktop.render.tests). When set,
+    /// <see cref="OnFrameworkInitializationCompleted"/> returns immediately after the base call -
+    /// none of the production DI container, tray, IPC listener or window creation runs. This lets
+    /// the render harness use the real <c>App</c> type (so App.axaml's MaterialTheme and
+    /// BaseDarkGlass resources actually load) without also standing up production startup, which
+    /// touches ProgramData and opens a network listener.
+    /// </summary>
+    internal static bool SkipProductionStartup { get; set; }
+
+    /// <summary>
+    /// Test-only seam (RemEx-0e9eq): lets the render harness hand <see cref="Services"/> a
+    /// container it built itself, since <see cref="SkipProductionStartup"/> means the normal
+    /// container in <see cref="OnFrameworkInitializationCompleted"/> never runs.
+    /// </summary>
+    internal static void SetServicesForTests(IServiceProvider services) => Services = services;
 
     public static int? OverrideHostPort { get; set; }
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
@@ -41,6 +64,12 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (SkipProductionStartup)
+        {
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -51,6 +80,8 @@ public partial class App : Application
         collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
+        collection.AddSingleton<SensorAlertStore>();
+        collection.AddSingleton<SensorAlertTracker>();
         collection.AddSingleton<RemexSavefileService>(sp =>
         {
             // Host-side dashboard storage resolves the same ProgramData path regardless of
@@ -65,7 +96,8 @@ public partial class App : Application
                 hostProfileStorage);
         });
         collection.AddSingleton<ThemeService>();
-        collection.AddSingleton<HardwareThemeService>();
+        collection.AddSingleton(_ => new WindowsAccentWatcher(SystemSeedSources.TryGetWindowsAccent, TimeProvider.System));
+        collection.AddSingleton<ColorSourceCoordinator>();
         collection.AddSingleton<UpdateCheckService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();
@@ -77,6 +109,9 @@ public partial class App : Application
         collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<HomeViewModel>();
         collection.AddSingleton<ShellViewModel>();
+        // Singleton: the tray flyout window is created once and reused, and its tile list is
+        // rebuilt in place as phone presence changes rather than per show.
+        collection.AddSingleton<TrayFlyoutViewModel>();
         collection.AddTransient<DiagnosticLogsViewModel>();
 
         RegisterPlatformServices?.Invoke(collection);
@@ -87,9 +122,32 @@ public partial class App : Application
         Services = collection.BuildServiceProvider();
         CommandModeContext.StartListener(Services);
 
-        // Synchronously apply the saved theme before the window opens.
-        // This prevents a dark-glass flash for SolarFlare (or any non-default) users.
+        // Apply the saved theme before the window opens, so SolarFlare (or any non-default) users do
+        // not see a dark-glass flash.
+        //
+        // "SYNCHRONOUSLY" IS WHAT THIS SAID AND IT WAS NOT TRUE. ThemeService.ApplyCustomization
+        // posts its whole body to the dispatcher, and MainWindow.Show happens later from the
+        // fire-and-forget InitializeAppAsync. The ordering that actually prevents the flash is
+        // priority, not synchrony: a DispatcherPriority.Default job runs ahead of Render, so the
+        // palette lands before the first frame. Worth stating accurately because the flash is now
+        // one shared DARK fallback under every preset (RemEx-07jij), so lowering that priority would
+        // regress a light preset with nothing to point at the cause.
         ApplyThemeBeforeWindowShown();
+
+        // Install the notification surfaces BEFORE app init, because app init is one of the things
+        // that can fail and needs to announce it. The in-app toast host is not set here — ShellView
+        // installs it once there is a window to draw the toast over.
+        //
+        // The probe re-reads the lifetime on every call rather than capturing a window: MainWindow
+        // is created lazily and can be replaced, and a captured reference would go on reporting the
+        // visibility of a window that is no longer the one on screen.
+        NotificationService.Instance.TrayBalloon = new TrayBalloonSink();
+        NotificationService.Instance.WindowVisibleProbe = () =>
+            ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime
+            && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
+
+        BuildTrayMenu();
+        WireTrayTooltipToPhonePresence();
 
         _ = InitializeAppAsync();
 
@@ -100,14 +158,24 @@ public partial class App : Application
     {
         try
         {
-            var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var filePath = Path.Combine(baseFolder, "Remex", "dashboard_layout.json");
+            // THE SERVICE'S OWN PATH, NOT A SECOND HAND-BUILT ONE (RemEx-mzbn). This read happens
+            // before the window is shown, so it predates the service — but building the path here
+            // meant it did not honour RemexDataPaths' test redirect, and a file with two resolvers
+            // where only one is redirected is what RemEx-ln0k existed to remove.
+            // Fully qualified: `Services` binds to App.Services, the IServiceProvider, not the namespace.
+            var filePath = Remex.Desktop.Services.DashboardLayoutService.DefaultFilePath;
 
-            if (!File.Exists(filePath)) return;
-
-            var json = File.ReadAllText(filePath);
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var profile = JsonSerializer.Deserialize<Remex.Core.Models.DashboardProfile>(json, options);
+            // READ AND MIGRATED THROUGH THE SERVICE'S OWN PATH, not a hand-built deserialize
+            // (RemEx-dbkzy). This method used to build its own JsonSerializerOptions and apply the
+            // RAW record — so for a profile written before the seed engine it painted the theme the
+            // migration exists to replace. A 2.4 Cyber-NOC user's window opened violet and turned
+            // cyan once LoadAsync landed, or opened cyan, depending on how this file read raced the
+            // window: the whole point of this method is which palette the window OPENS on, which is
+            // the phrase the bead's acceptance uses.
+            //
+            // The same argument as RemEx-mzbn one line up, one level deeper: a second reader of a
+            // file is a second opinion about what that file means, and the two drift.
+            var profile = Remex.Desktop.Services.DashboardLayoutService.ReadAndMigrate(filePath, out _);
 
             if (profile?.Customization == null) return;
 
@@ -117,9 +185,13 @@ public partial class App : Application
             // This ensures colors, corner radii, and base theme are set BEFORE the window is shown.
             themeService.ApplyCustomization(profile.Customization);
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fall back to the default dark theme already declared in App.axaml.
+            // Falls back to the default dark theme already declared in App.axaml, which is the right
+            // behaviour - but the user sees a theme they did not choose, with nothing to explain it.
+            // "my theme keeps resetting" is unanswerable without this line.
+            InMemoryLogSink.Append(LogLevel.Warning, "App",
+                "Could not apply the saved theme customization; falling back to the default dark theme", ex);
         }
     }
 
@@ -129,7 +201,11 @@ public partial class App : Application
         {
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
             var savefileService = Services.GetRequiredService<RemexSavefileService>();
-            var profile = await layoutService.LoadAsync();
+            // ReloadAsync (RemEx-waqb4 review): the very first load genuinely replaces the
+            // constructor-default CurrentProfile with whatever is actually on disk, so it is a real
+            // replacement in the same sense a savefile import is - harmless either way this early
+            // (nothing has cached a view model against the default yet), but correct to name it as one.
+            var profile = await layoutService.ReloadAsync();
 
             // Auto-check for a newer GitHub release on startup unless the user opted out. Fire-and-forget
             // so a slow/absent network never delays the window; the About page reads the cached result.
@@ -156,14 +232,32 @@ public partial class App : Application
                     System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
                     System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
                 }
-                catch (System.Globalization.CultureNotFoundException)
+                catch (System.Globalization.CultureNotFoundException ex)
                 {
-                    // Invalid language code in settings — ignore, use default culture
+                    // Ignoring it and using the default culture is correct, but the user picked a
+                    // language and the app came up in another one. That is a support case nobody can
+                    // answer from a log that never mentions it - and the bad code is in the message,
+                    // which is the one fact needed to fix it.
+                    InMemoryLogSink.Append(LogLevel.Warning, "App",
+                        $"Settings hold an unrecognised language code '{profile.Language}'; using the default culture", ex);
                 }
             }
 
             var viewModel = Services.GetRequiredService<ShellViewModel>();
             viewModel.NavigateToHome();
+
+            // --view <Name> (RemEx-8q7de): opens a specific view at startup for the palette sweep
+            // script, which launches the host once per cell x view rather than sending keystrokes
+            // through a running one (SendKeys navigation is banned — no InvokePattern on the nav
+            // list items for UI Automation to click instead). An unrecognised name just stays on
+            // Home with a log line; it is not a reason to fail startup.
+            var launchArgs = (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Args;
+            var requestedView = StartupViewArgument.ExtractRequestedViewName(launchArgs);
+            if (requestedView != null && !StartupViewArgument.TryApply(launchArgs, viewModel))
+            {
+                InMemoryLogSink.Append(LogLevel.Warning, "App",
+                    $"--view '{requestedView}' is not a recognised view name; staying on Home", null);
+            }
 
             if (OverrideHostPort.HasValue)
             {
@@ -224,10 +318,9 @@ public partial class App : Application
                 }
             };
 
-            // P8-H: seed the theme toggle label from the persisted theme
-            UpdateThemeToggleLabel(profile?.Customization?.ThemeId);
-            UpdateTrayMenuHeaders();
-            LocalizationService.Instance.PropertyChanged += (s, e) => UpdateTrayMenuHeaders();
+            // Rebuilding is the simplest correct response to a language switch - every header is
+            // read from LocalizationService at build time, so there is nothing to re-address.
+            LocalizationService.Instance.PropertyChanged += (s, e) => BuildTrayMenu();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -265,7 +358,7 @@ public partial class App : Application
                         mainWindow.Show();
                     }
 
-                    var shouldRestore = await RestorePromptWindow.ShowAsync(mainWindow, snapshotPath);
+                    var shouldRestore = await MaterialDialogs.RestoreAsync(mainWindow, snapshotPath);
                     if (shouldRestore)
                     {
                         await using var stream = File.OpenRead(snapshotPath);
@@ -276,7 +369,21 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            // ROUTED TO THE IN-APP LOG, NOT JUST Debug.WriteLine (RemEx-43ha). Debug output exists
+            // only in a debugger, so on a user's machine this failure left NO trace anywhere - and
+            // it is the whole of app initialization, so it is the single most valuable line a
+            // support case could have. The in-app sink is what the diagnostics export reads, which
+            // is how it reaches someone who can act on it.
+            InMemoryLogSink.Append(LogLevel.Error, "App", "Failed to initialize app", ex);
             System.Diagnostics.Debug.WriteLine($"Failed to initialize app: {ex.Message}");
+
+            // AND SHOW IT. The log line above is what a support case reads; this is what the user
+            // in front of the machine gets. Without it the app simply comes up wrong and the only
+            // person who could say so has no idea anything failed (RemEx-5wc2).
+            NotificationService.Instance.Notify(
+                NotificationImportance.Problem,
+                LocalizationService.Instance["Notification_StartupFailed_Title"],
+                LocalizationService.Instance["Notification_StartupFailed_Message"]);
         }
     }
 
@@ -298,15 +405,36 @@ public partial class App : Application
         try
         {
             var vm = new FileConsentDialogViewModel(prompt.Request);
-            var dialog = new FileConsentDialog { DataContext = vm };
 
             Remex.Core.Services.FileTransfer.FileConsentDecision decision;
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is { } owner)
-                decision = await dialog.ShowDialog<Remex.Core.Services.FileTransfer.FileConsentDecision>(owner);
+            {
+                // SURFACE THE OWNER FIRST, OR THERE IS NO DIALOG (RemEx-6bfyt). Avalonia's ShowDialog
+                // throws "Cannot show window with non-visible parent", and not-visible is RemEx's
+                // NORMAL state rather than an edge case: the logon task starts it '--minimized'
+                // (scripts/autostart-remex.ps1) so MainWindow is constructed and never shown, and
+                // hide-to-tray returns it there. The throw lands in the catch below, which denies
+                // fail-closed with no reason code - byte-identical to the user tapping Deny. So the
+                // prompt nobody could see becomes a refusal nobody can explain.
+                //
+                // This was latent while the desktop route only served phones too old to render the
+                // prompt. Routing full browse here by kind made it the ONLY path for that grant, so
+                // the guard stops being optional.
+                //
+                // THROUGH THE HELPER, NOT A LOCAL Show()/Activate() PAIR (RemEx-b3bi). All three of
+                // its steps are load-bearing and none implies another - in particular a MINIMIZED
+                // window reports IsVisible true, so an `if (!owner.IsVisible) Show()` guard skips it
+                // and Activate alone leaves it in the taskbar. That is a reachable state (open from
+                // the tray, then minimize) and it lands in exactly the same silent-deny as the one
+                // above. This was written as a local two-step first; the helper is the whole reason
+                // that class of bug has one place to be fixed.
+                BringMainWindowToFront();
+
+                decision = await MaterialDialogs.FileConsentAsync(owner, vm);
+            }
             else
             {
-                dialog.Show();
-                decision = await vm.ResultTask;
+                decision = await MaterialDialogs.FileConsentAsync(owner: null, vm);
             }
 
             service.ResolveConsent(prompt.Request.ConsentId, decision.Granted, decision.Remember);
@@ -314,30 +442,58 @@ public partial class App : Application
         catch (Exception ex)
         {
             // Never let a UI failure hang the host's pending consent — deny cleanly instead.
+            //
+            // AND SAY SO IN THE LOG. Denying is correct and fail-closed, but it is indistinguishable
+            // from the user having chosen to deny, so without this line a transfer is refused and
+            // nobody can tell why. That is the shape of report this export exists to answer.
+            InMemoryLogSink.Append(LogLevel.Error, "App",
+                "File consent dialog failed; denying the request fail-closed", ex);
             System.Diagnostics.Debug.WriteLine($"File consent dialog failed: {ex.Message}");
             service.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
+
+            // Denying is correct, but from the phone's end it is indistinguishable from the user
+            // having said no — and from this end it is indistinguishable from nothing happening at
+            // all. Announce it so the person at the PC knows a request arrived and was refused for
+            // a reason they did not choose.
+            NotificationService.Instance.Notify(
+                NotificationImportance.Problem,
+                LocalizationService.Instance["Notification_ConsentFailed_Title"],
+                LocalizationService.Instance["Notification_ConsentFailed_Message"]);
         }
     }
 
     private void OnTrayIconClicked(object? sender, EventArgs e)
     {
+        // Interacting with the tray icon deactivates the flyout, and a transient flyout hides on
+        // deactivation - so without this, clicking the icon that owns the window is indistinguishable
+        // from clicking away from it. The flag is cleared again in ShowAtTray, so arming it for a
+        // deactivation that never arrives cannot swallow the next genuine click-away.
+        //
+        // NOTE this covers the LEFT click only. Avalonia raises Clicked for the left button; a
+        // right-click opens the native menu without routing through here, so the "right-click the
+        // tray icon and the flyout survives" behaviour is unverified and has no hook to hang on -
+        // TrayIcon exposes no menu-opening event. See Task 7's verification list.
+        _flyout?.SuppressNextDeactivate();
+
         ToggleLiveGlance();
     }
 
-    private void OnToggleLiveGlance(object? sender, EventArgs e) => ToggleLiveGlance();
-
     private void ToggleLiveGlance()
     {
-        var homeVm = Services.GetRequiredService<HomeViewModel>();
-        homeVm.RefreshPinnedSensors();
-
         if (_flyout == null)
         {
-            _flyout = new TrayFlyoutWindow
-            {
-                DataContext = homeVm
-            };
+            var vm = Services.GetRequiredService<TrayFlyoutViewModel>();
+            _flyout = new TrayFlyoutWindow { DataContext = vm };
+
+            // The flyout is a visible Window, so it can host a modal dialog. Wired here rather than
+            // in the view model because a view model owns no UI (RemEx-07jx). ConfirmationDialogHost
+            // returns false when the owner has no visible window, so a destructive action declines
+            // rather than proceeding unconfirmed if that ever stops being true.
+            vm.OnConfirmationRequested = ConfirmationDialogHost.For(_flyout);
         }
+
+        // The flyout refreshes itself in ShowAtTray now - HomeViewModel is no longer its data
+        // context, so refreshing that here would have refreshed something nothing was binding to.
 
         if (_flyout.IsVisible)
         {
@@ -349,20 +505,67 @@ public partial class App : Application
         }
     }
 
-    private void OnShowMainWindow(object? sender, EventArgs e)
+    /// <summary>
+    /// Keeps the tray tooltip saying what the shell's dot says (RemEx-3s4v).
+    /// </summary>
+    /// <remarks>
+    /// THE TRAY IS THE STATUS SURFACE FOR MOST OF THIS APP'S LIFE, because it closes to the tray by
+    /// default — so a tooltip that read "RemEx Desktop - Remote Execution" whether or not a phone was
+    /// attached was answering the one question it is well placed to answer with a constant.
+    /// Subscribed rather than bound: TrayIcon is a NativeMenu-adjacent object declared in App.axaml,
+    /// not a control in a visual tree, so there is no data context to bind through.
+    /// </remarks>
+    private void WireTrayTooltipToPhonePresence()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            if (desktop.MainWindow == null)
-            {
-                var viewModel = Services.GetRequiredService<ShellViewModel>();
-                desktop.MainWindow = new MainWindow { DataContext = viewModel };
-            }
+        if (TrayIcon.GetIcons(this) is not { Count: > 0 } icons) return;
 
-            desktop.MainWindow.Show();
-            desktop.MainWindow.Activate();
-            desktop.MainWindow.WindowState = WindowState.Normal;
-        }
+        var icon = icons[0];
+        var product = LocalizationService.Instance["Tray_TooltipDefault"];
+
+        void Apply() => icon.ToolTipText =
+            TrayTooltip.Compose(product, PhonePresenceMonitor.Instance.PresenceText);
+
+        // One 3-second poll drives both surfaces. The menu's status header is the same sentence as
+        // the tooltip, so refreshing them from separate subscriptions would only create a window in
+        // which they disagree.
+        PhonePresenceMonitor.Instance.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(PhonePresenceMonitor.PresenceText)) Apply();
+            RefreshTrayMenu();
+        };
+
+        Apply();
+    }
+
+    private void OnShowMainWindow(object? sender, EventArgs e) => BringMainWindowToFront();
+
+    /// <summary>
+    /// Creates the main window if it is gone, then shows, activates and un-minimizes it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ONE COPY, BECAUSE THREE AGREED UNTIL THEY DID NOT (RemEx-b3bi). The tray menu, the tray
+    /// flyout's "open" button and a pressed balloon each carried their own version of this. They
+    /// matched, which is exactly what makes the drift invisible: the failure mode is one entry point
+    /// quietly not restoring a MINIMIZED window while the other two do, and nobody notices until they
+    /// happen to use that entry point with the window in that state.
+    /// </para>
+    /// <para>
+    /// ALL THREE STEPS ARE LOAD-BEARING and none is implied by another. Show brings back a window
+    /// hidden by close-to-tray, Activate raises and focuses it above whatever the user was doing, and
+    /// WindowState resolves Minimized — a minimized window is already "shown", so Show alone leaves
+    /// it in the taskbar and the click appears to do nothing.
+    /// </para>
+    /// </remarks>
+    public static void BringMainWindowToFront()
+    {
+        if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        desktop.MainWindow ??= new MainWindow { DataContext = Services.GetRequiredService<ShellViewModel>() };
+        desktop.MainWindow.Show();
+        desktop.MainWindow.Activate();
+        desktop.MainWindow.WindowState = WindowState.Normal;
     }
 
     private void OnExitApp(object? sender, EventArgs e) => ShutdownApplication();
@@ -435,73 +638,139 @@ public partial class App : Application
             icon.ToolTipText = text;
     }
 
-    // ═══════════════ P8-H: Theme Toggle ═══════════════
+    // ═══════════════ Tray context menu ═══════════════
 
-    private void OnToggleTheme(object? sender, EventArgs e)
+    /// <summary>
+    /// Builds the tray context menu in code.
+    /// </summary>
+    /// <remarks>
+    /// IN CODE RATHER THAN IN App.axaml BECAUSE THE ITEMS ARE NOT STATIC. The declared menu could
+    /// only be updated by index — <c>menu.Items[2] as NativeMenuItem</c> — which silently did
+    /// nothing the moment anyone inserted an item, and could not enable or disable anything at all.
+    /// Holding the two live items in fields removes both problems.
+    /// <para>
+    /// The theme toggle that used to live here is gone rather than ported. It only ever swapped
+    /// BaseDarkGlass and SolarFlare, which is two of the four themes, and Settings already offers
+    /// all four.
+    /// </para>
+    /// </remarks>
+    private void BuildTrayMenu()
     {
-        var themeService = Services.GetRequiredService<ThemeService>();
-        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-        var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
+        var strings = LocalizationService.Instance;
 
-        bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-        var newThemeId = isCurrentlyLight ? "BaseDarkGlass" : "SolarFlare";
-
-        var currentCustomization = layoutService.CurrentProfile?.Customization ?? new Remex.Core.Models.CustomizationSettings();
-        var newCustomization = currentCustomization with { ThemeId = newThemeId };
-        themeService.ApplyCustomization(newCustomization);
-
-        var profile = layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
-        layoutService.RequestSave(profile with { Customization = newCustomization });
-
-        // Sync the shell's Customization property so the UI reflects the change
-        if (Services.GetService<ShellViewModel>() is { } shellVm) // optional service
-            shellVm.Customization = newCustomization;
-
-        UpdateThemeToggleLabel(newThemeId);
-    }
-
-    private void UpdateThemeToggleLabel(string? themeId)
-    {
-        _themeToggleMenuItem ??= FindThemeToggleMenuItem();
-        if (_themeToggleMenuItem is null) return;
-
-        bool isLight = string.Equals(themeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-        _themeToggleMenuItem.Header = isLight
-            ? LocalizationService.Instance["Tray_SwitchDarkMode"]
-            : LocalizationService.Instance["Tray_SwitchLightMode"];
-    }
-
-    private NativeMenuItem? FindThemeToggleMenuItem()
-    {
-        var icons = TrayIcon.GetIcons(this);
-        var menu = icons?.FirstOrDefault()?.Menu;
-        if (menu == null || menu.Items.Count < 3) return null;
-        return menu.Items[2] as NativeMenuItem;
-    }
-
-    private void UpdateTrayMenuHeaders()
-    {
-        var icons = TrayIcon.GetIcons(this);
-        var menu = icons?.FirstOrDefault()?.Menu;
-        if (menu == null || menu.Items.Count < 5) return;
-
-        if (menu.Items[0] is NativeMenuItem showItem)
-            showItem.Header = LocalizationService.Instance["Tray_ShowMainWindow"];
-
-        if (menu.Items[1] is NativeMenuItem glanceItem)
-            glanceItem.Header = LocalizationService.Instance["Tray_LiveGlance"];
-
-        if (menu.Items[2] is NativeMenuItem themeItem)
+        _statusHeaderItem = new NativeMenuItem { IsEnabled = false };
+        _remoteDesktopItem = new NativeMenuItem { Header = strings["Palette_RemoteDesktop"] };
+        _remoteDesktopItem.Click += (_, _) =>
         {
-            var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-            var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
-            bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-            themeItem.Header = isCurrentlyLight
-                ? LocalizationService.Instance["Tray_SwitchDarkMode"]
-                : LocalizationService.Instance["Tray_SwitchLightMode"];
-        }
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToRemoteDesktop();
+        };
 
-        if (menu.Items[4] is NativeMenuItem exitItem)
-            exitItem.Header = LocalizationService.Instance["Tray_Exit"];
+        var lockItem = new NativeMenuItem { Header = strings["Palette_LockPc"] };
+
+        // NOT `async (_, _) => await ...`. An exception escaping an async void handler is raised on
+        // the synchronization context and takes the process down (RemEx-ajk3, and the note on
+        // ShowFileConsentDialogAsync above). LockAsync reaches string.Format over a localized format
+        // string, which is the failure PhonePresenceMonitor guards its own first Refresh against: a
+        // translation that gains a placeholder throws FormatException in one language only.
+        lockItem.Click += (_, _) =>
+            Services.GetRequiredService<ShellViewModel>().Connection.LockAsync()
+                .FireAndForget("lock the PC from the tray menu");
+
+        var transfersItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenTransfers"] };
+        transfersItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToFileTransfer();
+        };
+
+        var pairItem = new NativeMenuItem { Header = strings["Tray_Menu_PairDevice"] };
+        pairItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
+        };
+
+        var logsFolderItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenLogsFolder"] };
+        logsFolderItem.Click += (_, _) => OpenLogsFolder();
+
+        var showItem = new NativeMenuItem { Header = strings["Tray_ShowMainWindow"] };
+        showItem.Click += OnShowMainWindow;
+
+        var settingsItem = new NativeMenuItem { Header = strings["Palette_Settings"] };
+        settingsItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
+        };
+
+        var exitItem = new NativeMenuItem { Header = strings["Tray_Exit"] };
+        exitItem.Click += OnExitApp;
+
+        var menu = new NativeMenu();
+        menu.Items.Add(_statusHeaderItem);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(lockItem);
+        menu.Items.Add(_remoteDesktopItem);
+        menu.Items.Add(transfersItem);
+        menu.Items.Add(pairItem);
+        menu.Items.Add(logsFolderItem);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(showItem);
+        menu.Items.Add(settingsItem);
+        menu.Items.Add(exitItem);
+
+        if (TrayIcon.GetIcons(this)?.FirstOrDefault() is { } icon)
+            icon.Menu = menu;
+
+        RefreshTrayMenu();
+    }
+
+    /// <summary>Republishes the state-dependent parts: the status header and Remote's enablement.</summary>
+    /// <remarks>
+    /// Reuses <see cref="TrayTileRules.IsRemoteDesktopEnabled"/> rather than restating
+    /// <c>IsPhoneAttached</c> — one rule, two surfaces, no chance of them disagreeing. That is the
+    /// mistake the flyout's presence dot made before RemEx-7zzw.
+    /// </remarks>
+    private void RefreshTrayMenu()
+    {
+        var presence = PhonePresenceMonitor.Instance;
+
+        if (_statusHeaderItem is not null)
+            _statusHeaderItem.Header = presence.PresenceText;
+
+        if (_remoteDesktopItem is not null)
+            _remoteDesktopItem.IsEnabled = TrayTileRules.IsRemoteDesktopEnabled(presence.IsPhoneAttached);
+    }
+
+    /// <summary>
+    /// Opens <see cref="PathSettings.LogsDirectory"/> — the configured logs directory, resolved
+    /// through <see cref="Remex.Core.Services.RemexDataPaths.PerUserDirectory"/> so it honours the
+    /// same test/host-state redirect as every other per-user store (RemEx-kjdi).
+    /// </summary>
+    /// <remarks>
+    /// Reuses <see cref="DiagnosticLogsViewModel.LaunchFolder"/> rather than a second
+    /// <c>Process.Start</c> call — the export folder's "reveal in Explorer/xdg-open" logic
+    /// (RemEx-a8du) is the one true folder launcher, called directly rather than through a
+    /// transient <see cref="DiagnosticLogsViewModel"/> instance: that VM subscribes to
+    /// <see cref="InMemoryLogSink.LogAdded"/> in its constructor and is never disposed here, which
+    /// would leak a subscription every time the tray item is clicked.
+    /// </remarks>
+    private static void OpenLogsFolder()
+    {
+        try
+        {
+            // Accepted gap (review, RemEx-kjdi): `new PathSettings()` reads the type's own default,
+            // not any configured RemexClientSettings.Paths from DI — RemexClientSettings is not
+            // currently wired into this app's service collection at all (its own file is the only
+            // place it is referenced), so there is nothing configured to diverge from yet.
+            var directory = new PathSettings().LogsDirectory;
+            Directory.CreateDirectory(directory);
+            DiagnosticLogsViewModel.LaunchFolder(directory);
+        }
+        catch (Exception ex)
+        {
+            InMemoryLogSink.Append(LogLevel.Warning, "Tray", "Could not open the logs folder", ex);
+        }
     }
 }

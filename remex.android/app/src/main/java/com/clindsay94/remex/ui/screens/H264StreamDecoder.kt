@@ -71,7 +71,25 @@ class H264StreamDecoder(
     @Volatile private var running = true
 
     // Encoded access units awaiting the decode thread (oldest at head). Thread-safe.
-    private val frameQueue = LinkedBlockingDeque<ByteArray>()
+    /**
+     * One queued access unit, as a RANGE into the array the frame arrived in.
+     *
+     * Carrying (bytes, offset, length) instead of a trimmed array is what lets the envelope's 28-byte
+     * header be skipped without copying the whole frame a second time (RemEx-t8ku). Safe to retain
+     * across threads because the JNI layer allocates a fresh array per frame and never reuses it.
+     *
+     * [materialize] exists for the two paths that need a standalone array — initial configure and a
+     * mid-stream SPS change — because those run the NAL index scan, whose start/end offsets are
+     * relative to the array. Both happen on IDRs at most, so the copy is rare; the per-frame path
+     * ([feedInput]) never copies.
+     */
+    private data class AccessUnit(val bytes: ByteArray, val offset: Int, val length: Int) {
+        fun materialize(): ByteArray =
+                if (offset == 0 && length == bytes.size) bytes
+                else bytes.copyOfRange(offset, offset + length)
+    }
+
+    private val frameQueue = LinkedBlockingDeque<AccessUnit>()
 
     private val decodeThread = Thread({ runDecodeLoop() }, "H264DecodeLoop")
 
@@ -107,8 +125,8 @@ class H264StreamDecoder(
      * Bounds the backlog: if full, drops the oldest and asks the host for a keyframe so recovery is
      * explicit rather than an unbounded memory grow or a torn GOP. (RemEx-bqc)
      */
-    fun decodeFrame(bytes: ByteArray) {
-        if (bytes.isEmpty() || !running) {
+    fun decodeFrame(bytes: ByteArray, offset: Int, length: Int) {
+        if (length <= 0 || !running) {
             return
         }
         while (frameQueue.size >= MAX_INPUT_BACKLOG) {
@@ -116,7 +134,7 @@ class H264StreamDecoder(
             Log.w(TAG, "Input backlog full ($MAX_INPUT_BACKLOG); dropped oldest frame, requesting keyframe.")
             onKeyframeNeeded?.invoke()
         }
-        frameQueue.offerLast(bytes)
+        frameQueue.offerLast(AccessUnit(bytes, offset, length))
     }
 
     private fun runDecodeLoop() {
@@ -137,7 +155,9 @@ class H264StreamDecoder(
                 if (!configured) {
                     // Wait (briefly, interruptibly) for the next access unit; configure on the first one
                     // that carries SPS + PPS. Drop everything before that (no reference to decode).
-                    val au = frameQueue.pollFirst(50, TimeUnit.MILLISECONDS) ?: continue
+                    val queued = frameQueue.pollFirst(50, TimeUnit.MILLISECONDS) ?: continue
+                    // Rare path (pre-configure): needs a standalone array for the NAL index scan.
+                    val au = queued.materialize()
                     val nals = findNalUnits(au)
                     val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS }
                     val pps = nals.firstOrNull { it.type == NAL_TYPE_PPS }
@@ -160,7 +180,7 @@ class H264StreamDecoder(
                     applyFormatAndStart(codec, csd0, csd1)
                     configured = true
                     Log.i(TAG, "MediaCodec H.264 decoder configured+started (sync) from SPS/PPS (hint ${width}x$height, csd0=${csd0.size}B, csd1=${csd1.size}B; adaptive max ${maxWidth}x$maxHeight)")
-                    feedInput(codec, au)
+                    feedInput(codec, queued)
                     continue
                 }
 
@@ -220,7 +240,7 @@ class H264StreamDecoder(
     }
 
     /** Dequeues an input buffer (short wait) and queues [au] into it. Runs on the decode thread. */
-    private fun feedInput(codec: MediaCodec, au: ByteArray) {
+    private fun feedInput(codec: MediaCodec, au: AccessUnit) {
         val inIndex = try {
             codec.dequeueInputBuffer(10_000) // 10 ms
         } catch (e: IllegalStateException) {
@@ -235,9 +255,12 @@ class H264StreamDecoder(
         try {
             val inputBuffer = codec.getInputBuffer(inIndex) ?: return
             inputBuffer.clear()
-            inputBuffer.put(au)
-            val flags = if (containsNalType(au, NAL_TYPE_IDR)) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
-            codec.queueInputBuffer(inIndex, 0, au.size, System.nanoTime() / 1000, flags)
+            inputBuffer.put(au.bytes, au.offset, au.length)
+            val flags =
+                    if (containsNalType(au.bytes, au.offset, au.length, NAL_TYPE_IDR))
+                            MediaCodec.BUFFER_FLAG_KEY_FRAME
+                    else 0
+            codec.queueInputBuffer(inIndex, 0, au.length, System.nanoTime() / 1000, flags)
         } catch (e: RuntimeException) {
             // IllegalStateException (codec released) or BufferOverflowException (AU > input buffer,
             // guarded by KEY_MAX_INPUT_SIZE but stay defensive) — drop and recover.
@@ -279,8 +302,10 @@ class H264StreamDecoder(
      * is needed. A stop/configure/start failure propagates to the decode loop's catch, which signals
      * onInitFailure so the owner reconnects. (RemEx-aep Phase 5)
      */
-    private fun maybeReconfigureForNewSps(codec: MediaCodec, au: ByteArray): Boolean {
-        if (!containsNalType(au, NAL_TYPE_SPS)) return false // only IDR AUs carry an SPS — fast path
+    private fun maybeReconfigureForNewSps(codec: MediaCodec, queued: AccessUnit): Boolean {
+        // Fast path on the RANGE: P-frames carry no SPS and leave without materializing anything.
+        if (!containsNalType(queued.bytes, queued.offset, queued.length, NAL_TYPE_SPS)) return false
+        val au = queued.materialize()
         val nals = findNalUnits(au)
         val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS } ?: return false
         val newCsd0 = au.copyOfRange(sps.start, sps.end)
@@ -290,7 +315,7 @@ class H264StreamDecoder(
         Log.i(TAG, "SPS changed mid-stream (csd0 ${configuredCsd0?.size}B -> ${newCsd0.size}B); reconfiguring decoder.")
         codec.stop()
         applyFormatAndStart(codec, newCsd0, csd1)
-        feedInput(codec, au)
+        feedInput(codec, queued)
         return true
     }
 
@@ -342,9 +367,9 @@ class H264StreamDecoder(
     }
 
     /** True if [b] contains at least one NAL unit of [type]. */
-    private fun containsNalType(b: ByteArray, type: Int): Boolean {
-        val n = b.size
-        var i = 0
+    private fun containsNalType(b: ByteArray, offset: Int, length: Int, type: Int): Boolean {
+        val n = offset + length
+        var i = offset
         while (i + 3 < n) {
             if ((b[i].toInt() and 0xFF) == 0 &&
                 (b[i + 1].toInt() and 0xFF) == 0 &&

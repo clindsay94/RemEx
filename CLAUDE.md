@@ -1,266 +1,119 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file covers **Claude-harness wiring only** — precedence over the tool-managed blocks, MCP
+routing, memory ownership, and issue tracking.
+
+## 📖 Read `AGENTS.md` first
+
+**[`AGENTS.md`](AGENTS.md) holds the project rules** — architecture invariants, the Hard Rules,
+build commands, the `scripts/verify.ps1` verification gate, coding conventions, cross-platform
+parity, and UI verification axes. It is the authority on anything that is not Claude-harness-specific.
+
+RemEx is developed with Claude Code only, as of 2026-08-09. The two-file split is no longer about
+serving other vendors' agents — it is now just separation of concerns: **rules** in `AGENTS.md`,
+**harness wiring** here. Do not reintroduce Codex/Gemini/Cursor/Antigravity workflows or
+compatibility caveats; there is nothing left to be compatible with.
 
-## 🛑 STRICT MCP SERVER ROUTING FOR TOKEN CONSERVATION
+Those rules used to be duplicated here. They are not any more — **if a rule is missing from this
+file, it is in `AGENTS.md`, not absent.** Do not copy them back: two copies drift, and the last time
+they did, this repo shipped an instruction telling agents to do the exact opposite of what the code
+does.
 
-To strictly conserve context window tokens and prevent context compaction loops, you MUST utilize the following three MCP servers for all codebase analysis, command execution, and architectural exploration. NEVER read full files, raw logs, or execute un-sandboxed shell commands when these tools are available.
+## ⚖️ Precedence — this section outranks the managed blocks below
 
-### 1. `token-savior` (Structural Codebase Indexing)
-**Do not read raw files to understand codebase logic.** `token-savior` indexes the codebase structurally, cutting token usage by ~97%.
-* **Symbol-Level Navigation:** Use `find_symbol`, `get_edit_context`, and `get_function_source` instead of `read_file` or global `grep`. Request isolated logic rather than dumping massive files into the context window.
-* **Smart Dependencies:** Use `get_dependencies` and `get_change_impact` to trace relationships. Do not attempt to reverse-engineer imports through sequential, manual file reads.
+Roughly half of this file (everything from `<!-- gitnexus:start -->` onward) is **generated and
+overwritten by `bd` and `gitnexus`**. Those blocks cannot be corrected in place; the tools rewrite
+them on their next sync, and the beads block is content-hashed. So the corrections live here.
 
-### 2. `gitnexus` (Graph RAG & Architectural Awareness)
-**Do not manually traverse call chains.** `gitnexus` precomputes the repository's knowledge graph, avoiding the multi-step graph exploration that burns excessive tokens.
-* **One-Shot Blast Radius:** Use the `impact` tool to instantly analyze upstream and downstream dependencies before modifying code.
-* **Process-Grouped Search:** Use `query` to retrieve complete execution flows and functional clusters rather than running brute-force keyword searches across the repository.
-* **360° Context:** Use the `context` tool to retrieve a complete map of a single symbol's incoming calls, outgoing dependencies, and process participation in one single turn.
-
-### 3. `context-mode` (Tool Sandboxing & Virtualization)
-**Do not run standard shell commands that yield massive outputs.** `context-mode` sandboxes executions and indexes the data externally, yielding up to 98% context savings.
-* **Virtualized Execution:** Route potentially noisy scripts or terminal commands through `ctx_execute` or `ctx_execute_file`. Only the stdout summary hits your context, keeping raw logs out. 
-* **Write Code, Don't Process Data:** Treat yourself as a code generator, not a data parser. If you need to count, filter, or analyze large numbers of files, write a short script via `ctx_execute` to do it locally instead of loading all the files into context.
-* **Indexed Storage for Heavy Data:** For massive test failures, access logs, or browser snapshots, use `ctx_index` or `fetch_and_index`. Store the data in the local SQLite FTS5 database and use `ctx_search` (BM25) to retrieve only the relevant lines you need.
-
-### 4. Bulk Code Generation Workflow (`antigravity` & `agy-splitter`)
-When generating large scaffolds, boilerplates, or multi-file modules, DO NOT write the files directly using local LLM output tokens. Instead, delegate the heavy lifting to the Antigravity CLI (`agy`) powered by Gemini. (`agy`/`agy-splitter` are external global tools, not part of this repo — verify they are on PATH before relying on this workflow; if absent, fall back to writing files directly.)
-
-- **Command Shorthand:** `/bulk-write [generation requirements]` (Maps to `~/.claude/commands/bulk-write.md`)
-- **Execution Sequence:** When `/bulk-write` is invoked, you must execute the following via `ctx_execute`:
-  1. Trigger generation and pipe to a temporary file: `agy [parameters] > .bulk_raw.txt`
-  2. Split the output into valid files: `agy-splitter .bulk_raw.txt`
-  3. Automatically delete `.bulk_raw.txt` once file extraction is verified.
-
-### Rules for Bulk Code Generation
-- **Strict Delimiters:** You must explicitly instruct Gemini/Antigravity to prefix every new file block with the EXACT string format: `// FILE: path/to/file.ext`. Do not allow markdown headers, backticks, or alternative comment syntax for file paths, or the `agy-splitter` regex will fail.
-- **Verify via Diffs:** Do NOT read the generated files back into the primary context window. Use `git diff` to evaluate the generated code.
-- **Edit by Exception:** Act purely as a reviewer. Only intervene or edit the resulting files directly if the diff reveals structural hallucinations or logic flaws.
+**Where this section and a managed block disagree, this section wins.** Specifically:
 
-### MCP Tool Decision Matrix
+| Managed block says | Actually |
+|---|---|
+| "Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files" | Scoped, not absolute. See *Memory ownership* below. The harness-injected `MEMORY.md` is legitimate and is not what that rule is aimed at. |
+| "NEVER edit a function, class, or method without first running `gitnexus_impact`" | Applies to **cross-cutting edits** — a symbol with callers outside its own file, anything named in `docs/REGRESSION-GUARDS.md`, or a signature/contract change. Not to test files, new symbols, localization, comments, or single-call-site private helpers. |
+| "MUST warn the user if impact analysis returns HIGH or CRITICAL" | In a headless `/ralph` or `/drain` iteration there is no user. Record the risk in the bead and the journal instead. |
+| "NEVER commit changes without running `gitnexus_detect_changes()`" | `scripts/verify.ps1 -Check` is the commit gate (`AGENTS.md`). `detect_changes` is advisory on top of it, not a second gate. |
+| "Conservative (default): Do not run git commits … unless explicitly asked" / "Do not commit or push without clear authority" | **Committing is standing-authorized.** When work is done and the verify gate passes, commit it that turn (conventional prefix + bead ID) without asking — Connor decided 2026-09-02 that ending a turn with an uncommitted, verified change is the wrong default. Pushing and Dolt remote sync still wait for an explicit ask. |
 
-Use this table before reaching for `grep`, `Read`, or raw `Bash`:
+A rule nobody can follow is worse than no rule: it teaches agents that this file's MUSTs are
+decorative, which discounts the ones that are load-bearing. If you find another unfollowable
+instruction, fix it here rather than obeying it or silently ignoring it.
 
-| Task | Required Tool | Never Instead |
-|------|--------------|---------------|
-| Find a symbol / class / method | `token-savior: find_symbol` | `grep` or Read full files |
-| Read a function's body only | `token-savior: get_function_source` | Read the whole file |
-| What calls this function? | `token-savior: get_dependents` | Manual import tracing |
-| What does this function call? | `token-savior: get_dependencies` | Sequential file reads |
-| Before editing ANY symbol | `gitnexus: impact` (upstream) | Edit without checking |
-| Explore a concept / execution flow | `gitnexus: query` | Keyword grep across repo |
-| Full 360° context on one symbol | `gitnexus: context` | Multiple sequential Reads |
-| Run command with potentially large output | `context-mode: ctx_execute` | Raw Bash into context |
-| Count / filter / aggregate data | `context-mode: ctx_execute` | Load all data into context |
-| Generate / rewrite >3 files at once | `agy -p "..."` (see §4 above) | Write each file directly |
+## 🛑 MCP server routing — read structurally, edit literally
 
-**`agy` quick usage for large multi-file changes:**
-```bash
-agy -p "Generate X. Prefix every file block with // FILE: path/to/file.ext" > .bulk_raw.txt
-agy-splitter .bulk_raw.txt   # split into real files on disk
-rm .bulk_raw.txt             # clean up
-git diff                     # grade — do NOT Read generated files back into context
-```
-Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic flaws.
+Three MCP servers — `token-savior`, `gitnexus`, `context-mode` — exist to keep bulk bytes out of
+context. They are for **understanding** code. They are not a substitute for reading a file you are
+about to change.
 
+**The rule, stated so it can actually be followed:**
 
-## Project Overview
+- **Understanding** what code does, what calls it, where a concept lives → symbol and graph tools.
+  Never a whole-file `Read`, never a repo-wide `grep`.
+- **Editing** a file → `Read` it first. `Edit` matches against exact bytes held in context, so an
+  unread file cannot be edited. This is not an exception to the rule, it is the rule: `Read` is an
+  edit-time tool here, not a discovery tool.
+- **Observing** a short, fixed output (`git status`, `command -v x`) → plain `Bash`. Routing a
+  three-line result through a sandbox costs more than it saves.
+- **Processing** output you intend to filter, count, or aggregate → `ctx_execute`.
+- **Mutating** state (`git`, `mv`, `rm`, installs, `scripts/verify.ps1`) → plain `Bash`/`PowerShell`.
+  `ctx_execute` discards its sandbox filesystem, so writes and builds performed there do not exist.
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `remex.agent` is the host execution entry point, while `remex.desktop` houses the PC-side UI and Localization. `remex.android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+### The per-tool matrix lives in a skill, not here
 
-> **There is no desktop client.** `remex.desktop/` contains the live PC-side UI (Avalonia Views, ViewModels, and 812 fully-translated Localization keys). If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
+Which server for which job — `token-savior` symbol retrieval, `gitnexus` graph and
+`impact`, `context-mode` sandboxed execution, the retrieval ladder, and when `impact` is
+genuinely required — is **[`.claude/skills/mcp-routing/SKILL.md`](.claude/skills/mcp-routing/SKILL.md)**.
+Invoke it before the first file lookup of a task.
 
-### 🔒 Hard Rules — repeat mistakes, do not re-litigate these
+It moved there deliberately (RemEx-56fu.6). A table in this file is a table the model is
+trusted to remember; a skill is one that gets loaded. More importantly, this repo keeps
+getting bitten by the same thing — two copies of a claim drift until one is lying — and
+the MCP matrix had already drifted into mandating eight tools that could not be called.
+**Do not copy the matrix back here.** One authoritative copy is the point.
 
-These exist because the same corrections have had to be made multiple times across sessions. If any other doc (including AGENTS.md, old commit messages, or a stale bead status) disagrees with these, **this file wins**.
+### The servers are version-controlled now
 
-1. **There is no headless host process and never has one separate from the UI.** `remex.agent` is a single process that IS both the former host service and the UI. Never describe or design around a "PC-side client connecting to a PC-side host" — that pair doesn't exist.
-2. **`remex.desktop/` is permanent, not being removed.** It holds only UI code (Views/ViewModels/Localization) and is a real, current `<ProjectReference>` of `remex.agent`. "Legacy" describes the leftover folder name from a pre-rename layout, not its lifecycle status — do not treat it as dead code, do not suggest deleting it, do not say it's "being phased out." A prior removal effort (bead `RemEx-d8s`) was closed without deleting it; the current, intended end state IS "UI code lives in remex.desktop, gets compiled into remex.agent."
-3. **Before citing a bead's status from AGENTS.md (or any doc) as a fact, verify it with `bd show <id>` first.** AGENTS.md's status tables have gone stale relative to the real bead tracker more than once — treat `bd` as the source of truth for issue status, docs as a cache that can lag.
-4. **Never construct a `git add`/file path (or any case-sensitive path comparison) from memory — copy exact case from `git status`/`ls` output.** This repo is Windows-authored but must build on case-sensitive Linux; a case mismatch in a git pathspec silently stages nothing (Windows git is case-insensitive by default), which has previously left real fixes stranded uncommitted. Never use PowerShell `-eq`/`-ne` to compare paths/namespaces that must be case-sensitive — use `-ceq`/`-cne`.
+Definitions live in **[`.mcp.json`](.mcp.json)** at the repo root, not only in user-scope
+config that no other machine or worktree reproduces. Linux overrides are documented in
+that file.
 
-## Build & Run
+Verify with **`pwsh scripts/check-mcp-health.ps1 -Full`**. It compares what the
+instructions MANDATE against what is actually CALLABLE, and a `-Hook -Quick` pass runs at
+every SessionStart. This exists because between 2026-08-15 and 2026-08-20 `gitnexus` and
+`token-savior` were wiped out of `~/.claude.json` and nobody noticed for nine days: their
+hooks kept firing, so the capability looked present while the tool surface was gone.
 
-```powershell
-# Run PC host service (Android connects to this — this IS the entire PC side)
-dotnet run --project remex.agent
+**When auditing MCP config, do not open `~/.claude/settings.json`.** It carries an
+`mcpServers` block that Claude Code does not read and never has. It is inert, it is the
+file a human reaches for first, and it is why that outage was invisible.
 
-# NOTE: remex.desktop contains the PC-side UI components and localization.
+## Memory ownership
 
-# Run all tests
-dotnet test Remex.sln
+Five stores have accumulated. Two are authoritative; the rest are convenience or history. When they
+disagree, read down this table and stop at the first hit.
 
-# Unified build (all platforms, release)
-pwsh ./build-remex.ps1 -c release -t all
+| Store | Owns | Write to it when |
+|---|---|---|
+| `bd` (beads + `bd remember`) | **Authoritative** for issues, decisions, and project/technical knowledge | Always, for anything a future session must act on |
+| `AGENTS.md` + `docs/REGRESSION-GUARDS.md` | **Authoritative** for rules and invariants | A rule changed; guards only ever by hand |
+| Harness auto-memory (`~/.claude/projects/Z--RemEx/memory/`) | User preferences and environment facts *about Connor's machine* | A preference or env fact, never a project rule |
+| `.remember/` | Session-continuity narrative, append-only | Automatic; do not hand-curate |
+| `token-savior` / `context-mode` indexes | Derived caches | Never directly — they are rebuilt |
 
-# Android only — hardened fresh build
-.\scripts\android-fresh.ps1 -Configuration Release
+The managed beads block says "do NOT use MEMORY.md files". Read that as: **do not invent new
+markdown task or knowledge files.** It is not a prohibition on the harness-injected auto-memory,
+which is a different mechanism and is correctly scoped to prefs and environment facts.
 
-# Linux packages (run from repo root; uses WSL on Windows)
-./installer/build-linux.sh
-```
+`memory-store` (MCP + plugin) was retired on 2026-08-09: the server could not connect, while its
+skills and its SessionStart banner still claimed it was live. Do not reinstate it without a reason.
 
-## Architecture
+## Regression Guards
 
-```
-remex.core/         Shared models, messages, validation, Guards, serialization
-                    ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
-remex.agent/         ★ THE PC SIDE — single elevated interactive-session app + all PC functionality
-                    ↳ Combines the former host service + desktop UI into ONE process. No Windows
-                      Service: it runs in the signed-in user's session, always elevated, auto-started
-                      by a Task Scheduler logon task (Windows) or an XDG autostart .desktop (Linux, RemEx-aep.7).
-                    ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
-remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-                    ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.
-remex.desktop/       PC-SIDE UI CODE — NOT a separate app, NOT "legacy" in the sense of dead/removable.
-                    ↳ Compiled directly into remex.agent via a real <ProjectReference>. "Legacy" here
-                      refers ONLY to the leftover pre-rename folder/namespace name, not the code's
-                      status. remex.agent.Program.cs does `using Remex.Desktop.Services;` — this is a
-                      live, load-bearing dependency, not dead weight. Do not describe it as "being
-                      phased out," "removed," or "optional" — that removal was decided against.
-```
+**Read [`docs/REGRESSION-GUARDS.md`](docs/REGRESSION-GUARDS.md) before touching capture, the remote-desktop stream or its pacing, the Android H.264 decoder, SurfaceView zoom/pan, pairing and trust, or the session guard.**
 
-### Communication Protocols
+Every rule in that file exists because breaking it reintroduced a real failure that presented as *silence* — a black screen, a dead stream, a bricked pairing — with no exception and no log line pointing back at the cause. Code review does not catch these; the file is the institutional memory.
 
-| Protocol | Endpoint | Port | Purpose |
-|---|---|---|---|
-| WSS | `/ws` | 5005 | Telemetry, power commands, pairing, file transfer |
-| WSS | `/ws/desktop` | 5005 | H.264 / MJPEG remote desktop stream |
-| TCP (TLS) | — | 8338 | External script command ingress |
-
-> The former `RemExLocalIPC` / `RemExHostControl` named pipes are **gone** (RemEx-aep). The UI and host
-> live in one process, so the UI resolves host services straight from DI via `EmbeddedHostServiceLocator`.
-
-All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN; clients then pin the host certificate SPKI hash.
-
-### High-Risk Code Areas
-
-The following areas are **security-critical or tightly coupled between `remex.agent` and `remex.android`**. Changes here require explicit user sign-off and must be coordinated across both sides of the connection:
-
-- **Pairing flow** (`PairingHandler`, `PairedClientRegistry`) — ECDH P-256 key exchange and PIN verification. `PairedClientRegistry` is the ONLY authentication path in production (non-loopback). Breakage silently bricks all device pairing with no clear error on either end.
-- **Certificate pinning** — Android pins the host's SPKI hash at pairing time. If the host cert changes without a re-pair, the connection is permanently refused until the user re-pairs. Never regenerate or rotate certs silently.
-- **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
-- **Elevation + cert ACLs** (`app.manifest`, `CertificateService`, `PairedClientRegistry`) — `remex.agent` MUST start elevated (`requireAdministrator`). An elevated token keeps FullControl over the machine-wide `cert.pfx` / `paired_clients.json` (ACL = LocalSystem + Administrators, inheritance disabled). A non-elevated start gets Administrators as deny-only, fails to read `cert.pfx`, and would brick every SPKI-pinned pairing. Never ship a path that auto-starts non-elevated. `CertificateService` has a brick canary: it logs Critical and refuses to regenerate when an existing `cert.pfx` is unreadable.
-
-## Versioning
-
-- **.NET projects**: centrally managed in `Directory.Build.props` (`<Version>`)
-- **Android**: managed in `remex.android/app/version.properties` (`versionName` / `versionCode`)
-- `build-remex.ps1` syncs `Directory.Build.props` from `version.properties` automatically
-
-## Coding Conventions
-
-### Async
-**Do NOT use `ConfigureAwait(false)` anywhere.** Neither Avalonia nor ASP.NET Core uses `SynchronizationContext`. CA2007 is suppressed in `.editorconfig`. See `docs/ASYNC_GUIDELINES.md`.
-
-### Null Safety
-Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `remex.core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
-
-### Validation
-All network-facing input must be validated through the shared validation helpers in `remex.core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
-
-### NativeAOT Constraints (`Remex.Core`)
-
-`Remex.Core` is compiled as a NativeAOT JNI library (`libRemexCore.so`) for Android. Code in `Remex.Core` **must be NativeAOT-safe** or the Android build will break at link time — often with no obvious connection to the change you made. Hard rules:
-
-- **No reflection** — `typeof(T).GetMethod(...)`, `Activator.CreateInstance`, `JsonSerializer` with non-source-generated options, etc. are all forbidden.
-- **No dynamic code generation** — no `System.Linq.Expressions` compilation, no `Emit`, no runtime type building.
-- **Trimming-safe** — use `[DynamicallyAccessedMembers]` and `[RequiresUnreferencedCode]` where necessary. The build has trimming enabled; unannotated reflection silently disappears.
-- **Source-generated JSON** — use `[JsonSerializable]` + `JsonSerializerContext` for any new serializable types. Do not use `JsonSerializer.Serialize<T>(obj)` without a source-gen context.
-- If you're unsure whether something is NativeAOT-safe, check `Remex.Core` for existing patterns before writing new code.
-
-### Elevated interactive-session app (`remex.agent` on Windows)
-
-`remex.agent` runs **in the signed-in user's interactive session, always elevated (high integrity)** — NOT as a Windows Service and NOT in Session 0. It is auto-started by a Task Scheduler logon task (`scripts/autostart-remex.ps1`, task name `RemEx`, `RunLevel=Highest`, `LogonType=InteractiveToken`) so it starts elevated at sign-in with no UAC prompt. (RemEx-aep.) Implications:
-
-- **Capture + input work directly** — being inside the session, screen capture and `SendInput` reach the user's desktop; HIGH→HIGH UIPI is permitted so input reaches elevated windows. There is no session bridging or `CreateProcessAsUser`.
-- **Machine-wide config still uses `HKLM` / `ProgramData`** — `cert.pfx`, `paired_clients.json`, and `CaptureBackendPreference` stay machine-wide so they are stable across logins and protected by the elevated-only ACL (see High-Risk Areas). `HKCU` / `%APPDATA%` are now valid for genuinely user-scoped state, but keep security-sensitive state machine-wide.
-- **Elevation is load-bearing, never weaken it** — see the Elevation + cert ACLs high-risk note. A medium-integrity start bricks pairings.
-- **No Windows Service, no named pipes** — `LocalIpcServerService`, `RemExLocalIPC`, `HostControlServer/Client`, `AgentCoordinator`, `SessionBridgingCommandService`, and `WindowsActiveSession` were deleted. The UI resolves host services in-process via `EmbeddedHostServiceLocator`.
-
-### Localization
-
-All user-facing strings in `remex.agent` (UI labels, tooltips, error messages, notifications) **must** go through the localization system in `Localization/`. The app supports 8 languages with live switching — hardcoded English strings are a regression. Rules:
-
-- Add new strings to the appropriate `.resx` / localization file, not inline in code or XAML.
-- Never use `string.Format` or interpolation directly in UI-bound properties; use localized format strings.
-- If a string is purely internal (logs, exception messages, developer-facing), it may stay in English without localization.
-
-### Protocol Versioning
-
-`RemexMessage` carries `protocolVersion: 2`. If you make a breaking change to the wire format:
-1. Bump `protocolVersion` in both `remex.agent` and `remex.android`.
-2. Coordinate the release — a version mismatch between host and Android causes silent deserialization failures, not clean errors.
-3. Non-breaking additions (new optional fields) do not require a bump, but document them in CHANGELOG.md.
-4. **Adding a new message TYPE the Android client must receive? You MUST also route it to the phone.** Inbound `/ws` messages reach Kotlin only if `AndroidNativeExports.OnNativeMessageReceived` (in `Remex.Core`, compiled into `libRemexCore.so`) forwards them to a JNI callback. File messages now forward by `file_*` prefix, so any `file_*` type is covered — but a **non-`file_` client-bound type still needs its own callback wiring**, and a type the router doesn't recognize is **silently dropped with no error on either side**. This exact stale-allowlist gap bricked all of v3 file transfer with "Peer did not respond" (RemEx-y6x6). Always test the round-trip on a real device after adding a client-bound message type. **Deliberate exception — `pairing_pin_response` (RemEx-1t0b):** this host→client reply is intentionally *not* routed through `OnNativeMessageReceived`. It arrives on the pairing `/ws` socket, which only `PairingClient` reads, and is consumed synchronously as the return value of the `FetchPairingPinNative` native export — so it needs no JNI callback and cannot be silently dropped by construction. Do **not** "fix" this by adding it to the router.
-
-## Android Prerequisites
-
-- Android SDK API Level 37 platform required
-- NDK version **30.0.14904198** required for NativeAOT JNI compilation
-- `build-remex.ps1` auto-installs both via `sdkmanager` if absent
-- Set `ANDROID_HOME` or configure `remex.android/local.properties` (`sdk.dir=...`)
-
-## Host Diagnostics
-
-On Linux, run `dotnet run --project remex.agent -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
-
-## Cross-Platform Parity (Windows ↔ CachyOS/Linux)
-
-This repo lives on a shared drive and must work equally on **Windows** and **CachyOS/Linux**. Any change that touches the PC side (remex.agent, scripts, installers, build tooling) **must maintain parity**:
-
-- Every `.ps1` script must work under `pwsh` on Linux **or** have a `.sh` equivalent that does the same thing.
-- Never hardcode Windows-only paths. Use path helpers or environment variables.
-- `build-remex.ps1` is the canonical cross-platform build entry point. New build steps must be added for both platforms.
-- Before closing a task: verify the change works on both platforms, or explicitly note which OS was tested and file a follow-up beads issue for the other.
-
-## Code Quality Standards
-
-**No lazy code.** Every implementation must be the most correct, robust, and maintainable approach for the task. Rules:
-
-- Use `gitnexus: query` and `token-savior` to understand existing patterns **before** writing new code. Match the codebase's conventions.
-- No placeholder implementations, stub methods, `TODO:` bodies, or "good enough for now" code. If a full implementation is out of scope, file a beads issue and implement what IS in scope correctly.
-- Prefer correctness over speed-to-write. If there's a real tradeoff, explain it.
-- Use existing infrastructure before rolling new ones: `remex.core/Guards`, `remex.core/Validation`, `GetRequiredService<T>()`, etc.
-
-## Documentation & CHANGELOG Maintenance
-
-**Update docs on every change.** No task is complete until:
-
-1. **CHANGELOG.md** has an entry under the correct version heading (Keep a Changelog format: `Added`, `Changed`, `Fixed`, `Removed`, `Security`).
-2. Affected XML doc comments, README sections, or `docs/` guideline files are updated.
-3. `AGENTS.md` / `CLAUDE.md` are updated if project structure, tooling, or conventions changed.
-4. `Directory.Build.props` and `remex.android/app/version.properties` are bumped if the change warrants a version increment.
-
-## User Experience Standards
-
-The target user **may not be technical**. Every user-facing element must be:
-
-- **Plain English** — no jargon, no abbreviations, no assumed knowledge in scripts, installers, UI tooltips, or error messages.
-- **Hand-holdy** — scripts print friendly status messages and tell the user exactly what to do when something fails. Always provide a "what to do next" step.
-- **Consistent** — `build-remex.ps1` is the canonical entry point for all major build/install operations. All major operations should be accessible from it, not buried in sub-scripts.
-- **Theme-safe** — every UI change must be verified across the theming axes of the platform it
-  touches. **The two platforms theme completely differently — do not apply one's axes to the other.**
-
-  - **PC only (`remex.desktop` / `remex.agent`)** — the four named themes **CyberNOC, Monolith,
-    SolarFlare, BaseDarkGlass**. Each has distinct contrast ratios and background treatments; a
-    change that looks fine on one can break another. **These four do not exist on Android.** The
-    only occurrences of the word "monolith" in `remex.android/` are comments about the former
-    monolithic `SplashScreen.kt` — unrelated. Never ask for four-theme verification of an Android
-    change; there is nothing to verify against and the instruction is pure noise.
-  - **Android only (`remex.android`)** — Material 3 dynamic theming, not named themes. `RemExTheme`
-    (`ui/theme/Theme.kt`) resolves a scheme from three mutually exclusive sources, and a change must
-    hold up under all of them:
-    1. **Custom seed** — `colorSchemeFromSeed(seedColor, darkTheme, themeStyle, themeContrast)`
-    2. **Dynamic color** — `dynamicDark/LightColorScheme(context)`, only when `dynamicColor` is on
-       AND `Build.VERSION.SDK_INT >= S`
-    3. **Static fallback** — `DarkColorScheme`/`LightColorScheme`, used on API < 31 or with dynamic
-       color off. This is a real shipping path, not dead code.
-
-    Orthogonal axes on top of that: `darkTheme` (light/dark/system), `themeStyle` (7 values —
-    `tonal_spot` default, plus expressive, vibrant, neutral, **monochrome**, fruit_salad, rainbow),
-    and `themeContrast` (0.0 → 1.0). Monochrome and contrast 1.0 are the harshest tests — a
-    hardcoded color literal that looks fine on the default scheme will fail there.
+It is hand-maintained and anchored to `file:line`. It replaced an auto-generated block in `AGENTS.md` that drifted out of sync with the code and, in one case, instructed agents to do the exact opposite of what the code does. **Do not regenerate it, and do not copy its guards back into `AGENTS.md` or here** — one authoritative copy is the entire point.
 
 ## Beads Issue Tracking (`bd`)
 
@@ -289,7 +142,7 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) �
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (15747 symbols, 32418 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (31351 symbols, 69720 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

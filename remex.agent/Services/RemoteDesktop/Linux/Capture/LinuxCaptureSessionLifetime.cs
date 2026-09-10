@@ -10,12 +10,24 @@ namespace Remex.Agent.Services.RemoteDesktop.Linux.Capture;
 
 /// <summary>
 /// Singleton that owns the xdg-desktop-portal ScreenCast session and
-/// <see cref="LinuxCaptureSessionCoordinator"/> for the duration of at least
-/// one active <c>/ws/desktop</c> connection.
+/// <see cref="LinuxCaptureSessionCoordinator"/> for the lifetime of the PROCESS —
+/// not for the lifetime of a <c>/ws/desktop</c> connection.
 ///
-/// Reference-counted: the first <see cref="AcquireAsync"/> call opens the
-/// portal session; the last <see cref="ReleaseAsync"/> tears it down.
-/// Concurrent acquires after the first all await the same start task.
+/// The first <see cref="AcquireAsync"/> call opens the portal session, and concurrent
+/// acquires after it all await the same start task. <see cref="ReleaseAsync"/> decrements
+/// the refcount and <b>deliberately does NOT tear the session down at zero</b>: it stays
+/// warm so the next connect adopts it. Teardown happens only on portal session loss
+/// (<c>OnPortalSessionLost</c> — the compositor killed it) or on <see cref="DisposeAsync"/>
+/// (process shutdown).
+///
+/// **NEVER REINTRODUCE REFCOUNT-ZERO TEARDOWN.** Closing a KDE ScreenCast session and
+/// reopening it shortly after — exactly what disconnect→reconnect and monitor-switch do —
+/// reliably yields a stream KWin reports as valid but which never produces a buffer, for
+/// MINUTES. The refcount is therefore a diagnostic and an underflow canary, not a lifetime.
+/// Known, accepted side effect: KDE's screen-sharing indicator stays on for the life of the
+/// process. Cold starts verify first-frame production (<c>WaitForFirstFrameAsync</c>, 3s) and
+/// recreate the portal session once before giving up. (RemEx-lq6h; the durable record is the
+/// <c>LinuxCaptureSessionLifetime</c> entry in <c>docs/REGRESSION-GUARDS.md</c>.)
 ///
 /// On portal session loss, the coordinator is nulled out of the screen capture
 /// service so the legacy shell-tool path takes over until the next connection.
@@ -142,10 +154,17 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
     }
 
     /// <summary>
-    /// Decrements the refcount. When it reaches zero, tears down the coordinator
-    /// and portal session. Must only be called if <see cref="AcquireAsync"/>
-    /// returned <c>true</c>.
+    /// Decrements the refcount. Reaching zero tears down NOTHING — the coordinator and portal
+    /// session stay warm for the process lifetime; see the class summary for why, and
+    /// <see cref="DisposeAsync"/> for where teardown actually happens. Must only be called if
+    /// <see cref="AcquireAsync"/> returned <c>true</c>; a call without a matching acquire is
+    /// logged and clamped rather than allowed to underflow.
     /// </summary>
+    /// <remarks>
+    /// This doc comment used to say the last release tore the session down, which is the exact
+    /// opposite of what the body below does — and reintroducing that behaviour is what
+    /// <c>docs/REGRESSION-GUARDS.md</c> forbids. Corrected rather than "fixed" in code.
+    /// </remarks>
     public Task ReleaseAsync()
     {
         lock (_gate)
@@ -162,9 +181,10 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
         }
 
         // Deliberately NO teardown at refcount 0: the session stays warm for the process
-        // lifetime so the next connect adopts it (see the class comment above — restoring a
-        // freshly closed KDE session yields a permanently silent stream). Teardown happens
-        // only on portal session loss or process shutdown (DisposeAsync).
+        // lifetime so the next connect adopts it (see the class summary — reopening a freshly
+        // closed KDE session yields a stream KWin calls valid that never produces a buffer, for
+        // minutes). Teardown happens only on portal session loss or process shutdown
+        // (DisposeAsync). NEVER reintroduce refcount-zero teardown here.
         return Task.CompletedTask;
     }
 

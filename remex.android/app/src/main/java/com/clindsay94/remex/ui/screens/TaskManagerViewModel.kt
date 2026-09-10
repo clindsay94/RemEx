@@ -379,15 +379,21 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             )
                         }
                 val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull()
+                // "success"/"message", NOT "commandSuccess"/"commandMessage" (RemEx-66rf). Those are
+                // RemexMessage's wire names; what comes back here is a CommandResponse, which has
+                // never carried them. optBoolean therefore always fell through to its default of
+                // TRUE, so a refused or failed kill reported success and the error banner below was
+                // unreachable. Defaulting to false now: a response we cannot read is not a kill we
+                // can claim happened.
                 val (success, message) = try {
                     if (responseJson?.isNotBlank() == true) {
                         val response = JSONObject(responseJson)
-                        Pair(response.optBoolean("commandSuccess", true), response.optString("commandMessage").takeIf { it.isNotBlank() })
+                        Pair(response.optBoolean("success", false), response.optString("message").takeIf { it.isNotBlank() })
                     } else {
                         Pair(false, null)
                     }
                 } catch (_: Exception) {
-                    Pair(responseJson?.isNotBlank() == true, null)
+                    Pair(false, null)
                 }
                 if (!success) {
                     _killError.value = message?.let { localizeKillFailure(it) }

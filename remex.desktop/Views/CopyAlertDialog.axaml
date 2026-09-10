@@ -1,0 +1,91 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Remex.Desktop.ViewModels"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+        x:Class="Remex.Desktop.Views.CopyAlertDialog"
+        x:DataType="vm:CopyAlertDialogViewModel"
+        Title="{local:Localize CopyAlert_Title}"
+        Width="380"
+        Height="520"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="32">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="24,44,24,24">
+
+        <!-- Header: "Copy alert from {DisplayName}: {direction} {threshold} · {severity}" -->
+        <TextBlock Grid.Row="0" Text="{Binding Header}" Theme="{StaticResource Headline6TextBlock}"
+                   FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"
+                   TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+        <!-- Filter -->
+        <TextBox Grid.Row="1" Text="{Binding Filter}" PlaceholderText="{local:Localize CopyAlert_Filter}"
+                  AutomationProperties.Name="{local:Localize CopyAlert_Filter}"
+                  Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+        <!-- Show all sensors -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Grid.Column="0" Text="{local:Localize CopyAlert_ShowAll}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowAllSensors}"
+                          IsEnabled="{Binding SameUnitToggleEnabled}"
+                          AutomationProperties.Name="{local:Localize CopyAlert_ShowAll}"
+                          OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}"/>
+        </Grid>
+
+        <!-- Candidate list. Virtualising (ListBox's default ItemsPanel is a VirtualizingStackPanel) -
+             MaxHeight below just bounds the visible window, same reasoning as SettingsView's alerts
+             card ListBox. -->
+        <material:Card Grid.Row="3" Padding="4">
+            <ListBox ItemsSource="{Binding Candidates}" SelectedItems="{Binding SelectedCandidates}"
+                     SelectionMode="Multiple" MaxHeight="280"
+                     Background="Transparent" BorderThickness="0">
+                <ListBox.Styles>
+                    <!-- Without this, each row's UI Automation Name is the item container's default -
+                         the bound view-model's type name - rather than anything a screen reader user
+                         can act on. Set on the container (not templated: FocusVisibleStyleGuardTests
+                         pins the ListBoxItem template to Material's stock one) so it names the row by
+                         what it actually shows. -->
+                    <Style Selector="ListBoxItem" x:DataType="vm:CopyAlertCandidateViewModel">
+                        <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}"/>
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CopyAlertCandidateViewModel">
+                        <Grid ColumnDefinitions="*,Auto,Auto" Margin="4,2">
+                            <TextBlock Grid.Column="0" Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Unit}" Theme="{StaticResource CaptionTextBlock}"
+                                       Foreground="{DynamicResource TextMutedBrush}" Margin="8,0,8,0"
+                                       VerticalAlignment="Center"/>
+                            <mi:MaterialIcon Grid.Column="2" Kind="BellOutline" Width="16" Height="16"
+                                              IsVisible="{Binding HasAlert}"
+                                              Foreground="{DynamicResource TextMutedBrush}"
+                                              VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </material:Card>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" Margin="0,16,0,0">
+            <Button Grid.Column="1" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"
+                    Classes="tertiary" MinWidth="80" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="{Binding ApplyLabel}" Command="{Binding ApplyCommand}"
+                    Classes="primary" MinWidth="120" ToolTip.Tip="{Binding OverwriteHint}"/>
+        </Grid>
+
+    </Grid>
+    <!-- ESCAPE CANCELS, ENTER APPLIES WHEN ENABLED (RemEx-xxifk / RemEx-df08's per-dialog default-
+         action rule): ApplyCommand's own CanExecute already gates Enter, since Avalonia's KeyBinding
+         checks Command.CanExecute before invoking. -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}"/>
+    </Window.KeyBindings>
+</Window>

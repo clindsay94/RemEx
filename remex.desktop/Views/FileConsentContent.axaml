@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Remex.Desktop.ViewModels"
+             xmlns:local="clr-namespace:Remex.Desktop.Converters"
+             mc:Ignorable="d" d:DesignWidth="392"
+             x:Class="Remex.Desktop.Views.FileConsentContent"
+             x:DataType="vm:FileConsentDialogViewModel">
+
+    <!-- The message, detail card, "remember" checkbox and Deny/Allow buttons that FileConsentDialog.axaml
+         carried directly. Title/message are inside this control rather than the dialog builder's own
+         ContentHeader/SupportingText because the Remember checkbox has to sit under them either
+         way, and one bound control keeps that whole block, bindings included, unchanged from before
+         (RemEx-2m7fr pinned the CheckBox binding at FileConsentDialogViewModel.cs:40,59-65).
+
+         RemEx-x6a70.3 fix round 2: Deny/Allow are real RemEx Buttons now, wearing this app's
+         secondary/primary vocabulary, bound straight to the VM's existing DenyCommand/AllowCommand -
+         those commands' own logic (FileConsentDialogViewModel.cs:58-62) is unchanged. MaterialDialogs.cs
+         hands the library an empty DialogButtons array and closes the window once vm.ResultTask
+         completes, instead of building a fresh decision from a library button's result string. -->
+    <!-- RemEx-df08 fix round 1: an AutomationProperties-attached Name value USED to live here, on
+         this StackPanel. It announced nothing - Control.OnCreateAutomationPeer defaults to
+         NoneAutomationPeer for any element with no dedicated peer, and Avalonia has no
+         PanelAutomationPeer, so the name was set on a peer documented as "not contributing to the
+         logical structure of the application" and a screen reader never saw it. The real fix is on
+         the host WINDOW, not this content: MaterialDialogs.FileConsentAsync now calls
+         AutomationProperties.SetName(window, vm.Title) after building this control, because
+         WindowAutomationPeer is a real peer that is actually announced. -->
+    <StackPanel Spacing="14" Margin="24,24,24,24">
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="{Binding Title}"
+                       Theme="{StaticResource Headline6TextBlock}"/>
+            <TextBlock Text="{Binding Message}"
+                       Theme="{StaticResource Body2TextBlock}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       MaxWidth="440"/>
+        </StackPanel>
+
+        <Border IsVisible="{Binding HasDetail}"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14,10">
+            <TextBlock Text="{Binding Detail}"
+                       Theme="{StaticResource Body2TextBlock}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <CheckBox IsChecked="{Binding Remember}"
+                  Content="{local:Localize FileConsent_Remember}"
+                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="secondary" Content="{local:Localize FileConsent_Deny}" Command="{Binding DenyCommand}"/>
+            <Button Classes="primary" Content="{local:Localize FileConsent_Allow}" Command="{Binding AllowCommand}"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

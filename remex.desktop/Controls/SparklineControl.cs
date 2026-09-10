@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
 using Remex.Core.Models;
@@ -45,9 +46,86 @@ public class SparklineControl : Control
     public static readonly StyledProperty<Color> SecondaryAccentColorProperty =
         AvaloniaProperty.Register<SparklineControl, Color>(nameof(SecondaryAccentColor), Color.Parse("#FFB020"));
 
+    /// <summary>
+    /// The active theme's contrast slider, [-1, 1] (0 = no boost). Fed from
+    /// <c>ThemeService</c>'s <c>ThemeContrastLevel</c> resource via the App.axaml Style setter
+    /// below, the same wiring as <see cref="SecondaryAccentColorProperty"/>. Used only to scale the
+    /// collapsed-series dim floor (RemEx-n2kv0) so a high-contrast theme doesn't cut a 1px line's
+    /// ratio in half after the palette already spent its contrast budget getting it distinguishable.
+    /// </summary>
+    public static readonly StyledProperty<double> ContrastLevelProperty =
+        AvaloniaProperty.Register<SparklineControl, double>(nameof(ContrastLevel));
+
+    /// <summary>
+    /// The "running hot" colour, resolved from the active theme per render (RemEx-fy0a).
+    /// </summary>
+    /// <remarks>
+    /// Severity, not accent: this is the colour a reading climbs toward as it approaches its
+    /// ceiling, so it follows the theme's error colour rather than the card's own accent.
+    /// <para>
+    /// The two <c>StyledProperty</c> defaults above (<see cref="AccentColorProperty"/>,
+    /// <see cref="SecondaryAccentColorProperty"/>) are deliberately still literals and cannot get the
+    /// same treatment: a property default is baked in at static registration, which runs before any
+    /// theme is loaded, so there is nothing to resolve against at that moment. They are NOT the
+    /// effective default any more, though — an app-level <c>Style Selector="ctrl|SparklineControl"</c>
+    /// (App.axaml) sets both from the theme once the control is actually in the tree: AccentColor from
+    /// <c>AccentPrimary</c>, SecondaryAccentColor from the M3 Tertiary role (<c>PaletteTertiary</c>,
+    /// pushed by <c>ThemeService</c>). A Style setter is lower priority than a local value, so the
+    /// card's own customisation binding still wins wherever one is set; these literals are now only
+    /// the last-resort fallback for a control built entirely outside that style pipeline. (RemEx-fy0a,
+    /// decided in RemEx-qljv.)
+    /// </para>
+    /// </remarks>
+    private static Color HotColor => ThemeResources.Color("SystemError", HotColorFallback);
+
+    private static readonly Color HotColorFallback = Color.Parse("#FF3B30");
+
     private const byte AreaFillAlpha = 60;
     private const byte GlowAlpha = 100;
     private const byte TrackAlpha = 40;
+
+    /// <summary>
+    /// Two colours closer than this in hue (degrees) AND chroma read as the same colour to a
+    /// viewer, not two distinguishable series (RemEx-n2kv0). Deliberately loose rather than tuned
+    /// to a just-noticeable-difference study: the only real-world case this has to catch is
+    /// Monochrome's Primary/Tertiary both landing on the same chroma-0 grey, and it must not fire
+    /// for ordinary variety between two saturated theme roles.
+    /// </summary>
+    private const double IndistinguishableHueDegrees = 12.0;
+
+    /// <summary>Chroma below this reads as "no meaningful hue" - two greys are never distinguishable by hue alone.</summary>
+    private const double IndistinguishableChroma = 6.0;
+
+    /// <summary>
+    /// Tone (HCT's L*-like axis, 0-100) apart by at least this much escapes the hue/chroma match
+    /// below - once one line is meaningfully lighter or darker than the other, it reads as two
+    /// lines regardless of how close hue and chroma land. Picked well above what any same-mode M3
+    /// role pair actually produces: Monochrome's Primary/Tertiary (identical seed) measure a 0.000
+    /// tone delta, and every SchemeVariant's Primary/Tertiary measured across the Default/Chalk/Ink
+    /// sweep seeds (light+dark, contrast 0 and 1) top out under 0.20 - both roles target the same
+    /// fixed tone for a given mode by M3 construction. 20.0 sits far above that noise floor while
+    /// still catching a real cross-tone comparison (a Container role sits ~30-40 tones from its
+    /// Main), so it is a dead branch on today's Primary/Tertiary pairs and a live guard for
+    /// whatever calls this predicate next (see SparklineDualMetricDimmingTests for the measured
+    /// values behind this comment).
+    /// </summary>
+    private const double IndistinguishableToneDelta = 20.0;
+
+    /// <summary>
+    /// The dim floor for a secondary series that collapses onto the primary's colour, at
+    /// contrast = 0.0. Reuses <c>CanvasView.axaml</c>'s <c>material|Card.stale</c> opacity rather
+    /// than inventing a new per-theme value (gate decision, RemEx-n2kv0).
+    /// </summary>
+    private const double IndistinguishableSecondaryOpacityAtContrast0 = 0.55;
+
+    /// <summary>
+    /// The dim floor at contrast = 1.0. <c>DynamicColorGenerator.Contrasted</c> already walks every
+    /// "on" pair to WCAG AAA at this setting, so a flat 0.55 multiplier on top of that spends half
+    /// of the ratio the palette just spent budget reaching - a 1px collapsed line goes from AAA back
+    /// to under AA. 0.75 keeps a visible dim while giving up much less of that budget; the two
+    /// floors are interpolated by <see cref="ContrastLevel"/> in <c>RenderDualMetric</c>.
+    /// </summary>
+    private const double IndistinguishableSecondaryOpacityAtContrast1 = 0.75;
 
     private ISolidColorBrush? _accentBrush;
     private ISolidColorBrush? _areaFillBrush;
@@ -108,11 +186,30 @@ public class SparklineControl : Control
         set => SetValue(SecondaryAccentColorProperty, value);
     }
 
+    public double ContrastLevel
+    {
+        get => GetValue(ContrastLevelProperty);
+        set => SetValue(ContrastLevelProperty, value);
+    }
+
+    /// <summary>
+    /// Redraws when the theme changes. Same reasoning as <c>CanvasMinimap</c>: a control that paints
+    /// in <see cref="Render"/> is not invalidated by a theme switch the way a DynamicResource
+    /// binding is, so resolving colours per render only helps if something asks for a repaint.
+    /// <c>ResourcesChanged</c> and not <c>ActualThemeVariantChanged</c>, for the reason spelled out
+    /// on <c>CanvasMinimap</c>'s constructor: three of the four themes share the Dark variant, so the
+    /// variant event does not fire when switching between them. (RemEx-fy0a.)
+    /// </summary>
+    public SparklineControl()
+    {
+        ResourcesChanged += (_, _) => InvalidateVisual();
+    }
+
     static SparklineControl()
     {
         AffectsRender<SparklineControl>(HistoryProperty, GraphTypeProperty, AccentColorProperty,
             CurrentValueProperty, MinSeenProperty, MaxSeenProperty, TrackBrushProperty,
-            SecondaryHistoryProperty, SecondaryAccentColorProperty);
+            SecondaryHistoryProperty, SecondaryAccentColorProperty, ContrastLevelProperty);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -272,7 +369,7 @@ public class SparklineControl : Control
 
         int litCount = (int)Math.Round(fraction * segments);
         var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
-        var hotBrush = new ImmutableSolidColorBrush(Color.Parse("#FF3B30"));
+        var hotBrush = new ImmutableSolidColorBrush(HotColor);
 
         for (int i = 0; i < segments; i++)
         {
@@ -298,7 +395,7 @@ public class SparklineControl : Control
         // so the tile visibly reacts to load — not just a static-colored area chart.
         double range = MaxSeen - MinSeen;
         double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
-        var accent = LerpColor(AccentColor, Color.Parse("#FF3B30"), fraction * 0.8);
+        var accent = LerpColor(AccentColor, HotColor, fraction * 0.8);
         var accentBrush = new ImmutableSolidColorBrush(accent);
 
         int count = data.Count;
@@ -358,9 +455,65 @@ public class SparklineControl : Control
         if (secondary != null && secondary.Count >= 2)
         {
             var secAccent = SecondaryAccentColor;
+
+            // Detected by colour distance, not by variant name (gate decision, RemEx-n2kv0): a
+            // future variant that collapses Primary and Tertiary onto the same hue is covered too,
+            // not just Monochrome specifically.
+            if (SeriesColorsAreIndistinguishable(AccentColor, secAccent))
+            {
+                double opacityFactor = SecondaryDimOpacityFactor(ContrastLevel);
+                secAccent = new Color(
+                    (byte)Math.Round(secAccent.A * opacityFactor),
+                    secAccent.R, secAccent.G, secAccent.B);
+            }
+
             var secBrush = new ImmutableSolidColorBrush(secAccent);
             DrawSeriesLine(context, bounds, secondary, secBrush, filledAlpha: 0);
         }
+    }
+
+    /// <summary>
+    /// Whether two series colours would read as the same colour to a viewer. Computed in HCT
+    /// (hue/chroma), not by comparing raw sRGB channels, so a hue rotation reads as distinguishable
+    /// even when it lands at similar luminance. Internal so <c>SparklineDualMetricDimmingTests</c>
+    /// can assert the predicate directly rather than only through a rendered pixel.
+    /// </summary>
+    internal static bool SeriesColorsAreIndistinguishable(Color a, Color b)
+    {
+        var (hueA, chromaA, toneA) = SeedHct.FromColor(a);
+        var (hueB, chromaB, toneB) = SeedHct.FromColor(b);
+
+        // A large tone gap reads as two lines - one visibly lighter or darker than the other - no
+        // matter how close hue and chroma land. Checked before the grey short-circuit below so two
+        // achromatic colours far apart in tone (e.g. a near-black and a near-white grey) still read
+        // as distinguishable instead of being swallowed by the chroma check first.
+        if (Math.Abs(toneA - toneB) >= IndistinguishableToneDelta) return false;
+
+        // Chroma near zero makes hue noise, not signal - two greys close in tone are
+        // indistinguishable regardless of how far apart their "hues" measure (Monochrome's exact
+        // case), now that the tone-delta escape above has already ruled out a large tone gap.
+        if (chromaA < IndistinguishableChroma && chromaB < IndistinguishableChroma) return true;
+
+        double hueDelta = Math.Abs(hueA - hueB);
+        hueDelta = Math.Min(hueDelta, 360.0 - hueDelta);
+
+        return hueDelta < IndistinguishableHueDegrees && Math.Abs(chromaA - chromaB) < IndistinguishableChroma;
+    }
+
+    /// <summary>
+    /// The dim floor for a collapsed secondary series, interpolated by the theme's contrast level
+    /// (RemEx-n2kv0 review finding) - linear between
+    /// <see cref="IndistinguishableSecondaryOpacityAtContrast0"/> at contrast 0.0 and
+    /// <see cref="IndistinguishableSecondaryOpacityAtContrast1"/> at contrast 1.0. Negative contrast
+    /// (reduced-contrast mode) clamps to the same floor as 0.0 - lowering contrast never had extra
+    /// ratio budget to protect. Internal, like <see cref="SeriesColorsAreIndistinguishable"/>, so
+    /// tests can assert the factor directly instead of decoding a rendered pixel.
+    /// </summary>
+    internal static double SecondaryDimOpacityFactor(double contrastLevel)
+    {
+        double contrastT = Math.Clamp(contrastLevel, 0.0, 1.0);
+        return IndistinguishableSecondaryOpacityAtContrast0
+            + contrastT * (IndistinguishableSecondaryOpacityAtContrast1 - IndistinguishableSecondaryOpacityAtContrast0);
     }
 
     /// <summary>Draws a normalized (0–1) series as a line, optionally with a faint area fill.</summary>

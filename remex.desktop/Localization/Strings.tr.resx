@@ -14,6 +14,69 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Karşıtlık</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Daha keskin</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Daha yumuşak</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Üretilen paletin metni arkasındaki yüzeyden ne kadar ayırdığı.</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Son kullanılanlar</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Tohum</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Renk tonu</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Tohum renk çarkı</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Tohum rengi seçmek için sürükleyin. Renk tonu çarkın çevresinde, kroma merkezden dışa doğru ilerler. Ok tuşları da çalışır.</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Klasörü indir</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Seçili klasörü ve içindeki her şeyi kaydeder</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Klasörün kaydedileceği yeri seçin</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} dosya indirme kuyruğuna alındı.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} dosya yükleme kuyruğuna alındı.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} dosya kuyruğa alındı, ancak klasör tamamen listelenemeyecek kadar büyüktü — bazı dosyalar dışarıda kaldı.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Klasör listelenemedi: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Klasör listeleniyor…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Bu klasör tek seferde aktarılamayacak kadar çok dosya içeriyor.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Gönderilecek klasörü seçin</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Klasör yükle</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>İçindeki her şeyle birlikte klasörün tamamını gönderir</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Ana Sayfa</value>
   </data>
@@ -28,6 +91,9 @@
   </data>
   <data name="Nav_Files" xml:space="preserve">
     <value>Dosyalar</value>
+  </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>Uzak Masaüstü</value>
   </data>
 
   
@@ -73,31 +139,31 @@
     <value>ZORLA (ANINDA)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 PC'yi Kilitle</value>
+    <value>PC'yi Kilitle</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Oturumu Kapat</value>
+    <value>Oturumu Kapat</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Kapat</value>
+    <value>Kapat</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Yeniden Başlat</value>
+    <value>Yeniden Başlat</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Uyku</value>
+    <value>Uyku</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Hazırda Beklet</value>
+    <value>Hazırda Beklet</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Zorla Kapat</value>
+    <value>Zorla Kapat</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Zorla Yeniden Başlat</value>
+    <value>Zorla Yeniden Başlat</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI'ye Yeniden Başlat</value>
+    <value>UEFI'ye Yeniden Başlat</value>
   </data>
 
   
@@ -225,12 +291,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>ANA SAYFA</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ÇALIŞMA ALANI</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Canlı Bakış</value>
   </data>
@@ -252,7 +312,7 @@
     <value>ORT</value>
   </data>
   <data name="Canvas_Max" xml:space="preserve">
-    <value>MAX</value>
+    <value>MAKS</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
     <value>AKTİF SENSÖRLER</value>
@@ -273,13 +333,13 @@
     <value>Sensörler ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ İptal</value>
+    <value>İptal</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Bağlantıyı Kes</value>
+    <value>Bağlantıyı Kes</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Bağlan</value>
@@ -330,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>TEMEL ÖN AYARLAR</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>GELİŞMİŞ İNCE AYAR</value>
   </data>
@@ -348,32 +405,35 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Parlaklık Gücü</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Vurgu Rengi</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Arka Plan Modu</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>TUVAL ATMOSFERI</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Tema Varsayılanlarına Sıfırla</value>
   </data>
-  <data name="Custom_PresetStandardGlass" xml:space="preserve">
-    <value>Standard Glass</value>
+  <data name="Custom_PresetGlass" xml:space="preserve">
+    <value>Glass</value>
   </data>
-  <data name="Custom_PresetCyberNOC" xml:space="preserve">
-    <value>Cyber-NOC</value>
+  <data name="Custom_PresetNeon" xml:space="preserve">
+    <value>Neon</value>
   </data>
-  <data name="Custom_PresetSolarFlare" xml:space="preserve">
-    <value>Solar-Flare</value>
+  <data name="Custom_PresetEmber" xml:space="preserve">
+    <value>Ember</value>
   </data>
-  <data name="Custom_PresetMonolith" xml:space="preserve">
-    <value>Monolith</value>
+  <data name="Custom_PresetSlate" xml:space="preserve">
+    <value>Slate</value>
+  </data>
+  <data name="Custom_PresetDaybreak" xml:space="preserve">
+    <value>Daybreak</value>
+  </data>
+  <data name="Custom_PresetVoltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Custom_PresetSorbet" xml:space="preserve">
+    <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Dinamik</value>
   </data>
 
   
@@ -444,7 +504,7 @@
     <value>Yayın başlatılamadı. Yeniden bağlanmayı deneyin.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Durduruldu</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>Uzak ekran görüntülenemiyor — Kaliteyi düşürmeyi deneyin ya da bağlantıyı kesip yeniden bağlanın.</value>
@@ -480,6 +540,18 @@
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
     <value>PC bağlı değil</value>
+  </data>
+  <data name="Status_PlatformWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Status_PlatformLinux" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="Status_PlatformMacOs" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="Status_HostRuntimeOnPlatform" xml:space="preserve">
+    <value>{1} üzerinde {0}</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
     <value>Etkileşimli PC</value>
@@ -534,6 +606,9 @@
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN tam olarak 6 haneli olmalıdır.</value>
+  </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Eşleştirildi</value>
   </data>
 
   
@@ -600,6 +675,9 @@
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Bu eğitimi bir daha gösterme</value>
+  </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>Eğitim ilerlemesi</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
@@ -733,7 +811,7 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Hakkında</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Ayarları Aç</value>
@@ -745,20 +823,20 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>QR Kodu</value>
   </data>
+  <data name="Home_PairPhoneButton" xml:space="preserve">
+    <value>Telefon eşleştir</value>
+  </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Eşleştirme başarısız</value>
+  </data>
+  <data name="Home_PairPhoneTooltip" xml:space="preserve">
+    <value>Bir telefonun bu bilgisayarla eşleşmesi için gereken QR kodunu ve PIN'i göster</value>
+  </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
     <value>RemEx Android uygulamasıyla tarayın</value>
   </data>
-  <data name="Home_QrCodeTooltip" xml:space="preserve">
-    <value>RemEx Android uygulamasını bağlamak için QR kodu oluşturun</value>
-  </data>
-  <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Eşleştirme PIN'ini göster</value>
-  </data>
-  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Telefonunuzun bu bilgisayarla eşleşmek için ihtiyaç duyduğu 6 haneli kodu gösterir</value>
-  </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>EŞLEŞTİRME PINİ</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Eşleştirmeyi tamamlamak için bu kodu telefonunuza girin</value>
@@ -767,7 +845,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>{0} sn içinde sona erer</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Kapat</value>
   </data>
 
   
@@ -788,6 +866,9 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Giriş yapıldığında RemEx'i sistem tepsisinde küçültülmüş olarak başlatır, böylece bilgisayarınız her zaman erişilebilir kalır.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx, oturum açıldığında başlayacak şekilde ayarlanıp ayarlanmadığını denetleyemedi. Aşağıdaki anahtar son seçiminizi gösterir; bilgisayarınızla eşleşmeyebilir.</value>
   </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Giriş yapıldığında RemEx'in otomatik olarak başlatılıp başlatılmayacağını seçin.</value>
@@ -1023,6 +1104,51 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Bu klasör kaldırılamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Tamamlanıyor…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>{0} saniye kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>{0} saniye kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>{0} saniye kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>{0} saniye kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>{0} dakika kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>{0} dakika kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>{0} dakika kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>{0} dakika kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>{0} saat kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>{0} saat kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>{0} saat kaldı</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>{0} saat kaldı</value>
+  </data>
 
   
 
@@ -1039,7 +1165,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Ped</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Kalem Modu: dokun = anında tıkla, sürükle = tıkla-ve-sürükle</value>
@@ -1077,16 +1203,16 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Grafik Türü</value>
+    <value>Grafik Türü</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 PC'yi Kilitle</value>
+    <value>PC'yi Kilitle</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI'ye Yeniden Başlat</value>
+    <value>UEFI'ye Yeniden Başlat</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
+    <value>Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
   </data>
 
   
@@ -1110,7 +1236,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Komut Paleti</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+Shift+P tuşlarına basın.</value>
+    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+K tuşlarına basın.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Sözlük: Uygulama Başlatıcı</value>
@@ -1157,19 +1283,19 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Adsız Uygulama</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Uygulama Seç</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Uygulamalar</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Tüm Dosyalar</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Bilinmeyen</value>
   </data>
 
   
@@ -1179,6 +1305,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>Derleme</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>Bu PC'deki RemEx</value>
   </data>
@@ -1186,7 +1315,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>PC'niz</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ GitHub'da bir yıldız vermeyi düşünün!</value>
+    <value>GitHub'da bir yıldız vermeyi düşünün!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Açık kaynaklı ve ücretsiz. (lütfen bir yıldız verin, kedimi rehin aldılar!)</value>
@@ -1251,7 +1380,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Bilgisayarda görünen 6 haneli PIN'i girin:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Eşleştir</value>
   </data>
 
   
@@ -1421,23 +1550,14 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Yoğun</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Özel renk ekle</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Özel vurgu rengi</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Şema Varyantı</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Açılış Ekranı</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Donanım Senkronizasyonu</value>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Azaltılmış hareket</value>
   </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Vurgu rengini fiziksel RGB ile senkronize et</value>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Animasyonları en aza indirir. Sayfalar kaymadan değişir ve dekoratif hareket durur.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Açık</value>
@@ -1457,6 +1577,24 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Yenile</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Seçilenleri Kopyala</value>
+  </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Mesajı kopyala</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Yığınla kopyala</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Sonu takip et</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>En yeniye git</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Klasörü aç</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Günlükleri Temizle</value>
   </data>
@@ -1465,6 +1603,26 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Windows Olay Görüntüleyicisi veya Linux systemd günlüğünden alınan en son olay günlüğü sorgusu.</value>
+  </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>RemEx tarafından yazılan sistem olay günlüğü girişleri okunuyor…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>RemEx için Windows olay günlüğü girişi bulunamadı.
+Bu normaldir — RemEx buraya yalnızca ciddi başlangıç sorunlarında yazar, bu nedenle boş bir liste genellikle hiçbir şeyin yanlış gitmediği anlamına gelir.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>journalctl sorgusu başarısız oldu: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Sistem olay günlükleri yalnızca Windows ve Linux'ta kullanılabilir.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Sistem olay günlüğü okunamadı: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Remex.Agent için kaydedilmiş kullanıcı-journal girişi yok.
+Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran masaüstlerinde beklenen bir durumdur — işletim sistemi çıktısını orada asla yakalamaz. Yukarıdaki {0} RemEx'in kendi kaydıdır ve her yerde çalışır.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Sistem Olay Günlüklerini Sorgula</value>
@@ -1592,6 +1750,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>RemEx Masaüstü - Uzaktan Çalıştırma</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Komut Paleti</value>
   </data>
@@ -1700,6 +1861,63 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Kritik</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Sensör uyarıları</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Yapılandırılmış uyarı yok. Bir tane ayarlamak için tuvaldeki bir sensör kartına sağ tıklayın.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Düzenle</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Şuraya kopyala…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Kaldır</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Tümünü onayla</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Tüm uyarıları sıfırla</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Tüm sensör uyarıları sıfırlansın mı?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Bu, {0} uyarıyı kaldırır. Profilinizdeki başka hiçbir şey değişmez.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>{0} saatinde tetiklendi · {1}</value>
+  </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>{0} sensöründen uyarıyı kopyala: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Sensörleri filtrele…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Tüm sensörleri göster</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>{0} öğesine uygula</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Seçili sensörlerdeki mevcut uyarının üzerine yazar</value>
+  </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} {1} değerine ulaştı</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Uyarı: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Uyarı: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>{0} saatinde tetiklendi ({1}). Onaylamak için tıklayın.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Geri Al (Ctrl+Z)</value>
   </data>
@@ -1733,27 +1951,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Piksel cinsinden neon parlama kalınlığı</value>
   </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Renk paleti teması vurgularını seç</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Neon Menekşe renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Siber Macenta renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Canlı Pembe renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Güneş Altını renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Zümrüt Yeşili renk temasını seç</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Koyu Kırmızı renk temasını seç</value>
-  </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Başlangıç hoş geldiniz açılış ekranı animasyonu tarzını seç</value>
   </data>
@@ -1776,7 +1973,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Mutlak piksel cinsinden kılavuz yerleşim artış sınırları</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Komut Paletini Aç (Ctrl+Shift+P)</value>
+    <value>Komut Paletini Aç (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Kenar Çubuğunu Aç/Kapat</value>
@@ -1787,23 +1984,53 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Kılavuzu tekrar görmek ister misiniz?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX CANLI</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Ana Pencereyi Göster</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Canlı Bakış</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Karanlık Moda Geç</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Aydınlık Moda Geç</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Çıkış</value>
+  </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>Kilitle</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>Uyku</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>Uzak</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>Gönder</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>Hazırda Beklet</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>Bunu kullanmak için bir telefon bağlayın</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>Bu pencereyi sabitle</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>Bu pencerenin sabitlemesini kaldır</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>Aktarımları aç</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>Bir cihaz eşleştir</value>
+  </data>
+  <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
+    <value>Günlük klasörünü aç</value>
+  </data>
+  <data name="Busy_Loading" xml:space="preserve">
+    <value>Yükleniyor…</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>RemEx durumu</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>RemEx penceresini sabitle veya sabitlemesini kaldır</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Otomatik (akıllı)</value>
@@ -2032,12 +2259,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Tarih</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Telefona Gönder</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Bu PC'den dosya seçin ve bağlı cihazdaki geçerli klasöre gönderin.</value>
-  </data>
   <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
     <value>Özellikler</value>
   </data>
@@ -2083,11 +2304,23 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>Tam cihaz erişimi verilmedi.</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>Bu cihaza sorulamadı — şu anda bağlı değil. Yeniden bağlayıp tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>Karşı cihazdaki istem zamanında yanıtlanmadı. Tekrar deneyin.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Sürücüler listelenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>AKTARIMLAR</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Tümünü iptal et</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Devam eden veya bekleyen tüm aktarımları iptal et</value>
   </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Bitenleri temizle</value>
@@ -2197,7 +2430,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Ağımdaki hostları bul</value>
   </data>
   <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
+    <value>Ana Bilgisayar</value>
   </data>
   <data name="Conn_Latency" xml:space="preserve">
     <value>Gecikme</value>
@@ -2316,9 +2549,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Büyük sayfa başlıkları için yazı tipi. Uygulamanın görüntü yazı tiplerini ve bu sistem üzerinde yüklü olan yazı tiplerini içerir.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>TİPOGRAFİ</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Kullanıcı Arayüzü Boyutu</value>
   </data>
@@ -2414,6 +2644,9 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Dışa Aktar Olarak:</value>
+  </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Kapsam:</value>
   </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
     <value>Günlükleri Dışa Aktar</value>
@@ -2520,6 +2753,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Sensör kitaplığı</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Son zamanlarda görülmedi</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>RemEx çalışmak için neden özel bir izne ihtiyaç duyuyor?</value>
   </data>
@@ -2606,9 +2842,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Tek Renk</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2639,11 +2872,26 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Meyve Salatası</value>
   </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>İçeriğe Göre</value>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Birincil</value>
   </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>İkincil</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Üçüncül</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Nötr</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Birincil / Birincil Üzeri</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Yüzey / Yüzey Üzeri</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Hata / Hata Üzeri</value>
   </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>"{0}" (PID {1}) sonlandırılamadı. Hiçbir şey değişmedi. Listeyi yenileyip tekrar deneyin.</value>
@@ -2724,7 +2972,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>bilinmeyen bir arka uç</value>
   </data>
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
-    <value>Wake on LAN</value>
+    <value>LAN üzerinden Uyandır</value>
   </data>
   <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
     <value>RemEx'in bu programı kapatma izni yok. Programın bilgisayarda yönetici olarak başlatılması gerekebilir.</value>
@@ -2751,14 +2999,15 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>RemEx'in görünümünü nasıl değiştiririm?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Personalize panelini açmak için "Personalize appearance" düğmesini kullanın.
+    <value>Kişiselleştir panelini açmak için "Görünümü kişiselleştir" düğmesini kullanın.
 
 Şunları değiştirebilirsiniz:
-• Tema (CyberNOC, Monolith, SolarFlare veya BaseDarkGlass)
-• Vurgu rengi ve palet
-• Kart köşe yarıçapı ve biçimi
-• Yazı tipi ve boyutu
-• Kart saydamlığı
+• Paletinizin tohum (seed) rengi — renk çarkından seçin, hex kodu girin, Windows vurgu renginizle eşleştirin veya duvar kağıdınızdan alın
+• Açık, koyu veya sistem modu ile kontrast
+• Şema varyantı ve arka plan materyali
+• Köşe yarıçapı, cam saydamlığı ve parlama gücü
+• Açılış ekranı stili
+• Sayfa başlığı ve içerik yazı tipleri ile arayüz ölçeği
 • Uygulama dili — Windows veya Linux dilinizden bağımsız olarak</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -2766,6 +3015,21 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Eğitimi Yeniden Oynat" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>Dosya, seçtiğiniz klasörün kaydedebileceğinden daha hızlı geliyor, bu yüzden indirme tamamlanamadı. USB bellek veya ağ klasörü yerine bu bilgisayarın ana sürücüsündeki bir klasöre kaydetmeyi deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>İndirme kaydedilemedi. Seçtiğiniz sürücüde yer kalmamış veya bir USB bellek çıkarılmış olabilir. Yeterli yer olduğundan ve sürücünün hâlâ takılı olduğundan emin olup yeniden deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Dosya okunamadı. Başka bir programda açık olabilir veya bulunduğu sürücü çıkarılmış olabilir. Dosyayı diğer programlarda kapatın, sürücünün takılı olduğundan emin olun ve yeniden deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx'in indirmeyi oraya kaydetme izni yok. Klasör korumalı olabilir veya değiştirilecek dosya salt okunur olabilir. Başka bir klasör ya da başka bir dosya adı deneyin — genellikle Belgeler veya İndirilenler işe yarar.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx'in o dosyayı okuma izni yok. Dosya başka bir kullanıcıya ait olabilir veya izinleri buna elvermiyor olabilir. Kendi klasörlerinizdeki bir dosyayı deneyin ya da bilgisayarın sahibinden erişim isteyin.</value>
   </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>İndirilen dosya bilgisayarın gönderdiğiyle eşleşmedi, bu yüzden silindi. Yeniden indirmeyi deneyin.</value>
@@ -2781,5 +3045,428 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Bağlantı durumu: bağlı değil</value>
+  </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Sistem durumu</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>RemEx'in ihtiyaç duyduğu her şey çalışıyor.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Bu ne demek</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx yönetici olarak çalışmalıdır. Aksi halde eşleme ve uzaktan denetim çalışmaz. RemEx’i kapatıp Yönetici olarak çalıştır ile yeniden başlatın.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx, bu bilgisayarın kimliğini telefonunuza kanıtlayan sertifikayı okuyamadı. RemEx’i yönetici olarak yeniden başlatmak sertifikayı yeniden oluşturur.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Telefonunuzun bağlandığı bağı dinleyen bir şey yok. RemEx hâlâ başlatılıyor olabilir ya da başka bir program o bağı kullanıyor olabilir. RemEx’i yeniden başlatın, sürerse Ayarlar’dan bağı değiştirin.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Güvenlik duvarı gelen bağlantıları engelliyor; telefonunuz bu bilgisayarı görüyor ama bağlanamıyor. Özel ağlar için RemEx’e güvenlik duvarında izin verin. Açık bir bilgisayara telefonun ulaşamamasının en yaygın nedeni budur.</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Bunu düzelt</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Yeniden denetle</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Yönetici hakları</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx, ihtiyaç duyduğu yönetici haklarıyla çalışıyor.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx'in tüm yönetici hakları olmayabilir. Bazı işlemler uyarı vermeden başarısız olabilir.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx yönetici olarak çalışmıyor. Bu düzelene kadar telefon eşleştirme ve bu bilgisayarı denetleme çalışmayacak.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx, yönetici haklarına sahip olup olmadığını denetleyemedi. Eşleştirme veya uzaktan denetim başarısız olursa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Güvenlik sertifikası</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikası yerinde ve okunabilir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikasında bir sorun var. Telefonlar bağlanamayabilir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikası okunamadı, bu yüzden hiçbir telefon bağlanamaz. Sertifikayı silmeyin veya değiştirmeyin — bu, eşleştirdiğiniz tüm telefonların bağlantısını keser ve her birini yeniden eşleştirmeniz gerekir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx, bu bilgisayarın güvenlik sertifikasını denetleyemedi. Telefonlar bağlanamıyorsa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Bağlantıları kabul etme</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx çalışıyor ve bu bilgisayarda bağlantıları kabul ediyor.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx bağlantıları kabul etmiyor olabilir. Telefonunuz bağlanamayabilir.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx bağlantıları kabul etmiyor, bu yüzden hiçbir telefon bu bilgisayara bağlanamaz.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx, bağlantıları kabul edip etmediğini denetleyemedi. Telefonunuz bağlanamıyorsa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Güvenlik duvarı</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'e izin verecek şekilde ayarlanmış.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'i engelliyor olabilir. Telefonunuz bu bilgisayarı bulamıyorsa buradan başlayın.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'i engelliyor, bu yüzden telefonunuz bu bilgisayara ulaşamayacak.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx güvenlik duvarını denetleyemedi. Telefonunuz bu bilgisayarı bulamıyorsa kendiniz kontrol edin.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Oturum açınca başlat</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>Bu bilgisayarda oturum açtığınızda RemEx otomatik olarak başlar.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx oturum açtığınızda başlayacak şekilde ayarlanmamış, bu yüzden telefonunuz bağlanabilmeden önce onu kendiniz açmanız gerekecek.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx oturum açtığınızda başlayacak şekilde ayarlanamadı, bu yüzden her seferinde onu kendiniz açmanız gerekecek.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx, oturum açtığınızda başlayıp başlamadığını denetleyemedi. Burada görünen, bilgisayarınızdaki durumla uyuşmayabilir.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx bu bilgisayarı denetleyemedi, çünkü RemEx'in denetimi yapan bölümü çalışmıyor. O çalışmaya başlayana kadar telefonunuz bağlanamayacak.</value>
+  </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Dosya alındı</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} telefonunuzdan geldi.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Tanılama dışa aktarıldı</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>{0} konumuna kaydedildi.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx düzgün başlamadı</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>RemEx'in bir bölümü başlatılamadı, bu yüzden bazı şeyler çalışmayacak. Ayrıntılar Tanılama bölümünde.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Dosya isteği reddedildi</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx izin istemini gösteremedi, bu yüzden dosya isteğini sizin adınıza reddetti.</value>
+  </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Sertifika parmak izi</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Telefonunuz bu bilgisayarın sertifikasının değiştiği konusunda uyarırsa, orada görüneni bununla karşılaştırın.</value>
+  </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Bağlı telefon yok</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 telefon bağlı</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} bağlı</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} telefon bağlı</value>
+  </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Telefon durumu: bağlı</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Telefon durumu: bağlı telefon yok</value>
+  </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx bu bilgisayarda çalışmıyor</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>TELEFON</value>
+  </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Eşleştirilmiş cihazlar</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Bu bilgisayarla henüz eşleştirilmiş telefon yok.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Bilinmiyor</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>İlk eşleştirme</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Son görülme</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Cihaz durumu: bağlı</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Cihaz durumu: bağlı değil</value>
+  </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Bu PIN süresi doldu.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Yeni PIN al</value>
+  </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Yeniden adlandır</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Yeni ad</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Cihaz kimliğine dönmek için adı temizleyin.</value>
+  </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Bu telefonun eşleştirmesi kaldırılsın mı?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} artık bu bilgisayara bağlanamayacak. Yeniden kullanmak için yeni bir PIN ile baştan eşleştirmeniz gerekir. Bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Eşleştirmeyi kaldır</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Cihazın eşleştirmesi kaldırıldı</value>
+  </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Eşleştirme kaldırma tamamlanamadı: {0}. Bu cihaz RemEx bir sonraki başlatıldığında geri gelebilir; o zaman eşleştirmeyi yeniden kaldırın.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Temel mod</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Açık, koyu veya işletim sistemi ayarını izle.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Sistem</value>
+  </data>
+  <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
+    <value>{0}&#xD;&#xA;Adres: {1}</value>
+  </data>
+  <data name="Shell_StatusFlyoutAddress" xml:space="preserve">
+    <value>Adres</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
+    <value>Sunucu bağlantısı</value>
+  </data>
+  <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
+    <value>Gecikme</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostRuntime" xml:space="preserve">
+    <value>Çalışma zamanı</value>
+  </data>
+  <data name="A11y_ConnectionStatusButton" xml:space="preserve">
+    <value>Bağlantı durumu</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>AXAML olarak kopyala</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>JSON olarak dışa aktar</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>JSON içe aktar</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>RemEx Paleti</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Palet kopyalandı</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Herhangi bir Avalonia ResourceDictionary'sine yapıştırın.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Palet içe aktarıldı</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>{0}, {1} uygulandı.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Bu dosya bir RemEx paleti değil.</value>
+  </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Nötr</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Tek renkli</value>
+  </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Aurora ışığı</value>
+  </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Duvar kağıdı kaynağı</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Masaüstü duvar kağıdı</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Bir görsel seç</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Görsel seç…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Bulanıklık</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Duvar kağıdı görseli yüklenemedi, bu yüzden şimdilik düz bir arka plan gösteriliyor. Yeniden denemek için başka bir görsel seçin.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Bu görsel kopyalanamadı, bu yüzden öncekisi korundu.</value>
+  </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Geçerli olanı kaydet</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Paletleriniz</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Yerleşik</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Paleti sil</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Palet adı</value>
+  </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>RENK</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>MOD</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>GÖRÜNÜM</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>DAVRANIŞ</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>KAYITLI PALETLER</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Kaynak</value>
+  </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Telefonuma uydur</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Windows vurgu rengi</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Duvar kağıdı</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Özel</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Geçerli Windows vurgu rengi</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Canlılık</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Strateji</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Önizleme</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Örnek kart</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Kartlar ve metin böyle görünecek.</value>
+  </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Bu ad zaten kullanılıyor</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>“{0}” bu klasörde zaten var. İki dosyayı da tutabilir, oradakini değiştirebilir ya da bu öğeyi atlayabilirsiniz.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>“{0}” burada zaten var, ama farklı türde bir öğe — dosya yapıştırdığınız yerde bir klasör var ya da tam tersi. İkisini de tutun veya bu öğeyi atlayın.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>“{0}” için seçilen yeni adı, oluşturulmadan hemen önce başka bir şey aldı. Boş bir ad seçmek için “İkisini de tut” seçeneğini yeniden deneyin ya da bu öğeyi atlayın.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>“{0}” öğesine burada yeni bir ad verilemiyor, çünkü yeni ad bu klasör için fazla uzun olurdu. Bu öğeyi atlayın ya da yapıştırmayı durdurup önce adı kısaltın.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>“{0}” buraya yapıştırılamadı ve bu bilgisayar cihazınızın verdiği nedeni tanımıyor. Bu öğeyi atlayın ya da yapıştırmayı durdurun.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>İkisini de tut</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Cihazınız yeni bir ad seçer, böylece hiçbir şeyin üzerine yazılmaz.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Değiştir</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Orada zaten olan öğenin üzerine yazar. Bu geri alınamaz.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Atla</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Bu öğeyi olduğu gibi bırakır ve kalanlarla devam eder.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Yapıştırmayı durdur</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Burada durun. Henüz yapıştırılmamış olanlar olduğu gibi kalır.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Yapıştırma durduruldu. Yapıştırılmayan öğeler hâlâ panoda.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>“{0}” olarak kaydedildi, böylece orada zaten olan öğe korundu.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Birkaç denemeden sonra “{0}” bırakıldı. O öğede hiçbir şey değişmedi.</value>
   </data>
 </root>

@@ -14,6 +14,69 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Контраст</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Різкіший</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>М'якший</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Наскільки згенерована палітра відділяє текст від поверхні позаду нього.</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Нещодавні</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>База</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Відтінок</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Колесо базового кольору</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Перетягніть, щоб вибрати базовий колір. Відтінок йде по колу, а хрома — від центру назовні. Клавіші зі стрілками теж працюють.</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Завантажити теку</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Зберігає вибрану теку разом з усім її вмістом</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Виберіть, куди зберегти теку</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} файлів додано до черги завантаження.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} файлів додано до черги надсилання.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} файлів додано до черги, але теку було завелико, щоб прочитати її повністю — деякі файли пропущено.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Не вдалося прочитати теку: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Читання теки…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Ця тека містить забагато файлів, щоб передати їх за один раз.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Виберіть теку для надсилання</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Надіслати теку</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>Надсилає цілу теку разом з усім її вмістом</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Головна</value>
   </data>
@@ -28,6 +91,9 @@
   </data>
   <data name="Nav_Files" xml:space="preserve">
     <value>Файли</value>
+  </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>Віддалений робочий стіл</value>
   </data>
 
   
@@ -73,31 +139,31 @@
     <value>ПРИМУСОВЕ (НЕГАЙНО)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 Заблокувати ПК</value>
+    <value>Заблокувати ПК</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 Вихід</value>
+    <value>Вихід</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ Вимкнути</value>
+    <value>Вимкнути</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 Перезавантажити</value>
+    <value>Перезавантажити</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 Сон</value>
+    <value>Сон</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ Сплячий режим</value>
+    <value>Сплячий режим</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ Примусове вимкнення</value>
+    <value>Примусове вимкнення</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ Примусове перезавантаження</value>
+    <value>Примусове перезавантаження</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 Перезавантаження в UEFI</value>
+    <value>Перезавантаження в UEFI</value>
   </data>
 
   
@@ -225,12 +291,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>ГОЛОВНА</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>ПРОСТІР</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>Швидкий перегляд</value>
   </data>
@@ -273,13 +333,13 @@
     <value>Датчики ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
+    <value>Ping</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ Скасувати</value>
+    <value>Скасувати</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ Відключити</value>
+    <value>Відключити</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Підключити</value>
@@ -330,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>БАЗОВІ ПРЕСЕТИ</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>РОЗШИРНЕ ТОНКЕ НАЛАШТУВАННЯ</value>
   </data>
@@ -348,32 +405,35 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Сила свічення</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>Акцентний колір</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>Режим тла</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>АТМОСФЕРА ПОЛОТНА</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Скинути до стандартів теми</value>
   </data>
-  <data name="Custom_PresetStandardGlass" xml:space="preserve">
-    <value>Standard Glass</value>
+  <data name="Custom_PresetGlass" xml:space="preserve">
+    <value>Glass</value>
   </data>
-  <data name="Custom_PresetCyberNOC" xml:space="preserve">
-    <value>Cyber-NOC</value>
+  <data name="Custom_PresetNeon" xml:space="preserve">
+    <value>Neon</value>
   </data>
-  <data name="Custom_PresetSolarFlare" xml:space="preserve">
-    <value>Solar-Flare</value>
+  <data name="Custom_PresetEmber" xml:space="preserve">
+    <value>Ember</value>
   </data>
-  <data name="Custom_PresetMonolith" xml:space="preserve">
-    <value>Monolith</value>
+  <data name="Custom_PresetSlate" xml:space="preserve">
+    <value>Slate</value>
+  </data>
+  <data name="Custom_PresetDaybreak" xml:space="preserve">
+    <value>Daybreak</value>
+  </data>
+  <data name="Custom_PresetVoltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Custom_PresetSorbet" xml:space="preserve">
+    <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Динамічний</value>
   </data>
 
   
@@ -444,7 +504,7 @@
     <value>Не вдалося розпочати трансляцію. Спробуйте підключитися знову.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Зупинено</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>Не вдається показати віддалений екран — спробуйте знизити Якість або від'єднайтеся та підключіться знову.</value>
@@ -480,6 +540,18 @@
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
     <value>Хост не підключено</value>
+  </data>
+  <data name="Status_PlatformWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Status_PlatformLinux" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="Status_PlatformMacOs" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="Status_HostRuntimeOnPlatform" xml:space="preserve">
+    <value>{0} на {1}</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
     <value>Інтерактивний хост</value>
@@ -534,6 +606,9 @@
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN-код повинен складатися рівно з 6 цифр.</value>
+  </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>Спарено</value>
   </data>
 
   
@@ -600,6 +675,9 @@
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Більше не показувати цей посібник</value>
+  </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>Прогрес посібника</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
@@ -733,7 +811,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Про програму</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Відкрити налаштування</value>
@@ -745,17 +823,17 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>QR-код</value>
   </data>
+  <data name="Home_PairPhoneButton" xml:space="preserve">
+    <value>Пов’язати телефон</value>
+  </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Не вдалося спарувати</value>
+  </data>
+  <data name="Home_PairPhoneTooltip" xml:space="preserve">
+    <value>Показати QR-код і PIN, потрібні телефону для пов’язання з цим ПК</value>
+  </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
     <value>Скануйте додатком RemEx Android</value>
-  </data>
-  <data name="Home_QrCodeTooltip" xml:space="preserve">
-    <value>Згенеруйте QR-код для підключення додатка RemEx Android</value>
-  </data>
-  <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Показати PIN-код сполучення</value>
-  </data>
-  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Показати 6-значний код, потрібний телефону для сполучення з цим ПК</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PIN-КОД СПОЛУЧЕННЯ</value>
@@ -767,7 +845,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Діє ще {0} с</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Закрити</value>
   </data>
 
   
@@ -788,6 +866,9 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Запускає RemEx згорнутим у трей при вході в систему, щоб ваш ПК завжди був доступний.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи налаштовано запуск під час входу. Перемикач нижче показує ваш останній вибір, який може не збігатися зі станом ПК.</value>
   </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Виберіть, чи запускати RemEx автоматично при вході в систему.</value>
@@ -1023,6 +1104,51 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>Не вдалося видалити цю папку. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>Завершення…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>залишилася {0} секунда</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>залишилося {0} секунди</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>залишилося {0} секунд</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>залишилося {0} секунди</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>залишилася {0} хвилина</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>залишилося {0} хвилини</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>залишилося {0} хвилин</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>залишилося {0} хвилини</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>залишилася {0} година</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>залишилося {0} години</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>залишилося {0} годин</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>залишилося {0} години</value>
+  </data>
 
   
 
@@ -1077,16 +1203,16 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 Тип графіка</value>
+    <value>Тип графіка</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 Заблокувати ПК</value>
+    <value>Заблокувати ПК</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 Перезавантажити в UEFI</value>
+    <value>Перезавантажити в UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 Закріпити/Відкріпити на Головній</value>
+    <value>Закріпити/Відкріпити на Головній</value>
   </data>
 
   
@@ -1110,7 +1236,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Глосарій: Палітра команд</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Натисніть Ctrl+Shift+P, щоб перейти до екранів, виконати швидкі дії та миттєво шукати в центрі команд.</value>
+    <value>Натисніть Ctrl+K, щоб перейти до екранів, виконати швидкі дії та миттєво шукати в центрі команд.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>Глосарій: Запуск програм</value>
@@ -1157,19 +1283,19 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Програма без назви</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Виберіть програму</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Програми</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Усі файли</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Невідомо</value>
   </data>
 
   
@@ -1179,6 +1305,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>Збірка</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx на цьому ПК</value>
   </data>
@@ -1186,7 +1315,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Ваш ПК</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Розгляньте можливість поставити зірочку на GitHub!</value>
+    <value>Розгляньте можливість поставити зірочку на GitHub!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>Відкритий код та безкоштовно. (будь ласка, поставте зірочку, вони тримають мого кота!)</value>
@@ -1421,23 +1550,14 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>Інтенсивний</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Додати власний колір</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Власний колір акценту</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>Варіант схеми</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>Заставка</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>Синхронізація апаратного забезпечення</value>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Зменшений рух</value>
   </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>Синхронізувати колір акценту з фізичним RGB</value>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Зводить анімації до мінімуму. Сторінки змінюються без ковзання, а декоративний рух зупиняється.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Увімк.</value>
@@ -1457,6 +1577,24 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Оновити</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Копіювати вибране</value>
+  </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>Копіювати повідомлення</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>Копіювати зі стеком</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>Стежити за кінцем</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>Перейти до найновішого</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>Відкрити папку</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Очистити логи</value>
   </data>
@@ -1465,6 +1603,26 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Останній запит логів подій з Windows Event Viewer або журналу systemd в Linux.</value>
+  </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>Читання записів журналу подій системи, зроблених RemEx…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>Записів журналу подій Windows для RemEx не знайдено.
+Це нормально — RemEx записує сюди лише серйозні проблеми запуску, тож порожній список зазвичай означає, що нічого поганого не сталося.</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>Не вдалося виконати запит journalctl: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>Журнали подій системи доступні лише в Windows і Linux.</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>Не вдалося прочитати журнал подій системи: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Записів журналу користувача для Remex.Agent не зафіксовано.
+Це очікувано на робочих столах, які запускають RemEx безпосередньо через автозапуск XDG, а не через systemd — ОС ніколи не перехоплює його вивід у такому разі. {0} вище — це власний запис RemEx, який працює всюди.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Запитати журнал подій системи</value>
@@ -1592,6 +1750,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>RemEx Десктоп - Віддалене виконання</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Палітра команд</value>
   </data>
@@ -1700,6 +1861,63 @@ Linux: ip addr  або  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>Критично</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>Сповіщення датчиків</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>Сповіщення не налаштовано. Клацніть правою кнопкою миші на картці датчика на полотні, щоб налаштувати одне.</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>Редагувати</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>Копіювати до…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>Підтвердити всі</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>Скинути всі сповіщення</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>Скинути всі сповіщення датчиків?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>Це видалить {0} сповіщень. Решта вашого профілю не зміниться.</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>Спрацювало о {0} · {1}</value>
+  </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>Копіювати сповіщення з {0}: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>Фільтрувати датчики…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>Показати всі датчики</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>Застосувати до {0}</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>Перезаписує наявне сповіщення на вибраних датчиках</value>
+  </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} досягло {1}</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>Сповіщення: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>Сповіщення: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>Спрацювало о {0} ({1}). Натисніть, щоб підтвердити.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>Скасувати (Ctrl+Z)</value>
   </data>
@@ -1733,27 +1951,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Товщина неонового свічення у пікселях</value>
   </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>Вибрати акцентні кольори теми</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>Вибрати фіолетову тему кольору</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>Вибрати блакитну тему кольору</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>Вибрати рожеву тему кольору</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>Вибрати золоту тему кольору</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>Вибрати зелену тему кольору</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>Вибрати червону тему кольору</value>
-  </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Вибрати стиль анімації екрана привітання</value>
   </data>
@@ -1776,7 +1973,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Межі кроку сітки в абсолютних пікселях</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Відкрити палітру команд (Ctrl+Shift+P)</value>
+    <value>Відкрити палітру команд (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Перемкнути бічну панель</value>
@@ -1787,23 +1984,53 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Потрібно переглянути інструкцію знову?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>REMEX НАЖИВО</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Показати головне вікно</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Швидкий перегляд наживо</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Переключити на темний режим</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Переключити на світлий режим</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Вихід</value>
+  </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>Блокувати</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>Сон</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>Віддалений</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>Надіслати</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>Гібернація</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>Підключіть телефон, щоб скористатися цим</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>Закріпити це вікно</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>Відкріпити це вікно</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>Відкрити передавання</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>Сполучити пристрій</value>
+  </data>
+  <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
+    <value>Відкрити папку журналів</value>
+  </data>
+  <data name="Busy_Loading" xml:space="preserve">
+    <value>Завантаження…</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>Стан RemEx</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>Закріпити або відкріпити вікно RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Авто (розумно)</value>
@@ -2040,6 +2267,12 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Показати відомості та попередній перегляд вибраного елемента.</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Скасувати все</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Скасувати всі поточні та очікувані передавання</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Очистити завершені</value>
   </data>
@@ -2097,12 +2330,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Пошук у цій папці…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Надіслати на телефон</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Виберіть файли на цьому ПК і надішліть їх до поточної папки на підключеному пристрої.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Дата</value>
   </data>
@@ -2117,6 +2344,12 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>Повний доступ до пристрою не надано.</value>
+  </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>Не вдалося запитати цей пристрій — він зараз не під’єднаний. Під’єднайте його знову та спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>На запит іншого пристрою не відповіли вчасно. Спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Не вдалося отримати список дисків. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
@@ -2313,9 +2546,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Шрифт для великих заголовків сторінок. Включає дисплейні шрифти застосунку та будь-які шрифти, встановлені в цій системі.</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>ТИПОГРАФІКА</value>
-  </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Розмір інтерфейсу</value>
   </data>
@@ -2411,6 +2641,9 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>Експортувати як:</value>
+  </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>Область:</value>
   </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
     <value>Експорт логів</value>
@@ -2517,6 +2750,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Бібліотека сенсорів</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>Не виявлено нещодавно</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>Чому RemEx потребує особливого дозволу для роботи?</value>
   </data>
@@ -2603,9 +2839,6 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Монохромний</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2636,11 +2869,26 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>Фруктовий салат</value>
   </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>За вмістом</value>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>Основний</value>
   </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>Другорядний</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>Третинний</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>Нейтральний</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>Основний / На основному</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>Поверхня / На поверхні</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>Помилка / На помилці</value>
   </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>Не вдалося завершити «{0}» (PID {1}). Нічого не змінено. Оновіть список і повторіть спробу.</value>
@@ -2748,14 +2996,15 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Як змінити вигляд RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Скористайтеся кнопкою «Personalize appearance», щоб відкрити панель Personalize.
+    <value>Скористайтеся кнопкою «Персоналізувати вигляд», щоб відкрити панель Персоналізувати.
 
 Можна змінити:
-• Тему (CyberNOC, Monolith, SolarFlare або BaseDarkGlass)
-• Акцентний колір і палітру
-• Радіус і форму кутів карток
-• Шрифт і його розмір
-• Прозорість карток
+• Базовий (seed) колір палітри — виберіть його на колірному колі, введіть hex-код, узгодьте з акцентом Windows або візьміть із шпалер
+• Світлий, темний чи системний режим і контраст
+• Варіант схеми та матеріал тла
+• Радіус кутів, прозорість скла та інтенсивність світіння
+• Стиль екрана заставки
+• Шрифти заголовка сторінки та вмісту, а також масштаб інтерфейсу
 • Мову застосунку — незалежно від мови Windows чи Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -2763,6 +3012,21 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Так. Відкрийте Налаштування та скористайтеся пунктом «Повторити посібник» у розділі Довідка. Це можна робити скільки завгодно разів.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>Файл надходить швидше, ніж вибрана папка встигає його зберігати, тому завантаження не вдалося завершити. Спробуйте зберегти в папку на основному диску цього комп’ютера, а не на USB-накопичувач чи мережеву папку.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Не вдалося зберегти завантаження. Можливо, на вибраному диску немає місця або USB-накопичувач від'єднано. Перевірте, чи є вільне місце і чи накопичувач досі підключено, а потім спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Не вдалося прочитати файл. Можливо, він відкритий в іншій програмі або диск, на якому він міститься, від'єднано. Закрийте його в інших програмах, перевірте, чи диск підключено, і спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx не має дозволу зберегти завантаження там. Можливо, папка захищена або файл, який замінюється, доступний лише для читання. Спробуйте іншу папку чи іншу назву файлу — зазвичай підходить «Документи» або «Завантаження».</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx не має дозволу прочитати цей файл. Можливо, він належить іншому користувачеві або його дозволи цього не допускають. Спробуйте файл із власних папок або попросіть доступ у власника комп'ютера.</value>
   </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Завантажений файл не збігся з тим, що надіслав комп’ютер, тому його видалено. Спробуйте завантажити ще раз.</value>
@@ -2778,5 +3042,428 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Стан з’єднання: немає з’єднання</value>
+  </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Стан системи</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Усе, що потрібно RemEx, працює.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Що це означає</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx має працювати від імені адміністратора. Без цього парування та віддалене керування не працюватимуть. Закрийте RemEx і запустіть його через Запустити від імені адміністратора.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx не зміг прочитати сертифікат, який підтверджує особу цього ПК для вашого телефона. Перезапуск RemEx від імені адміністратора створює його заново.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Нічого не прослуховує порт, до якого підключається телефон. Можливо, RemEx ще запускається або інша програма зайняла цей порт. Перезапустіть RemEx, а якщо повторюється — змініть порт у Налаштуваннях.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Брандмауер блокує вхідні з’єднання, тому телефон бачить цей ПК, але не може підключитися. Дозвольте RemEx у брандмауері для приватних мереж. Це найчастіша причина, чому телефон не дістається до увімкненого ПК.</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Виправити</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Перевірити ще раз</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Права адміністратора</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx працює з правами адміністратора, які йому потрібні.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx може не мати повних прав адміністратора. Деякі дії можуть не спрацювати без попередження.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx працює не від імені адміністратора. Доки це не зміниться, підключення телефона та керування цим ПК не працюватимуть.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи має він права адміністратора. Якщо підключення телефона або дистанційне керування не працює, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Сертифікат безпеки</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Сертифікат безпеки цього ПК на місці, і його можна прочитати.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Із сертифікатом безпеки цього ПК щось не так. Телефони можуть не під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Не вдалося прочитати сертифікат безпеки цього ПК, тому жоден телефон не може під'єднатися. Не видаляйте й не замінюйте його — це від'єднає всі підключені телефони, і кожен доведеться підключати заново.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити сертифікат безпеки цього ПК. Якщо телефони не під'єднуються, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Приймання з'єднань</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx працює та приймає з'єднання на цьому ПК.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>Можливо, RemEx не приймає з'єднання. Ваш телефон може не під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx не приймає з'єднання, тому жоден телефон не може під'єднатися до цього ПК.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи приймає він з'єднання. Якщо ваш телефон не під'єднується, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Брандмауер</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Брандмауер налаштовано пропускати RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Можливо, брандмауер блокує RemEx. Якщо ваш телефон не знаходить цей ПК, почніть звідси.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Брандмауер блокує RemEx, тому ваш телефон не зможе дістатися до цього ПК.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити брандмауер. Якщо ваш телефон не знаходить цей ПК, перевірте його самостійно.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Запуск під час входу</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx запускається автоматично, коли ви входите на цей ПК.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx не налаштовано запускатися під час входу, тому вам доведеться відкривати його самостійно, перш ніж телефон зможе під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>Не вдалося налаштувати RemEx на запуск під час входу, тому вам доведеться відкривати його самостійно щоразу.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи запускається він під час входу. Те, що ви бачите тут, може не збігатися з налаштуваннями вашого ПК.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx не зміг перевірити цей ПК, бо частина RemEx, яка виконує перевірки, не працює. Доки це не зміниться, ваш телефон не зможе під'єднатися.</value>
+  </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Файл отримано</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} надійшов із вашого телефона.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Діагностику експортовано</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Збережено у {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx запустився не повністю</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Частина RemEx не змогла запуститися, тож дещо не працюватиме. Подробиці — у Діагностиці.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Запит на файл відхилено</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx не зміг показати запит дозволу, тому відхилив передавання файлу за вас.</value>
+  </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Відбиток сертифіката</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Якщо телефон попереджає, що сертифікат цього ПК змінився, порівняйте показане там значення з цим.</value>
+  </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Телефон не підключено</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 телефон підключено</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} підключено</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>Підключено телефонів: {0}</value>
+  </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Стан телефона: підключено</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Стан телефона: телефон не підключено</value>
+  </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx не працює на цьому ПК</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>ТЕЛЕФОН</value>
+  </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Пов’язані пристрої</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>З цим ПК ще не пов’язано жодного телефона.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Невідомо</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>Перше пов’язання</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Востаннє в мережі</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Стан пристрою: підключено</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Стан пристрою: не підключено</value>
+  </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Термін дії цього PIN-коду минув.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Отримати новий PIN-код</value>
+  </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Перейменувати</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Нова назва</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Очистіть назву, щоб повернутися до ідентифікатора пристрою.</value>
+  </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Скасувати пов’язання з цим телефоном?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} більше не зможе підключатися до цього ПК. Щоб скористатися ним знову, доведеться пов’язати його заново з новим PIN-кодом. Цю дію не можна скасувати.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Скасувати пов’язання</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Пов’язання пристрою скасовано</value>
+  </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Не вдалося завершити скасування пов’язання: {0}. Цей пристрій може повернутися під час наступного запуску RemEx — скасуйте пов’язання ще раз тоді.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Базовий режим</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Світлий, темний або відповідно до налаштувань операційної системи.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Світлий</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Темний</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
+    <value>{0}&#xD;&#xA;Адреса: {1}</value>
+  </data>
+  <data name="Shell_StatusFlyoutAddress" xml:space="preserve">
+    <value>Адреса</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
+    <value>З'єднання з хостом</value>
+  </data>
+  <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
+    <value>Затримка</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostRuntime" xml:space="preserve">
+    <value>Середовище виконання</value>
+  </data>
+  <data name="A11y_ConnectionStatusButton" xml:space="preserve">
+    <value>Стан підключення</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>Копіювати як AXAML</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>Експортувати як JSON</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>Імпортувати JSON</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>Палітра RemEx</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>Палітру скопійовано</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>Вставте її в будь-який Avalonia ResourceDictionary.</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>Палітру імпортовано</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>Застосовано {0}, {1}.</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>Цей файл не є палітрою RemEx.</value>
+  </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>Нейтральна</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>Монохромна</value>
+  </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>Сяйво</value>
+  </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>Джерело шпалер</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>Шпалери робочого столу</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>Вибрати зображення</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>Вибрати файл…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>Розмиття</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>Не вдалося завантажити зображення шпалер, тому поки що показано суцільний фон. Виберіть інше зображення, щоб спробувати ще раз.</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>Не вдалося скопіювати це зображення, тому збережено попереднє.</value>
+  </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>Зберегти поточну</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>Ваші палітри</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>Вбудовані</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>Видалити палітру</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>Назва палітри</value>
+  </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>КОЛІР</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>РЕЖИМ</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>ВИГЛЯД</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>ПОВЕДІНКА</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>ЗБЕРЕЖЕНІ ПАЛІТРИ</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>Джерело</value>
+  </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>Узгодити з телефоном</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Акцент Windows</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>Шпалери</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>Власний</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>Поточний колір акценту Windows</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>Насиченість</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>Стратегія</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>Попередній перегляд</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>Зразок картки</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>Картки й текст виглядатимуть так.</value>
+  </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Ця назва вже використовується</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>«{0}» вже є в цій папці. Ви можете зберегти обидва файли, замінити той, що там є, або пропустити цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>«{0}» вже тут, але це інший тип елемента — папка там, де ви вставляєте файл, або навпаки. Збережіть обидва або пропустіть цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Нову назву для «{0}» зайняло щось інше саме перед створенням. Спробуйте «Зберегти обидва» ще раз, щоб вибрати вільну назву, або пропустіть цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>Не вдається дати «{0}» нову назву тут, бо нова назва була б задовгою для цієї папки. Пропустіть цей елемент або зупиніть вставляння та спершу скоротіть назву.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>Не вдалося вставити «{0}» сюди, і цей ПК не розпізнає причину, яку назвав ваш пристрій. Пропустіть цей елемент або зупиніть вставляння.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Зберегти обидва</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Ваш пристрій вибере нову назву, тож нічого не буде перезаписано.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Замінити</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Перезаписує елемент, який уже там є. Цю дію не можна скасувати.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Пропустити</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Залишає цей елемент як є та продовжує з рештою.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Зупинити вставляння</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Зупиніться тут. Усе, що ще не вставлено, залишиться без змін.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Вставляння зупинено. Елементи, які не було вставлено, досі в буфері обміну.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Збережено як «{0}», тож елемент, який уже там був, залишився.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Після кількох спроб «{0}» покинуто. У цьому елементі нічого не змінено.</value>
   </data>
 </root>

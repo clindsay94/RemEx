@@ -1,13 +1,16 @@
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Core.Services.Security;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Security;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -19,14 +22,67 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     private readonly ConnectionViewModel _connection;
     private readonly ShellViewModel _shell;
 
+    /// <summary>
+    /// An explicitly supplied certificate service (tests only). When null, the service is looked up
+    /// from the containers on every read — see <see cref="ResolveCertificateService"/>.
+    /// </summary>
+    private readonly ICertificateService? _injectedCertificateService;
+
     [ObservableProperty]
     private string _clientVersion = "unknown";
 
+    /// <summary>
+    /// This build's identity — a short commit sha, with a "+" marker when it was built from a
+    /// working tree that had uncommitted changes. Empty when the assembly carries no stamp.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="ClientVersion"/> because it answers a separate question: the version
+    /// says which release, this says which build. It exists because both heads sat on 2.4.0 long
+    /// enough that the version could not tell two binaries apart (RemEx-2ckhm).
+    /// </remarks>
+    [ObservableProperty]
+    private string _clientBuildId = string.Empty;
+
+    /// <summary>Whether there is a build id worth showing a row for.</summary>
+    /// <remarks>
+    /// A row reading "unknown" beside a real version number is worse than no row — it invites the
+    /// reader to treat the absence of a stamp as a property of the build rather than of the machine
+    /// that built it, which is the opposite of what this feature is for.
+    /// </remarks>
+    public bool HasClientBuildId => !string.IsNullOrEmpty(ClientBuildId);
+
+    partial void OnClientBuildIdChanged(string value) => OnPropertyChanged(nameof(HasClientBuildId));
+
+    /// <summary>
+    /// The connected host's build id in its comparable form — sha, plus a bare '+' when that build
+    /// was dirty (RemEx-d9guj). Empty when disconnected or when the host predates the field, and
+    /// the row hides on empty by the same no-"unknown" rule as <see cref="ClientBuildId"/>.
+    /// </summary>
+    /// <remarks>
+    /// On this app the "host" is this same PC over loopback, so the row usually mirrors
+    /// <see cref="ClientBuildId"/> — and a SHA mismatch between the two rows is what makes a
+    /// partial update (UI and agent from different commits) visible instead of invisible. Only
+    /// the sha half carries that signal: the reduction below drops the dirty suffix even here,
+    /// where it happens to be comparable, because this view model cannot know it is loopback.
+    /// </remarks>
+    [ObservableProperty]
+    private string _hostBuildId = string.Empty;
+
+    /// <summary>Whether there is a host build id worth showing a row for.</summary>
+    public bool HasHostBuildId => !string.IsNullOrEmpty(HostBuildId);
+
+    partial void OnHostBuildIdChanged(string value) => OnPropertyChanged(nameof(HasHostBuildId));
+
     [ObservableProperty]
     private string _hostVersion = "Disconnected";
-    
+
+    /// <summary>
+    /// This PC's own certificate fingerprint, in the grouped short form the Android client shows
+    /// (RemEx-n8xk). Not localized: it is base64 plus the <c>(none)</c> marker, and the whole point
+    /// is that it reads the same here as it does on the phone.
+    /// </summary>
     [ObservableProperty]
-    private bool _isShowShortcutsOpen;
+    private string _hostFingerprint = SpkiFingerprintDisplay.Unavailable;
 
     // ── Update check (RemEx-<update-checker>) ──────────────────────────────────
     private readonly UpdateCheckService? _updateService;
@@ -56,18 +112,30 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     /// <summary>The shared connection view-model (used for the host-version display).</summary>
     public ConnectionViewModel Connection => _connection;
 
-    public AboutViewModel(ConnectionViewModel connection, ShellViewModel shell)
+    /// <param name="certificateService">
+    /// Injected by tests. Left null in the app, where it is resolved the same way
+    /// <c>ConnectionViewModel</c> resolves it for the pairing QR code: from the app container first,
+    /// then from the embedded host's, because the host registers it and the two containers are
+    /// separate.
+    /// </param>
+    public AboutViewModel(
+        ConnectionViewModel connection,
+        ShellViewModel shell,
+        ICertificateService? certificateService = null)
     {
         _connection = connection;
         _shell = shell;
+        _injectedCertificateService = certificateService;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         // Live language switching: the What's New / FAQ lists are built from localized strings
         // once, so rebuild them when the culture changes.
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
 
-        // Get client version from assembly
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        ClientVersion = version?.ToString() ?? "unknown";
+        // Get client version from assembly, in the same three-part form the Android About screen
+        // shows for the same release (e.g. "2.4.0") rather than a four-part "2.4.0.0".
+        var version = AppVersion.Display;
+        ClientVersion = string.IsNullOrEmpty(version) ? "unknown" : version;
+        ClientBuildId = AppVersion.BuildId;
 
         // The update check runs at startup (App.InitializeAppAsync); pick up any cached result so the
         // card is populated the instant About opens, and stay subscribed for the startup check that may
@@ -81,9 +149,28 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         }
 
         UpdateHostVersion();
+        UpdateHostFingerprint();
         LoadWhatsNew();
         LoadFaq();
     }
+
+    /// <summary>
+    /// Finds the certificate service, app container first, then the embedded host's.
+    /// </summary>
+    /// <remarks>
+    /// RESOLVED ON EVERY READ, NOT CACHED IN THE CONSTRUCTOR (review of RemEx-n8xk). The two
+    /// containers are separate and the host registers the service in its own, so a view model built
+    /// before the host publishes its container would cache null — and because
+    /// <c>ShellViewModel</c> keeps one About instance for the session, that null would never be
+    /// revisited. Re-resolving costs a dictionary lookup on a page the user opens by hand.
+    /// </remarks>
+    private ICertificateService? ResolveCertificateService()
+        => _injectedCertificateService
+            ?? FromContainer(App.Services)
+            ?? FromContainer(App.EmbeddedHostServices);
+
+    private static ICertificateService? FromContainer(IServiceProvider? provider)
+        => provider?.GetService(typeof(ICertificateService)) as ICertificateService;
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -112,9 +199,12 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             if (WhatsNewItems.Count > 0)
                 return;
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall back to the localized static highlights below if the changelog can't be read.
+            // Benign - the static highlights below are a real fallback - but recorded anyway, because
+            // "the About page shows the wrong release notes" is otherwise unexplainable from a log.
+            InMemoryLogSink.Append(LogLevel.Debug, "About",
+                "Could not read the bundled changelog; falling back to static highlights", ex);
         }
 
         WhatsNewItems.Add(new WhatsNewItem(
@@ -205,15 +295,62 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private void ToggleShortcuts() => IsShowShortcutsOpen = !IsShowShortcutsOpen;
-
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ConnectionViewModel.HostCapabilities) ||
             e.PropertyName == nameof(ConnectionViewModel.IsConnected))
         {
             UpdateHostVersion();
+            // Also re-read the fingerprint, because the SERVICE can arrive late even though the
+            // certificate cannot. HostBootstrapper awaits GetOrCreateCertificateAsync BEFORE it
+            // registers ICertificateService, so the service and a loaded certificate become visible
+            // together — a resolvable service holding an unloaded certificate is not a state the
+            // desktop can observe. What is observable is no service at all: the embedded host is
+            // started inside a try/catch, and About is cached for the session by ShellViewModel, so
+            // without this re-read a host that published its container late would leave "(none)" on
+            // screen permanently — on the one page a user opens precisely because their phone told
+            // them to check this value.
+            UpdateHostFingerprint();
+        }
+    }
+
+    /// <summary>
+    /// Reads this PC's certificate fingerprint into <see cref="HostFingerprint"/>, in the same
+    /// grouped short form the Android client shows for the pin it holds (RemEx-n8xk).
+    /// </summary>
+    private void UpdateHostFingerprint()
+    {
+        var certificateService = ResolveCertificateService();
+        if (certificateService is null)
+        {
+            HostFingerprint = SpkiFingerprintDisplay.Unavailable;
+
+            // LOGGED, THOUGH IT IS AN EARLY RETURN RATHER THAN A CATCH (review of RemEx-n8xk). This
+            // is the REACHABLE cause of an empty row — the embedded host is started inside a
+            // try/catch, and a host that never came up registers no container — while the throw
+            // below is not observable from the desktop at all. Leaving the reachable branch silent
+            // put the only "(none)" a real user can hit nowhere in the diagnostics export, which is
+            // the exact shape SwallowedErrorLoggingTests exists to prevent. Information, not Debug,
+            // so it survives the export's level filter.
+            InMemoryLogSink.Append(LogLevel.Information, "About",
+                "No certificate service in this process, so this PC's fingerprint cannot be shown.", null);
+            return;
+        }
+
+        try
+        {
+            HostFingerprint = SpkiFingerprintDisplay.ForDisplay(certificateService.GetSpkiSha256Base64());
+        }
+        catch (Exception ex)
+        {
+            // DEFENSIVE, not expected. GetSpkiSha256Base64 throws until the certificate is loaded,
+            // but HostBootstrapper awaits that load before it registers the service, so a resolvable
+            // service with an unloaded certificate is not a state this process can reach. Kept
+            // because the alternative is an unhandled exception taking down the page the user was
+            // told to visit, and because a certificate the host cannot READ would land here too.
+            HostFingerprint = SpkiFingerprintDisplay.Unavailable;
+            InMemoryLogSink.Append(LogLevel.Warning, "About",
+                "The host certificate fingerprint could not be read", ex);
         }
     }
 
@@ -222,18 +359,33 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         if (!_connection.IsConnected)
         {
             HostVersion = LocalizationService.Instance["Status_Disconnected"];
+            HostBuildId = string.Empty;
             return;
         }
 
         if (_connection.HostCapabilities == null)
         {
             HostVersion = LocalizationService.Instance["Status_Connected"];
+            HostBuildId = string.Empty;
             return;
         }
 
         var caps = _connection.HostCapabilities;
-        var version = caps.Version;
-        var platform = caps.Platform;
+        // Comparable form only: the sha, and a bare '+' for a dirty build. The remote dirty
+        // suffix is hashed by a different tool than the local one, so rendering it would invite
+        // a comparison that reports differences that are not there (RemEx-d9guj).
+        HostBuildId = AppVersion.NormalizeRemoteBuildId(caps.BuildId);
+        // Normalised for DISPLAY ONLY — the wire value is untouched, so nothing the Android client
+        // parses changes. The host still reports four components ("2.4.0.0") while this app shows
+        // its own as three, and the two sit one divider apart on this page (RemEx-8jzu).
+        var version = AppVersion.Normalize(caps.Version);
+        // TWO VALUES ON PURPOSE, and keeping them apart is the point. The label is what the user
+        // reads; the raw token is what the branch below decides on. Deciding on the label would mean
+        // comparing an English wire sentinel against a string that is nominally translated - correct
+        // only for as long as nobody localizes the unknown case, and silently wrong the moment
+        // somebody does. (RemEx-6s34)
+        var platform = _connection.HostPlatformLabel;
+        var platformToken = caps.Platform;
         // Localized label, not the raw wire token: RuntimeMode "service" is legacy naming for a
         // non-interactive Windows process, not a service install (RemEx-9z0f).
         var runtime = _connection.HostRuntimeLabel;
@@ -242,7 +394,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         {
             HostVersion = $"{version} ({platform}, {runtime})";
         }
-        else if (!string.IsNullOrEmpty(platform) && platform != "unknown")
+        else if (!string.IsNullOrEmpty(platformToken) && platformToken != "unknown")
         {
             HostVersion = $"{platform} ({runtime})";
         }
@@ -265,9 +417,11 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             };
             Process.Start(psi);
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fail if browser can't be opened
+            // The user clicked a link and nothing happened. Silence here means the log cannot even
+            // confirm the click was received, let alone why it did nothing.
+            InMemoryLogSink.Append(LogLevel.Warning, "About", "Could not open a browser for a link", ex);
         }
     }
 
@@ -300,9 +454,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         {
             Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fail if a browser can't be opened.
+            InMemoryLogSink.Append(LogLevel.Warning, "About",
+                "Could not open a browser for the update download", ex);
         }
     }
 

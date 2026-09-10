@@ -9,7 +9,7 @@ namespace Remex.Agent.Services.Input.Linux;
 /// <summary>
 /// Injects pointer and keyboard events via the xdg-desktop-portal RemoteDesktop D-Bus API.
 ///
-/// Wayland-only path. Maintains a persistent <see cref="Connection"/> so that the
+/// Wayland-only path. Maintains a persistent <see cref="DBusConnection"/> so that the
 /// portal session (which is tied to the caller's unique bus name) survives across
 /// every Notify* invocation. Permission dialogue is shown once during
 /// <see cref="EnsureStartedAsync"/>; afterwards every Notify* method is fire-and-forget.
@@ -21,7 +21,7 @@ namespace Remex.Agent.Services.Input.Linux;
 ///     therefore a no-op on input-only injectors and is kept only for API compatibility.
 /// </summary>
 [SupportedOSPlatform("linux")]
-internal sealed class LinuxPortalInputInjector : IAsyncDisposable
+internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputSink
 {
     private const string PortalDestination = PortalDbusNames.PortalService;
     private const string PortalPath = PortalDbusNames.PortalPath;
@@ -30,7 +30,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
     private readonly ILogger _logger;
 
-    private Connection? _conn;
+    private DBusConnection? _conn;
     private string? _sessionHandle;
     private string? _normalizedSender;
     private volatile bool _active;
@@ -106,6 +106,14 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
         var sessionHandle = sessionVariant.GetString();
         _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
+
+        // Assigned here, not only on the full-success path below, so that a SelectDevices or Start
+        // failure further down can actually find it: CloseSessionInternalAsync closes via
+        // _sessionHandle and no-ops when it is null. Before this the two failure returns below called
+        // CloseSessionInternalAsync while the field was still null, so CreateSession's handle was
+        // never closed - a leak that a retry (RemEx-5bwpv) makes repeatable once per declined tap
+        // instead of a one-time curiosity.
+        _sessionHandle = sessionHandle;
 
         // Step 2: SelectDevices (Keyboard | Pointer = 3).
         var selectResults = await PortalDbusHelper.CallPortalAsync(
@@ -395,7 +403,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     /// Wraps the RemoteDesktop <c>CreateSession</c> portal call with one-shot
     /// stale-frontend recovery. On the first <c>UnknownMethod</c>/<c>ServiceUnknown</c>/<c>UnknownInterface</c>
     /// error per process, restarts the portal frontend via
-    /// <see cref="Portal.PortalRecoveryHelper"/> and retries once. On any other
+    /// <see cref="Remex.Agent.Services.RemoteDesktop.Linux.Portal.PortalRecoveryHelper"/> and retries once. On any other
     /// outcome, returns the original result (or null).
     /// </summary>
     private async Task<Dictionary<string, VariantValue>?> CreateSessionWithRecoveryAsync(
@@ -430,7 +438,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                     logger: _logger,
                     ct: ct);
             }
-            catch (DBusException ex) when (
+            catch (DBusErrorReplyException ex) when (
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownInterface")
@@ -461,7 +469,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     {
         if (_conn is not null) return true;
 
-        var address = Address.Session;
+        var address = DBusAddress.Session;
         if (string.IsNullOrEmpty(address))
         {
             _logger.LogInformation(
@@ -472,7 +480,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
         try
         {
-            var conn = new Connection(address);
+            var conn = new DBusConnection(address);
             await conn.ConnectAsync();
             _conn = conn;
 

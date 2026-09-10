@@ -118,6 +118,13 @@ on every command; an unauthenticated sender no longer works.
 
 ### Request Payload: `CommandRequest`
 
+**The request may not exceed 64 KB.** The host reads the length prefix, refuses anything larger, and
+closes the connection *without sending a `CommandResponse`* — so an over-framed request looks like a
+bare disconnect rather than an error, and that is worth knowing before debugging one. The limit exists
+because the buffer is allocated from the declared length before the sender has been authenticated
+(RemEx-ga503). It is far above anything this port dispatches: the widest command here is `WAKEONLAN`
+with its MAC, broadcast address, port and delay.
+
 The client must send a UTF-8 encoded JSON string matching the following structure:
 
 ```json

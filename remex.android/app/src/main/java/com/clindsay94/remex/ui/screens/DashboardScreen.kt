@@ -108,6 +108,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -116,6 +118,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -183,9 +188,19 @@ fun DashboardScreen(
 
         val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
-        LaunchedEffect(Unit) {
-                viewModel.wakeStatus.collect { message ->
-                        snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
+        // Gated on STARTED. Unlike pairingRequired this flow has NO replay, so gating genuinely
+        // drops anything emitted while stopped — which is the behaviour we want here: the user
+        // triggers a wake from this screen, and a snackbar announcing it minutes later, after they
+        // have been elsewhere, is worse than no snackbar at all.
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.wakeStatus.collect { message ->
+                                snackbarHostState.showSnackbar(
+                                        message,
+                                        duration = androidx.compose.material3.SnackbarDuration.Short
+                                )
+                        }
                 }
         }
 
@@ -315,8 +330,35 @@ fun DashboardScreenContent(
         val wakePcSubtitle = stringResource(R.string.dashboard_wake_pc_subtitle)
         val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
 
+        // THE LIST WAS ALREADY REMEMBERED; THE KEY WAS THE PROBLEM (RemEx-cite item 3).
+        // parseTelemetry returns a FRESH list every tick, so remember(telemetrySensors) saw a new
+        // key each second and rebuilt - buildList, distinctBy, then a sort - even with the drawer
+        // shut and nothing about the card list changed.
+        //
+        // Keyed on what the cards are actually BUILT FROM: id, name, category and group. The field
+        // that changes every tick is `value`, and no card here reads it. So the key now moves when
+        // the SET of sensors changes and stays put while their readings update, which is the
+        // distinction the old key could not express. A hash rather than a joined string because this
+        // still runs per tick and the point was to make that cheap.
+        // ONE INDEX PER TICK, INSTEAD OF TWO SCANS PER VISIBLE CARD (RemEx-cite item 4). Keyed on
+        // telemetrySensors itself, NOT on the stable card key below - this holds the sensors and
+        // therefore their values, which change every tick, so memoising it any harder would serve
+        // stale readings. That is the opposite of what availableCards wants, and the two keys
+        // differ deliberately.
+        val sensorIndex = remember(telemetrySensors) { SensorIndex(telemetrySensors) }
+
+        val availableCardsKey =
+                remember(telemetrySensors) {
+                        telemetrySensors.fold(7) { acc, sensor ->
+                                acc * 31 + sensor.id.hashCode() +
+                                        sensor.name.hashCode() * 3 +
+                                        sensor.category.hashCode() * 5 +
+                                        sensor.group.hashCode() * 7
+                        }
+                }
+
         val availableCards =
-                remember(telemetrySensors, pcStatusTitle, wakePcTitle, telemetryFallback) {
+                remember(availableCardsKey, pcStatusTitle, wakePcTitle, telemetryFallback) {
                         buildList {
                                 add(AvailableCardItem("pc_status", pcStatusTitle, pcStatusSubtitle))
                                 add(AvailableCardItem("wake_pc", wakePcTitle, wakePcSubtitle))
@@ -791,7 +833,7 @@ fun DashboardScreenContent(
                                                                         }
                                                                         "TELEMETRY" -> {
                                                                                 val sensor =
-                                                                                        selectSensor(card.sensorId, telemetrySensors)
+                                                                                        sensorIndex.select(card.sensorId)
                                                                                 // Keyed by the RESOLVED sensor's own id, not the card's declared
                                                                                 // sensorId - curated ids without a stable cardSlug (e.g.
                                                                                 // sensor:cputemp) resolve to a different real host id, and
@@ -801,7 +843,7 @@ fun DashboardScreenContent(
                                                                                                         sensor?.id]
                                                                                                 .orEmpty()
                                                                                 val secondarySensor =
-                                                                                        selectSensor(card.secondarySensorId, telemetrySensors)
+                                                                                        sensorIndex.select(card.secondarySensorId)
                                                                                 val secondaryHistory =
                                                                                         telemetryHistory[
                                                                                                         secondarySensor?.id]
@@ -1383,7 +1425,7 @@ fun DashboardScreenContent(
                                 pickerCardId?.let { cardId ->
                                         val pickedCard = cards.firstOrNull { it.id == cardId }
                                         if (pickedCard != null) {
-                                                val pickedSensor = selectSensor(pickedCard.sensorId, telemetrySensors)
+                                                val pickedSensor = sensorIndex.select(pickedCard.sensorId)
                                                 val pickedHistory = telemetryHistory[pickedSensor?.id].orEmpty()
                                                 DisplayModePickerSheet(
                                                         cardId = cardId,
@@ -1627,34 +1669,89 @@ private fun ConnectionOrbCard(
         onNavigateToConnection: () -> Unit = {}
 ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                // Hoisted above the Column because the Column's own modifier now clips the ripple
+                // to this shape (RemEx-g9mq). Same values, same animation, read one scope out.
+                var currentMorphTarget by remember { mutableFloatStateOf(shapePreset) }
+
+                LaunchedEffect(isConnecting) {
+                        if (isConnecting) {
+                                while (true) {
+                                        currentMorphTarget =
+                                                (0 until materialShapesList.size)
+                                                        .random()
+                                                        .toFloat()
+                                        delay(1000)
+                                }
+                        } else {
+                                currentMorphTarget = shapePreset
+                        }
+                }
+
+                val animatedShapePreset by
+                        animateFloatAsState(
+                                targetValue = currentMorphTarget,
+                                animationSpec =
+                                        MaterialTheme.motionScheme.slowSpatialSpec(),
+                                label = "orb_morph"
+                        )
+
+                // THE HIT AREA IS THE ORB AND ITS CAPTION TOGETHER (RemEx-g9mq). It used to be the
+                // 72dp orb alone, so the caption reading "TAP TO CONNECT" — an imperative
+                // instruction aimed at a non-technical user — was the one part of the card that did
+                // nothing when tapped, and gave no feedback that it had been missed. Device capture
+                // had the orb clickable at [259,504][475,720] and the caption at [228,744][544,804]
+                // with clickable=false.
+                //
+                // DELIBERATELY THE COLUMN AND NOT fillMaxSize, which is what the bead asked for.
+                // Two gestures already own this surface, and a clickable child outranks both because
+                // Compose dispatches leaf-to-root:
+                //
+                //   1. SELECTION MODE is the decisive one. DraggableDashboardCard's selectionActive
+                //      branch toggles multi-select with detectTapGestures, which awaits an
+                //      UNCONSUMED down. A clickable descendant consumes it first, so that card can
+                //      no longer be added to or removed from a selection and tapping it navigates
+                //      away instead. Covering the whole card would have made this card the only one
+                //      that cannot be multi-selected at all.
+                //   2. detectPickUpGesture arms on a long press and selects on release-in-place
+                //      without consuming the release, while a plain clickable has no long-press
+                //      timeout and fires on release regardless of hold duration — so a long press
+                //      inside the hit area both selects the card and activates it.
+                //
+                // Both predate this change over the 72dp orb; this widens them to the caption, which
+                // is the smallest area that fixes the reported bug. Leaving the card's outer ring
+                // untouched is what keeps it selectable and draggable. RemEx-7o8r tracks both, and
+                // the fix belongs in the gesture layer rather than here — it affects every in-card
+                // control, including the Wake-on-LAN button. The Column is comfortably past the 48dp
+                // minimum touch target either way.
+                //
+                // mergeDescendants makes this ONE node for a screen reader rather than an unlabelled
+                // clickable box sitting next to a stranded caption, so what gets announced is the
+                // instruction itself. Disabled rather than no-op while connecting: the old code
+                // branched to {} there, which still rippled and still announced as actionable,
+                // promising a response it would never give.
                 Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                        var currentMorphTarget by remember { mutableFloatStateOf(shapePreset) }
-
-                        LaunchedEffect(isConnecting) {
-                                if (isConnecting) {
-                                        while (true) {
-                                                currentMorphTarget =
-                                                        (0 until materialShapesList.size)
-                                                                .random()
-                                                                .toFloat()
-                                                delay(1000)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier =
+                                Modifier.semantics(mergeDescendants = true) {}
+                                        // Clipped so the ripple follows the card's morphing shape
+                                        // rather than landing as a hard rectangle over a card whose
+                                        // whole visual language is rounded — worst under the
+                                        // monochrome palette at contrast 1.0, where ripple alpha is
+                                        // highest against a flattened scheme.
+                                        .clip(cardShape(animatedShapePreset, cornerRadius))
+                                        .clickable(
+                                                enabled = !isConnecting,
+                                                role = Role.Button,
+                                                onClickLabel =
+                                                        stringResource(
+                                                                R.string.dashboard_connection_card_action
+                                                        )
+                                        ) {
+                                                if (isConnected) onToggle()
+                                                else onNavigateToConnection()
                                         }
-                                } else {
-                                        currentMorphTarget = shapePreset
-                                }
-                        }
-
-                        val animatedShapePreset by
-                                animateFloatAsState(
-                                        targetValue = currentMorphTarget,
-                                        animationSpec =
-                                                MaterialTheme.motionScheme.slowSpatialSpec(),
-                                        label = "orb_morph"
-                                )
-
+                ) {
                         val orbColor by
                                 animateColorAsState(
                                         targetValue =
@@ -1708,14 +1805,7 @@ private fun ConnectionOrbCard(
                                 modifier =
                                         Modifier.size(72.dp)
                                                 .clip(cardShape(animatedShapePreset, cornerRadius))
-                                                .background(orbColor.copy(alpha = glowAlpha))
-                                                .clickable {
-                                                        when {
-                                                                isConnected -> onToggle()
-                                                                isConnecting -> {}
-                                                                else -> onNavigateToConnection()
-                                                        }
-                                                },
+                                                .background(orbColor.copy(alpha = glowAlpha)),
                                 contentAlignment = Alignment.Center
                         ) {}
 

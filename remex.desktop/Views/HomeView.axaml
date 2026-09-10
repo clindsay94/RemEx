@@ -1,5 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
@@ -7,48 +9,137 @@
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
-        <!-- Quick-action pill buttons -->
-        <Style Selector="Button.action-pill">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="24"/>
-            <Setter Property="Padding" Value="20,14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
+        <!-- System status row dot. CLASS BINDINGS rather than a bound brush name, because a
+             DynamicResource cannot be resolved from a string a binding produced - it would silently
+             render nothing. All three brushes exist in every one of the four themes. -->
+        <Style Selector="Ellipse.state-dot">
+            <Setter Property="Width" Value="9"/>
+            <Setter Property="Height" Value="9"/>
+            <Setter Property="Fill" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
-        <Style Selector="Button.action-pill:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="translateY(-2px)"/>
+        <Style Selector="Ellipse.state-dot.attention">
+            <Setter Property="Fill" Value="{DynamicResource SystemWarningBrush}"/>
         </Style>
-        <Style Selector="Button.action-pill:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+        <Style Selector="Ellipse.state-dot.problem">
+            <Setter Property="Fill" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
-        <Style Selector="Button.action-pill-accent">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.12"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+
+        <!-- Footer radar halo pulse (RemEx-s19yc). CLASS-GATED Style.Animations, not the
+             MaterialAnimationAssist ContinuousAnimation attached property - that assist's Changed
+             handler cannot be stopped by clearing it back to null (bd memory: material-animation-
+             assist-cannot-be-stopped), which is unfit for a pulse that must stop when the phone
+             detaches or reduced motion is on. Same 1.6s/Alternate/Infinite timing as App.axaml's
+             presence badge pulse. -->
+        <Style Selector="Ellipse.status-ring.pulse">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6" IterationCount="Infinite" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.2"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.5"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
         </Style>
-        <Style Selector="Button.action-pill-danger">
-            <Setter Property="Foreground" Value="{DynamicResource SystemError}"/>
-            <Setter Property="BorderBrush" Value="#40FF6B6B"/>
+
+        <!-- Dashboard first-paint entrance (RemEx-dnfq0). Opacity + translateY only, so nothing is
+             ever hidden or hit-test-suppressed - interactivity is never delayed. The class is added
+             by HomeView.axaml.cs only when StaggeredEntrance.ShouldPlay says this is the first visit
+             this process and reduced motion is off. Budget: max Delay (125ms, N=6) + Duration (175ms)
+             = 300ms, the bead's ceiling. FillMode=Backward holds each child's 0% keyframe (Opacity 0)
+             until its own Delay elapses, so a later-staggered child does not flash at full opacity
+             before its turn. -->
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(1)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
         </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(2)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(3)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(4)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(5)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel#DashboardSections.entrance > :is(Control):nth-child(6)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.175" Delay="0:0:0.125" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto">
     <ScrollViewer Grid.Row="0" Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="40,32,40,40" Spacing="48">
+        <StackPanel Name="DashboardSections" Margin="40,32,40,40" Spacing="48">
 
             <!-- ═══ WELCOME HERO ═══ -->
             <Grid>
@@ -61,15 +152,20 @@
                     </Border>
 
                     <TextBlock Classes="page-title" Text="{local:Localize Home_WelcomeTitle}" HorizontalAlignment="Center" TextAlignment="Center"/>
-                    <TextBlock Text="{local:Localize Home_WelcomeIntro}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="640" TextWrapping="Wrap" LineHeight="21"/>
+                    <TextBlock Text="{local:Localize Home_WelcomeIntro}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="640" TextWrapping="Wrap" LineHeight="21"/>
 
+                    <!-- The remaining inline Padding values on .pill buttons in this file (here and
+                         below) are each a deliberate, context-specific CTA size — a search-bar launcher,
+                         a hero CTA, a small chip — not copy-paste drift off CornerRadiusSmall/.compact.
+                         Three call sites that matched .pill.compact's Padding exactly (12,6) were folded
+                         into that class above; the rest are documented exceptions (RemEx-cgrv3). -->
                     <!-- Command palette launcher -->
-                    <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="action-pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
+                    <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="secondary pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Path Grid.Column="0" Data="{StaticResource IconSearch}" Fill="{DynamicResource TextMutedBrush}" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                            <TextBlock Grid.Column="1" Text="{local:Localize Home_SearchPrompt}" FontSize="13" FontWeight="Normal" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Foreground="{DynamicResource TextMutedBrush}" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <TextBlock Grid.Column="1" Text="{local:Localize Home_SearchPrompt}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Normal" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                             <Border Grid.Column="2" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
-                                <TextBlock Text="Ctrl + K" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Ctrl + K" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                         </Grid>
                     </Button>
@@ -78,36 +174,125 @@
                     <WrapPanel HorizontalAlignment="Center" Margin="0,6,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <TextBlock Text="Ctrl + 1–7" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Ctrl + 1–7" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
-                            <TextBlock Text="{local:Localize Home_ScNav}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_ScNav}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <TextBlock Text="Ctrl + ," FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Ctrl + ," Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
-                            <TextBlock Text="{local:Localize Home_ScSettings}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_ScSettings}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <TextBlock Text="Esc" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Esc" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
-                            <TextBlock Text="{local:Localize Home_ScClose}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_ScClose}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </WrapPanel>
                 </StackPanel>
             </Grid>
 
+            <!-- ═══ SYSTEM STATUS (RemEx-id37) ═══ -->
+            <material:Card Padding="24" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0"
+                    IsVisible="{Binding SystemStatus.IsRendered}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Classes="card-title"
+                                   Text="{local:Localize SystemStatus_Title}" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="secondary pill compact"
+                                Command="{Binding SystemStatus.RefreshCommand}"
+                                IsEnabled="{Binding !SystemStatus.IsChecking}"
+                                AutomationProperties.Name="{local:Localize SystemStatus_Recheck}"
+                                ToolTip.Tip="{local:Localize SystemStatus_Recheck}">
+                            <TextBlock Text="{local:Localize SystemStatus_Recheck}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- COLLAPSED WHEN READY: one line, no rows. A card that is always open teaches
+                         people to stop reading it. -->
+                    <TextBlock Text="{local:Localize SystemStatus_AllReady}" Theme="{StaticResource CaptionTextBlock}"
+                               Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding SystemStatus.IsFullyReady}"/>
+
+                    <!-- THE HOST IS NOT THERE. Review found IsUnavailable computed and rendered
+                         nowhere, so the card simply vanished - on the one surface a user opens to
+                         find out that the host is down. -->
+                    <TextBlock Text="{local:Localize SystemStatus_Unavailable}" Theme="{StaticResource CaptionTextBlock}"
+                               Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding SystemStatus.IsUnavailable}"/>
+
+                    <!-- DataContext set HERE so each row can reach the card's FixCommand. Review
+                         found the first version casting $parent[ItemsControl].DataContext to
+                         SystemStatusViewModel - but the ItemsControl inherited HomeViewModel, so the
+                         cast failed, Command bound to null, and the Fix button did NOTHING with no
+                         error anywhere. Avalonia binding failures are silent. -->
+                    <ItemsControl DataContext="{Binding SystemStatus}"
+                                  ItemsSource="{Binding Rows}"
+                                  IsVisible="{Binding !IsFullyReady}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SystemStatusRowViewModel">
+                                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+                                    <Ellipse Grid.Column="0" Classes="state-dot"
+                                             Classes.attention="{Binding IsAttention}"
+                                             Classes.problem="{Binding IsProblem}"
+                                             VerticalAlignment="Top" Margin="0,5,12,0"/>
+
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="{Binding Title}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap"/>
+                                        <!-- The SENTENCE, never ReadinessCheck.Detail: Detail is
+                                             developer-facing English built for logs, sometimes from an
+                                             exception message, and the view model has no path to it. -->
+                                        <TextBlock Text="{Binding Sentence}" Theme="{StaticResource CaptionTextBlock}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" MaxWidth="620"
+                                                   HorizontalAlignment="Left"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                                VerticalAlignment="Top">
+                                        <Button Classes="secondary pill compact"
+                                                IsVisible="{Binding ShowsFix}"
+                                                IsEnabled="{Binding !$parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).IsChecking}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).FixCommand}"
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{local:Localize SystemStatus_Fix}">
+                                            <TextBlock Text="{local:Localize SystemStatus_Fix}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                        </Button>
+                                        <!-- Same $parent[ItemsControl] cast as the Fix button above,
+                                             and for the same reason: the ItemsControl inherits
+                                             HomeViewModel, so reaching the card's command needs the
+                                             explicit cast. Avalonia binding failures are silent, so
+                                             getting this wrong gives a button that does nothing with
+                                             no error anywhere. (RemEx-tb0a) -->
+                                        <Button Classes="secondary pill compact"
+                                                IsVisible="{Binding ShowsExplain}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).ExplainCommand}"
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{local:Localize SystemStatus_Explain}">
+                                            <TextBlock Text="{local:Localize SystemStatus_Explain}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </material:Card>
+
             <!-- ═══ ALWAYS-ON STATS STRIP (live CPU · memory · uptime) ═══ -->
-            <Border Classes="glass-card" Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">
+            <material:Card Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">
                 <StackPanel Orientation="Horizontal">
                     <!-- CPU -->
                     <StackPanel Width="190" Spacing="7" Margin="22,14">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{local:Localize Home_StatCpu}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding CpuText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_StatCpu}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding CpuText}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Grid>
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding CpuPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding CpuPercent}" Height="4"/>
                     </StackPanel>
 
                     <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>
@@ -115,32 +300,32 @@
                     <!-- MEMORY -->
                     <StackPanel Width="190" Spacing="7" Margin="22,14">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{local:Localize Home_StatMemory}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding RamText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_StatMemory}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding RamText}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Grid>
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding RamPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding RamPercent}" Height="4"/>
                     </StackPanel>
 
                     <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>
 
                     <!-- UPTIME -->
                     <StackPanel Width="190" Spacing="7" Margin="22,14" VerticalAlignment="Center">
-                        <TextBlock Text="{local:Localize Home_StatUptime}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}"/>
-                        <TextBlock Text="{Binding UptimeText}" FontSize="18" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{local:Localize Home_StatUptime}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding UptimeText}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <WrapPanel Margin="0,24,0,0" HorizontalAlignment="Center">
 
                 <!-- ═══ LEFT COLUMN: LIVE TELEMETRY MATRIX ═══ -->
                 <StackPanel MinWidth="400" MaxWidth="1400" Spacing="24" Margin="0,0,32,32">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{local:Localize Home_ActiveSensors}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
-                        <Button AutomationProperties.Name="{local:Localize Home_OpenWorkspace}" Grid.Column="1" Classes="action-pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">
+                        <TextBlock Text="{local:Localize Home_ActiveSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
+                        <Button AutomationProperties.Name="{local:Localize Home_OpenWorkspace}" Grid.Column="1" Classes="secondary pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="[ ]" FontSize="14" FontFamily="{StaticResource JetBrainsMono}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_OpenWorkspace}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="[ ]" Theme="{StaticResource Body2TextBlock}" FontFamily="{StaticResource JetBrainsMono}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_OpenWorkspace}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -150,9 +335,32 @@
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Background" Value="Transparent"/>
+                                <!-- The gap between cards is set HERE rather than on the card itself, and the
+                                     corner radius is repeated here, so that the focus ring below lands on the
+                                     card's own outline. Left on the card, the 20px margin sat inside the ring
+                                     and the ring drew square-cornered, flush with the card on two sides and
+                                     20px clear of it on the other two - visible, but reading as a stray box
+                                     rather than as focus. -->
+                                <Setter Property="Margin" Value="0,0,20,20"/>
+                                <Setter Property="CornerRadius" Value="4,24,4,24"/>
+                                <!-- The Border is not decoration: it is what makes the keyboard focus ring
+                                     visible on these cards. App.axaml rings a focused ListBoxItem by setting
+                                     BorderBrush and BorderThickness ON THE CONTROL, which only renders if the
+                                     item's template binds them. Material's stock template does; this one
+                                     replaces it, so without this Border the pinned sensors would be the one
+                                     list in the app you can tab into and see nothing (RemEx-kgs7g).
+
+                                     While UNFOCUSED the thickness is 0 and this costs no layout. While focused
+                                     it costs 2px a side, and the WrapPanel slot is a fixed 280 wide, so the
+                                     card narrows by 4px as focus arrives. Whether that twitch is noticeable is
+                                     a visual question, recorded on the bead. -->
                                 <Setter Property="Template">
                                     <ControlTemplate>
-                                        <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding CornerRadius}">
+                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                        </Border>
                                     </ControlTemplate>
                                 </Setter>
                             </Style>
@@ -164,86 +372,87 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:SensorViewModel">
-                                <Border Classes="glass-card interactive" Padding="24" Margin="0,0,20,20" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
+                                <!-- Margin moved onto the ListBoxItem so the focus ring hugs this card. -->
+                                <material:Card Classes="interactive" Padding="24" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
                                     <Panel>
                                         <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="80" Margin="-24,0,-24,-24"/>
 
                                         <StackPanel Spacing="16">
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                <Path Grid.Column="1" Data="{StaticResource IconFlash}" Fill="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Stretch="Uniform" Opacity="0.8"/>
+                                                <TextBlock Text="{Binding Name}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <mi:MaterialIcon Grid.Column="1" Kind="Flash" Foreground="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Opacity="0.8"/>
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,8,0,0">
-                                                <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="48" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding Unit}" FontSize="16" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
+                                                <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" Theme="{StaticResource Headline3TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Unit}" Theme="{StaticResource Body1TextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Panel>
-                                </Border>
+                                </material:Card>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
 
                     <!-- No Sensors HUD state -->
-                    <Border Classes="glass-card" Padding="48" IsVisible="{Binding !PinnedSensors.Count}" CornerRadius="4,32,4,32" BorderThickness="1,0,0,0">
+                    <material:Card Padding="48" IsVisible="{Binding !PinnedSensors.Count}" CornerRadius="4,32,4,32" BorderThickness="1,0,0,0">
                         <StackPanel Spacing="16" HorizontalAlignment="Center">
-                            <TextBlock Text="{local:Localize Home_NoDataFeed}" FontSize="20" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" FontSize="13" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap"/>
-                            <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
+                            <TextBlock Text="{local:Localize Home_NoDataFeed}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap"/>
+                            <Button Classes="primary pill" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </material:Card>
                 </StackPanel>
 
                 <!-- ═══ RIGHT COLUMN: QUICK LAUNCH ═══ -->
                 <StackPanel Width="340" Spacing="16">
-                    <TextBlock Text="{local:Localize Home_Directives}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
+                    <TextBlock Text="{local:Localize Home_Directives}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
                     <UniformGrid Columns="2">
-                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="glass-card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconSensors}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsSensors}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="ChartLineVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="glass-card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconRemote}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsCommands}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsCommands}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="glass-card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconLauncher}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsApps}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Apps" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsApps}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsProcesses}" Classes="glass-card interactive" Command="{Binding NavigateToTaskManagerCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsProcesses}" Classes="card interactive" Command="{Binding NavigateToTaskManagerCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconTasks}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsProcesses}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FormatListBulleted" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsProcesses}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="glass-card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconFiles}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsFiles}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FolderOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsFiles}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="glass-card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconLogs}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsLogs}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FileDocument" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsLogs}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="glass-card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconPersonalize}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsPersonalize}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsPersonalize}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="glass-card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconAbout}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsAbout}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsAbout}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>
@@ -253,72 +462,72 @@
             <!-- ═══ RECENT ACTIVITY ═══ -->
             <StackPanel MaxWidth="780" HorizontalAlignment="Center" Spacing="16">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{local:Localize Home_RecentActivity}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
-                    <Button AutomationProperties.Name="{local:Localize Home_ClearActivity}" Grid.Column="1" Classes="action-pill" Command="{Binding ClearActivityCommand}" Padding="14,7" IsVisible="{Binding HasRecentActivity}">
-                        <TextBlock Text="{local:Localize Home_ClearActivity}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold"/>
+                    <TextBlock Text="{local:Localize Home_RecentActivity}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
+                    <Button AutomationProperties.Name="{local:Localize Home_ClearActivity}" Grid.Column="1" Classes="secondary pill" Command="{Binding ClearActivityCommand}" Padding="14,7" IsVisible="{Binding HasRecentActivity}">
+                        <TextBlock Text="{local:Localize Home_ClearActivity}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold"/>
                     </Button>
                 </Grid>
 
                 <!-- Populated feed -->
-                <Border Classes="glass-card" Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
+                <material:Card Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
                     <ScrollViewer MaxHeight="300" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding RecentActivity}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="services:ActivityEntry">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,9">
                                         <Border Grid.Column="0" Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GlassBaseDarkBrush}" Margin="0,0,14,0">
-                                            <TextBlock Text="{Binding Glyph}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <mi:MaterialIcon Kind="{Binding Kind, Converter={x:Static conv:ActivityKindToIconKindConverter.Instance}}" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="12,0,4,0"/>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                </Border>
+                </material:Card>
 
                 <!-- Empty state -->
-                <Border Classes="glass-card" Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
+                <material:Card Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                        <TextBlock Text="🗒" FontSize="26" HorizontalAlignment="Center" Opacity="0.7"/>
-                        <TextBlock Text="{local:Localize Home_NoRecentActivity}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
+                        <mi:MaterialIcon Kind="NoteText" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" Width="28" Height="28" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Home_NoRecentActivity}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
                     </StackPanel>
-                </Border>
+                </material:Card>
             </StackPanel>
 
             <!-- ═══ Links: GitHub + Google Play ═══ -->
             <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
-                <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="glass-card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#1FFFFFFF" Margin="0,0,14,0">
-                            <TextBlock Text="🐙" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource CardBackgroundHoverBrush}" Margin="0,0,14,0">
+                            <mi:MaterialIcon Kind="Github" Foreground="{DynamicResource TextPrimaryBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="{local:Localize Home_GitHubCard}" FontSize="13" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{local:Localize Home_GitHubCardDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{local:Localize Home_GitHubCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_GitHubCardDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="glass-card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#1534D399" Margin="0,0,14,0">
-                            <TextBlock Text="▶" FontSize="20" Foreground="#34D399" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemSuccessBackgroundBrush}" Margin="0,0,14,0">
+                            <mi:MaterialIcon Kind="GooglePlay" Foreground="{DynamicResource SystemSuccessBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="{local:Localize Home_PlayStoreCard}" FontSize="13" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{local:Localize Home_PlayStoreCardDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{local:Localize Home_PlayStoreCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_PlayStoreCardDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="glass-card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
+                <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#15F59E0B" Margin="0,0,14,0">
-                            <TextBlock Text="🌡️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemWarningBackgroundBrush}" Margin="0,0,14,0">
+                            <mi:MaterialIcon Kind="Thermometer" Foreground="{DynamicResource SystemWarningBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="{local:Localize Home_HwInfoCard}" FontSize="13" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{local:Localize Home_HwInfoCardDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{local:Localize Home_HwInfoCard}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_HwInfoCardDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -328,25 +537,36 @@
     </ScrollViewer>
 
     <!-- Advanced Status Node Footer -->
-    <Border Grid.Row="1" Classes="glass-card" Padding="20" HorizontalAlignment="Center" BoxShadow="0 -8 32 0 #40000000" CornerRadius="20,20,4,4" Margin="0,0,0,16">
+    <material:Card Grid.Row="1" Classes="footer-bar" Padding="20" HorizontalAlignment="Center" CornerRadius="20,20,4,4" Margin="0,0,0,16">
         <StackPanel Orientation="Horizontal" Spacing="24">
             <Grid>
                 <!-- Radar Sweep Animation -->
-                <Ellipse Width="48" Height="48" Classes="status-ring" Classes.connected="{Binding Connection.IsConnected}" StrokeThickness="1" Opacity="0.2"/>
-                <Ellipse Width="48" Height="48" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}" Opacity="0.1"/>
-                <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                <!-- All three of these (ring, halo, dot) follow PHONE presence, not the loopback link
+                     (RemEx-7zzw). Binding only some of them would make the halo disagree with the
+                     dot inside it. -->
+                <Ellipse Width="48" Height="48" Classes="status-ring" Classes.connected="{Binding Presence.IsPhoneAttached}" Classes.pulse="{Binding Shell.ShowPresencePulse}" StrokeThickness="1" Opacity="0.2"/>
+                <Ellipse Width="48" Height="48" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}" Opacity="0.1"/>
+                <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                 </Ellipse>
             </Grid>
             <StackPanel HorizontalAlignment="Center" MinWidth="140">
-                <TextBlock Text="{local:Localize Home_LinkStatus}" FontSize="9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
-                <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
+                <!-- The label had to move with the line it labels (review). "LINK_STATUS" now sits over the
+                     host-link detail; the phone line gets its own heading, because a label reading
+                     LINK_STATUS above "No phone connected" is the same contradiction one level down. -->
+                <TextBlock Text="{local:Localize Home_PhoneStatus}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                <!-- The dot beside this follows PHONE presence, so this line must too (RemEx-7zzw). Binding
+                     the dot alone put a red radar next to the word "Connected" — the contradiction moved
+                     from between screens into one StackPanel, which is the more confusing of the two. -->
+                <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{local:Localize Home_LinkStatus}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding Connection.LatencyText}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
             <StackPanel Spacing="8">
-                <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
-                <Button Classes="action-pill action-pill-danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="primary pill" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="secondary pill danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
             </StackPanel>
         </StackPanel>
-    </Border>
+    </material:Card>
 </Grid>
 </UserControl>

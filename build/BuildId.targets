@@ -1,0 +1,107 @@
+<Project>
+
+  <!--
+    Stamps the assembly with an identity for THIS BUILD, not this release (RemEx-2ckhm).
+
+    THE PROBLEM IT SOLVES. Both heads have shipped 2.4.0 for a long time, so the version number
+    cannot distinguish two builds — and "is the fix in the binary I am looking at?" is asked
+    constantly during a review session. It has been answered twice on this branch by comparing a
+    file timestamp against a commit timestamp, and one of those answers was wrong: a pin fix was
+    reviewed as broken when it was simply not deployed, and the bead had to be reopened.
+
+    NOT A VERSION BUMP. <Version> in Directory.Build.props, versionName and versionCode are
+    untouched and stay Connor's call. This is orthogonal to the release version.
+
+    WHY THE SDK'S OWN SHA IS NOT ENOUGH ON ITS OWN. The .NET SDK already appends the full commit
+    sha to AssemblyInformationalVersion (IncludeSourceRevisionInInformationalVersion, on by default
+    since .NET 8) — "2.4.0+39b0b09bcb19...". That covers the clean case for free. It does NOT cover
+    the case that actually bites: a build from an uncommitted tree carries the sha of the last
+    commit, so a binary containing work-in-progress is labelled identically to the clean build of
+    the commit before it. That is precisely the "two different binaries, one identity" failure this
+    is meant to prevent, so the dirty marker is the part worth writing code for.
+
+    WHAT THE DIRTY SUFFIX DOES AND DOES NOT DISTINGUISH, stated plainly because assuming the
+    stronger guarantee would be worse than not having it. It is a stable hash of git's porcelain
+    status output: the list of changed and untracked PATHS with their status codes. Two builds that
+    touch different files get different suffixes. Two builds that make DIFFERENT EDITS TO THE SAME
+    FILE get the SAME suffix. Hashing content instead would mean piping a whole diff through an
+    MSBuild property on every build, which is not worth it: the suffix's job is to say loudly "the
+    sha above is not the whole story", and it does that either way.
+
+    THE GENERATED FILE IS AN INPUT TO COMPILATION ON PURPOSE. Writing the id into a source file that
+    the compiler consumes means a change in the id is a change in the build's inputs, so the
+    assembly rebuilds when — and only when — the id actually moves. Stamping via an attribute
+    computed in a target that runs after the compiler would leave a stale id in an up-to-date
+    assembly, which is the same class of lie as the timestamp comparison this replaces.
+  -->
+
+  <PropertyGroup>
+    <!--
+      Overridable so the logic below can be exercised against a PURPOSE-BUILT repository rather than
+      only against this one. Without it the clean and dirty branches could only be asserted by
+      reading this file, and the dirty branch is the entire reason this exists rather than just
+      reading the sha the SDK already embeds. BuildIdTargetsTests points it at a temp repo it
+      commits into and then dirties.
+    -->
+    <RemexBuildIdRepoRoot Condition="'$(RemexBuildIdRepoRoot)' == ''">$(MSBuildThisFileDirectory)..</RemexBuildIdRepoRoot>
+  </PropertyGroup>
+
+  <Target Name="RemexComputeBuildId" BeforeTargets="BeforeCompile" Condition="'$(RemexStampBuildId)' == 'true'">
+
+    <!--
+      ContinueOnError + IgnoreExitCode on every git call: a source drop with no .git, a machine
+      without git on PATH, or a build from a release tarball must produce an unknown id, never a
+      failed build. An About page that says "unknown" is diagnosable; a build that will not run is not.
+    -->
+    <Exec Command="git -C &quot;$(RemexBuildIdRepoRoot)&quot; rev-parse --short=7 HEAD"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_RemexSha" />
+      <Output TaskParameter="ExitCode" PropertyName="_RemexShaExit" />
+    </Exec>
+
+    <Exec Command="git -C &quot;$(RemexBuildIdRepoRoot)&quot; status --porcelain"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_RemexStatus" />
+      <Output TaskParameter="ExitCode" PropertyName="_RemexStatusExit" />
+    </Exec>
+
+    <PropertyGroup>
+      <_RemexSha>$(_RemexSha.Trim())</_RemexSha>
+
+      <!-- StableStringHash rather than String.GetHashCode: .NET randomises string hashing per
+           process, so GetHashCode would give this build a different suffix on every invocation and
+           rebuild the assembly every time. -->
+      <_RemexDirtyHash Condition="'$(_RemexStatus.Trim())' != ''">$([MSBuild]::StableStringHash($(_RemexStatus)).ToString('x8').Substring(0, 4))</_RemexDirtyHash>
+
+      <_RemexBuildId Condition="'$(_RemexShaExit)' == '0' and '$(_RemexSha)' != ''">$(_RemexSha)</_RemexBuildId>
+      <_RemexBuildId Condition="'$(_RemexBuildId)' != '' and '$(_RemexDirtyHash)' != ''">$(_RemexBuildId)+$(_RemexDirtyHash)</_RemexBuildId>
+      <_RemexBuildId Condition="'$(_RemexBuildId)' == ''">unknown</_RemexBuildId>
+
+      <_RemexBuildIdFile>$(IntermediateOutputPath)RemexBuildId.g.cs</_RemexBuildIdFile>
+    </PropertyGroup>
+
+    <!--
+      WriteOnlyWhenDifferent is what keeps this from forcing a rebuild on every single build: the
+      file's timestamp only moves when the id does.
+    -->
+    <WriteLinesToFile
+        File="$(_RemexBuildIdFile)"
+        Lines="// &lt;auto-generated /&gt; Written by build/BuildId.targets. Do not edit or commit.;[assembly: System.Reflection.AssemblyMetadata(&quot;RemexBuildId&quot;, &quot;$(_RemexBuildId)&quot;)]"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <Compile Include="$(_RemexBuildIdFile)" />
+      <FileWrites Include="$(_RemexBuildIdFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

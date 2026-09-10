@@ -25,6 +25,10 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
         var folder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("host_dashboard_layout.json");
         _filePath = Path.Combine(folder, "host_dashboard_layout.json");
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_filePath);
     }
 
     public async Task<DashboardProfile> LoadProfileAsync()
@@ -46,6 +50,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
         var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
-        await File.WriteAllTextAsync(_filePath, json);
+        // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
+        await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);
     }
 }

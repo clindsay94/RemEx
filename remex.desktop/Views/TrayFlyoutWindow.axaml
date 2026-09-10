@@ -1,121 +1,264 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="360" SizeToContent="Height" MaxHeight="540" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" SystemDecorations="None">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    x:Class="Remex.Desktop.Views.TrayFlyoutWindow"
+    x:DataType="vm:TrayFlyoutViewModel"
+    Title="{local:Localize TrayFlyout_Title}"
+    Width="420" Height="400"
+    MinWidth="320" MinHeight="240"
+    MaxWidth="900" MaxHeight="800">
+
+    <!-- SizeToContent, CanResize, Focusable and ShowInTaskbar are deliberately absent: the
+         code-behind's ApplyMode and constructor own them, and a value here would fight it.
+         The Min/Max above duplicate TrayFlyoutGeometryValidator's constants because Avalonia
+         needs literals in XAML - change one, change the other. -->
+
+    <Window.Resources>
+        <!-- Shared by both tile buttons below so the plain tile and the submenu tile cannot
+             drift apart visually. -->
+        <DataTemplate x:Key="TrayTileFace" x:DataType="vm:TrayTile">
+            <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="{Binding Icon}"
+                                 Foreground="{DynamicResource AccentPrimaryBrush}"
+                                 Width="18" Height="18"
+                                 HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding Label}"
+                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
 
     <Window.Styles>
-        <Style Selector="Border.widget-card">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusLarge}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="ClipToBounds" Value="True"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.widget-card:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-        </Style>
-
-        <Style Selector="Button.tray-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
+        <!-- (RemEx-rjnbo.1) The presence badge now shows a device count, so a fixed 10x10 only
+             fits the dot state (HasOnlineDevices false): at two-plus online devices the same size
+             clips the "2"+ digits App.axaml's BadgeContent renders. Classes.dot on the element
+             below gates this style so the count state is left unsized, like the nav count badges
+             (ShellView.axaml:806/848/865). -->
+        <Style Selector="material|Badged.dot">
+            <Setter Property="BadgeWidth" Value="10"/>
+            <Setter Property="BadgeHeight" Value="10"/>
         </Style>
     </Window.Styles>
 
-    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="0 12 40 0 #60000000">
-        <Grid RowDefinitions="Auto,*,Auto" Margin="20">
-            <!-- Header -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="4">
-                    <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
-                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
+
+    <Panel>
+
+    <!-- Elevation2Shadow (blur 34, OffsetY 9 - ThemeService.cs:528), not Elevation3: this window
+         is transparent with no decorations, so the shadow extent has to fit inside Margin below or
+         it gets clipped by the window bounds into a hard band (RemEx-la0rk round 3). Margin 44 clears
+         blur+OffsetY=43. Elevation3's 48/12 would need Margin ~=60, which eats too much of the
+         320x240 MinWidth/MinHeight floor from TrayFlyoutGeometryValidator for the tile grid below. -->
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="{DynamicResource Elevation2Shadow}">
+        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+
+            <!-- Status strip. Doubles as the drag handle in pinned mode: this window has no system
+                 title bar, so without PointerPressed here a pinned window could not be moved.
+                 The material:Badged below is the presence indicator, and (RemEx-rjnbo.1) now also
+                 carries the online-paired-device count as its content instead of rendering as a bare
+                 dot - Classes="presence"/Classes.connected keep the same red/green vocabulary and
+                 BottomRight placement App.axaml declares for both. Unlike the Files/Diagnostics
+                 badges, this one is never fully hidden: it doubles as the presence dot, so at zero
+                 online devices BadgeDisplayContent drops back to a plain dot rather than the whole
+                 badge disappearing. The 10x10 size is now conditional (fix, MEDIUM, RemEx-rjnbo.1):
+                 a fixed 10x10 badge clips the digits BadgeContent draws once a device count shows,
+                 so Classes.dot below applies the fixed size only in the dot state via the
+                 material|Badged.dot style in Window.Styles - the count state is left unsized, same
+                 shape as the nav count badges (ShellView.axaml:806/848/865). The drawer-footer twin
+                 in ShellView.axaml:928 has no count to show and keeps its own literal 10x10. -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                  PointerPressed="OnHeaderPressed"
+                  Background="Transparent"
+                  AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Header}">
+
+                <material:Badged Grid.Column="0" Classes="presence"
+                                  Classes.connected="{Binding Presence.IsPhoneAttached}"
+                                  Classes.dot="{Binding !HasOnlineDevices}"
+                                  BadgeContent="{Binding OnlineDeviceCount}"
+                                  BadgeDisplayContent="{Binding HasOnlineDevices}"
+                                  Margin="0,0,12,0" VerticalAlignment="Center"
+                                  AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}">
+                    <mi:MaterialIcon Kind="Cellphone" Width="18" Height="18"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </material:Badged>
+
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Presence.PresenceText}"
+                               Theme="{StaticResource Subtitle2TextBlock}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="{Binding Connection.StatusText}"
+                               Theme="{StaticResource OverlineTextBlock}"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
-                <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
-                </Ellipse>
+
+                <Button Grid.Column="2" Classes="tertiary icon-button compact" Click="OnOpenMainApp"
+                        AutomationProperties.Name="{local:Localize Palette_Settings}">
+                    <mi:MaterialIcon Kind="Cog" Width="14" Height="14"/>
+                </Button>
+
+                <!-- ONE-WAY ON PURPOSE. A two-way IsChecked binding writes IsPinned before the Click
+                     handler runs, so OnTogglePin would read the already-flipped value and flip it
+                     straight back - the pin button would appear dead. The handler is the only writer;
+                     this binding just reflects the result. -->
+                <ToggleButton Grid.Column="3" Classes="tertiary icon-button compact"
+                              IsChecked="{Binding IsPinned, Mode=OneWay}"
+                              Click="OnTogglePin"
+                              ToolTip.Tip="{Binding PinTooltip}"
+                              AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Pin}">
+                    <mi:MaterialIcon Kind="Pin" Width="14" Height="14"/>
+                </ToggleButton>
+
+                <Button Grid.Column="4" Classes="tertiary icon-button compact" Click="OnCloseFlyout"
+                        AutomationProperties.Name="{local:Localize A11y_Close}">
+                    <mi:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                </Button>
             </Grid>
 
-            <!-- Widget List -->
-            <ScrollViewer Grid.Row="1" Margin="0,20" VerticalScrollBarVisibility="Hidden" MaxHeight="380">
-                <!-- Panel so the empty state can share the ScrollViewer, which takes one child. -->
-                <Panel>
-                <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ListBox.Styles>
-                        <Style Selector="ListBoxItem">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                    </ListBox.Styles>
-                    <ListBox.ItemTemplate>
+            <!-- Sensor strip, directly under the status line rather than along the bottom edge
+                 (RemEx-or8f8). At the bottom its horizontal scrollbar sat on top of a 16px-tall
+                 strip and covered the values it was there to scroll. Scrollbar is Hidden rather
+                 than Auto for the same reason - the wheel still scrolls it, nothing steals height.
+                 It collapses entirely when nothing is pinned: a command center with no telemetry
+                 should just be shorter, not show a paragraph explaining its own emptiness. The
+                 double bang is Avalonia's coercion-to-bool; the negated single-bang form was
+                 already used in this file, so the positive case is written as its double rather
+                 than relying on an implicit int-to-bool that may not exist. -->
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,12,0,0"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Disabled"
+                          IsVisible="{Binding !!PinnedSensors.Count}">
+                <ItemsControl ItemsSource="{Binding PinnedSensors}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="16"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <Border Classes="widget-card" Margin="0,0,0,12" Height="90">
-                                <Panel>
-                                    <!-- Background Sparkline -->
-                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="60" Margin="-10,0,-10,-10"/>
-
-                                    <Grid ColumnDefinitions="*,Auto" Margin="20,14">
-                                        <StackPanel VerticalAlignment="Center" Spacing="4">
-                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Black" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1" TextTrimming="CharacterEllipsis"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <TextBlock FontSize="32" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" FontFamily="{StaticResource JetBrainsMono}">
-                                                    <TextBlock.Text>
-                                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
-                                                            <Binding Path="Value"/>
-                                                            <Binding Path="Unit"/>
-                                                        </MultiBinding>
-                                                    </TextBlock.Text>
-                                                </TextBlock>
-                                                <TextBlock Text="{Binding Unit}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <!-- Status Indicator -->
-                                        <Border Grid.Column="1" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource CardBackgroundBrush}" VerticalAlignment="Center">
-                                            <Path Data="{StaticResource IconFlash}" Fill="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.8"/>
-                                        </Border>
-                                    </Grid>
-                                </Panel>
-                            </Border>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}"
+                                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Black" LetterSpacing="1"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextMutedBrush}"/>
+                                <TextBlock Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JetBrainsMono}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                            <Binding Path="Value"/>
+                                            <Binding Path="Unit"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ctrl:SparklineControl History="{Binding History}"
+                                                       GraphType="{Binding ResolvedGraphType}"
+                                                       AccentColor="{Binding Theme.AccentColor,
+                                                                     Converter={x:Static conv:HexToColorConverter.Instance}}"
+                                                       Width="44" Height="16"
+                                                       Opacity="0.7" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <!-- With nothing pinned the flyout was simply blank, which reads as broken rather
-                     than as empty. HomeView already has a state for exactly this data, so its
-                     wording is reused rather than a fourth variant invented - no new strings, and
-                     the two surfaces cannot drift apart. Trimmed to the hint alone: the flyout is a
-                     small transient popup, not a place for a heading and a call-to-action button
-                     (RemEx-po2x). -->
-                <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}"
-                           IsVisible="{Binding !PinnedSensors.Count}"
-                           FontSize="12"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"
-                           Margin="12,24"
-                           Foreground="{DynamicResource TextSecondaryBrush}"/>
-                </Panel>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </ScrollViewer>
 
-            <!-- Actions -->
-            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Content="{local:Localize TrayFlyout_Home}" Classes="tray-btn" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
-                    <Button Content="{local:Localize TrayFlyout_Workspace}" Classes="tray-btn" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
-                </StackPanel>
-                <Button Grid.Column="1" Content="✕" Classes="tray-btn" AutomationProperties.Name="{local:Localize A11y_Close}" Click="OnCloseFlyout" Padding="12,8"/>
-            </Grid>
+            <!-- Action grid. Columns are driven by the window's own width so that resizing reveals
+                 more of the grid per row instead of only stretching the tiles. -->
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding Tiles}" Margin="0,16,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding $parent[Window].Bounds.Width,
+                                               Converter={x:Static conv:TrayTileColumnsConverter.Instance}}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TrayTile">
+                        <!-- The tooltip hangs on the PANEL, not on the Button. DisabledTooltip is
+                             non-null only when IsEnabled is false, and Avalonia excludes disabled
+                             controls from hit testing with no ShowOnDisabled equivalent - so on the
+                             Button the one string that explains why a tile is dead could never
+                             open. The panel stays enabled, so the pointer still reaches it. -->
+                        <Panel ToolTip.Tip="{Binding DisabledTooltip}">
+                            <!-- Ordinary tile -->
+                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
+                                    IsVisible="{Binding !HasSubmenu}"
+                                    Command="{Binding Command}"
+                                    IsEnabled="{Binding IsEnabled}"
+                                    AutomationProperties.Name="{Binding Label}"
+                                    ContentTemplate="{StaticResource TrayTileFace}"
+                                    Content="{Binding}"
+                                    Click="OnTileClicked"/>
+
+                            <!-- Submenu tile. A second Button rather than a conditional Flyout,
+                                 because Button.Flyout cannot be set per-item from one DataTemplate.
+                                 Placement="Top" matters: the window usually sits at the bottom-right
+                                 of the screen, where a downward flyout would open off-screen. -->
+                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
+                                    IsVisible="{Binding HasSubmenu}"
+                                    AutomationProperties.Name="{Binding Label}"
+                                    ContentTemplate="{StaticResource TrayTileFace}"
+                                    Content="{Binding}">
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="Top">
+                                        <MenuItem Header="{local:Localize Confirm_Restart_Btn}"
+                                                  Command="{Binding $parent[Window].((vm:TrayFlyoutViewModel)DataContext).InvokePowerCommand}"
+                                                  CommandParameter="{x:Static vm:TrayPowerAction.Restart}"/>
+                                        <MenuItem Header="{local:Localize Confirm_Shutdown_Btn}"
+                                                  Command="{Binding $parent[Window].((vm:TrayFlyoutViewModel)DataContext).InvokePowerCommand}"
+                                                  CommandParameter="{x:Static vm:TrayPowerAction.Shutdown}"/>
+                                        <MenuItem Header="{local:Localize Confirm_SignOut_Btn}"
+                                                  Command="{Binding $parent[Window].((vm:TrayFlyoutViewModel)DataContext).InvokePowerCommand}"
+                                                  CommandParameter="{x:Static vm:TrayPowerAction.SignOut}"/>
+                                        <MenuItem Header="{local:Localize Tray_Power_Hibernate}"
+                                                  Command="{Binding $parent[Window].((vm:TrayFlyoutViewModel)DataContext).InvokePowerCommand}"
+                                                  CommandParameter="{x:Static vm:TrayPowerAction.Hibernate}"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Panel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
         </Grid>
     </Border>
+
+    <!-- Resize border, by hand. WindowDecorations="None" means Windows draws no frame, so
+         CanResize="True" alone gives nothing to grab (RemEx-2j58q). These eight hit areas sit in
+         the 12px band between the window edge and the card, which otherwise holds only the drop
+         shadow. The Grid itself has no Background and the centre cell is empty, so everything over
+         the card hit-tests straight through to the tiles. Only present when pinned - a transient
+         popup is not resizable and should not show resize cursors. -->
+    <Grid IsVisible="{Binding IsPinned}"
+          RowDefinitions="12,*,12" ColumnDefinitions="12,*,12">
+        <Border Grid.Row="0" Grid.Column="0" Background="Transparent" Cursor="TopLeftCorner"
+                Tag="NorthWest" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="0" Grid.Column="1" Background="Transparent" Cursor="TopSide"
+                Tag="North" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="0" Grid.Column="2" Background="Transparent" Cursor="TopRightCorner"
+                Tag="NorthEast" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="1" Grid.Column="0" Background="Transparent" Cursor="LeftSide"
+                Tag="West" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="1" Grid.Column="2" Background="Transparent" Cursor="RightSide"
+                Tag="East" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="0" Background="Transparent" Cursor="BottomLeftCorner"
+                Tag="SouthWest" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="1" Background="Transparent" Cursor="BottomSide"
+                Tag="South" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="2" Background="Transparent" Cursor="BottomRightCorner"
+                Tag="SouthEast" PointerPressed="OnResizePressed"/>
+    </Grid>
+
+    </Panel>
 </Window>

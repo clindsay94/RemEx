@@ -1,9 +1,13 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Material.Icons;
+using Material.Icons.Avalonia;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Controls;
 
@@ -72,7 +76,7 @@ public class ColorPickerPopup : ContentControl
             Text = ElementLabel,
             FontSize = 11,
             FontWeight = FontWeight.SemiBold,
-            Foreground = new SolidColorBrush(Color.Parse("#8888AA")),
+            Foreground = ThemeResources.Brush("TextMutedBrush", new SolidColorBrush(Color.Parse("#8888AA"))),
         });
 
         // SV Pad (Saturation-Value 2D area)
@@ -121,12 +125,20 @@ public class ColorPickerPopup : ContentControl
             Width = 100,
             FontSize = 12,
             FontFamily = new FontFamily("Consolas, monospace"),
-            Background = new SolidColorBrush(Color.Parse("#12121E")),
-            Foreground = new SolidColorBrush(Color.Parse("#C0C0FF")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#2A2A3E")),
+            // Resolved at construction, which is correct here: the popup is rebuilt each time it
+            // opens, so it cannot outlive a theme switch the way a cached static brush would.
+            Background = new SolidColorBrush(ThemeResources.OpaqueColor("GlassBaseDark", Color.Parse("#12121E"))),
+            Foreground = ThemeResources.Brush("TextPrimaryBrush", new SolidColorBrush(Color.Parse("#C0C0FF"))),
+            // CardBorderBrush is translucent where the literal it replaces was opaque (10% black on
+            // SolarFlare), so this border is fainter there than it was. Accepted deliberately rather
+            // than forced opaque: it is the same subtle card border every other surface in the app
+            // uses, and matching them is the point. ThemeService also overrides this key to an
+            // opaque outline once customisation runs.
+            BorderBrush = ThemeResources.Brush("CardBorderBrush", new SolidColorBrush(Color.Parse("#2A2A3E"))),
             CornerRadius = new CornerRadius(4),
             Padding = new Thickness(6, 4),
-            Watermark = "#RRGGBB",
+            // Renamed from Watermark in Avalonia 12 (RemEx-jcma3). Same hint text, same behaviour.
+            PlaceholderText = "#RRGGBB",
         };
         _hexInput.KeyDown += HexInput_KeyDown;
         hexRow.Children.Add(_hexInput);
@@ -140,18 +152,34 @@ public class ColorPickerPopup : ContentControl
         };
         hexRow.Children.Add(_previewSwatch);
 
+        // The tick has to be legible on whatever accent the active theme picked, so the foreground
+        // is derived from the resolved background rather than left as the white that suited the old
+        // fixed deep blue. SolarFlare's accent is amber — white on it is about 1.9:1.
+        var applyBackground = ThemeResources.Color("AccentPrimary", Color.Parse("#4A3AFF"));
+
+        var applyForeground = new SolidColorBrush(ThemeResources.ForegroundOn(applyBackground));
         var applyBtn = new Button
         {
-            Content = "✓",
-            FontSize = 14,
+            Content = new MaterialIcon
+            {
+                Kind = MaterialIconKind.Check,
+                Width = 16,
+                Height = 16,
+                Foreground = applyForeground,
+            },
             Width = 32,
             Height = 32,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
-            Background = new SolidColorBrush(Color.Parse("#4A3AFF")),
-            Foreground = Brushes.White,
+            Background = new SolidColorBrush(applyBackground),
+            Foreground = applyForeground,
             CornerRadius = new CornerRadius(4),
         };
+        // The button used to carry its accessible name implicitly through the checkmark text
+        // content; a MaterialIcon is not a label, so the name has to be set explicitly or a
+        // screen reader announces nothing here. Reuses Btn_Apply rather than adding a new
+        // localized string - "Apply" is exactly what this button does (RemEx-me22).
+        AutomationProperties.SetName(applyBtn, LocalizationService.Instance["Btn_Apply"]);
         applyBtn.Click += (_, _) => ColorConfirmed?.Invoke(this, SelectedColor);
         hexRow.Children.Add(applyBtn);
 

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -75,35 +77,198 @@ data class HomeCardState(
 )
 
 /**
- * Deterministically selects the sensor a card should display. Curated cards (cpu/gpu/ram) bind by
- * semantic [MetricKind] so an Unknown/timing sensor can never win a load slot — the fix for the
- * "1089.0ms" RAM bug. Everything else matches by stable id. This is the ONE selection rule,
- * replacing the two divergent lookups (associateBy last-wins in the view, firstOrNull first-wins in
- * the VM) that used to disagree.
+ * The kinds a curated card will accept, in the order it prefers them.
+ *
+ * Extracted so the list has ONE definition shared by the direct lookup and the indexed one - two
+ * copies of a priority order is how they come to disagree, and a disagreement here binds a card to a
+ * plausible-looking wrong reading rather than failing.
  */
-fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySensor? {
-    if (cardId == null) return null
-    val acceptable: List<MetricKind> = when (cardId) {
-        "sensor:cpu" -> listOf(MetricKind.CPU_LOAD)
-        "sensor:gpu" -> listOf(MetricKind.GPU_LOAD)
-        "sensor:ram" -> listOf(MetricKind.RAM_USED_GB, MetricKind.RAM_LOAD)
-        "sensor:ramtotal" -> listOf(MetricKind.RAM_TOTAL_GB)
-        "sensor:cputemp" -> listOf(MetricKind.CPU_TEMP_C, MetricKind.TEMP_C)
-        "sensor:gputemp" -> listOf(MetricKind.GPU_TEMP_C, MetricKind.TEMP_C)
-        "sensor:nettotal" -> listOf(MetricKind.NET_THROUGHPUT_MBPS)
-        else -> emptyList()
-    }
-    if (acceptable.isNotEmpty()) {
-        for (k in acceptable) {
-            sensors.firstOrNull { it.kind == k }?.let { return it }
-        }
-        // Curated card, but a new host sent no kind-matched sensor: prefer a same-id sensor that
-        // isn't the Unknown sink; only an old host with no kinds at all falls through to a raw id match.
-        return sensors.firstOrNull { it.id == cardId && it.kind != MetricKind.UNKNOWN }
-            ?: sensors.firstOrNull { it.id == cardId }
-    }
-    return sensors.firstOrNull { it.id == cardId }
+private fun acceptableKinds(cardId: String): List<MetricKind> = when (cardId) {
+    "sensor:cpu" -> listOf(MetricKind.CPU_LOAD)
+    "sensor:gpu" -> listOf(MetricKind.GPU_LOAD)
+    "sensor:ram" -> listOf(MetricKind.RAM_USED_GB, MetricKind.RAM_LOAD)
+    "sensor:ramtotal" -> listOf(MetricKind.RAM_TOTAL_GB)
+    "sensor:cputemp" -> listOf(MetricKind.CPU_TEMP_C, MetricKind.TEMP_C)
+    "sensor:gputemp" -> listOf(MetricKind.GPU_TEMP_C, MetricKind.TEMP_C)
+    "sensor:nettotal" -> listOf(MetricKind.NET_THROUGHPUT_MBPS)
+    else -> emptyList()
 }
+
+/**
+ * One tick's sensors, indexed so a card lookup is O(1) instead of a scan (RemEx-cite item 4).
+ *
+ * **EVERY MAP KEEPS THE FIRST ENTRY, NOT THE LAST, AND THAT IS THE WHOLE CORRECTNESS ARGUMENT.**
+ * [selectSensor] encodes three first-match preferences, and `associateBy` - the obvious way to build
+ * these - keeps the LAST value per key. Building them that way inverts all three at once and
+ * produces a dashboard that looks entirely plausible while bound to the wrong readings. `putIfAbsent`
+ * is what preserves the order the scans had. SelectSensorTest pins all three.
+ *
+ * Rebuilt every tick on purpose: the sensors it holds carry the values that change every tick, so a
+ * memoised index would serve stale readings. The win is one O(n) pass instead of two scans per
+ * visible card.
+ */
+class SensorIndex(sensors: List<TelemetrySensor>) {
+    private val byKind = HashMap<MetricKind, TelemetrySensor>(sensors.size)
+    private val byId = HashMap<String, TelemetrySensor>(sensors.size)
+    private val byIdTyped = HashMap<String, TelemetrySensor>(sensors.size)
+
+    init {
+        for (sensor in sensors) {
+            byKind.putIfAbsent(sensor.kind, sensor)
+            byId.putIfAbsent(sensor.id, sensor)
+            if (sensor.kind != MetricKind.UNKNOWN) byIdTyped.putIfAbsent(sensor.id, sensor)
+        }
+    }
+
+    fun select(cardId: String?): TelemetrySensor? {
+        if (cardId == null) return null
+
+        val acceptable = acceptableKinds(cardId)
+        if (acceptable.isNotEmpty()) {
+            for (kind in acceptable) {
+                byKind[kind]?.let { return it }
+            }
+            // Curated card, but a new host sent no kind-matched sensor: prefer a same-id sensor that
+            // isn't the Unknown sink; only an old host with no kinds at all falls through to a raw
+            // id match.
+            return byIdTyped[cardId] ?: byId[cardId]
+        }
+        return byId[cardId]
+    }
+}
+
+/**
+ * Everything one telemetry tick yields, computed before any of it is applied (RemEx-cite).
+ *
+ * Grouped into one value so the whole derivation crosses the dispatcher boundary once. Returning
+ * four separate results would mean four hops, which costs more than the parse it was meant to
+ * move.
+ */
+internal data class DerivedTelemetry(
+    val cpu: Int,
+    val gpu: Int,
+    val ram: Int,
+    val sensors: List<TelemetrySensor>,
+)
+
+/**
+ * One headline percentage, accumulated as the sensor array is walked rather than scanned for.
+ *
+ * Same rule the three separate passes followed: a sensor whose unit is "%" in the category and whose lowercased
+ * name contains EVERY preferred token, else the first "%" sensor in the category, else 0. The
+ * original returned the moment it found a preferred match; a folded loop cannot stop early because
+ * it is still building the sensor list, so the first preferred reading LATCHES instead - the same
+ * answer by a different route, and the reason `offer` is a no-op once one has landed.
+ */
+private class PercentPicker(private val category: String, private val preferredTokens: List<String>) {
+    private var preferred = Double.NaN
+    private var fallback = Double.NaN
+
+    fun offer(sensorCategory: String, unit: String, name: String, value: Double) {
+        // NaN IS REFUSED HERE AND NOT ONLY BY THE CALLER. `preferred` doubles as the latch, so a NaN
+        // reaching it would read as "never latched" - a later match would overwrite it and, with
+        // none, result() would fall through to the fallback. Sound today because parseTelemetry
+        // skips NaN first; this makes it sound wherever it is called from.
+        if (value.isNaN() || !preferred.isNaN() || unit != "%") return
+        if (!sensorCategory.equals(category, ignoreCase = true)) return
+
+        val lowered = name.lowercase()
+        if (preferredTokens.all(lowered::contains)) {
+            preferred = value
+        } else if (fallback.isNaN()) {
+            fallback = value
+        }
+    }
+
+    fun result(): Int {
+        val chosen = if (preferred.isNaN()) fallback else preferred
+        return if (chosen.isNaN()) 0 else chosen.roundToInt().coerceIn(0, 100)
+    }
+}
+
+internal fun parseTelemetry(sensors: JSONArray?): DerivedTelemetry {
+    val cpu = PercentPicker("CPU", listOf("cpu", "usage"))
+    val gpu = PercentPicker("GPU", listOf("gpu", "usage"))
+    val ram = PercentPicker("Memory", listOf("memory", "load"))
+    val parsed = mutableListOf<TelemetrySensor>()
+
+    if (sensors != null) {
+        for (index in 0 until sensors.length()) {
+            val sensor = sensors.optJSONObject(index) ?: continue
+            val name = sensor.optString("name")
+            val category = sensor.optString("category")
+            val value = sensor.optDouble("value", Double.NaN)
+            val unit = sensor.optString("unit")
+            if (value.isNaN()) {
+                continue
+            }
+
+            // THE PICKERS SEE THIS SENSOR AND THE CARD LIST BELOW MAY NOT, AND THAT ASYMMETRY IS
+            // LOAD BEARING. The percentages used to come from a separate scan that discarded only
+            // NaN readings, while the card list discards blank names too - so a host that
+            // categorises its sensors correctly and labels them poorly still lit up the CPU/GPU/RAM
+            // gauges even though it produced no cards. Folding the loops is only equivalent if the
+            // offers happen BEFORE the blank-name skip; move these three lines below it and
+            // ParseTelemetryTest fails.
+            cpu.offer(category, unit, name, value)
+            gpu.offer(category, unit, name, value)
+            ram.offer(category, unit, name, value)
+
+            if (name.isBlank()) {
+                continue
+            }
+
+            val kind = MetricKind.fromWire(sensor.optString("kind").ifBlank { null })
+            val hostId = sensor.optString("id")
+            val group = sensor.optString("group")
+            // Prefer a semantic slug for curated kinds, then the host's stable id, and only fall
+            // back to the legacy name-based normalization for older hosts that send neither.
+            val id = MetricUnits.cardSlug(kind) ?: hostId.ifBlank { normalizeSensorId(name, category) }
+            parsed += TelemetrySensor(
+                id = id,
+                name = name,
+                category = category,
+                value = value,
+                unit = unit,
+                kind = kind,
+                group = group
+            )
+        }
+    }
+
+    return DerivedTelemetry(cpu.result(), gpu.result(), ram.result(), parsed)
+}
+
+private fun normalizeSensorId(name: String, category: String): String {
+    val loweredName = name.lowercase()
+    return when {
+        loweredName.contains("cpu") -> "sensor:cpu"
+        loweredName.contains("gpu") -> "sensor:gpu"
+        loweredName.contains("memory") || loweredName.contains("ram") -> "sensor:ram"
+        else -> {
+            val slug = "${category}_${name}"
+                .lowercase()
+                .replace(Regex("[^a-z0-9]+"), "_")
+                .trim('_')
+            "sensor:$slug"
+        }
+    }
+}
+
+/**
+ * Which sensor a card binds to.
+ *
+ * Curated cards (cpu/gpu/ram) bind by semantic [MetricKind] so an Unknown or timing sensor can never
+ * win a load slot - the fix for the "1089.0ms" RAM bug. Everything else matches by stable id. This is
+ * the ONE selection rule, replacing the two divergent lookups (associateBy last-wins in the view,
+ * firstOrNull first-wins in the VM) that used to disagree.
+ *
+ * Delegates to [SensorIndex] so there is ONE implementation of it. A caller resolving many cards
+ * against the same tick should build the index once and call [SensorIndex.select] directly - this
+ * overload builds one per call and exists for the occasional single lookup.
+ */
+fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySensor? =
+    SensorIndex(sensors).select(cardId)
 
 /**
  * Number of sequential Home Base coach-mark hints (RemEx-km0i.10). Single source of truth shared by
@@ -371,24 +536,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->
-                try {
-                    val json = JSONObject(telemetryData)
-                    val sensors = json.optJSONArray("sensors")
-
-                    _telemetryState.update {
-                        it.copy(
-                            cpuUsage = sensors.extractPercent("CPU", listOf("cpu", "usage")),
-                            gpuUsage = sensors.extractPercent("GPU", listOf("gpu", "usage")),
-                            ramUsage = sensors.extractPercent("Memory", listOf("memory", "load"))
-                        )
+                // PARSED OFF THE MAIN THREAD, IN ONE PASS (RemEx-cite). Every tick this deserialises
+                // the whole sensor payload and derives everything the screen needs from it, at 1 Hz,
+                // for as many sensors as the PC reports. It used to walk the array four times - once
+                // per headline percentage and once for the cards - and all of it used to run on Main.
+                // Sub-millisecond per tick either way, which is why the bead calls it hygiene rather
+                // than jank; it is also work with no reason to be on the UI thread.
+                //
+                // ONLY THE DERIVATION MOVES. The three state applications below stay exactly where
+                // they were: _telemetryState and _telemetrySensors are StateFlows and safe from any
+                // thread, but updateTelemetryHistory and ensureDefaultCardsExist mutate view-model
+                // state whose threading this change is not in a position to re-reason about. Moving
+                // the pure part is the whole of the win here.
+                val derived =
+                    withContext(Dispatchers.Default) {
+                        runCatching {
+                            parseTelemetry(JSONObject(telemetryData).optJSONArray("sensors"))
+                        }
+                            .onFailure { Log.w("DashboardVM", "Failed to parse telemetry", it) }
+                            .getOrNull()
                     }
 
-                    val parsed = parseSensors(sensors)
-                    _telemetrySensors.value = parsed
-                    updateTelemetryHistory(parsed)
-                    ensureDefaultCardsExist(parsed)
-                } catch (e: Exception) {
-                    Log.w("DashboardVM", "Failed to parse telemetry", e)
+                if (derived != null) {
+                    _telemetryState.update {
+                        it.copy(cpuUsage = derived.cpu, gpuUsage = derived.gpu, ramUsage = derived.ram)
+                    }
+                    _telemetrySensors.value = derived.sensors
+                    updateTelemetryHistory(derived.sensors)
+                    ensureDefaultCardsExist(derived.sensors)
                 }
             }
         }
@@ -403,7 +578,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     if (mac.isNotEmpty()) {
                         // Report the *actual* native result rather than optimistically saying "sent"
                         // (mirrors RemoteControlViewModel.wakePc): the WakePc JNI call returns a JSON
-                        // envelope with a success flag, so a failed send now surfaces as a failure. (RemEx-nbfb)
+                        // envelope with a success flag, so a failed send surfaces as a failure.
+                        // (RemEx-nbfb.)
+                        //
+                        // TRUE OF THE SEND ONLY SINCE RemEx-52n0, THOUGH IT WAS WRITTEN AS IF ALREADY
+                        // TRUE. The native export used to fire the send into a discarded task and
+                        // hard-code success, so no failure of the SEND could ever reach this branch —
+                        // it was correct code reading a flag the packet never influenced. It could
+                        // still be entered by the native library failing to load or the JNI call
+                        // throwing, which is why the path was never dead, only uninformed.
                         val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
                         val success = try {
                             JSONObject(responseJson).optBoolean("success", false)
@@ -592,42 +775,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         _homeCards.update { it + card }
     }
 
-    private fun parseSensors(sensors: JSONArray?): List<TelemetrySensor> {
-        if (sensors == null) {
-            return emptyList()
-        }
-
-        val parsed = mutableListOf<TelemetrySensor>()
-        for (index in 0 until sensors.length()) {
-            val sensor = sensors.optJSONObject(index) ?: continue
-            val name = sensor.optString("name")
-            val category = sensor.optString("category")
-            val value = sensor.optDouble("value", Double.NaN)
-            val unit = sensor.optString("unit")
-            if (name.isBlank() || value.isNaN()) {
-                continue
-            }
-
-            val kind = MetricKind.fromWire(sensor.optString("kind").ifBlank { null })
-            val hostId = sensor.optString("id")
-            val group = sensor.optString("group")
-            // Prefer a semantic slug for curated kinds, then the host's stable id, and only fall
-            // back to the legacy name-based normalization for older hosts that send neither.
-            val id = MetricUnits.cardSlug(kind) ?: hostId.ifBlank { normalizeSensorId(name, category) }
-            parsed += TelemetrySensor(
-                id = id,
-                name = name,
-                category = category,
-                value = value,
-                unit = unit,
-                kind = kind,
-                group = group
-            )
-        }
-
-        return parsed
-    }
-
     private fun updateTelemetryHistory(sensors: List<TelemetrySensor>) {
         _telemetryHistory.update { current ->
             val mutable = current.toMutableMap()
@@ -757,56 +904,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             settingsManager.saveHomeLayout(envelope.toString())
             settingsManager.saveHomeEnabledCards(enabledArray.toString())
         }
-    }
-
-    private fun normalizeSensorId(name: String, category: String): String {
-        val loweredName = name.lowercase()
-        return when {
-            loweredName.contains("cpu") -> "sensor:cpu"
-            loweredName.contains("gpu") -> "sensor:gpu"
-            loweredName.contains("memory") || loweredName.contains("ram") -> "sensor:ram"
-            else -> {
-                val slug = "${category}_${name}"
-                    .lowercase()
-                    .replace(Regex("[^a-z0-9]+"), "_")
-                    .trim('_')
-                "sensor:$slug"
-            }
-        }
-    }
-
-    private fun org.json.JSONArray?.extractPercent(category: String, preferredTokens: List<String>): Int {
-        if (this == null) {
-            return 0
-        }
-
-        var fallback = Double.NaN
-        for (index in 0 until length()) {
-            val sensor = optJSONObject(index) ?: continue
-            val sensorCategory = sensor.optString("category")
-            if (!sensorCategory.equals(category, ignoreCase = true)) {
-                continue
-            }
-
-            val unit = sensor.optString("unit")
-            val value = sensor.optDouble("value", Double.NaN)
-            if (value.isNaN()) {
-                continue
-            }
-
-            if (unit == "%") {
-                val name = sensor.optString("name").lowercase()
-                if (preferredTokens.all(name::contains)) {
-                    return value.roundToInt().coerceIn(0, 100)
-                }
-
-                if (fallback.isNaN()) {
-                    fallback = value
-                }
-            }
-        }
-
-        return if (fallback.isNaN()) 0 else fallback.roundToInt().coerceIn(0, 100)
     }
 
     private companion object {

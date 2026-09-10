@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Channels;
@@ -16,8 +17,15 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     // Bounded, drop-newest feed from the capture thread to the dedicated stdin writer. A tiny
     // capacity (a few frames) is intentional: if the encoder can't keep up, the freshest frames
     // matter, not a backlog, so EncodeFrame drops rather than blocking the capture thread. (RemEx-ii3)
-    private const int InputChannelCapacity = 3;
-    private Channel<byte[]>? _inputChannel;
+    // internal, not private, only so FrameInputPipelineTests can bound its drop assertion by the REAL
+    // capacity instead of a copy of the number that could drift from it.
+    internal const int InputChannelCapacity = 3;
+    // ReadOnlyMemory rather than byte[] so a caller can hand over a slice of a larger buffer without
+    // trimming it first (RemEx-hgox). OWNERSHIP IS UNCHANGED by that: a ReadOnlyMemory over a GC array
+    // behaves exactly as the array did, and nothing here pools or recycles. Do not read this as a step
+    // toward pooling - see RemEx-lcp8, which has failed three times precisely because a recycled
+    // buffer can be overwritten while stdin is still reading it.
+    private Channel<ReadOnlyMemory<byte>>? _inputChannel;
     private Task? _writerTask;
 
     // Bounded output of encoded Annex-B access units. Replaces an unbounded queue so a stalled/slow
@@ -77,15 +85,19 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     private string? _ffmpegPath;
     private int _width;
     private int _height;
+    private int _inputWidth;
+    private int _inputHeight;
     private bool _initialized;
 
     public bool IsAvailable { get; private set; }
 
     /// <summary>
-    /// Exact raw BGRA byte count this encoder expects per frame (width * height * 4).
-    /// 0 until <see cref="Initialize"/> succeeds.
+    /// Bytes the caller must write per frame. Follows the INPUT size, not the encoded size — ffmpeg's
+    /// <c>-s</c> describes what arrives on the pipe, and a mismatch here desyncs rawvideo and makes
+    /// the encoder emit zero frames. 0 until <see cref="Initialize"/> succeeds.
+    /// THE PROBE MUST USE THE SAME SIZE; see RunEncoderProbe.
     /// </summary>
-    public int ExpectedInputByteCount => _initialized ? _width * _height * 4 : 0;
+    public int ExpectedInputByteCount => _initialized ? _inputWidth * _inputHeight * 4 : 0;
 
     /// <summary>
     /// The FFmpeg codec string that was successfully started (e.g. "h264_nvenc", "libx264").
@@ -144,7 +156,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
-    public bool Initialize(int width, int height, int fps, int qp)
+    /// <summary>
+    /// Starts the encoder. <paramref name="inputWidth"/>/<paramref name="inputHeight"/> are the size
+    /// of the raw BGRA frames the caller will write; <paramref name="width"/>/<paramref name="height"/>
+    /// are the size to encode. When they differ ffmpeg does the downscale — see
+    /// <see cref="BuildEncoderArgs"/> for why that beats scaling on the capture thread.
+    /// </summary>
+    public bool Initialize(int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         if (!IsAvailable || _ffmpegPath == null) return false;
         if (_initialized) DisposeProcess();
@@ -152,6 +170,8 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // Constant-QP rate control. Lower QP = higher quality + bitrate. Clamp to a sane H.264 range.
         qp = Math.Clamp(qp, 16, 45);
 
+        _inputWidth = inputWidth;
+        _inputHeight = inputHeight;
         _width = width;
         _height = height;
 
@@ -180,10 +200,10 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             // (h264_vaapi on NVIDIA was reported "initialized", died on the first real frame,
             // and the session silently degraded to MJPEG — RemEx-h038). The one-shot probe
             // forces that lazy open up front so fallback to the next codec is deterministic.
-            if (!ProbeCodec(codec, width, height, fps, qp))
+            if (!ProbeCodec(codec, inputWidth, inputHeight, width, height, fps, qp))
                 continue;
 
-            if (TryStartFFmpeg(codec, width, height, fps, qp))
+            if (TryStartFFmpeg(codec, inputWidth, inputHeight, width, height, fps, qp))
             {
                 long maxRate = ComputeMaxRateBps(width, height, fps, qp);
                 _logger.LogInformation(
@@ -220,17 +240,74 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     internal static int ComputeGop(int fps) => Math.Clamp(fps, 30, 120);
 
     /// <summary>
+    /// Writes a number into an ffmpeg argument, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NOTHING IS BROKEN HERE TODAY, AND THAT IS THE POINT (RemEx-wssm). Interpolating an <c>int</c>
+    /// uses <c>CurrentCulture</c>, and 95 runtime cultures render a NEGATIVE one with a
+    /// <c>NegativeSign</c> that is not the ASCII hyphen — sv-SE, lt-LT and fi-FI use U+2212 MINUS
+    /// SIGN. A positive one has no culture-sensitive rendering at all: integers get no
+    /// <c>NativeDigits</c> or <c>DigitSubstitution</c>, so only the sign can vary. Every operand this
+    /// builder emits — geometry, fps, qp, the VBV rates and the GOP length — is structurally
+    /// non-negative, so the raw interpolations it used before were correct on all 890 cultures.
+    /// </para>
+    /// <para>
+    /// It goes through here anyway because that is the rule RemEx-hbma settled on and RemEx-j7el,
+    /// RemEx-tiih and RemEx-clum extended: one rule with no exceptions, so the safety of a signed
+    /// operand does not depend on whoever adds it next remembering that this file has a different
+    /// convention from the other four. An offset, a crop origin or a delta introduced here later is
+    /// then safe by construction rather than by review. <c>FFmpegArgumentFormattingTests</c> enforces
+    /// it, since a revert cannot be caught behaviourally: with no negative operand, the emitted string
+    /// is byte-identical either way.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <inheritdoc cref="Arg(int)"/>
+    private static string Arg(long value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// Builds the full ffmpeg argument string for <paramref name="codec"/>. Shared by the real
     /// streaming process and the one-shot capability probe so the probe exercises EXACTLY the
     /// arguments the real run will use — only the output side differs (single frame to a
-    /// discarded null muxer vs. a flushed Annex-B stream on stdout).
+    /// discarded null muxer vs. a flushed Annex-B stream on stdout). <paramref name="inputWidth"/>/<paramref name="inputHeight"/>
+    /// describe the raw BGRA frames arriving on the pipe; <paramref name="width"/>/
+    /// <paramref name="height"/> are the ENCODED dimensions.
     /// </summary>
-    internal static string BuildEncoderArgs(string codec, int width, int height, int fps, int qp, bool forProbe)
+    /// <remarks>
+    /// When they differ, a <c>scale</c> filter does the downscale inside ffmpeg. That is the point of
+    /// separating them: the capture backend used to shrink the frame itself with a GDI+ bilinear
+    /// <c>DrawImage</c>, measured at <b>20.7 ms per frame</b> for 2560x1440 → 0.6 on the reference box
+    /// — single-threaded, on the capture thread, capping the stream near 48 FPS before the encoder saw
+    /// anything. Handing full-resolution frames to swscale instead costs 1.7 ms of row-copy on the
+    /// capture thread and moves the resample into ffmpeg's SIMD scaler on its own threads (RemEx-evzv).
+    /// <para>
+    /// The trade is pipe bandwidth: full-res 2560x1440 BGRA is 14 MB per frame against 5.3 MB at 0.6.
+    /// It is worth it because the capture thread is what gates frame rate, and 20.7 ms of it cannot be
+    /// spent 120 times a second.
+    /// </para>
+    /// <para>
+    /// <c>bilinear</c>, NOT <c>fast_bilinear</c>. Measured on the reference box at 2560x1440 → 1536x864
+    /// against a lanczos reference: fast_bilinear 28.93 dB / 3.55 ms, bilinear 42.87 dB / 3.87 ms. The
+    /// extra 0.32 ms buys ~14 dB and is free against an 8.3 ms budget at 120 FPS on ffmpeg's own
+    /// thread. The initial choice of fast_bilinear also had the rate-distortion argument backwards:
+    /// scaler aliasing costs MORE bits at a given QP, so it hurts H.264 efficiency as well as sharpness.
+    /// </para>
+    /// </remarks>
+    internal static string BuildEncoderArgs(
+        string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp, bool forProbe)
     {
         var argsBuilder = new StringBuilder();
 
-        // Input: Raw BGRA frames from stdin
-        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
+        // Input: Raw BGRA frames from stdin, at the size the CAPTURE produces.
+        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {Arg(inputWidth)}x{Arg(inputHeight)} -r {Arg(fps)} -i - -an ");
+
+        // Downscale inside ffmpeg when capture and encode sizes differ. Prepended to each codec's own
+        // filter chain below rather than emitted as a second -vf, which would silently override it.
+        string scaleFilter = inputWidth != width || inputHeight != height
+            ? $"scale={Arg(width)}:{Arg(height)}:flags=bilinear"
+            : string.Empty;
 
         // VBV-capped rate control budget, shared across every codec below. Replaces the previous
         // unbounded constant-QP scheme (no -maxrate/-bufsize anywhere), whose bitrate scaled freely
@@ -264,7 +341,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // repeatSPSPPS whenever AV_CODEC_FLAG_GLOBAL_HEADER is unset, which is always true for
                 // raw `-f h264 -` output, so every natural GOP keyframe is already self-contained and
                 // a decoder joining mid-stream configures from the next one. (RemEx-vj7b)
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
+                //
+                // The scale filter, when present, stays in BGRA: swscale resizes and NVENC still gets
+                // BGRA to convert in fixed-function hardware, so this path keeps its whole point. It
+                // is deliberately NOT scale_cuda for the reason above.
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {Arg(qp)} -b:v 0 -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -aud 1");
                 break;
             case "h264_nvenc":
                 // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
@@ -274,19 +356,23 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
                 // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
                 // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {Arg(qp)} -b:v 0 -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
                 break;
             case "h264_vaapi":
                 // VA-API on Linux (Intel/AMD). Rate-control left as CQP — VBR/maxrate behavior varies
                 // per driver and needs separate Linux validation (tested on Windows only for Phase 3).
-                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g {gop} -aud 1");
+                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf ");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"{scaleFilter},");
+                argsBuilder.Append($"format=nv12,hwupload -c:v h264_vaapi -qp {Arg(qp)} -g {Arg(gop)} -aud 1");
                 break;
             case "h264_qsv":
                 // Intel Quick Sync. QVBR: -global_quality anchors quality, -maxrate/-bufsize cap peaks.
                 // -repeat_pps 1: QSV does not re-emit the PPS on IDRs by default, so a decoder that
                 // missed the stream-start access unit could never configure from natural GOP
                 // keyframes — black until a full restart. (RemEx-vj7b)
-                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -repeat_pps 1 -aud 1");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
+                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {Arg(qp)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -repeat_pps 1 -aud 1");
                 break;
             case "h264_amf":
                 // AMD AMF. vbr_peak: -b:v is the target (75% of the ceiling), -maxrate the hard peak.
@@ -295,7 +381,8 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // GOP keyframes — black until a full restart. Spacing == GOP length aligns header
                 // insertion with the periodic IDRs (AMD's recommended streaming setup). NOTE: this is
                 // the H.264 AMF option — `header_insertion_mode` exists only on hevc_amf. (RemEx-vj7b)
-                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -header_spacing {gop} -aud 1");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
+                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {Arg(maxRate * 3 / 4)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -header_spacing {Arg(gop)} -aud 1");
                 break;
             default:
                 // libx264 software fallback with zero latency. libx264 has no generic
@@ -305,7 +392,8 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // repeat-headers=1: already x264's default without GLOBAL_HEADER, made explicit so
                 // self-contained GOP keyframes are a tested contract, not an ffmpeg default that a
                 // future muxer/global-header change could silently revoke. (RemEx-vj7b)
-                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1:repeat-headers=1");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
+                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {Arg(qp)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -x264-params aud=1:repeat-headers=1");
                 break;
         }
 
@@ -336,11 +424,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// lazy open to happen up front. Exit code 0 means the codec genuinely encodes at this
     /// geometry. (RemEx-h038)
     /// </summary>
-    private bool ProbeCodec(string codec, int width, int height, int fps, int qp)
+    private bool ProbeCodec(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         // qp is excluded from the key on purpose: it is clamped to a universally valid H.264
         // range in Initialize and never decides whether an encoder can open.
-        var cacheKey = $"{codec}:{width}x{height}@{fps}";
+        // Input dims are part of the key: they change the filter chain (a scale filter appears or
+        // disappears), so a probe for the same OUTPUT size is not transferable between them.
+        var cacheKey = $"{codec}:{inputWidth}x{inputHeight}->{width}x{height}@{fps}";
         if (ProbeCache.TryGetValue(cacheKey, out var cached) &&
             (cached.Ok || Environment.TickCount64 - cached.AtMs < FailedProbeRetryMs))
         {
@@ -350,7 +440,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         bool ok;
         try
         {
-            ok = RunEncoderProbe(codec, width, height, fps, qp);
+            ok = RunEncoderProbe(codec, inputWidth, inputHeight, width, height, fps, qp);
         }
         catch (Exception ex)
         {
@@ -362,9 +452,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return ok;
     }
 
-    private bool RunEncoderProbe(string codec, int width, int height, int fps, int qp)
+    private bool RunEncoderProbe(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
-        var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: true))
+        var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, inputWidth, inputHeight, width, height, fps, qp, forProbe: true))
         {
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -383,10 +473,16 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         try
         {
             // Feed exactly one black frame, then EOF. Written in small chunks so the probe never
-            // allocates a whole frame (≈19 MB at 4096x1152) on the large-object heap.
+            // allocates a whole frame (≈14 MB at 2560x1440) on the large-object heap.
+            //
+            // SIZED FROM THE INPUT DIMENSIONS, which is the whole pipe contract: -s describes what
+            // arrives, so writing the ENCODED size here makes ffmpeg reject the frame with
+            // "packet size N < expected frame_size M" and fail the probe for EVERY codec — which
+            // presents as H.264 silently falling back to MJPEG forever, not as an error. That is
+            // exactly what this change did in review before the length was corrected (RemEx-evzv).
             var stdin = process.StandardInput.BaseStream;
             var zeros = new byte[64 * 1024];
-            long remaining = (long)width * height * 4;
+            long remaining = (long)inputWidth * inputHeight * 4;
             while (remaining > 0)
             {
                 int chunk = (int)Math.Min(zeros.Length, remaining);
@@ -413,7 +509,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         if (process.ExitCode == 0)
             return true;
 
-        // stderrTask is complete once the child has exited and its pipe closed.
+        // The child has exited (WaitForExit above, and the timeout branch returns rather than
+        // falling through), so the pipe's write end is closed and EOF is guaranteed to arrive - this
+        // cannot hang. It is NOT guaranteed to be complete already, though: WaitForExit(int) does not
+        // wait for redirected-stream EOF the way the parameterless overload does, so this can block
+        // briefly while the reader drains. Harmless here - the probe thread has no
+        // SynchronizationContext - but it is a blocking wait, not a free read. (RemEx-r9tv)
         var stderr = stderrTask.GetAwaiter().GetResult().Trim();
         var stderrTail = stderr.Length > 400 ? stderr[^400..] : stderr;
         _logger.LogWarning(
@@ -423,11 +524,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return false;
     }
 
-    private bool TryStartFFmpeg(string codec, int width, int height, int fps, int qp)
+    private bool TryStartFFmpeg(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         try
         {
-            var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: false))
+            var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, inputWidth, inputHeight, width, height, fps, qp, forProbe: false))
             {
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -471,14 +572,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             });
             _droppingUntilIdr = false;
 
-            _inputChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(InputChannelCapacity)
-            {
-                // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
-                // explicit: a full channel discards the newest frame rather than ever blocking.
-                FullMode = BoundedChannelFullMode.DropWrite,
-                SingleReader = true,
-                SingleWriter = false,
-            });
+            _inputChannel = CreateInputChannel();
 
             var stdin = process.StandardInput.BaseStream;
             _writerTask = Task.Run(() => StdinWriterLoop(stdin, _inputChannel.Reader, ct));
@@ -525,12 +619,62 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     }
 
     /// <summary>
+    /// The raw-frame feed from the capture thread to <see cref="StdinWriterLoop"/>.
+    ///
+    /// Factored into one place so the test harness starts the pipeline with the REAL configuration
+    /// rather than a second copy of these options that could silently drift from it. Capacity and
+    /// drop policy are load-bearing for the tests in <c>FrameInputPipelineTests</c>: they pin that a
+    /// full channel discards frames with no hook the producer could use to reclaim them.
+    /// </summary>
+    private static Channel<ReadOnlyMemory<byte>> CreateInputChannel() =>
+        Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(InputChannelCapacity)
+        {
+            // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
+            // explicit: a full channel discards the newest frame rather than ever blocking.
+            FullMode = BoundedChannelFullMode.DropWrite,
+            SingleReader = true,
+            SingleWriter = false,
+        });
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). Starts JUST
+    /// the raw-frame half of the encoder — the bounded drop-write input channel plus the real
+    /// <see cref="StdinWriterLoop"/> — writing into <paramref name="destination"/> instead of a real
+    /// ffmpeg child's stdin. No process is spawned, so this runs headless with no ffmpeg and no GPU.
+    ///
+    /// This exists because the buffer-lifetime hazard that has reverted RemEx-lcp8 three times lives
+    /// exactly here, between <see cref="EncodeFrame"/> handing memory to the channel and the writer
+    /// loop finishing its write — and its failure mode is CORRUPTED VIDEO, not a crash or a red test.
+    /// Driving the genuine channel and the genuine writer loop is the point: a harness that
+    /// reimplemented either would keep passing while the real path broke.
+    ///
+    /// Not used by DI or by any production path — <see cref="Initialize"/> is the only production
+    /// entry point and it always goes through a real process.
+    /// </summary>
+    internal void StartRawInputPipelineForTests(Stream destination, int inputWidth, int inputHeight)
+    {
+        Guard.NotNull(destination);
+
+        _inputWidth = inputWidth;
+        _inputHeight = inputHeight;
+        _processCts = new CancellationTokenSource();
+        _inputChannel = CreateInputChannel();
+
+        // EncodeFrame refuses to submit unless this is set; _ffmpegProcess stays null, which its
+        // `is { HasExited: true }` guard already tolerates.
+        _initialized = true;
+
+        var ct = _processCts.Token;
+        _writerTask = Task.Run(() => StdinWriterLoop(destination, _inputChannel.Reader, ct));
+    }
+
+    /// <summary>
     /// Dedicated stdin writer. Drains the bounded input channel and writes each raw BGRA frame to
     /// ffmpeg's stdin with <see cref="Stream.WriteAsync(ReadOnlyMemory{byte},CancellationToken)"/> so
     /// the capture thread is never blocked on a slow/busy encoder. Stops promptly when the token is
     /// cancelled (disconnect/dispose). (RemEx-ii3)
     /// </summary>
-    private async Task StdinWriterLoop(Stream stdin, ChannelReader<byte[]> reader, CancellationToken ct)
+    private async Task StdinWriterLoop(Stream stdin, ChannelReader<ReadOnlyMemory<byte>> reader, CancellationToken ct)
     {
         try
         {
@@ -592,20 +736,19 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // Emit every complete access unit: the bytes between consecutive AUD start codes.
                 // Keep the trailing (possibly incomplete) access unit in the accumulator.
                 int lastCut = 0;
-                int limit = accLen - 5; // need 5 bytes to test 00 00 00 01 <nal>
-                for (int p = 1; p <= limit; p++)
+                var window = acc.AsSpan(0, accLen);
+
+                // From 1, not 0: the accumulator starts AT an AUD, and cutting there would emit an
+                // empty access unit.
+                // No p <= lastCut guard: the search starts at 1 with lastCut 0 and each subsequent p
+                // comes from a search starting at p + 1, so p strictly increases past lastCut. The old
+                // loop carried the same test and it was equally dead there.
+                for (int p = IndexOfAudStart(window, 1); p >= 0; p = IndexOfAudStart(window, p + 1))
                 {
-                    if (acc[p] == 0x00 && acc[p + 1] == 0x00 && acc[p + 2] == 0x00 && acc[p + 3] == 0x01 &&
-                        (acc[p + 4] & 0x1F) == 9)
-                    {
-                        if (p > lastCut)
-                        {
-                            var frame = new byte[p - lastCut];
-                            Buffer.BlockCopy(acc, lastCut, frame, 0, p - lastCut);
-                            QueueFrame(frame);
-                            lastCut = p;
-                        }
-                    }
+                    var frame = new byte[p - lastCut];
+                    Buffer.BlockCopy(acc, lastCut, frame, 0, p - lastCut);
+                    QueueFrame(frame);
+                    lastCut = p;
                 }
 
                 if (lastCut > 0)
@@ -626,26 +769,77 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// start codes. An access unit containing an IDR is independently decodable — it doesn't
     /// reference any frame that may have been dropped upstream.
     /// </summary>
-    internal static bool ContainsIdr(byte[] au)
+    internal static bool ContainsIdr(byte[] au) => IndexOfNalOfType(au, 0, IdrNalType) >= 0;
+
+    /// <summary>Annex-B three-byte start code. Also the tail of the four-byte form.</summary>
+    private static ReadOnlySpan<byte> StartCode3 => [0x00, 0x00, 0x01];
+
+    /// <summary>Annex-B four-byte start code.</summary>
+    private static ReadOnlySpan<byte> StartCode4 => [0x00, 0x00, 0x00, 0x01];
+
+    private const int IdrNalType = 5;
+    private const int AudNalType = 9;
+
+    /// <summary>
+    /// Index of the next NAL of <paramref name="nalType"/>, at or after <paramref name="from"/>,
+    /// behind EITHER start-code form; -1 if there is none.
+    /// </summary>
+    /// <remarks>
+    /// Scanning for the THREE-byte code finds both forms, because <c>00 00 00 01</c> contains
+    /// <c>00 00 01</c> starting one byte in — and in both cases the NAL header is the byte straight
+    /// after the match. That is why this needs one pass rather than the two interleaved cases the
+    /// hand-rolled loop carried.
+    ///
+    /// <c>IndexOf</c> over a span is vectorized, so the search runs on wide registers instead of a
+    /// byte at a time. This runs over every access unit the encoder emits — 120+ a second at the
+    /// frame rates this targets, over buffers up to a megabyte — so the scan is not free. (RemEx-rpu2)
+    /// </remarks>
+    internal static int IndexOfNalOfType(ReadOnlySpan<byte> buffer, int from, int nalType)
     {
-        for (int i = 0; i + 2 < au.Length; i++)
+        while (from >= 0 && from <= buffer.Length - StartCode3.Length)
         {
-            if (au[i] != 0x00 || au[i + 1] != 0x00) continue;
+            int hit = buffer[from..].IndexOf(StartCode3);
+            if (hit < 0) return -1;
 
-            // 4-byte start code: 00 00 00 01 <nal>
-            if (i + 3 < au.Length && au[i + 2] == 0x00 && au[i + 3] == 0x01 && i + 4 < au.Length)
-            {
-                if ((au[i + 4] & 0x1F) == 5) return true;
-                continue;
-            }
+            int at = from + hit;
+            int header = at + StartCode3.Length;
+            if (header < buffer.Length && (buffer[header] & 0x1F) == nalType) return at;
 
-            // 3-byte start code: 00 00 01 <nal>
-            if (au[i + 2] == 0x01 && i + 3 < au.Length)
-            {
-                if ((au[i + 3] & 0x1F) == 5) return true;
-            }
+            // Advance by one. Start codes provably cannot overlap — a match at i needs buffer[i+2]
+            // to be 1, which is exactly what a match at i+1 or i+2 would need to be 0 — so stepping
+            // past the whole match would be equivalent. One byte is simply the step that stays
+            // correct if the pattern is ever changed to one that CAN overlap.
+            from = at + 1;
         }
-        return false;
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Index of the next access-unit delimiter introduced by a FOUR-byte start code, at or after
+    /// <paramref name="from"/>; -1 if there is none.
+    /// </summary>
+    /// <remarks>
+    /// Four-byte only, deliberately: the encoder is started with <c>-aud 1</c> / x264 <c>aud=1</c>,
+    /// which emits the long form, and the reader cuts access units on these boundaries. Accepting the
+    /// three-byte form here would cut in places the previous scanner did not, changing how the stream
+    /// is framed rather than just how fast it is found.
+    /// </remarks>
+    internal static int IndexOfAudStart(ReadOnlySpan<byte> buffer, int from)
+    {
+        while (from >= 0 && from <= buffer.Length - StartCode4.Length)
+        {
+            int hit = buffer[from..].IndexOf(StartCode4);
+            if (hit < 0) return -1;
+
+            int at = from + hit;
+            int header = at + StartCode4.Length;
+            if (header < buffer.Length && (buffer[header] & 0x1F) == AudNalType) return at;
+
+            from = at + 1;
+        }
+
+        return -1;
     }
 
     // Reader thread only — no locks needed (single writer to _encodedFrames, matching SingleWriter=true).
@@ -687,7 +881,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
-    public byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe)
+    public byte[]? EncodeFrame(ReadOnlyMemory<byte> rawPixelsBGRA, bool forceKeyframe)
     {
         // forceKeyframe is honored at the stream-control layer (RemoteDesktopHandler requests a real
         // on-demand IDR by reinitializing the encoder, which emits fresh SPS/PPS + an IDR). Within a

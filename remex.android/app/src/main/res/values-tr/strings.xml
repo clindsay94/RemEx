@@ -117,6 +117,24 @@
     <string name="rc_category_session">Oturum</string>
     <string name="rc_category_power">Güç</string>
     <string name="rc_category_energy">Enerji</string>
+    <string name="rc_media_volume_down">Sesi azalt</string>
+    <string name="rc_media_volume_up">Sesi artır</string>
+    <string name="rc_media_mute">Sessize al</string>
+    <string name="rc_media_previous">Önceki parça</string>
+    <string name="rc_media_play_pause">Oynat veya duraklat</string>
+    <string name="rc_media_play">Oynat</string>
+    <string name="rc_media_pause">Duraklat</string>
+    <string name="rc_media_next">Sonraki parça</string>
+    <string name="rc_media_hint">Sesi değiştirmeye devam etmek için ses düğmelerini basılı tutun.</string>
+    <string name="rc_media_unavailable">Bu bilgisayar tuş basışlarını kabul edecek şekilde ayarlanmadığından bu düğmeler hiçbir şey yapmaz.</string>
+    <string name="rc_media_disconnected">Bu denetimleri kullanmak için bilgisayarınıza bağlanın.</string>
+    <string name="rc_media_state_playing">Çalıyor</string>
+    <string name="rc_media_state_paused">Duraklatıldı</string>
+    <string name="rc_media_state_idle">Hiçbir şey çalmıyor</string>
+    <string name="rc_media_now_playing">Şu an çalıyor</string>
+    <string name="rc_media_open_now_playing">Şu an çalınanı aç</string>
+    <string name="rc_media_artwork">Albüm kapağı</string>
+    <string name="rc_media_seek">Oynatma konumunu ara</string>
     <string name="screen_remote_desktop_title">Uzak Masaüstü</string>
     <string name="cd_show_keyboard">Klavyeyi Göster</string>
     <string name="cd_key_escape">Esc</string>
@@ -133,8 +151,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (Başlangıç)</string>
+    <string name="cd_key_end">End (Son)</string>
     <string name="cd_key_pageup">PgUp (Sayfa yukarı)</string>
     <string name="cd_key_pagedown">PgDn (Sayfa aşağı)</string>
     <string name="cd_key_insert">Ins (Ekle)</string>
@@ -175,11 +193,10 @@
     <string name="dashboard_host_online">BİLGİSAYAR ÇEVRİMİÇİ</string>
     <string name="dashboard_connecting">BAĞLANILIYOR…</string>
     <string name="dashboard_tap_to_connect">BAĞLANMAK İÇİN DOKUNUN</string>
+    <string name="dashboard_connection_card_action">bilgisayarınıza bağlanmak</string>
     <string name="dashboard_wake_pc_button">BİLGİSAYARI UYANDIR</string>
     <string name="dashboard_collecting_data">Veriler toplanıyor…</string>
     <string name="screen_connection_title">Bağlantı</string>
-    <string name="screen_splash_title">Yükleniyor</string>
-    <string name="screen_tutorial_title">Öğretici</string>
     <string name="connection_auto_discover_title">Yerel Ağda Otomatik Keşif</string>
     <string name="connection_auto_discover_hint">RemEx uygulamasının bilgisayarınızda çalıştığından ve her iki cihazın da aynı Wi-Fi ağında olduğundan emin olun.</string>
     <string name="connection_searching">PC\'niz aranıyor…</string>
@@ -202,7 +219,7 @@
     <string name="connection_or_enter_manually">Ya da elle girin</string>
     <string name="connection_label_host">PC IP Adresi</string>
     <string name="connection_hint_host">Bilgisayarınızın yerel IP adresi — ipconfig (Windows) veya ip addr (Linux) ile bulabilirsiniz</string>
-    <string name="connection_label_port">Port</string>
+    <string name="connection_label_port">Bağlantı Noktası</string>
     <string name="connection_hint_port">Varsayılan: 5005</string>
     <string name="connection_label_mac">MAC Adresi (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
@@ -221,6 +238,21 @@
     <string name="connection_status_label">Durum: %1$s</string>
     <string name="connection_paired">Eşleştirildi</string>
     <string name="connection_unpair">Eşleştirmeyi kaldır</string>
+    <string name="connection_known_pcs_title">Bilinen bilgisayarlar</string>
+    <string name="connection_known_pcs_hint">Bağlanmak için bir adrese dokunun.</string>
+    <string name="connection_known_pc_last_connected">Son bağlantı: %1$s</string>
+    <string name="connection_known_pc_never_connected">Henüz bağlanılmadı</string>
+    <string name="connection_known_pc_actions">%1$s seçenekleri</string>
+    <string name="connection_known_pc_rename">Yeniden adlandır</string>
+    <string name="connection_known_pc_rename_title">Bu bilgisayara ad verin</string>
+    <string name="connection_known_pc_nickname_label">Takma ad</string>
+    <string name="connection_known_pc_unpair_title">%1$s eşleştirmesi kaldırılsın mı?</string>
+    <string name="connection_known_pc_unpair_message">Bu telefon, yanıt verdiği tüm adreslerde bu bilgisayarı unutacak. Yeniden eşleştirmek için bilgisayarda görünen PIN gerekir.</string>
+    <string name="connection_known_pc_needs_pairing">Eşleştirme gerekiyor</string>
+    <string name="connection_known_pc_forget">Listeden kaldır</string>
+    <string name="connection_known_pc_pair_title">%1$s ile eşleştirilsin mi?</string>
+    <string name="connection_known_pc_pair_message">Bu telefon bu adreste eşleştirilmemiş. Bilgisayarda görünen 6 haneli PIN kodunu girin.</string>
+    <string name="connection_known_pc_pair_confirm">Eşleştir</string>
     <string name="pairing_title">Güvenli Eşleştirme</string>
     <string name="pairing_prompt">Bilgisayarınızda gösterilen 6 haneli PIN kodunu girin</string>
     <string name="pairing_auto_pin_failed">PIN otomatik olarak alınamadı — bilgisayarınızda görünen PIN\'i girin.</string>
@@ -315,6 +347,8 @@
     <string name="tile_hibernate_label">Bilgisayarı Hazırda Beklet</string>
     <string name="tile_monitor_off_label">Monitörü Kapat</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">İşlemi onayla</string>
+    <string name="tile_confirm_message">\"%1$s\" şimdi bilgisayarınıza gönderilsin mi?</string>
     <string name="screen_file_transfer_title">Dosya Aktarımı</string>
     <string name="file_transfer_upload">Yükle ↑</string>
     <string name="file_transfer_download">İndir ↓</string>
@@ -329,6 +363,54 @@
     <string name="file_transfer_notification_download_title">%1$s indiriliyor</string>
     <string name="file_transfer_notification_preparing">Aktarım hazırlanıyor…</string>
     <string name="file_transfer_notification_progress">%2$d baytın %1$d baytı aktarıldı</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d kopyalandı</item>
+        <item quantity="other">%1$d kopyalandı</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d taşındı</item>
+        <item quantity="other">%1$d taşındı</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d başarısız</item>
+        <item quantity="other">%1$d başarısız</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d atlandı</item>
+        <item quantity="other">%1$d atlandı</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s zaten var</string>
+    <string name="file_conflict_body_exists">Hedef klasörde bu ada sahip bir dosya veya klasör zaten var.</string>
+    <string name="file_conflict_body_different_kind">Hedef klasörde bu ada sahip farklı türde bir öğe zaten var.</string>
+    <string name="file_conflict_body_name_unusable">Bu ad hedef klasör için çok uzun.</string>
+    <string name="file_conflict_body_name_taken">Kaydedilmeden önce başka bir şey bu yeni adı aldı. Yeniden denendiğinde başka bir ad seçilecek.</string>
+    <string name="file_conflict_body_unknown">Bu tamamlanamıyor.</string>
+    <string name="file_conflict_replace">Değiştir</string>
+    <string name="file_conflict_keep_both">İkisini de tut</string>
+    <string name="file_conflict_skip">Atla</string>
+    <string name="file_conflict_apply_to_all">Kalan tümüne uygula</string>
+    <string name="file_conflict_saved_as">%1$s olarak kaydedildi</string>
+    <string name="file_transfer_rate_bytes">%1$s B/sn</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/sn</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/sn</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/sn</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Tamamlanıyor…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d saniye kaldı</item>
+        <item quantity="other">%1$d saniye kaldı</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d dakika kaldı</item>
+        <item quantity="other">%1$d dakika kaldı</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d saat kaldı</item>
+        <item quantity="other">%1$d saat kaldı</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Aktarım tamamlandı</string>
     <string name="file_transfer_notification_upload_complete">%1$s yüklendi</string>
     <string name="file_transfer_notification_upload_failed">%1$s gönderilemedi</string>
@@ -369,7 +451,7 @@
     <string name="shape_puffy">Kabarık</string>
     <string name="shape_puffy_diamond">Kabarık Elmas</string>
     <string name="shape_ghostish">Hayalet Gibi</string>
-    <string name="shape_oval">Oval</string>
+    <string name="shape_oval">Elips</string>
     <string name="shape_clover_4_leaf">4 Yapraklı Yonca</string>
     <string name="shape_clover_8_leaf">8 Yapraklı Yonca</string>
     <string name="shape_sunny">Güneşli</string>
@@ -418,7 +500,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN gönderildi</string>
     <string name="widget_toast_not_connected">Bağlı değil — bağlanmak için RemEx\'i açın</string>
     <string name="widget_toast_command_sent">%1$s gönderildi</string>
-    <string name="widget_toast_launching">%1$s başlatılıyor…</string>
     <string name="widget_hardware_title">Donanım Bilgisi</string>
     <string name="sensor_cpu_usage">İşlemci Kullanımı</string>
     <string name="sensor_gpu_usage">Grafik Kartı Kullanımı</string>
@@ -428,19 +509,20 @@
     <string name="sensor_gpu_temp">Grafik Kartı Sıcaklığı</string>
     <string name="sensor_fallback_label">Sensör %1$d</string>
     <string name="about_android_client_label">Android İstemcisi</string>
+    <string name="about_build_id">Derleme %1$s</string>
     <string name="about_pc_host_label">PC\'niz</string>
     <string name="about_status_unknown">Bilinmeyen</string>
     <string name="about_view_github">GitHub\'da Kaynağı Görüntüle</string>
-    <string name="about_whats_new_1_label">Panel 2.0</string>
-    <string name="about_whats_new_1_body">Ana panel yeniden tasarlandı: kart başına grafik stili seçin, kartları yeniden adlandırın, şekillerini seçin ve sürükleme ile çoklu seçim hareketleriyle düzenleyin. İlk açılışta rehberli tur her şeyi öğretir.</string>
-    <string name="about_whats_new_2_label">Daha Akıllı Sensör Kartları</string>
-    <string name="about_whats_new_2_body">Kartlar neyi ölçtüğünü anlar: görünüm her metriğin türüne otomatik uyar, başlıklar özelleştirilebilir ve toplam RAM gibi okumalar artık “Veri toplanıyor” ekranında takılı kalmaz.</string>
-    <string name="about_whats_new_3_label">Dosya Paylaşımı</string>
-    <string name="about_whats_new_3_body">Dosyaları iki yönde de taşıyın: devam ettirme desteği, SHA-256 doğrulaması ve canlı ilerleme. Başka bir uygulamadan RemEx\'e paylaşım, RemEx çalışmıyorken bile artık sorunsuz.</string>
-    <string name="about_whats_new_4_label">Etkileyici Animasyonlar</string>
-    <string name="about_whats_new_4_body">Material 3 Expressive yayları, rehber ipuçlarından aktarımlara kadar tüm uygulamayı canlandırır — ve her animasyon sistemin Hareketi azalt erişilebilirlik ayarına uyar.</string>
-    <string name="about_whats_new_5_label">Güvenlik Güçlendirmesi</string>
-    <string name="about_whats_new_5_body">Eski şifrelenmemiş HTTP eşleştirme uç noktaları kaldırıldı; PIN\'e giden son şifresiz yol kapandı. Eşleştirme uçtan uca ECDH ile şifreli kalır ve her yeniden bağlanışta PC\'nin sertifika parmak izi doğrulanır.</string>
+    <string name="about_whats_new_1_label">Sensör Uyarıları</string>
+    <string name="about_whats_new_1_body">PC\'nizde herhangi bir sensöre eşik belirleyin; eşik aşıldığı anda kartında kırmızıya dönen bir zil belirir. Uyarı, siz onaylayana kadar yanık kalır, böylece siz yokken kaçırdığınız bir sıçrama işaretli kalmaya devam eder; kritik bir uyarı ise pencere gözden uzaktayken ayrıca bir masaüstü bildirimi tetikler.</string>
+    <string name="about_whats_new_2_label">Temamı Eşleştir</string>
+    <string name="about_whats_new_2_body">Telefonunuz artık temasını PC\'nizle paylaşıyor, böylece Kişiselleştirme tek dokunuşla renklerinizi, açık ya da koyu, eşleştirebiliyor. Telefonunuzun temasını daha sonra değiştirin, PC istediğinizde onu yeniden benimseyebilir.</string>
+    <string name="about_whats_new_3_label">Pano Eşitleme</string>
+    <string name="about_whats_new_3_body">Telefonunuzda metin kopyalayın ve Uzaktan Kumanda ekranından PC\'nizin panosuna gönderin — ulaşır ulaşmaz yapıştırmaya hazır olur. Yol boyunca hiçbir şey saklanmaz, bu yüzden bir şifre veya giriş kodu sadece geçip gider.</string>
+    <string name="about_whats_new_4_label">Bilinen PC\'ler</string>
+    <string name="about_whats_new_4_body">Bağlantı ekranı artık eşleştiğiniz her PC\'yi listeler, böylece makine değiştirmek adresi yeniden yazmak yerine tek dokunuştur. Her biri kendi adını ve son bağlandığınız zamanı hatırlar.</string>
+    <string name="about_whats_new_5_label">Klasör Aktarımı</string>
+    <string name="about_whats_new_5_body">Dosyaları tek tek seçmek yerine, boş alt klasörler dahil olmak üzere tüm bir klasörü tek seferde gönderin veya alın. Kopan bir bağlantı, tek bir dosyada olduğu gibi kaldığı yerden devam eder.</string>
     <string name="about_whats_new_title">%1$s Sürümündeki Yenilikler</string>
     <string name="app_launcher_recent">Son kullanılanlar</string>
     <string name="cd_close_settings">Ayarları kapat</string>
@@ -531,17 +613,23 @@
     <string name="task_manager_host_unresponsive">PC işlem listesi isteklerine yanıt vermiyor. Eşleştirmenin tamamlandığını ve PC\'nin işlem bilgilerini okuma iznine sahip olduğunu kontrol edin.</string>
     <string name="task_manager_kill_failed_format">%1$d işlemi sonlandırılamadı</string>
     <string name="task_manager_retry">Yeniden Dene</string>
-    <string name="rd_err_capture_unavailable">Bilgisayarınızda ekran yakalama çalışmıyor.</string>
-    <string name="rd_err_capture_stopped">Ekran yakalama %1$d kareden sonra durdu. Bilgisayarınız kilitlenmiş veya oturumu kapatılmış olabilir.</string>
-    <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor.</string>
-    <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez.</string>
-    <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor.</string>
+    <string name="rd_err_capture_unavailable">Bilgisayarınızda ekran yakalama çalışmıyor. Yayını yeniden başlatmayı deneyin — sürekli başarısız olursa bilgisayarda RemEx’i yeniden başlatın.</string>
+    <string name="rd_err_capture_stopped">Ekran yakalama %1$d kareden sonra durdu. Bilgisayarınız kilitlenmiş veya oturum kapatılmış olabilir. Kilidini açıp yayını yeniden başlatın.</string>
+    <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor. Başka bir ekran seçip yayını yeniden başlatın.</string>
+    <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez. Yayını durdurup istediğiniz ekranda yeniden başlatın.</string>
+    <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor. Bu genellikle bilgisayardaki RemEx’in güncellenmesi gerektiği ya da gerekli bileşenlerin bulunmadığı anlamına gelir.</string>
+    <string name="rd_err_input_unavailable">Bilgisayarınız klavye veya fare girişini kabul etmiyor. Bilgisayardaki izin istemi reddedilmiş olabilir — orada yeniden gösterilmesi için Tekrar sor’a dokunun. Ekranı hâlâ görebilirsiniz.</string>
+    <string name="rd_input_retry_button">Tekrar sor</string>
+    <string name="rd_input_retry_sent">Bilgisayarınıza tekrar soruldu — istemi orada kabul edin.</string>
+    <string name="rd_err_connect_timeout">%1$s adresindeki bilgisayarınız yanıt vermedi. Açık olduğundan ve bu telefonla aynı Wi‑Fi ağına bağlı olduğundan emin olun, sonra tekrar deneyin.</string>
+    <string name="rd_err_handshake_timeout">%1$s adresindeki bilgisayarınız yanıt verdi ama bu cihazı doğrularken durdu. Uyku moduna geçmiş olabilir. Yeniden bağlanmayı deneyin.</string>
     <string name="cd_clear_search">Aramayı temizle</string>
     <string name="pairing_error_timeout">PC yanıt vermedi. Açık olduğundan ve aynı ağa bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="host_discovered_snackbar">PC bulundu: %1$s</string>
     <string name="widget_refresh">Yenile</string>
     <string name="widget_toast_refreshing">Yenileniyor…</string>
     <string name="widget_toast_refreshed">Telemetri yenilendi</string>
+    <string name="widget_toast_refresh_failed">Telemetri yenilenemedi</string>
     <string name="widget_toast_connecting">PC\'ye bağlanılıyor…</string>
     <string name="widget_config_poll_interval_label">Her %1$d saniyede bir yenile</string>
     <string name="widget_config_poll_interval_hint">Widget\'ın bağlıyken PC\'den güncel telemetri alma sıklığı.</string>
@@ -554,6 +642,20 @@
     <string name="connection_error_generic">Bağlantı başarısız.</string>
     <string name="connection_error_native_missing">RemEx\'in bağlantı motoru başlatılamadı. Uygulamayı yeniden başlatmayı deneyin; bu sorun devam ederse RemEx\'i yeniden yükleyin.</string>
     <string name="connection_action_repair">Yeniden Eşleştir</string>
+    <string name="connection_cert_repair_title">Bu bilgisayarla yeniden eşleştirilsin mi?</string>
+    <string name="connection_cert_repair_title_unchanged">Onarılacak bir şey yok</string>
+    <string name="connection_cert_repair_changed">Bu bilgisayar, telefonunuzun eşleştiği kimlikten farklı bir güvenlik kimliğiyle yanıt veriyor.</string>
+    <string name="connection_cert_repair_when_safe">Bilgisayarda RemEx\'i veya Windows\'u yeniden yüklediyseniz ya da donanımını değiştirdiyseniz bu beklenen bir durumdur.</string>
+    <string name="connection_cert_repair_when_unsafe">Bunların hiçbiri olmadıysa durun. Bu adreste başka bir şey yanıt veriyor ve gönderdiklerinizi okuyor olabilir.</string>
+    <string name="connection_cert_repair_effect">Yeniden eşleştirmek, telefonunuzun güvendiği kimliği unutmasını sağlar ve eşleştirmeyi baştan başlatır. Bilgisayarda görünen PIN gerekir.</string>
+    <string name="connection_cert_repair_label_pinned">Eşleşilen</string>
+    <string name="connection_cert_repair_label_presented">Şu anda yanıt veren</string>
+    <string name="connection_cert_repair_checking">Bu adreste neyin yanıt verdiği denetleniyor…</string>
+    <string name="connection_cert_repair_unknown">Bu bilgisayar yanıt vermedi, bu yüzden geçerli kimliği okunamadı. Yalnızca neden değiştiğini biliyorsanız yeniden eşleştirin.</string>
+    <string name="connection_cert_repair_unchanged">Bu bilgisayar, telefonunuzun zaten güvendiği kimlikle yanıt veriyor; onarılacak bir şey yok. Bağlantı başka bir nedenle başarısız oldu.</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(bilinmiyor)</string>
+    <string name="connection_cert_repair_fingerprint_checking">Denetleniyor…</string>
+    <string name="connection_cert_repair_confirm">Unut ve yeniden eşleştir</string>
     <string name="wake_pc_sent">Uyandırma sinyali gönderildi</string>
     <string name="wake_pc_failed">Uyandırma sinyali gönderilemedi</string>
     <string name="wake_pc_mac_not_configured">MAC adresi yapılandırılmadı — Ayarlar\'dan ayarlayın</string>
@@ -606,9 +708,21 @@
     <string name="file_manager_prop_readonly">Salt okunur</string>
     <string name="file_manager_prop_yes">Evet</string>
     <string name="file_manager_prop_no">Hayır</string>
-    <string name="file_manager_requesting_volumes">Sürücüler yükleniyor…</string>
+    <string name="file_manager_full_browse_pending">Bilgisayarınızda onay bekleniyor…</string>
+    <string name="file_manager_full_browse_unreachable">Bilgisayarınız sormak için bu telefona ulaşamadı. Yeniden bağlanıp tekrar deneyin.</string>
+    <string name="file_manager_full_browse_refused">Tüm cihazda gezinme reddedildi.</string>
+    <string name="file_manager_full_browse_timed_out">Bilgisayarınız zamanında yanıt vermedi. Tekrar deneyin.</string>
     <string name="file_manager_queued_upload">Sıraya alınan yükleme: %1$s</string>
     <string name="file_manager_queued_download">Sıraya alınan indirme: %1$s</string>
+    <string name="file_manager_download_folder">Klasörü indir</string>
+    <string name="file_manager_folder_scanning">Klasör listeleniyor…</string>
+    <string name="file_manager_folder_scan_failed">Klasör listelenemedi.</string>
+    <string name="file_manager_folder_empty">Bu klasörde aktarılacak dosya yok.</string>
+    <string name="file_manager_folder_queued_download">%1$d dosya indirme kuyruğuna alındı.</string>
+    <string name="file_manager_upload_folder">Klasör yükle</string>
+    <string name="file_manager_folder_queued_upload">%1$d dosya yükleme kuyruğuna alındı.</string>
+    <string name="file_manager_folder_too_large">Bu klasör tek seferde aktarılamayacak kadar çok dosya içeriyor.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d dosya kuyruğa alındı, ancak klasör tamamen listelenemeyecek kadar büyüktü — bazı dosyalar dışarıda kaldı.</string>
     <string name="file_manager_transfers_title">Aktarımlar (%1$d)</string>
     <string name="file_manager_clear_finished">Bitenleri temizle</string>
     <string name="file_manager_pause">Duraklat</string>
@@ -652,6 +766,11 @@
     <string name="file_consent_push_message_generic">PC\'niz bu telefona dosya göndermek istiyor. İzin verilsin mi?</string>
     <string name="file_consent_full_browse_title">Cihazda gezinme isteği</string>
     <string name="file_consent_full_browse_message">PC\'niz bu telefonun depolamasında gezinmek istiyor. İzin verilsin mi?</string>
+    <string name="file_consent_remote_full_browse_title">PC\'nizdeki dosyalarda gezinilsin mi?</string>
+    <string name="file_consent_remote_full_browse_message">Bu telefon, yalnızca paylaşılan klasörlerde değil, PC\'nizdeki her şeyde gezinmeyi istiyor. İzin verilsin mi?</string>
+    <string name="file_consent_remote_push_title">Dosyalar PC\'nize gönderilsin mi?</string>
+    <string name="file_consent_remote_push_message">Bu telefon şunu göndermeyi istiyor: %1$s. İzin verilsin mi?</string>
+    <string name="file_consent_remote_push_message_generic">Bu telefon PC\'nize dosya göndermeyi istiyor. İzin verilsin mi?</string>
     <string name="file_consent_allow">İzin ver</string>
     <string name="file_consent_deny">Reddet</string>
     <string name="file_consent_remember">Bu PC için seçimimi hatırla</string>
@@ -756,4 +875,53 @@
     <string name="personalization_shape_cat_network">Ağ kartları</string>
     <string name="personalization_shape_cat_action">Eylem kartları</string>
     <string name="personalization_shape_cat_other">Diğer kartlar</string>
+
+    <string name="action_take_screenshot">Bilgisayarın ekran görüntüsünü al</string>
+    <string name="screenshot_taken">Ekran görüntüsü bilgisayarda alındı. Almak için bildirimlerinizi kontrol edin.</string>
+    <string name="screenshot_failed">Bilgisayar ekran görüntüsü alamadı.</string>
+    <string name="file_push_failed_no_folder">Bir dosya kaydedilemedi: bu telefonda yazma için paylaşılan bir klasör yok. Dosya almak için RemEx\'te bir klasör paylaşın.</string>
+    <string name="file_push_failed_bad_name">Bir dosya adı nedeniyle kaydedilemedi.</string>
+    <string name="file_push_failed_destination">Bir dosya kaydedilemedi: gideceği klasör artık kullanılabilir değil.</string>
+    <string name="file_push_failed_wrong_file">Bir dosya kaydedilemedi: bu, almayı kabul ettiğiniz dosya değildi.</string>
+    <string name="file_push_failed_not_saved">Bilgisayardan gelen bir dosya kaydedilemedi. Bilgisayardan tekrar göndermesini isteyin.</string>
+    <string name="file_push_failed_no_channel">Bilgisayardan gelen bir dosya alınamadı: bu telefon dosya bağlantısını açamadı. Tekrar deneyin, sorun sürerse yeniden eşleştirin.</string>
+    <string name="file_received_title">Dosya alındı</string>
+    <string name="file_received_text">%1$s bilgisayarınızdan geldi.</string>
+    <string name="file_received_share">Paylaş</string>
+    <string name="pairing_phase_probe">Bilgisayarınıza ulaşılabiliyor mu diye bakılıyor…</string>
+    <string name="pairing_phase_securing">Güvenli bağlantı kuruluyor…</string>
+    <string name="pairing_phase_awaiting_host">Bilgisayarınızın PIN göstermesi bekleniyor…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Tanılamayı paylaş</string>
+    <string name="settings_share_diagnostics_body">Bu uygulama ve bilgisayarınızla olan bağlantısı hakkında, size yardım eden kişiye gönderebileceğiniz bir rapor oluşturun. Önce raporun tamamını okursunuz ve siz göndermeden hiçbir şey telefonunuzdan çıkmaz.</string>
+    <string name="screen_share_diagnostics_title">Tanılamayı paylaş</string>
+    <string name="share_diagnostics_explainer">Bu rapor uygulama sürümünü, telefon modelini, Android sürümünü, bilgisayarınızın kendisi hakkında en son bildirdiklerini ve bu uygulamanın son günlük satırlarını içerir. Eşleştirme anahtarları kaldırılır ve dosya yolları yalnızca dosya adına kısaltılır. Aşağıda gördüğünüz şey, tam olarak gönderilecek olan şeydir.</string>
+    <string name="share_diagnostics_network_toggle">Ağ adreslerini dahil et</string>
+    <string name="share_diagnostics_network_toggle_body">Varsayılan olarak kapalıdır. Yalnızca bağlantı sorunu için açın: IP adresleri raporda kalır.</string>
+    <string name="share_diagnostics_preview_title">Rapor önizlemesi</string>
+    <string name="share_diagnostics_collecting">Rapor oluşturuluyor…</string>
+    <string name="share_diagnostics_send">Raporu paylaş</string>
+    <string name="share_diagnostics_chooser">Tanılamayı paylaş</string>
+    <string name="share_diagnostics_failed">Rapor paylaşıma hazırlanamadı.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Panoyu bilgisayara gönder</string>
+    <string name="clipboard_send_ok">Bilgisayarın panosuna gönderildi</string>
+    <string name="clipboard_send_empty">Panoda gönderilecek bir şey yok</string>
+    <string name="clipboard_send_too_large">Bu, gönderilemeyecek kadar büyük. Sınır %1$d KB.</string>
+    <string name="clipboard_send_failed">Pano gönderilemedi</string>
+    <string name="clipboard_send_refused">Bilgisayar reddetti — önce telefonu bilgisayarınızla eşleştirin</string>
+    <string name="clipboard_send_not_connected">Önce bilgisayarınıza bağlanın</string>
+    <string name="clipboard_send_unsupported">Yalnızca kopyalanan metin gönderilebilir</string>
+    <string name="clipboard_fetch_button">Panoyu bilgisayardan al</string>
+    <string name="clipboard_fetch_ok">Bilgisayardan kopyalandı</string>
+    <string name="clipboard_fetch_empty">Bilgisayarda kopyalanmış bir şey yok</string>
+    <string name="clipboard_fetch_too_large">Bilgisayarın panosu kopyalanamayacak kadar büyük</string>
+    <string name="clipboard_fetch_failed">Bilgisayarın panosu alınamadı</string>
+    <string name="clipboard_fetch_label">Bilgisayar panosu</string>
 </resources>

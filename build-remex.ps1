@@ -9,6 +9,36 @@
     remex-agent package) and the Android app. Consolidates APKs, AABs, and PC
     installers into a single `build_output` folder.
 
+    Every run shows the current version and offers a 5-second y/N chance to change it before
+    building. It defaults to NO, so an unattended build never bumps anything. Answer yes and it asks
+    two separate questions — the new MAJOR.MINOR.PATCH, then the versionCode — and writes both
+    remex.android/app/version.properties (Android) and Directory.Build.props (Windows/Linux .NET) —
+    the pair remex.desktop.tests/Services/VersionSourceOfTruthTests.cs requires to agree.
+    Pass -Version and/or -VersionCode to state the answers up front and skip the prompts entirely.
+
+    The two are asked separately because versionCode is monotonic and independent of versionName.
+    Keeping the name and raising the code alone is the normal move when Play rejects an upload and
+    burns its code, and it was not expressible before: the code only ever moved as a silent +1 riding
+    along with a name change.
+
+.PARAMETER Version
+    Build at this version (MAJOR.MINOR.PATCH), skipping the interactive version prompt.
+
+    If it differs from what version.properties currently holds, the version files are rewritten and
+    versionCode is incremented unless -VersionCode says otherwise. If it matches and no -VersionCode
+    is given, nothing is written. Use it to script a release build, or to say "yes, this version,
+    don't ask me" on a normal one.
+
+.PARAMETER VersionCode
+    The Android versionCode to write, instead of the automatic current+1.
+
+    Valid on its own, without -Version: that is a code-only bump, which is what a re-upload after a
+    Play rejection needs. Combined with -Version it simply replaces the automatic increment.
+
+    Play will not accept an upload whose versionCode is not strictly higher than the last one you
+    shipped, and a code can never be reused or lowered. A value below the current code is refused
+    here rather than at the Play console. Equal to the current code means "leave it alone".
+
 .PARAMETER Config
     Build configuration. Valid options are 'debug' and 'release'. Defaults to 'release'.
 
@@ -23,12 +53,43 @@
     incremental rebuilds. Use this when iterating on a single platform and you don't need
     a pristine build environment. Example: -t windows -NoClean
 
+.PARAMETER AdbInstall
+    After a successful Android build, push the staged APK to your connected device with
+    'adb install -r'. Opt-in and off by default, even for -t android / -t all: a build should
+    never touch a device you didn't ask it to.
+
+    Wireless debugging often isn't up on the first look, so the device check runs twice with a
+    pause in between. If it still finds nothing, you get a 5-second y/N countdown to retry adb
+    or skip; on timeout it skips. Skipping never fails the build — the APK is still staged in
+    build_output/android and you can install it by hand.
+
+.PARAMETER InstallLocal
+    After a successful Windows build, update your installed copy at "$env:ProgramFiles\RemEx"
+    by handing off to scripts/update-local-install.ps1 -SkipPublish, which reuses the publish
+    output this script just produced.
+
+    That script is invoked rather than inlined on purpose: it carries
+    '#Requires -RunAsAdministrator' (which would otherwise force elevation on every build,
+    including Android-only ones), it stops and restarts the RemEx logon task, and it is the
+    documented standalone fast-update loop. One copy of that logic, called from two places.
+
+    Release only — update-local-install.ps1 reads artifacts/publish/remex.agent/release_win-x64.
+
 .EXAMPLE
     ./build-remex.ps1 -c release -t all
 .EXAMPLE
+    ./build-remex.ps1 -v 2.5.0 -t all -c release
+.EXAMPLE
     ./build-remex.ps1 -t windows -NoClean
 .EXAMPLE
+    ./build-remex.ps1 -t android -NoClean -AdbInstall
+.EXAMPLE
+    ./build-remex.ps1 -t windows-client -NoClean -InstallLocal
+.EXAMPLE
     ./build-remex.ps1 (starts interactive wizard if no args are specified)
+
+.LINK
+    scripts/update-local-install.ps1
 #>
 param(
     [Parameter(Mandatory=$false)]
@@ -41,6 +102,18 @@ param(
     [ValidateSet("android", "linux", "windows", "all", "windows-client", "installer", "apk")]
     [string]$Target = "",
 
+    # "v" is declared explicitly rather than left to prefix matching: this script's [Parameter()]
+    # attributes make it an advanced script, so a bare -v would be ambiguous with the -Verbose
+    # common parameter. An exact alias resolves first and wins.
+    [Parameter(Mandatory=$false)]
+    [Alias("v")]
+    [string]$Version = "",
+
+    # 0 means "not supplied". A real versionCode is always >= 1, so there is no ambiguity, and it
+    # keeps the was-this-passed test a plain comparison instead of a nullable int.
+    [Parameter(Mandatory=$false)]
+    [int]$VersionCode = 0,
+
     [Parameter(Mandatory=$false)]
     [switch]$NonInteractive,
 
@@ -48,7 +121,13 @@ param(
     [switch]$NoClean,
 
     [Parameter(Mandatory=$false)]
-    [switch]$BrandAssets
+    [switch]$BrandAssets,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$AdbInstall,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$InstallLocal
 )
 
 Set-StrictMode -Version Latest
@@ -90,6 +169,102 @@ function Get-LocalPropertiesSdkDir {
     if (-not $line) { return $null }
     $value = ($line -split '=', 2)[1]
     return $value -replace '\\:', ':' -replace '\\\\', '\'
+}
+
+# A y/N prompt that gives up on its own after $Seconds. Every prompt in this script that can block
+# an otherwise-unattended build goes through here: a build left running in another window must not
+# sit forever waiting on a keypress nobody is there to give.
+function Read-CountdownChoice {
+    param(
+        [Parameter(Mandatory=$true)][string]$Prompt,
+        [int]$Seconds = 5,
+        [bool]$DefaultOnTimeout = $false
+    )
+
+    if ($NonInteractive) { return $DefaultOnTimeout }
+
+    # A redirected or headless host has no key-reading RawUI; probe before relying on it.
+    try {
+        $null = $Host.UI.RawUI.KeyAvailable
+    } catch {
+        return $DefaultOnTimeout
+    }
+
+    try {
+        while ($Host.UI.RawUI.KeyAvailable) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+
+        $defaultLabel = if ($DefaultOnTimeout) { "yes" } else { "no" }
+        for ($remaining = $Seconds; $remaining -gt 0; $remaining--) {
+            Write-Host ("`r  {0} [y/N] {1}s, default {2}...  " -f $Prompt, $remaining, $defaultLabel) -NoNewline -ForegroundColor Yellow
+            $deadline = (Get-Date).AddSeconds(1)
+            while ((Get-Date) -lt $deadline) {
+                if ($Host.UI.RawUI.KeyAvailable) {
+                    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                    $char = "$($key.Character)"
+                    if ($char -match '^[yY]$') { Write-Host ""; return $true }
+                    if ($char -match '^[nN]$' -or $key.VirtualKeyCode -eq 27) { Write-Host ""; return $false }
+                }
+                Start-Sleep -Milliseconds 50
+            }
+        }
+        Write-Host ""
+        return $DefaultOnTimeout
+    } catch {
+        Write-Host ""
+        return $DefaultOnTimeout
+    }
+}
+
+# Directory.Build.props carries the .NET assembly version for the whole solution, but
+# remex.android/app/version.properties is the source of truth (remex.desktop.tests
+# VersionSourceOfTruthTests asserts the two agree). This pushes one to the other, and is called both
+# on every build and immediately after a version change so the Windows side never lags the Android side.
+# The one place the version is written. Both routes into a version change — the interactive prompt
+# and -Version — land here, so the Android and .NET sides can never be updated by one path and
+# missed by the other.
+function Set-RemexVersion {
+    param(
+        [Parameter(Mandatory=$true)][string]$VersionFilePath,
+        [Parameter(Mandatory=$true)][string]$BuildPropsPath,
+        [Parameter(Mandatory=$true)][string]$NewVersion,
+        [Parameter(Mandatory=$true)][int]$NewVersionCode
+    )
+
+    # Rewrite the two keys in place rather than regenerating the file, so any comment or extra
+    # property someone adds to version.properties later survives a bump.
+    $updatedLines = foreach ($line in @(Get-Content $VersionFilePath)) {
+        if ($line -match '^\s*versionName\s*=') { "versionName=$NewVersion" }
+        elseif ($line -match '^\s*versionCode\s*=') { "versionCode=$NewVersionCode" }
+        else { $line }
+    }
+    Set-Content -Path $VersionFilePath -Value $updatedLines
+    Write-Host "  Updated version.properties (Android): versionName=$NewVersion, versionCode=$NewVersionCode" -ForegroundColor Green
+
+    Sync-DirectoryBuildPropsVersion -BuildPropsPath $BuildPropsPath -DesiredVersion $NewVersion
+    Write-Host "  Both version files now read $NewVersion. Commit them alongside the build." -ForegroundColor Green
+}
+
+function Sync-DirectoryBuildPropsVersion {
+    param(
+        [Parameter(Mandatory=$true)][string]$BuildPropsPath,
+        [Parameter(Mandatory=$true)][string]$DesiredVersion
+    )
+
+    if (-not (Test-Path $BuildPropsPath)) {
+        Write-Warning "Directory.Build.props not found at $BuildPropsPath; .NET version left unsynced."
+        return
+    }
+
+    $content = Get-Content $BuildPropsPath -Raw
+    $patched = $content -replace '<Version>[^<]*</Version>', "<Version>$DesiredVersion</Version>"
+    if ($content -ne $patched) {
+        Set-Content $BuildPropsPath $patched -NoNewline
+        Write-Host "Synchronized Directory.Build.props to version $DesiredVersion" -ForegroundColor Green
+    } else {
+        Write-Host "Directory.Build.props is already synced at version $DesiredVersion" -ForegroundColor DarkGray
+    }
 }
 
 # Force output to support emojis/colored text on Windows PowerShell
@@ -178,6 +353,41 @@ Write-Host "$Target" -ForegroundColor Green
 Write-Host "Clean Phase:            " -NoNewline -ForegroundColor DarkCyan
 Write-Host "$(if ($NoClean) { 'Skipped' } else { 'Full' })" -ForegroundColor $(if ($NoClean) { 'Yellow' } else { 'Green' })
 
+# Post-build deployment flags. Both are opt-in; drop them with a warning rather than an error
+# when the selected target can't produce what they'd deploy, so '-t windows -AdbInstall' still
+# builds instead of dying on a flag that was only ever a convenience.
+$buildsAndroid = $Target -eq "android" -or $Target -eq "all"
+$buildsWindows = $Target -eq "windows" -or $Target -eq "all"
+
+if ($AdbInstall -and -not $buildsAndroid) {
+    Write-Warning "-AdbInstall was requested but target '$Target' does not build an APK. Ignoring it."
+    $AdbInstall = $false
+}
+if ($InstallLocal) {
+    if (-not $buildsWindows) {
+        Write-Warning "-InstallLocal was requested but target '$Target' does not build the Windows agent. Ignoring it."
+        $InstallLocal = $false
+    } elseif (-not $IsWin) {
+        Write-Warning "-InstallLocal updates a Windows ProgramFiles install and cannot run here. On Linux, reinstall with ./installer/build-linux.sh. Ignoring it."
+        $InstallLocal = $false
+    } elseif ($Config -ne "release") {
+        # update-local-install.ps1 -SkipPublish reads artifacts/publish/remex.agent/release_win-x64.
+        # A debug build never writes there, so the handoff would either fail or silently install a
+        # stale release. Refuse rather than deploy something other than what was just built.
+        Write-Error "-InstallLocal requires -c release; update-local-install.ps1 deploys the release_win-x64 publish and a debug build does not produce one."
+        exit 1
+    }
+}
+
+if ($AdbInstall) {
+    Write-Host "Post-build:             " -NoNewline -ForegroundColor DarkCyan
+    Write-Host "adb install -r (APK)" -ForegroundColor Green
+}
+if ($InstallLocal) {
+    Write-Host "Post-build:             " -NoNewline -ForegroundColor DarkCyan
+    Write-Host "update local RemEx install" -ForegroundColor Green
+}
+
 # Locate repository root folder
 $RepoRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($RepoRoot)) {
@@ -199,11 +409,130 @@ if (-not (Test-Path $VersionFile)) {
     exit 1
 }
 $versionProps = Get-Content $VersionFile -Raw | ConvertFrom-StringData
-$Version = $versionProps["versionName"]
-if ([string]::IsNullOrEmpty($Version)) {
+$FileVersion = $versionProps["versionName"]
+if ([string]::IsNullOrEmpty($FileVersion)) {
     Write-Error "Could not read versionName from version.properties"
     exit 1
 }
+$RequestedVersion = $Version    # whatever -Version was given, before $Version becomes the resolved one
+$Version = $FileVersion
+# Same capture for the code: both parameters are read into Requested* here, because the plain names
+# are immediately reused below to hold what version.properties actually says.
+$RequestedVersionCode = $VersionCode
+
+# Play rejects an upload whose versionCode isn't strictly higher than the last one, so any change to
+# versionName drags the code up with it. It is monotonic and independent of versionName.
+$VersionCode = 0
+$rawVersionCode = if ($versionProps.ContainsKey("versionCode")) { $versionProps["versionCode"] } else { "" }
+if (-not [int]::TryParse($rawVersionCode, [ref]$VersionCode)) {
+    Write-Error "versionCode in $VersionFile is '$rawVersionCode', which is not an integer. Fix it by hand before building."
+    exit 1
+}
+
+$BuildPropsPath = Join-Paths $RepoRoot "Directory.Build.props"
+$versionPattern = '^\d+\.\d+\.\d+(\.\d+)?$'
+
+Write-Host ""
+Write-Host "Current version: " -NoNewline -ForegroundColor DarkCyan
+Write-Host "$Version" -NoNewline -ForegroundColor Green
+Write-Host "  (versionCode $VersionCode)" -ForegroundColor DarkGray
+
+# Both routes into a version change — the parameters and the interactive prompt — resolve a target
+# versionName and a target versionCode here, and the single write below fires if EITHER moved. They
+# are separate answers: versionCode is monotonic and independent of versionName, so a re-upload after
+# Play rejects a build needs the code to move on its own, with the name standing still.
+$targetVersion = $Version
+$targetVersionCode = $VersionCode
+
+if (-not [string]::IsNullOrWhiteSpace($RequestedVersion) -or $RequestedVersionCode -gt 0) {
+    # -Version and/or -VersionCode were passed: the answers are already given, so don't ask anything.
+    if (-not [string]::IsNullOrWhiteSpace($RequestedVersion)) {
+        $RequestedVersion = $RequestedVersion.Trim().TrimStart("v", "V")
+        if ($RequestedVersion -notmatch $versionPattern) {
+            Write-Error "-Version '$RequestedVersion' is not a valid version. Use MAJOR.MINOR.PATCH (e.g. 2.6.0)."
+            exit 1
+        }
+        $targetVersion = $RequestedVersion
+    }
+
+    if ($RequestedVersionCode -gt 0) {
+        if ($RequestedVersionCode -lt $VersionCode) {
+            Write-Error "-VersionCode $RequestedVersionCode is below the current $VersionCode. Play can never reuse or lower a versionCode, so this would be rejected at upload. Pick a higher one."
+            exit 1
+        }
+        $targetVersionCode = $RequestedVersionCode
+    }
+    elseif ($targetVersion -ne $Version) {
+        # A versionName change with no code stated: the code has to move, so take the next one.
+        $targetVersionCode = $VersionCode + 1
+    }
+}
+# Version change checkpoint. This runs on every build that passed neither parameter, and always
+# defaults to "no": a bump is irreversible in the eyes of the Play Store (a versionCode can never be
+# reused), so it happens on a deliberate keypress, never by drifting through an unattended build.
+elseif (Read-CountdownChoice -Prompt "Change the version number before building?" -Seconds 5 -DefaultOnTimeout $false) {
+    while ($true) {
+        $entered = "$(Read-Host "  New version number (blank to keep $Version)")"
+        if ([string]::IsNullOrWhiteSpace($entered)) { break }
+        $entered = $entered.Trim().TrimStart("v", "V")
+        if ($entered -notmatch $versionPattern) {
+            Write-Host "  '$entered' isn't a valid version. Use MAJOR.MINOR.PATCH (e.g. 2.6.0)." -ForegroundColor Yellow
+            continue
+        }
+        if ($entered -eq $Version) {
+            Write-Host "  That's the current version; keeping it." -ForegroundColor DarkGray
+            break
+        }
+        $targetVersion = $entered
+        break
+    }
+
+    # versionCode is asked separately, and always — it is the number Play actually gates uploads on,
+    # and it was previously only ever reachable as a silent +1 riding along with a versionName change.
+    # The default is stated in the prompt and differs by case, so blank never surprises: a changed
+    # versionName forces the code up, while an unchanged one defaults to leaving the code alone.
+    $defaultCode = if ($targetVersion -ne $Version) { $VersionCode + 1 } else { $VersionCode }
+    while ($true) {
+        $enteredCode = "$(Read-Host "  versionCode (blank for $defaultCode, currently $VersionCode)")"
+        if ([string]::IsNullOrWhiteSpace($enteredCode)) { $targetVersionCode = $defaultCode; break }
+        $parsedCode = 0
+        if (-not [int]::TryParse($enteredCode.Trim(), [ref]$parsedCode)) {
+            Write-Host "  '$enteredCode' isn't a whole number." -ForegroundColor Yellow
+            continue
+        }
+        if ($parsedCode -lt $VersionCode) {
+            Write-Host "  $parsedCode is below the current $VersionCode. Play can never reuse or lower a versionCode." -ForegroundColor Yellow
+            continue
+        }
+        $targetVersionCode = $parsedCode
+        break
+    }
+} else {
+    Write-Host "  Keeping version $Version (versionCode $VersionCode)." -ForegroundColor DarkGray
+}
+
+if ($targetVersion -ne $Version -or $targetVersionCode -ne $VersionCode) {
+    Write-Host "  $Version (code $VersionCode)  ->  $targetVersion (code $targetVersionCode)" -ForegroundColor Cyan
+
+    # The parameters ARE the confirmation on the scripted route; only the interactive one asks again.
+    $writeIt = $true
+    if ([string]::IsNullOrWhiteSpace($RequestedVersion) -and $RequestedVersionCode -le 0) {
+        $writeIt = Read-CountdownChoice -Prompt "Write this to version.properties and Directory.Build.props?" -Seconds 5 -DefaultOnTimeout $false
+    }
+
+    if ($writeIt) {
+        Set-RemexVersion -VersionFilePath $VersionFile -BuildPropsPath $BuildPropsPath -NewVersion $targetVersion -NewVersionCode $targetVersionCode
+        $Version = $targetVersion
+        $VersionCode = $targetVersionCode
+    } else {
+        Write-Host "  Left at $Version (versionCode $VersionCode)." -ForegroundColor DarkGray
+    }
+}
+elseif (-not [string]::IsNullOrWhiteSpace($RequestedVersion) -or $RequestedVersionCode -gt 0) {
+    Write-Host "  Parameters match what's on disk; nothing to write." -ForegroundColor DarkGray
+}
+
+Write-Host ""
 Write-Host "Resolved Version:       " -NoNewline -ForegroundColor DarkCyan
 Write-Host "$Version" -ForegroundColor Green
 Write-Host "----------------------------------------------------------" -ForegroundColor Gray
@@ -310,17 +639,9 @@ if ($NoClean) {
 }
 
 # 4. Synchronize version with Directory.Build.props
-$BuildProps = Join-Paths $RepoRoot "Directory.Build.props"
-if (Test-Path $BuildProps) {
-    $content = Get-Content $BuildProps -Raw
-    $patched = $content -replace '<Version>[^<]*</Version>', "<Version>$Version</Version>"
-    if ($content -ne $patched) {
-        Set-Content $BuildProps $patched -NoNewline
-        Write-Host "Synchronized Directory.Build.props to version $Version" -ForegroundColor Green
-    } else {
-        Write-Host "Directory.Build.props is already synced at version $Version" -ForegroundColor DarkGray
-    }
-}
+# A no-op when the version was just changed above; the safety net for a working copy where the two
+# files drifted apart on their own (a hand edit, a bad merge).
+Sync-DirectoryBuildPropsVersion -BuildPropsPath $BuildPropsPath -DesiredVersion $Version
 
 # 5. Restore .NET Solutions
 if ($Target -eq "windows" -or $Target -eq "linux" -or $Target -eq "all") {
@@ -353,6 +674,75 @@ function Find-IsccCompiler {
         }
     }
     return $null
+}
+
+# ---------------------------------------------------------------------------
+# Post-build deployment helpers (-AdbInstall / -InstallLocal)
+# ---------------------------------------------------------------------------
+
+# Locate adb: PATH first, then the SDK's platform-tools. Plenty of working Android setups never
+# put platform-tools on PATH, and "adb not found" is a useless failure when the SDK dir is already
+# known from local.properties / ANDROID_HOME.
+function Find-AdbExecutable {
+    $command = Get-Command adb -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($command -and $command.Source) {
+        return $command.Source
+    }
+
+    $candidateRoots = @()
+    $localPropsPath = Join-Paths $RepoRoot "remex.android" "local.properties"
+    $fromProps = Get-LocalPropertiesSdkDir -LocalPropertiesPath $localPropsPath
+    if (-not [string]::IsNullOrWhiteSpace($fromProps)) { $candidateRoots += $fromProps.Trim() }
+    if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_HOME)) { $candidateRoots += $env:ANDROID_HOME }
+    if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_SDK_ROOT)) { $candidateRoots += $env:ANDROID_SDK_ROOT }
+
+    $adbName = if ($IsWin) { "adb.exe" } else { "adb" }
+    foreach ($root in $candidateRoots) {
+        $candidate = Join-Paths $root "platform-tools" $adbName
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+    return $null
+}
+
+# Serials of devices adb reports as actually usable. "unauthorized" (RSA prompt not accepted) and
+# "offline" (a wireless link that dropped) are deliberately excluded — installing to those fails.
+function Get-AdbReadyDevices {
+    param([Parameter(Mandatory=$true)][string]$Adb)
+
+    $output = @(& $Adb devices 2>&1)
+    $serials = @()
+    foreach ($line in $output) {
+        $text = "$line".Trim()
+        if ($text -match '^(?<Serial>\S+)\s+device$') {
+            $serials += $Matches["Serial"]
+        }
+    }
+    # Returned unwrapped on purpose — callers wrap in @() to normalize. Returning ", $serials"
+    # would hand back a one-element array *containing* the array, so "no devices" would count as one.
+    return $serials
+}
+
+# adb exits 0 on some install failures and prints "Failure [INSTALL_FAILED_...]" instead, so the
+# output is inspected as well as the exit code.
+function Invoke-AdbInstallApk {
+    param(
+        [Parameter(Mandatory=$true)][string]$Adb,
+        [Parameter(Mandatory=$true)][string]$Serial,
+        [Parameter(Mandatory=$true)][string]$ApkPath
+    )
+
+    Write-Host "Installing $([System.IO.Path]::GetFileName($ApkPath)) -> $Serial ..." -ForegroundColor DarkCyan
+    $output = @(& $Adb -s $Serial install -r $ApkPath 2>&1)
+    $exitCode = $LASTEXITCODE
+    foreach ($line in $output) {
+        $text = "$line".Trim()
+        if (-not [string]::IsNullOrWhiteSpace($text)) {
+            Write-Host "  $text" -ForegroundColor DarkGray
+        }
+    }
+    return ($exitCode -eq 0) -and (($output -join "`n") -notmatch 'Failure')
 }
 
 # 6. Targets Compilation
@@ -667,7 +1057,117 @@ if ($Target -eq "linux" -or $Target -eq "all") {
     Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 }
 
-# 7. Premium Visual Summary
+# 7. Post-Build Deployment (-AdbInstall / -InstallLocal)
+# Both steps run only after every selected target compiled and staged successfully, so a
+# deployment never ships a half-built tree. Neither runs unless explicitly asked for.
+$deployFailed = $false
+
+# --- ANDROID: adb install -r ---
+if ($AdbInstall) {
+    Write-Host "=== Installing APK to Device (adb) ===" -ForegroundColor Yellow
+
+    $androidStage = Join-Paths $BuildOutputDir "android"
+    $variantSuffix = if ($Config -eq "release") { "-release.apk" } else { "-debug.apk" }
+    $stagedApks = @(Get-ChildItem -Path $androidStage -Filter "*.apk" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "*unsigned*" })
+    # Match the built variant exactly — no "any APK will do" fallback. Debug and release are signed
+    # with different keys, so installing the wrong one over the other fails with a signature mismatch,
+    # and installing a stale variant that happens to be lying in the folder is worse than not installing.
+    $apk = $stagedApks | Where-Object { $_.Name -like "*$variantSuffix" } | Select-Object -First 1
+
+    $adb = Find-AdbExecutable
+
+    if ($null -eq $apk) {
+        Write-Warning "No signed *$variantSuffix found in $androidStage. Skipping adb install."
+    } elseif ($null -eq $adb) {
+        Write-Warning "adb was not found on PATH or under <sdk>/platform-tools. Skipping install."
+        Write-Warning "Install it with 'sdkmanager platform-tools', or install by hand: adb install -r `"$($apk.FullName)`""
+    } else {
+        Write-Host "Using adb: $adb" -ForegroundColor DarkGray
+
+        # Wireless debugging frequently isn't discovered on the first look — the daemon may still be
+        # starting, or mDNS hasn't resolved the paired device yet. So: check, pause, check again,
+        # and only then ask the human.
+        $devices = @(Get-AdbReadyDevices -Adb $adb)
+        if ($devices.Count -eq 0) {
+            Write-Host "No device on the first check. Wireless debugging often needs a moment — retrying..." -ForegroundColor DarkGray
+            Start-Sleep -Seconds 3
+            $devices = @(Get-AdbReadyDevices -Adb $adb)
+        }
+
+        while ($devices.Count -eq 0) {
+            Write-Host "Still no authorized device." -ForegroundColor Yellow
+            Write-Host "  Check that wireless debugging is on and the phone is paired (Developer options > Wireless debugging)." -ForegroundColor DarkGray
+            if (-not (Read-CountdownChoice -Prompt "Retry adb?" -Seconds 5 -DefaultOnTimeout $false)) {
+                Write-Host "Skipping install. The APK is staged at $($apk.FullName)" -ForegroundColor DarkGray
+                break
+            }
+            $devices = @(Get-AdbReadyDevices -Adb $adb)
+            if ($devices.Count -eq 0) {
+                Start-Sleep -Seconds 2
+                $devices = @(Get-AdbReadyDevices -Adb $adb)
+            }
+        }
+
+        if ($devices.Count -gt 0) {
+            Write-Host "Ready device(s): $($devices -join ', ')" -ForegroundColor Green
+            # Always target a specific serial. Bare 'adb install' aborts with "more than one device"
+            # the moment an emulator is also running, which is a confusing way to fail.
+            foreach ($serial in $devices) {
+                if (Invoke-AdbInstallApk -Adb $adb -Serial $serial -ApkPath $apk.FullName) {
+                    Write-Host "Installed on $serial." -ForegroundColor Green
+                } else {
+                    Write-Warning "adb install failed on $serial. See the adb output above."
+                    $deployFailed = $true
+                }
+            }
+        }
+    }
+    Write-Host "----------------------------------------------------------" -ForegroundColor Gray
+}
+
+# --- WINDOWS: update the local install ---
+# Handed off to scripts/update-local-install.ps1 rather than reimplemented here. That script owns
+# stopping the RemEx logon task, copying the whole publish folder (code lives in the managed DLLs,
+# not in the native Remex.Agent.exe shim) and restarting it — and it requires elevation, which this
+# build script must not.
+if ($InstallLocal) {
+    Write-Host "=== Updating Local RemEx Install ===" -ForegroundColor Yellow
+
+    $updateScript = Join-Paths $RepoRoot "scripts" "update-local-install.ps1"
+    $isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    if (-not (Test-Path $updateScript)) {
+        Write-Warning "update-local-install.ps1 not found at $updateScript. Skipping local install update."
+    } elseif (-not $isElevated) {
+        Write-Warning "Updating the install writes to ProgramFiles and needs an elevated shell. Skipping."
+        Write-Warning "Re-run from an admin terminal, or run it yourself: pwsh `"$updateScript`" -SkipPublish"
+        $deployFailed = $true
+    } else {
+        # -SkipPublish reuses the publish this script produced a moment ago instead of building twice.
+        # Reset LASTEXITCODE first: the script ends without an explicit 'exit 0', so a stale code from
+        # an earlier native command would otherwise be read as its result. The try/catch is because it
+        # runs under $ErrorActionPreference = 'Stop', where its own Write-Error paths throw.
+        $global:LASTEXITCODE = 0
+        try {
+            & $updateScript -SkipPublish
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "update-local-install.ps1 failed (exit $LASTEXITCODE). Your install may be partially updated."
+                $deployFailed = $true
+            } else {
+                Write-Host "Local install updated." -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "update-local-install.ps1 failed: $($_.Exception.Message)"
+            Write-Warning "Your install may be partially updated. Re-run: pwsh `"$updateScript`" -SkipPublish"
+            $deployFailed = $true
+        }
+    }
+    Write-Host "----------------------------------------------------------" -ForegroundColor Gray
+}
+
+# 8. Premium Visual Summary
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "            ✨ BUILD COMPLETED SUCCESSFULLY ✨            " -ForegroundColor Green
@@ -677,6 +1177,10 @@ Write-Host "Target(s):     $Target" -ForegroundColor DarkCyan
 Write-Host "Version:       $Version" -ForegroundColor DarkCyan
 Write-Host "Clean:         $(if ($NoClean) { 'Skipped (-NoClean)' } else { 'Full' })" -ForegroundColor DarkCyan
 Write-Host "Output Folder: $BuildOutputDir" -ForegroundColor DarkCyan
+if ($AdbInstall -or $InstallLocal) {
+    $deployLabel = if ($deployFailed) { "One or more steps FAILED (see warnings above)" } else { "OK" }
+    Write-Host "Deployment:    $deployLabel" -ForegroundColor $(if ($deployFailed) { 'Red' } else { 'DarkCyan' })
+}
 Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 
 # Retrieve staged files
@@ -691,4 +1195,11 @@ if ($stagedFiles.Count -eq 0) {
     }
 }
 Write-Host "==========================================================" -ForegroundColor Green
+
+# The build itself succeeded — artifacts are staged and valid. But if a deployment step you
+# explicitly asked for failed, exiting 0 would report a lie to whatever ran this.
+if ($deployFailed) {
+    Write-Host "The build succeeded, but a requested deployment step did not. Exiting non-zero." -ForegroundColor Red
+    exit 1
+}
 exit 0

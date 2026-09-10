@@ -8,7 +8,12 @@ namespace Remex.Desktop.Controls;
 /// <summary>
 /// Draws the RemEx terminal-window brand mark (gradient backdrop + mark) natively, from the same
 /// path data as the launcher icon (Remex.Branding.RemexBrandData). Resolution-independent — used on
-/// the About screen. Fixed brand palette by design (not theme-adaptive).
+/// the About screen and the drawer header (ShellView.axaml). Brand default, runtime recolour
+/// allowed (RemEx-alwfa.1): the window's own fill follows the live theme's primary -&gt; tertiary
+/// gradient (the same resources <see cref="Remex.Desktop.Services.ThemeService"/> publishes for every other themed
+/// surface — "AccentPrimary" and "PaletteTertiary"), so the drawer-header mark matches whatever
+/// seed the splash just painted once the drawer opens. The backdrop and the accent details (amber,
+/// slate, off-white) stay the fixed brand colours — only the mark gradient recolours (decision (c)).
 /// </summary>
 public sealed class BrandMark : Control
 {
@@ -24,7 +29,12 @@ public sealed class BrandMark : Control
     private static readonly Geometry CursorBar = Geometry.Parse(RemexBrandData.CursorPath);
 
     private static Color C(uint argb) => Color.FromUInt32(argb);
-    private static readonly IBrush WindowFill = new SolidColorBrush(C(RemexBrandData.WindowFillArgb));
+
+    /// <summary>Fallback for the mark gradient's two stops when the theme resources are not (yet)
+    /// published — e.g. rendered outside a themed <c>Application</c>. Identical to the brand
+    /// default's own window fill, so the gradient collapses to the same solid colour it always drew.</summary>
+    private static readonly Color FallbackMarkColor = C(RemexBrandData.WindowFillArgb);
+
     private static readonly IBrush Amber      = new SolidColorBrush(C(RemexBrandData.AmberArgb));
     private static readonly IBrush SlateLo    = new SolidColorBrush(C(RemexBrandData.SlateLoArgb));
     private static readonly IBrush SlateHi    = new SolidColorBrush(C(RemexBrandData.SlateHiArgb));
@@ -35,12 +45,28 @@ public sealed class BrandMark : Control
     private static readonly IPen ChevronPen = new Pen(Amber, RemexBrandData.ChevronStrokeWidth)
     { LineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
 
+    /// <summary>
+    /// Repaints on a theme switch. <c>ResourcesChanged</c> rather than <c>ActualThemeVariantChanged</c>
+    /// — same reasoning as <see cref="Controls.SparklineControl"/> and <c>CanvasMinimap</c>: this
+    /// control paints in <see cref="Render"/>, which nothing but an explicit invalidate re-triggers,
+    /// and <c>ThemeService</c> repaints by swapping resource overrides (a seed change can leave the
+    /// Dark/Light variant itself unchanged).
+    /// </summary>
+    public BrandMark()
+    {
+        ResourcesChanged += (_, _) => InvalidateVisual();
+    }
+
+    private Color ResolveThemeColor(string key) =>
+        this.TryFindResource(key, out var value) && value is Color color ? color : FallbackMarkColor;
+
     public override void Render(DrawingContext context)
     {
         double w = Bounds.Width, h = Bounds.Height;
         if (w <= 0 || h <= 0) return;
 
-        // Full-bleed diagonal gradient backdrop.
+        // Full-bleed diagonal gradient backdrop — the fixed brand colours (decision (c): only the
+        // mark recolours, not the backdrop, for this control).
         double f0 = RemexBrandData.GradStart / RemexBrandData.Viewport;
         double f1 = RemexBrandData.GradEnd / RemexBrandData.Viewport;
         var bg = new LinearGradientBrush
@@ -67,9 +93,26 @@ public sealed class BrandMark : Control
         var fit = Matrix.CreateTranslation(-(wb.X + wb.Width / 2), -(wb.Y + wb.Height / 2))
                   * Matrix.CreateScale(s, s)
                   * Matrix.CreateTranslation(w / 2, h / 2);
+
+        // The window's own fill is the live theme's primary -> tertiary gradient (RemEx-alwfa.1
+        // decision (c)). Built from fixed (absolute) points in the SAME local coordinate space the
+        // fit transform establishes, and reused verbatim for RHole below, so the "hole" reads as a
+        // punch through the window's fill rather than a mismatched patch — mirrors the identical
+        // trick in Remex.Branding.SplashBrand.DrawMark.
+        var primary = ResolveThemeColor("AccentPrimary");
+        var tertiary = ResolveThemeColor("PaletteTertiary");
+        double mf0 = RemexBrandData.GradStart / RemexBrandData.Viewport;
+        double mf1 = RemexBrandData.GradEnd / RemexBrandData.Viewport;
+        var markFill = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(wb.Left + wb.Width * mf0, wb.Top + wb.Height * mf0, RelativeUnit.Absolute),
+            EndPoint = new RelativePoint(wb.Left + wb.Width * mf1, wb.Top + wb.Height * mf1, RelativeUnit.Absolute),
+            GradientStops = { new GradientStop(primary, 0), new GradientStop(tertiary, 1) },
+        };
+
         using (context.PushTransform(fit))
         {
-            context.DrawGeometry(WindowFill, WindowStroke, Window);
+            context.DrawGeometry(markFill, WindowStroke, Window);
             context.DrawGeometry(Amber, null, Dot1);
             context.DrawGeometry(SlateLo, null, Dot2);
             context.DrawGeometry(SlateHi, null, Dot3);
@@ -77,7 +120,7 @@ public sealed class BrandMark : Control
             context.DrawGeometry(OffWhite, null, RStem);
             context.DrawGeometry(OffWhite, null, RBowl);
             context.DrawGeometry(OffWhite, null, RLeg);
-            context.DrawGeometry(WindowFill, null, RHole);
+            context.DrawGeometry(markFill, null, RHole);
             context.DrawGeometry(Amber, null, CursorBar);
         }
     }

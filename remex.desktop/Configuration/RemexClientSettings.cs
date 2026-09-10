@@ -1,3 +1,5 @@
+using Remex.Core.Services;
+
 namespace Remex.Desktop.Configuration;
 
 /// <summary>
@@ -69,26 +71,28 @@ public class UiSettings
     public bool EnableAnimations { get; set; } = true;
 }
 
+/// <remarks>
+/// The defaults resolve through <see cref="RemexDataPaths.PerUserDirectory"/>, so a test that binds
+/// this section — or just constructs it — cannot end up pointing real writes at the developer's own
+/// profile (RemEx-ln0k). The production paths are unchanged: that property returns
+/// <c>%LocalAppData%/Remex</c> unless the test redirect is set.
+/// </remarks>
 public class PathSettings
 {
     /// <summary>
     /// Application data directory (default: %LocalAppData%/Remex)
     /// </summary>
-    public string AppDataDirectory { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Remex");
+    public string AppDataDirectory { get; set; } = RemexDataPaths.PerUserDirectory;
 
     /// <summary>
     /// Dashboard profiles directory
     /// </summary>
-    public string DashboardProfilesDirectory { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Remex", "Profiles");
+    public string DashboardProfilesDirectory { get; set; } =
+        Path.Combine(RemexDataPaths.PerUserDirectory, "Profiles");
 
     /// <summary>
     /// Logs directory
     /// </summary>
-    public string LogsDirectory { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Remex", "Logs");
+    public string LogsDirectory { get; set; } =
+        Path.Combine(RemexDataPaths.PerUserDirectory, "Logs");
 }

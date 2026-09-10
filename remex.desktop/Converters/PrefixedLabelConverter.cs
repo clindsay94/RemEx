@@ -6,14 +6,14 @@ namespace Remex.Desktop.Converters;
 
 /// <summary>
 /// Maps a raw identifier to its localized display label, using a resource-key prefix supplied as the
-/// ConverterParameter — parameter <c>Custom_BgType_</c> and value <c>Mica</c> resolve
-/// <c>Custom_BgType_Mica</c>.
+/// ConverterParameter — parameter <c>Custom_BgType_</c> and value <c>Aurora</c> resolve
+/// <c>Custom_BgType_Aurora</c>.
 /// </summary>
 /// <remarks>
 /// <para>
 /// WHY THE PICKERS NEED THIS AT ALL: <c>SelectedItem</c> must keep binding the RAW identifier,
 /// because that is what is written to and compared from the saved dashboard profile
-/// (<c>MainWindow.axaml.cs</c> tests <c>== "Mica"</c>, <c>DynamicColorGenerator</c> switches on the
+/// (<c>MainWindow.axaml.cs</c> tests <c>== "Acrylic"</c>, <c>DynamicColorGenerator</c> switches on the
 /// raw variant string). Localizing the bound value would silently reset every user's backdrop and
 /// scheme. Only the shown text may change.
 /// </para>

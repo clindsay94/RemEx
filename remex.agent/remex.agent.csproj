@@ -13,6 +13,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Remex.Agent</RootNamespace>
     <AssemblyName>Remex.Agent</AssemblyName>
+    <!-- This assembly's stamp is what the host reports over the link (RemEx-d9guj). Stamped
+         SEPARATELY from remex.desktop's on purpose: the two DLLs ship together but are stamped
+         per-assembly, so the About page's local row (desktop) and host row (agent, over loopback)
+         genuinely disagree after a partial update instead of one masking the other. -->
+    <RemexStampBuildId>true</RemexStampBuildId>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\remex.desktop\Assets\icon.ico</ApplicationIcon>
     <UserSecretsId>dotnet-Remex.Host-250abb58-e6f9-4331-93e2-4801f7e26382</UserSecretsId>
@@ -20,6 +25,41 @@
          PipeSecurity/PipeAccessRights/MutexAcl are used directly in Services/IPC. The NoWarn
          attribute on <PackageReference> does not suppress restore-phase warnings; only this form does. -->
     <NoWarn>$(NoWarn);NU1510</NoWarn>
+
+    <!--
+      Ahead-of-time compile the IL on publish, so sign-in does not pay to JIT Avalonia and ASP.NET
+      Core from cold. A Task Scheduler logon task starts this app during the busiest moment of the
+      session, competing with everything else that starts then, and the work is identical on every
+      single boot (RemEx-48kh).
+
+      SET HERE RATHER THAN ON THE PUBLISH COMMANDS, and that is the point: there are five publish
+      call sites across four scripts - build-remex.ps1, installer/build-installer.ps1,
+      installer/build-linux.sh, scripts/autostart-remex.ps1 and scripts/update-local-install.ps1 -
+      and a flag repeated five times is a flag that will be missing from the sixth. Here it applies
+      by construction, including to a publish someone runs by hand.
+
+      GUARDED ON RuntimeIdentifier because ReadyToRun requires one: unconditional, a RID-less
+      `dotnet publish` of this project would fail with NETSDK1095 rather than simply skipping the
+      optimisation.
+
+      THE COST, MEASURED RATHER THAN WAVED AT, since it is a real trade and the operator ships this:
+      the win-x64 self-contained publish grows 175.2 MB -> 227.4 MB (+52.3 MB, +29.8%) on disk. What
+      the user downloads is the LZMA2 solid-compressed installer, where the same delta is
+      49.3 MB -> 61.9 MB (+12.5 MB, +25.4%) - smaller than the on-disk figure, because native code
+      still compresses, but not negligible. 279 of 382 published assemblies are compiled, including
+      Avalonia, Kestrel and CoreLib, and cross-publishing linux-x64 from Windows produces the same.
+
+      Composite is deliberately NOT enabled - it cross-compiles the framework into one image, trading
+      a much larger artifact and slower publishes for a gain on startup paths already covered here.
+      Narrowing to only this app's own assemblies is the WRONG lever rather than an untried one:
+      Avalonia and ASP.NET Core are the JIT cost, so excluding them removes most of the benefit. The
+      defensible narrowing is excluding assemblies never touched at startup, and naming those needs a
+      startup JIT profile nobody has taken.
+
+      And do NOT add ServerGarbageCollection: Workstation GC is the right default for a resident app
+      that spends most of its life idle.
+    -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
   </PropertyGroup>
 
   <!-- The consolidated Remex.Agent is both the Avalonia GUI host and the in-process ASP.NET host. -->
@@ -50,8 +90,14 @@
   <ItemGroup>
     <!-- Avalonia GUI -->
     <PackageReference Include="Avalonia.Desktop" />
-    <!--Condition removes Avalonia.Diagnostics from Release build output.-->
-    <PackageReference Include="Avalonia.Diagnostics">
+    <!-- Text shaping. Avalonia 12 stopped having UseSkia() imply HarfBuzz, so this has to be
+         referenced and .UseHarfBuzz() called explicitly (Program.cs BuildAvaloniaApp). Without it
+         Latin text still renders and nothing throws — Hindi loses its shaping quietly. -->
+    <PackageReference Include="Avalonia.HarfBuzz" />
+    <!--Condition removes DevTools from Release build output. Was Avalonia.Diagnostics, which does
+        not exist for Avalonia 12; DevTools now ships as the independently versioned
+        AvaloniaUI.DiagnosticsSupport (RemEx-jcma3).-->
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
@@ -64,6 +110,18 @@
     <PackageReference Include="Tmds.DBus.Protocol" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+
+    <!-- HotAvalonia (RemEx-1us2w). This is the STARTUP project — OutputType WinExe — so this is the
+         reference that actually turns hot reload on; HotAvaloniaAutoEnable defaults to true for an
+         exe and calls .UseHotReload() on the AppBuilder for us, so Program.cs needs no change.
+
+         <HotAvalonia> defaults to Debug-only and is left at that default deliberately. The README's
+         own warning is "please, do not enable it unconditionally", and Release is what
+         scripts/update-local-install.ps1 publishes into C:\Program Files\RemEx. Hot reload is a
+         development loop, not a shipped feature. -->
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" PrivateAssets="All" />
+    <PackageReference Include="HotAvalonia" PrivateAssets="All" />
+    <PackageReference Include="MonoMod.RuntimeDetour" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -77,12 +135,51 @@
     registration in HostBootstrapper.cs. Mirrors the OS-conditioned CopyNativeLinuxBridge targets below.
     This project is intentionally NOT in Remex.sln; it is pulled in transitively here on Windows only.
   -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+  <!--
+    Conditioned on the resolved TFM rather than on IsOSPlatform('Windows') directly. The two agree on
+    every real build, because the TFM above is itself chosen by host OS. The difference is that a TFM
+    condition can be overridden on the command line, so the Linux compilation can be reproduced from a
+    Windows box: `dotnet restore remex.agent -p:TargetFramework=net10.0` then the same on build gives
+    exactly what a Linux build compiles. With an IsOSPlatform condition that override half-applies —
+    plain TFM, but this windows-TFM ProjectReference still attached — and errors before reaching any
+    real problem, which is why a Linux-only break in this project can survive a green Windows run.
+  -->
+  <ItemGroup Condition="$(TargetFramework.Contains('windows'))">
     <ProjectReference Include="..\remex.agent.windows\remex.agent.windows.csproj" />
   </ItemGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <DefineConstants>$(DefineConstants);WGC_CAPTURE</DefineConstants>
+  <PropertyGroup Condition="$(TargetFramework.Contains('windows'))">
+    <!--
+      WINDOWS_MEDIA is declared explicitly rather than leaning on the SDK's implicit WINDOWS constant.
+      That constant does not reach DefineConstants here (checked with -getProperty: this project sees
+      TRACE;WGC_CAPTURE;RELEASE and no WINDOWS), so an "#if WINDOWS" would be silently false on the
+      windows TFM as well — the SMTC reader would compile away on Windows too and media would just
+      stop working, with a green build and no diagnostic. An explicit constant fails loudly instead.
+    -->
+    <DefineConstants>$(DefineConstants);WGC_CAPTURE;WINDOWS_MEDIA</DefineConstants>
   </PropertyGroup>
+
+  <!--
+    The SMTC media reader and its app-icon resolver are the only files in this project that consume
+    WinRT projections (Windows.Media.Control, Windows.Storage.Streams, Windows.Management.Deployment).
+    Those namespaces exist only under the windows-versioned TFM selected above, so on Linux — where the
+    TFM is plain net10.0 — they do not compile at all. An OperatingSystem.IsWindows() guard cannot help:
+    that is a runtime check, and this fails at compile time.
+
+    So they leave the compilation entirely off Windows, and their single call site is gated on the
+    WINDOWS constant the windows TFM defines implicitly (HostBootstrapper.cs, media reader selection).
+    Same shape as the WGC_CAPTURE ProjectReference above. LinuxMediaSessionReader (MPRIS over D-Bus)
+    and UnsupportedMediaSessionReader cover the other platforms, so the DI registration still resolves.
+
+    Conditioned on the TFM, not on IsOSPlatform('Windows') like the block above it. The two agree in
+    practice — the TFM is picked by host OS — but the TFM is the thing that actually decides whether
+    the WinRT projections exist, and saying so is what makes the Linux path reproducible from a Windows
+    box: `dotnet build remex.agent -p:TargetFramework=net10.0` compiles exactly what Linux compiles.
+    An IsOSPlatform condition cannot be exercised that way, which is how this broke unnoticed.
+  -->
+  <ItemGroup Condition="!$(TargetFramework.Contains('windows'))">
+    <Compile Remove="Services\Media\WindowsMediaSessionReader.cs" />
+    <Compile Remove="Services\Media\WindowsAppIconResolver.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

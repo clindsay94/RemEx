@@ -3,6 +3,7 @@ using System.Security;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32;
+using Remex.Core.Services;
 using Remex.Desktop.Services;
 
 namespace Remex.Agent.Services;
@@ -33,8 +34,46 @@ public class StartupRegistrationService : IStartupRegistrationService
     private const string LinuxAutostartFileName = "remex-agent.desktop";
     private const string LinuxLegacyAutostartFileName = "remex-client.desktop";
 
+    /// <summary>
+    /// True while host state is redirected to a test directory, which means this service must not
+    /// read or write the machine's real launch-at-login registration (RemEx-ln0k).
+    ///
+    /// <para>
+    /// THE WINDOWS SIDE CANNOT BE REDIRECTED, ONLY SUPPRESSED, and that is the whole reason this
+    /// property exists rather than a path. Autostart there is a Task Scheduler logon task and an
+    /// HKCU <c>Run</c> value — machine and user-hive state with no directory to point elsewhere. A
+    /// test that called <see cref="SetEnabled"/> would register real autostart on the developer's
+    /// machine, or delete the registration they were relying on; the only way to not do that is to
+    /// not touch it. The query is suppressed with the writes on purpose: a run that cannot change
+    /// the registration should not report the real machine's answer either, or a test would pass or
+    /// fail on whether the developer happens to have autostart switched on. Suppressed reads narrow
+    /// to "unknown", which <see cref="NarrowToTwoValues"/> already resolves to <c>false</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// Linux needs none of this — its registration is a file under <c>~/.config/autostart</c>, so
+    /// <see cref="GetHomeDirectory"/> redirects it the same way every other store is redirected.
+    /// </para>
+    /// </summary>
+    private static bool IsHostStateRedirected => RemexDataPaths.HostStateDirectoryOverride is not null;
+
+    /// <summary>
+    /// The home directory the XDG autostart and menu-launcher paths hang off: the real user profile,
+    /// or the redirect directory when host state is redirected.
+    /// </summary>
+    private static string GetHomeDirectory() =>
+        RemexDataPaths.HostStateDirectoryOverride
+        ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
     private static string GetLinuxAutostartDir() => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart");
+        GetHomeDirectory(), ".config", "autostart");
+
+    /// <summary>
+    /// Exposes the resolved autostart directory so tests can assert the redirect covers it on every
+    /// platform — the Linux branch that uses it is unreachable from a Windows test run, but the path
+    /// itself is pure composition and resolves identically anywhere.
+    /// </summary>
+    internal static string LinuxAutostartDirectoryForTests => GetLinuxAutostartDir();
 
     public bool IsSupported => OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
 
@@ -47,7 +86,9 @@ public class StartupRegistrationService : IStartupRegistrationService
     /// </summary>
     public static void RemoveLegacyWindowsRunKey()
     {
-        if (!OperatingSystem.IsWindows())
+        // IsHostStateRedirected: deleting the value is a write to the signed-in user's hive, and a
+        // test that did it would remove a real launch-at-login entry (RemEx-ln0k).
+        if (!OperatingSystem.IsWindows() || IsHostStateRedirected)
         {
             return;
         }
@@ -103,41 +144,115 @@ public class StartupRegistrationService : IStartupRegistrationService
         }
     }
 
-    public bool IsEnabled()
+    /// <inheritdoc />
+    public bool? TryIsEnabled()
     {
         if (OperatingSystem.IsWindows())
         {
-            return WindowsTaskExists();
+            return InterpretSchtasksExit(TryRunSchtasksQuery());
         }
-        else if (OperatingSystem.IsLinux())
+
+        if (OperatingSystem.IsLinux())
         {
             try
             {
-                var autostartDir = GetLinuxAutostartDir();
-                var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
-                if (!File.Exists(desktopFile))
-                {
-                    // Pre-rename installs used the legacy basename; honor it until migrated.
-                    desktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
-                }
-                if (!File.Exists(desktopFile)) return false;
-                var lines = File.ReadAllLines(desktopFile);
-                foreach (var line in lines)
-                {
-                    if (line.Trim().StartsWith("X-GNOME-Autostart-enabled=", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var value = line.Split('=')[1].Trim();
-                        return value.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    }
-                }
-                return true; // default enabled if file exists
+                return ReadLinuxAutostartEnabled();
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                return false;
+                // An unreadable ~/.config/autostart is not the same as an absent entry.
+                return null;
             }
         }
-        return false;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Collapses the tri-state to the two-valued view, resolving unknown to <c>false</c>.
+    /// </summary>
+    /// <remarks>
+    /// **UNKNOWN MUST NARROW TO FALSE, NOT TRUE**, and mutation testing is what pinned it: reporting
+    /// an unanswerable query as "registered" would have the readiness card and the settings switch
+    /// both claim autostart is set up on a machine where nothing established that — and the user
+    /// finds out at the next reboot, which is the one failure this whole read-back exists to catch.
+    /// Losing the distinction is acceptable here; inverting it is not.
+    /// </remarks>
+    internal static bool NarrowToTwoValues(bool? state) => state == true;
+
+    /// <summary>
+    /// Turns a <c>schtasks /Query</c> exit code into registered / not-registered / unknown.
+    /// </summary>
+    /// <remarks>
+    /// EXTRACTED SO IT IS TESTABLE AGAINST THE REAL MAPPING. Mutation testing caught the first
+    /// version of this pinned only by a fake service, so inverting the mapping here changed nothing
+    /// that any test could see - the same "the test exercises a stand-in, not the code" gap that
+    /// makes a green suite meaningless.
+    ///
+    /// schtasks documents 0 for "the task exists" and 1 for "it does not". ANY OTHER CODE IS THE
+    /// QUERY FAILING rather than an answer about the task, and null (the launcher did not run at
+    /// all) is the clearest case of that.
+    /// </remarks>
+    internal static bool? InterpretSchtasksExit(int? exitCode) => exitCode switch
+    {
+        0 => true,
+        1 => false,
+        _ => null,
+    };
+
+    private static int? TryRunSchtasksQuery()
+    {
+        // IsHostStateRedirected reads as "no answer", not as "not registered" - see the property.
+        if (!OperatingSystem.IsWindows() || IsHostStateRedirected) return null;
+
+        try
+        {
+            return RunSchtasks($"/Query /TN \"{WindowsTaskName}\"");
+        }
+        catch
+        {
+            // The launcher itself did not run - blocked, missing, or refused.
+            return null;
+        }
+    }
+
+    public bool IsEnabled()
+    {
+        // The two-valued view, kept for callers that cannot act on "do not know". An unanswerable
+        // query collapses to false here - which is exactly the ambiguity TryIsEnabled exists to
+        // preserve, so anything user-visible should call that instead.
+        return NarrowToTwoValues(TryIsEnabled());
+    }
+
+    /// <summary>
+    /// Reads the XDG autostart entry: true/false if it says, null only from the caller's catch.
+    /// </summary>
+    /// <remarks>
+    /// A MISSING FILE IS A REAL "NO", not a failure - the entry simply is not registered. Only an
+    /// unreadable one is unknowable, and that is distinguished by letting the IOException escape to
+    /// the caller rather than swallowing it here.
+    /// </remarks>
+    private static bool ReadLinuxAutostartEnabled()
+    {
+        var autostartDir = GetLinuxAutostartDir();
+        var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
+        if (!File.Exists(desktopFile))
+        {
+            // Pre-rename installs used the legacy basename; honor it until migrated.
+            desktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
+        }
+        if (!File.Exists(desktopFile)) return false;
+
+        foreach (var line in File.ReadAllLines(desktopFile))
+        {
+            if (line.Trim().StartsWith("X-GNOME-Autostart-enabled=", StringComparison.OrdinalIgnoreCase))
+            {
+                var value = line.Split('=')[1].Trim();
+                return value.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        return true; // default enabled if file exists
     }
 
     public void SetEnabled(bool enabled)
@@ -188,7 +303,7 @@ public class StartupRegistrationService : IStartupRegistrationService
                 // mirrored — a legacy remex-client.desktop may point at a removed install directory,
                 // so mirroring it would resurrect a stale binary at login.
                 var userDesktopFile = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    GetHomeDirectory(),
                     ".local", "share", "applications", LinuxAutostartFileName);
                 var systemDesktopFile = "/usr/share/applications/" + LinuxAutostartFileName;
                 var sourceDesktopFile = File.Exists(userDesktopFile) ? userDesktopFile
@@ -255,23 +370,12 @@ X-GNOME-Autostart-enabled=true
 
     // ---- Windows scheduled-task helpers ----------------------------------------------------
 
-    private static bool WindowsTaskExists()
-    {
-        if (!OperatingSystem.IsWindows()) return false;
-        try
-        {
-            // schtasks /Query exits 0 when the task exists, 1 when it does not.
-            return RunSchtasks($"/Query /TN \"{WindowsTaskName}\"") == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     private static void RegisterWindowsLogonTask()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        // IsHostStateRedirected: schtasks /Create registers autostart on the real machine, and under
+        // a test run the executable it would point at is the test host (RemEx-ln0k).
+        if (!OperatingSystem.IsWindows() || IsHostStateRedirected) return;
 
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
@@ -306,7 +410,9 @@ X-GNOME-Autostart-enabled=true
 
     private static void RemoveWindowsLogonTask()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        // IsHostStateRedirected: this is the sharper of the two writes - schtasks /Delete would
+        // unregister the developer's real autostart, and nothing would put it back (RemEx-ln0k).
+        if (!OperatingSystem.IsWindows() || IsHostStateRedirected) return;
         try
         {
             // /F suppresses the confirmation prompt; a missing task is a non-fatal non-zero exit.

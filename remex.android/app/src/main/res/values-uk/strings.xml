@@ -117,6 +117,24 @@
     <string name="rc_category_session">Сеанс</string>
     <string name="rc_category_power">Живлення</string>
     <string name="rc_category_energy">Енергія</string>
+    <string name="rc_media_volume_down">Тихіше</string>
+    <string name="rc_media_volume_up">Гучніше</string>
+    <string name="rc_media_mute">Вимкнути звук</string>
+    <string name="rc_media_previous">Попередній трек</string>
+    <string name="rc_media_play_pause">Відтворити або призупинити</string>
+    <string name="rc_media_play">Відтворити</string>
+    <string name="rc_media_pause">Призупинити</string>
+    <string name="rc_media_next">Наступний трек</string>
+    <string name="rc_media_hint">Утримуйте кнопки гучності, щоб продовжувати змінювати її.</string>
+    <string name="rc_media_unavailable">Цей ПК не налаштовано приймати натискання клавіш, тому ці кнопки нічого не зроблять.</string>
+    <string name="rc_media_disconnected">Підключіться до ПК, щоб користуватися цими елементами керування.</string>
+    <string name="rc_media_state_playing">Відтворення</string>
+    <string name="rc_media_state_paused">Призупинено</string>
+    <string name="rc_media_state_idle">Нічого не відтворюється</string>
+    <string name="rc_media_now_playing">Зараз грає</string>
+    <string name="rc_media_open_now_playing">Відкрити «Зараз грає»</string>
+    <string name="rc_media_artwork">Обкладинка альбому</string>
+    <string name="rc_media_seek">Пошук позиції відтворення</string>
     <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
     <string name="cd_show_keyboard">Показати клавіатуру</string>
     <string name="cd_key_escape">Esc</string>
@@ -133,8 +151,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (Початок)</string>
+    <string name="cd_key_end">End (Кінець)</string>
     <string name="cd_key_pageup">PgUp (Сторінка вгору)</string>
     <string name="cd_key_pagedown">PgDn (Сторінка вниз)</string>
     <string name="cd_key_insert">Ins (Вставити)</string>
@@ -175,11 +193,10 @@
     <string name="dashboard_host_online">ПК В МЕРЕЖІ</string>
     <string name="dashboard_connecting">ПІДКЛЮЧЕННЯ…</string>
     <string name="dashboard_tap_to_connect">НАТИСНІТЬ, ЩОБ ПІДКЛЮЧИТИСЯ</string>
+    <string name="dashboard_connection_card_action">підключитися до ПК</string>
     <string name="dashboard_wake_pc_button">ПРОБУДИТИ ПК</string>
     <string name="dashboard_collecting_data">Збір даних…</string>
     <string name="screen_connection_title">Підключення</string>
-    <string name="screen_splash_title">Завантаження</string>
-    <string name="screen_tutorial_title">Посібник</string>
     <string name="connection_auto_discover_title">Автоматичне виявлення в локальній мережі</string>
     <string name="connection_auto_discover_hint">Переконайтеся, що застосунок RemEx запущено на вашому ПК і обидва пристрої підключені до однієї мережі Wi-Fi.</string>
     <string name="connection_searching">Пошук вашого ПК…</string>
@@ -221,6 +238,21 @@
     <string name="connection_status_label">Стан: %1$s</string>
     <string name="connection_paired">Сполучено</string>
     <string name="connection_unpair">Скасувати сполучення</string>
+    <string name="connection_known_pcs_title">Відомі ПК</string>
+    <string name="connection_known_pcs_hint">Торкніться адреси, щоб підключитися.</string>
+    <string name="connection_known_pc_last_connected">Останнє підключення: %1$s</string>
+    <string name="connection_known_pc_never_connected">Ще не підключалися</string>
+    <string name="connection_known_pc_actions">Параметри для %1$s</string>
+    <string name="connection_known_pc_rename">Перейменувати</string>
+    <string name="connection_known_pc_rename_title">Назвіть цей ПК</string>
+    <string name="connection_known_pc_nickname_label">Псевдонім</string>
+    <string name="connection_known_pc_unpair_title">Скасувати сполучення з %1$s?</string>
+    <string name="connection_known_pc_unpair_message">Цей телефон забуде цей ПК за всіма адресами, на які він відповідає. Щоб знову створити сполучення, знадобиться PIN-код, показаний на ПК.</string>
+    <string name="connection_known_pc_needs_pairing">Потрібне сполучення</string>
+    <string name="connection_known_pc_forget">Вилучити зі списку</string>
+    <string name="connection_known_pc_pair_title">Створити сполучення з %1$s?</string>
+    <string name="connection_known_pc_pair_message">Цей телефон не має сполучення за цією адресою. Введіть 6-значний PIN-код, показаний на ПК.</string>
+    <string name="connection_known_pc_pair_confirm">Створити сполучення</string>
     <string name="pairing_title">Сполучення</string>
     <string name="pairing_prompt">Введіть 6-значний PIN-код, показаний на вашому ПК</string>
     <string name="pairing_auto_pin_failed">Не вдалося отримати PIN автоматично — введіть PIN, показаний на вашому ПК.</string>
@@ -315,6 +347,8 @@
     <string name="tile_hibernate_label">Гібернація ПК</string>
     <string name="tile_monitor_off_label">Вимкнути монітор</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Підтвердити дію</string>
+    <string name="tile_confirm_message">Надіслати \"%1$s\" на ваш ПК зараз?</string>
     <string name="screen_file_transfer_title">Передача файлів</string>
     <string name="file_transfer_upload">Вивантажити ↑</string>
     <string name="file_transfer_download">Завантажити ↓</string>
@@ -329,6 +363,68 @@
     <string name="file_transfer_notification_download_title">Завантаження %1$s</string>
     <string name="file_transfer_notification_preparing">Підготовка передавання…</string>
     <string name="file_transfer_notification_progress">Передано %1$d з %2$d байтів</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d скопійовано</item>
+        <item quantity="few">%1$d скопійовано</item>
+        <item quantity="many">%1$d скопійовано</item>
+        <item quantity="other">%1$d скопійовано</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d переміщено</item>
+        <item quantity="few">%1$d переміщено</item>
+        <item quantity="many">%1$d переміщено</item>
+        <item quantity="other">%1$d переміщено</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d не вдалося</item>
+        <item quantity="few">%1$d не вдалося</item>
+        <item quantity="many">%1$d не вдалося</item>
+        <item quantity="other">%1$d не вдалося</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d пропущено</item>
+        <item quantity="few">%1$d пропущено</item>
+        <item quantity="many">%1$d пропущено</item>
+        <item quantity="other">%1$d пропущено</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s вже існує</string>
+    <string name="file_conflict_body_exists">У папці призначення вже є файл або папка з такою назвою.</string>
+    <string name="file_conflict_body_different_kind">У папці призначення вже є елемент іншого типу з такою назвою.</string>
+    <string name="file_conflict_body_name_unusable">Ця назва задовга для папки призначення.</string>
+    <string name="file_conflict_body_name_taken">Щось інше зайняло нову назву, перш ніж її вдалося зберегти. Повторна спроба вибере іншу назву.</string>
+    <string name="file_conflict_body_unknown">Цю дію не вдається завершити.</string>
+    <string name="file_conflict_replace">Замінити</string>
+    <string name="file_conflict_keep_both">Зберегти обидва</string>
+    <string name="file_conflict_skip">Пропустити</string>
+    <string name="file_conflict_apply_to_all">Застосувати до всіх решти</string>
+    <string name="file_conflict_saved_as">Збережено як %1$s</string>
+    <string name="file_transfer_rate_bytes">%1$s Б/с</string>
+    <string name="file_transfer_rate_kilobytes">%1$s КБ/с</string>
+    <string name="file_transfer_rate_megabytes">%1$s МБ/с</string>
+    <string name="file_transfer_rate_gigabytes">%1$s ГБ/с</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Завершення…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">залишилася %1$d секунда</item>
+        <item quantity="few">залишилося %1$d секунди</item>
+        <item quantity="many">залишилося %1$d секунд</item>
+        <item quantity="other">залишилося %1$d секунди</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">залишилася %1$d хвилина</item>
+        <item quantity="few">залишилося %1$d хвилини</item>
+        <item quantity="many">залишилося %1$d хвилин</item>
+        <item quantity="other">залишилося %1$d хвилини</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">залишилася %1$d година</item>
+        <item quantity="few">залишилося %1$d години</item>
+        <item quantity="many">залишилося %1$d годин</item>
+        <item quantity="other">залишилося %1$d години</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Передавання завершено</string>
     <string name="file_transfer_notification_upload_complete">%1$s вивантажено</string>
     <string name="file_transfer_notification_upload_failed">Не вдалося надіслати %1$s</string>
@@ -418,7 +514,6 @@
     <string name="widget_toast_wol_sent">Надіслано Wake-on-LAN</string>
     <string name="widget_toast_not_connected">Не підключено — відкрийте RemEx для підключення</string>
     <string name="widget_toast_command_sent">Надіслано %1$s</string>
-    <string name="widget_toast_launching">Запуск %1$s…</string>
     <string name="widget_hardware_title">Інформація про обладнання</string>
     <string name="sensor_cpu_usage">Використання процесора</string>
     <string name="sensor_gpu_usage">Використання відеокарти</string>
@@ -428,19 +523,20 @@
     <string name="sensor_gpu_temp">Температура відеокарти</string>
     <string name="sensor_fallback_label">Сенсор %1$d</string>
     <string name="about_android_client_label">Клієнт Android</string>
+    <string name="about_build_id">Збірка %1$s</string>
     <string name="about_pc_host_label">Ваш ПК</string>
     <string name="about_status_unknown">Невідомо</string>
     <string name="about_view_github">Переглянути вихідний код на GitHub</string>
-    <string name="about_whats_new_1_label">Панель 2.0</string>
-    <string name="about_whats_new_1_body">Головну панель перебудовано: обирайте стиль графіка для кожної картки, перейменовуйте картки, задавайте їхню форму та впорядковуйте жестами перетягування й мультивибору. Під час першого відкриття все покаже покроковий тур.</string>
-    <string name="about_whats_new_2_label">Розумніші картки датчиків</string>
-    <string name="about_whats_new_2_body">Картки розуміють, що вимірюють: вигляд автоматично добирається до типу метрики, назви можна змінювати, а показники на кшталт загальної RAM більше не застрягають на «Збирання даних».</string>
-    <string name="about_whats_new_3_label">Обмін файлами</string>
-    <string name="about_whats_new_3_body">Переміщуйте файли в обох напрямках із відновленням, перевіркою SHA-256 та живим прогресом. Надсилання в RemEx з іншого застосунку тепер працює, навіть якщо RemEx ще не запущено.</string>
-    <string name="about_whats_new_4_label">Виразна анімація</string>
-    <string name="about_whats_new_4_body">Пружини Material 3 Expressive оживляють увесь застосунок — від підказок до передач, і кожна анімація поважає системне налаштування доступності «Зменшити рух».</string>
-    <string name="about_whats_new_5_label">Посилення безпеки</string>
-    <string name="about_whats_new_5_body">Старі нешифровані HTTP-точки сполучення видалено — закрито останній незашифрований шлях до PIN-коду. Сполучення залишається наскрізно зашифрованим ECDH, а відбиток сертифіката ПК перевіряється під час кожного повторного підключення.</string>
+    <string name="about_whats_new_1_label">Сповіщення датчиків</string>
+    <string name="about_whats_new_1_body">На ПК встановіть поріг для будь-якого датчика — щойно його перевищено, картка показує дзвіночок, який стає червоним. Сповіщення лишається активним, доки ви його не підтвердите, тож стрибок, пропущений під час вашої відсутності, залишається позначеним, а критичне до того ж викликає сповіщення на робочому столі, поки вікно поза полем зору.</string>
+    <string name="about_whats_new_2_label">Узгодити мою тему</string>
+    <string name="about_whats_new_2_body">Тепер телефон ділиться своєю темою з ПК, тож Персоналізація може підібрати ваші кольори, світлі чи темні, одним дотиком. Змініть тему телефону пізніше, і ПК зможе підхопити її знову, коли забажаєте.</string>
+    <string name="about_whats_new_3_label">Синхронізація буфера обміну</string>
+    <string name="about_whats_new_3_body">Скопіюйте текст на телефоні й надішліть його в буфер обміну ПК з екрана Дистанційне керування — він готовий до вставлення, щойно прибуде. Дорогою нічого не зберігається, тож пароль чи код входу просто проходить і зникає.</string>
+    <string name="about_whats_new_4_label">Відомі ПК</string>
+    <string name="about_whats_new_4_body">Екран Підключення тепер показує кожен ПК, з яким ви сполучалися, тож перемкнутися на інший — це один дотик замість повторного введення адреси. Кожен запам\'ятовує власну назву та час останнього підключення.</string>
+    <string name="about_whats_new_5_label">Передавання тек</string>
+    <string name="about_whats_new_5_body">Надсилайте чи отримуйте цілу теку за раз, включно з порожніми підтеками, замість вибору файлів по одному. Перерване з\'єднання просто відновлюється, так само як і для одного файлу.</string>
     <string name="about_whats_new_title">Що нового у версії %1$s</string>
     <string name="app_launcher_recent">Нещодавні</string>
     <string name="cd_close_settings">Закрити налаштування</string>
@@ -531,17 +627,23 @@
     <string name="task_manager_host_unresponsive">ПК не відповідає на запити списку процесів. Перевірте, чи завершено сполучення та чи має ПК дозвіл на читання інформації про процеси.</string>
     <string name="task_manager_kill_failed_format">Не вдалося завершити процес %1$d</string>
     <string name="task_manager_retry">Повторити</string>
-    <string name="rd_err_capture_unavailable">Захоплення екрана не працює на вашому ПК.</string>
-    <string name="rd_err_capture_stopped">Захоплення екрана зупинилося після %1$d кадрів. Можливо, ваш ПК було заблоковано або виконано вихід.</string>
-    <string name="rd_err_target_unavailable">Вибраний дисплей більше недоступний.</string>
-    <string name="rd_err_target_switch_unsupported">Цей сеанс не може перемикати дисплеї під час трансляції.</string>
-    <string name="rd_err_runtime_unavailable">Віддалений робочий стіл наразі недоступний на вашому ПК.</string>
+    <string name="rd_err_capture_unavailable">Захоплення екрана не працює на вашому ПК. Спробуйте запустити трансляцію ще раз — якщо не виходить, перезапустіть RemEx на ПК.</string>
+    <string name="rd_err_capture_stopped">Захоплення екрана зупинилося після %1$d кадрів. Можливо, ПК заблоковано або вийшли з облікового запису. Розблокуйте його й запустіть трансляцію знову.</string>
+    <string name="rd_err_target_unavailable">Вибраний екран більше недоступний. Оберіть інший і запустіть трансляцію знову.</string>
+    <string name="rd_err_target_switch_unsupported">Цей сеанс не може перемикати екрани під час трансляції. Зупиніть її й запустіть знову на потрібному екрані.</string>
+    <string name="rd_err_runtime_unavailable">Віддалений робочий стіл наразі недоступний на вашому ПК. Зазвичай це означає, що RemEx на ПК потребує оновлення або йому бракує потрібних компонентів.</string>
+    <string name="rd_err_input_unavailable">Ваш ПК не приймає введення з клавіатури чи миші. Запит на дозвіл на ПК, можливо, було відхилено — торкніться «Запитати знову», щоб він з’явився там ще раз. Ви й далі бачите екран.</string>
+    <string name="rd_input_retry_button">Запитати знову</string>
+    <string name="rd_input_retry_sent">Ваш ПК запитано ще раз — прийміть запит там.</string>
+    <string name="rd_err_connect_timeout">Ваш ПК за адресою %1$s не відповів. Переконайтеся, що він увімкнений і підключений до тієї самої мережі Wi‑Fi, що й цей телефон, і спробуйте ще раз.</string>
+    <string name="rd_err_handshake_timeout">Ваш ПК за адресою %1$s відповів, але перестав відповідати під час перевірки цього пристрою. Можливо, він перейшов у режим сну. Спробуйте підключитися ще раз.</string>
     <string name="cd_clear_search">Очистити пошук</string>
     <string name="pairing_error_timeout">ПК не відповів. Перевірте, чи він увімкнений і підключений до тієї самої мережі, а потім спробуйте ще раз.</string>
     <string name="host_discovered_snackbar">Знайдено ПК: %1$s</string>
     <string name="widget_refresh">Оновити</string>
     <string name="widget_toast_refreshing">Оновлення…</string>
     <string name="widget_toast_refreshed">Телеметрію оновлено</string>
+    <string name="widget_toast_refresh_failed">Не вдалося оновити телеметрію</string>
     <string name="widget_toast_connecting">Підключення до ПК…</string>
     <string name="widget_config_poll_interval_label">Оновлювати кожні %1$d с</string>
     <string name="widget_config_poll_interval_hint">Як часто віджет запитує у ПК свіжу телеметрію під час підключення.</string>
@@ -554,6 +656,20 @@
     <string name="connection_error_generic">Не вдалося підключитися.</string>
     <string name="connection_error_native_missing">Не вдалося запустити модуль з\'єднання RemEx. Спробуйте перезапустити застосунок; якщо це повторюється, перевстановіть RemEx.</string>
     <string name="connection_action_repair">Підключити знову</string>
+    <string name="connection_cert_repair_title">Створити сполучення з цим ПК знову?</string>
+    <string name="connection_cert_repair_title_unchanged">Немає чого виправляти</string>
+    <string name="connection_cert_repair_changed">Цей ПК відповідає іншою ідентичністю безпеки, ніж та, з якою телефон створив сполучення.</string>
+    <string name="connection_cert_repair_when_safe">Це очікувано, якщо ви перевстановили RemEx чи Windows на ПК або замінили його обладнання.</string>
+    <string name="connection_cert_repair_when_unsafe">Якщо нічого з цього не було, зупиніться. За цією адресою може відповідати щось інше й читати те, що ви надсилаєте.</string>
+    <string name="connection_cert_repair_effect">Повторне сполучення змусить телефон забути ідентичність, якій він довіряє, і почне сполучення заново. Знадобиться PIN-код, показаний на ПК.</string>
+    <string name="connection_cert_repair_label_pinned">Сполучено з</string>
+    <string name="connection_cert_repair_label_presented">Відповідає зараз</string>
+    <string name="connection_cert_repair_checking">Перевіряємо, що відповідає за цією адресою…</string>
+    <string name="connection_cert_repair_unknown">Цей ПК не відповів, тому його поточну ідентичність не вдалося зчитати. Створюйте сполучення знову, лише якщо знаєте, чому вона змінилася.</string>
+    <string name="connection_cert_repair_unchanged">Цей ПК відповідає ідентичністю, якій телефон уже довіряє, тож виправляти нічого. З\'єднання не вдалося з іншої причини.</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(невідомо)</string>
+    <string name="connection_cert_repair_fingerprint_checking">Перевіряємо…</string>
+    <string name="connection_cert_repair_confirm">Забути та створити сполучення знову</string>
     <string name="wake_pc_sent">Сигнал пробудження надіслано</string>
     <string name="wake_pc_failed">Не вдалося надіслати сигнал пробудження</string>
     <string name="wake_pc_mac_not_configured">MAC-адресу не налаштовано — вкажіть у налаштуваннях</string>
@@ -606,9 +722,21 @@
     <string name="file_manager_prop_readonly">Лише для читання</string>
     <string name="file_manager_prop_yes">Так</string>
     <string name="file_manager_prop_no">Ні</string>
-    <string name="file_manager_requesting_volumes">Завантаження дисків…</string>
+    <string name="file_manager_full_browse_pending">Очікування підтвердження на вашому ПК…</string>
+    <string name="file_manager_full_browse_unreachable">Ваш ПК не зміг зв’язатися з цим телефоном, щоб запитати. Підключіться знову й спробуйте ще раз.</string>
+    <string name="file_manager_full_browse_refused">Перегляд усього пристрою відхилено.</string>
+    <string name="file_manager_full_browse_timed_out">Ваш ПК не відповів вчасно. Спробуйте ще раз.</string>
     <string name="file_manager_queued_upload">Вивантаження в черзі: %1$s</string>
     <string name="file_manager_queued_download">Завантаження в черзі: %1$s</string>
+    <string name="file_manager_download_folder">Завантажити теку</string>
+    <string name="file_manager_folder_scanning">Читання теки…</string>
+    <string name="file_manager_folder_scan_failed">Не вдалося прочитати теку.</string>
+    <string name="file_manager_folder_empty">У цій теці немає файлів для передавання.</string>
+    <string name="file_manager_folder_queued_download">%1$d файлів додано до черги завантаження.</string>
+    <string name="file_manager_upload_folder">Надіслати теку</string>
+    <string name="file_manager_folder_queued_upload">%1$d файлів додано до черги надсилання.</string>
+    <string name="file_manager_folder_too_large">Ця тека містить забагато файлів, щоб передати їх за один раз.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d файлів додано до черги, але теку було завелико, щоб прочитати її повністю — деякі файли пропущено.</string>
     <string name="file_manager_transfers_title">Передавання (%1$d)</string>
     <string name="file_manager_clear_finished">Очистити завершені</string>
     <string name="file_manager_pause">Пауза</string>
@@ -652,6 +780,11 @@
     <string name="file_consent_push_message_generic">Ваш ПК хоче надіслати файли на цей телефон. Дозволити?</string>
     <string name="file_consent_full_browse_title">Запит на перегляд пристрою</string>
     <string name="file_consent_full_browse_message">Ваш ПК хоче переглянути сховище цього телефона. Дозволити?</string>
+    <string name="file_consent_remote_full_browse_title">Переглянути файли на вашому ПК?</string>
+    <string name="file_consent_remote_full_browse_message">Цей телефон просить переглянути весь вміст вашого ПК, а не лише спільні теки. Дозволити?</string>
+    <string name="file_consent_remote_push_title">Надіслати файли на ваш ПК?</string>
+    <string name="file_consent_remote_push_message">Цей телефон просить надіслати: %1$s. Дозволити?</string>
+    <string name="file_consent_remote_push_message_generic">Цей телефон просить надіслати файли на ваш ПК. Дозволити?</string>
     <string name="file_consent_allow">Дозволити</string>
     <string name="file_consent_deny">Відхилити</string>
     <string name="file_consent_remember">Запам\'ятати мій вибір для цього ПК</string>
@@ -756,4 +889,53 @@
     <string name="personalization_shape_cat_network">Картки мережі</string>
     <string name="personalization_shape_cat_action">Картки дій</string>
     <string name="personalization_shape_cat_other">Інші картки</string>
+
+    <string name="action_take_screenshot">Зробити знімок екрана ПК</string>
+    <string name="screenshot_taken">Знімок екрана зроблено на ПК. Перевірте сповіщення, щоб отримати його.</string>
+    <string name="screenshot_failed">ПК не зміг зробити знімок екрана.</string>
+    <string name="file_push_failed_no_folder">Не вдалося зберегти файл: жодна папка на цьому телефоні не надана для запису. Надайте одну в RemEx, щоб отримувати файли.</string>
+    <string name="file_push_failed_bad_name">Не вдалося зберегти файл через його назву.</string>
+    <string name="file_push_failed_destination">Не вдалося зберегти файл: папка призначення більше недоступна.</string>
+    <string name="file_push_failed_wrong_file">Не вдалося зберегти файл: це був не той файл, який ви погодилися отримати.</string>
+    <string name="file_push_failed_not_saved">Не вдалося зберегти файл з ПК. Попросіть ПК надіслати його ще раз.</string>
+    <string name="file_push_failed_no_channel">Не вдалося отримати файл з ПК: цей телефон не зміг відкрити з\'єднання для файлів. Спробуйте ще раз, а якщо помилка повторюється, виконайте сполучення заново.</string>
+    <string name="file_received_title">Файл отримано</string>
+    <string name="file_received_text">%1$s надійшов з вашого ПК.</string>
+    <string name="file_received_share">Поділитися</string>
+    <string name="pairing_phase_probe">Перевірка доступності вашого ПК…</string>
+    <string name="pairing_phase_securing">Встановлення безпечного з’єднання…</string>
+    <string name="pairing_phase_awaiting_host">Очікування, поки ПК покаже PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Поділитися діагностикою</string>
+    <string name="settings_share_diagnostics_body">Створіть звіт про цей застосунок і його з’єднання з вашим ПК, який ви можете надіслати тому, хто вам допомагає. Спершу ви читаєте його повністю, і ніщо не залишає ваш телефон, доки ви його не надішлете.</string>
+    <string name="screen_share_diagnostics_title">Поділитися діагностикою</string>
+    <string name="share_diagnostics_explainer">Цей звіт містить версію застосунку, модель телефона, версію Android, те, що ваш ПК останнім повідомив про себе, та останні рядки журналу цього застосунку. Ключі створення пари вилучаються, а шляхи до файлів скорочуються лише до назви файлу. Те, що ви бачите нижче, — саме те, що буде надіслано.</string>
+    <string name="share_diagnostics_network_toggle">Включити мережеві адреси</string>
+    <string name="share_diagnostics_network_toggle_body">Типово вимкнено. Вмикайте лише для проблеми зі з’єднанням: тоді IP-адреси залишаться у звіті.</string>
+    <string name="share_diagnostics_preview_title">Попередній перегляд звіту</string>
+    <string name="share_diagnostics_collecting">Створення звіту…</string>
+    <string name="share_diagnostics_send">Поділитися звітом</string>
+    <string name="share_diagnostics_chooser">Поділитися діагностикою</string>
+    <string name="share_diagnostics_failed">Не вдалося підготувати звіт до надсилання.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Надіслати буфер обміну на ПК</string>
+    <string name="clipboard_send_ok">Надіслано до буфера обміну ПК</string>
+    <string name="clipboard_send_empty">У буфері обміну немає нічого для надсилання</string>
+    <string name="clipboard_send_too_large">Це завелике, щоб надіслати. Обмеження — %1$d КБ.</string>
+    <string name="clipboard_send_failed">Не вдалося надіслати буфер обміну</string>
+    <string name="clipboard_send_refused">ПК відхилив — спершу з’єднайте телефон із ПК</string>
+    <string name="clipboard_send_not_connected">Спочатку підключіться до ПК</string>
+    <string name="clipboard_send_unsupported">Надіслати можна лише скопійований текст</string>
+    <string name="clipboard_fetch_button">Отримати буфер обміну з ПК</string>
+    <string name="clipboard_fetch_ok">Скопійовано з ПК</string>
+    <string name="clipboard_fetch_empty">На ПК нічого не скопійовано</string>
+    <string name="clipboard_fetch_too_large">Буфер обміну ПК надто великий для копіювання</string>
+    <string name="clipboard_fetch_failed">Не вдалося отримати буфер обміну ПК</string>
+    <string name="clipboard_fetch_label">Буфер обміну з ПК</string>
 </resources>

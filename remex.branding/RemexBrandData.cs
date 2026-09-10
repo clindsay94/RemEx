@@ -9,7 +9,10 @@ namespace Remex.Branding;
 /// </summary>
 public static class RemexBrandData
 {
-    // Palette (ARGB) — fixed brand colors, never theme-adaptive.
+    // Palette (ARGB) — brand default, runtime recolour allowed (RemEx-alwfa.1: the splash and the
+    // drawer-header mark recolour from the active seed at runtime; these constants remain the
+    // fallback when no seed palette is available, and BrandAssetGen's checked-in rasters always
+    // render from these values verbatim).
     public const uint BackdropStartArgb = 0xFF20242F;
     public const uint BackdropEndArgb   = 0xFF39404F;
     public const uint WindowFillArgb    = 0xFF0C0E13;

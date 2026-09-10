@@ -41,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
@@ -363,16 +364,21 @@ fun RemexCircularWavyGauge(
 /**
  * M3 Expressive linear wavy progress bar. The track animates as a flowing wave while in motion —
  * ideal for file-transfer and long-running task progress.
+ *
+ * @param amplitude per M3 Expressive spec 4.3, a paused track flattens the wave — pass
+ *   `{ 0f }` for that case. Defaults to the standard wavy amplitude.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemexLinearWavyProgress(
         progress: Float,
         modifier: Modifier = Modifier,
+        amplitude: (Float) -> Float = WavyProgressIndicatorDefaults.indicatorAmplitude,
 ) {
         LinearWavyProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
                 modifier = modifier,
+                amplitude = amplitude,
         )
 }
 

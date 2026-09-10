@@ -7,6 +7,43 @@ namespace Remex.Core.Messages;
 /// <summary>
 /// Lightweight JSON envelope for all Remex IPC messages.
 /// </summary>
+/// <remarks>
+/// <para>
+/// ONE ENVELOPE, MANY PAYLOADS. <see cref="Type"/> is the discriminator and everything else is
+/// optional; a message carries exactly one payload and leaves the other slots null. The slots follow
+/// a strict convention that is worth stating once instead of on each of the thirty-odd properties:
+/// <b>the property name is the payload type name</b> (<c>FileTransferStart? FileTransferStart</c>),
+/// and the matching <see cref="MessageTypes"/> constant is the same name in snake_case
+/// (<c>file_transfer_start</c>). For the types that CARRY a payload the mapping runs both ways, so
+/// no lookup table is needed. The reverse is not total: plenty of constants name payload-free
+/// messages (<c>ping</c>, <c>desktop_start</c>, <c>desktop_frame</c>) and a few carry a payload under
+/// a different name (<c>desktop_input</c> arrives in the <c>InputEvent</c> slot). The individual
+/// slots are left undocumented on purpose — a summary on each could only restate its own name.
+/// </para>
+/// <para>
+/// WHAT IS NOT SELF-EVIDENT, and what actually bites:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>Adding a slot is backward compatible; renaming one is not.</b> A new optional property is
+/// invisible to older peers, so it needs no <see cref="ProtocolVersion"/> bump. Changing a name or a
+/// meaning does, on BOTH sides in the same release — a version mismatch produces silent
+/// deserialization failures, not clean errors.
+/// </description></item>
+/// <item><description>
+/// <b>An unrecognised type is dropped in silence.</b> Neither end errors on a type it does not know,
+/// so a new host → client message reaches the Android app only if it is also routed to a JNI
+/// callback. <c>file_*</c> types are covered by prefix; anything else needs explicit wiring, and
+/// forgetting it once bricked all of v3 file transfer with a misleading "peer did not respond"
+/// (RemEx-y6x6). Always test a new client-bound type round-trip on a real device.
+/// </description></item>
+/// <item><description>
+/// <b>The envelope is source-generated, not reflected.</b> <c>Remex.Core</c> compiles to a NativeAOT
+/// library, so every payload type must be registered in the serializer context; a type that is not
+/// silently fails to serialize in the Android build only.
+/// </description></item>
+/// </list>
+/// </remarks>
 public sealed record RemexMessage
 {
     /// <summary>
@@ -75,6 +112,11 @@ public sealed record RemexMessage
     /// <summary>Capability summary for the active host runtime.</summary>
     [JsonPropertyName("hostCapabilities")]
     public Remex.Core.Models.HostCapabilities? HostCapabilities { get; init; }
+
+    /// <summary>What the CLIENT can do. Absent from every build before RemEx-220r, and absence means
+    /// "none of it" — see <see cref="Remex.Core.Models.ClientCapabilities"/>.</summary>
+    [JsonPropertyName("clientCapabilities")]
+    public Remex.Core.Models.ClientCapabilities? ClientCapabilities { get; init; }
 
     /// <summary>Remote desktop input event.</summary>
     [JsonPropertyName("inputEvent")]
@@ -233,6 +275,12 @@ public sealed record RemexMessage
     [JsonPropertyName("fileSearchResponse")]
     public FileSearchResponse? FileSearchResponse { get; init; }
 
+    [JsonPropertyName("fileManifestRequest")]
+    public FileManifestRequest? FileManifestRequest { get; init; }
+
+    [JsonPropertyName("fileManifestResponse")]
+    public FileManifestResponse? FileManifestResponse { get; init; }
+
     [JsonPropertyName("fileMetadataRequest")]
     public FileMetadataRequest? FileMetadataRequest { get; init; }
 
@@ -264,11 +312,103 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("pairingPin")]
     public PairingPinInfo? PairingPin { get; init; }
+
+    /// <summary>
+    /// Text destined for the PC clipboard, for <see cref="MessageTypes.ClipboardPush"/>. Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("clipboardPush")]
+    public Remex.Core.Models.ClipboardPush? ClipboardPush { get; init; }
+
+    /// <summary>
+    /// The PC's clipboard, for <see cref="MessageTypes.ClipboardContent"/>. Optional addition; no
+    /// protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("clipboardContent")]
+    public Remex.Core.Models.ClipboardContent? ClipboardContent { get; init; }
+
+    /// <summary>What the PC did with a pushed clipboard, for <see cref="MessageTypes.ClipboardPushResult"/>.</summary>
+    [JsonPropertyName("clipboardPushResult")]
+    public Remex.Core.Models.ClipboardPushResult? ClipboardPushResult { get; init; }
+
+    /// <summary>
+    /// What the PC is playing, for <see cref="MessageTypes.MediaState"/> (RemEx-xx6xf). Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// HOST TO CLIENT ONLY. A client never sends one — it has nothing to say about the PC's media
+    /// session — and the host has no case for it, so one arriving from a phone falls through to the
+    /// handler's unknown-type default and is ignored.
+    /// </remarks>
+    [JsonPropertyName("mediaState")]
+    public Remex.Core.Models.MediaPlaybackState? MediaState { get; init; }
+
+    /// <summary>
+    /// A client asking for one cover image, for <see cref="MessageTypes.MediaArtworkRequest"/>
+    /// (RemEx-vtorl). Optional addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. It is
+    /// pairing-gated by the default-true <c>RequiresPairing</c>, like every other client-originated
+    /// type.
+    /// </remarks>
+    [JsonPropertyName("mediaArtworkRequest")]
+    public Remex.Core.Models.MediaArtworkRequest? MediaArtworkRequest { get; init; }
+
+    /// <summary>
+    /// One cover image, for <see cref="MessageTypes.MediaArtwork"/> (RemEx-vtorl). Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("mediaArtwork")]
+    public Remex.Core.Models.MediaArtwork? MediaArtwork { get; init; }
+
+    /// <summary>
+    /// A client asking the host to move the playback position, for
+    /// <see cref="MessageTypes.MediaSeek"/> (RemEx-vtorl). Optional addition; no protocolVersion
+    /// bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. Like
+    /// <see cref="MediaArtworkRequest"/> it is pairing-gated for free by the default-true
+    /// <c>RequiresPairing</c>, which is what a message that reaches into the user's media player
+    /// wants.
+    /// </remarks>
+    [JsonPropertyName("mediaSeek")]
+    public Remex.Core.Models.MediaSeekRequest? MediaSeek { get; init; }
+
+    /// <summary>
+    /// The phone's palette at one instant, for <see cref="MessageTypes.ThemeSync"/> (RemEx-y06a0.1,
+    /// RemEx-sudp8). Optional addition; no protocolVersion bump.
+    /// </summary>
+    /// <remarks>
+    /// CLIENT TO HOST ONLY, and therefore in no audience table — that table is host → client. Like
+    /// <see cref="MediaSeek"/> it is pairing-gated for free by the default-true
+    /// <c>RequiresPairing</c>. An unpaired sender's own theme is not something the host has any
+    /// business adopting.
+    /// </remarks>
+    [JsonPropertyName("themeSync")]
+    public Remex.Core.Models.PhoneThemeSnapshot? ThemeSync { get; init; }
 }
 
 /// <summary>
 /// Well-known message type constants.
 /// </summary>
+/// <remarks>
+/// <para>
+/// These strings ARE the wire protocol. Each is the snake_case form of its
+/// <see cref="RemexMessage"/> payload slot, so the constants are left individually undocumented:
+/// the name and the value are the same word, and a per-constant summary could only repeat it.
+/// </para>
+/// <para>
+/// Two things are worth knowing before adding one. Changing an existing value silently breaks every
+/// shipped client, because a peer ignores types it does not recognise rather than reporting an
+/// error. And the Android client builds some of its JSON by hand in Kotlin, so a type can exist as a
+/// literal on the phone with no constant here — the parity test
+/// <c>EveryMessageTypeAndroidSends_HasAMatchingConstant</c> exists because exactly that drift once
+/// shipped, and it also matters for authorisation, since loopback-only gating matches on CONSTANTS
+/// and cannot gate a hand-built literal at all.
+/// </para>
+/// </remarks>
 public static class MessageTypes
 {
     public const string Ping = "ping";
@@ -298,7 +438,6 @@ public static class MessageTypes
     public const string HostInfo = "host_info";
     public const string DesktopStart = "desktop_start";
     public const string DesktopStop = "desktop_stop";
-    public const string DesktopFrame = "desktop_frame";
     public const string DesktopInput = "desktop_input";
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
@@ -317,6 +456,13 @@ public static class MessageTypes
     public const string DesktopWindowResult = "desktop_window_result";
     /// <summary>Client-to-host request for an on-demand keyframe (IDR) after decoder desync (RD-2).</summary>
     public const string DesktopKeyframeRequest = "desktop_keyframe_request";
+    /// <summary>
+    /// Client → host: user-initiated request to re-arm and retry the desktop input permission after a
+    /// declined portal prompt (RemEx-5bwpv). No payload. Additive and backward-compatible: the
+    /// streaming switch that dispatches these has no default case, so an old host silently ignores an
+    /// unrecognized type, and an old phone never sends this one. No <c>protocolVersion</c> bump.
+    /// </summary>
+    public const string DesktopInputPermissionRetry = "desktop_input_permission_retry";
 
     // ── 2.0 Pairing ──
     public const string PairingRequest = "pairing_request";
@@ -365,6 +511,8 @@ public static class MessageTypes
     public const string FileVolumesResponse = "file_volumes_response";
     public const string FileSearchRequest = "file_search_request";
     public const string FileSearchResponse = "file_search_response";
+    public const string FileManifestRequest = "file_manifest_request";
+    public const string FileManifestResponse = "file_manifest_response";
     public const string FileMetadataRequest = "file_metadata_request";
     public const string FileMetadataResponse = "file_metadata_response";
     public const string FileThumbnailRequest = "file_thumbnail_request";
@@ -374,4 +522,79 @@ public static class MessageTypes
     public const string FileConsentResponse = "file_consent_response";
     public const string FilePushOffer = "file_push_offer";
     public const string FilePushResponse = "file_push_response";
+
+    // ── 2.5 Clipboard ──
+    // Additive and optional: a peer that does not know these ignores them, so no ProtocolVersion
+    // bump. clipboard_push is CLIENT -> HOST and lands in the host's own dispatcher, so unlike a
+    // host -> client type it needs no JNI routing to arrive (RemEx-hgqs; the fetch direction, which
+    // does, is RemEx-ci98m).
+    public const string ClipboardPush = "clipboard_push";
+
+    // The fetch direction (RemEx-ci98m). clipboard_content is HOST -> CLIENT and therefore only
+    // reaches the Android app if AndroidNativeExports.OnNativeMessageReceived routes it - see the
+    // clipboard_ prefix forward there, and the guard that keeps it honest.
+    public const string ClipboardRequest = "clipboard_request";
+    public const string ClipboardContent = "clipboard_content";
+
+    // The push's answer (RemEx-s1ay7). clipboard_ prefixed, so the router carries it with no new
+    // wiring at all - which is the payoff of forwarding the family by prefix rather than by name.
+    public const string ClipboardPushResult = "clipboard_push_result";
+
+    /// <summary>
+    /// What the PC is playing, HOST -> CLIENT (RemEx-xx6xf).
+    /// </summary>
+    /// <remarks>
+    /// UNPREFIXED AND THEREFORE NOT CARRIED BY ANY OF THE FAMILY FORWARDS. The <c>file_</c> and
+    /// <c>clipboard_</c> prefixes each get a whole family routed to a callback in
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>; this one is a single type and needs its
+    /// own line there. That is the RemEx-y6x6 shape exactly — a host that sends correctly and a phone
+    /// that never hears, with a successful send on one side and silence on the other — so the routing
+    /// has its own guard rather than being left to a reviewer to notice.
+    /// </remarks>
+    public const string MediaState = "media_state";
+
+    /// <summary>
+    /// A client asking for one cover image by id, CLIENT -> HOST (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// The only client-originated member of this family. It reaches the host through the ordinary
+    /// inbound handler and needs no audience entry, because <c>MessageAudience.HostToClient</c>
+    /// describes the other direction.
+    /// </remarks>
+    public const string MediaArtworkRequest = "media_artwork_request";
+
+    /// <summary>
+    /// One cover image, HOST -> CLIENT (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// UNPREFIXED, EXACTLY LIKE <see cref="MediaState"/>, AND SO IT NEEDS ITS OWN LINE IN
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>. It is worth repeating rather than
+    /// cross-referencing because this is the failure that costs the most to diagnose here: the phone
+    /// asked, the host answered, the send succeeded, and the cover never appeared — with nothing in
+    /// either log to say the reply was dropped one layer above the socket. The audience guard is what
+    /// makes that impossible to ship.
+    /// </remarks>
+    public const string MediaArtwork = "media_artwork";
+
+    /// <summary>
+    /// A client asking the host to move the playback position, CLIENT -> HOST (RemEx-vtorl).
+    /// </summary>
+    /// <remarks>
+    /// The second client-originated member of this family, and like
+    /// <see cref="MediaArtworkRequest"/> it needs no audience entry, because
+    /// <c>MessageAudience.HostToClient</c> describes the other direction. It also needs no line in
+    /// <c>AndroidNativeExports.OnNativeMessageReceived</c>: nothing comes back under this type. The
+    /// answer is the next <c>media_state</c>, which the phone is already listening for.
+    /// </remarks>
+    public const string MediaSeek = "media_seek";
+
+    /// <summary>
+    /// The phone's palette at one instant, CLIENT -> HOST (RemEx-y06a0.1, blocker of RemEx-sudp8).
+    /// </summary>
+    /// <remarks>
+    /// NOTHING IS SENT BACK, like <see cref="MediaSeek"/>: the host stores the snapshot and the
+    /// desktop's Personalize sheet reads it straight from <c>IPhoneThemeSnapshotStore</c>, so there
+    /// is no reply to route and no JNI concern on the way back to Android.
+    /// </remarks>
+    public const string ThemeSync = "theme_sync";
 }

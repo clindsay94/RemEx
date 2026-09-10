@@ -19,8 +19,10 @@ namespace Remex.Desktop.Services;
 /// Anything that needs a user-visible outcome should be awaited somewhere that can show one.
 /// </para>
 /// <para>
-/// No <c>ConfigureAwait(false)</c> anywhere here, per <c>docs/ASYNC_GUIDELINES.md</c> — neither
-/// Avalonia nor ASP.NET Core installs a <c>SynchronizationContext</c>, so it would be noise.
+/// No <c>ConfigureAwait(false)</c> anywhere here, per <c>docs/ASYNC_GUIDELINES.md</c>. Note the
+/// reason is NOT that no context exists — Avalonia 11 does install one, and this file's callers are
+/// often on the UI thread. It is that UI work here is marshalled explicitly, so capturing the context
+/// changes nothing except adding a dispatcher turn. (RemEx-rbfq corrected the old wording.)
 /// </para>
 /// </remarks>
 public static class FireAndForgetExtensions

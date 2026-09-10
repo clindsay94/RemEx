@@ -107,7 +107,12 @@ internal static class LinuxJpegEncoder
                 var destInfo = new SKImageInfo(targetW, targetH, colorType, SKAlphaType.Premul);
                 using var srcBitmap = SKBitmap.FromImage(baseImage);
                 using var dstBitmap = new SKBitmap(destInfo);
-                if (!srcBitmap.ScalePixels(dstBitmap, SKFilterQuality.Medium))
+                // SKFilterQuality is gone in SkiaSharp 3 (RemEx-jcma3). Linear + mipmap Linear is
+                // what Medium meant: SkiaSharp's own docs describe Medium as "bilerp filter, and
+                // mipmap when size is reduced", and every call here IS a reduction. Picking plain
+                // Linear instead would drop the mipmap and alias the downscale — visible as shimmer
+                // on a scaled remote desktop, with nothing failing to say so.
+                if (!srcBitmap.ScalePixels(dstBitmap, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear)))
                 {
                     logger.LogWarning(
                         "LinuxJpegEncoder: ScalePixels failed; encoding at original resolution.");

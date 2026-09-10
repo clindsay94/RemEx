@@ -67,6 +67,63 @@ internal object PairingErrors {
     }
 
     /**
+     * The localized sentence for a pairing phase token, or null when there is nothing to say.
+     *
+     * **NULL FOR AN UNKNOWN TOKEN, DELIBERATELY.** The tokens come from the native side, which does
+     * not know the phone's language — so mapping happens here. A phase added natively and not yet
+     * mapped here should show nothing rather than crash or render a raw token at the user, which is
+     * what lets a phase be added without a coordinated release. Same contract as [messageRes]'s
+     * fallback, for the same reason (RemEx-g87x).
+     */
+    @StringRes
+    fun phaseRes(phase: String?): Int? =
+            when (phase) {
+                "PROBE" -> R.string.pairing_phase_probe
+                "SECURING" -> R.string.pairing_phase_securing
+                "AWAITING_HOST" -> R.string.pairing_phase_awaiting_host
+                else -> null
+            }
+
+    /**
+     * The causes that leave the native pairing session unusable.
+     *
+     * **ONE LIST, READ BY BOTH THINGS THAT NEED IT.** [killsSession] and [messageRes] are two
+     * questions about the same fact, and keeping two copies means a cause can be added to one and
+     * not the other — which is invisible, because the user simply gets advice that does not fit the
+     * state they are in. Deriving both from here costs nothing and removes the failure mode.
+     *
+     * The membership is not guessable from the names. PIN_FETCH_TIMEOUT reads like something you
+     * retry and is not: see [killsSession] for why.
+     */
+    private val DEAD_SESSION_CAUSES =
+            setOf(
+                    "PIN_REJECTED",
+                    "NO_SESSION",
+                    "SESSION_KEY_LOST",
+                    "PIN_CONFIRM_TIMEOUT",
+                    "PAIRING_ABORTED_SESSION_LOST",
+                    "PIN_FETCH_TIMEOUT",
+            )
+
+    /**
+     * Whether this cause leaves the native pairing session unusable.
+     *
+     * **PIN_FETCH_TIMEOUT IS IN THE SET, AND THAT IS THE COUNTER-INTUITIVE ONE.** Here is the actual
+     * derivation, because "a timeout means the session is gone" is not obvious and the reason
+     * matters: inside `PairingClient.RequestPinAsync` the ONLY operation handed the cancellation
+     * token is `webSocket.ReceiveAsync` — the send above it is called with no token at all. So a
+     * PIN_FETCH_TIMEOUT can only have come from a cancelled receive, and `ClientWebSocket` registers
+     * `Abort()` on the token it is given. Cancelled receive, aborted socket, dead session
+     * (RemEx-d3z9; `CancelledReceiveKillsTheSocketTests` measures it against a real TLS connection).
+     *
+     * The same derivation is why PIN_UNAVAILABLE is NOT in the set. It is returned whenever
+     * `RequestPinAsync` yields null without throwing — a reply carrying no PIN, a host Close frame,
+     * or the loop falling out on an already-cancelled token — and none of those went through a
+     * cancelled receive.
+     */
+    fun killsSession(code: String?): Boolean = code in DEAD_SESSION_CAUSES
+
+    /**
      * Maps a native cause code onto the localized string that explains it to the user.
      *
      * Every target is placeholder-free on purpose. Wrapping a localized cause inside another
@@ -75,11 +132,12 @@ internal object PairingErrors {
      * rather than surfacing the raw diagnostic, which is what lets new codes be added natively
      * without a coordinated release.
      *
-     * NOTE ON THE DEAD-SESSION GROUP: for those four causes the native session is unusable, though
-     * NOT all for the same reason — PIN_REJECTED and PIN_CONFIRM_TIMEOUT have had
-     * ClearActivePairingState() called on them, whereas NO_SESSION and SESSION_KEY_LOST are bare
-     * guard returns where the session was already absent or its key already gone (and for
-     * SESSION_KEY_LOST the socket stays non-null, so resubmitting returns it again indefinitely).
+     * NOTE ON THE DEAD-SESSION GROUP: for those six causes the native session is unusable, though
+     * NOT all for the same reason — PIN_REJECTED, PIN_CONFIRM_TIMEOUT, PAIRING_ABORTED_SESSION_LOST
+     * and PIN_FETCH_TIMEOUT have had ClearActivePairingState() called on them, whereas
+     * NO_SESSION and SESSION_KEY_LOST are bare guard returns where the session was already absent or
+     * its key already gone (and for SESSION_KEY_LOST the socket stays non-null, so resubmitting
+     * returns it again indefinitely).
      * What they share is that none can be fixed by resubmitting, so the advice depends entirely on
      * [surface]: on [PairingSurface.Dedicated] Submit stays enabled but re-uses that dead session
      * (RemEx-aor9), so the only escape is Cancel; on [PairingSurface.InlineConnect] there is no
@@ -96,17 +154,30 @@ internal object PairingErrors {
                 // Reached the host during start, but it never answered. No stale Submit button is
                 // sitting there on this path, so "check it is on and try again" is followable.
                 "PAIR_TIMEOUT" -> R.string.pairing_error_timeout
+                // The caller abandoned the attempt (RemEx-defb) — usually its own timeout, but any
+                // cancellation of the surrounding scope does it too. Grouped with PAIR_TIMEOUT
+                // because the session survives, so trying again is followable advice. Normally
+                // unreachable: by the time the native returns this, the coroutine has already thrown
+                // TimeoutCancellationException and that path showed the message. Mapping it anyway
+                // keeps a surfaced abort from rendering as "unknown".
+                "PAIRING_ABORTED" -> R.string.pairing_error_timeout
                 "PAIR_MALFORMED" -> R.string.pairing_error_malformed_response
                 // The native session is unusable for all of these — see the note above. The advice
                 // has to match the recovery the surface actually offers.
-                "PIN_REJECTED", "NO_SESSION", "SESSION_KEY_LOST", "PIN_CONFIRM_TIMEOUT" ->
+                // Derived from DEAD_SESSION_CAUSES rather than restated, so this arm and
+                // killsSession cannot drift. PAIRING_ABORTED_SESSION_LOST is here because abandoning
+                // a PIN submission OR a PIN fetch calls ClearActivePairingState, and on Dedicated the
+                // Submit button that stays enabled can then only fail (RemEx-aor9).
+                in DEAD_SESSION_CAUSES ->
                         when (surface) {
                             PairingSurface.Dedicated -> R.string.pairing_error_verify_failed
                             PairingSurface.InlineConnect -> R.string.pairing_error_bad_pin
                         }
-                // Reachable only once the PIN-relay result stops being funnelled through
-                // parseFetchedPin, which maps every non-OK reply to null (RemEx-6gkr notes).
-                "PIN_FETCH_TIMEOUT", "PIN_UNAVAILABLE" -> R.string.pairing_error_empty_response
+                // The host declined, has no active PIN, closed the socket, or the loop fell out
+                // on an already-cancelled token — RequestPinAsync yields null for all of those. What
+                // they share, and the reason this is survivable while the fetch TIMEOUT beside it is
+                // not, is that none of them went through a CANCELLED receive. See killsSession.
+                "PIN_UNAVAILABLE" -> R.string.pairing_error_empty_response
                 // ARG_MISSING is a caller bug and is the one cause that does NOT clear session
                 // state, so "try again" is right advice for it. UNEXPECTED and any code this build
                 // does not recognise land here too.

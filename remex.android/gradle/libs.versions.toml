@@ -48,8 +48,15 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 androidx-compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version = "1.12.0-beta02" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version = "1.2.0" }
+# See the kotlin-serialization plugin note below for why this is 1.7.3 exactly.
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version = "1.7.3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# Typed navigation routes (RemEx-mt43): @Serializable route classes need the serialization compiler
+# plugin, and the runtime below. 1.7.3 is not a choice — it is what navigation-compose
+# 2.10.0-alpha06 resolves and certifies against (checked with :app:dependencies); pinning the same
+# number makes the direct source dependency explicit without forking the version.
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

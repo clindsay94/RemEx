@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -47,9 +48,28 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
+// A SECOND ANNOTATION RATHER THAN A SECOND ARGUMENT ABOVE, AND NOT BY PREFERENCE (RemEx-28wng).
+// ExperimentalGetImage is declared in Java against androidx.annotation.RequiresOptIn, and Kotlin's
+// built-in @OptIn accepts only Kotlin-declared markers, so the two cannot share a line. Fully
+// qualified because importing androidx.annotation.OptIn would collide with the kotlin.OptIn that is
+// imported by default and in use directly above.
+//
+// It covers imageProxy.image in the ImageAnalysis analyzer below. CameraX marks that getter to warn
+// callers the signature may move under them; naming the marker here records that the risk was seen
+// and accepted at the one call site that takes it, rather than leaving a lint error standing that
+// would bury the next genuinely unsafe opt-in in a list that already has one in it.
+@androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
 @Composable
 fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
+
+    // READ HERE RATHER THAN IN THE ANALYSER CALLBACKS THAT USE THEM (RemEx-2evl3). Those callbacks
+    // run off the composition and stringResource is @Composable, which is why the originals reached
+    // for LocalContext.current - but a context read is not configuration-aware and can hand back a
+    // stale string after a Configuration change. With nine locales shipped, that change is a user
+    // switching language.
+    val qrMissingHashMessage = stringResource(R.string.qr_error_missing_hash)
+    val qrSetupFailedMessage = stringResource(R.string.qr_error_setup_failed)
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val scannedOnce = remember { mutableStateOf(false) }
@@ -198,7 +218,7 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                             try {
                                                                                  if (spkiHash.isBlank()
                                                                                  ) {
-                                                                                     errorMessage = context.getString(R.string.qr_error_missing_hash)
+                                                                                     errorMessage = qrMissingHashMessage
                                                                                      scannedOnce.value = false
                                                                                      return@launch
                                                                                  }
@@ -229,6 +249,19 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                                                  host,
                                                                                                  spkiHash
                                                                                          )
+                                                                                 // Link the keys so
+                                                                                 // a later forget
+                                                                                 // clears them all
+                                                                                 // (RemEx-uxem).
+                                                                                 PinnedHostStore
+                                                                                         .recordAliases(
+                                                                                                 context,
+                                                                                                 listOfNotNull(
+                                                                                                         hostId,
+                                                                                                         host,
+                                                                                                         spkiHash
+                                                                                                 )
+                                                                                         )
                                                                                  errorMessage =
                                                                                          null
                                                                                  onScanned(
@@ -250,7 +283,7 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                                                  e
                                                                                          )
                                                                                  errorMessage =
-                                                                                         context.getString(R.string.qr_error_setup_failed)
+                                                                                         qrSetupFailedMessage
                                                                                  scannedOnce
                                                                                          .value =
                                                                                          false

@@ -1,5 +1,8 @@
+using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
+
+using Remex.Agent.Services.Input;
 
 namespace Remex.Agent.Services.Input.Linux;
 
@@ -234,6 +237,17 @@ public static class LinuxInputEventTranslator
         0xDC => 43,   // backslash
         0xDD => 27,   // ]
         0xDE => 40,   // apostrophe
+        // MEDIA AND VOLUME (RemEx-3cnq). Values read from /usr/include/linux/input-event-codes.h
+        // rather than recalled - the media block is the part of this table most often written from
+        // memory and it is easy to be one off.
+        0xAD => 113,  // VK_VOLUME_MUTE       -> KEY_MUTE
+        0xAE => 114,  // VK_VOLUME_DOWN       -> KEY_VOLUMEDOWN
+        0xAF => 115,  // VK_VOLUME_UP         -> KEY_VOLUMEUP
+        0xB0 => 163,  // VK_MEDIA_NEXT_TRACK  -> KEY_NEXTSONG
+        0xB1 => 165,  // VK_MEDIA_PREV_TRACK  -> KEY_PREVIOUSSONG
+        0xB2 => 166,  // VK_MEDIA_STOP        -> KEY_STOPCD
+        0xB3 => 164,  // VK_MEDIA_PLAY_PAUSE  -> KEY_PLAYPAUSE
+
         _ => -1,
     };
 
@@ -261,7 +275,7 @@ public static class LinuxInputEventTranslator
         >= 0x41 and <= 0x5A => ((char)(keyCode + 32)).ToString(),
         0x5B => "Super_L",
         0x5C => "Super_R",
-        >= 0x70 and <= 0x7B => $"F{keyCode - 0x6F}",
+        >= 0x70 and <= 0x7B => string.Create(CultureInfo.InvariantCulture, $"F{keyCode - 0x6F}"),
         0xA0 => "Shift_L",
         0xA1 => "Shift_R",
         0xA2 => "Control_L",
@@ -278,6 +292,21 @@ public static class LinuxInputEventTranslator
         0xDC => "backslash",
         0xDD => "bracketright",
         0xDE => "apostrophe",
+        // MEDIA AND VOLUME (RemEx-3cnq), taken from /usr/include/X11/XF86keysym.h.
+        //
+        // PLAY/PAUSE IS NOT XF86AudioPlay, which is the trap here. That keysym is documented in the
+        // header as KEY_PLAYCD / KEY_PLAY - start playing - while the Windows key this maps from,
+        // VK_MEDIA_PLAY_PAUSE, is a TOGGLE. X11 has a separate XF86XK_MediaPlayPause, annotated
+        // _EVDEVK(0x0a4) = 164 = KEY_PLAYPAUSE, which is the exact counterpart and matches what the
+        // evdev table above emits for the same key.
+        0xAD => "XF86AudioMute",
+        0xAE => "XF86AudioLowerVolume",
+        0xAF => "XF86AudioRaiseVolume",
+        0xB0 => "XF86AudioNext",
+        0xB1 => "XF86AudioPrev",
+        0xB2 => "XF86AudioStop",
+        0xB3 => "XF86MediaPlayPause",
+
         _ => null,
     };
 
@@ -319,16 +348,29 @@ public static class LinuxInputEventTranslator
     }
 
     /// <summary>
-    /// Converts a <see cref="DesktopPointerSample"/> button index to a Linux BTN_ code.
-    /// Index 0 = BTN_LEFT, 1 = BTN_RIGHT, 2 = BTN_MIDDLE.
+    /// Converts a protocol button index (<see cref="Remex.Core.Models.InputEvent.Button"/>) to a Linux BTN_ code.
+    /// Index 0 = BTN_LEFT, 1 = BTN_MIDDLE, 2 = BTN_RIGHT.
     /// </summary>
-    public static uint ButtonIndexToLinuxCode(int index) => index switch
-    {
-        0 => 272u,   // BTN_LEFT
-        1 => 273u,   // BTN_RIGHT
-        2 => 274u,   // BTN_MIDDLE
-        3 => 275u,   // BTN_SIDE
-        4 => 276u,   // BTN_EXTRA
-        _ => 272u,
-    };
+    /// <remarks>
+    /// <para>
+    /// 1 AND 2 WERE THE OTHER WAY ROUND UNTIL RemEx-kie3, and the swap survived because nothing in
+    /// production calls this. Only a unit test referenced it, and that test pinned the wrong order,
+    /// so the contradiction looked verified rather than wrong. Wiring this up for a future evdev
+    /// path would have silently swapped right-click and middle-click on Linux.
+    /// <para>
+    /// THERE WERE SIX BUTTON TABLES IN THIS REPO and every other one already agreed on
+    /// 0/1/2 = left/middle/right: three in <c>LinuxInputSimulationService</c>, two in
+    /// <c>LinuxInputBackendRouter</c>, and the <c>MOUSEEVENTF_*</c> switch in
+    /// <c>WindowsInputSimulationService</c>. Six copies with no shared definition was the actual
+    /// defect; <see cref="MouseButtonCodes"/> is now the one constant they all resolve through
+    /// (RemEx-upxn).
+    /// </para>
+    /// </para>
+    /// <para>
+    /// The old summary also mis-stated its input: <see cref="Remex.Core.Models.DesktopPointerSample"/> carries a
+    /// button MASK, not an index (the router reads <c>ButtonMask &amp; 0x02</c> / <c>&amp; 0x04</c>),
+    /// so this never applied to the pointer path at all.
+    /// </para>
+    /// </remarks>
+    public static uint ButtonIndexToLinuxCode(int index) => MouseButtonCodes.ToEvdev(index);
 }

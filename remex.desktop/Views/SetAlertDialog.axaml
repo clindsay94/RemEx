@@ -3,6 +3,7 @@
         xmlns:vm="using:Remex.Desktop.ViewModels"
         xmlns:local="clr-namespace:Remex.Desktop.Converters"
         xmlns:conv="clr-namespace:Remex.Desktop.Converters"
+        xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
         x:Class="Remex.Desktop.Views.SetAlertDialog"
         x:DataType="vm:SetAlertViewModel"
         Title="{local:Localize SetAlert_Title}"
@@ -12,42 +13,45 @@
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlassBaseDarkBrush}"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="32">
 
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="24,44,24,24">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="4">
-            <TextBlock Text="{local:Localize SetAlert_Header}" FontSize="11" FontWeight="SemiBold"
+            <TextBlock Text="{local:Localize SetAlert_Header}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <TextBlock Text="{Binding SensorName}" FontSize="18" FontWeight="Bold"
+            <TextBlock Text="{Binding SensorName}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold"
                        Foreground="{DynamicResource AccentPrimaryBrush}"
                        TextTrimming="CharacterEllipsis"/>
         </StackPanel>
 
-        <!-- Threshold -->
+        <!-- Threshold. NOT assists:TextFieldAssist.Label (Opus review round 2, MEDIUM): confirmed
+             against Material.Avalonia 3.19.0's actual source
+             (Material.Styles/Resources/Themes/NumericUpDown.axaml) that OutlineNumericUpDown's
+             template-binds TextFieldAssist.Label down to an inner PART_TextBox, but that inner box
+             is themed MaterialOnlyPresenterTextBox - a stripped template with no label element at
+             all - while the OUTER template's own ":empty"/"focus-within" styles target
+             Border#PART_LabelRootBorder, an element the OUTER template never declares either. The
+             value is bound through but never painted anywhere; a caption stays here instead
+             (TextInputTests.LabelExemptInputs). AutomationProperties.Name below is unaffected -
+             UIA reads it directly, not through this template. -->
         <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
-            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" FontSize="12"
+            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" Theme="{StaticResource CaptionTextBlock}"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <NumericUpDown Value="{Binding Threshold}" Increment="1"
                            Minimum="-99999" Maximum="99999"
                            FormatString="F1"
-                           Background="{DynamicResource GlassBaseMediumBrush}"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           BorderBrush="{DynamicResource CardBorderBrush}"
-                           CornerRadius="8" Padding="8,6" FontSize="14"/>
+                           AutomationProperties.Name="{local:Localize SetAlert_ThresholdValue}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
         </StackPanel>
 
         <!-- Direction -->
         <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,12">
-            <TextBlock Text="{local:Localize SetAlert_TriggerDirection}" FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Directions}" SelectedItem="{Binding Direction}"
-                      Background="{DynamicResource GlassBaseMediumBrush}"
-                      Foreground="{DynamicResource TextPrimaryBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      CornerRadius="8" HorizontalAlignment="Stretch">
+                      assists:ComboBoxAssist.Label="{local:Localize SetAlert_TriggerDirection}"
+                      AutomationProperties.Name="{local:Localize SetAlert_TriggerDirection}"
+                      Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>
@@ -58,13 +62,10 @@
 
         <!-- Severity -->
         <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,24">
-            <TextBlock Text="{local:Localize SetAlert_Severity}" FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Severities}" SelectedItem="{Binding Severity}"
-                      Background="{DynamicResource GlassBaseMediumBrush}"
-                      Foreground="{DynamicResource TextPrimaryBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      CornerRadius="8" HorizontalAlignment="Stretch">
+                      assists:ComboBoxAssist.Label="{local:Localize SetAlert_Severity}"
+                      AutomationProperties.Name="{local:Localize SetAlert_Severity}"
+                      Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>
@@ -76,15 +77,22 @@
         <!-- Buttons -->
         <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto,Auto">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Command="{Binding ClearAlertCommand}"
-                    Classes="glass-button" Foreground="{DynamicResource SystemErrorBrush}"
+                    Classes="tertiary danger"
                     MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"
-                    Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
+                    Classes="tertiary" MinWidth="80" Margin="0,0,8,0"/>
             <Button Grid.Column="3" Content="{local:Localize SetAlert_SetAlertBtn}" Command="{Binding ConfirmCommand}"
-                    MinWidth="100" CornerRadius="8" Padding="16,10"
-                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
-                    FontWeight="SemiBold" FontSize="13"/>
+                    Classes="primary" MinWidth="100"/>
         </Grid>
 
     </Grid>
+    <!-- ESCAPE DISMISSES, AND IT IS ROUTED TO THE ACTION ALREADY WRITTEN AS THIS DIALOG'S CANCEL
+         (RemEx-xxifk). ENTER SETS THE ALERT (RemEx-df08), routed to ConfirmCommand - the same
+         affirmative action the "SetAlert_SetAlertBtn" primary button already runs. Deliberately NOT
+         ClearAlertCommand: that is the destructive option (removes the alert entirely) and stays a
+         mouse-only, deliberate action - this is exactly the "backwards" failure mode to avoid. -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Enter" Command="{Binding ConfirmCommand}"/>
+    </Window.KeyBindings>
 </Window>

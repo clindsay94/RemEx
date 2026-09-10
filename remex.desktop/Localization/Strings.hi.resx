@@ -14,6 +14,69 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>कंट्रास्ट</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>तीव्र</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>नरम</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>जनरेट किया गया पैलेट टेक्स्ट को उसके पीछे की सतह से कितना अलग करता है।</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>हाल के</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>सीड</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>ह्यू</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>सीड रंग चक्र</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>सीड रंग चुनने के लिए खींचें। ह्यू चक्र के चारों ओर चलता है, क्रोमा केंद्र से बाहर की ओर। तीर कुंजियाँ भी काम करती हैं।</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>फ़ोल्डर डाउनलोड करें</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>चुने गए फ़ोल्डर और उसके अंदर की हर चीज़ को सहेजें</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>फ़ोल्डर सहेजने की जगह चुनें</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} फ़ाइलें डाउनलोड के लिए कतार में हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} फ़ाइलें अपलोड के लिए कतार में हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} फ़ाइलें कतार में हैं, लेकिन फ़ोल्डर पूरी सूची बनाने के लिए बहुत बड़ा था — कुछ फ़ाइलें छूट गईं।</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>फ़ोल्डर की सूची नहीं बन सकी: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>फ़ोल्डर की सूची बन रही है…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>उस फ़ोल्डर में एक बार में स्थानांतरित करने के लिए बहुत अधिक फ़ाइलें हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>भेजने के लिए फ़ोल्डर चुनें</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>फ़ोल्डर अपलोड करें</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>पूरा फ़ोल्डर भेजें, उसके अंदर की हर चीज़ सहित</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>होम</value>
   </data>
@@ -28,6 +91,9 @@
   </data>
   <data name="Nav_Files" xml:space="preserve">
     <value>फ़ाइलें</value>
+  </data>
+  <data name="Nav_RemoteDesktop" xml:space="preserve">
+    <value>रिमोट डेस्कटॉप</value>
   </data>
 
   
@@ -73,31 +139,31 @@
     <value>जबरन (तत्काल)</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>🔒 पीसी लॉक करें</value>
+    <value>पीसी लॉक करें</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>🚪 साइन आउट</value>
+    <value>साइन आउट</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>⏻ शटडाउन</value>
+    <value>शटडाउन</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>🔄 रीस्टार्ट</value>
+    <value>रीस्टार्ट</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
-    <value>💤 स्लीप</value>
+    <value>स्लीप</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>❄ हाइबरनेट</value>
+    <value>हाइबरनेट</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>⚠ फोर्स शटडाउन</value>
+    <value>फोर्स शटडाउन</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>⚠ फोर्स रीस्टार्ट</value>
+    <value>फोर्स रीस्टार्ट</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI में रीबूट</value>
+    <value>UEFI में रीबूट</value>
   </data>
 
   
@@ -215,7 +281,7 @@
     <value>आइकन पूर्वावलोकन</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
-    <value>C:\Path\To\App.exe</value>
+    <value>C:\पथ\तक\App.exe</value>
   </data>
   <data name="AddProgram_WatermarkName" xml:space="preserve">
     <value>मेरा ऐप</value>
@@ -225,12 +291,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Home" xml:space="preserve">
-    <value>होम</value>
-  </data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve">
-    <value>वर्कस्पेस</value>
-  </data>
   <data name="TrayFlyout_Title" xml:space="preserve">
     <value>लाइव ग्लेंस</value>
   </data>
@@ -273,13 +333,13 @@
     <value>सेंसर ({0})</value>
   </data>
   <data name="Canvas_Ping" xml:space="preserve">
-    <value>📡 पिंग</value>
+    <value>पिंग</value>
   </data>
   <data name="Canvas_CancelConnect" xml:space="preserve">
-    <value>✕ रद्द करें</value>
+    <value>रद्द करें</value>
   </data>
   <data name="Canvas_Disconnect" xml:space="preserve">
-    <value>✕ डिसकनेक्ट</value>
+    <value>डिसकनेक्ट</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ कनेक्ट</value>
@@ -330,9 +390,6 @@
   </data>
 
   
-  <data name="Custom_BasePresets" xml:space="preserve">
-    <value>बेस प्रीसेट</value>
-  </data>
   <data name="Custom_AdvancedTuning" xml:space="preserve">
     <value>उन्नत फाइन-ट्यूनिंग</value>
   </data>
@@ -348,32 +405,35 @@
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>ग्लो शक्ति</value>
   </data>
-  <data name="Custom_AccentColor" xml:space="preserve">
-    <value>एक्सेंट रंग</value>
-  </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
     <value>पृष्ठभूमि मोड</value>
-  </data>
-  <data name="Custom_Atmosphere" xml:space="preserve">
-    <value>कैनवास वातावरण</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>थीम डिफ़ॉल्ट पर रीसेट करें</value>
   </data>
-  <data name="Custom_PresetStandardGlass" xml:space="preserve">
-    <value>Standard Glass</value>
+  <data name="Custom_PresetGlass" xml:space="preserve">
+    <value>Glass</value>
   </data>
-  <data name="Custom_PresetCyberNOC" xml:space="preserve">
-    <value>Cyber-NOC</value>
+  <data name="Custom_PresetNeon" xml:space="preserve">
+    <value>Neon</value>
   </data>
-  <data name="Custom_PresetSolarFlare" xml:space="preserve">
-    <value>Solar-Flare</value>
+  <data name="Custom_PresetEmber" xml:space="preserve">
+    <value>Ember</value>
   </data>
-  <data name="Custom_PresetMonolith" xml:space="preserve">
-    <value>Monolith</value>
+  <data name="Custom_PresetSlate" xml:space="preserve">
+    <value>Slate</value>
+  </data>
+  <data name="Custom_PresetDaybreak" xml:space="preserve">
+    <value>Daybreak</value>
+  </data>
+  <data name="Custom_PresetVoltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Custom_PresetSorbet" xml:space="preserve">
+    <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>गतिशील</value>
   </data>
 
   
@@ -444,7 +504,7 @@
     <value>स्ट्रीम शुरू नहीं हो सकी। फिर से कनेक्ट करके देखें।</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>रोका गया</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>रिमोट स्क्रीन नहीं दिखाई जा सकती — गुणवत्ता कम करके देखें, या डिस्कनेक्ट करके फिर से कनेक्ट करें।</value>
@@ -480,6 +540,18 @@
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
     <value>होस्ट कनेक्टेड नहीं है</value>
+  </data>
+  <data name="Status_PlatformWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Status_PlatformLinux" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="Status_PlatformMacOs" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="Status_HostRuntimeOnPlatform" xml:space="preserve">
+    <value>{1} पर {0}</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
     <value>इंटरैक्टिव होस्ट</value>
@@ -534,6 +606,9 @@
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>पिन ठीक 6 अंकों का होना चाहिए।</value>
+  </data>
+  <data name="Pairing_Succeeded" xml:space="preserve">
+    <value>युग्मित</value>
   </data>
 
   
@@ -600,6 +675,9 @@
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>यह ट्यूटोरियल दोबारा न दिखाएं</value>
+  </data>
+  <data name="Tutorial_PageIndicator" xml:space="preserve">
+    <value>ट्यूटोरियल प्रगति</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
@@ -733,7 +811,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>के बारे में</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>सेटिंग्स खोलें</value>
@@ -745,20 +823,20 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>QR कोड</value>
   </data>
+  <data name="Home_PairPhoneButton" xml:space="preserve">
+    <value>फ़ोन पेयर करें</value>
+  </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>पेयरिंग विफल</value>
+  </data>
+  <data name="Home_PairPhoneTooltip" xml:space="preserve">
+    <value>इस PC से पेयर करने के लिए फ़ोन को जो QR कोड और PIN चाहिए, वह दिखाएँ</value>
+  </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
     <value>RemEx Android ऐप से स्कैन करें</value>
   </data>
-  <data name="Home_QrCodeTooltip" xml:space="preserve">
-    <value>RemEx Android ऐप को कनेक्ट करने के लिए QR कोड जनरेट करें</value>
-  </data>
-  <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>पेयरिंग PIN दिखाएँ</value>
-  </data>
-  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>वह 6 अंकों का कोड दिखाएँ जो आपके फ़ोन को इस PC से पेयर करने के लिए चाहिए</value>
-  </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>पेयरिंग पिन</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>पेयरिंग पूरी करने के लिए यह कोड अपने फ़ोन पर दर्ज करें</value>
@@ -767,7 +845,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>{0} सेकंड में समाप्त</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>बंद करें</value>
   </data>
 
   
@@ -788,6 +866,9 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>लॉगिन करने पर RemEx को सिस्टम ट्रे में छोटा करके शुरू करता है ताकि आपका पीसी हमेशा पहुंच योग्य रहे।</value>
+  </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx यह जाँच नहीं सका कि वह साइन-इन पर शुरू होने के लिए सेट है या नहीं। नीचे का स्विच आपकी पिछली पसंद दिखाता है, जो आपके पीसी से मेल न भी खाए।</value>
   </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>चुनें कि लॉगिन करने पर RemEx स्वचालित रूप से शुरू हो या नहीं।</value>
@@ -1023,6 +1104,51 @@ Linux: ip addr  या  hostname -I</value>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
     <value>उस फ़ोल्डर को हटाया नहीं जा सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
+  <data name="FileTransfer_RateFormat" xml:space="preserve">
+    <value>{0}/s</value>
+  </data>
+  <data name="FileTransfer_RateEtaFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FileTransfer_EtaFinishing" xml:space="preserve">
+    <value>पूरा हो रहा है…</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_One" xml:space="preserve">
+    <value>{0} सेकंड बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Few" xml:space="preserve">
+    <value>{0} सेकंड बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Many" xml:space="preserve">
+    <value>{0} सेकंड बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaSecondsFormat_Other" xml:space="preserve">
+    <value>{0} सेकंड बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_One" xml:space="preserve">
+    <value>{0} मिनट बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Few" xml:space="preserve">
+    <value>{0} मिनट बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Many" xml:space="preserve">
+    <value>{0} मिनट बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaMinutesFormat_Other" xml:space="preserve">
+    <value>{0} मिनट बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_One" xml:space="preserve">
+    <value>{0} घंटा बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Few" xml:space="preserve">
+    <value>{0} घंटे बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Many" xml:space="preserve">
+    <value>{0} घंटे बाकी</value>
+  </data>
+  <data name="FileTransfer_EtaHoursFormat_Other" xml:space="preserve">
+    <value>{0} घंटे बाकी</value>
+  </data>
 
   
 
@@ -1077,16 +1203,16 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>📊 ग्राफ़ प्रकार</value>
+    <value>ग्राफ़ प्रकार</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
-    <value>🔒 पीसी लॉक करें</value>
+    <value>पीसी लॉक करें</value>
   </data>
   <data name="Canvas_RebootUefi" xml:space="preserve">
-    <value>🔧 UEFI में रीबूट करें</value>
+    <value>UEFI में रीबूट करें</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>📌 होम पर पिन टॉगल करें</value>
+    <value>होम पर पिन टॉगल करें</value>
   </data>
 
   
@@ -1110,7 +1236,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>शब्दावली: कमांड पैलेट</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>स्क्रीन के बीच जाने, त्वरित क्रियाएँ चलाने और कमांड सेंटर में तुरंत खोजने के लिए Ctrl+Shift+P दबाएँ।</value>
+    <value>स्क्रीन के बीच जाने, त्वरित क्रियाएँ चलाने और कमांड सेंटर में तुरंत खोजने के लिए Ctrl+K दबाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
     <value>शब्दावली: ऐप लॉन्चर</value>
@@ -1157,19 +1283,19 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>अनाम ऐप</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>एप्लिकेशन चुनें</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>एप्लिकेशन</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>सभी फ़ाइलें</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>अज्ञात</value>
   </data>
 
   
@@ -1179,6 +1305,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>बिल्ड</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>इस PC पर RemEx</value>
   </data>
@@ -1186,7 +1315,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>आपका PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ GitHub पर स्टार देने पर विचार करें!</value>
+    <value>GitHub पर स्टार देने पर विचार करें!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
     <value>ओपन सोर्स और मुफ़्त। (कृपया एक स्टार दें, उनके पास मेरी बिल्ली है!)</value>
@@ -1251,7 +1380,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>PC पर दिखाया गया 6 अंकों का PIN दर्ज करें:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>पेयर करें</value>
   </data>
 
   
@@ -1421,23 +1550,14 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_GlowIntense" xml:space="preserve">
     <value>तीव्र</value>
   </data>
-  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>कस्टम रंग जोड़ें</value>
-  </data>
-  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>कस्टम एक्सेंट रंग</value>
-  </data>
-  <data name="Custom_SchemeVariant" xml:space="preserve">
-    <value>स्कीम संस्करण</value>
-  </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
     <value>स्प्लैश स्क्रीन</value>
   </data>
-  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
-    <value>हार्डवेयर सिंक</value>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>कम गति</value>
   </data>
-  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
-    <value>भौतिक RGB के साथ एक्सेंट रंग सिंक करें</value>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>एनिमेशन को कम से कम रखें। पेज बिना स्लाइड किए बदलते हैं और सजावटी गति रुक जाती है।</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>चालू</value>
@@ -1457,6 +1577,24 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>ताज़ा करें</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>चयनित कॉपी करें</value>
+  </data>
+  <data name="Logs_CopyMessage" xml:space="preserve">
+    <value>संदेश कॉपी करें</value>
+  </data>
+  <data name="Logs_CopyWithStack" xml:space="preserve">
+    <value>स्टैक सहित कॉपी करें</value>
+  </data>
+  <data name="Logs_FollowTail" xml:space="preserve">
+    <value>अंत का अनुसरण करें</value>
+  </data>
+  <data name="Logs_JumpToNewest" xml:space="preserve">
+    <value>नवीनतम पर जाएँ</value>
+  </data>
+  <data name="Logs_OpenFolder" xml:space="preserve">
+    <value>फ़ोल्डर खोलें</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>लॉग साफ़ करें</value>
   </data>
@@ -1465,6 +1603,26 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>विंडोज इवेंट व्यूअर या लिनक्स सिस्टमडी जर्नल से नवीनतम इवेंट लॉग क्वेरी।</value>
+  </data>
+  <data name="Logs_Service_Reading" xml:space="preserve">
+    <value>RemEx द्वारा लिखी गई सिस्टम इवेंट लॉग प्रविष्टियाँ पढ़ी जा रही हैं…</value>
+  </data>
+  <data name="Logs_Service_WindowsEmpty" xml:space="preserve">
+    <value>RemEx के लिए कोई Windows इवेंट लॉग प्रविष्टि नहीं मिली।
+यह सामान्य है — RemEx यहां केवल गंभीर स्टार्टअप समस्याओं के लिए लिखता है, इसलिए एक खाली सूची का आमतौर पर मतलब है कि कुछ भी गलत नहीं हुआ है।</value>
+  </data>
+  <data name="Logs_Service_JournalFailed" xml:space="preserve">
+    <value>journalctl क्वेरी विफल रही: {0}</value>
+  </data>
+  <data name="Logs_Service_Unsupported" xml:space="preserve">
+    <value>सिस्टम इवेंट लॉग केवल Windows और Linux पर उपलब्ध हैं।</value>
+  </data>
+  <data name="Logs_Service_ReadError" xml:space="preserve">
+    <value>सिस्टम इवेंट लॉग नहीं पढ़ा जा सका: {0}</value>
+  </data>
+  <data name="Logs_Service_LinuxEmpty" xml:space="preserve">
+    <value>Remex.Agent के लिए कोई उपयोगकर्ता-जर्नल प्रविष्टि दर्ज नहीं है।
+यह उन डेस्कटॉप पर सामान्य है जो RemEx को systemd के बजाय सीधे XDG ऑटोस्टार्ट से चलाते हैं — OS वहां इसका आउटपुट कभी कैप्चर नहीं करता। ऊपर दिया गया {0} RemEx का अपना रिकॉर्ड है और हर जगह काम करता है।</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>सिस्टम इवेंट लॉग क्वेरी करें</value>
@@ -1592,6 +1750,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>रेमेक्स डेस्कटॉप - रिमोट निष्पादन</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>कमांड पैलेट</value>
   </data>
@@ -1700,6 +1861,63 @@ Linux: ip addr  या  hostname -I</value>
   <data name="AlertSeverity_Critical" xml:space="preserve">
     <value>गंभीर</value>
   </data>
+  <data name="Settings_Alerts_Title" xml:space="preserve">
+    <value>सेंसर अलर्ट</value>
+  </data>
+  <data name="Settings_Alerts_Empty" xml:space="preserve">
+    <value>कोई अलर्ट कॉन्फ़िगर नहीं किया गया है। एक सेट करने के लिए कैनवस पर सेंसर कार्ड पर राइट-क्लिक करें।</value>
+  </data>
+  <data name="Settings_Alerts_Edit" xml:space="preserve">
+    <value>संपादित करें</value>
+  </data>
+  <data name="Settings_Alerts_CopyTo" xml:space="preserve">
+    <value>इसमें कॉपी करें…</value>
+  </data>
+  <data name="Settings_Alerts_Remove" xml:space="preserve">
+    <value>हटाएं</value>
+  </data>
+  <data name="Settings_Alerts_AcknowledgeAll" xml:space="preserve">
+    <value>सभी स्वीकार करें</value>
+  </data>
+  <data name="Settings_Alerts_ResetAll" xml:space="preserve">
+    <value>सभी अलर्ट रीसेट करें</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmTitle" xml:space="preserve">
+    <value>सभी सेंसर अलर्ट रीसेट करें?</value>
+  </data>
+  <data name="Settings_Alerts_ResetConfirmBody" xml:space="preserve">
+    <value>इससे {0} अलर्ट हट जाएंगे। आपकी प्रोफ़ाइल में कुछ और नहीं बदलेगा।</value>
+  </data>
+  <data name="Settings_Alerts_TrippedAt" xml:space="preserve">
+    <value>{0} बजे ट्रिप हुआ · {1}</value>
+  </data>
+  <data name="CopyAlert_Title" xml:space="preserve">
+    <value>{0} से अलर्ट कॉपी करें: {1}</value>
+  </data>
+  <data name="CopyAlert_Filter" xml:space="preserve">
+    <value>सेंसर फ़िल्टर करें…</value>
+  </data>
+  <data name="CopyAlert_ShowAll" xml:space="preserve">
+    <value>सभी सेंसर दिखाएं</value>
+  </data>
+  <data name="CopyAlert_Apply" xml:space="preserve">
+    <value>{0} पर लागू करें</value>
+  </data>
+  <data name="CopyAlert_OverwriteHint" xml:space="preserve">
+    <value>चयनित सेंसर पर मौजूदा अलर्ट अधिलेखित हो जाएगा</value>
+  </data>
+  <data name="Alert_Notify_Title" xml:space="preserve">
+    <value>{0} {1} तक पहुंचा</value>
+  </data>
+  <data name="Alert_Notify_Body" xml:space="preserve">
+    <value>अलर्ट: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellConfigured" xml:space="preserve">
+    <value>अलर्ट: {0} {1} · {2}</value>
+  </data>
+  <data name="Canvas_AlertBellTripped" xml:space="preserve">
+    <value>{0} पर ट्रिप हुआ ({1})। स्वीकार करने के लिए क्लिक करें.</value>
+  </data>
   <data name="Canvas_UndoTooltip" xml:space="preserve">
     <value>पूर्ववत करें (Ctrl+Z)</value>
   </data>
@@ -1733,27 +1951,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>पिक्सेल में नियॉन चमक मोटाई</value>
   </data>
-  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
-    <value>रंग पैलेट थीम हाइलाइट चुनें</value>
-  </data>
-  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
-    <value>नियॉन वायलेट थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
-    <value>साइबर स्यान थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
-    <value>हॉट पिंक/मजेंटा थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
-    <value>सोलर गोल्ड/एम्बर थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
-    <value>पन्ना हरा थीम चुनें</value>
-  </data>
-  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
-    <value>क्रिमसन रोज थीम चुनें</value>
-  </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>स्टार्टअप स्वागत स्प्लैश स्क्रीन अनुक्रम एनीमेशन की शैली चुनें</value>
   </data>
@@ -1776,7 +1973,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पूर्ण पिक्सेल में ग्रिड प्लेसमेंट वृद्धि सीमा</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>कमांड पैलेट खोलें (Ctrl+Shift+P)</value>
+    <value>कमांड पैलेट खोलें (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>साइडबार टॉगल करें</value>
@@ -1787,23 +1984,53 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>क्या आपको फिर से वॉकथ्रू देखने की आवश्यकता है?</value>
   </data>
-  <data name="Tray_LiveHeader" xml:space="preserve">
-    <value>रेमेक्स लाइव</value>
-  </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>मुख्य विंडो दिखाएं</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>लाइव झलक</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>डार्क मोड पर स्विच करें</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>लाइट मोड पर स्विच करें</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>बाहर निकलें</value>
+  </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>लॉक करें</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>स्लीप</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>रिमोट</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>भेजें</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>हाइबरनेट करें</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>इसका उपयोग करने के लिए एक फ़ोन कनेक्ट करें</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>इस विंडो को पिन करें</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>इस विंडो को अनपिन करें</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>ट्रांसफ़र खोलें</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>डिवाइस पेयर करें</value>
+  </data>
+  <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
+    <value>लॉग फ़ोल्डर खोलें</value>
+  </data>
+  <data name="Busy_Loading" xml:space="preserve">
+    <value>लोड हो रहा है…</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>RemEx स्थिति</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>RemEx विंडो को पिन या अनपिन करें</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>ऑटो (स्मार्ट)</value>
@@ -2039,6 +2266,12 @@ Linux: ip addr  या  hostname -I</value>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>चयनित आइटम का विवरण और पूर्वावलोकन दिखाएं।</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>सभी रद्द करें</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>चल रहे या प्रतीक्षारत सभी स्थानांतरण रद्द करें</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>पूर्ण हटाएं</value>
   </data>
@@ -2096,12 +2329,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>इस फ़ोल्डर में खोजें…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>फ़ोन पर भेजें</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>इस पीसी पर फ़ाइलें चुनें और उन्हें कनेक्टेड डिवाइस के वर्तमान फ़ोल्डर में भेजें।</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>दिनांक</value>
   </data>
@@ -2116,6 +2343,12 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>पूर्ण-डिवाइस एक्सेस नहीं दी गई।</value>
+  </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>उस डिवाइस से पूछा नहीं जा सका — यह अभी कनेक्ट नहीं है। इसे फिर से कनेक्ट करके पुनः प्रयास करें।</value>
+  </data>
+  <data name="FileTransfer_VolumesHostPromptTimedOut" xml:space="preserve">
+    <value>दूसरे डिवाइस के संकेत का समय पर उत्तर नहीं दिया गया। पुनः प्रयास करें।</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>ड्राइव की सूची नहीं मिल सकी। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
@@ -2267,9 +2500,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Remote_WakeInstruction" xml:space="preserve">
     <value>इसे सेट करने के लिए: अपने फ़ोन पर RemEx ऐप खोलें, सेटिंग्स → Wake-on-LAN पर जाएं।</value>
   </data>
-  <data name="Custom_Typography" xml:space="preserve">
-    <value>टाइपोग्राफी</value>
-  </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>पेज शीर्षक फ़ॉन्ट</value>
   </data>
@@ -2305,6 +2535,9 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Logs_ExportAs" xml:space="preserve">
     <value>इसे इस रूप में निर्यात करें:</value>
+  </data>
+  <data name="Logs_ExportScope" xml:space="preserve">
+    <value>दायरा:</value>
   </data>
   <data name="Logs_Export" xml:space="preserve">
     <value>निर्यात</value>
@@ -2516,6 +2749,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>सेंसर लाइब्रेरी</value>
   </data>
+  <data name="A11y_StagedSensorStale" xml:space="preserve">
+    <value>हाल ही में नहीं देखा गया</value>
+  </data>
   <data name="Faq_Q13_Question" xml:space="preserve">
     <value>RemEx को चलने के लिए विशेष अनुमति क्यों चाहिए?</value>
   </data>
@@ -2602,9 +2838,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>मोनोक्रोम</value>
   </data>
-  <data name="Custom_BgType_Mica" xml:space="preserve">
-    <value>Mica</value>
-  </data>
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
@@ -2635,11 +2868,26 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
     <value>फ्रूट सलाद</value>
   </data>
-  <data name="Custom_Scheme_Content" xml:space="preserve">
-    <value>कॉन्टेंट के आधार पर</value>
+  <data name="Custom_TonalRamp_Primary" xml:space="preserve">
+    <value>प्राइमरी</value>
   </data>
-  <data name="Custom_Scheme_Spritz" xml:space="preserve">
-    <value>Spritz</value>
+  <data name="Custom_TonalRamp_Secondary" xml:space="preserve">
+    <value>सेकेंडरी</value>
+  </data>
+  <data name="Custom_TonalRamp_Tertiary" xml:space="preserve">
+    <value>टर्शियरी</value>
+  </data>
+  <data name="Custom_TonalRamp_Neutral" xml:space="preserve">
+    <value>न्यूट्रल</value>
+  </data>
+  <data name="Custom_TonalRamp_PrimaryPair" xml:space="preserve">
+    <value>प्राइमरी / ऑन प्राइमरी</value>
+  </data>
+  <data name="Custom_TonalRamp_SurfacePair" xml:space="preserve">
+    <value>सरफ़ेस / ऑन सरफ़ेस</value>
+  </data>
+  <data name="Custom_TonalRamp_ErrorPair" xml:space="preserve">
+    <value>एरर / ऑन एरर</value>
   </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
     <value>"{0}" (PID {1}) बंद नहीं किया जा सका। कुछ भी नहीं बदला। सूची ताज़ा करें और फिर कोशिश करें।</value>
@@ -2747,14 +2995,15 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>RemEx का रूप कैसे बदलें?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>«Personalize appearance» बटन से Personalize पैनल खोलें।
+    <value>«दिखावट वैयक्तिकृत करें» बटन से वैयक्तिकृत करें पैनल खोलें।
 
 आप बदल सकते हैं:
-• थीम (CyberNOC, Monolith, SolarFlare या BaseDarkGlass)
-• एक्सेंट रंग और पैलेट
-• कार्ड के कोनों की त्रिज्या और आकार
-• फ़ॉन्ट और उसका आकार
-• कार्ड की अपारदर्शिता
+• अपने पैलेट का सीड रंग — इसे कलर व्हील से चुनें, हेक्स कोड टाइप करें, Windows के एक्सेंट से मिलाएं, या अपने वॉलपेपर से लें
+• लाइट, डार्क या सिस्टम मोड, और कंट्रास्ट
+• स्कीम वेरिएंट और बैकग्राउंड मटीरियल
+• कोनों की त्रिज्या, ग्लास की अपारदर्शिता और ग्लो की तीव्रता
+• स्प्लैश स्क्रीन का स्टाइल
+• पेज टाइटल और कंटेंट के फ़ॉन्ट, और UI स्केल
 • ऐप की भाषा, आपके Windows या Linux की भाषा से अलग</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -2762,6 +3011,21 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>हाँ। सेटिंग्स खोलें और सहायता अनुभाग में «ट्यूटोरियल दोबारा चलाएँ» चुनें। आप इसे जितनी बार चाहें कर सकते हैं।</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>फ़ाइल उससे तेज़ आ रही है जितनी तेज़ी से चुना गया फ़ोल्डर उसे सहेज सकता है, इसलिए डाउनलोड पूरा नहीं हो सका। USB ड्राइव या नेटवर्क फ़ोल्डर के बजाय इस कंप्यूटर की मुख्य ड्राइव के किसी फ़ोल्डर में सहेजकर देखें।</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>डाउनलोड सहेजा नहीं जा सका। हो सकता है चुनी गई ड्राइव में जगह न बची हो, या कोई USB ड्राइव निकाल दी गई हो। जाँचें कि जगह बची है और ड्राइव अब भी जुड़ी है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>फ़ाइल पढ़ी नहीं जा सकी। हो सकता है वह किसी दूसरे प्रोग्राम में खुली हो, या जिस ड्राइव पर वह है वह निकाल दी गई हो। उसे दूसरे प्रोग्राम में बंद करें, जाँचें कि ड्राइव जुड़ी है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx के पास डाउनलोड को वहाँ सहेजने की अनुमति नहीं है। हो सकता है फ़ोल्डर सुरक्षित हो, या जिस फ़ाइल को बदला जा रहा है वह केवल पढ़ने के लिए हो। कोई दूसरा फ़ोल्डर या दूसरा नाम आज़माएँ — आमतौर पर दस्तावेज़ या डाउनलोड फ़ोल्डर काम करता है।</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx के पास उस फ़ाइल को पढ़ने की अनुमति नहीं है। हो सकता है वह किसी दूसरे उपयोगकर्ता की हो, या उसकी अनुमतियाँ इसकी इजाज़त न दें। अपने फ़ोल्डरों की कोई फ़ाइल आज़माएँ, या PC के मालिक से पहुँच माँगें।</value>
   </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>डाउनलोड की गई फ़ाइल PC से भेजी गई फ़ाइल से मेल नहीं खाती, इसलिए उसे हटा दिया गया। फिर से डाउनलोड करें।</value>
@@ -2777,5 +3041,428 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>कनेक्शन स्थिति: कनेक्ट नहीं है</value>
+  </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>सिस्टम की स्थिति</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>RemEx को जिन चीज़ों की ज़रूरत है, वे सब काम कर रही हैं।</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>इसका मतलब</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>बंद करें</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx को प्रशासक के रूप में चलना चाहिए। इसके बिना पेयरिंग और रिमोट कंट्रोल काम नहीं करेंगे। RemEx बंद करके उसे Run as administrator से फिर से शुरू करें।</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx उस प्रमाणपत्र को नहीं पढ़ सका जो आपके फ़ोन को इस पीसी की पहचान बताता है। RemEx को प्रशासक के रूप में पुनः आरंभ करने पर वह फिर से बन जाता है।</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>जिस पोर्ट से आपका फ़ोन जुड़ता है, उस पर कुछ सुन नहीं रहा। हो सकता है RemEx अभी शुरू हो रहा हो या कोई दूसरा प्रोग्राम उस पोर्ट का उपयोग कर रहा हो। RemEx पुनः आरंभ करें, और बार-बार हो तो सेटिंग्स में पोर्ट बदलें।</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>फ़ायरवॉल आने वाले कनेक्शन रोक रहा है, इसलिए आपका फ़ोन इस पीसी को देख सकता है पर जुड़ नहीं सकता। निजी नेटवर्क के लिए फ़ायरवॉल में RemEx को अनुमति दें। चालू पीसी तक फ़ोन के न पहुँचने का यह सबसे आम कारण है।</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>इसे ठीक करें</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>फिर से जाँचें</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>एडमिनिस्ट्रेटर अधिकार</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx को जिन एडमिनिस्ट्रेटर अधिकारों की ज़रूरत है, वे उसे मिले हुए हैं।</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>हो सकता है RemEx के पास पूरे एडमिनिस्ट्रेटर अधिकार न हों। कुछ काम बिना किसी चेतावनी के विफल हो सकते हैं।</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx एडमिनिस्ट्रेटर के रूप में नहीं चल रहा है। जब तक ऐसा नहीं होता, फ़ोन जोड़ना और इस PC को नियंत्रित करना काम नहीं करेगा।</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx यह जाँच नहीं सका कि उसके पास एडमिनिस्ट्रेटर अधिकार हैं या नहीं। अगर फ़ोन जोड़ना या रिमोट कंट्रोल विफल हो, तो सबसे पहले यही देखें।</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>सुरक्षा प्रमाणपत्र</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>इस PC का सुरक्षा प्रमाणपत्र मौजूद है और पढ़ा जा सकता है।</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>इस PC के सुरक्षा प्रमाणपत्र में कोई समस्या है। हो सकता है फ़ोन कनेक्ट न हो पाएँ।</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>इस PC का सुरक्षा प्रमाणपत्र पढ़ा नहीं जा सका, इसलिए कोई भी फ़ोन कनेक्ट नहीं हो सकता। इसे मिटाएँ या बदलें नहीं — ऐसा करने पर आपके सभी जुड़े हुए फ़ोन कट जाएँगे और हर एक को दोबारा जोड़ना पड़ेगा।</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx इस PC के सुरक्षा प्रमाणपत्र की जाँच नहीं कर सका। अगर फ़ोन कनेक्ट न हो पाएँ, तो सबसे पहले यही देखें।</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>कनेक्शन स्वीकार करना</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx चल रहा है और इस PC पर कनेक्शन स्वीकार कर रहा है।</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>हो सकता है RemEx कनेक्शन स्वीकार न कर रहा हो। आपका फ़ोन शायद कनेक्ट न हो पाए।</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx कनेक्शन स्वीकार नहीं कर रहा है, इसलिए कोई भी फ़ोन इस PC से कनेक्ट नहीं हो सकता।</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx यह जाँच नहीं सका कि वह कनेक्शन स्वीकार कर रहा है या नहीं। अगर आपका फ़ोन कनेक्ट न हो पाए, तो सबसे पहले यही देखें।</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>फ़ायरवॉल</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>फ़ायरवॉल RemEx को जाने देने के लिए सेट है।</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>हो सकता है फ़ायरवॉल RemEx को रोक रहा हो। अगर आपका फ़ोन इस PC को न ढूँढ़ पाए, तो यहीं से शुरू करें।</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>फ़ायरवॉल RemEx को रोक रहा है, इसलिए आपका फ़ोन इस PC तक नहीं पहुँच पाएगा।</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx फ़ायरवॉल की जाँच नहीं कर सका। अगर आपका फ़ोन इस PC को न ढूँढ़ पाए, तो इसे खुद देखें।</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>साइन इन पर शुरू करें</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>जब आप इस PC में साइन इन करते हैं, तो RemEx अपने आप शुरू हो जाता है।</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx साइन इन पर शुरू होने के लिए सेट नहीं है, इसलिए आपके फ़ोन के कनेक्ट होने से पहले आपको इसे खुद खोलना होगा।</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx को साइन इन पर शुरू होने के लिए सेट नहीं किया जा सका, इसलिए आपको इसे हर बार खुद खोलना होगा।</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx यह जाँच नहीं सका कि वह साइन इन पर शुरू होता है या नहीं। यहाँ जो दिख रहा है, वह आपके PC से मेल न खाता हो।</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx इस PC की जाँच नहीं कर सका, क्योंकि RemEx का जाँच करने वाला हिस्सा नहीं चल रहा है। जब तक वह नहीं चलेगा, आपका फ़ोन कनेक्ट नहीं हो पाएगा।</value>
+  </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>फ़ाइल मिली</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>आपके फ़ोन से {0} आ गई।</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>डायग्नोस्टिक्स निर्यात हो गए</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>{0} में सहेजा गया।</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx ठीक से शुरू नहीं हुआ</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>RemEx का एक हिस्सा शुरू नहीं हो सका, इसलिए कुछ चीज़ें काम नहीं करेंगी। विवरण डायग्नोस्टिक्स में हैं।</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>फ़ाइल का अनुरोध अस्वीकार किया गया</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx अनुमति का संकेत नहीं दिखा सका, इसलिए उसने आपकी ओर से यह अनुरोध अस्वीकार कर दिया।</value>
+  </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>प्रमाणपत्र फ़िंगरप्रिंट</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>अगर आपका फ़ोन चेतावनी दे कि इस PC का प्रमाणपत्र बदल गया है, तो वहाँ दिख रहे मान की तुलना इससे करें।</value>
+  </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>कोई फ़ोन कनेक्ट नहीं है</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 फ़ोन कनेक्ट है</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} कनेक्ट है</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} फ़ोन कनेक्ट हैं</value>
+  </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>फ़ोन स्थिति: कनेक्ट है</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>फ़ोन स्थिति: कोई फ़ोन कनेक्ट नहीं है</value>
+  </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>इस PC पर RemEx नहीं चल रहा है</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>फ़ोन</value>
+  </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>युग्मित डिवाइस</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>इस पीसी से अभी तक कोई फ़ोन युग्मित नहीं है।</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>अज्ञात</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>पहली बार युग्मित</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>अंतिम बार देखा गया</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>रीफ़्रेश करें</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>डिवाइस स्थिति: कनेक्ट है</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>डिवाइस स्थिति: कनेक्ट नहीं है</value>
+  </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>यह पिन समाप्त हो गया है।</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>नया पिन प्राप्त करें</value>
+  </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>नाम बदलें</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>नया नाम</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>डिवाइस आईडी पर लौटने के लिए नाम खाली छोड़ें।</value>
+  </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>इस फ़ोन को अनपेयर करें?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} अब इस पीसी से कनेक्ट नहीं हो पाएगा। दोबारा इस्तेमाल करने के लिए आपको इसे नए पिन के साथ फिर से पेयर करना होगा। इसे पूर्ववत नहीं किया जा सकता।</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>अनपेयर करें</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>डिवाइस अनपेयर हो गया</value>
+  </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>अनपेयर पूरा नहीं हो सका: {0}। RemEx के अगली बार शुरू होने पर यह डिवाइस वापस आ सकता है — तब इसे फिर से अनपेयर करें।</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>आधार मोड</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>हल्का, गहरा, या ऑपरेटिंग सिस्टम की सेटिंग का पालन करें।</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>हल्का</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>गहरा</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>सिस्टम</value>
+  </data>
+  <data name="Shell_StatusTooltipAddressLine" xml:space="preserve">
+    <value>{0}&#xD;&#xA;पता: {1}</value>
+  </data>
+  <data name="Shell_StatusFlyoutAddress" xml:space="preserve">
+    <value>पता</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
+    <value>होस्ट लिंक</value>
+  </data>
+  <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
+    <value>विलंबता</value>
+  </data>
+  <data name="Shell_StatusFlyoutHostRuntime" xml:space="preserve">
+    <value>रनटाइम</value>
+  </data>
+  <data name="A11y_ConnectionStatusButton" xml:space="preserve">
+    <value>कनेक्शन स्थिति</value>
+  </data>
+  <data name="Custom_CopyPaletteAxaml" xml:space="preserve">
+    <value>AXAML के रूप में कॉपी करें</value>
+  </data>
+  <data name="Custom_ExportPaletteJson" xml:space="preserve">
+    <value>JSON के रूप में निर्यात करें</value>
+  </data>
+  <data name="Custom_ImportPaletteJson" xml:space="preserve">
+    <value>JSON आयात करें</value>
+  </data>
+  <data name="Custom_PaletteFileType" xml:space="preserve">
+    <value>RemEx पैलेट</value>
+  </data>
+  <data name="Notification_PaletteCopied_Title" xml:space="preserve">
+    <value>पैलेट कॉपी हो गया</value>
+  </data>
+  <data name="Notification_PaletteCopied_Message" xml:space="preserve">
+    <value>इसे किसी भी Avalonia ResourceDictionary में पेस्ट करें।</value>
+  </data>
+  <data name="Notification_PaletteImported_Title" xml:space="preserve">
+    <value>पैलेट आयात हुआ</value>
+  </data>
+  <data name="Notification_PaletteImported_Message" xml:space="preserve">
+    <value>{0}, {1} लागू किया गया।</value>
+  </data>
+  <data name="Custom_PaletteImportInvalid" xml:space="preserve">
+    <value>वह फ़ाइल RemEx पैलेट नहीं है।</value>
+  </data>
+  <data name="Custom_Scheme_Neutral" xml:space="preserve">
+    <value>तटस्थ</value>
+  </data>
+  <data name="Custom_Scheme_Monochrome" xml:space="preserve">
+    <value>एकवर्णी</value>
+  </data>
+  <data name="Custom_BgType_Aurora" xml:space="preserve">
+    <value>ऑरोरा</value>
+  </data>
+  <data name="Custom_WallpaperSource" xml:space="preserve">
+    <value>वॉलपेपर स्रोत</value>
+  </data>
+  <data name="Custom_WallpaperSource_Desktop" xml:space="preserve">
+    <value>डेस्कटॉप वॉलपेपर</value>
+  </data>
+  <data name="Custom_WallpaperSource_Image" xml:space="preserve">
+    <value>एक छवि चुनें</value>
+  </data>
+  <data name="Custom_ChooseWallpaperImage" xml:space="preserve">
+    <value>छवि चुनें…</value>
+  </data>
+  <data name="Custom_WallpaperBlur" xml:space="preserve">
+    <value>धुंधलापन</value>
+  </data>
+  <data name="Custom_WallpaperUnavailable" xml:space="preserve">
+    <value>वॉलपेपर छवि लोड नहीं हो सकी, इसलिए अभी एक ठोस पृष्ठभूमि दिखाई जा रही है। फिर से प्रयास करने के लिए दूसरी छवि चुनें।</value>
+  </data>
+  <data name="Custom_WallpaperImageCopyFailed" xml:space="preserve">
+    <value>उस छवि की प्रतिलिपि नहीं बनाई जा सकी, इसलिए पिछली छवि रखी गई है।</value>
+  </data>
+  <data name="Custom_SavePalette" xml:space="preserve">
+    <value>वर्तमान सहेजें</value>
+  </data>
+  <data name="Custom_UserPalettes" xml:space="preserve">
+    <value>आपके पैलेट</value>
+  </data>
+  <data name="Custom_BuiltInPresets" xml:space="preserve">
+    <value>अंतर्निर्मित</value>
+  </data>
+  <data name="Custom_DeletePalette" xml:space="preserve">
+    <value>पैलेट हटाएँ</value>
+  </data>
+  <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
+    <value>पैलेट का नाम</value>
+  </data>
+  <data name="Custom_SectionColor" xml:space="preserve">
+    <value>रंग</value>
+  </data>
+  <data name="Custom_SectionMode" xml:space="preserve">
+    <value>मोड</value>
+  </data>
+  <data name="Custom_SectionLook" xml:space="preserve">
+    <value>रूप</value>
+  </data>
+  <data name="Custom_SectionBehaviour" xml:space="preserve">
+    <value>व्यवहार</value>
+  </data>
+  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
+    <value>सहेजे गए पैलेट</value>
+  </data>
+  <data name="Custom_ColorSource" xml:space="preserve">
+    <value>स्रोत</value>
+  </data>
+  <data name="Custom_MatchPhoneTheme" xml:space="preserve">
+    <value>मेरे फ़ोन से मिलाएं</value>
+  </data>
+  <data name="Custom_Source_WindowsAccent" xml:space="preserve">
+    <value>Windows एक्सेंट</value>
+  </data>
+  <data name="Custom_Source_Wallpaper" xml:space="preserve">
+    <value>वॉलपेपर</value>
+  </data>
+  <data name="Custom_Source_Custom" xml:space="preserve">
+    <value>कस्टम</value>
+  </data>
+  <data name="Custom_CurrentWindowsAccent" xml:space="preserve">
+    <value>वर्तमान Windows एक्सेंट रंग</value>
+  </data>
+  <data name="Custom_RefreshWallpaperSeeds" xml:space="preserve">
+    <value>रीफ़्रेश करें</value>
+  </data>
+  <data name="Custom_Vibrancy" xml:space="preserve">
+    <value>जीवंतता</value>
+  </data>
+  <data name="Custom_Strategy" xml:space="preserve">
+    <value>रणनीति</value>
+  </data>
+  <data name="Custom_Preview" xml:space="preserve">
+    <value>पूर्वावलोकन</value>
+  </data>
+  <data name="Custom_SampleCardTitle" xml:space="preserve">
+    <value>नमूना कार्ड</value>
+  </data>
+  <data name="Custom_SampleCardBody" xml:space="preserve">
+    <value>कार्ड और टेक्स्ट ऐसे दिखेंगे।</value>
+  </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>यह नाम पहले से इस्तेमाल में है</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>“{0}” पहले से ही इस फ़ोल्डर में है। आप दोनों फ़ाइलें रख सकते हैं, जो वहाँ है उसे बदल सकते हैं, या इस आइटम को छोड़ सकते हैं।</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>“{0}” पहले से यहाँ है, लेकिन यह अलग तरह का आइटम है — जहाँ आप फ़ाइल चिपका रहे हैं वहाँ फ़ोल्डर है, या इसका उल्टा। दोनों रखें या इस आइटम को छोड़ दें।</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>“{0}” का नया नाम बनने से ठीक पहले किसी और ने ले लिया। कोई खाली नाम चुनने के लिए “दोनों रखें” फिर आज़माएँ, या इस आइटम को छोड़ दें।</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>“{0}” को यहाँ नया नाम नहीं दिया जा सकता, क्योंकि नया नाम इस फ़ोल्डर के लिए बहुत लंबा होगा। इस आइटम को छोड़ दें, या चिपकाना रोककर पहले नाम छोटा करें।</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>“{0}” को यहाँ चिपकाया नहीं जा सका, और आपके डिवाइस ने जो कारण बताया उसे यह पीसी नहीं पहचानता। इस आइटम को छोड़ दें या चिपकाना रोक दें।</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>दोनों रखें</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>आपका डिवाइस नया नाम चुनता है, इसलिए कुछ भी नहीं मिटेगा।</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>बदलें</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>जो आइटम पहले से है उसे मिटाकर बदल देता है। इसे वापस नहीं किया जा सकता।</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>छोड़ें</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>इस आइटम को वैसे ही रहने दें और बाकी के साथ आगे बढ़ें।</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>चिपकाना रोकें</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>यहीं रोक दें। जो अभी चिपकाया नहीं गया वह वैसा ही रहेगा।</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>चिपकाना रोक दिया गया। जो आइटम चिपकाए नहीं गए वे अब भी क्लिपबोर्ड में हैं।</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>“{0}” के रूप में सहेजा गया, इसलिए पहले से मौजूद आइटम बना रहा।</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>कई कोशिशों के बाद “{0}” छोड़ दिया गया। उस आइटम में कुछ नहीं बदला।</value>
   </data>
 </root>

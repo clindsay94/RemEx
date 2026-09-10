@@ -1,4 +1,6 @@
 using System.Globalization;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Data.Converters;
 
 namespace Remex.Desktop.Converters;
@@ -88,6 +90,32 @@ public class IntNotEqualConverter : IValueConverter
 }
 
 /// <summary>
+/// Bridges <c>ShellViewModel.IsReducedMotion</c> to the tutorial Carousel's PageTransition
+/// (RemEx-9iz00.1): a short Material-eased horizontal slide normally, or <c>null</c> - no
+/// transition at all - when the user has asked for reduced motion.
+/// </summary>
+public class BoolToPageTransitionConverter : IValueConverter
+{
+    public static readonly BoolToPageTransitionConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is true)
+            return null;
+
+        var easing = new CubicEaseOut();
+        return new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Horizontal)
+        {
+            SlideInEasing = easing,
+            SlideOutEasing = easing,
+        };
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Converts a boolean to one of two strings.
 /// Pass "TrueString|FalseString" as the parameter (e.g. "✓|✕").
 /// </summary>
@@ -126,6 +154,31 @@ public class LatencyToHeightConverter : IValueConverter
             return height;
         }
         return 2.0;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// Multiplies a bound double by a fixed factor parsed from the ConverterParameter, clamped to
+/// [0, 1]. Used to scale the Mica/Acrylic canvas base-tint veils by Customization.GlassOpacity
+/// (RemEx-mmrgc): "Clear" (0.01) leaves the OS backdrop almost bare, "Frosted" (1.0) reproduces
+/// the fixed ceiling passed as ConverterParameter rather than going fully opaque.
+/// </summary>
+public class MultiplyConverter : IValueConverter
+{
+    public static readonly MultiplyConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is double d &&
+            parameter is string s &&
+            double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var factor))
+        {
+            return Math.Clamp(d * factor, 0.0, 1.0);
+        }
+        return 0.0;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

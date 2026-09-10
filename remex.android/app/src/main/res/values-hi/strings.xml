@@ -88,9 +88,9 @@
     <string name="settings_tab_input">इनपुट</string>
     <string name="settings_tab_file_transfer">फ़ाइल ट्रांसफर</string>
     <string name="settings_tab_help">सहायता</string>
-    <string name="settings_help_title">सहायता और विवरण</string>
+    <string name="settings_help_title">सहायता</string>
     <string name="settings_replay_tutorial">📖 ट्यूटोरियल फिर से देखें</string>
-    <string name="settings_replay_tutorial_body">शुरुआती गाइड को फिर से देखें जिसमें सेटअप, ऑटो-डिस्कवरी, आईपी ढूँढना और पीसी से कनेक्ट करना शामिल है।</string>
+    <string name="settings_replay_tutorial_body">सेटअप, क्यूआर पेयरिंग, मैनुअल कनेक्शन और दैनिक उपयोग के सुझावों के लिए शुरुआती वॉकथ्रू को फिर से देखें।</string>
     <string name="settings_faq_hint">कोई सवाल है? ओवरफ्लो मेनू (⋮ → FAQ) से उपलब्ध FAQ देखें।</string>
     <string name="screen_app_launcher_title">ऐप लॉन्चर</string>
     <string name="app_launcher_no_apps">कोई ऐप नहीं मिला</string>
@@ -117,6 +117,24 @@
     <string name="rc_category_session">सत्र</string>
     <string name="rc_category_power">पावर</string>
     <string name="rc_category_energy">ऊर्जा</string>
+    <string name="rc_media_volume_down">आवाज़ कम करें</string>
+    <string name="rc_media_volume_up">आवाज़ बढ़ाएँ</string>
+    <string name="rc_media_mute">म्यूट करें</string>
+    <string name="rc_media_previous">पिछला ट्रैक</string>
+    <string name="rc_media_play_pause">चलाएँ या रोकें</string>
+    <string name="rc_media_play">चलाएँ</string>
+    <string name="rc_media_pause">रोकें</string>
+    <string name="rc_media_next">अगला ट्रैक</string>
+    <string name="rc_media_hint">आवाज़ बदलते रहने के लिए वॉल्यूम बटन दबाए रखें।</string>
+    <string name="rc_media_unavailable">यह पीसी कुंजी दबाने को स्वीकार करने के लिए सेट नहीं है, इसलिए ये बटन कुछ नहीं करेंगे।</string>
+    <string name="rc_media_disconnected">इन नियंत्रणों का उपयोग करने के लिए अपने पीसी से कनेक्ट करें।</string>
+    <string name="rc_media_state_playing">चल रहा है</string>
+    <string name="rc_media_state_paused">रोका गया</string>
+    <string name="rc_media_state_idle">कुछ भी नहीं चल रहा है</string>
+    <string name="rc_media_now_playing">अभी चल रहा है</string>
+    <string name="rc_media_open_now_playing">“अभी चल रहा है” खोलें</string>
+    <string name="rc_media_artwork">एल्बम कवर</string>
+    <string name="rc_media_seek">प्लेबैक स्थिति खोजें</string>
     <string name="screen_remote_desktop_title">रिमोट डेस्कटॉप</string>
     <string name="cd_show_keyboard">कीबोर्ड दिखाएं</string>
     <string name="cd_key_escape">Esc (एस्केप)</string>
@@ -133,8 +151,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (होम)</string>
+    <string name="cd_key_end">End (समाप्त)</string>
     <string name="cd_key_pageup">PgUp (पृष्ठ ऊपर)</string>
     <string name="cd_key_pagedown">PgDn (पृष्ठ नीचे)</string>
     <string name="cd_key_insert">Ins (सम्मिलित करें)</string>
@@ -167,7 +185,7 @@
     <string name="dashboard_pc_status">पीसी स्थिति</string>
     <string name="dashboard_pc_status_subtitle">कनेक्शन स्थिति ऑर्ब</string>
     <string name="dashboard_wake_pc">पीसी जगाएं</string>
-    <string name="dashboard_wake_pc_subtitle">WOL मैजिक पैकेट भेजें</string>
+    <string name="dashboard_wake_pc_subtitle">WOL वेक सिग्नल भेजें</string>
     <string name="dashboard_telemetry_fallback">टेलीमेट्री</string>
     <string name="dashboard_card_drawer_title">कार्ड दराज</string>
     <string name="dashboard_card_drawer_hint">कार्ड रखने के लिए चेक करें, हटाने के लिए अनचेक करें, या कार्ड को कैनवास पर खींचें।</string>
@@ -175,11 +193,10 @@
     <string name="dashboard_host_online">पीसी ऑनलाइन</string>
     <string name="dashboard_connecting">कनेक्ट हो रहा है…</string>
     <string name="dashboard_tap_to_connect">कनेक्ट करने के लिए टैप करें</string>
+    <string name="dashboard_connection_card_action">अपने पीसी से कनेक्ट करें</string>
     <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
     <string name="screen_connection_title">कनेक्शन</string>
-    <string name="screen_splash_title">लोड हो रहा है</string>
-    <string name="screen_tutorial_title">ट्यूटोरियल</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
     <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपके पीसी पर RemEx ऐप चल रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
     <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>
@@ -221,6 +238,21 @@
     <string name="connection_status_label">स्थिति: %1$s</string>
     <string name="connection_paired">पेयर किया गया</string>
     <string name="connection_unpair">अनपेयर करें</string>
+    <string name="connection_known_pcs_title">ज्ञात पीसी</string>
+    <string name="connection_known_pcs_hint">कनेक्ट करने के लिए किसी पते पर टैप करें।</string>
+    <string name="connection_known_pc_last_connected">पिछला कनेक्शन: %1$s</string>
+    <string name="connection_known_pc_never_connected">अभी तक कनेक्ट नहीं हुआ</string>
+    <string name="connection_known_pc_actions">%1$s के विकल्प</string>
+    <string name="connection_known_pc_rename">नाम बदलें</string>
+    <string name="connection_known_pc_rename_title">इस पीसी को नाम दें</string>
+    <string name="connection_known_pc_nickname_label">उपनाम</string>
+    <string name="connection_known_pc_unpair_title">%1$s को अनपेयर करें?</string>
+    <string name="connection_known_pc_unpair_message">यह फ़ोन इस पीसी को उन सभी पतों पर भूल जाएगा जिन पर वह जवाब देता है। दोबारा पेयर करने के लिए आपको पीसी पर दिख रहा पिन चाहिए होगा।</string>
+    <string name="connection_known_pc_needs_pairing">पेयरिंग ज़रूरी है</string>
+    <string name="connection_known_pc_forget">सूची से हटाएँ</string>
+    <string name="connection_known_pc_pair_title">%1$s के साथ पेयर करें?</string>
+    <string name="connection_known_pc_pair_message">यह फ़ोन इस पते पर पेयर नहीं है। पीसी पर दिख रहा 6-अंकों का पिन डालें।</string>
+    <string name="connection_known_pc_pair_confirm">पेयर करें</string>
     <string name="pairing_title">सुरक्षित पेयरिंग</string>
     <string name="pairing_prompt">अपने पीसी पर दिखाया गया 6 अंकों का पिन दर्ज करें</string>
     <string name="pairing_auto_pin_failed">PIN अपने आप प्राप्त नहीं हो सका — अपने PC पर दिखाई गई PIN दर्ज करें.</string>
@@ -315,6 +347,8 @@
     <string name="tile_hibernate_label">पीसी को हाइबरनेट करें</string>
     <string name="tile_monitor_off_label">मॉनिटर बंद करें</string>
     <string name="tile_wol_label">वेक ऑन लैन</string>
+    <string name="tile_confirm_title">कार्रवाई की पुष्टि करें</string>
+    <string name="tile_confirm_message">क्या अभी अपने पीसी पर \"%1$s\" भेजें?</string>
     <string name="screen_file_transfer_title">फ़ाइल ट्रांसफर</string>
     <string name="file_transfer_upload">अपलोड ↑</string>
     <string name="file_transfer_download">डाउनलोड ↓</string>
@@ -329,6 +363,54 @@
     <string name="file_transfer_notification_download_title">%1$s डाउनलोड किया जा रहा है</string>
     <string name="file_transfer_notification_preparing">ट्रांसफर की तैयारी की जा रही है…</string>
     <string name="file_transfer_notification_progress">%1$d में से %2$d बाइट्स ट्रांसफर हुए</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d कॉपी किया</item>
+        <item quantity="other">%1$d कॉपी किए</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d ले जाया गया</item>
+        <item quantity="other">%1$d ले जाए गए</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d विफल</item>
+        <item quantity="other">%1$d विफल</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d छोड़ा गया</item>
+        <item quantity="other">%1$d छोड़े गए</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s पहले से मौजूद है</string>
+    <string name="file_conflict_body_exists">गंतव्य फ़ोल्डर में इस नाम की फ़ाइल या फ़ोल्डर पहले से है।</string>
+    <string name="file_conflict_body_different_kind">गंतव्य फ़ोल्डर में इस नाम की किसी दूसरे प्रकार की चीज़ पहले से है।</string>
+    <string name="file_conflict_body_name_unusable">यह नाम गंतव्य फ़ोल्डर के लिए बहुत लंबा है।</string>
+    <string name="file_conflict_body_name_taken">सहेजने से पहले ही कोई और चीज़ यह नया नाम ले चुकी थी। दोबारा कोशिश करने पर दूसरा नाम चुना जाएगा।</string>
+    <string name="file_conflict_body_unknown">यह पूरा नहीं किया जा सकता।</string>
+    <string name="file_conflict_replace">बदलें</string>
+    <string name="file_conflict_keep_both">दोनों रखें</string>
+    <string name="file_conflict_skip">छोड़ें</string>
+    <string name="file_conflict_apply_to_all">शेष सभी पर लागू करें</string>
+    <string name="file_conflict_saved_as">%1$s के रूप में सहेजा गया</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">पूरा हो रहा है…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d सेकंड बाकी</item>
+        <item quantity="other">%1$d सेकंड बाकी</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d मिनट बाकी</item>
+        <item quantity="other">%1$d मिनट बाकी</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d घंटा बाकी</item>
+        <item quantity="other">%1$d घंटे बाकी</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">ट्रांसफर पूरा हुआ</string>
     <string name="file_transfer_notification_upload_complete">%1$s अपलोड हो गया</string>
     <string name="file_transfer_notification_upload_failed">%1$s भेजने में विफल</string>
@@ -418,7 +500,6 @@
     <string name="widget_toast_wol_sent">वेक-ऑन-लैन भेजा गया</string>
     <string name="widget_toast_not_connected">कनेक्ट नहीं है — कनेक्ट करने के लिए रेमेक्स खोलें</string>
     <string name="widget_toast_command_sent">%1$s भेजा गया</string>
-    <string name="widget_toast_launching">%1$s प्रारंभ किया जा रहा है…</string>
     <string name="widget_hardware_title">हार्डवेयर की जानकारी</string>
     <string name="sensor_cpu_usage">सीपीयू उपयोग</string>
     <string name="sensor_gpu_usage">जीपीयू उपयोग</string>
@@ -428,19 +509,20 @@
     <string name="sensor_gpu_temp">जीपीयू तापमान</string>
     <string name="sensor_fallback_label">सेंसर %1$d</string>
     <string name="about_android_client_label">एंड्रॉइड क्लाइंट</string>
+    <string name="about_build_id">बिल्ड %1$s</string>
     <string name="about_pc_host_label">आपका पीसी</string>
     <string name="about_status_unknown">अज्ञान</string>
     <string name="about_view_github">GitHub पर स्रोत कोड देखें</string>
-    <string name="about_whats_new_1_label">डैशबोर्ड 2.0</string>
-    <string name="about_whats_new_1_body">होम डैशबोर्ड नई तरह बनाया गया: हर कार्ड के लिए ग्राफ़ शैली चुनें, कार्ड का नाम बदलें, आकार चुनें, और ड्रैग व मल्टी-सिलेक्ट जेस्चर से पुनर्व्यवस्थित करें। पहली बार खोलने पर एक गाइडेड टूर इसे सिखाता है।</string>
-    <string name="about_whats_new_2_label">और स्मार्ट सेंसर कार्ड</string>
-    <string name="about_whats_new_2_body">कार्ड समझते हैं कि वे क्या माप रहे हैं: हर मेट्रिक के लिए दृश्य अपने आप चुना जाता है, शीर्षक बदले जा सकते हैं, और कुल RAM जैसी रीडिंग अब “डेटा एकत्र किया जा रहा है” पर अटकी नहीं रहतीं।</string>
-    <string name="about_whats_new_3_label">फ़ाइल साझा करना</string>
-    <string name="about_whats_new_3_body">रिज़्यूम समर्थन, SHA-256 सत्यापन और लाइव प्रगति के साथ दोनों दिशाओं में फ़ाइलें भेजें। किसी दूसरी ऐप से RemEx में साझा करना अब तब भी काम करता है जब RemEx पहले से चालू न हो।</string>
-    <string name="about_whats_new_4_label">एक्सप्रेसिव मोशन</string>
-    <string name="about_whats_new_4_body">Material 3 Expressive स्प्रिंग पूरी ऐप को जीवंत बनाते हैं, ट्यूटोरियल से लेकर ट्रांसफ़र तक — और हर एनीमेशन सिस्टम की ‘मोशन कम करें’ पहुँच-योग्यता सेटिंग का सम्मान करता है।</string>
-    <string name="about_whats_new_5_label">सुरक्षा सुदृढ़ीकरण</string>
-    <string name="about_whats_new_5_body">पुराने बिना-एन्क्रिप्शन वाले HTTP पेयरिंग एंडपॉइंट हटा दिए गए हैं, जिससे PIN तक की आख़िरी अनएन्क्रिप्टेड राह बंद हो गई। पेयरिंग ECDH से एंड-टू-एंड एन्क्रिप्टेड रहती है, और हर पुनः कनेक्शन पर PC के प्रमाणपत्र का फ़िंगरप्रिंट जाँचा जाता है।</string>
+    <string name="about_whats_new_1_label">सेंसर अलर्ट</string>
+    <string name="about_whats_new_1_body">अपने PC पर, किसी भी सेंसर पर थ्रेशोल्ड सेट करें और उसके पार होते ही उसका कार्ड लाल घंटी दिखाता है। अलर्ट तब तक जलता रहता है जब तक आप उसे स्वीकार न करें, इसलिए दूर रहते हुए छूटा हुआ स्पाइक भी चिह्नित रहता है, और एक क्रिटिकल अलर्ट विंडो नज़र से बाहर होने पर एक डेस्कटॉप सूचना भी भेजता है।</string>
+    <string name="about_whats_new_2_label">मेरी थीम मिलाएं</string>
+    <string name="about_whats_new_2_body">अब आपका फ़ोन अपनी थीम आपके PC से साझा करता है, जिससे पर्सनलाइजेशन एक टैप में आपके रंग, लाइट हो या डार्क, मिला सकता है। बाद में अपने फ़ोन की थीम बदलें और जब चाहें PC उसे फिर से अपना सकता है।</string>
+    <string name="about_whats_new_3_label">क्लिपबोर्ड सिंक</string>
+    <string name="about_whats_new_3_body">अपने फ़ोन पर टेक्स्ट कॉपी करें और रिमोट कंट्रोल स्क्रीन से इसे अपने PC के क्लिपबोर्ड पर भेजें — पहुंचते ही यह पेस्ट के लिए तैयार होता है। रास्ते में कुछ भी सेव नहीं होता, इसलिए कोई पासवर्ड या लॉगिन कोड बस गुज़र कर चला जाता है।</string>
+    <string name="about_whats_new_4_label">जाने-पहचाने PC</string>
+    <string name="about_whats_new_4_body">कनेक्शन स्क्रीन अब उन सभी PC को सूचीबद्ध करती है जिनसे आप पेयर हुए हैं, इसलिए मशीन बदलना पता फिर से टाइप करने के बजाय बस एक टैप है। हर एक अपना नाम और आपके आख़िरी बार कनेक्ट होने का समय याद रखता है।</string>
+    <string name="about_whats_new_5_label">फ़ोल्डर ट्रांसफ़र</string>
+    <string name="about_whats_new_5_body">फ़ाइलें एक-एक करके चुनने के बजाय, पूरा फ़ोल्डर एक साथ भेजें या प्राप्त करें, खाली सब-फ़ोल्डर भी शामिल। कनेक्शन टूटने पर ट्रांसफ़र बस फिर से शुरू हो जाता है, ठीक वैसे ही जैसे एक फ़ाइल के लिए होता है।</string>
     <string name="about_whats_new_title">%1$s में नया क्या है</string>
     <string name="app_launcher_recent">हाल का</string>
     <string name="cd_close_settings">सेटिंग्स बंद करें</string>
@@ -494,16 +576,16 @@
     <string name="file_transfer_upload_complete">अपलोड पूर्ण।</string>
     <string name="file_transfer_upload_failed">फ़ाइल नहीं भेजी जा सकी। जांचें कि आपका पीसी अभी भी कनेक्ट है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_uploading_single">%1$s अपलोड किया जा रहा है…</string>
-    <string name="font_inter_premium">Inter (Premium)</string>
-    <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>
+    <string name="font_inter_premium">Inter (प्रीमियम)</string>
+    <string name="font_jetbrains_mono_tech">JetBrains Mono (तकनीकी)</string>
     <string name="font_lato">Lato</string>
-    <string name="font_lexend_fluent">Lexend (Fluent)</string>
+    <string name="font_lexend_fluent">Lexend (धाराप्रवाह)</string>
     <string name="font_montserrat">Montserrat</string>
-    <string name="font_outfit_modern">Outfit (Modern Rounded)</string>
+    <string name="font_outfit_modern">Outfit (आधुनिक गोल)</string>
     <string name="font_poppins">Poppins</string>
     <string name="font_roboto">Roboto</string>
-    <string name="font_space_grotesk_cyber">Space Grotesk (Cyber)</string>
-    <string name="font_syne_expressive">Syne (Expressive)</string>
+    <string name="font_space_grotesk_cyber">Space Grotesk (साइबर)</string>
+    <string name="font_syne_expressive">Syne (अभिव्यंजक)</string>
     <string name="personalization_font_family">फ़ॉन्ट परिवार</string>
     <string name="personalization_font_scale_format">फ़ॉन्ट स्केल: %1$d%%</string>
     <string name="personalization_section_splash">लॉन्च एनीमेशन</string>
@@ -531,17 +613,23 @@
     <string name="task_manager_host_unresponsive">पीसी प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और पीसी को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
     <string name="task_manager_kill_failed_format">प्रक्रिया %1$d को समाप्त करने में विफल</string>
     <string name="task_manager_retry">पुनः प्रयास करें</string>
-    <string name="rd_err_capture_unavailable">आपके पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
-    <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि आपका पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
-    <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
-    <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
-    <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
+    <string name="rd_err_capture_unavailable">आपके पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा। स्ट्रीम फिर से शुरू करें — बार-बार विफल हो तो पीसी पर RemEx पुनः आरंभ करें।</string>
+    <string name="rd_err_capture_stopped">%1$d फ्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है पीसी लॉक या साइन आउट हो गया हो। उसे अनलॉक करके स्ट्रीम फिर से शुरू करें।</string>
+    <string name="rd_err_target_unavailable">चुना गया डिस्प्ले अब उपलब्ध नहीं है। दूसरा डिस्प्ले चुनकर स्ट्रीम फिर से शुरू करें।</string>
+    <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता। स्ट्रीम रोकें और मनचाहे डिस्प्ले पर फिर से शुरू करें।</string>
+    <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है। आमतौर पर इसका मतलब है कि पीसी पर RemEx को अपडेट करना होगा या आवश्यक घटक मौजूद नहीं हैं।</string>
+    <string name="rd_err_input_unavailable">आपका पीसी कीबोर्ड या माउस इनपुट स्वीकार नहीं कर रहा। पीसी पर अनुमति संकेत अस्वीकार हुआ हो सकता है — इसे फिर से दिखाने के लिए फिर से पूछें दबाएँ। आप स्क्रीन अब भी देख सकते हैं।</string>
+    <string name="rd_input_retry_button">फिर से पूछें</string>
+    <string name="rd_input_retry_sent">आपके पीसी से फिर से पूछा गया — वहाँ संकेत स्वीकार करें।</string>
+    <string name="rd_err_connect_timeout">%1$s पर आपके पीसी ने जवाब नहीं दिया। पक्का करें कि वह चालू है और इस फ़ोन वाले Wi‑Fi नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
     <string name="widget_refresh">रिफ़्रेश करें</string>
     <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>
     <string name="widget_toast_refreshed">टेलीमेट्री रिफ़्रेश हो गई</string>
+    <string name="widget_toast_refresh_failed">टेलीमेट्री रिफ़्रेश नहीं हो सकी</string>
     <string name="widget_toast_connecting">पीसी से कनेक्ट हो रहा है…</string>
     <string name="widget_config_poll_interval_label">हर %1$d सेकंड में रिफ़्रेश करें</string>
     <string name="widget_config_poll_interval_hint">कनेक्ट रहते हुए विजेट कितनी बार पीसी से ताज़ा टेलीमेट्री मांगता है।</string>
@@ -554,6 +642,20 @@
     <string name="connection_error_generic">कनेक्शन विफल।</string>
     <string name="connection_error_native_missing">RemEx का कनेक्शन इंजन शुरू नहीं हो सका। ऐप को फिर से शुरू करने की कोशिश करें; अगर यह बार-बार हो, तो RemEx को फिर से इंस्टॉल करें।</string>
     <string name="connection_action_repair">फिर से पेयर करें</string>
+    <string name="connection_cert_repair_title">इस PC से फिर से पेयर करें?</string>
+    <string name="connection_cert_repair_title_unchanged">ठीक करने के लिए कुछ नहीं है</string>
+    <string name="connection_cert_repair_changed">यह PC उससे अलग सुरक्षा पहचान के साथ जवाब दे रहा है जिससे आपका फ़ोन पेयर हुआ था।</string>
+    <string name="connection_cert_repair_when_safe">यह अपेक्षित है यदि आपने PC पर RemEx या Windows फिर से इंस्टॉल किया है, या उसका हार्डवेयर बदला है।</string>
+    <string name="connection_cert_repair_when_unsafe">अगर इनमें से कुछ नहीं हुआ, तो रुक जाएँ। हो सकता है कोई और इस पते पर जवाब दे रहा हो और आपका भेजा हुआ पढ़ रहा हो।</string>
+    <string name="connection_cert_repair_effect">फिर से पेयर करने पर आपका फ़ोन उस पहचान को भूल जाएगा जिस पर वह भरोसा करता है और पेयरिंग दोबारा शुरू होगी। आपको PC पर दिख रहा PIN चाहिए होगा।</string>
+    <string name="connection_cert_repair_label_pinned">इससे पेयर किया गया</string>
+    <string name="connection_cert_repair_label_presented">अभी जवाब दे रहा है</string>
+    <string name="connection_cert_repair_checking">जाँचा जा रहा है कि इस पते पर क्या जवाब दे रहा है…</string>
+    <string name="connection_cert_repair_unknown">इस PC ने जवाब नहीं दिया, इसलिए उसकी मौजूदा पहचान नहीं पढ़ी जा सकी। फिर से पेयर तभी करें जब आपको पता हो कि यह क्यों बदली।</string>
+    <string name="connection_cert_repair_unchanged">यह PC उसी पहचान के साथ जवाब दे रहा है जिस पर आपका फ़ोन पहले से भरोसा करता है, इसलिए ठीक करने के लिए कुछ नहीं है। कनेक्शन किसी और वजह से विफल हुआ।</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(अज्ञात)</string>
+    <string name="connection_cert_repair_fingerprint_checking">जाँचा जा रहा है…</string>
+    <string name="connection_cert_repair_confirm">भूलें और फिर से पेयर करें</string>
     <string name="wake_pc_sent">वेक सिग्नल भेजा गया</string>
     <string name="wake_pc_failed">वेक सिग्नल भेजने में विफल</string>
     <string name="wake_pc_mac_not_configured">MAC पता कॉन्फ़िगर नहीं है — सेटिंग्स में सेट करें</string>
@@ -606,9 +708,21 @@
     <string name="file_manager_prop_readonly">केवल-पढ़ने योग्य</string>
     <string name="file_manager_prop_yes">हाँ</string>
     <string name="file_manager_prop_no">नहीं</string>
-    <string name="file_manager_requesting_volumes">ड्राइव लोड हो रहे हैं…</string>
+    <string name="file_manager_full_browse_pending">आपके पीसी पर अनुमति की प्रतीक्षा हो रही है…</string>
+    <string name="file_manager_full_browse_unreachable">आपका पीसी पूछने के लिए इस फ़ोन तक नहीं पहुँच सका। फिर से कनेक्ट करें और दोबारा कोशिश करें।</string>
+    <string name="file_manager_full_browse_refused">पूरे डिवाइस को ब्राउज़ करने की अनुमति नहीं दी गई।</string>
+    <string name="file_manager_full_browse_timed_out">आपके पीसी ने समय पर जवाब नहीं दिया। दोबारा कोशिश करें।</string>
     <string name="file_manager_queued_upload">अपलोड कतार में: %1$s</string>
     <string name="file_manager_queued_download">डाउनलोड कतार में: %1$s</string>
+    <string name="file_manager_download_folder">फ़ोल्डर डाउनलोड करें</string>
+    <string name="file_manager_folder_scanning">फ़ोल्डर की सूची बन रही है…</string>
+    <string name="file_manager_folder_scan_failed">फ़ोल्डर की सूची नहीं बन सकी।</string>
+    <string name="file_manager_folder_empty">उस फ़ोल्डर में स्थानांतरित करने योग्य कोई फ़ाइल नहीं है।</string>
+    <string name="file_manager_folder_queued_download">%1$d फ़ाइलें डाउनलोड के लिए कतार में हैं।</string>
+    <string name="file_manager_upload_folder">फ़ोल्डर अपलोड करें</string>
+    <string name="file_manager_folder_queued_upload">%1$d फ़ाइलें अपलोड के लिए कतार में हैं।</string>
+    <string name="file_manager_folder_too_large">उस फ़ोल्डर में एक बार में स्थानांतरित करने के लिए बहुत अधिक फ़ाइलें हैं।</string>
+    <string name="file_manager_folder_queued_truncated">%1$d फ़ाइलें कतार में हैं, लेकिन फ़ोल्डर पूरी सूची बनाने के लिए बहुत बड़ा था — कुछ फ़ाइलें छूट गईं।</string>
     <string name="file_manager_transfers_title">स्थानांतरण (%1$d)</string>
     <string name="file_manager_clear_finished">पूर्ण हटाएँ</string>
     <string name="file_manager_pause">रोकें</string>
@@ -652,6 +766,11 @@
     <string name="file_consent_push_message_generic">आपका PC इस फ़ोन पर फ़ाइलें भेजना चाहता है। अनुमति दें?</string>
     <string name="file_consent_full_browse_title">डिवाइस ब्राउज़ अनुरोध</string>
     <string name="file_consent_full_browse_message">आपका PC इस फ़ोन के स्टोरेज को ब्राउज़ करना चाहता है। अनुमति दें?</string>
+    <string name="file_consent_remote_full_browse_title">अपने PC की फ़ाइलें ब्राउज़ करें?</string>
+    <string name="file_consent_remote_full_browse_message">यह फ़ोन आपके PC की सभी फ़ाइलें ब्राउज़ करने का अनुरोध कर रहा है, केवल साझा फ़ोल्डर नहीं। अनुमति दें?</string>
+    <string name="file_consent_remote_push_title">अपने PC पर फ़ाइलें भेजें?</string>
+    <string name="file_consent_remote_push_message">यह फ़ोन भेजने का अनुरोध कर रहा है: %1$s. अनुमति दें?</string>
+    <string name="file_consent_remote_push_message_generic">यह फ़ोन आपके PC पर फ़ाइलें भेजने का अनुरोध कर रहा है। अनुमति दें?</string>
     <string name="file_consent_allow">अनुमति दें</string>
     <string name="file_consent_deny">अस्वीकार करें</string>
     <string name="file_consent_remember">इस PC के लिए मेरा चयन याद रखें</string>
@@ -754,4 +873,53 @@
     <string name="personalization_shape_cat_network">नेटवर्क कार्ड</string>
     <string name="personalization_shape_cat_action">एक्शन कार्ड</string>
     <string name="personalization_shape_cat_other">अन्य कार्ड</string>
+
+    <string name="action_take_screenshot">पीसी का स्क्रीनशॉट लें</string>
+    <string name="screenshot_taken">पीसी पर स्क्रीनशॉट लिया गया। इसे पाने के लिए अपनी सूचनाएं देखें।</string>
+    <string name="screenshot_failed">पीसी स्क्रीनशॉट नहीं ले सका।</string>
+    <string name="file_push_failed_no_folder">फ़ाइल सहेजी नहीं जा सकी: इस फ़ोन का कोई फ़ोल्डर लिखने के लिए साझा नहीं है। फ़ाइलें पाने के लिए RemEx में एक साझा करें।</string>
+    <string name="file_push_failed_bad_name">नाम के कारण फ़ाइल सहेजी नहीं जा सकी।</string>
+    <string name="file_push_failed_destination">फ़ाइल सहेजी नहीं जा सकी: जिस फ़ोल्डर में वह जा रही थी वह अब उपलब्ध नहीं है।</string>
+    <string name="file_push_failed_wrong_file">फ़ाइल सहेजी नहीं जा सकी: यह वह फ़ाइल नहीं थी जिसे पाने के लिए आपने सहमति दी थी।</string>
+    <string name="file_push_failed_not_saved">पीसी से आई फ़ाइल सहेजी नहीं जा सकी। पीसी से इसे दोबारा भेजने को कहें।</string>
+    <string name="file_push_failed_no_channel">पीसी से आई फ़ाइल प्राप्त नहीं की जा सकी: यह फ़ोन अपना फ़ाइल कनेक्शन नहीं खोल सका। दोबारा कोशिश करें, और बार-बार विफल होने पर फिर से पेयर करें।</string>
+    <string name="file_received_title">फ़ाइल मिली</string>
+    <string name="file_received_text">%1$s आपके पीसी से आ गई।</string>
+    <string name="file_received_share">साझा करें</string>
+    <string name="pairing_phase_probe">आपका पीसी उपलब्ध है या नहीं, जाँचा जा रहा है…</string>
+    <string name="pairing_phase_securing">सुरक्षित कनेक्शन बनाया जा रहा है…</string>
+    <string name="pairing_phase_awaiting_host">आपके पीसी पर पिन दिखने का इंतज़ार किया जा रहा है…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">डायग्नोस्टिक्स साझा करें</string>
+    <string name="settings_share_diagnostics_body">इस ऐप और आपके पीसी से इसके कनेक्शन के बारे में एक रिपोर्ट बनाएँ, जिसे आप मदद करने वाले को भेज सकते हैं। आप उसे पहले पूरा पढ़ते हैं, और जब तक आप न भेजें तब तक कुछ भी आपके फ़ोन से बाहर नहीं जाता।</string>
+    <string name="screen_share_diagnostics_title">डायग्नोस्टिक्स साझा करें</string>
+    <string name="share_diagnostics_explainer">इस रिपोर्ट में ऐप का संस्करण, फ़ोन का मॉडल, Android का संस्करण, आपके पीसी ने अपने बारे में आख़िरी बार जो बताया था, और इस ऐप की हाल की लॉग पंक्तियाँ शामिल हैं। पेयरिंग कुंजियाँ हटा दी जाती हैं और फ़ाइल पथ घटाकर केवल फ़ाइल का नाम कर दिए जाते हैं। नीचे आप जो देख रहे हैं, ठीक वही भेजा जाता है।</string>
+    <string name="share_diagnostics_network_toggle">नेटवर्क पते शामिल करें</string>
+    <string name="share_diagnostics_network_toggle_body">डिफ़ॉल्ट रूप से बंद। इसे केवल कनेक्शन की समस्या के लिए चालू करें: इससे रिपोर्ट में IP पते बने रहते हैं।</string>
+    <string name="share_diagnostics_preview_title">रिपोर्ट का पूर्वावलोकन</string>
+    <string name="share_diagnostics_collecting">रिपोर्ट बनाई जा रही है…</string>
+    <string name="share_diagnostics_send">रिपोर्ट साझा करें</string>
+    <string name="share_diagnostics_chooser">डायग्नोस्टिक्स साझा करें</string>
+    <string name="share_diagnostics_failed">रिपोर्ट को साझा करने के लिए तैयार नहीं किया जा सका।</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">क्लिपबोर्ड को PC पर भेजें</string>
+    <string name="clipboard_send_ok">PC के क्लिपबोर्ड पर भेजा गया</string>
+    <string name="clipboard_send_empty">भेजने के लिए क्लिपबोर्ड में कुछ नहीं है</string>
+    <string name="clipboard_send_too_large">यह भेजने के लिए बहुत बड़ा है। सीमा %1$d KB है।</string>
+    <string name="clipboard_send_failed">क्लिपबोर्ड नहीं भेजा जा सका</string>
+    <string name="clipboard_send_refused">PC ने इसे अस्वीकार कर दिया — पहले फ़ोन को अपने PC से पेयर करें</string>
+    <string name="clipboard_send_not_connected">पहले अपने PC से कनेक्ट करें</string>
+    <string name="clipboard_send_unsupported">केवल कॉपी किया गया टेक्स्ट भेजा जा सकता है</string>
+    <string name="clipboard_fetch_button">PC से क्लिपबोर्ड लें</string>
+    <string name="clipboard_fetch_ok">PC से कॉपी किया गया</string>
+    <string name="clipboard_fetch_empty">PC पर कुछ भी कॉपी नहीं है</string>
+    <string name="clipboard_fetch_too_large">PC का क्लिपबोर्ड कॉपी करने के लिए बहुत बड़ा है</string>
+    <string name="clipboard_fetch_failed">PC का क्लिपबोर्ड नहीं मिल सका</string>
+    <string name="clipboard_fetch_label">PC का क्लिपबोर्ड</string>
 </resources>

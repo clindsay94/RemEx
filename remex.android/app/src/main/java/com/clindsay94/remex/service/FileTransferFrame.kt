@@ -150,6 +150,10 @@ object FileTransferLimits {
     const val DATA_PAYLOAD_BYTES = 256 * 1024
     const val ACK_INTERVAL_BYTES = 4 * 1024 * 1024
     const val MAX_UNACKED_BYTES = 8 * 1024 * 1024
+    const val MANIFEST_MAX_ENTRIES_PER_PAGE = 1000
+    const val MANIFEST_DEFAULT_ENTRIES_PER_PAGE = 500
+    const val MANIFEST_MAX_TOTAL_ENTRIES = 200_000
+    const val MANIFEST_COUNT_BUDGET_ENTRIES = 200_000
 }
 
 /** Mirrors `Remex.Core.Models.FileTransferModes`. */

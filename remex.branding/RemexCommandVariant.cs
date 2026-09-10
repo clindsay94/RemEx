@@ -325,15 +325,17 @@ public sealed class RemexCommandVariant : ISplashVariant
         float monScreenX, float monScreenY, float monScreenW, float monScreenH)
     {
         float termSize = monScreenW / 15f;
+        // SkiaSharp 3 moved typeface, size and metrics onto SKFont; alignment became a DrawText
+        // argument (RemEx-jcma3). The metrics still have to come from the SAME font that draws and
+        // measures, because Ascent positions every baseline here and MeasureText drives the
+        // typing-reveal clip - a mismatch would shear the terminal text against its own clip rect.
+        using var termFont = new SKFont(SplashBrand.Typeface ?? SKTypeface.Default, termSize);
         using var term = new SKPaint
         {
             IsAntialias = true,
             Color = SplashBrand.OffWhite,
-            Typeface = SplashBrand.Typeface ?? SKTypeface.Default,
-            TextSize = termSize,
-            TextAlign = SKTextAlign.Left,
         };
-        var fm = term.FontMetrics;
+        var fm = termFont.Metrics;
         float lineH = (fm.Descent - fm.Ascent) * 1.25f;
 
         int total = TermLines[0].Length + TermLines[1].Length + TermLines[2].Length;
@@ -351,10 +353,10 @@ public sealed class RemexCommandVariant : ISplashVariant
             float revealed = Math.Clamp((shown - consumed) / line.Length, 0f, 1f);
             if (revealed > 0f)
             {
-                float lw = term.MeasureText(line);
+                float lw = termFont.MeasureText(line);
                 canvas.Save();
                 canvas.ClipRect(new SKRect(monScreenX, ly, monScreenX + pad + lw * revealed, ly + lineH));
-                canvas.DrawText(line, monScreenX + pad, ly - fm.Ascent, term);
+                canvas.DrawText(line, monScreenX + pad, ly - fm.Ascent, SKTextAlign.Left, termFont, term);
                 canvas.Restore();
                 cursorX = monScreenX + pad + lw * revealed;
                 cursorY = ly;
@@ -384,15 +386,15 @@ public sealed class RemexCommandVariant : ISplashVariant
 
     private static void DrawLeftText(SKCanvas canvas, string text, float x, float topY, float size, SKColor color)
     {
+        using var font = new SKFont(SplashBrand.Typeface ?? SKTypeface.Default, size);
         using var p = new SKPaint
         {
             IsAntialias = true,
             Color = color,
-            Typeface = SplashBrand.Typeface ?? SKTypeface.Default,
-            TextSize = size,
-            TextAlign = SKTextAlign.Left,
         };
-        canvas.DrawText(text, x, topY - p.FontMetrics.Ascent, p);
+        // topY is a TOP edge, so the baseline is topY minus the (negative) ascent. Metrics moved
+        // from SKPaint to SKFont in SkiaSharp 3; the arithmetic is unchanged (RemEx-jcma3).
+        canvas.DrawText(text, x, topY - font.Metrics.Ascent, SKTextAlign.Left, font, p);
     }
 
     private static SKPoint CubicPoint(SKPoint p0, SKPoint p1, SKPoint p2, SKPoint p3, float t)

@@ -19,10 +19,11 @@ tab_width = 4
 [*.cs]
 
 # CA2007: Do not directly await a Task without calling ConfigureAwait
-# We disable this because Avalonia and ASP.NET Core don't use SynchronizationContext
-# Using ConfigureAwait(false) adds noise without benefit in our codebase
-# Team convention: No ConfigureAwait needed in this codebase
-# Reason: Avalonia UI and ASP.NET Core are SynchronizationContext-free
+# Disabled because this repo bans ConfigureAwait outright, which is the opposite of CA2007's advice.
+# NOT because there is no SynchronizationContext: Avalonia 11 installs one, and on the desktop side
+# capturing it is load-bearing - continuations assign bound properties after awaits that complete off
+# the UI thread. ConfigureAwait(false) would move those writes off it. See docs/ASYNC_GUIDELINES.md;
+# the ban is enforced by ConfigureAwaitBanTests, not by this suppression. (RemEx-rbfq)
 dotnet_diagnostic.CA2007.severity = none
 
 # Organize usings

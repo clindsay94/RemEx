@@ -1,0 +1,85 @@
+using Remex.Core.Models;
+
+namespace Remex.Agent.Services.FileTransfer;
+
+/// <summary>
+/// A file operation refused because the destination name is taken (RemEx-6vd8).
+/// </summary>
+/// <remarks>
+/// <para>
+/// **A TYPE RATHER THAN A MESSAGE, WHICH IS THE WHOLE POINT.** These sites previously threw a plain
+/// <see cref="IOException"/> whose message was English prose, and the handler surfaced it as
+/// <c>errorMessage</c>. A client could only string-match it — which breaks when the wording improves
+/// and cannot work once the host is localized.
+/// </para>
+/// <para>
+/// Still an <see cref="IOException"/>, so every existing <c>catch (IOException)</c> and
+/// <c>catch (Exception)</c> keeps working unchanged; the code is additional information for the one
+/// handler that looks for it, not a new failure mode.
+/// </para>
+/// <para>
+/// THE PROSE IS KEPT, NOT REPLACED. It remains what a person reads when the client is older than
+/// this change, or when the UI has nothing better to show.
+/// </para>
+/// </remarks>
+public sealed class FileConflictException : IOException
+{
+    public FileConflictException(string errorCode, string conflictingName, string message)
+        : base(message)
+    {
+        ErrorCode = errorCode;
+        ConflictingName = conflictingName;
+    }
+
+    /// <summary>One of <see cref="FileTransferErrorCodes"/>. Invariant, never localized.</summary>
+    public string ErrorCode { get; }
+
+    /// <summary>
+    /// The bare name that collided, so the UI can say which file it is asking about.
+    /// </summary>
+    /// <remarks>
+    /// The NAME, not the path: the sheet asks "report.pdf already exists", and a full path would
+    /// leak the host's directory layout into a phone dialog for no benefit to the question.
+    /// </remarks>
+    public string ConflictingName { get; }
+
+    /// <summary>The destination is taken by a file and the caller wanted to put a file there.</summary>
+    public static FileConflictException FileExists(string name) =>
+        new(FileTransferErrorCodes.DestinationExists, name, $"A file named '{name}' already exists.");
+
+    /// <summary>The destination is taken by a folder and the caller wanted to put a folder there.</summary>
+    public static FileConflictException DirectoryExists(string name) =>
+        new(FileTransferErrorCodes.DestinationExists, name, $"A folder named '{name}' already exists.");
+
+    /// <summary>The renamed sibling "keep both" chose cannot be created at the destination.</summary>
+    /// <remarks>
+    /// Carries the name that FAILED rather than the one originally asked for: it is longer than what
+    /// the user was shown, and its length is the whole problem.
+    /// </remarks>
+    public static FileConflictException ResolvedNameUnusable(string name, Exception cause) =>
+        new(FileTransferErrorCodes.ResolvedNameUnusable, name,
+            $"The name '{name}' cannot be created at the destination: {cause.Message}");
+
+    /// <summary>The renamed sibling "keep both" chose was claimed by something else first.</summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="ResolvedNameUnusable"/> BECAUSE THE ANSWER DIFFERS. That name is
+    /// perfectly creatable — somebody simply got there first — so asking again works: the host
+    /// re-lists the directory and picks the next free name. Reporting it as unusable would send the
+    /// client to a Skip-only dead end for a problem one retry solves. No cause is carried, because
+    /// the reason the open failed is not the point; what is there now is.
+    /// </remarks>
+    public static FileConflictException ResolvedNameTaken(string name) =>
+        new(FileTransferErrorCodes.ResolvedNameTaken, name,
+            $"The name '{name}' was taken by something else before it could be created.");
+
+    /// <summary>
+    /// The destination is taken by something of the other kind — a folder where a file was going.
+    /// </summary>
+    /// <remarks>
+    /// Distinguished so a client does not offer "replace", which here would mean deleting a whole
+    /// directory tree to make room for one file. Nobody intends that from a copy, and nothing undoes it.
+    /// </remarks>
+    public static FileConflictException DifferentKindExists(string name) =>
+        new(FileTransferErrorCodes.DestinationIsDifferentKind, name,
+            $"Something of a different kind already exists at the destination '{name}'.");
+}

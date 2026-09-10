@@ -31,8 +31,8 @@ public sealed class FakeScreenCaptureService : IScreenCaptureService
 
     public string? BackendName => "fake";
 
-    public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-        => Task.FromResult(FakeJpeg);
+    public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult<ReadOnlyMemory<byte>>(FakeJpeg);
 
     public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
         => Task.FromResult<byte[]?>(null);

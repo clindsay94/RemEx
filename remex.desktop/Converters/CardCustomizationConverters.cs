@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Converters;
 
@@ -25,7 +26,9 @@ public class HexToBrushConverter : IValueConverter
             }
         }
 
-        return new SolidColorBrush(Color.Parse("#E0E0FF"));
+        // Unset/invalid customisation falls back to the theme's text colour rather than one fixed
+        // pale lilac that only suits the dark themes (RemEx-fy0a).
+        return ThemeResources.Brush("TextPrimaryBrush", new SolidColorBrush(Color.Parse("#E0E0FF")));
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -49,7 +52,7 @@ public class HexToTranslucentBrushConverter : IValueConverter
         if (parameter is string p && double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
             alpha = Math.Clamp(parsed, 0.0, 1.0);
 
-        var baseColor = Color.Parse("#0A0A16");
+        var baseColor = ThemeResources.Color("GlassBaseDark", Color.Parse("#0A0A16"));
         if (value is string hex && !string.IsNullOrWhiteSpace(hex))
         {
             try { baseColor = Color.Parse(hex); }
@@ -85,7 +88,7 @@ public class HexToColorConverter : IValueConverter
             }
         }
 
-        return Color.Parse("#C0C0FF");
+        return ThemeResources.Color("AccentPrimary", Color.Parse("#C0C0FF"));
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

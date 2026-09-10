@@ -1,11 +1,14 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+        xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Remex.Desktop.ViewModels"
         xmlns:sys="using:System"
         xmlns:services="using:Remex.Desktop.Services"
         xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        xmlns:mi="using:Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
         x:Class="Remex.Desktop.Views.PairingDialog"
         x:DataType="vm:PairingDialogViewModel"
@@ -15,47 +18,98 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="{local:Localize PairingDialogTitle}"
-        ExtendClientAreaToDecorationsHint="True">
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="32">
 
-    <Border Padding="24" Background="{DynamicResource CardBackgroundBrush}">
+    <material:Card Padding="24" Margin="12,40,12,12">
         <Grid RowDefinitions="Auto,*,Auto">
-            
-            <TextBlock Grid.Row="0" 
-                       Text="{local:Localize PairingDialogTitle}" 
-                       FontSize="20" FontWeight="SemiBold" 
+
+            <TextBlock Grid.Row="0"
+                       Text="{local:Localize PairingDialogTitle}"
+                       Theme="{StaticResource Headline6TextBlock}"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
                        Margin="0,0,0,16"/>
-            
+
             <StackPanel Grid.Row="1" Spacing="16" VerticalAlignment="Center">
                 <TextBlock Text="{local:Localize PairingDialogInstruction}"
+                           Theme="{StaticResource Body2TextBlock}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 
-                <TextBox Text="{Binding PinInput}" 
-                         Watermark="000000"
+                <!-- THE ERROR IS PART OF THE FIELD NOW, not a red line floating under it
+                     (RemEx-5w9ws). TextFieldAssist.Hints renders inside the text field's own
+                     template, so the message sits where the field's helper text goes and moves
+                     with it; HasError turns the border and the helper text to the error colour at
+                     the same time. That is the acceptance criterion's "visible without colour
+                     alone": the field gains TEXT and a changed border, and the message is now
+                     associated with the input rather than merely adjacent to it — which is the
+                     difference a screen reader can hear. -->
+                <TextBox Text="{Binding PinInput}"
+                         PlaceholderText="000000"
                          MaxLength="6"
                          FontSize="24"
                          FontWeight="Bold"
+                         LetterSpacing="8"
                          HorizontalContentAlignment="Center"
-                         IsEnabled="{Binding !IsBusy}"/>
-                
-                <TextBlock Text="{Binding ErrorText}" 
+                         IsEnabled="{Binding CanEdit}"
+                         AutomationProperties.Name="{local:Localize PairingDialogTitle}"
+                         assists:TextFieldAssist.Hints="{Binding ErrorText}"
+                         Classes.invalid="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+
+                <!-- Indeterminate is honest: a pairing handshake reports no percentage, so a
+                     determinate bar here would be inventing one. The accessible name is what makes
+                     it mean anything to a screen reader - an indeterminate bar has no text and no
+                     value to announce, so without it the dialog simply goes quiet while it works
+                     (RemEx-rcgmc). Status_Connecting rather than a new string: the handshake IS the
+                     connection attempt, and it already reads correctly in all nine locales. -->
+                <ProgressBar IsIndeterminate="True"
+                             IsVisible="{Binding IsBusy}"
+                             HorizontalAlignment="Stretch"
+                             AutomationProperties.Name="{local:Localize Status_Connecting}"/>
+
+                <!-- RemEx-x6a70.1: the dialog now stays open through CompletePairingAsync, so success
+                     needs its own visible state — otherwise the box would just go quiet again, the
+                     same silence this bead exists to fix. -->
+                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsSucceeded}">
+                    <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20" Foreground="{DynamicResource SystemSuccessBrush}"/>
+                    <TextBlock Text="{local:Localize Pairing_Succeeded}"
+                               Theme="{StaticResource Body2TextBlock}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- RemEx-x6a70.1 fix round 1: a failed PIN is now terminal (no retry — see
+                     PairingDialogViewModel's class remarks), and the TextBox goes IsEnabled=False via
+                     CanEdit at that point. A disabled TextBox does not reliably show
+                     TextFieldAssist.Hints, so the failure needs its own visible text rather than
+                     relying on the field's helper slot alone. -->
+                <TextBlock Text="{local:Localize Status_PairingFailed}"
+                           Theme="{StaticResource Body2TextBlock}"
                            Foreground="{DynamicResource SystemErrorBrush}"
-                           IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           IsVisible="{Binding IsFailed}"
                            TextWrapping="Wrap"/>
-                
-                <ProgressBar IsIndeterminate="True" 
-                             IsVisible="{Binding IsBusy}" 
-                             HorizontalAlignment="Stretch"/>
             </StackPanel>
-            
+
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
-                <Button Content="{local:Localize Btn_Cancel}" 
+                <Button Content="{local:Localize Btn_Cancel}"
                         Command="{Binding CancelCommand}"
-                        Classes="outline"/>
-                <Button Content="{local:Localize Btn_Pair}" 
+                        Classes="secondary"/>
+                <Button Content="{local:Localize Btn_Pair}"
                         Command="{Binding SubmitCommand}"
-                        Classes="accent"
-                        IsEnabled="{Binding !IsBusy}"/>
+                        Classes="primary"/>
             </StackPanel>
         </Grid>
-    </Border>
+    </material:Card>
+    <!-- ESCAPE DISMISSES, AND IT IS ROUTED TO THE ACTION ALREADY WRITTEN AS THIS DIALOG'S CANCEL
+         (RemEx-xxifk). ENTER SUBMITS (RemEx-df08): SubmitCommand's own [RelayCommand(CanExecute =
+         nameof(CanEdit))] already gates it, so Enter is a no-op while busy/succeeded/failed - the
+         same guard the Pair button and the PIN TextBox's IsEnabled already rely on. Submitting is
+         never the destructive option here (a wrong PIN just fails and stays terminal per this
+         dialog's own no-retry design), so there is no "backwards" risk to weigh. -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Enter" Command="{Binding SubmitCommand}"/>
+    </Window.KeyBindings>
 </Window>

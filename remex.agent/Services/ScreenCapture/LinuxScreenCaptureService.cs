@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -233,7 +234,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var jpegBytes = await CaptureScreenAsync(50, scale, drawCursor, ct);
             if (jpegBytes is { Length: > 0 })
             {
-                using var ms = new MemoryStream(jpegBytes);
+                // Wrap the frame in place rather than copying it out: ToArray here would
+                // reintroduce, on Linux, exactly the per-frame frame-sized copy RemEx-hgox removed.
+                // The fallback covers a memory that is not array-backed, which cannot happen today.
+                using var ms = System.Runtime.InteropServices.MemoryMarshal.TryGetArray(jpegBytes, out var jpegSegment)
+                    && jpegSegment.Array is { } jpegArray
+                        ? new MemoryStream(jpegArray, jpegSegment.Offset, jpegSegment.Count, writable: false)
+                        : new MemoryStream(jpegBytes.ToArray());
                 using var bmp = new System.Drawing.Bitmap(ms);
                 var rect = new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
                 var bmpData = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -318,7 +325,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     var destInfo = new SkiaSharp.SKImageInfo(targetW, targetH, colorType, SkiaSharp.SKAlphaType.Premul);
                     using var srcBitmap = SkiaSharp.SKBitmap.FromImage(baseImage);
                     scaledBitmap = new SkiaSharp.SKBitmap(destInfo);
-                    if (srcBitmap.ScalePixels(scaledBitmap, SkiaSharp.SKFilterQuality.Medium))
+                    // SkiaSharp 3 equivalent of the old Medium quality (RemEx-jcma3): bilinear
+                    // filtering plus mipmapping, which is what Medium did on a size reduction.
+                    if (srcBitmap.ScalePixels(
+                        scaledBitmap,
+                        new SkiaSharp.SKSamplingOptions(SkiaSharp.SKFilterMode.Linear, SkiaSharp.SKMipmapMode.Linear)))
                     {
                         finalImage = SkiaSharp.SKImage.FromBitmap(scaledBitmap);
                     }
@@ -363,7 +374,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         }
     }
 
-    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    public async Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
@@ -603,16 +614,30 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         _activeTop = top;
     }
 
-    private DesktopDisplayInfo CreateFallbackDisplay() => new()
+    private DesktopDisplayInfo CreateFallbackDisplay() =>
+        CreateFallbackDisplay(_screenLeft, _screenTop, _screenWidth, _screenHeight);
+
+    /// <summary>
+    /// The single-display descriptor used when the host cannot enumerate its outputs.
+    /// </summary>
+    /// <remarks>
+    /// Static and shared by all three fallback sites, which each carried their own copy of this
+    /// literal — which is how they came to disagree with the documented contract in the first place.
+    /// <see cref="DesktopDisplayInfo.PersistentDisplayKey"/> is EMPTY, not <c>"default"</c>: this
+    /// branch established no stable identity and must not claim one. <c>DisplayId</c> stays
+    /// <c>"default"</c> because selection needs it, and because <c>GetDisplayCatalog</c> keys off that
+    /// exact sentinel to decide the host has no real displays to advertise. (RemEx-kiy1)
+    /// </remarks>
+    internal static DesktopDisplayInfo CreateFallbackDisplay(int left, int top, int width, int height) => new()
     {
         DisplayId = "default",
-        PersistentDisplayKey = "default",
+        PersistentDisplayKey = string.Empty,
         Name = "Display",
         IsPrimary = true,
-        Left = _screenLeft,
-        Top = _screenTop,
-        Width = _screenWidth,
-        Height = _screenHeight,
+        Left = left,
+        Top = top,
+        Width = width,
+        Height = height,
     };
 
     /// <summary>
@@ -659,10 +684,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             cropX == 0 &&
             cropY == 0)
         {
-            return $"scale={captureWidth}:{captureHeight}";
+            return $"scale={Arg(captureWidth)}:{Arg(captureHeight)}";
         }
 
-        return $"crop={cropWidth}:{cropHeight}:{cropX}:{cropY},scale={captureWidth}:{captureHeight}";
+        return $"crop={Arg(cropWidth)}:{Arg(cropHeight)}:{Arg(cropX)}:{Arg(cropY)},scale={Arg(captureWidth)}:{Arg(captureHeight)}";
     }
 
     internal static IReadOnlyList<DesktopDisplayInfo> ParseXrandrDisplays(string[] lines)
@@ -732,7 +757,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     return grimResult;
 
                 // Convert PNG to JPEG with quality and scale
-                var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+                var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{tmpFile}\"";
                 return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
             }
             finally
@@ -769,7 +794,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             }
 
             // Crop to primary monitor first, then scale. If no primary detected, scale the full capture.
-            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{tmpFile}\"";
             return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
         }
         finally
@@ -787,7 +812,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
             // -q sets JPEG quality. -z would suppress the cursor, so we omit it
             // to include the OS cursor in the captured frame.
-            var args = $"-q {quality} \"{tmpFile}\"";
+            var args = $"-q {Arg(quality)} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
             if (result != 0) return result;
 
@@ -795,7 +820,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var scaledFile = tmpFile + ".scaled.jpg";
             try
             {
-                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{scaledFile}\"";
                 var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
                 if (scaleResult == 0 && File.Exists(scaledFile))
                 {
@@ -813,7 +838,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (toolName == "import")
         {
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
-            var args = $"-window root -quality {quality} \"{tmpFile}\"";
+            var args = $"-window root -quality {Arg(quality)} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
             if (result != 0)
             {
@@ -823,7 +848,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var scaledFile = tmpFile + ".scaled.jpg";
             try
             {
-                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{scaledFile}\"";
                 var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
                 if (scaleResult == 0 && File.Exists(scaledFile))
                 {
@@ -846,8 +871,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":0";
         var env = new Dictionary<string, string> { ["DISPLAY"] = display };
-        var args = $"-f x11grab -video_size {_screenWidth}x{_screenHeight} -i {display}+{_screenLeft},{_screenTop} " +
-                   $"-frames:v 1 -q:v {Math.Max(1, 31 - quality * 31 / 100)} " +
+        var args = $"-f x11grab -video_size {Arg(_screenWidth)}x{Arg(_screenHeight)} " +
+                   $"-i {BuildX11GrabInputArgument(display, _screenLeft, _screenTop)} " +
+                   $"-frames:v 1 -q:v {FfmpegQualityArgument(quality)} " +
                    $"-vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -y \"{tmpFile}\"";
         return await RunProcessAsync("ffmpeg", args, ct, env);
     }
@@ -928,6 +954,94 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         SetDefaultSize();
     }
 
+    /// <summary>
+    /// Writes a number into an argument for ffmpeg / scrot / import, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE MIRROR OF <see cref="TryParseInt"/>, AND IT BREAKS A DIFFERENT SET OF LOCALES
+    /// (RemEx-clum). Interpolating an <c>int</c> uses <c>CurrentCulture</c>, and 95 runtime cultures
+    /// render a negative one with a <c>NegativeSign</c> that is not the ASCII hyphen — sv-SE, lt-LT
+    /// and fi-FI use U+2212 MINUS SIGN, and the ar/fa/he families prefix a directional mark. ffmpeg
+    /// parses none of those.
+    /// </para>
+    /// <para>
+    /// The one value here that can actually be negative is the virtual-desktop origin fed to
+    /// x11grab: <c>_screenLeft</c>/<c>_screenTop</c> are the minimum over outputs, so a monitor left
+    /// of or above the primary makes them negative and capture then fails to start at all. Widths,
+    /// heights and quality levels cannot be negative, and a positive <c>int</c> has no
+    /// culture-sensitive rendering to get wrong — they go through this anyway for the reason
+    /// RemEx-hbma established: one rule with no exceptions is what keeps the signed cases safe by
+    /// construction rather than by anyone remembering which values carry a sign.
+    /// </para>
+    /// <para>
+    /// This was not an oversight handed down from the earlier sweeps. RemEx-hbma covered the input
+    /// tools and never touched this file; RemEx-tiih found this exact site while fixing the parse
+    /// direction here and deferred it deliberately, because it is the opposite direction and breaks a
+    /// different set of locales.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Builds the ffmpeg <c>-q:v</c> operand from a 0-100 quality level (ffmpeg counts the other way,
+    /// 1 being best), formatted through <see cref="Arg"/>.
+    /// </summary>
+    private static string FfmpegQualityArgument(int quality) =>
+        Arg(Math.Max(1, 31 - quality * 31 / 100));
+
+    /// <summary>
+    /// Builds the x11grab <c>-i</c> operand: the X display plus the virtual-desktop origin.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so the one genuinely negative-capable argument in this file can be asserted under a
+    /// hostile culture without running ffmpeg (RemEx-clum).
+    /// </remarks>
+    internal static string BuildX11GrabInputArgument(string display, int left, int top) =>
+        $"{display}+{Arg(left)},{Arg(top)}";
+
+    /// <summary>
+    /// Reads a number out of kscreen-doctor / xrandr / xdpyinfo output, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THESE TOOLS SPEAK ASCII AND THE HOST MIGHT NOT (RemEx-tiih). <c>int.Parse</c> and
+    /// <c>int.TryParse</c> without a provider use <c>CurrentCulture</c>, and 57 runtime cultures —
+    /// the ar, ckb, fa, he, ks, lrc, mzn, pa, ps, sd, ur and uz families — reject the ASCII sign
+    /// these tools emit, because their <c>NegativeSign</c> and <c>PositiveSign</c> carry a directional
+    /// mark such as U+061C or U+200E in front of it.
+    /// </para>
+    /// <para>
+    /// THE BLAST RADIUS IS WIDER THAN "NEGATIVE COORDINATES", which is how this was filed.
+    /// <see cref="XrandrGeometryRegex"/> matches <c>(?&lt;x&gt;[+-]\d+)</c> — a sign is REQUIRED, so
+    /// even a primary monitor at the origin arrives as <c>+0</c>. Measured: <c>"+0"</c>, <c>"+1920"</c>
+    /// and <c>"-1920"</c> are rejected by the same 57 cultures, while an unsigned <c>"1920"</c> is
+    /// rejected by none. On an affected host the xrandr path therefore failed to parse the geometry of
+    /// EVERY output, not merely of monitors left of or above the primary.
+    /// </para>
+    /// <para>
+    /// What that costs is not a cosmetic topology error. <c>_screenLeft</c>/<c>_screenTop</c> are the
+    /// minimum over outputs, and RemEx-dyvd made that origin load-bearing: <c>MoveMouse</c> subtracts
+    /// it before handing coordinates to ydotool, whose <c>--absolute</c> is emulated as home-then-move
+    /// and wants an offset rather than a position. A wrong origin aims the pointer at the wrong place,
+    /// silently.
+    /// </para>
+    /// <para>
+    /// Resolutions, dimensions and priorities cannot be negative and go through this anyway, for the
+    /// reason the formatting side does (RemEx-hbma): one rule with no exceptions is what keeps the
+    /// signed cases safe by construction rather than by anyone remembering which values carry a sign.
+    /// </para>
+    /// </remarks>
+    private static bool TryParseInt(string? text, out int value) =>
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+
+    /// <summary>
+    /// Throwing form of <see cref="TryParseInt"/>, for the kscreen path whose caller already sits
+    /// inside a try/catch and treats a malformed line as a parse failure.
+    /// </summary>
+    private static int ParseInt(string text) =>
+        int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture);
+
     // Matches a kscreen-doctor "Geometry: X,Y WxH" line (ANSI colour codes stripped first).
     private static readonly Regex KScreenGeometryRegex = new(
         @"Geometry:\s*(?<x>-?\d+),(?<y>-?\d+)\s+(?<w>\d+)x(?<h>\d+)",
@@ -1007,7 +1121,15 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     //       connected
     //       priority <n>        (priority 1 == primary)
     //       Geometry: X,Y WxH
-    private static List<DesktopDisplayInfo> ParseKScreenDisplays(string cleanOutput)
+    /// <summary>
+    /// Turns <c>kscreen-doctor -o</c> output into displays.
+    /// </summary>
+    /// <remarks>
+    /// Internal so the KDE path's parsing can be tested without kscreen-doctor. It is the only place
+    /// the throwing <see cref="ParseInt"/> is used, and testing that helper alone would not have shown
+    /// whether the geometry line reaches it at all (RemEx-tiih).
+    /// </remarks>
+    internal static List<DesktopDisplayInfo> ParseKScreenDisplays(string cleanOutput)
     {
         var result = new List<DesktopDisplayInfo>();
         var lines = cleanOutput.Split('\n');
@@ -1057,7 +1179,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             else if (line.Equals("connected", StringComparison.OrdinalIgnoreCase)) connected = true;
             else if (line.StartsWith("priority ", StringComparison.OrdinalIgnoreCase))
             {
-                if (int.TryParse(line["priority ".Length..].Trim(), out var pr) && pr == 1)
+                if (TryParseInt(line["priority ".Length..].Trim(), out var pr) && pr == 1)
                     isPrimary = true;
             }
             else
@@ -1065,10 +1187,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 var m = KScreenGeometryRegex.Match(line);
                 if (m.Success)
                 {
-                    geomX = int.Parse(m.Groups["x"].Value);
-                    geomY = int.Parse(m.Groups["y"].Value);
-                    geomW = int.Parse(m.Groups["w"].Value);
-                    geomH = int.Parse(m.Groups["h"].Value);
+                    geomX = ParseInt(m.Groups["x"].Value);
+                    geomY = ParseInt(m.Groups["y"].Value);
+                    geomW = ParseInt(m.Groups["w"].Value);
+                    geomH = ParseInt(m.Groups["h"].Value);
                 }
             }
         }
@@ -1171,26 +1293,14 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 if (line.Contains("dimensions:"))
                 {
                     var parts = line.Split(':')[1].Trim().Split(' ')[0].Split('x');
-                    if (parts.Length == 2 && int.TryParse(parts[0], out int w) && int.TryParse(parts[1], out int h))
+                    if (parts.Length == 2 && TryParseInt(parts[0], out int w) && TryParseInt(parts[1], out int h))
                     {
                         _screenLeft = 0;
                         _screenTop = 0;
                         _screenWidth = w;
                         _screenHeight = h;
                         _detectedDisplays =
-                        [
-                            new DesktopDisplayInfo
-                            {
-                                DisplayId = "default",
-                                PersistentDisplayKey = "default",
-                                Name = "Display",
-                                IsPrimary = true,
-                                Left = 0,
-                                Top = 0,
-                                Width = w,
-                                Height = h,
-                            },
-                        ];
+                        [CreateFallbackDisplay(0, 0, w, h)];
                         SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
@@ -1226,26 +1336,14 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 {
                     var resPart = trimmed.Split("current:")[1].Trim().Split(' ')[0];
                     var res = resPart.Split('x');
-                    if (res.Length == 2 && int.TryParse(res[0], out int w) && int.TryParse(res[1], out int h))
+                    if (res.Length == 2 && TryParseInt(res[0], out int w) && TryParseInt(res[1], out int h))
                     {
                         _screenLeft = 0;
                         _screenTop = 0;
                         _screenWidth = w;
                         _screenHeight = h;
                         _detectedDisplays =
-                        [
-                            new DesktopDisplayInfo
-                            {
-                                DisplayId = "default",
-                                PersistentDisplayKey = "default",
-                                Name = "Display",
-                                IsPrimary = true,
-                                Left = 0,
-                                Top = 0,
-                                Width = w,
-                                Height = h,
-                            },
-                        ];
+                        [CreateFallbackDisplay(0, 0, w, h)];
                         SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
@@ -1356,8 +1454,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
             var dims = dimsSection.Split(" x ", StringSplitOptions.TrimEntries);
             if (dims.Length != 2 ||
-                !int.TryParse(dims[0], out width) ||
-                !int.TryParse(dims[1], out height))
+                !TryParseInt(dims[0], out width) ||
+                !TryParseInt(dims[1], out height))
             {
                 continue;
             }
@@ -1413,7 +1511,15 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         return true;
     }
 
-    private static bool TryParseXrandrGeometry(
+    /// <summary>
+    /// Parses one xrandr geometry token such as <c>1920x1080+0+0</c> or <c>1920x1080-1920+0</c>.
+    /// </summary>
+    /// <remarks>
+    /// Internal so the regex and the parse can be tested together, which is where the defect lived:
+    /// the pattern REQUIRES a sign on x and y, so testing the helper alone would miss that every
+    /// output, not merely a left-of-primary one, went through a signed parse (RemEx-tiih).
+    /// </remarks>
+    internal static bool TryParseXrandrGeometry(
         string line,
         out int width,
         out int height,
@@ -1438,10 +1544,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             if (!match.Success)
                 continue;
 
-            if (!int.TryParse(match.Groups["width"].Value, out width) ||
-                !int.TryParse(match.Groups["height"].Value, out height) ||
-                !int.TryParse(match.Groups["x"].Value, out x) ||
-                !int.TryParse(match.Groups["y"].Value, out y))
+            if (!TryParseInt(match.Groups["width"].Value, out width) ||
+                !TryParseInt(match.Groups["height"].Value, out height) ||
+                !TryParseInt(match.Groups["x"].Value, out x) ||
+                !TryParseInt(match.Groups["y"].Value, out y))
             {
                 continue;
             }

@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Remex.Desktop.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Models;
@@ -10,10 +13,41 @@ namespace Remex.Desktop;
 public partial class MainWindow : Window
 {
     private ThemeService? _themeService;
+    private ColorSourceCoordinator? _colorSources;
 
     public MainWindow()
     {
         InitializeComponent();
+
+        // THE ACRYLIC BACKDROP DEPENDS ON THIS LINE (RemEx-c437b). Without it the window
+        // keeps Material.Avalonia's decorations theme, whose underlay is an opaque sheet over the
+        // OS backdrop — the app then renders a flat surface while reporting that Acrylic is active.
+        // Themes/Chrome/WindowChrome.axaml carries the diagnosis and why nothing lighter reaches it.
+        // Assigned here rather than as a Window attribute because the theme arrives in a merged
+        // resource dictionary, which only exists once InitializeComponent has run.
+        // TryGetResource, NOT the Resources indexer. The indexer does not search
+        // MergedDictionaries, so it returns null for a key that is plainly there — and because
+        // WindowDecorationsTheme is a nullable ControlTheme, assigning that null is not an error.
+        // The window then quietly keeps Material's decorations and the backdrop stays dead, which
+        // is the same shape of silent failure this whole bug was. Missing means broken, so throw.
+        if (!Resources.TryGetResource("BackdropSafeWindowDecorations", ActualThemeVariant, out var decorations)
+            || decorations is not ControlTheme decorationsTheme)
+        {
+            throw new InvalidOperationException(
+                "Themes/Chrome/WindowChrome.axaml did not supply BackdropSafeWindowDecorations. " +
+                "Without it the OS backdrop is covered by Material's opaque decorations underlay.");
+        }
+
+        WindowDecorationsTheme = decorationsTheme;
+
+        // RemEx-5253o: belt-and-braces exit for any future path into FullScreen (the chrome's own
+        // fullscreen button is gated off non-macOS in WindowChrome.axaml, but Remote Desktop's
+        // immersive mode or an OS shortcut could still land here). Registered on the Tunnel phase so
+        // it always runs before the Escape KeyBinding below fires DismissOverlaysCommand — exiting
+        // FullScreen takes priority over that key press, and e.Handled=true stops the bubble phase
+        // from also dismissing overlays on the same keystroke. When not in FullScreen this handler
+        // is a no-op and Escape reaches DismissOverlaysCommand exactly as before.
+        AddHandler(KeyDownEvent, OnEscapeExitsFullScreen, RoutingStrategies.Tunnel);
 
         _themeService = App.Services.GetService<ThemeService>(); // optional service
         if (_themeService is not null)
@@ -25,6 +59,24 @@ public partial class MainWindow : Window
                 OnCustomizationApplied(settings);
             }
         }
+
+        _colorSources = App.Services.GetService<ColorSourceCoordinator>(); // optional, like the theme service
+        if (_colorSources is not null)
+        {
+            Opened += (_, _) =>
+            {
+                _colorSources.Start();
+                _colorSources.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
+            };
+            Activated += (_, _) => _colorSources.PollNow();
+        }
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsVisibleProperty || change.Property == WindowStateProperty)
+            _colorSources?.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -67,13 +119,14 @@ public partial class MainWindow : Window
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica")
-            {
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
-                Background = Brushes.Transparent;
-                Opacity = 1.0;
-            }
-            else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
+            // Every branch also sets TransparencyBackgroundFallback to the opaque palette surface
+            // (ThemeService overrides GlassBaseDark with palette.Surface, following the active
+            // seed on both a light and a dark palette). That fallback is what actually paints
+            // when the requested backdrop is unavailable (Win10, X11 without a compositor) - so
+            // it must never be left at whatever translucent value preceded this customization.
+            TransparencyBackgroundFallback = OpaqueSurfaceFallbackBrush();
+
+            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
@@ -91,9 +144,38 @@ public partial class MainWindow : Window
             {
                 // Gradient, Wallpaper, Solid, and all non-transparent modes.
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
-                Background = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x10));
+                // Follows the theme's own base (ThemeService overrides GlassBaseDark with
+                // palette.Surface) rather than one hardcoded near-black, which was the same
+                // window colour on every seed (RemEx-fy0a).
+                // OpaqueColor: this branch has just disabled transparency, so the background must
+                // actually be opaque. GlassBaseDark carries alpha on some palettes, and the brush
+                // form would have made a "non-transparent" window partially transparent.
+                Background = OpaqueSurfaceFallbackBrush();
                 Opacity = 1.0;
             }
         });
     }
+
+    // Shared by every OnCustomizationApplied branch: an unavailable backdrop must fall back to
+    // the opaque palette surface, never a translucent pre-customization value (RemEx-l2yqy).
+    // Assigning the fallback in code makes it a LocalValue that outranks the XAML DynamicResource,
+    // so it only stays current because ThemeService.ApplyCustomizationCore both writes the
+    // GlassBaseDark overrides and raises CustomizationApplied. Move either one and a Win10 / X11
+    // window without a compositor keeps painting the previous seed's Surface after a theme switch.
+    private static SolidColorBrush OpaqueSurfaceFallbackBrush() =>
+        new(ThemeResources.OpaqueColor("GlassBaseDark", Color.FromRgb(0x0A, 0x0A, 0x10)));
+
+    private void OnEscapeExitsFullScreen(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldExitFullScreenOnEscape(e.Key, WindowState))
+            return;
+
+        WindowState = WindowState.Normal;
+        e.Handled = true;
+    }
+
+    // Pure logic pulled out of OnEscapeExitsFullScreen so it is testable without an Avalonia
+    // headless runtime (RemEx-5253o) — this project has none.
+    internal static bool ShouldExitFullScreenOnEscape(Key key, WindowState state) =>
+        key == Key.Escape && state == WindowState.FullScreen;
 }

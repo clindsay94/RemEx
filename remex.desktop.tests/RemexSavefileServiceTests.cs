@@ -30,6 +30,12 @@ public sealed class RemexSavefileServiceTests : IDisposable
 {
     private readonly List<string> _tempDirs = new();
 
+    // DISPOSED IN Dispose() BELOW, ALONGSIDE _tempDirs (RemEx-8y3qy). Every DashboardLayoutService in
+    // this assembly shares one redirected dashboard_layout.json (build/TestHostStateRedirect.cs is
+    // per-ASSEMBLY, not per-test); an undisposed instance can leave a debounce timer armed past this
+    // test's own lifetime that later fires a write into another test's read.
+    private readonly List<DashboardLayoutService> _layoutServices = new();
+
     private string CreateTempDir()
     {
         var dir = Path.Combine(Path.GetTempPath(), "remex-savefile-tests-" + Guid.NewGuid().ToString("N"));
@@ -44,6 +50,11 @@ public sealed class RemexSavefileServiceTests : IDisposable
         {
             try { Directory.Delete(dir, recursive: true); } catch { /* best-effort cleanup */ }
         }
+
+        foreach (var layoutService in _layoutServices)
+        {
+            layoutService.Dispose();
+        }
     }
 
     /// <summary>
@@ -54,10 +65,13 @@ public sealed class RemexSavefileServiceTests : IDisposable
     /// are real instances bound to the real machine-wide paths; safe to construct (no I/O happens
     /// in their constructors) as long as tests never populate the corresponding savefile sections.
     /// </summary>
-    private static RemexSavefileService CreateService(string launcherDir, IDashboardProfileStorageService? hostStorage = null)
+    private RemexSavefileService CreateService(string launcherDir, IDashboardProfileStorageService? hostStorage = null)
     {
+        var layoutService = new DashboardLayoutService(new ThemeService());
+        _layoutServices.Add(layoutService);
+
         return new RemexSavefileService(
-            new DashboardLayoutService(new ThemeService()),
+            layoutService,
             new LauncherStorageService(launcherDir),
             new FileTransferRootSettingsService(),
             hostStorage ?? new FakeDashboardProfileStorageService());

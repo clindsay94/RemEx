@@ -402,14 +402,13 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         // Fixed brand backdrop — full-bleed diagonal gradient (the first draw).
                         drawRect(brush = SplashBrand.backdropBrush(size))
-                        // particleFrame read here subscribes the draw to the frame clock so
-                        // the floating morph-shapes (drawn inside the helper) animate.
-                        @Suppress("UNUSED_EXPRESSION") particleFrame
+                        // Subscribes this draw to the frame clock so the floating morph-shapes animate.
+                        redrawOnFrame(particleFrame)
                         drawRemexCommandAmbientFx(floatingShapes, SplashBrand.WindowStroke, SplashBrand.SlateLo)
 
                         // Particle embers
                         if (p2 < 0.5f) {
-                                @Suppress("UNUSED_EXPRESSION") particleFrame
+                                redrawOnFrame(particleFrame)
                                 for (p in particles) {
                                         if (p.alpha > 0.02f)
                                                 drawCircle(
@@ -579,7 +578,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 drawContext.canvas.drawPath(connPath, corePaint)
 
                                 // Stream particles traveling along the curve
-                                @Suppress("UNUSED_EXPRESSION") particleFrame
+                                redrawOnFrame(particleFrame)
                                 for (sp in streamParticles) {
                                         val pos =
                                                 cubicBezier(

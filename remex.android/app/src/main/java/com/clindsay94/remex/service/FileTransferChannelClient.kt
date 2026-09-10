@@ -14,6 +14,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -42,7 +43,96 @@ interface FileFrameChannel {
 
     /** Sends one frame. Returns false if the socket is not open. */
     fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray): Boolean
+
+    /**
+     * Sends one DATA frame carrying `count` bytes from `buffer`. Returns false if the socket is not
+     * open.
+     *
+     * ON THE INTERFACE SO THE SEND LOOP CAN BE INJECTED (RemEx-xrb2v). [FileHostHandler] already
+     * takes its channel as a constructor parameter, but its download-send loop reached past that to
+     * call [FileTransferChannelClient.sendData] directly — so in a unit test the singleton has no
+     * websocket, the very first data frame returns false, and the loop throws before reaching
+     * anything worth asserting about. The ack-drain that bead fixed was therefore unreachable from a
+     * test.
+     *
+     * Takes the buffer plus a count rather than a sized ByteArray on purpose: this runs once per
+     * 64 KB chunk of every transfer, and copying each chunk into a right-sized array to satisfy
+     * [sendFrame] would add an allocation per frame to the hot path.
+     */
+    fun sendData(
+        transferId: String,
+        offset: Long,
+        buffer: ByteArray,
+        count: Int,
+        final: Boolean,
+    ): Boolean
 }
+
+/**
+ * Which machine a binary channel is connected to (RemEx-5t4k9).
+ *
+ * ONE DEFINITION, because two places compare against it - the reconnect shortcut inside
+ * [FileTransferChannelClient.ensureConnected] and [FileTransferChannelClient.isOpenTo]. A second copy
+ * that drifted would let one of them believe the channel goes somewhere the other does not, which is
+ * the same silent wrong-machine transfer the caller-side check exists to stop.
+ *
+ * **A VALUE RATHER THAN A JOINED STRING, AND A TEST IS WHY.** This started as "$host:$port:$clientId",
+ * which is ambiguous: a host of "10.0.0.1:9000" on port 8765 and a host of "10.0.0.1" on port 9000
+ * with a client id of "8765:abc" produce the identical key. Nothing can reach that today - the host
+ * comes from the user's own settings and the client id is a bare UUID - but this key is compared for
+ * equality to answer "am I connected to the right machine", and a format in which two different
+ * machines can collide is the wrong shape for that question no matter how unreachable the collision
+ * is. Structural equality has no such case to reason about.
+ */
+internal data class ChannelTarget(val host: String, val port: Int, val clientId: String)
+
+/**
+ * Whether an open channel is the one a caller is asking about.
+ *
+ * **EXTRACTED SO THE RULE IS ENFORCED RATHER THAN ASSERTED.** Two places decide this — the reconnect
+ * shortcut inside [FileTransferChannelClient.ensureConnected] and [FileTransferChannelClient.isOpenTo]
+ * — and if they ever disagreed, one would believe the channel goes somewhere the other does not. That
+ * is the same silent wrong-machine transfer the caller-side check exists to stop, arriving from the
+ * inside. Pure, so it can be mutation-tested; the state it reads is private to an object no unit test
+ * in this module can reach.
+ */
+internal fun channelMatches(open: Boolean, current: ChannelTarget?, target: ChannelTarget): Boolean =
+    open && current == target
+
+/**
+ * Which stored reconnect secret answers the host's proof-of-possession challenge on this channel.
+ *
+ * **THE SPKI ALIAS FIRST, AND THAT ORDER IS THE ENTIRE FIX (RemEx-6bfyt).** Pairing writes the same
+ * secret under three aliases — `hostId`, the host address, and the SPKI hash — each encrypted
+ * separately with its own alias as Tink associated data. They are therefore independent records, and
+ * a re-pair reached over a different address leaves the OLD secret sitting under the OLD address key
+ * while the SPKI key carries the current one. An address-only lookup then finds a secret, computes a
+ * perfectly well-formed HMAC with it, and is rejected.
+ *
+ * That is not hypothetical: it is the reported bug. The control channel already resolves it this way
+ * (`RemexClientManager`, RemEx-060g, "prefer the SPKI-keyed secret ... so a stale per-IP secret is
+ * never used after a LAN <-> Tailscale switch"), and that fix was never carried across to this
+ * channel. So `/ws` authenticated on the fresh secret and streamed telemetry while `/ws/files`
+ * presented the stale one and was refused — which surfaced far downstream as the host reporting "The
+ * binary file channel is not connected", naming a socket rather than the credential that failed.
+ *
+ * The address alias is still the fallback, deliberately: pairings made before RemEx-060g have no
+ * SPKI-keyed entry, and dropping it would brick them instead of the one re-pair they already need.
+ *
+ * A BLANK [spkiHash] is skipped rather than looked up. Both callers already refuse to get this far
+ * without a pin, so nothing reaches it today — but this is a credential lookup, and a blank alias is
+ * a writable key in the store rather than a guaranteed miss. Asking for it would be asking "give me
+ * whatever was filed under no host at all", which is never a question worth answering here.
+ *
+ * Takes [lookup] rather than a `Context` so the ORDER is unit-testable. The real source is
+ * `PinnedHostStore.getReconnectSecret`, which needs DataStore and Tink and so cannot be reached from
+ * a JVM unit test — the same reason [channelMatches] above is extracted.
+ */
+internal suspend fun resolveReconnectSecret(
+    spkiHash: String,
+    host: String,
+    lookup: suspend (String) -> String?,
+): String? = spkiHash.takeIf { it.isNotBlank() }?.let { lookup(it) } ?: lookup(host)
 
 /**
  * OkHttp WSS client for the dedicated binary `/ws/files` channel (plan §1.1, WP5). This is a plain
@@ -68,9 +158,23 @@ object FileTransferChannelClient : FileFrameChannel {
 
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var openState = false
-    @Volatile private var currentKey: String? = null
+    @Volatile private var currentKey: ChannelTarget? = null
 
     override val isOpen: Boolean get() = openState
+
+    /**
+     * Whether the channel is open **to this exact host**, and not merely open (RemEx-5t4k9).
+     *
+     * **[isOpen] ALONE IS NOT A USEFUL ANSWER TO "CAN I TRANSFER NOW".** It says a socket exists, not
+     * that it goes anywhere the caller means. A live channel to a previously configured PC satisfies
+     * it, and a caller that shortcuts on it skips [ensureConnected] entirely - so the transfer gets
+     * negotiated over a connection to the wrong machine and its bytes have nowhere to go. The one
+     * two callers that did that are why this exists. [isOpen] stays, because [FileFrameChannel] needs a
+     * question that can be asked without knowing an address, and because refusing an offer only needs
+     * to know that SOME channel is up.
+     */
+    fun isOpenTo(host: String, port: Int, clientId: String): Boolean =
+        channelMatches(openState, currentKey, ChannelTarget(host, port, clientId))
 
     override fun registerSink(transferId: String, sink: FileFrameSink) {
         sinks[transferId] = sink
@@ -88,7 +192,7 @@ object FileTransferChannelClient : FileFrameChannel {
     }
 
     /** Sends a data frame without an extra payload copy. */
-    fun sendData(
+    override fun sendData(
         transferId: String,
         offset: Long,
         buffer: ByteArray,
@@ -142,8 +246,8 @@ object FileTransferChannelClient : FileFrameChannel {
         clientId: String,
         spkiHash: String,
     ): Boolean {
-        val key = "$host:$port:$clientId"
-        if (openState && currentKey == key) return true
+        val key = ChannelTarget(host, port, clientId)
+        if (channelMatches(openState, currentKey, key)) return true
         // Tear down any prior socket to a different host before reconnecting.
         closeInternal()
 
@@ -154,7 +258,12 @@ object FileTransferChannelClient : FileFrameChannel {
         // synchronously off the OkHttp dispatcher, not a coroutine — can answer without blocking. A
         // paired client with no stored secret predates PAIR-1 or lost it; fail fast instead of
         // letting the host silently 1008-close the socket after its 10s challenge timeout.
-        val reconnectSecret = PinnedHostStore.getReconnectSecret(context, host)
+        // SPKI-keyed first, address-keyed only as the legacy fallback — see [resolveReconnectSecret].
+        // Looking this up by address alone is what made every transfer fail after a LAN <-> Tailscale
+        // switch: a stale per-address secret is found, proves nothing, and the host refuses the
+        // channel (RemEx-6bfyt).
+        val reconnectSecret =
+            resolveReconnectSecret(spkiHash, host) { PinnedHostStore.getReconnectSecret(context, it) }
         if (reconnectSecret.isNullOrBlank()) {
             Log.e(TAG, "No stored reconnect secret for $host; refusing /ws/files connect (re-pair required)")
             return false
@@ -269,18 +378,23 @@ object FileTransferChannelClient : FileFrameChannel {
                     webSocket.close(code, null)
                 }
 
-                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                // NAMED `socket`, NOT `webSocket`, ON PURPOSE. handleClosed compares what it is
+                // handed against the FIELD of the same name to tell a retired socket from the live
+                // one. With the parameter named `webSocket` that still worked - it shadows the field
+                // here - but the guard's correctness rested on the shadowing, and a rename would have
+                // silently turned it into a comparison of the field with itself.
+                override fun onClosed(socket: WebSocket, code: Int, reason: String) {
                     // Covers the case where the host 1008-closes the socket (proof rejected/timed
                     // out) before onFailure would otherwise fire — callers awaiting [opened] must
                     // not hang.
                     if (!opened.isCompleted) opened.complete(false)
-                    handleClosed()
+                    handleClosed(socket)
                 }
 
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                override fun onFailure(socket: WebSocket, t: Throwable, response: Response?) {
                     Log.w(TAG, "Binary /ws/files channel failure: ${t.message} (http=${response?.code})")
                     if (!opened.isCompleted) opened.complete(false)
-                    handleClosed()
+                    handleClosed(socket)
                 }
             }
 
@@ -289,6 +403,12 @@ object FileTransferChannelClient : FileFrameChannel {
         client.dispatcher.executorService.shutdown()
         return try {
             opened.await()
+        } catch (e: CancellationException) {
+            // Rethrow: a cancelled transfer or a caller leaving the screen must unwind the
+            // coroutine here, not read back as "the host did not accept the connection" to
+            // AndroidFileTransferHost / FileTransferEngine, which would report a connection
+            // failure for what was actually a user cancel.
+            throw e
         } catch (e: Exception) {
             false
         }
@@ -307,11 +427,34 @@ object FileTransferChannelClient : FileFrameChannel {
         sink.onFrame(decoded.envelope, decoded.payload)
     }
 
-    private fun handleClosed() {
+    /**
+     * @param source the socket whose callback fired, or null when the caller IS the current socket's
+     *   owner (an explicit [close] or [invalidate]).
+     */
+    private fun handleClosed(source: WebSocket?) {
+        // **A RETIRED SOCKET MUST NOT TEAR DOWN THE ONE THAT REPLACED IT.** closeInternal sends a
+        // graceful close frame and moves on, so the old socket's onFailure/onClosed can arrive long
+        // after a new one is up - OkHttp gives an unanswered close up to a minute. Without this the
+        // late callback cleared openState, currentKey and webSocket for the LIVE connection and told
+        // every sink on the new transfer that the channel had dropped: the transfer stalls mid-flight
+        // and the only log line names the wrong socket.
+        //
+        // Unreachable until RemEx-5t4k9, which is why it survived. Every caller used to shortcut on a
+        // bare isOpen, so ensureConnected was only ever entered with nothing open and closeInternal
+        // had no live socket to retire. Asking the right question is what first routes a live one
+        // through it. The listener's own contract at the top of this file already says a callback
+        // must act on the socket it was handed rather than on whatever the field points at now; this
+        // was the one place that did not.
+        if (source != null && source !== webSocket) return
+
         openState = false
         currentKey = null
         webSocket = null
-        // Notify every live sink so receivers keep partials and senders pause.
+        notifySinksClosed()
+    }
+
+    /** Tells every live sink the channel is gone, so receivers keep partials and senders pause. */
+    private fun notifySinksClosed() {
         sinks.values.toList().forEach {
             try {
                 it.onChannelClosed()
@@ -322,6 +465,7 @@ object FileTransferChannelClient : FileFrameChannel {
     }
 
     private fun closeInternal() {
+        val hadSocket = webSocket != null
         try {
             webSocket?.close(1000, "reconnect")
         } catch (e: Exception) {
@@ -330,6 +474,14 @@ object FileTransferChannelClient : FileFrameChannel {
         webSocket = null
         openState = false
         currentKey = null
+
+        // **THE SINKS ARE TOLD HERE, NOT WHEN THE CLOSE FRAME IS EVENTUALLY ANSWERED.** A graceful
+        // close is asynchronous, so the old socket's onClosed can arrive a minute later - by which
+        // time a new socket may be up, and handleClosed will (correctly) ignore it as belonging to a
+        // retired connection. That left the transfers on the OLD connection never told at all: they
+        // stalled instead of pausing. Telling them now is both earlier and addressed to the right
+        // set, because at this instant the sinks are still the retired connection's.
+        if (hadSocket) notifySinksClosed()
     }
 
     fun close() {
@@ -355,7 +507,7 @@ object FileTransferChannelClient : FileFrameChannel {
         } catch (e: Exception) {
             // best-effort
         }
-        handleClosed()
+        handleClosed(null)
     }
 
     private val EMPTY = ByteArray(0)

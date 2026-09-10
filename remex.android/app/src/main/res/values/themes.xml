@@ -10,4 +10,14 @@
     </style>
 
     <style name="Theme.RemEx" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- Quick Settings tile destructive-action confirmation (TileConfirmActivity, RemEx-sxfp).
+         Floating/translucent so the confirm dialog reads as an overlay on whatever was already on
+         screen when the tile was tapped, not a full-screen app launch for a single yes/no. -->
+    <style name="Theme.RemEx.TileConfirm" parent="Theme.Material3.DayNight.Dialog">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
 </resources>

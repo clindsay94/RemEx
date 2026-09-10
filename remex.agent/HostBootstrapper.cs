@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -90,7 +91,19 @@ public static class HostBootstrapper
         // PROTO-1 (RemEx-htt): the 8338 command channel authenticates callers against the paired-client
         // registry. Without this registration the listener fails closed (rejects every command).
         builder.Services.AddSingleton<Remex.Core.Services.Network.ICommandChannelAuthenticator, Remex.Agent.Services.Network.PairedClientChannelAuthenticator>();
-        builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
+        // A FACTORY RATHER THAN A TYPE REGISTRATION, so the media-session probe can be supplied
+        // (RemEx-xx6xf). Its parameter is an optional Func that defaults to FALSE, so a plain
+        // AddSingleton<,>() would compile, resolve, and quietly tell every phone that this PC will
+        // never report what it is playing.
+        builder.Services.AddSingleton<IHostCapabilitiesProvider>(sp => new HostCapabilitiesProvider(
+            sp.GetRequiredService<IScreenCaptureService>(),
+            sp.GetRequiredService<IInputSimulationService>(),
+            mediaStateProbe: () => sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>().IsSupported));
+        // The PC clipboard, for clipboard_push (RemEx-hgqs). Lives in remex.desktop because that is
+        // where Avalonia is; the implementation hops to the UI thread, which nothing in this project
+        // can do - remex.agent has no Dispatcher reference of its own.
+        builder.Services.AddSingleton<Remex.Core.Services.Clipboard.IHostClipboard,
+            Remex.Desktop.Services.AvaloniaHostClipboard>();
         builder.Services.AddSingleton<IDesktopWindowControlService, UnsupportedDesktopWindowControlService>();
         // No LocalIpcServerService: the desktop UI runs in THIS process and resolves command/WoL/pairing
         // services straight from DI (see EmbeddedHostServiceLocator), so the RemExLocalIPC named pipe and
@@ -128,7 +141,20 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
             builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Agent.Services.ScreenCapture.LinuxScreenCaptureService>();
-            builder.Services.AddSingleton<IInputSimulationService, Remex.Agent.Services.Input.LinuxInputSimulationService>();
+            // Factory rather than a plain type registration so the input service can be handed the
+            // virtual-desktop origin. It needs one because ydotool has no absolute pointer mode: its
+            // --absolute homes the pointer to the desktop's top-left and then moves by the operands,
+            // so those operands are an OFFSET, and the two only coincide when the origin is (0,0)
+            // (RemEx-dyvd). The type test lives here because this is the only place that knows the
+            // concrete capture service; GetVirtualDesktopBounds is deliberately not on the shared
+            // interface, where a default implementation would be wrong on Windows.
+            builder.Services.AddSingleton<IInputSimulationService>(sp =>
+                new Remex.Agent.Services.Input.LinuxInputSimulationService(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Input.LinuxInputSimulationService>>(),
+                    sp.GetService<Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>(),
+                    sp.GetRequiredService<IScreenCaptureService>() is Remex.Agent.Services.ScreenCapture.LinuxScreenCaptureService linuxCapture
+                        ? () => { var (left, top, _, _) = linuxCapture.GetVirtualDesktopBounds(); return (left, top); }
+                        : null));
             builder.Services.AddSingleton<IDesktopWindowControlService, LinuxDesktopWindowControlService>();
             builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
         }
@@ -144,6 +170,64 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<TelemetryBackgroundService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<TelemetryBackgroundService>());
+        // Same instance again, under the interface the in-process UI can name (RemEx-ite8).
+        builder.Services.AddSingleton<Remex.Core.Services.ITelemetryBroadcaster>(
+            sp => sp.GetRequiredService<TelemetryBackgroundService>());
+
+        // ── Media session reporting (RemEx-xx6xf) ──
+        // The reader is chosen here and NOWHERE ELSE branches on the platform: an unsupported host
+        // gets a real stub rather than a null registration, so the sampler, the capability provider
+        // and the per-connection stream are all platform-agnostic. What a host cannot do is said once,
+        // in HostCapabilities.SupportsMediaState, rather than re-derived at each call site.
+        // The #if is not belt-and-braces over the runtime check: WindowsMediaSessionReader consumes
+        // WinRT projections that exist only under the windows-versioned TFM, so off Windows the type
+        // is not compiled at all (see the Compile Remove in Remex.Agent.csproj) and naming it here
+        // would be a compile error, not a branch never taken. The OperatingSystem.IsWindows() call
+        // still earns its place inside: the windows TFM is chosen by the BUILD host, so a Windows
+        // build can still be published for a linux-x64 RID and must not construct an SMTC reader there.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSessionReader>(sp =>
+        {
+#if WINDOWS_MEDIA
+            if (OperatingSystem.IsWindows())
+            {
+                return new Remex.Agent.Services.Media.WindowsMediaSessionReader(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.WindowsMediaSessionReader>>());
+            }
+#endif
+            if (OperatingSystem.IsLinux())
+            {
+                return new Remex.Agent.Services.Media.LinuxMediaSessionReader(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.LinuxMediaSessionReader>>());
+            }
+
+            return new Remex.Agent.Services.Media.UnsupportedMediaSessionReader();
+        });
+
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaArtworkStore, Remex.Agent.Services.Media.MediaArtworkStore>();
+        // The platform readers opt into artwork resolution by implementing IMediaArtworkSource
+        // themselves (WindowsMediaSessionReader, LinuxMediaSessionReader) — the handle they resolve
+        // from comes out of the same session object the reading did. A reader that does not is a
+        // platform with no artwork at all, and falls back to the null object rather than a nullable
+        // dependency every call site would have to check.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaArtworkSource>(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaArtworkSource
+            ?? Remex.Agent.Services.Media.NullMediaArtworkSource.Instance);
+
+        // Seeking opts in the same way and for the same reason: the session to seek is the session
+        // the reading came from, and nothing else in this process knows which player that is. A
+        // reader that is not a seek target is a platform that cannot move a playback position, and
+        // the null object answers false rather than making every call site check for null.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSeekTarget>(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaSeekTarget
+            ?? Remex.Agent.Services.Media.NullMediaSeekTarget.Instance);
+
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.MediaSessionBackgroundService>();
+        builder.Services.AddHostedService(sp =>
+            sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
+        // Same instance under the interface its consumers name, the shape used by the telemetry
+        // broadcaster above: one sampler, several readers, no second poll.
+        builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSessionMonitor>(
+            sp => sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
@@ -178,7 +262,69 @@ public static class HostBootstrapper
         // Singletons on purpose: TransferSessionManager holds live per-transfer state that MUST be shared
         // between the /ws control plane (offer/ready/complete/result/control) and the /ws/files binary data
         // plane, and TransferQueueService owns the process-death-surviving transfer_queue.json.
+        // Singleton: it IS the live-session list, so a per-request instance would be empty.
+        builder.Services.AddSingleton<ClientSessionRegistry>();
+
+        // The same instance under the interface the DESKTOP can name (RemEx-0z7w). A second
+        // AddSingleton<IClientSessionSource, ClientSessionRegistry>() would construct a SECOND
+        // registry holding no sessions, and the UI would confidently report zero phones forever —
+        // the failure this feature exists to fix, arriving by way of its own wiring.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IClientSessionSource>(
+            sp => sp.GetRequiredService<ClientSessionRegistry>());
+        builder.Services.AddSingleton<PairedClientNameStore>();
+        builder.Services.AddSingleton<PairedDeviceActivityStore>();
+        builder.Services.AddSingleton<PairedDeviceNameOverrideStore>();
+        // The phone's last-known palette, for "Match my phone" (RemEx-sudp8). Interface lives in
+        // Remex.Core so the desktop can depend on it without referencing Remex.Agent, resolved there
+        // via App.EmbeddedHostServices the same way SystemStatusViewModel reaches ISystemReadinessService.
+        builder.Services.AddSingleton<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore,
+            Remex.Agent.Services.Theme.PhoneThemeSnapshotStore>();
+
+        // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
+        // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
+        // name the host's types without a project-reference cycle.
+        // The rename seam, deliberately a SEPARATE registration from the read-only list: one is a
+        // list and one is a mutation, and the interfaces are kept apart for the same reason
+        // (RemEx-4gbp2). It resolves only the name store, so it cannot reach the pairing registry.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceNameWriter>(
+            sp => new PairedDeviceRenamer(sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
+
+        // The revoker: its own registration, its own interface, because it is the only one of the
+        // three that touches the pairing registry (RemEx-5lb90). It takes the trust service too —
+        // that store is the fifth thing keyed by client id, and it is pruned only for clients that
+        // are NOT paired, so a grant that outlives a revocation becomes live again on the re-pair.
+        // Cutting the live connections is its own service, not four more constructor parameters on
+        // the revoker: the stores are persistent state and the channels are lifetimes owned by three
+        // other classes, and keeping them apart is what lets either be tested without the other
+        // (RemEx-6nkht).
+        builder.Services.AddSingleton<IPairedDeviceDisconnector, PairedDeviceDisconnector>();
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceRevoker>(
+            sp => new PairedDeviceRevoker(
+                sp.GetRequiredService<PairedClientRegistry>(),
+                sp.GetRequiredService<PairedClientNameStore>(),
+                sp.GetRequiredService<PairedDeviceNameOverrideStore>(),
+                sp.GetRequiredService<PairedDeviceActivityStore>(),
+                sp.GetRequiredService<IFileTrustService>(),
+                sp.GetRequiredService<IPairedDeviceDisconnector>(),
+                sp.GetRequiredService<ILogger<PairedDeviceRevoker>>()));
+
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(
+            sp => new PairedDeviceDirectory(
+                sp.GetRequiredService<PairedClientRegistry>(),
+                sp.GetRequiredService<PairedClientNameStore>(),
+                sp.GetRequiredService<PairedDeviceActivityStore>(),
+                sp.GetRequiredService<ClientSessionRegistry>(),
+                sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
         builder.Services.AddSingleton<TransferSessionManager>();
+        // RESOLVED BY TransferSessionManager, which is the only production writer of
+        // transfer_queue.json. Until that constructor parameter existed this registration had ZERO
+        // production resolution sites: nothing ever constructed the service, so the file was never
+        // written on a real machine and two beads (RemEx-kow1, RemEx-njzcx) had hardened a store only
+        // the tests instantiated. Do not "simplify" this back to an unresolved registration — the
+        // singleton is what makes the queue file survive a restart. It is constructed when
+        // TransferSessionManager is first resolved, which is the same moment TSM's own constructor
+        // already creates its staging directory under %ProgramData%: this adds no new startup ordering
+        // question, it joins one that was already answered.
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
 
@@ -230,6 +376,56 @@ public static class HostBootstrapper
             .GetAwaiter().GetResult();
 
         builder.Services.AddSingleton<ICertificateService>(certService);
+
+        // SCREENSHOTS (RemEx-tjve), registered after the capture backends above so it picks up
+        // whichever one this platform negotiated rather than opening a second one.
+        //
+        // PICTURES, NOT A REMEX-PRIVATE FOLDER. A screenshot is the user's, not the app's: they will
+        // look for it where every other screenshot on the machine lives, and a gallery indexes that
+        // location already. On Linux this follows the user's XDG PICTURES directory, falling back to
+        // ~/Pictures - so on a localised desktop it is ~/Bilder or ~/Images, not literally ~/Pictures.
+        builder.Services.AddSingleton<Remex.Agent.Services.FileTransfer.FilePushOriginator>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Screenshot.IScreenshotService>(sp =>
+            new Remex.Agent.Services.Screenshot.ScreenshotService(
+                sp.GetRequiredService<IScreenCaptureService>(),
+                () =>
+                {
+                    // EMPTY IS A REAL ANSWER, not a theoretical one: GetFolderPath returns "" when
+                    // the folder cannot be resolved - Pictures redirected to an unavailable share, or
+                    // HOME unset under an XDG autostart. Path.Combine would then yield a RELATIVE
+                    // path, which an elevated process resolves against a working directory it did not
+                    // choose. The write would succeed in somewhere like System32 BECAUSE of the
+                    // elevation, and the user would never find the file.
+                    var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                    if (string.IsNullOrEmpty(pictures))
+                    {
+                        throw new InvalidOperationException(
+                            "This PC has no Pictures folder available, so there is nowhere sensible to "
+                                + "save a screenshot.");
+                    }
+
+                    return Path.Combine(pictures, "RemEx Screenshots");
+                },
+                () => DateTimeOffset.Now));
+
+        // THE READINESS REPORT, REGISTERED WHERE ITS INPUTS ALREADY LIVE (RemEx-id37). It needs the
+        // certificate path and the port, and both are here - certService a line above, port the
+        // parameter of this method - so building it anywhere else would mean recomputing one of them.
+        //
+        // AUTOSTART IS RESOLVED LAZILY, THROUGH THE OTHER CONTAINER. IStartupRegistrationService is
+        // registered into App.Services (the Avalonia container) by Program.RegisterPlatformServices,
+        // not into this one, and in the headless/--doctor path there is no Avalonia container at all.
+        // A Func closed over App.Services is read at probe time rather than now, and TryIsEnabled's
+        // own contract already returns null for "could not determine" - which the service maps to
+        // Unknown, the honest answer when the UI is not there to ask.
+        builder.Services.AddSingleton<Remex.Core.Services.Readiness.ISystemReadinessService>(_ =>
+            new Remex.Agent.Services.Readiness.SystemReadinessService(
+                new Remex.Agent.Services.Readiness.SystemReadinessProbe(
+                    isAutostartRegistered: () =>
+                        (Remex.Desktop.App.Services?.GetService(typeof(Remex.Desktop.Services.IStartupRegistrationService))
+                            as Remex.Desktop.Services.IStartupRegistrationService)?.TryIsEnabled(),
+                    certificatePath: certService.CertificatePath),
+                port));
 
         if (configureWebHost is null)
         {
@@ -303,7 +499,7 @@ public static class HostBootstrapper
         // detail is exposed here (VULN-6 review, RemEx-s032.6).
         app.MapGet("/pairing-qr", (ICertificateService certService, IConfiguration config) =>
         {
-            var port = int.Parse(config["Host:Port"] ?? "5005");
+            var port = int.Parse(config["Host:Port"] ?? "5005", NumberStyles.Integer, CultureInfo.InvariantCulture);
             return Results.Ok(new
             {
                 host = "0.0.0.0", // Client should substitute with actual host address
@@ -342,7 +538,7 @@ public static class HostBootstrapper
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
-            var handler = new PingPongHandler(
+            using var handler = new PingPongHandler(
                 logger,
                 telemetry,
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(),
@@ -353,10 +549,18 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Screenshot.IScreenshotService>(),
                 context.RequestServices.GetRequiredService<PairingHandler>(),
                 context.RequestServices.GetRequiredService<FileTransferHandler>(),
                 context.RequestServices.GetRequiredService<TransferSessionManager>(),
-                context.RequestServices.GetRequiredService<PairedClientRegistry>());
+                context.RequestServices.GetRequiredService<PairedClientRegistry>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>(),
+                context.RequestServices.GetRequiredService<ClientSessionRegistry>(),
+                context.RequestServices.GetRequiredService<PairedClientNameStore>(),
+                context.RequestServices.GetRequiredService<PairedDeviceActivityStore>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for
@@ -374,7 +578,9 @@ public static class HostBootstrapper
             var isTrustedForPinAutoFetch = Remex.Agent.Services.Security.TransportTrust
                 .IsTrustedForPinAutoFetch(remoteIp, context.Connection.LocalIpAddress);
 
-            await handler.HandleAsync(ws, isLoopback, isTrustedForPinAutoFetch, context.RequestAborted);
+            await handler.HandleAsync(
+                ws, isLoopback, isTrustedForPinAutoFetch,
+                remoteAddress: remoteIp?.ToString(), context.RequestAborted);
         });
 
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
@@ -611,7 +817,7 @@ public static class HostBootstrapper
     /// </summary>
     /// <remarks>
     /// Extracted so the auth decision can be exercised by unit tests without standing up Kestrel.
-    /// The default <see cref="WebApplicationFactory"/> TestServer reports a null RemoteIpAddress,
+    /// The default <c>WebApplicationFactory</c> TestServer reports a null RemoteIpAddress,
     /// which we treat as loopback — that bypasses the registry check, so the rejection paths
     /// have to be validated through this helper directly.
     /// </remarks>
@@ -628,7 +834,10 @@ public static class HostBootstrapper
         // non-numeric or below the supported range is a clear-cut reject.
         if (!string.IsNullOrEmpty(protocolVersion))
         {
-            if (!int.TryParse(protocolVersion, out var parsedVersion)
+            // INVARIANT: protocolVersion arrives off the wire from a phone in an unknown locale, and
+            // is compared against a fixed supported range. Parsing it under the host's ambient
+            // culture makes the same query string mean different things on different PCs.
+            if (!int.TryParse(protocolVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedVersion)
                 || !Remex.Core.Messages.ProtocolVersionPolicy.IsSupported(parsedVersion))
             {
                 return (StatusCodes.Status400BadRequest,
@@ -640,6 +849,18 @@ public static class HostBootstrapper
         var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
         if (isLoopback)
         {
+            // Same guard, same reason as EvaluateFilesAuth (RemEx-4u0d). This endpoint had the
+            // identical hole one function over: loopback returned 200 with any ?clientId=, and the
+            // caller then cancels the prior StreamFramesAsync loop for that id (Track B), so a local
+            // process could name a paired phone and kill its screen stream. The bead was written
+            // about /ws/files; this is the same copy-pasted bypass, and fixing only the reported one
+            // would have left its sibling live - which is exactly how the shadowed
+            // InitializeComponent defect (RemEx-wdqx) reached three views.
+            if (!string.IsNullOrWhiteSpace(clientId) && registry.IsClientPaired(clientId))
+            {
+                return (StatusCodes.Status403Forbidden, "Loopback may not claim a paired client identity.");
+            }
+
             return (StatusCodes.Status200OK, null);
         }
 
@@ -683,7 +904,8 @@ public static class HostBootstrapper
         // not know it exists), so in practice only paired v3 clients ever reach here.
         if (!string.IsNullOrEmpty(protocolVersion))
         {
-            if (!int.TryParse(protocolVersion, out var parsedVersion)
+            // Invariant, for the same reason as the /ws/desktop pre-auth above.
+            if (!int.TryParse(protocolVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedVersion)
                 || !Remex.Core.Messages.ProtocolVersionPolicy.SupportsBinaryFileTransfer(parsedVersion))
             {
                 return (StatusCodes.Status400BadRequest,
@@ -695,6 +917,37 @@ public static class HostBootstrapper
         var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
         if (isLoopback)
         {
+            // LOOPBACK IS AUTHENTICATED BY CONSTRUCTION, BUT IT IS NOT A PAIRING - so it may not ACT
+            // AS one (RemEx-4u0d, the /ws/files half of RemEx-4215). The bypass below used to return
+            // 200 for loopback with ANY ?clientId=, before the IsClientPaired check, and the caller
+            // hands that same id straight to TransferSessionManager.RunChannelAsync, which does
+            // existing.MarkSuperseded() and re-keys the channel on it. An unelevated local process
+            // could therefore name a paired phone, DISPLACE that phone's binary channel, and receive
+            // or inject the elevated agent's bulk file bytes for an in-flight transfer. The control
+            // plane was closed for exactly this in RemEx-4215; the binary channel never went through
+            // connectionClientId at all, so it was one hop away and still open.
+            //
+            // This is also what makes the loopback proof-of-possession SKIP below sound. That skip
+            // was only ever safe if loopback could not hold a paired identity, and until this guard
+            // existed it could - so the skip was resting on something that was not true.
+            //
+            // Only the Android client dials this endpoint - there is no PC-side consumer - so
+            // refusing a PAIRED id costs nothing real. A blank or unknown id is still admitted,
+            // which keeps the TestServer path working (it reports a null RemoteIpAddress and so
+            // arrives here) and leaves room for a genuine local consumer later; neither can collide
+            // with a phone's channel key.
+            //
+            // WHY THIS IS NARROWER THAN RemEx-4215, which froze loopback at NO identity outright:
+            // there the id was connectionClientId, a per-connection variable, so blanking it cost
+            // nothing. Here it is a shared dictionary key - TransferSessionManager._channels and
+            // DesktopSessionRegistry._activeSessions - so forcing every loopback caller to a blank
+            // id would collapse them onto ONE key and make two local consumers silently supersede
+            // each other. Refusing only a paired id is the narrowest rule that closes the attack.
+            if (!string.IsNullOrWhiteSpace(clientId) && registry.IsClientPaired(clientId))
+            {
+                return (StatusCodes.Status403Forbidden, "Loopback may not claim a paired client identity.");
+            }
+
             return (StatusCodes.Status200OK, null);
         }
 

@@ -1,6 +1,11 @@
-<Application xmlns="https://github.com/avaloniaui"
+﻿<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+             xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+             xmlns:ctrl="using:Remex.Desktop.Controls"
              x:Class="Remex.Desktop.App" RequestedThemeVariant="Dark">
     <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
@@ -8,39 +13,12 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Remex.Desktop/Themes/BaseDarkGlass.axaml"/>
+                <!-- DraggableCard's ControlTheme (RemEx-9iz00.3). A merged Themes/ include, not a
+                     base theme file, so SwapBaseTheme (RemEx-gcqw5) leaves it alone on every
+                     preset switch — the same guarantee Themes/Chrome/WindowChrome.axaml already
+                     relies on. -->
+                <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/DraggableCard.axaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- ═══ SVG Icon Paths (Material Design, Apache 2.0) ═══ -->
-            <!-- Navigation -->
-            <StreamGeometry x:Key="IconHome">M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z</StreamGeometry>
-            <StreamGeometry x:Key="IconSensors">M3.5,18.5L9.5,12.5L13.5,16.5L22,6.22L20.59,4.81L13.5,13.5L9.5,9.5L2,17L3.5,18.5Z</StreamGeometry>
-            <StreamGeometry x:Key="IconRemote">M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z</StreamGeometry>
-            <StreamGeometry x:Key="IconLauncher">M16,20H20V16H16M16,14H20V10H16M10,8H14V4H10M16,8H20V4H16M10,14H14V10H10M4,14H8V10H4M4,20H8V16H4M10,20H14V16H10M4,8H8V4H4V8Z</StreamGeometry>
-            <StreamGeometry x:Key="IconTasks">M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z</StreamGeometry>
-            <StreamGeometry x:Key="IconDesktop">M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z</StreamGeometry>
-            <StreamGeometry x:Key="IconSettings">M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V9H13V11H21V13M15,9V7H21V5H15V3H13V9H15Z</StreamGeometry>
-            <StreamGeometry x:Key="IconGear">M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.47,5.34 14.86,5.08L14.47,2.44C14.43,2.19 14.22,2 13.97,2H9.97C9.72,2 9.51,2.19 9.47,2.44L9.08,5.08C8.47,5.34 7.9,5.66 7.38,6.05L4.89,5.05C4.67,4.96 4.4,5.05 4.28,5.27L2.28,8.73C2.16,8.95 2.21,9.22 2.4,9.37L4.51,11.03C4.47,11.34 4.45,11.67 4.45,12C4.45,12.33 4.47,12.65 4.51,12.97L2.4,14.63C2.21,14.78 2.16,15.05 2.28,15.27L4.28,18.73C4.4,18.95 4.67,19.04 4.89,18.95L7.38,17.95C7.9,18.34 8.47,18.66 9.08,18.92L9.47,21.56C9.51,21.81 9.72,22 9.97,22H13.97C14.22,22 14.43,21.81 14.47,21.56L14.86,18.92C15.47,18.66 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z</StreamGeometry>
-            <StreamGeometry x:Key="IconAbout">M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z</StreamGeometry>
-            <StreamGeometry x:Key="IconLogs">M14,2H6C4.89,2 4,2.89 4,4V20C4,21.1 4.89,22 6,22H18C19.1,22 20,21.1 20,20V8L14,2M12,18H6V16H12V18M16,14H6V12H16V14M16,10H6V8H16V10M13,9V3.5L18.5,9H13Z</StreamGeometry>
-            <!-- Nav revamp glyphs (Commands / Processes / Connection / FAQ / Personalize) -->
-            <StreamGeometry x:Key="IconCommands">M15,2H9A3,3 0 0,0 6,5V22H18V5A3,3 0 0,0 15,2M12,4A1,1 0 0,1 13,5A1,1 0 0,1 12,6A1,1 0 0,1 11,5A1,1 0 0,1 12,4M9,8H11V10H9V8M13,8H15V10H13V8M9,12H11V14H9V12M13,12H15V14H13V12M9,16H11V18H9V16M13,16H15V18H13V16Z</StreamGeometry>
-            <StreamGeometry x:Key="IconProcesses">M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2M15,15H17V9H15M11,15H13V6H11M7,15H9V11H7V15Z</StreamGeometry>
-            <StreamGeometry x:Key="IconConnection">M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83C7.22,12.88 7.22,9.71 9.17,7.76L12.71,4.22C14.66,2.27 17.83,2.27 19.78,4.22C21.73,6.17 21.73,9.34 19.78,11.29L18.29,12.78C18.3,11.96 18.17,11.14 17.89,10.36L18.36,9.88C19.53,8.72 19.53,6.83 18.36,5.66C17.19,4.5 15.3,4.5 14.13,5.66L10.59,9.2C9.42,10.37 9.42,12.26 10.59,13.41M13.41,9.17C13.8,8.78 14.44,8.78 14.83,9.17C16.78,11.12 16.78,14.29 14.83,16.24L11.29,19.78C9.34,21.73 6.17,21.73 4.22,19.78C2.27,17.83 2.27,14.66 4.22,12.71L5.71,11.22C5.7,12.04 5.83,12.86 6.11,13.65L5.64,14.12C4.47,15.28 4.47,17.17 5.64,18.34C6.81,19.5 8.7,19.5 9.87,18.34L13.41,14.8C14.58,13.63 14.58,11.74 13.41,10.59C13,10.2 13,9.56 13.41,9.17Z</StreamGeometry>
-            <StreamGeometry x:Key="IconFaq">M15.07,11.25L14.17,12.17C13.45,12.89 13,13.5 13,15H11V14.5C11,13.39 11.45,12.39 12.17,11.67L13.41,10.41C13.78,10.05 14,9.55 14,9C14,7.89 13.1,7 12,7A2,2 0 0,0 10,9H8A4,4 0 0,1 12,5A4,4 0 0,1 16,9C16,9.88 15.64,10.67 15.07,11.25M13,19H11V17H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2Z</StreamGeometry>
-            <StreamGeometry x:Key="IconPersonalize">M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A1.5,1.5 0 0,0 13.5,19.5C13.5,19.11 13.35,18.76 13.11,18.5C12.88,18.23 12.73,17.88 12.73,17.5A1.5,1.5 0 0,1 14.23,16H16A5,5 0 0,0 21,11C21,6.58 16.97,3 12,3Z</StreamGeometry>
-            <!-- Toolbar actions -->
-            <StreamGeometry x:Key="IconSave">M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z</StreamGeometry>
-            <StreamGeometry x:Key="IconSync">M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12H4A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z</StreamGeometry>
-            <StreamGeometry x:Key="IconImport">M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z</StreamGeometry>
-            <!-- Version info -->
-            <StreamGeometry x:Key="IconLaptop">M4,6H20V16H4M20,18A2,2 0 0,0 22,16V6C22,4.89 21.1,4 20,4H4C2.89,4 2,4.89 2,6V16A2,2 0 0,0 4,18H0V20H24V18H20Z</StreamGeometry>
-            <StreamGeometry x:Key="IconDesktopPC">M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z</StreamGeometry>
-            <!-- Sensor widget -->
-            <StreamGeometry x:Key="IconFlash">M7,2V13H10V22L17,10H13L17,2H7Z</StreamGeometry>
-            <!-- Warning -->
-            <StreamGeometry x:Key="IconWarning">M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16</StreamGeometry>
-            <!-- File Transfer -->
-            <StreamGeometry x:Key="IconFiles">M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6Z</StreamGeometry>
 
             <!-- Typography -->
             <FontFamily x:Key="JetBrainsMono">avares://Remex.Desktop/Assets#JetBrains Mono, Consolas, DejaVu Sans Mono, monospace</FontFamily>
@@ -55,11 +33,119 @@
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
             <!-- Overall UI scale (the personalization "UI size" slider). Overridden live by ThemeService. -->
             <x:Double x:Key="UiScale">1</x:Double>
+
+            <!-- ═══ Material typography keys, overridden BY KEY on purpose (RemEx-prkot §3 of
+                 docs/AUDIT-fluent-removal.md). MaterialTheme sets FontFamily/FontSize on Window AND
+                 on PopupRoot/OverlayPopupHost through these two DynamicResources; overriding the
+                 keys reaches both surfaces in one move, where a Window-level pin would fix the ten
+                 dialogs and leave every tooltip, flyout and context menu on Roboto — the silent
+                 half the audit calls a trap. ThemeService mirrors the font picker into
+                 MaterialDesignFonts alongside BodyFontFamily, so the live-themable body font keeps
+                 covering popups too. Types must match what Material's themes expect: a FontFamily
+                 element and an x:Double, not strings. -->
+            <FontFamily x:Key="MaterialDesignFonts">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
+            <x:Double x:Key="MaterialDesignFontSize">14</x:Double>
+
+            <!-- ═══ THE CARD SURFACE (RemEx-qbzl1). Material.Styles' Card, re-themed rather than
+                 used as shipped, and declared as an OWN key of Application.Resources on purpose.
+                 It was FORCED to be an own key: ThemeService used to clear every merged dictionary
+                 except its own override dictionary before inserting the new theme file, so a merged
+                 Card theme survived launch and then vanished on the first theme switch — cards
+                 silently falling back to Material's opaque paper on a translucent shell. That trap
+                 is gone (RemEx-gcqw5): a switch now removes only the base theme files it owns, and
+                 a merged dictionary would survive. The own key STAYS, because it is the right shape
+                 for a single ControlTheme — one key, no second file to load — and because
+                 CardSurfaceTests pins it structurally by reading this element out of App.axaml.
+
+                 Two things are re-themed, and both are the reason a stock Card will not do:
+
+                 PAINT. Material's Card is opaque MaterialCardBackgroundBrush. RemEx surfaces are
+                 translucent glass over a mica/acrylic window backdrop (RemEx-c437b); an opaque
+                 card would erase the backdrop wherever a card sits, which is most of the app.
+                 Background/BorderBrush/BorderThickness/CornerRadius therefore come from the
+                 Card* palette keys, which is also what keeps the corner-radius sliders in
+                 CustomizationViewModel working — they write CardCornerRadius, and this theme
+                 reads it as a DynamicResource, so the vibrate-feedback preview still animates.
+
+                 SHADOW. Material drives Card elevation through ShadowAssist.ShadowDepth, whose
+                 change handler assigns Border.BoxShadow as a LOCAL value — local values outrank
+                 style setters in Avalonia, so a themed, glow-slider-scaled shadow could never be
+                 pushed past it. This template drops ShadowAssist entirely and binds the ramp key
+                 directly; the App.axaml styles below then step the level on hover.
+
+                 Padding defaults to 0, not Material's 8: every call site already sets its own
+                 padding, and 8 would silently inset all ~50 of them.
+
+                 Structure is otherwise Material's own Card template (Material.Avalonia 3.19.0)
+                 so InsideClipping keeps working — call sites that clipped content with
+                 ClipToBounds on the old Border set InsideClipping here instead, because the Card
+                 itself must stay unclipped or it would clip its own shadow. -->
+            <ControlTheme x:Key="{x:Type material:Card}" TargetType="material:Card">
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
+                <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="ClipToBounds" Value="False"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Setter>
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Panel Name="PART_RootPanel">
+                            <Border Name="PART_BackgroundBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    BoxShadow="{DynamicResource Elevation1Shadow}">
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
+                                            <BoxShadowsTransition.Easing>
+                                                <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
+                                            </BoxShadowsTransition.Easing>
+                                        </BoxShadowsTransition>
+                                    </Transitions>
+                                </Border.Transitions>
+                            </Border>
+                            <Border Name="PART_InnerBorder"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    ClipToBounds="{TemplateBinding InsideClipping}">
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  Padding="{TemplateBinding Padding}"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                            </Border>
+                        </Panel>
+                    </ControlTemplate>
+                </Setter>
+            </ControlTheme>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
-        <FluentTheme />
+        <!-- MATERIAL OWNS EVERY CONTROL TEMPLATE NOW (RemEx-prkot, Connor's call 2026-08-26:
+             "wire MaterialTheme in", reversing the 2026-08-20 palette-only decision). Fluent is
+             GONE, not merely shadowed — docs/AUDIT-fluent-removal.md verified per control that
+             nothing this app uses loses its template, and that there is no Simple-theme safety
+             net underneath, which is why the audit had to be per-control rather than optimistic.
+
+             BaseTheme="Inherit" follows Application.RequestedThemeVariant, which ThemeService
+             already flips for light/dark — including the live OS-follow of System mode
+             (RemEx-zk5bc) — so Material's base tracks the same switch everything else does.
+             The initial Primary/Secondary are placeholders: ThemeService pushes the real seed
+             palette into MaterialTheme.CurrentTheme on every ApplyCustomization, which is what
+             keeps this from being a two-palette app (RemEx surfaces seeded, Material controls
+             stuck on a brand colour). -->
+        <themes:MaterialTheme BaseTheme="Inherit" PrimaryColor="Purple" SecondaryColor="Lime" />
+        <!-- Icon glyphs for mi:MaterialIcon — a separate package from Material.Avalonia's control
+             themes, loaded on its own before those went in and unchanged by them. -->
+        <mi:MaterialIconStyles />
         <!-- Global Control Styles -->
 
         <!-- Base Text Styling -->
@@ -67,48 +153,418 @@
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
 
-        <Style Selector="Border.glass-card">
+        <!-- ═══ SparklineControl's theme-derived defaults (RemEx-qljv) ═══
+             The StyledProperty registrations (SparklineControl.cs) still default to hex literals,
+             because a property default is baked in at static registration time, before any theme is
+             loaded — there is nothing to resolve against yet. A Style setter runs later, once the
+             control is in the visual tree with a theme applied, so it is the layer where a theme
+             answer can actually land: AccentColor takes the theme's own accent (the same move that
+             settled AccentForegroundBrush in RemEx-tq2e), and SecondaryAccentColor takes the M3
+             Tertiary role, which is a distinct hue from Primary in every scheme variant EXCEPT
+             Monochrome — DynamicColorGenerator.SeedCoreFor strips chroma from every tonal palette
+             under that variant (MonochromeHasNoChromaOnAnyTonalPalette), so Primary and Tertiary
+             both render the same grey there and the two series lose their separation. Not fixed
+             here: what should distinguish a sparkline's two series under Monochrome is an open
+             design call, left for the gate to file as its own bead.
+             A Style setter is LOWER priority than a local value, so every existing per-sensor binding
+             (HomeView, CanvasView, TrayFlyoutWindow) still wins here unchanged — this only reaches an
+             unbound control. -->
+        <Style Selector="ctrl|SparklineControl">
+            <Setter Property="AccentColor" Value="{DynamicResource AccentPrimary}"/>
+            <Setter Property="SecondaryAccentColor" Value="{DynamicResource PaletteTertiary}"/>
+            <!-- Feeds the collapsed-series dim floor (RemEx-n2kv0 review finding): a local value
+                 still wins here too, same priority note as above, but nothing currently sets one. -->
+            <Setter Property="ContrastLevel" Value="{DynamicResource ThemeContrastLevel}"/>
+        </Style>
+
+        <!-- ═══ The four inherited Window properties, settled deliberately (RemEx-n0pb8 via the
+             audit's §3). Material's Window theme would supply MaterialPaperBrush/MaterialBodyBrush;
+             three windows pin nothing and every window leaves Foreground to inheritance, so without
+             these the app would mix Material's palette under RemEx-brushed content — the
+             foreground-from-one-palette-over-background-from-another shape that fails on light
+             themes. App styles (frame Style) outrank ControlTheme setters (frame StyleTheme), so
+             these win everywhere a window does not pin its own. FontFamily/FontSize ride the
+             MaterialDesignFonts keys above instead — the key override is what reaches popups. -->
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <!-- ═══ PALETTE CROSSFADE (RemEx-zgtn1) ═══
+             OPT-IN VIA `.palette-crossfade`, NOT ON BARE `Window`. An unqualified Window selector
+             reaches every window in the app — ConfirmationDialog, PairingDialog, FileConsentDialog,
+             TrayFlyoutWindow, CommandPaletteWindow and the rest — and only MainWindow binds the
+             suppression class below. Those windows would therefore have animated for 400ms with no
+             way to turn it off, including for a user who has asked for reduced motion, where before
+             this bead they snapped. That is a NEW accessibility regression rather than an inherited
+             one, which is why the selector is opt-in (review MEDIUM).
+
+             MainWindow paints Background="Transparent" as a LOCAL value (Mica/Acrylic needs it,
+             RemEx-c437b), so the Background transition never fires there — DashboardBackgroundControl
+             carries that surface and animates it itself. Foreground does reach MainWindow, since
+             nothing else pins it. -->
+        <Style Selector="Window.palette-crossfade">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Suppression, bound onto Classes.palette-transition-suppressed by
+             ShellViewModel.SuppressPaletteTransitions (MainWindow.axaml).
+
+             WHY THIS WINS, precisely — because getting this wrong shipped a P0 once already
+             (RemEx-zrlze's dead scrim). It is NOT "the last matching style wins": Avalonia's
+             StyleInstance.GetPriority returns StyleTrigger for any style carrying an activator and
+             Style otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. Both of these
+             selectors carry a class activator, so both resolve at StyleTrigger and the tie is broken
+             by declaration order — which is the one case where "declared later wins" is the real
+             rule, and why this must stay below the style above. A style with no activator would lose
+             to either of them no matter where it sat. -->
+        <Style Selector="Window.palette-crossfade.palette-transition-suppressed">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+
+        <!-- The chrome suppressors are NOT here. They have to be the last thing in
+             Application.Styles — see the block at the very bottom of this file and the comment on
+             it. Putting them next to the Window pair, which is where they were first written, made
+             them inert. -->
+        <!-- Material sets the PAPER brush as the FOREGROUND on both of these — correct against its
+             own dark tooltip surface, near-white-on-near-white against ours on a light palette
+             (the audit's §3 tail). Both take the app's glass treatment instead - the same trio the
+             in-app toast used before RemEx-uedna moved it off NotificationCard onto a Snackbar built
+             from theme-resource brushes directly (ShellView.axaml.cs), which needed no style override
+             here at all. -->
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        </Style>
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        </Style>
+
+        <!-- ═══ POPUP SURFACES, DECOUPLED FROM CARD OPACITY (Connor, live 2026-08-31). Card
+             Opacity (GlassOpacity) at 0 was taking every dropdown to fully transparent along with
+             the cards, because both leak from the same plumbing:
+               - ComboBox.axaml (Material.Avalonia 3.19.0) wraps its dropdown list in a bare
+                 <controls:Card>, with no Theme= override, so it resolves the app-wide
+                 {x:Type material:Card} ControlTheme above and paints with CardBackgroundBrush.
+               - ContextMenu.axaml and MenuFlyoutPresenter.axaml (same package) set their own
+                 Background from {DynamicResource MaterialCardBackgroundBrush} in their own
+                 ControlTheme, a key this app has never overridden until now.
+             ThemeService.ApplyCustomization computes PopupSurfaceBrush the same way as
+             CardBackgroundBrush, floored at PopupOpacityFloor (0.40) — see the comment there. These
+             three selectors are Application.Styles Setters, which is what lets them outrank the
+             ControlTheme-level Background setters above (the same precedence the Card :pointerover
+             styles below already rely on). -->
+        <Style Selector="ContextMenu, MenuFlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource PopupSurfaceBrush}"/>
+        </Style>
+        <Style Selector="ComboBox /template/ Popup#PART_Popup > material|Card#PART_Card">
+            <Setter Property="Background" Value="{DynamicResource PopupSurfaceBrush}"/>
+        </Style>
+
+        <!-- ═══ CARD STATE (RemEx-qbzl1). Border.glass-card is retired; material:Card is the
+             app's one raised-surface primitive and its resting paint lives in the ControlTheme
+             above. What is left here is STATE.
+
+             The bead's real ask was that an interactive card RAISE A LEVEL on hover rather than
+             only shift colour, so the three-step ramp is spent as: every card rests at level 1,
+             hovering any card takes it to 2, and hovering an .interactive card — one that is
+             itself a click target — takes it to 3 with a bigger lift. Colour still moves too;
+             it is no longer the only signal, which is what the acceptance criterion was about.
+
+             Card has no BoxShadow property of its own (BoxShadow belongs to Border), so the
+             shadow cannot ride a TemplateBinding the way Background does. The /template/
+             selectors below reach PART_BackgroundBorder directly. This works only because the
+             ControlTheme dropped ShadowAssist: ShadowAssist writes BoxShadow as a local value,
+             and a local value would outrank every one of these setters. -->
+        <Style Selector="material|Card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="translateY(-4px) scale(1.01)"/>
+        </Style>
+        <Style Selector="material|Card:pointerover /template/ Border#PART_BackgroundBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
+        </Style>
+
+        <Style Selector="material|Card.interactive:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="translateY(-6px) scale(1.02)"/>
+        </Style>
+        <Style Selector="material|Card.interactive:pointerover /template/ Border#PART_BackgroundBorder">
+            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
+        </Style>
+
+        <!-- Surface variant (RemEx-zm6gp): for cards that HOST a list rather than act as a
+             clickable unit. The hover lift is designed for finite cards; on a container as tall as
+             its unvirtualized content, scale(1.01) about the centre displaces the top edge by 1% of
+             half its height - on Task Manager that is ~80px of list sliding up over the search
+             field. Surfaces keep the hover background and the elevation step, and give up the
+             transform.
+             ORDER IS LOAD-BEARING: Avalonia has no specificity — the last matching style wins —
+             so this block must sit BELOW both transform-setting hover styles above, or a
+             Card (or a future "surface interactive") re-acquires the lift and the slide
+             returns. TaskManagerListSurfaceTests asserts this ordering from the source. -->
+        <Style Selector="material|Card.surface:pointerover">
+            <Setter Property="RenderTransform" Value="none"/>
+        </Style>
+
+        <!-- ═══ CARD-SHAPED BUTTON (RemEx-qbzl1). HomeView's eight quick actions and three link
+             tiles are cards that happen to be click targets. They carried
+             Classes="glass-card interactive" against a selector that only ever matched Border, so
+             they matched NOTHING and have been rendering as ordinary buttons — dead classes the
+             sweep for leftover .glass-card selectors is what surfaced. They cannot become Cards
+             (a Card is not focusable and raises no Command), so the surface comes to them as a
+             button class instead, painted from the same Card* keys so the two idioms cannot
+             drift apart. RemEx-z7pnx folds .card into the Material button vocabulary. -->
+        <Style Selector=":is(Button).card">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                        <BoxShadowsTransition.Easing>
-                            <SpringEasing Mass="1" Stiffness="120" Damping="12" />
-                        </BoxShadowsTransition.Easing>
-                    </BoxShadowsTransition>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
-
-        <Style Selector="Border.glass-card:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
-            <Setter Property="RenderTransform" Value="translateY(-4px) scale(1.01)"/>
-        </Style>
-
-        <!-- Glass Card Interactive Effect -->
-        <Style Selector="Border.glass-card.interactive:pointerover">
+        <Style Selector=":is(Button).card.interactive:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="translateY(-6px) scale(1.02)"/>
-            <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
+        </Style>
+        <Style Selector=":is(Button).card.interactive:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.98)"/>
         </Style>
 
-        <!-- Theme Preset Tile Button -->
-        <Style Selector="Button.theme-tile">
+        <!-- .card pointer/focus/press elevation (RemEx-la0rk). Mirrors the .primary pattern:
+             ShadowAssist is safe here (unlike on Card/DraggableCard) because Button has no
+             competing BoxShadow style setter to be outranked. -->
+        <Style Selector=":is(Button).card">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth1"/>
+        </Style>
+        <Style Selector=":is(Button).card.interactive:pointerover">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth2"/>
+        </Style>
+        <!-- Keyboard users get the same lift pointer users get on hover (RemEx-alwfa.5). Declared
+             after pointerover and before pressed so a press while focused still drops to Depth0. -->
+        <Style Selector=":is(Button).card.interactive:focus-visible">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth2"/>
+        </Style>
+        <Style Selector=":is(Button).card.interactive:pressed">
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+        </Style>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             THE BUTTON VOCABULARY (RemEx-z7pnx). Documented in docs/BUTTON-VOCABULARY.md.
+
+             Before this, 37 button classes across 16 files each answered "what should a button
+             look like?" from scratch: nine different corner radii, six ways to spell "this is
+             the destructive one", and two identical colour swatches declared in two files. The
+             names described SCREENS (rd-btn, log-btn, about-back), so nothing about a name told
+             you what it meant, and a new button had no rule to follow.
+
+             These classes describe ROLE. Pick one emphasis, add a tint if the action carries a
+             consequence, add a shape or size modifier if the layout needs one. That is the whole
+             system, and it is what the Phase 4 view beads apply instead of a preference.
+
+             They sit ON TOP of Material's Button template rather than replacing it: the ripple,
+             the hover overlay (PART_HoverEffect), the focus overlay and the disabled treatment
+             all come from MaterialButtonBase, and what RemEx supplies is the palette and the
+             geometry. ShadowAssist IS used here, unlike on Card — a button's shadow is a plain
+             drop shadow with no accent glow riding on it, so Material's fixed ramp is exactly
+             right and the local-value problem that ruled it out for cards never arises.
+             ═══════════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- EMPHASIS 1/3 — PRIMARY. The one thing this surface exists to do. Accent fill, and
+             the only emphasis that carries elevation, so at most one per surface. -->
+        <Style Selector=":is(Button).primary">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth1"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector=":is(Button).primary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+        </Style>
+
+        <!-- EMPHASIS 2/3 — SECONDARY. An action of equal standing to the primary, or the normal
+             emphasis on a surface that has no single primary action. Card surface plus the card
+             border, so a row of them reads as a row of controls rather than a row of shouts. -->
+        <Style Selector=":is(Button).secondary">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector=":is(Button).secondary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+
+        <!-- EMPHASIS 3/3 — TERTIARY. Inline, toolbar and dismiss actions: present, not competing.
+             No fill and no border until hovered, which is what lets a toolbar of them sit over a
+             card without drawing a grid of boxes. -->
+        <Style Selector=":is(Button).tertiary">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector=":is(Button).tertiary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+
+        <!-- Pressed feedback is one rule for all three emphases. It was previously spelled
+             scale(0.96), scale(0.97) and scale(0.98) in different files, which is not a design
+             decision, it is three people not knowing about each other. -->
+        <Style Selector=":is(Button).primary:pressed, :is(Button).secondary:pressed, :is(Button).tertiary:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+        </Style>
+
+        <!-- ─── TINT MODIFIERS. Combine with any emphasis. A tint says the action has a
+             CONSEQUENCE — it never changes how loud the button is, only what it means. Applied
+             after the emphasis blocks above so it wins on the properties it sets; Avalonia has
+             no specificity, so this ordering is the mechanism. -->
+        <Style Selector=":is(Button).danger">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
+            <!-- ErrorTintForegroundBrush, not SystemErrorBrush. The tint is a different surface
+                 from the fill and inverts the answer: red-on-15%-red measures 1.24:1, white
+                 measures 15.96:1 at rest and clears AA against every backdrop (RemEx-1elh, and
+                 the token comment in Themes/Shared/FallbackPalette.axaml). Three of the five
+                 danger buttons this replaces used the red; card-action-danger already used the
+                 white. One rule ends the disagreement on the measured side. -->
+            <Setter Property="Foreground" Value="{DynamicResource ErrorTintForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector=":is(Button).danger:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundHoverBrush}"/>
+        </Style>
+        <Style Selector=":is(Button).success">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector=":is(Button).warning">
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+        <!-- PRIMARY is already a solid fill, so a tinted primary fills SOLID rather than
+             washing. This is the destructive-confirm shape: one loud button whose colour is the
+             warning. ErrorForegroundBrush is the dark token, correct over solid red, and the
+             opposite of the one the wash above needs. -->
+        <Style Selector=":is(Button).primary.danger">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector=":is(Button).primary.success">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SuccessForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <!-- WarningForegroundBrush: measured text for the warning fill, same shape as
+             SuccessForegroundBrush/ErrorForegroundBrush above it. Its live, per-palette value is
+             palette.OnWarning (computed in DynamicColorGenerator.cs, pushed by ThemeService), so
+             it tracks the seed sweep; the entry in Themes/Shared/FallbackPalette.axaml is only the
+             pre-theme fallback. Do NOT substitute ErrorForegroundBrush here — that was the original
+             defect: OnError and OnWarning are computed independently and diverge across the sweep. -->
+        <Style Selector=":is(Button).primary.warning">
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource WarningForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+
+        <!-- A tertiary button has no fill to tint, so a tinted one keeps its transparency and
+             only recolours its label. Without this, .tertiary.danger would paint a filled box and
+             stop being tertiary. -->
+        <Style Selector=":is(Button).tertiary.danger, :is(Button).tertiary.success, :is(Button).tertiary.warning">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector=":is(Button).tertiary.danger">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <!-- ─── SIZE AND SHAPE MODIFIERS. Orthogonal to emphasis and tint. -->
+        <Style Selector=":is(Button).compact">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector=":is(Button).pill">
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="20,12"/>
+        </Style>
+        <Style Selector=":is(Button).pill.compact">
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+
+        <!-- ─── ICON BUTTON. A square hit target with a glyph and no label. Tertiary paint, so
+             .icon-button is written alongside .tertiary rather than instead of it — the size is
+             the only thing this class owns. -->
+        <Style Selector=":is(Button).icon-button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=":is(Button).icon-button.compact">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- ─── TILE. A large, stretch-content click target: theme presets, the tray's device
+             tiles, Remote's command grid. Distinct from .card, which lifts off the page on hover;
+             a tile sits flat in a grid of its peers and only brightens. Height is deliberately
+             NOT set here — a tile's height belongs to the grid it lives in, and pinning it in the
+             class is what previously forced three near-identical copies of this style. -->
+        <Style Selector=":is(Button).tile">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
@@ -117,50 +573,83 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.theme-tile:pointerover">
+        <Style Selector=":is(Button).tile:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.02)"/>
         </Style>
-        <Style Selector="Button.theme-tile:pressed">
+        <Style Selector=":is(Button).tile:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
-        <Style Selector="Button.theme-tile.selected">
+        <Style Selector=":is(Button).tile:disabled">
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
+        <!-- The selected state of a tile group (theme presets, and any future single-choice grid). -->
+        <Style Selector=":is(Button).tile.selected">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
 
-        <!-- Glass Navigation Button -->
-        <Style Selector="Button.glass-button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12 8"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.glass-button:pointerover">
+        <!-- ─── TOGGLE STATE. A ToggleButton wearing a vocabulary class is a button that
+             remembers, so :checked reads as "this one is on" rather than as a fourth emphasis.
+             This is why the selectors above are :is(Button) — ToggleButton derives from Button
+             and a bare Button selector would not have reached it (RemEx-x3vom).
+
+             BACKGROUND IS SET HERE, NOT JUST FOREGROUND, AND IT IS THE WHOLE FIX (RemEx-xpfls,
+             carried over from TrayFlyoutWindow when the tray chips joined the vocabulary). The
+             tray's pin glyph vanished the moment the flyout was pinned, leaving a plain filled
+             square, so there was no way to tell which mode the window was in — and the two modes
+             differ in whether the window can be resized and whether its geometry persists.
+             Connor reported the resize behaviour backwards because of it.
+
+             It is a priority collision, not a missing colour. Avalonia's frame order (lower wins)
+             puts an app style WITH an activator at StyleTrigger, a ControlTheme style with an
+             activator at StyleTriggerTheme, and a plain app style at Style. So on :checked, the
+             theme's own checked background (StyleTriggerTheme) beat the plain Background setter
+             in the base class (Style), and the theme's checked background was accent-derived —
+             an accent glyph on an accent fill. The glyph's own colour was never the problem.
+
+             Pinning the background from a style that CARRIES THE ACTIVATOR is what stops the
+             control theme supplying it. Keep the :checked on this selector; moving these setters
+             into the plain .tertiary block would reintroduce the bug exactly.
+
+             CardBackgroundHoverBrush reads as "this one is active" and exists in all four PC
+             themes, so the accent glyph keeps its contrast on SolarFlare too. -->
+        <Style Selector="ToggleButton.tertiary:checked, ToggleButton.secondary:checked">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
-        <Style Selector="Button.glass-button:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.98)"/>
+        <!-- Hover while already checked must not fall back to the theme's own accent fill
+             either — same collision, same activator requirement. -->
+        <Style Selector="ToggleButton.tertiary:checked:pointerover, ToggleButton.secondary:checked:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
-        <!-- Accent Color Swatch -->
-        <Style Selector="Button.accent-swatch">
+        <!-- A MaterialIcon does not inherit Foreground the way a TextBlock does — it is a Path
+             with its own brush — so an icon inside a button would keep the palette's default
+             while the button around it changed colour on hover, tint or toggle. This is the one
+             rule that keeps the glyph and its label the same colour.
+
+             $parent[Button] resolves for a ToggleButton too: the lookup is a runtime type test,
+             so it matches Button's subclasses. And MaterialIcon has no Fill at all — a Fill
+             setter here would compile and do nothing (RemEx-wyx2c). -->
+        <Style Selector=":is(Button) mi|MaterialIcon">
+            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
+        </Style>
+
+        <!-- ─── SWATCH. A round colour chip whose FILL is the value it represents, so the class
+             sets everything except Background. One class now: this was declared twice, as
+             Button.accent-swatch here and Button.accent-picker in PersonalizationPanelView, at 28px
+             and 24px, and the hover-border bug (RemEx-fy0a) had to be fixed in both — once each,
+             months apart. -->
+        <Style Selector=":is(Button).swatch">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
@@ -168,24 +657,305 @@
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.accent-swatch:pointerover">
-            <Setter Property="BorderBrush" Value="White"/>
+        <Style Selector=":is(Button).swatch.compact">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
+        </Style>
+        <!-- BorderBrush is a TOKEN, not White (RemEx-fy0a). A white hover border is invisible on
+             SolarFlare, whose surface is near-white, so on that theme the swatch had no hover
+             feedback at all - the control looked inert rather than styled. TextPrimaryBrush is the
+             one key guaranteed to contrast with its own theme's background. -->
+        <Style Selector=":is(Button).swatch:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>
 
-        <!-- Typography classes -->
-        <Style Selector="TextBlock.h1">
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="Black"/>
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             SELECTION CONTROLS (RemEx-x3vom). ToggleSwitch, CheckBox and RadioButton keep
+             Material's templates - the ripple, the knob transition, the check glyph - and take
+             RemEx's palette through the assist properties those templates read.
+
+             THE ONE THAT ACTUALLY MATTERED: Material's MaterialToggleSwitch sets
+             SwitchTrackOffBackground to the LITERAL "Black". Not a resource, not a theme brush.
+             The track renders it at 0.26 opacity, which over RemEx's dark glass is very nearly
+             the surface itself - an OFF switch read as an empty gap where a control should be,
+             on three of the four themes. Only SolarFlare, being light, was unaffected. There is
+             no error and nothing to see in a log; you have to look at a settings row and notice
+             that the thing you are meant to click is not there.
+
+             The rest is palette consistency rather than a defect: Material's own Body and
+             CheckBoxOff brushes come from its BaseTheme, and ThemeService only pushes the seed's
+             PRIMARY and SECONDARY into MaterialTheme.CurrentTheme (see PushSeedIntoMaterialTheme).
+             So a switch label was Material's body colour while every other label on the same row
+             was TextPrimaryBrush.
+
+             ToggleButtonAssist, which this bead's description named, is not read by any shipped
+             theme in Material.Avalonia 3.19.0 - MaterialFlatToggleButton does not reference it.
+             The toggle-state rule above does that job instead. -->
+        <Style Selector="ToggleSwitch">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="assists:ToggleSwitchAssist.SwitchTrackOnBackground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <!-- NOT Material's literal Black. TextMutedBrush is a theme token, so the off track
+                 stays visible against whichever surface the current theme paints. -->
+            <Setter Property="assists:ToggleSwitchAssist.SwitchTrackOffBackground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="assists:ToggleSwitchAssist.SwitchThumbOnBackground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="assists:ToggleSwitchAssist.SwitchThumbOffBackground" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
-        <Style Selector="TextBlock.h2">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+
+        <!-- CheckBox and RadioButton share SelectionControlAssist, so they share a rule.
+             InnerForeground is the checked glyph, the hover halo and the ripple; Foreground is
+             the label. RadioButton has no instances in the app today and is here anyway: it is
+             one selector, and the alternative is that the first radio button anyone adds is
+             off-palette for however long it takes someone to notice. -->
+        <Style Selector="CheckBox, RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="assists:SelectionControlAssist.Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="assists:SelectionControlAssist.InnerForeground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
-        <Style Selector="TextBlock.caption">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <!-- The UNCHECKED box is drawn by the template's Path, filled from Material's own
+             CheckBoxOff brush rather than from an assist property, so it can only be reached
+             through the template. An unchecked box in Material's grey on RemEx's glass is the
+             same failure mode as the black switch track, one step less severe. -->
+        <Style Selector="CheckBox /template/ Path#Graphic">
+            <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
+        <Style Selector="CheckBox:checked /template/ Path#Graphic, CheckBox:indeterminate /template/ Path#Graphic">
+            <Setter Property="Fill" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="CheckBox:disabled /template/ Path#Graphic">
+            <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+
+        <!-- ═══ PROGRESS (RemEx-rcgmc). Material's MaterialProgressBar paints the fill from
+             MaterialPrimaryDarkBrush and the TRACK from MaterialPrimaryLightBrush — a light tint
+             of the primary, not a neutral. HomeView's two stat bars had always overridden both;
+             FileTransferView's transfer bar and PairingDialog's pairing bar had not, so the same
+             control wore two different colour schemes depending on which screen you were on.
+             One rule, and the per-view overrides come out.
+
+             DETERMINATE WHERE A REAL PERCENTAGE EXISTS. All three of the app's linear bars bind a
+             genuine 0-100 value (CPU, memory, transfer progress); the only IsIndeterminate="True"
+             is PairingDialog's, where the host genuinely cannot report progress on a handshake. A
+             fake determinate bar is a lie about progress, so that distinction is deliberate and is
+             what ProgressIndicatorTests pins. -->
+        <Style Selector="ProgressBar">
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="MinHeight" Value="4"/>
+            <Setter Property="CornerRadius" Value="2"/>
+        </Style>
+
+        <!-- The circular variant is a THEME swap, not a class of setters: Material implements it
+             with a different template entirely (an Arc driven by RangeToSweepConverter, spun by
+             Material.Styles' own Rotator). Adding .circular to a ProgressBar is the whole adoption
+             — there is no bespoke spinner geometry anywhere in this app to replace, which is the
+             other half of the bead's acceptance and was already true. -->
+        <Style Selector="ProgressBar.circular">
+            <Setter Property="Theme" Value="{DynamicResource MaterialCircularProgressBar}"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="MinHeight" Value="22"/>
+            <Setter Property="MinWidth" Value="22"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             TEXT INPUTS (RemEx-5w9ws). One rule, and the reason it was needed is worth writing
+             down because it is not the obvious one.
+
+             MaterialTextBox - the default TextBox theme - is Material's UNDERLINE field: no
+             border, no fill, an accent line under the text. Its template does bind Background,
+             BorderBrush, BorderThickness and CornerRadius through PART_RootBorder, so a call site
+             CAN paint a box by hand. Thirty-six of the app's fifty-two inputs did exactly that,
+             each with its own copy of the same six attributes, and the other sixteen did not. The
+             same control was therefore a bordered rounded box on one screen and a transparent
+             underline field on the next, and neither was wrong on its own terms.
+
+             Connor chose OUTLINE (2026-08-27): it is what the hand-painted majority were already
+             asking for - a border, a corner radius, a real field edge - and it matches an app
+             whose surfaces are all bordered cards. The per-call-site paint is deleted rather than
+             overridden, so there is exactly one answer.
+
+             PADDING IS NOT SET HERE AND WAS DELETED FROM THE CALL SITES: MaterialTextBox's
+             template has no Padding TemplateBinding at all, so every Padding on a TextBox in this
+             app was decoration with no effect. Spacing inside the field belongs to the theme.
+
+             FLOATING LABELS ARE NOT APPLIED HERE (RemEx-x6a70.4). Material's notch - the gap the
+             outline cuts behind a floated label so the border does not run through the text - is a
+             Style embedded in MaterialTextBox's own template (Material.Styles/Resources/Themes/
+             TextBox.axaml, tag 3.19.0, lines 184-195), keyed to the selector
+             "TextBox.outline[UseFloatingPlaceholder=True] /template/ Border#PART_BackgroundTextField".
+             Setting UseFloatingPlaceholder app-wide was rejected on purpose: the same template
+             (lines 411-413) sets VerticalAlignment=Center on Panel#PART_TextContainer under that
+             same property whenever it is True, which would move the text in every unlabelled field
+             in fifteen views along with the labelled ones.
+             So a labelled TextBox must carry BOTH Classes="outline" and UseFloatingPlaceholder="True"
+             at its own call site - neither one alone satisfies the selector above, and the notch
+             will not appear without both. -->
+        <Style Selector="TextBox">
+            <Setter Property="Theme" Value="{DynamicResource OutlineTextBox}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AccentForegroundBrush}"/>
+        </Style>
+        <!-- Material's own focus rule lives in the ControlTheme, which Avalonia ranks BELOW an
+             application style carrying the same activator - so this wins and the focused field
+             takes the seed accent rather than Material's primary. -->
+        <Style Selector="TextBox:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- INVALID, as a class rather than as TextFieldAssist.HasError: HasError and ErrorColor
+             exist on Material.Avalonia's master branch but NOT in 3.19.0, which ships
+             TextFieldAssist with exactly Hints and Label. Avalonia's own DataValidationErrors path
+             is the other option and needs INotifyDataErrorInfo on the view model; the one field in
+             this app with inline validation (the pairing PIN) reports through a plain ErrorText
+             string, so a class binding is the honest fit rather than a rewrite of the view model
+             to satisfy a template.
+
+             Two channels change, deliberately: the border colour AND the helper text. Colour alone
+             was the state this replaces - a red TextBlock floating below the field, which said the
+             right thing while being visually unattached to the input it described. -->
+        <Style Selector="TextBox.invalid, TextBox.invalid:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="TextBox.invalid /template/ TextBlock#PART_HintsText">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <Style Selector="ComboBox">
+            <Setter Property="Theme" Value="{DynamicResource MaterialOutlineComboBox}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="PlaceholderForeground" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+        <Style Selector="ComboBox:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <Style Selector="NumericUpDown">
+            <Setter Property="Theme" Value="{DynamicResource OutlineNumericUpDown}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+        </Style>
+        <Style Selector="NumericUpDown:focus-within">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══ SLIDERS (RemEx-vryje). MaterialDiscreteSliderV2 is MaterialSlider with a thumb
+             that draws a value bubble above itself while dragging - a THUMB swap, not a ticks
+             change, so it is safe on the continuous sliders too. That is the bead's "value visible
+             while dragging", and it matters most on the Palette Studio's hue/chroma/tone, where the
+             number IS the thing being chosen and the only readout was a separate label.
+
+             SliderAssist in 3.19.0 carries exactly ThicknessTick - the value popup the bead's
+             description attributes to it is the discrete THEME's, not an assist property. Ticks
+             themselves need TickPlacement at the call site: Avalonia defaults it to None, so the
+             three sliders in this app that already declared a TickFrequency were computing tick
+             positions and drawing nothing. -->
+        <Style Selector="Slider">
+            <Setter Property="Theme" Value="{DynamicResource MaterialDiscreteSliderV2}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             TABS, EXPANDERS AND SCROLL SURFACES (RemEx-04ftl). All three keep Material's
+             templates; what changes is which palette they read and, for the expander, whether it
+             animates at all.
+
+             ThemeService.PushSeedIntoMaterialTheme writes the seed's PRIMARY and SECONDARY into
+             MaterialTheme.CurrentTheme and nothing else, so anything a Material theme draws from
+             its Body, Selection or CardBackground brushes is on Material's palette rather than
+             RemEx's. That is why each of these needs saying explicitly: the parts that happened to
+             use MaterialPrimaryMid were already right, and the parts beside them were not - which
+             is the hardest kind of mismatch to notice, because half of the control looks correct.
+             ═══════════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- TABS. The active indicator already animates between headers - that is Material's own
+             template and this does not touch it. The highlight rode MaterialPrimaryMidBrush, which
+             IS seeded and so was already correct; the INACTIVE header colour rode
+             MaterialBodyLightBrush, which is not, so a selected tab was on the app's accent and
+             its unselected neighbours were on the component library's grey. -->
+        <Style Selector="TabControl">
+            <Setter Property="assists:TabControlAssist.TabHeaderHighlightBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="assists:TabControlAssist.TabHeaderForeground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="assists:TabControlAssist.TabHeaderInactiveBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+
+        <!-- EXPANDERS. Two changes, and the first is not a colour.
+
+             MaterialExpander sets ContentTransition to {x:Null} — the content simply appears and
+             disappears. The bead's acceptance criterion is that expanders animate open and closed,
+             and About's FAQ list is a column of them, so opening one made the whole page jump. A
+             CrossFade is the smallest thing that reads as the panel opening rather than the page
+             reflowing under the pointer.
+
+             The background was MaterialCardBackgroundBrush — Material's OPAQUE paper, the same
+             brush RemEx had to keep off Card (RemEx-qbzl1). An opaque expander sitting inside a
+             translucent card punches a hole in the backdrop exactly where the eye already is. -->
+        <Style Selector="Expander">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="ContentTransition">
+                <CrossFade Duration="0:0:0.2"/>
+            </Setter>
+        </Style>
+
+        <!-- SCROLLBARS. Material draws them from MaterialBodyBrush and MaterialSelectionBrush,
+             neither of which the seed reaches, so every scrollbar in the app was the one piece of
+             chrome that ignored the user's chosen palette. The thumb takes the accent on hover
+             because a scrollbar you are dragging should say so. -->
+        <Style Selector="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+        <Style Selector="ScrollBar /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+        <Style Selector="ScrollBar:pointerover /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══ BADGES (RemEx-rjnbo). Placement and paint are declared ONCE. The bead asked
+             for consistent BadgePlacement across the app, and the cheapest way to guarantee that
+             is for no call site to be able to choose: a badge is top-right, accent-filled, and
+             reads its own foreground from the accent's contrast token.
+
+             A ZERO COUNT HIDES. That is IsBadgeVisible's job at each call site, bound to the
+             source's own "has any" property - Material will happily render a badge containing "0",
+             which is a notification that there is nothing to notify. -->
+        <Style Selector="material|Badged">
+            <Setter Property="BadgePlacement" Value="TopRight"/>
+            <Setter Property="BadgeBackground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BadgeForeground" Value="{DynamicResource AccentForegroundBrush}"/>
+            <Setter Property="BadgeFontSize" Value="10"/>
+        </Style>
+
+        <!-- ═══ Typography classes ═══
+             The RemEx type vocabulary and its mapping onto Material's scale is
+             docs/TYPOGRAPHY-VOCABULARY.md (RemEx-9iz00.2). Read it before adding a style here or an
+             inline FontSize in a view.
+
+             THE THREE THAT USED TO LIVE HERE ARE GONE: TextBlock.h1 (22/Black), .h2 (16/SemiBold)
+             and .caption (11/TextMuted) had ZERO usages anywhere in remex.desktop — verified by
+             scanning every Classes="..." attribute in the app, not by grepping the bare names, which
+             collide with words in prose and comments.
+
+             .caption was more than dead weight. Material.Avalonia ships
+             Resources/Compatibility/TextBlockClasses.axaml, which defines class selectors for its
+             own scale in BOTH cases — `:is(Control).Caption` and `:is(Control).caption`. RemEx does
+             not merge that dictionary today, so there was no live conflict, but a `TextBlock.caption`
+             sitting here meant the day anyone merged it for the Phase 4 sweeps, two different
+             definitions of `.caption` would both match every element carrying the class, and which
+             one won would come down to declaration order. Deleting it removes the trap rather than
+             documenting it. -->
         <Style Selector="TextBlock.page-title">
             <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
             <Setter Property="FontSize" Value="30"/>
@@ -214,8 +984,118 @@
         </Style>
 
 
-        <!-- Keyboard-focus visible ring -->
+        <!-- ═══ KEYBOARD-FOCUS VISIBLE RING ═══
+
+             EVERY INTERACTIVE CONTROL TYPE, NOT JUST BUTTON. This used to style Button alone, so a
+             keyboard user tabbing through a form got a clear accent ring on the buttons and then
+             Fluent's default on everything else - which on CyberNOC and Monolith is near-invisible
+             against their dark surfaces. The effect was worse than no ring at all: focus appeared to
+             VANISH when it left a button and reappear when it returned, so the tab order looked
+             broken rather than under-styled. (RemEx-2p19, continuing RemEx-dygk.)
+
+             AccentPrimaryBrush is per-theme by construction, so each theme rings in its own accent
+             rather than in a literal that one of the four cannot show - the failure just fixed for
+             the accent swatches in RemEx-wcvr.
+
+             `:focus-visible` rather than `:focus` throughout, deliberately: it fires for keyboard
+             traversal and not for a mouse click, so clicking a control does not leave a ring behind
+             it. That is the distinction the pseudo-class exists for, and losing it would make the
+             UI look permanently focused after any click.
+
+             Split by whether the control templates a ContentPresenter or draws its own border:
+             ContentPresenter for the content controls, the control itself where there is no inner
+             presenter to reach. -->
         <Style Selector="Button:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ToggleButton:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="RepeatButton:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!-- These draw their own border, so the ring goes on the control rather than on an inner
+             presenter. TextBox is the one a user is most likely to be typing into blind without it.
+
+             LISTBOXITEM IS HERE, NOT WITH THE BUTTONS, BECAUSE IT DOES NOT DEPEND ON THE TEMPLATE'S
+             SHAPE (RemEx-kgs7g). It used to target `/template/ ContentPresenter` like the three
+             above it. That works under Fluent — Avalonia 12.1.1's ListBoxItem template is a single
+             ContentPresenter#PART_ContentPresenter which template-binds BorderBrush, BorderThickness
+             and CornerRadius, so both forms render — but it only works for as long as the template
+             root happens to be a ContentPresenter, and it silently renders nothing when it is not.
+
+             That is not hypothetical: HomeView's pinned-sensor list supplies its own ListBoxItem
+             template. Its root WAS a bare ContentPresenter, so the old selector matched it and drew
+             the ring at the item's bounds — 20px clear of the card on two sides, because the card's
+             own margin sat inside the item. The ring was there; it was around the wrong rectangle.
+
+             Set on the CONTROL, the ring renders through whatever border the template binds, and the
+             obligation moves to the template: a view supplying its own has to bind BorderBrush and
+             BorderThickness or the ring reaches nothing. HomeView's now does, and
+             FocusVisibleStyleGuardTests holds both halves.
+
+             A note on provenance: the theme swap docs/AUDIT-fluent-removal.md analysed HAPPENED
+             (RemEx-prkot, 2026-08-26) — MaterialTheme owns the templates now, and the audit is a
+             description of what ships, not a contingency. This control-level shape is exactly why
+             the ring survived the swap: Material's ListBoxItem has no ContentPresenter to reach at
+             all, but its PART_RootBorder template-binds both border properties, and Material nulls
+             FocusAdorner on nine controls so there is nothing underneath these styles. -->
+        <Style Selector="ListBoxItem:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="TextBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ComboBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="CheckBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="RadioButton:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ToggleSwitch:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Slider:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!-- TabItem was the one interactive control this block missed (RemEx-83zq1). Material
+             3.19.0's TabItem theme styles no :focus state AND leaves FocusAdorner null, and there
+             is no framework default behind it - measured null both before and during
+             :focus-visible. So a keyboard user tabbing onto DiagnosticLogsView's "Live Application
+             Logs" / "System Event Logs" headers got no focus indicator at all, not a differently
+             drawn one. That is the accessibility hole RemEx-2p19 closed for the other ten, not a
+             cosmetic inconsistency.
+
+             CONTROL-LEVEL, NOT `/template/ ContentPresenter`, and not by analogy with ListBoxItem.
+             The template form is not inert - a ContentPresenter renders its own BorderBrush and
+             BorderThickness whether or not the template binds them, which is exactly why the
+             Button/ToggleButton/RepeatButton template-form selectors work. It is wrong here for a
+             different reason. Material's tree is
+                 Border#PART_RootBorder > Panel#PART_RootPanel > RippleEffect#PART_Ripple
+                 > ContentPresenter#PART_ContentPresenter > Panel#PART_InnerPanel
+                 > ContentPresenter#PART_ContentPresenter
+             so the presenter the selector matches wraps the header *text*: probed on a 360x48
+             header, the template form drew its 2px ring at 150,14,59,21 - tight around the label,
+             floating inside the header. That is the "ring around the wrong rectangle" failure
+             RemEx-kgs7g exists to prevent. PART_RootBorder is the header's own rectangle and
+             template-binds BorderBrush, BorderThickness and CornerRadius, so the control-level form
+             frames the header and follows its corners. -->
+        <Style Selector="TabItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
@@ -247,21 +1127,117 @@
         <Style Selector="Ellipse.status-ring.connected">
             <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
+
+        <!-- ═══ PRESENCE BADGE ON THE DRAWER-FOOTER CONNECTION BUTTON (RemEx-d7xj8) ═══
+             Same red/green vocabulary as Ellipse.status-dot above, now expressed as a Material
+             Badged dot (BadgeDisplayContent="False" plus a fixed 10x10 size renders a plain dot,
+             no content). Placement is BottomRight here rather than the app-wide TopRight the base
+             `material|Badged` style sets, because this badge sits on a phone icon and BottomRight
+             is where a dot reads as "attached to the device" instead of as a notification count.
+
+             THE PULSE IS A CLASS-GATED Style.Animations, NOT MaterialAnimationAssist.
+             ContinuousAnimation. That assist's Changed handler only ever starts a new animation on
+             a non-null value - setting it back to null does not cancel the one already running
+             (verified against the upstream Material.Avalonia source), so it cannot express "pulse
+             stops when the phone disconnects or when reduced motion is on". A Style gated on
+             `.pulse` does stop cleanly: when ShellViewModel.ShowPresencePulse drops the class,
+             Avalonia tears the animation down along with everything else the style set. -->
+        <Style Selector="material|Badged.presence">
+            <Setter Property="BadgePlacement" Value="BottomRight"/>
+        </Style>
+        <!-- COLOUR AND CROSSFADE LIVE ON THE TEMPLATE'S Badge, NOT ON Badged.BadgeBackground. Two
+             separate reasons, both verified on the running app:
+             1. BadgeBackground never reaches the screen. Badge's own ControlTheme carries a
+                `[ColorMode=Error]` style (Badged.BadgeColorMode defaults to Error) that sets
+                Badge.Background to MaterialValidationErrorBrush at Style priority, which outranks
+                the template binding Badged uses to pass BadgeBackground down. Setting
+                BadgeBackground on Badged - to anything, even a literal Blue - draws the Material
+                error red regardless. Styling Badge.Background from here wins because app styles
+                apply after the control theme's nested ones.
+             2. Badged types BadgeBackground as the concrete `Brush`, and BrushTransition refuses
+                anything but IBrush: a BrushTransition declared against BadgeBackground throws
+                InvalidCastException while App.axaml is being populated, taking the process down
+                before a window exists. Badge.Background is a plain IBrush, so the same 400ms
+                crossfade the status dots use attaches there. -->
+        <Style Selector="material|Badged.presence /template/ material|Badge">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.4"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="material|Badged.presence.connected /template/ material|Badge">
+            <Setter Property="Background" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="material|Badged.presence.pulse /template/ material|Badge">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6" IterationCount="Infinite" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.55"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- The in-app toast (RemEx-5wc2) moved off Avalonia's WindowNotificationManager /
+             NotificationCard onto a Material SnackbarHost in the shell (RemEx-uedna) - see
+             ShellView.axaml's SnackbarHost and ShellView.axaml.cs's SnackbarToastSink. NotificationCard
+             is no longer instantiated anywhere in the app, so the Style override that used to live
+             here (theming its Background/BorderBrush/Foreground off the app's glass palette, the same
+             fix the ToolTip override above still needs) went with it rather than styling a control
+             nothing shows. -->
+
+        <!-- ═══ DRAG SUPPRESSION FOR THE CHROME'S OWN COLOUR TRANSITIONS (RemEx-zgtn1) ═══
+             THIS BLOCK MUST STAY LAST IN Application.Styles. That is not tidiness, it is the only
+             thing that makes it work.
+
+             Every style that installs a chrome Transitions collection — `:is(Button).card`,
+             `.primary`, `.secondary`, `.tertiary`, `.tile`, `.swatch`, `Ellipse.status-dot`,
+             `Ellipse.status-ring`, `material|Badged.presence` — carries a class activator, so it resolves at
+             BindingPriority.StyleTrigger. So do these. At equal priority Avalonia breaks the tie on
+             declaration order, so a suppressor declared ABOVE them is simply overwritten by them and
+             does nothing at all. These were first written next to the Window pair a thousand lines
+             up, where they were inert while looking correct, and a test asserting their mere
+             presence passed the whole time (review MEDIUM, round 2).
+
+             WHY IT MATTERS: ApplyAndSave runs on every FRAME of a seed-wheel drag. Without this,
+             every card, button, tile, swatch and status dot restarts a 200-400ms Background or Fill
+             crossfade on each frame and visibly trails the backdrop it sits on — the "preview fights
+             the animation" cost the bead names.
+
+             Nulling the whole collection is safe here: Avalonia binds a running transition at
+             BindingPriority.Animation, so removing it drops the property to its correct final value
+             rather than freezing an intermediate colour. Hover and press feedback declared in
+             view-level Styles collections is unaffected, because those are applied after
+             Application.Styles and win at equal priority. -->
+        <Style Selector="Window.palette-transition-suppressed material|Card">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Button">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Border">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed Ellipse">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Window.palette-transition-suppressed material|Badged.presence /template/ material|Badge">
+            <Setter Property="Transitions" Value="{x:Null}"/>
+        </Style>
     </Application.Styles>
 
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://Remex.Desktop/Assets/icon.png" ToolTipText="{local:Localize Tray_TooltipDefault}" IsVisible="True" Clicked="OnTrayIconClicked">
-                <TrayIcon.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="{local:Localize Tray_ShowMainWindow}" Click="OnShowMainWindow" />
-                        <NativeMenuItem Header="{local:Localize Tray_LiveGlance}" Click="OnToggleLiveGlance" />
-                        <NativeMenuItem Header="{local:Localize Tray_SwitchLightMode}" Click="OnToggleTheme" />
-                        <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="{local:Localize Tray_Exit}" Click="OnExitApp" />
-                    </NativeMenu>
-                </TrayIcon.Menu>
-            </TrayIcon>
+            <!-- The menu is built in App.BuildTrayMenu, not declared here. Its items are not
+                 static: the status header changes with phone presence and Remote desktop enables
+                 and disables. A declared menu can only be updated by index, which is how the old
+                 UpdateTrayMenuHeaders came to address items[0], [1], [2] and [4] by number. -->
+            <TrayIcon Icon="avares://Remex.Desktop/Assets/icon.png" ToolTipText="{local:Localize Tray_TooltipDefault}" IsVisible="True" Clicked="OnTrayIconClicked" />
         </TrayIcons>
     </TrayIcon.Icons>
 </Application>

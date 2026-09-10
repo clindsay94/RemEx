@@ -170,10 +170,97 @@ public record ConnectionProfile
 }
 
 /// <summary>
+/// The values <see cref="CustomizationSettings.ThemeMode"/> can carry (RemEx-zk5bc).
+/// </summary>
+/// <remarks>
+/// String constants rather than an enum because the field rides source-generated JSON in a record
+/// that tolerates unknown values by design — an enum would turn a profile written by a newer build
+/// into a deserialization failure instead of a value the reader falls back from.
+/// </remarks>
+public static class ThemeModes
+{
+    public const string Light = "Light";
+    public const string Dark = "Dark";
+    public const string System = "System";
+}
+
+/// <summary>The values <see cref="CustomizationSettings.ColorSource"/> can carry.</summary>
+/// <remarks>String constants for the same reason as <see cref="ThemeModes"/>: the record tolerates
+/// unknown values by design, and the desktop resolves an unavailable source to Custom at load.</remarks>
+public static class ColorSources
+{
+    public const string WindowsAccent = "WindowsAccent";
+    public const string Wallpaper = "Wallpaper";
+    public const string Custom = "Custom";
+}
+
+/// <summary>The values <see cref="CustomizationSettings.WallpaperSource"/> can carry.</summary>
+public static class WallpaperSources
+{
+    public const string Desktop = "Desktop";
+    public const string Image = "Image";
+}
+
+/// <summary>
+/// A whole palette recipe the person chose to keep: where the seed came from, the seed itself, and
+/// the three shaping inputs. Applying one reproduces the palette; it is not the palette.
+/// </summary>
+public record SavedPalette
+{
+    /// <summary>The English prefix the 2→3 migration names converted swatches with ("Palette 1",
+    /// "Palette 2", …). Plain English on purpose: this assembly has no localisation, and the person
+    /// renames the palette on the sheet.</summary>
+    public const string DefaultNamePrefix = "Palette ";
+
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>A <see cref="ColorSources"/> value.</summary>
+    [JsonPropertyName("colorSource")]
+    public string ColorSource { get; init; } = ColorSources.Custom;
+
+    /// <summary>The seed hex, e.g. "#6C4CFF".</summary>
+    [JsonPropertyName("seed")]
+    public string Seed { get; init; } = "#6C4CFF";
+
+    /// <summary>The seed chroma (the Vibrancy slider).</summary>
+    [JsonPropertyName("vibrancy")]
+    public double Vibrancy { get; init; } = 48.0;
+
+    /// <summary>The contrast target, -1.0 to 1.0.</summary>
+    [JsonPropertyName("contrast")]
+    public double Contrast { get; init; }
+
+    /// <summary>One of the seven Android strategy names (the desktop normalises anything else).</summary>
+    [JsonPropertyName("strategy")]
+    public string Strategy { get; init; } = "TonalSpot";
+}
+
+/// <summary>
 /// Persisted visual customization parameters.
 /// </summary>
 public record CustomizationSettings
 {
+    /// <summary>
+    /// Which shape of this record was written. <c>0</c> — the value an absent key deserialises to —
+    /// means "written before the seed engine existed".
+    /// </summary>
+    /// <remarks>
+    /// THE ONLY HONEST WAY TO ASK "HAS THIS PROFILE BEEN MIGRATED YET". Every other signal is
+    /// ambiguous: an absent <c>ThemeContrast</c> and a deliberate 0.0 deserialise to the same
+    /// double, an absent <c>SchemeVariant</c> and a deliberate TonalSpot to the same string. A
+    /// migration that guesses from those either re-runs on every launch — overwriting the user's
+    /// choices with the preset's every time — or never runs at all. A version stamp is one integer
+    /// and it makes the question exact.
+    /// <para>
+    /// The desktop owns the migration itself, because deciding what a legacy <c>ThemeId</c> means
+    /// requires the preset catalogue and the palette generator, both of which live there. This
+    /// record only carries the stamp. See <c>Remex.Desktop.Services.CustomizationMigration</c>.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("schemaVersion")]
+    public int SchemaVersion { get; init; }
+
     /// <summary>Identifier for the selected presentation style.</summary>
     [JsonPropertyName("baseTheme")]
     public string ThemeId { get; init; } = "BaseDarkGlass";
@@ -184,6 +271,16 @@ public record CustomizationSettings
     /// <summary>Corner radius in pixels for remote control buttons.</summary>
     public double RemoteCardCornerRadius { get; init; } = 24;
 
+    /// <summary>
+    /// Card border thickness in pixels. The one geometry value that used to survive a per-preset
+    /// theme dictionary (Monolith's 3px identity border versus 1px everywhere else) after every
+    /// other geometry key had already become fully seed/settings-derived. Written by
+    /// <c>CustomizationViewModel.SelectTheme</c> from the chosen preset, the same way
+    /// <see cref="CornerRadius"/> already is, and pushed into the "CardBorderThickness" resource by
+    /// <c>ThemeService.ApplyCustomizationCore</c> on every apply (RemEx-bnz2x).
+    /// </summary>
+    public double CardBorderThickness { get; init; } = 1;
+
     /// <summary>Opacity (0.0 to 1.0) of the canvas cards.</summary>
     public double GlassOpacity { get; init; } = 0.1;
 
@@ -193,8 +290,20 @@ public record CustomizationSettings
     /// <summary>Relative strength of the neon/glow effects.</summary>
     public double GlowStrength { get; init; } = 2;
 
-    /// <summary>Vibrancy (Chroma) level for the seed color (Material 3).</summary>
+    /// <summary>Vibrancy (Chroma) level for the seed color (Material 3). The ACHIEVED chroma of
+    /// <see cref="AccentColor"/> — what <c>Hct.From(hue, ThemeSeedChroma, tone)</c> actually
+    /// reproduces, which may be lower than what was asked for (most hue/tone pairs cannot reach
+    /// high chroma in sRGB). This is Android's vibrancy axis and the parity RemEx-ndhlv wants.</summary>
     public double ThemeSeedChroma { get; init; } = 48.0;
+
+    /// <summary>
+    /// The Vibrancy slider's raw ask, independent of what the seed could hold. A Windows-accent or
+    /// Wallpaper source change re-shapes the seed from a new hue/tone but this same request every
+    /// time, so the chroma no longer ratchets down toward whatever the least forgiving accent hue
+    /// could reach (RemEx-ceu4x). <see cref="ThemeSeedChroma"/> stays the ACHIEVED value the two
+    /// platforms agree on; this field never leaves the desktop's own studio.
+    /// </summary>
+    public double ThemeSeedChromaRequest { get; init; } = 48.0;
 
     /// <summary>Contrast level for the dynamic color scheme (-1.0 to 1.0).</summary>
     public double ThemeContrast { get; init; } = 0.0;
@@ -202,22 +311,85 @@ public record CustomizationSettings
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
 
-    /// <summary>User-defined custom accent colours (hex strings) saved via the colour picker.</summary>
+    /// <summary>Recently-used seeds (hex strings). Schema 3 converted the pre-existing entries into <see cref="SavedPalettes"/> and emptied this list once; the Custom source's recents row writes it again afterwards.</summary>
     public IReadOnlyList<string> CustomAccentColors { get; init; } = Array.Empty<string>();
 
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";
 
-    /// <summary>Requested window or surface material treatment.</summary>
-    [JsonPropertyName("canvasBackgroundType")]
-    public string BackgroundMaterial { get; init; } = "Mica";
+    /// <summary>Who writes <see cref="AccentColor"/>: a <see cref="ColorSources"/> value. New
+    /// profiles start on the Windows accent; the desktop resolves an unavailable source (Linux) to
+    /// Custom without persisting it (RemEx-ddynd).</summary>
+    [JsonPropertyName("colorSource")]
+    public string ColorSource { get; init; } = ColorSources.WindowsAccent;
 
-    /// <summary>When true, the UI accent color attempts to sync with physical hardware (OpenRGB/FanControl).</summary>
+    /// <summary>Which extracted wallpaper candidate was chosen. Out of range resets to 0 at load.</summary>
+    [JsonPropertyName("wallpaperSeedIndex")]
+    public int WallpaperSeedIndex { get; init; }
+
+    /// <summary>A <see cref="WallpaperSources"/> value: the desktop's own wallpaper, or a picked image.</summary>
+    [JsonPropertyName("wallpaperSource")]
+    public string WallpaperSource { get; init; } = WallpaperSources.Desktop;
+
+    /// <summary>Path of the APP-OWNED copy of a picked image, never the original file.</summary>
+    [JsonPropertyName("wallpaperImagePath")]
+    public string? WallpaperImagePath { get; init; }
+
+    /// <summary>Wallpaper blur, 0 to 1, mapped to a blur radius by the desktop.</summary>
+    [JsonPropertyName("wallpaperBlur")]
+    public double WallpaperBlur { get; init; } = 0.6;
+
+    /// <summary>The person's saved palettes, in the order they were saved.</summary>
+    [JsonPropertyName("savedPalettes")]
+    public IReadOnlyList<SavedPalette> SavedPalettes { get; init; } = Array.Empty<SavedPalette>();
+
+    /// <summary>
+    /// Whether the generated palette is a light one. <c>null</c> means "decide from
+    /// <see cref="ThemeId"/>", which is how every profile written before this key existed behaves.
+    /// </summary>
+    /// <remarks>
+    /// DELIBERATELY NULLABLE, AND THAT IS THE WHOLE MIGRATION. Light/dark used to be a property of
+    /// the preset name — the code asked <c>ThemeId == "SolarFlare"</c> — so a user who picked a
+    /// light preset and then changed the seed silently got a dark palette. Making it a real setting
+    /// has to not repaint every existing install on upgrade: an absent key deserialises to null,
+    /// null reproduces the old name-based answer exactly, and the first time the user touches the
+    /// switch it becomes explicit and stays that way.
+    /// </remarks>
+    [JsonPropertyName("useLightPalette")]
+    public bool? UseLightPalette { get; init; }
+
+    /// <summary>
+    /// Base palette mode: <c>"Light"</c>, <c>"Dark"</c>, or <c>"System"</c> (follow the OS
+    /// setting, live). <c>null</c> means the profile predates the mode (RemEx-zk5bc).
+    /// </summary>
+    /// <remarks>
+    /// SUPERSEDES <see cref="UseLightPalette"/>, which stays as a migration input only and is
+    /// never written with a new value again — RemEx-dbkzy stamped it explicit on every migrated
+    /// profile, so its null channel was consumed and a third state ("follow the OS") could not
+    /// ride on it. Migration arm 2 stamps this field from it; when this is <c>null</c> the reader
+    /// falls back to the <see cref="UseLightPalette"/>-then-preset chain exactly as before, so an
+    /// unmigrated profile paints what it always painted.
+    /// </remarks>
+    [JsonPropertyName("themeMode")]
+    public string? ThemeMode { get; init; }
+
+    /// <summary>Requested background treatment: Aurora (default), Wallpaper, Acrylic, Glass, Gradient or Solid. The desktop resolves anything else at load.</summary>
+    [JsonPropertyName("canvasBackgroundType")]
+    public string BackgroundMaterial { get; init; } = "Aurora";
+
+    /// <summary>
+    /// Retained for savefile compatibility only (RemEx-dbjfy) — the toggle and polling service that
+    /// set this were removed because they never actually contacted hardware. No longer surfaced in
+    /// the UI; <c>CustomizationViewModel.ApplyAndSave</c> carries the stored value forward unchanged
+    /// so an older profile round-trips (the round-trip guard test insists on it). A future real
+    /// hardware-sync source (RemEx-v2pbv) can plug back in through
+    /// <c>ThemeService.ApplyHardwareAccent</c>/<c>ClearHardwareAccent</c>.
+    /// </summary>
     public bool SyncWithHardware { get; init; } = false;
 
     /// <summary>Selected splash screen animation sequence style.</summary>
     [JsonPropertyName("splashStyle")]
-    public string SplashStyle { get; init; } = "RemexCommand";
+    public string SplashStyle { get; init; } = "CosmicZoom";
 
     /// <summary>Font family for page-title headers (an avares URI for a bundled font, or a system font name).</summary>
     [JsonPropertyName("pageTitleFont")]

@@ -1,0 +1,185 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ═══ THE ONE FALLBACK PALETTE ═══
+
+         THIS IS NOT A THEME. It is what paints for the handful of frames between the window
+         appearing and ThemeService.ApplyCustomization landing, and nothing else. Every colour key
+         below is overwritten at runtime from the selected preset's SEED - see
+         ThemeService.ApplyCustomization, which pushes the generated M3 palette over all of them.
+
+         It used to be four copies. CyberNOC, Monolith, SolarFlare and BaseDarkGlass each carried
+         the same 53 keys with different literals, and after RemEx-zg8ws made every one of them a
+         generated value, three of those copies were paying maintenance for a surface nobody sees.
+         Four copies of a fallback drift; one cannot.
+
+         THE GEOMETRY LIVES HERE TOO NOW (RemEx-bnz2x). CardCornerRadius, CardBorderThickness and the
+         Elevation ramp used to be the reason a preset dictionary still existed - "the geometry that
+         is genuinely theirs". Measured against ThemeService, every one of them is overwritten on
+         every ApplyCustomization: CardCornerRadius and the three Elevation shadows already were:
+         only CardBorderThickness (Monolith's 3px vs everyone else's 1px) survived, and it now does
+         so as CustomizationSettings.CardBorderThickness, written by SelectTheme, not as a per-preset
+         XAML literal. One surviving key did not justify four dictionary files, so the four preset
+         files are pure merges of this one now - see Themes/BaseDarkGlass.axaml etc.
+
+         The values are BaseDarkGlass's, because that is the default preset and the one App.axaml
+         includes at startup.
+
+         DO NOT ADD A KEY HERE WITHOUT ADDING IT TO ThemeService's override list. A missing
+         DynamicResource is silent in Avalonia - no compile error, no runtime error, just an unstyled
+         default - which is why ThemeKeyCoverageTests cross-checks the two lists against each other.
+    -->
+
+    <!-- Base Tints (Reduced Alpha for better Mica/Acrylic blending) -->
+    <Color x:Key="GlassBaseDark">#A00A0A10</Color>
+    <Color x:Key="GlassBaseMedium">#B012121E</Color>
+
+    <!-- Background Gradients (Dark) -->
+    <Color x:Key="BackgroundGradientStart">#1A0A2E</Color>
+    <Color x:Key="BackgroundGradientMid">#0D1B2A</Color>
+    <Color x:Key="BackgroundGradientEnd">#000000</Color>
+
+    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
+        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
+        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
+    </LinearGradientBrush>
+
+    <!-- Accents -->
+    <Color x:Key="AccentPrimary">#6C4CFF</Color>
+    <Color x:Key="AccentHover">#826AFF</Color>
+    <Color x:Key="AccentPressed">#543BD9</Color>
+    <!-- The M3 Tertiary role, published under its own name rather than reused through AccentPressed
+         (RemEx-qljv). AccentPressed already carries palette.Tertiary for the pressed-state use case,
+         but binding a chart series to a key named for "this button is being pressed" would couple a
+         sparkline's second series to a control state that can never move without breaking the other.
+         Same colour, same fallback literal, a name that means what it is used for. -->
+    <Color x:Key="PaletteTertiary">#543BD9</Color>
+
+    <!-- Aurora mesh set (RemEx-ddynd): overridden from the seed on every apply; these are the
+         tone-30 values of the default seed so the first frame is not transparent. -->
+    <Color x:Key="AuroraPrimary">#3F2E9E</Color>
+    <Color x:Key="AuroraSecondary">#463F6E</Color>
+    <Color x:Key="AuroraTertiary">#6B3A5C</Color>
+
+    <!-- Functional Colors -->
+    <Color x:Key="SystemSuccess">#22C55E</Color>
+    <Color x:Key="SystemError">#F43F5E</Color>
+    <Color x:Key="SystemWarning">#F59E0B</Color>
+
+    <!-- Surfaces -->
+    <Color x:Key="CardBackground">#1AFFFFFF</Color>
+    <Color x:Key="CardBackgroundHover">#26FFFFFF</Color>
+    <Color x:Key="CardBorder">#2AFFFFFF</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimary">#F8FAFC</Color>
+    <Color x:Key="TextSecondary">#94A3B8</Color>
+    <Color x:Key="TextMuted">#64748B</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
+    <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
+    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
+    <!-- Text/icons ON an accent-filled surface. MEASURED, not chosen: white on this palette's
+         accent is 5.10:1 and black is 4.12:1, so this is the value WCAG AA picks, not a taste
+         call. The literal Foreground="White" it replaces failed AA on three of the four themes -
+         CyberNOC at 1.38:1 was barely legible. (RemEx-tq2e)
+         AT RUNTIME THIS COMES FROM THE GENERATOR, as palette.OnPrimary, and the generator answers
+         the same question for whatever seed it is given. The measurement that used to live once per
+         theme file now lives in AccentForegroundContrastTests against the four preset seeds - which
+         is the pair that actually ships. (RemEx-07jij) -->
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
+    <SolidColorBrush x:Key="PaletteTertiaryBrush" Color="{DynamicResource PaletteTertiary}"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
+    <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
+    <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <!-- MEASURED, NOT CHOSEN. White on this palette's success fill #22C55E is 2.28:1, below WCAG AA
+         - and AccentForegroundBrush cannot stand in, because here that token is white (correctly,
+         for a purple accent). Green wants dark text in every theme; the accent does not. This value
+         gives 8.69:1. (RemEx-iegl) -->
+    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#FF0A0A0A"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
+    <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
+    <!-- Pre-theme fallback, same measured-dark shape as SuccessForegroundBrush/ErrorForegroundBrush
+         above. ThemeService overrides it from palette.OnWarning once a palette is applied, so the
+         live value tracks the seed sweep; this literal only covers the window before that. -->
+    <SolidColorBrush x:Key="WarningForegroundBrush" Color="#FF0A0A0A"/>
+    <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <!-- MEASURED, NOT CHOSEN, AND IT INVERTS THE ACCENT ANSWER. White on this palette's error fill
+         #F43F5E is 3.67:1; this value gives 5.39:1. The accent token here is WHITE and red wants
+         dark, which is exactly why RemEx-tq2e reverted its blanket sweep - on the old SolarFlare
+         dictionary the accent token was dark and took red from 4.83:1 down to 3.81:1. Red needs its
+         own token, not a borrowed one. (RemEx-xb3c) -->
+    <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
+    <!-- Alert pulse glow (RemEx-8wpvr.4): DraggableCard's PART_AlertGlow border animates its own
+         Opacity, but the BoxShadow itself has to be one fixed value - a BoxShadows string is parsed
+         as a single opaque literal, so a component inside it cannot be a DynamicResource the way
+         SystemError above is. This is the same tradeoff every themed ElevationNShadow already makes
+         for its own accent glow (e.g. Monolith's Elevation3Shadow embeds its accent as a literal
+         too), and like those shadows it is NOT shared across seeds: ThemeService.ApplyCustomization
+         overrides this key from the live palette's Error colour on every apply (beside the
+         ElevationNShadow overrides), the same as every other key in this file. The value below is
+         only the pre-first-apply fallback - this file's own SystemError (#F43F5E) above - not a
+         constant the runtime colour agrees with. -->
+    <BoxShadows x:Key="AlertGlowShadow">0 0 40 0 #F43F5E</BoxShadows>
+    <!-- A FOURTH TOKEN, because the TINT is a different surface from the FILL and inverts its answer.
+         ErrorForegroundBrush above is dark, correctly, for solid red. Over 15% red on glass it would
+         measure 1.24:1 here - dark text on a dark surface. White is right: 15.96:1 at rest and
+         14.50:1 on hover.
+         THOSE TWO FIGURES ASSUME A BACKDROP MATCHING THE GLASS, because GlassBaseMedium is itself
+         translucent (#B0.. is 0.69 alpha) and what renders also depends on what sits behind the
+         action bar. The conclusion does not depend on the assumption: swept across every backdrop
+         from black to white, the worst case is 6.44:1 at rest and 6.27:1 on hover, so white clears
+         AA whatever is behind it. (RemEx-1elh) -->
+    <SolidColorBrush x:Key="ErrorTintForegroundBrush" Color="#FFFFFFFF"/>
+    <!-- Semi-transparent dark overlay for toolbars and floating panels -->
+    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
+    <!-- Deep overlay for modal/tutorial backdrops -->
+    <SolidColorBrush x:Key="OverlayBackdropBrush" Color="#E6141720"/>
+
+    <!-- Compatibility aliases for WinUI-style resource names -->
+    <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
+
+    <!-- UI Geometry (Material 3 Expressive Tokens). Shared because all four presets agreed on them
+         and nothing per-preset ever set them. -->
+    <CornerRadius x:Key="CornerRadiusSmall">8</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusMedium">16</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusLarge">28</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusExtraLarge">36</CornerRadius>
+
+    <!-- Also shared, and also overwritten: SeedPresetCatalog gives each preset its own value
+         (CyberNOC 4, Monolith 12, BaseDarkGlass 24, SolarFlare 48) the moment it is applied. -->
+    <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
+
+    <!-- FORMER PER-PRESET GEOMETRY (RemEx-bnz2x). All four values below are BaseDarkGlass's own,
+         because that is the default preset and the one App.axaml includes at startup - exactly the
+         same reasoning the colour keys above already follow. Every one of them is overwritten by
+         ThemeService.ApplyCustomizationCore on every apply: CardCornerRadius from
+         settings.CornerRadius, CardBorderThickness from the new settings.CardBorderThickness (see
+         SelectTheme), and the three Elevation levels from the live palette's accent. What is here is
+         only the pre-first-apply fallback, the same role every other key in this file plays. -->
+    <CornerRadius x:Key="CardCornerRadius">28, 8, 28, 8</CornerRadius>
+    <Thickness x:Key="CardBorderThickness">1</Thickness>
+    <!-- ELEVATION RAMP (RemEx-qbzl1). One shadow vocabulary for every raised surface, so a Card, a
+         dialog and an app bar say "level 2" rather than each inventing a BoxShadows. Levels track
+         Material's depth ramp in ORDER, not in absolute values - Material's ShadowProvider is a
+         fixed black drop shadow, while RemEx's is soft, accent-tinted and scaled live by the
+         GlowStrength slider. ThemeService overrides all three on every ApplyCustomization; these
+         literals are what the app renders with before the first apply lands.
+           1 = resting surface (cards, list panels)
+           2 = raised resting (selected/pinned cards, the app bar)
+           3 = hover / interactive lift -->
+    <BoxShadows x:Key="Elevation1Shadow">0 10 40 0 #50000000</BoxShadows>
+    <BoxShadows x:Key="Elevation2Shadow">0 14 48 0 #5C000000</BoxShadows>
+    <BoxShadows x:Key="Elevation3Shadow">0 20 60 0 #70000000, 0 0 20 3 #306C4CFF</BoxShadows>
+</ResourceDictionary>

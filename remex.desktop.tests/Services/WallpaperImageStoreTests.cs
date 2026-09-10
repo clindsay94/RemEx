@@ -1,0 +1,169 @@
+using System;
+using System.IO;
+using FluentAssertions;
+using Remex.Desktop.Services;
+using SkiaSharp;
+using Xunit;
+
+namespace Remex.Desktop.Tests.Services;
+
+/// <summary>Copying a picked image under the app's own directory, downscaled to 2560 px (spec section 6).</summary>
+public class WallpaperImageStoreTests : IDisposable
+{
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"remex-wpstore-{Guid.NewGuid():N}");
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
+    }
+
+    private static string WriteImage(int width, int height)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"remex-wpsrc-{Guid.NewGuid():N}.png");
+        using var bitmap = new SKBitmap(width, height);
+        using (var canvas = new SKCanvas(bitmap)) canvas.Clear(new SKColor(0x20, 0x60, 0xA0));
+        using var data = SKImage.FromBitmap(bitmap).Encode(SKEncodedImageFormat.Png, 100);
+        using var stream = File.OpenWrite(path);
+        data.SaveTo(stream);
+        return path;
+    }
+
+    [Fact]
+    public void ALargeImageIsCopiedWithItsLongestEdgeAtMostTwentyFiveSixty()
+    {
+        var source = WriteImage(4000, 2000);
+        try
+        {
+            WallpaperImageStore.TryCopyDownscaled(source, _dir, out var copy).Should().BeTrue();
+
+            copy.Should().StartWith(_dir).And.NotBe(source, "the app stores its own copy, never the original's path");
+            using var decoded = SKBitmap.Decode(copy!);
+            decoded.Width.Should().Be(2560);
+            decoded.Height.Should().Be(1280);
+        }
+        finally
+        {
+            File.Delete(source);
+        }
+    }
+
+    [Fact]
+    public void ASmallImageIsCopiedWithoutUpscaling()
+    {
+        var source = WriteImage(640, 480);
+        try
+        {
+            WallpaperImageStore.TryCopyDownscaled(source, _dir, out var copy).Should().BeTrue();
+            using var decoded = SKBitmap.Decode(copy!);
+            (decoded.Width, decoded.Height).Should().Be((640, 480));
+        }
+        finally
+        {
+            File.Delete(source);
+        }
+    }
+
+    [Fact]
+    public void AnUnreadableFileFailsWithoutThrowingAndWritesNothing()
+    {
+        var source = Path.Combine(Path.GetTempPath(), $"remex-wpsrc-{Guid.NewGuid():N}.png");
+        File.WriteAllText(source, "not an image");
+        try
+        {
+            WallpaperImageStore.TryCopyDownscaled(source, _dir, out var copy).Should().BeFalse();
+            copy.Should().BeNull();
+            (Directory.Exists(_dir) ? Directory.GetFiles(_dir).Length : 0).Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(source);
+        }
+    }
+
+    [Fact]
+    public void AMissingFileFailsWithoutThrowing()
+    {
+        WallpaperImageStore.TryCopyDownscaled(Path.Combine(_dir, "nope.png"), _dir, out var copy).Should().BeFalse();
+        copy.Should().BeNull();
+    }
+
+    [Fact]
+    public void TheDirectoryIsAWallpapersFolderUnderThePerUserRoot()
+    {
+        // No hardcoded Windows path, and the expectation is built from a plain separator + name
+        // concatenation rather than by calling the same Path.Combine(root, "wallpapers") the
+        // production code uses internally - otherwise this would just restate DirectoryFor's own
+        // implementation rather than pin an independent expectation of what it must produce.
+        var root = OperatingSystem.IsWindows()
+            ? @"C:\Users\x\AppData\Local\RemEx"
+            : "/home/x/.local/share/RemEx";
+
+        var result = WallpaperImageStore.DirectoryFor(root);
+
+        result.Should().Be(root + Path.DirectorySeparatorChar + "wallpapers");
+        result.Should().StartWith(root);
+        result.Should().EndWith("wallpapers");
+    }
+
+    [Fact]
+    public void ATrailingSeparatorOnTheDirectoryArgumentDoesNotStopADeleteInsideTheFolder()
+    {
+        // Ordinal string equality without normalization would treat "wallpapers" and
+        // "wallpapers\" as different folders and silently skip the delete (RemEx-8twk0.5).
+        Directory.CreateDirectory(_dir);
+        var copy = Path.Combine(_dir, "wallpaper-x.png");
+        File.WriteAllBytes(copy, new byte[] { 1, 2, 3 });
+
+        WallpaperImageStore.TryDeleteCopy(copy, _dir + Path.DirectorySeparatorChar);
+
+        File.Exists(copy).Should().BeFalse("a trailing separator on the directory argument must not stop the match");
+    }
+
+    [Fact]
+    public void ACopyPathThatDiffersOnlyByCasingIsDeletedOnWindowsAndKeptElsewhere()
+    {
+        // Windows folders are case-insensitive so a casing difference is still "the same folder"
+        // there; POSIX folders are not, so on Linux/macOS that really is a different directory and
+        // the file must be left alone. Reverting the comparison to a raw `==` makes this fail on
+        // Windows, because `==` is always case-sensitive regardless of OS.
+        Directory.CreateDirectory(_dir);
+        var copy = Path.Combine(_dir, "wallpaper-y.png");
+        File.WriteAllBytes(copy, new byte[] { 1, 2, 3 });
+
+        WallpaperImageStore.TryDeleteCopy(copy, _dir.ToUpperInvariant());
+
+        var expectDeleted = OperatingSystem.IsWindows();
+        File.Exists(copy).Should().Be(!expectDeleted,
+            expectDeleted
+                ? "Windows folder names are case-insensitive, so this is the same folder"
+                : "this OS treats differently-cased paths as different folders, so the file is outside and must survive");
+    }
+
+    [Fact]
+    public void APathOutsideTheFolderIsNeverDeletedEvenViaATraversalThatLandsThere()
+    {
+        var outsideDir = Path.Combine(Path.GetTempPath(), $"remex-wpstore-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outsideDir);
+        try
+        {
+            var outsideFile = Path.Combine(outsideDir, "not-mine.png");
+            File.WriteAllBytes(outsideFile, new byte[] { 1, 2, 3 });
+
+            WallpaperImageStore.TryDeleteCopy(outsideFile, _dir);
+            File.Exists(outsideFile).Should().BeTrue("a file outside the wallpapers folder must never be deleted");
+
+            // A path that starts under _dir but escapes it via "..", landing back on the same
+            // outside file: GetFullPath collapses the traversal before the comparison, so this
+            // must be judged on where it actually lands, not on the string containing _dir.
+            var traversal = Path.Combine(_dir, "..", Path.GetFileName(outsideDir), "not-mine.png");
+            Action act = () => WallpaperImageStore.TryDeleteCopy(traversal, _dir);
+
+            act.Should().NotThrow();
+            File.Exists(outsideFile).Should().BeTrue("a '..' traversal that resolves outside the folder must not be deleted either");
+        }
+        finally
+        {
+            Directory.Delete(outsideDir, recursive: true);
+        }
+    }
+}

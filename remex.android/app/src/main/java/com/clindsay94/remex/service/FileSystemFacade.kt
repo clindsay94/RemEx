@@ -2,9 +2,7 @@ package com.clindsay94.remex.service
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.util.Size
 import androidx.documentfile.provider.DocumentFile
 import java.io.ByteArrayOutputStream
@@ -25,6 +23,15 @@ interface FileNode {
     val canRead: Boolean
     val canWrite: Boolean
     val mimeType: String?
+
+    /**
+     * A `content://` URI another app could be handed, or null when this node has none (RemEx-pwkc).
+     *
+     * Needed so a file that arrives from the PC can offer Open and Share: both take a URI, and the
+     * rest of this interface deliberately hides where a node lives. Null on any implementation that
+     * is not SAF-backed, and callers must treat that as "no actions", not as an error.
+     */
+    val contentUri: String?
 
     fun listChildren(): List<FileNode>
     fun findChild(name: String): FileNode?
@@ -86,6 +93,7 @@ class DocumentFileNode(
     override val canRead: Boolean get() = doc.canRead()
     override val canWrite: Boolean get() = doc.canWrite()
     override val mimeType: String? get() = doc.type
+    override val contentUri: String get() = doc.uri.toString()
 
     override fun listChildren(): List<FileNode> =
         doc.listFiles().map { DocumentFileNode(context, it) }
@@ -149,16 +157,7 @@ class SafFileSystemFacade(
         val dim = maxDim.coerceIn(16, 512)
         val bmp: Bitmap? =
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    context.contentResolver.loadThumbnail(doc.uri, Size(dim, dim), null)
-                } else {
-                    // Pre-Q: decode the image directly (best-effort; videos are unsupported here).
-                    if (type.startsWith("image/")) {
-                        context.contentResolver.openInputStream(doc.uri)?.use {
-                            decodeScaled(it, dim)
-                        }
-                    } else null
-                }
+                context.contentResolver.loadThumbnail(doc.uri, Size(dim, dim), null)
             } catch (e: Exception) {
                 null
             }
@@ -177,17 +176,6 @@ class SafFileSystemFacade(
         }
         bmp.recycle()
         return null
-    }
-
-    private fun decodeScaled(input: InputStream, maxDim: Int): Bitmap? {
-        val bytes = input.readBytes()
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        var sample = 1
-        val largest = maxOf(bounds.outWidth, bounds.outHeight)
-        while (largest / sample > maxDim) sample *= 2
-        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
     }
 }
 

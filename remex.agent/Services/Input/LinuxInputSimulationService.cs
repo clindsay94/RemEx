@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -8,22 +9,57 @@ using Remex.Agent.Services.RemoteDesktop.Linux;
 
 namespace Remex.Agent.Services.Input;
 
+/// <summary>
+/// Runs one input-tool invocation and returns its standard output.
+/// </summary>
+/// <remarks>
+/// The single point every shell-tool call in <see cref="LinuxInputSimulationService"/> passes
+/// through, so a test can assert the exact argv that would have reached <c>xdotool</c> or
+/// <c>ydotool</c> without a process, a display server, or Linux (RemEx-fu9n).
+/// </remarks>
+internal delegate string InputToolLauncher(LinuxDesktopTool backend, string toolPath, string[] arguments);
+
+/// <summary>
+/// Top-left corner of the whole virtual desktop, in the same coordinate space
+/// <see cref="LinuxInputSimulationService.MoveMouse"/> is given.
+/// </summary>
+/// <remarks>
+/// A delegate rather than an <c>IScreenCaptureService</c> dependency because the value wanted is
+/// <c>GetVirtualDesktopBounds</c>, which is on the concrete Linux capture service and not on the
+/// shared interface — and putting it there would need a default implementation that is wrong on
+/// Windows, where the active capture region and the virtual desktop genuinely differ. The composition
+/// root already knows the concrete type, so the one type test lives there (RemEx-dyvd).
+/// </remarks>
+internal delegate (int Left, int Top) VirtualDesktopOrigin();
+
 [SupportedOSPlatform("linux")]
 public class LinuxInputSimulationService : IInputSimulationService
 {
     private readonly ILogger<LinuxInputSimulationService> _logger;
     private readonly LinuxDesktopBackendStatus _backendStatus;
-    private readonly string? _display;
 
-    // Stage 5: router is set when a WaylandNative/PortalNoPen session is active.
-    // When null, the legacy xdotool/ydotool path runs as before.
+    /// <summary>Set once the portal refused and there is no shell tool to fall back to (RemEx-iaxc).</summary>
+    /// <remarks>
+    /// Written on the input worker thread and read by the desktop stream's message loop, so both ends
+    /// go through <see cref="Volatile"/>. A plain field would let the reader cache the null it saw on
+    /// the first event forever, which is the one value that must not be sticky.
+    /// </remarks>
+    private string? _inputSilentlyDroppedReason;
+    private readonly string? _display;
+    private readonly InputToolLauncher _launch;
+    private readonly VirtualDesktopOrigin _virtualDesktopOrigin;
+
+    // Stage 5 router. ALWAYS NULL IN PRODUCTION: nothing calls SetRouter, so the legacy portal /
+    // xdotool / ydotool paths below are what actually run on every Linux tier (RemEx-7tkg). The
+    // previous wording here — "router is set when a WaylandNative/PortalNoPen session is active" —
+    // described an intention in the present tense and read as a description of behaviour.
     private LinuxInputBackendRouter? _router;
 
     // Portal-based Wayland input injector.  Created on Wayland when the portal is
     // available; null on X11 or when portal is absent.  Started lazily on first use
     // so that the permission dialog is shown only when a remote desktop session
     // actually begins sending input events.
-    private readonly LinuxPortalInputInjector? _portalInjector;
+    private readonly IPortalInputSink? _portalInjector;
     private int _portalStartAttempted; // 0 = not yet attempted, 1 = attempted (Interlocked)
     private readonly object _portalStartLock = new();
 
@@ -55,11 +91,71 @@ public class LinuxInputSimulationService : IInputSimulationService
     public LinuxInputSimulationService(
         ILogger<LinuxInputSimulationService> logger,
         Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
+        : this(logger, captureLifetime, virtualDesktopOrigin: null)
+    {
+    }
+
+    /// <summary>
+    /// Production constructor for the composition root, which is the only thing that knows where the
+    /// virtual-desktop origin comes from (RemEx-dyvd).
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than an extra public parameter so <see cref="VirtualDesktopOrigin"/> stays off
+    /// the public surface: it exists to serve one Linux backend's coordinate quirk, and nothing
+    /// outside this assembly has any business supplying one.
+    /// </remarks>
+    internal LinuxInputSimulationService(
+        ILogger<LinuxInputSimulationService> logger,
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime,
+        VirtualDesktopOrigin? virtualDesktopOrigin)
+        : this(logger, LinuxDesktopBackendProbe.Probe(), launcher: null, captureLifetime, virtualDesktopOrigin)
+    {
+    }
+
+    /// <summary>
+    /// Test seam: takes the probe result and the process launcher instead of discovering both
+    /// (RemEx-fu9n).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// WHAT THIS EXISTS TO CATCH IS A BUG THIS REPO HAS ALREADY SHIPPED. Every method here ends in an
+    /// argument list handed to another program, and RemEx-nb7c was two of those lists being wrong:
+    /// <c>0x00110D</c> to press and <c>0x00110U</c> to release, neither a form <c>ydotool click</c>
+    /// accepts, so clicking did nothing on that backend for as long as it existed. The fix moved the
+    /// string into a testable function — and the tests written for it still could not see the call
+    /// sites, so re-introducing the broken interpolation failed nothing. The defect class is not
+    /// "the mapping is wrong", it is "the argv is wrong", and only the argv is worth pinning.
+    /// </para>
+    /// <para>
+    /// Both parameters have to be injectable together, not just the launcher: which branch runs is
+    /// decided by <see cref="LinuxDesktopBackendStatus.InputTool"/>, and the two backends want
+    /// genuinely different words for the same action — <c>mousedown 1</c> against <c>click 0x40</c>.
+    /// A test that could only observe whichever tool happened to be installed on the build machine
+    /// would silently cover one branch on Linux and neither on Windows.
+    /// </para>
+    /// <para>
+    /// The launcher stays a delegate rather than becoming an interface because there is exactly one
+    /// operation and one real implementation; an interface would add a file and a name without
+    /// removing a decision.
+    /// </para>
+    /// </remarks>
+    internal LinuxInputSimulationService(
+        ILogger<LinuxInputSimulationService> logger,
+        LinuxDesktopBackendStatus backendStatus,
+        InputToolLauncher? launcher = null,
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null,
+        VirtualDesktopOrigin? virtualDesktopOrigin = null,
+        IPortalInputSink? portalInjector = null)
     {
         _logger = logger;
         _captureLifetime = captureLifetime;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
-        _backendStatus = LinuxDesktopBackendProbe.Probe();
+        _backendStatus = backendStatus;
+        _launch = launcher ?? RunToolWithOutput;
+
+        // (0,0) is the right default rather than a placeholder: it is what an X11 desktop always
+        // reports, and it makes the translation below a no-op wherever the origin is already zero.
+        _virtualDesktopOrigin = virtualDesktopOrigin ?? DesktopOriginAtZero;
 
         // On Wayland, create a portal input injector so that pointer events work even
         // when xdotool / ydotool are not available or cannot inject into the compositor.
@@ -67,7 +163,16 @@ public class LinuxInputSimulationService : IInputSimulationService
         // than a naive WAYLAND_DISPLAY-only check: KDE/GNOME Wayland sessions always
         // also set DISPLAY=:0 for XWayland, so requiring DISPLAY to be empty hides
         // the Wayland path on every real Wayland desktop.
-        if (_backendStatus.IsWaylandSession)
+        //
+        // The injected sink is a test seam (RemEx-y45x) and is null in production, so the condition
+        // below decides the real path exactly as it did before. It is the ONLY way to observe what
+        // this service sends the portal: nine branches route through it, and the one that scrolled
+        // 120x too far did so unseen because nothing could assert its arguments.
+        if (portalInjector is not null)
+        {
+            _portalInjector = portalInjector;
+        }
+        else if (_backendStatus.IsWaylandSession)
         {
             _portalInjector = new LinuxPortalInputInjector(logger);
             _logger.LogInformation(
@@ -84,10 +189,18 @@ public class LinuxInputSimulationService : IInputSimulationService
     }
 
     /// <summary>
-    /// Sets the backend router for WaylandNative / PortalNoPen tiers.
-    /// When set, all input events are routed through the router rather than shell tools.
-    /// Pass null to revert to the legacy shell-tool path.
+    /// Sets the backend router for WaylandNative / PortalNoPen tiers. Pass null to revert to the
+    /// legacy shell-tool path.
     /// </summary>
+    /// <remarks>
+    /// NO PRODUCTION CALLER, AND "ALL INPUT EVENTS" WAS NEVER TRUE (RemEx-7tkg). The router is
+    /// consulted by exactly four members — <see cref="BackendName"/>,
+    /// <see cref="EnqueuePointerSample"/>, <see cref="KeyDown"/> and <see cref="KeyUp"/>. Every mouse
+    /// method checks the portal injector and then the shell tool, never the router, so setting one
+    /// today would route the keyboard through it and silently leave the pointer on the old path.
+    /// Whoever wires Stage 5 up has to extend the mouse methods as well; a test pins the current
+    /// split so that discovery happens at compile-and-test time rather than on a device.
+    /// </remarks>
     public void SetRouter(LinuxInputBackendRouter? router)
     {
         _router = router;
@@ -116,15 +229,23 @@ public class LinuxInputSimulationService : IInputSimulationService
         {
             try
             {
-                var result = RunToolWithOutput(_backendStatus.CursorQueryTool, _backendStatus.CursorQueryToolPath, "getmouselocation", "--shell");
+                var result = _launch(_backendStatus.CursorQueryTool, _backendStatus.CursorQueryToolPath, ["getmouselocation", "--shell"]);
                 // Output format: X=123\nY=456\nSCREEN=0\nWINDOW=12345
                 var lines = result.Split('\n');
                 var x = 0;
                 var y = 0;
                 foreach (var line in lines)
                 {
-                    if (line.StartsWith("X=")) int.TryParse(line.Substring(2), out x);
-                    if (line.StartsWith("Y=")) int.TryParse(line.Substring(2), out y);
+                    // Invariant for the same reason the arguments are (RemEx-j7el): xdotool writes an
+                    // ASCII hyphen, and 57 cultures reject that when NegativeSign is something else.
+                    // X11 screen coordinates are 0-based so these are not negative today, which is
+                    // exactly why the rule has no exceptions - the next reader should not have to know
+                    // which of these can go negative.
+                    // StringComparison.Ordinal because the prefix test is culture-sensitive too by
+                    // default (CA1310) - low risk for "X=", but it is the last culture dependency in
+                    // this method and leaving it would make the comment above only half true.
+                    if (line.StartsWith("X=", StringComparison.Ordinal)) TryParseInvariant(line.Substring(2), out x);
+                    if (line.StartsWith("Y=", StringComparison.Ordinal)) TryParseInvariant(line.Substring(2), out y);
                 }
                 return (x, y);
             }
@@ -161,9 +282,30 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", "--absolute", x.ToString(), y.ToString());
+        {
+            // YDOTOOL HAS NO ABSOLUTE MODE, AND ITS EMULATION IS NOT A COORDINATE SYSTEM (RemEx-dyvd).
+            // `--absolute` slams the pointer to the minimum of the RELATIVE pointer space and then
+            // moves by the operands (tool_mousemove.c: two REL emits of INT32_MIN, then the values),
+            // so what it wants is an OFFSET FROM THE DESKTOP'S TOP-LEFT, not a position. Those two
+            // coincide only when the virtual desktop's origin is (0,0), which is the case on X11 by
+            // construction — the root window is 0-based — and is why this went unnoticed. Where a
+            // compositor reports a non-zero origin, every target landed off by exactly that origin,
+            // POSITIVE COORDINATES INCLUDED: with the desktop starting at x = -1920, a target of 300
+            // homed to -1920 and then moved +300, landing at -1620, on the wrong monitor.
+            var (originLeft, originTop) = _virtualDesktopOrigin();
+            RunTool(
+                "mousemove",
+                "--absolute",
+                "-x", Arg(x - originLeft),
+                "-y", Arg(y - originTop));
+        }
         else
-            RunTool("mousemove", x.ToString(), y.ToString());
+        {
+            // NOT translated, and that is not an oversight. xdotool takes X11 screen coordinates, and
+            // the coordinates arriving here ARE X11 screen coordinates on an X11 session, so the two
+            // spaces are the same one. Subtracting an origin here would break the case it fixes above.
+            RunTool("mousemove", Arg(x), Arg(y));
+        }
     }
 
     public void MouseMoveRelative(int dx, int dy)
@@ -182,9 +324,9 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", dx.ToString(), dy.ToString());
+            RunTool("mousemove", "-x", Arg(dx), "-y", Arg(dy));
         else
-            RunTool("mousemove_relative", "--", dx.ToString(), dy.ToString());
+            RunTool("mousemove_relative", "--", Arg(dx), Arg(dy));
     }
 
     public void MouseDown(int button)
@@ -195,9 +337,9 @@ public class LinuxInputSimulationService : IInputSimulationService
             return;
         }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("click", $"0x{MapButtonYdotool(button):X5}D");
+            RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: true));
         else
-            RunTool("mousedown", MapButtonXdotool(button).ToString());
+            RunTool("mousedown", Arg(MapButtonXdotool(button)));
     }
 
     public void MouseUp(int button)
@@ -211,9 +353,9 @@ public class LinuxInputSimulationService : IInputSimulationService
             return;
         }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("click", $"0x{MapButtonYdotool(button):X5}U");
+            RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: false));
         else
-            RunTool("mouseup", MapButtonXdotool(button).ToString());
+            RunTool("mouseup", Arg(MapButtonXdotool(button)));
     }
 
     /// <summary>
@@ -250,27 +392,106 @@ public class LinuxInputSimulationService : IInputSimulationService
     {
         if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive)
         {
-            _portalInjector.NotifyPointerScrollDiscrete(deltaX, deltaY);
+            // THIS BRANCH USED TO SCROLL 120x TOO FAR (RemEx-y45x). It passed the raw delta straight
+            // through, and the raw delta is not a step count. The wire unit is Windows' WHEEL_DELTA of
+            // 120 per notch — WindowsInputSimulationService hands deltaY to MOUSEEVENTF_WHEEL
+            // unchanged, which is what defines it, and CoordinateValidation caps it at 120 * 10 — while
+            // the portal's parameter is documented as "the number of steps scrolled":
+            //
+            //   NotifyPointerAxisDiscrete(IN session_handle o, IN options a{sv}, IN axis u, IN steps i)
+            //
+            // So one notch from the client asked the compositor for 120 notches. Both shell branches
+            // below already divide by 120; this one now shares the ydotool branch's helper outright, so
+            // the three cannot drift apart again. (The xdotool branch computes the same magnitude
+            // inline, as a loop count rather than a value it passes on.)
+            //
+            // The portal also offers NotifyPointerAxis, whose dx/dy are a smooth-scroll motion vector
+            // in the stream's logical pixels. That is the wrong one here: this delta arrives quantised
+            // to notches from a wheel, not as a touchpad gesture, and the discrete call is what the
+            // other two backends emit.
+            //
+            // AND IT HAS NO PORTABLE SIGN, which is the stronger reason and was only found while
+            // settling this one (RemEx-e0b2 review). The two compositors DISAGREE on the smooth call:
+            // xdg-desktop-portal-kde's requestPointerAxis negates y — wl_fixed_from_double(-y) — while
+            // mutter passes dy straight into notify_scroll_continuous. So no single sign is correct
+            // across desktops for NotifyPointerAxis, where the discrete call agrees on both axes.
+            // Anyone "upgrading" this branch for finer granularity would get GNOME right and KDE
+            // backwards, with every test in PortalScrollUnitTests still green.
+            // THE VERTICAL SIGN IS INVERTED AND THE HORIZONTAL ONE IS NOT (RemEx-e0b2). This is the
+            // one place in this file where the portal disagrees with the wire, and RemEx-y45x left it
+            // open on purpose: it fixed the MAGNITUDE after checking the spec, and would not touch the
+            // sign because the spec does not state one. The portal documents `steps` only as "the
+            // number of steps scrolled" and never says which way a positive count goes.
+            //
+            // SETTLED FROM THE COMPOSITORS RATHER THAN FROM THE CONVENTION, because guessing from
+            // "Wayland is usually positive-down" is exactly the assumption RemEx-nb7c exists to stop,
+            // and a wrong inversion turns a working direction into a broken one. Both implementations
+            // that actually receive this call agree:
+            //
+            //   GNOME — mutter, src/backends/meta-remote-desktop-session.c,
+            //   discrete_steps_to_scroll_direction(): axis 0 with steps < 0 returns CLUTTER_SCROLL_UP
+            //   and steps > 0 returns CLUTTER_SCROLL_DOWN. Explicit, in a dedicated function.
+            //
+            //   KDE — xdg-desktop-portal-kde passes `steps` through unchanged to
+            //   WaylandIntegration::requestPointerAxisDiscrete, which hands it to
+            //   fakeInput->axis(WL_POINTER_AXIS_VERTICAL_SCROLL, ...).
+            //
+            // THE KDE HALF RESTS ON libinput, NOT ON THE WAYLAND SPEC, and the difference matters
+            // because the obvious place to check says nothing. wayland.xml's wl_pointer::axis defines
+            // the value only as "the length of a vector along the specified axis in a coordinate space
+            // identical to those of motion events" — no direction at all. The rule is stated in
+            // libinput's own header ("the positive direction being down or right, respectively"), and
+            // that is the convention compositors feed into wl_pointer. Anyone re-deriving this from
+            // wayland.xml alone will find no support for it and may conclude the inversion is
+            // unfounded; it is founded, just one layer further down.
+            //
+            // The GNOME chain has two more hops than the ones named above and both are pure
+            // pass-throughs, checked rather than assumed: xdg-desktop-portal's own frontend does the
+            // session lookup and option filtering with no arithmetic, and xdg-desktop-portal-gnome
+            // forwards (axis, steps) verbatim to the Mutter D-Bus interface.
+            //
+            // So POSITIVE steps on axis 0 means DOWN, and the wire means UP: WindowsInputSimulation-
+            // Service hands deltaY to MOUSEEVENTF_WHEEL unchanged, and positive there is away from
+            // the user. The two shell backends already agree with the wire — xdotool maps deltaY > 0
+            // to button 4, ydotool's REL_WHEEL is positive up — so this branch was the only one
+            // scrolling backwards, on every Wayland desktop, since it was written.
+            //
+            // AXIS 1 IS NOT INVERTED, and that asymmetry is the reason this is not a one-token fix.
+            // mutter maps axis 1 with steps > 0 to CLUTTER_SCROLL_RIGHT, and the wire's positive
+            // deltaX is also right (MOUSEEVENTF_HWHEEL, and xdotool's button 7). Negating both would
+            // have fixed one axis and broken the other.
+            _portalInjector.NotifyPointerScrollDiscrete(WheelDetents(deltaX), -WheelDetents(deltaY));
             return;
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            // ydotool mousemove sends relative motion; wheel via separate abstraction not supported well
-            // Use xdotool fallback pattern: scroll buttons
-            if (deltaY != 0)
+            // THE SAME BUG AS THE CLICK PATH, AND IT WAS ALSO A NO-OP (RemEx-nb7c). This used to send
+            // X11's wheel buttons 4/5/6/7 to `ydotool click`. ydotool has no wheel button at all: it
+            // masks the argument to a low nibble and ORs it onto BTN_MOUSE — Client/tool_click.c does
+            // `keycode = (key & 0xf) | 0x110` — so 4/5/6/7 selected EXTR/FORWARD/BACK/TASK, and since
+            // the argument carried neither the 0x40 nor the 0x80 action bit, the tool's `if (key &
+            // 0x40)` / `if (key & 0x80)` guards both failed and it emitted NOTHING. Every scroll
+            // spawned up to ten processes to do nothing.
+            //
+            // `mousemove --wheel` is the real mechanism, and it takes detent COUNTS rather than
+            // repeated events (tool_mousemove.c emits REL_HWHEEL/REL_WHEEL with the values verbatim),
+            // so one invocation replaces the whole loop. It is documented in `ydotool mousemove
+            // --help` and present in the source; the man page's mouse section omits it, which is
+            // presumably how the click-based workaround came to be written.
+            int horizontal = WheelDetents(deltaX);
+            int vertical = WheelDetents(deltaY);
+
+            if (horizontal != 0 || vertical != 0)
             {
-                int clicks = Math.Clamp(Math.Abs(deltaY) / 120, 1, 10);
-                int btn = deltaY > 0 ? 4 : 5;
-                for (int i = 0; i < clicks; i++)
-                    RunTool("click", $"0x{btn:X5}");
-            }
-            if (deltaX != 0)
-            {
-                int clicks = Math.Clamp(Math.Abs(deltaX) / 120, 1, 10);
-                int btn = deltaX > 0 ? 7 : 6;
-                for (int i = 0; i < clicks; i++)
-                    RunTool("click", $"0x{btn:X5}");
+                // Signs match the buttons this replaces: REL_WHEEL is positive up (was button 4) and
+                // REL_HWHEEL positive right (was button 7). --wheel and --absolute are mutually
+                // exclusive in ydotool, so no position flag goes with this.
+                RunTool(
+                    "mousemove",
+                    "--wheel",
+                    "-x", Arg(horizontal),
+                    "-y", Arg(vertical));
             }
         }
         else
@@ -309,11 +530,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:1");
+            RunTool("key", $"{Arg(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:1");
             return;
         }
 
-        RunTool("keydown", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
+        RunTool("keydown", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? Arg(keyCode));
     }
 
     public void KeyUp(int keyCode)
@@ -333,11 +554,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:0");
+            RunTool("key", $"{Arg(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:0");
             return;
         }
 
-        RunTool("keyup", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
+        RunTool("keyup", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? Arg(keyCode));
     }
 
     public void TypeText(string text)
@@ -366,30 +587,61 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
     }
 
-    private static int MapButtonXdotool(int button) => button switch
-    {
-        0 => 1, // left
-        1 => 2, // middle
-        2 => 3, // right
-        _ => 1
-    };
+    /// <summary>
+    /// Formats a number for a shell tool's argument list.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// INVARIANT CULTURE BECAUSE THESE VALUES CAN BE NEGATIVE. <c>NumberFormatInfo.NegativeSign</c> is
+    /// culture-dependent — several locales define it as U+2212 MINUS SIGN rather than the ASCII
+    /// hyphen — and neither xdotool nor ydotool can parse that. It is the same class of failure as
+    /// the getopt one the coordinate sites were fixed for (RemEx-r29r), reached by a different route.
+    /// </para>
+    /// <para>
+    /// USED FOR EVERY NUMBER THAT BECOMES AN ARGUMENT, not only the ones that can currently go
+    /// negative (RemEx-hbma). A button index cannot, and neither can a clamped detent count, so those
+    /// are invariant already by accident of their range — which is exactly why leaving them formatted
+    /// differently is worse than pointless: the next reader cannot tell the deliberate cases from the
+    /// overlooked ones, and the value that CAN go negative is the unvalidated <c>keyCode</c> straight
+    /// off the wire. One rule, no exceptions to remember.
+    /// </para>
+    /// <para>
+    /// Named to match <c>LinuxInputBackendRouter.Arg</c>, which exists for the same reason in the
+    /// sibling class. Two names for one rule is how the rule gets applied to one of them.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-    private static int MapButtonYdotool(int button) => button switch
-    {
-        0 => 0x110, // BTN_LEFT
-        1 => 0x112, // BTN_MIDDLE
-        2 => 0x111, // BTN_RIGHT
-        _ => 0x110
-    };
+    /// <summary>
+    /// Reads a number out of a shell tool's output, invariantly. The mirror of <see cref="Arg"/>
+    /// (RemEx-j7el).
+    /// </summary>
+    internal static bool TryParseInvariant(string? text, out int value) =>
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
 
-    // Linux BTN_ codes used by the portal NotifyPointerButton API.
-    private static int MapButtonLinux(int button) => button switch
-    {
-        0 => 0x110, // BTN_LEFT
-        1 => 0x112, // BTN_MIDDLE
-        2 => 0x111, // BTN_RIGHT
-        _ => 0x110
-    };
+    /// <summary>
+    /// The virtual-desktop origin when nobody supplied one: <c>(0,0)</c>, which is what an X11
+    /// desktop always reports and what makes the ydotool translation a no-op.
+    /// </summary>
+    private static (int Left, int Top) DesktopOriginAtZero() => (0, 0);
+
+    /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
+    private static int MapButtonXdotool(int button) => MouseButtonCodes.ToXdotool(button);
+
+    /// <summary>evdev BTN_* code for the portal's NotifyPointerButton. Single-sourced (RemEx-upxn).</summary>
+    private static int MapButtonLinux(int button) => (int)MouseButtonCodes.ToEvdev(button);
+
+    /// <summary>
+    /// Converts a wheel delta in the protocol's 120-per-notch units to whole wheel detents, keeping
+    /// the sign.
+    /// </summary>
+    /// <remarks>
+    /// The clamp is inherited from the loop this replaced: any non-zero delta is worth at least one
+    /// detent, so a sub-notch scroll does not silently vanish, and a runaway delta is capped so a
+    /// single message cannot fling the page.
+    /// </remarks>
+    internal static int WheelDetents(int delta) =>
+        delta == 0 ? 0 : Math.Sign(delta) * (int)Math.Clamp(Math.Abs((long)delta) / 120, 1, 10);
 
     /// <summary>
     /// Synchronously ensures the portal input session is active. The first caller blocks
@@ -407,44 +659,185 @@ public class LinuxInputSimulationService : IInputSimulationService
         if (_portalInjector is null) return false;
         if (_portalInjector.IsActive) return true;
 
-        // Only one thread runs the start; others just observe IsActive afterwards.
-        if (Interlocked.CompareExchange(ref _portalStartAttempted, 1, 0) == 0)
+        // THE CAS IS INSIDE THE LOCK, NOT BEFORE IT (RemEx-5bwpv fix-round finding). Flipping
+        // _portalStartAttempted before acquiring _portalStartLock left a window where a concurrent
+        // TryArmPortalRetry's Monitor.TryEnter(_portalStartLock, 0) — meant to detect "a start is
+        // already in flight" — would succeed and reset the flag mid-attempt, queuing a second dialog
+        // behind the first: exactly the double-prompt the in-flight bail exists to prevent. Doing the
+        // CAS only once the lock is held closes that window; every caller now contends on the same
+        // lock, and the IsActive re-check below still makes every waiter after the first a no-op.
+        lock (_portalStartLock)
         {
-            lock (_portalStartLock)
+            if (_portalInjector.IsActive) return true;
+
+            if (Interlocked.CompareExchange(ref _portalStartAttempted, 1, 0) == 0)
             {
-                if (!_portalInjector.IsActive)
+                try
                 {
-                    try
-                    {
-                        _portalInjector.EnsureStartedAsync().GetAwaiter().GetResult();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Portal input session start raised an exception.");
-                    }
+                    _portalInjector.EnsureStartedAsync().GetAwaiter().GetResult();
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Portal input session start raised an exception.");
+                }
+
+                if (!_portalInjector.IsActive)
+                    NotePortalStartFailed();
             }
-        }
-        else
-        {
-            // Another thread is starting; wait for it to publish IsActive (or give up).
-            lock (_portalStartLock) { }
         }
 
         return _portalInjector.IsActive;
+    }
+
+    /// <summary>
+    /// Bail-checked, synchronous half of a permission retry (RemEx-5bwpv): resets the one-shot start
+    /// guard and clears the silently-dropped reason, but does not itself start the portal.
+    /// </summary>
+    /// <remarks>
+    /// Split out of <see cref="RearmPortalPermissionAndRetry"/> so <see cref="RetryInputPermission"/>
+    /// can clear the reason on the calling thread — synchronously, before returning — while the
+    /// potentially two-minute dialog wait in <see cref="EnsurePortalStarted"/> still runs off-thread.
+    /// Doing the reset inside that background work instead would leave a window where the handler has
+    /// already reset its reported-once guard but the reason is still the stale value, and the frame
+    /// loop would re-send it (RemoteDesktopHandler.ReportInputSilentlyDroppedOnceAsync).
+    /// <para>
+    /// Bails (returns false) without touching any state when there is no portal injector, the portal
+    /// session is already active, or a start is already in flight. The in-flight case is load-bearing:
+    /// the portal dialog waits up to two minutes (see <see cref="Linux.LinuxPortalInputInjector"/>), and
+    /// during that wait <c>_portalStartAttempted == 1 &amp;&amp; !IsActive</c> is indistinguishable from
+    /// "already refused". A naive reset would queue a second dialog the moment the first resolves, so
+    /// <see cref="Monitor.TryEnter(object, int)"/> with a zero timeout detects the in-flight case
+    /// instead of assuming a set flag means a finished attempt.
+    /// </para>
+    /// </remarks>
+    /// <returns>True if the guard was reset and a start should be (re-)attempted.</returns>
+    private bool TryArmPortalRetry()
+    {
+        if (_portalInjector is null)
+        {
+            _logger.LogDebug("Input permission retry requested with no portal injector; nothing to do.");
+            return false;
+        }
+
+        if (_portalInjector.IsActive)
+        {
+            _logger.LogDebug("Input permission retry requested but the portal session is already active.");
+            return false;
+        }
+
+        if (!Monitor.TryEnter(_portalStartLock, 0))
+        {
+            _logger.LogDebug(
+                "Input permission retry requested while a portal start is already in flight; ignoring.");
+            return false;
+        }
+
+        try
+        {
+            Interlocked.Exchange(ref _portalStartAttempted, 0);
+            Volatile.Write(ref _inputSilentlyDroppedReason, null);
+        }
+        finally
+        {
+            Monitor.Exit(_portalStartLock);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// User-initiated re-arm after a declined portal permission dialog (RemEx-5bwpv), triggered by the
+    /// phone's "Ask again" action. Synchronous test surface: arms via <see cref="TryArmPortalRetry"/>
+    /// and, if armed, retries the portal start inline (eager — the dialog must appear on the tap, not
+    /// on the next touch) before returning.
+    /// </summary>
+    /// <returns>True if the portal session is active once this call returns.</returns>
+    internal bool RearmPortalPermissionAndRetry()
+    {
+        if (TryArmPortalRetry())
+        {
+            EnsurePortalStarted();
+        }
+
+        return _portalInjector?.IsActive == true;
+    }
+
+    /// <inheritdoc />
+    public void RetryInputPermission()
+    {
+        if (!TryArmPortalRetry())
+            return;
+
+        // The arm above already cleared the reason synchronously; only the dialog wait (up to two
+        // minutes) goes off-thread, so the message-receive loop that calls this is never blocked on it.
+        Task.Run(() => EnsurePortalStarted()).ContinueWith(
+            t => _logger.LogWarning(t.Exception, "Input permission retry raised an exception."),
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+    }
+
+    /// <inheritdoc />
+    public string? InputSilentlyDroppedReason => Volatile.Read(ref _inputSilentlyDroppedReason);
+
+    /// <summary>
+    /// Records that the portal session could not be started, so the fall-through can name the real
+    /// cause and the stream can tell the user (RemEx-iaxc).
+    /// </summary>
+    /// <remarks>
+    /// Only meaningful when there is ALSO no shell tool to fall back to. With xdotool or ydotool
+    /// present a declined portal is a degradation, not a failure — input still reaches the desktop —
+    /// so <see cref="InputSilentlyDroppedReason"/> stays null and nothing is reported.
+    /// </remarks>
+    private void NotePortalStartFailed()
+    {
+        if (_backendStatus.InputTool != LinuxDesktopTool.None && _backendStatus.InputToolPath is not null)
+        {
+            _logger.LogWarning(
+                "Portal input session did not start; falling back to {Tool}. Input still works.",
+                _backendStatus.InputTool);
+            return;
+        }
+
+        // **CRITICAL RATHER THAN WARNING, BECAUSE NOTHING ELSE WILL EVER SAY SO.** From here every
+        // click and keystroke is discarded and the host keeps advertising that input works.
+        // The service is a singleton and _portalStartAttempted is never reset by a reconnect —
+        // reconnecting builds a new handler but takes the already-attempted branch and never
+        // re-prompts on its own (RemEx-iaxc). That no longer leaves the user stuck: an explicit,
+        // user-initiated "Ask again" on the phone re-arms the guard and retries eagerly
+        // (RearmPortalPermissionAndRetry, RemEx-5bwpv). Only ydotool is suggested here because this
+        // path is reachable only on Wayland, where xdotool is not the tool that would help.
+        _logger.LogCritical(
+            "Remote input is being DISCARDED: the desktop portal session was refused or failed to " +
+            "start, and there is no fallback input tool installed. If a permission dialog appeared, " +
+            "it was declined or dismissed. Use \"Ask again\" on the phone to re-prompt, restart the " +
+            "agent and accept the prompt, or install ydotool.");
+
+        Volatile.Write(
+            ref _inputSilentlyDroppedReason,
+            "The PC refused permission to control it, and has no fallback input tool installed.");
     }
 
     private void RunTool(params string[] arguments)
     {
         if (_backendStatus.InputTool == LinuxDesktopTool.None || _backendStatus.InputToolPath is null)
         {
-            _logger.LogWarning("No input simulation tool available (install xdotool or ydotool).");
+            // **THE MESSAGE DEPENDS ON WHETHER A PORTAL WAS EVER IN PLAY (RemEx-iaxc).** With no
+            // injector at all this is the static X11-with-nothing-installed case and "install
+            // xdotool" is exactly right - that is RemEx-vgxv's territory and this warning is its only
+            // signal today, so it is left alone. With an injector present the portal WAS the plan, a
+            // refused dialog is what actually killed the event, and naming the missing shell tool
+            // points at the wrong thing entirely. That case is reported once, with its real cause, by
+            // NotePortalStartFailed; here it drops to Debug because it fires for every discarded event
+            // and a per-event warning buries the one line that explains why.
+            if (_portalInjector is null)
+                _logger.LogWarning("No input simulation tool available (install xdotool or ydotool).");
+            else
+                _logger.LogDebug("Input event discarded: the portal session is not delivering events.");
             return;
         }
 
         try
         {
-            _ = RunToolWithOutput(_backendStatus.InputTool, _backendStatus.InputToolPath, arguments);
+            _ = _launch(_backendStatus.InputTool, _backendStatus.InputToolPath, arguments);
         }
         catch (Exception ex)
         {

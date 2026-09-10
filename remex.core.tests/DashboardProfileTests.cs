@@ -157,6 +157,45 @@ public class DashboardProfileTests
         Assert.Equal("#00E5FF", card.CardTheme.AccentColor);
     }
 
+    /// <summary>
+    /// The personalization sheet's new fields (RemEx-ddynd) round-trip through the source-generated
+    /// context, camelCase names included — the same NativeAOT-safe path the desktop's profile file
+    /// actually uses.
+    /// </summary>
+    [Fact]
+    public void CustomizationSettings_SourceGen_RoundTripsSavedPalettes()
+    {
+        var settings = new CustomizationSettings
+        {
+            ColorSource = ColorSources.Wallpaper,
+            WallpaperSeedIndex = 2,
+            WallpaperSource = WallpaperSources.Image,
+            WallpaperImagePath = @"C:\Users\x\wallpaper-abc.png",
+            WallpaperBlur = 0.35,
+            SavedPalettes = new[]
+            {
+                new SavedPalette { Name = "Dusk", ColorSource = ColorSources.Custom, Seed = "#123456", Vibrancy = 40, Contrast = -0.2, Strategy = "Expressive" },
+            },
+        };
+
+        var typeInfo = RemexJson.TypeInfo<CustomizationSettings>();
+        var json = RemexJson.Serialize(settings, typeInfo);
+        var back = RemexJson.Deserialize(json, typeInfo);
+
+        Assert.Contains("\"colorSource\"", json);
+        Assert.Contains("\"savedPalettes\"", json);
+        Assert.Contains("\"wallpaperBlur\"", json);
+
+        Assert.NotNull(back);
+        Assert.Equal(settings.ColorSource, back!.ColorSource);
+        Assert.Equal(settings.WallpaperSeedIndex, back.WallpaperSeedIndex);
+        Assert.Equal(settings.WallpaperSource, back.WallpaperSource);
+        Assert.Equal(settings.WallpaperImagePath, back.WallpaperImagePath);
+        Assert.Equal(settings.WallpaperBlur, back.WallpaperBlur);
+        var savedPalette = Assert.Single(back.SavedPalettes);
+        Assert.Equal(settings.SavedPalettes[0], savedPalette);
+    }
+
     // ═══════════════ Snap-to-Grid Math ═══════════════
 
     [Theory]

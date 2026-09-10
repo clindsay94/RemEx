@@ -1,0 +1,252 @@
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using FluentAssertions;
+using Remex.Desktop.Services;
+using Xunit;
+
+namespace Remex.Desktop.Tests.Scripts;
+
+/// <summary>
+/// scripts/ui-palette-sweep.ps1 (RemEx-8q7de) is PowerShell, so nothing here can compile-check
+/// it — these are text assertions over the source, the same shape .NET already uses elsewhere in
+/// this repo for things a build cannot verify (see <c>CustomizationSettingsRoundTripTests</c>).
+/// They exist to catch the two ways this script could quietly stop doing its job: losing the
+/// backup/restore/no-live-host safety net, or losing an axis of the matrix it claims to sweep.
+/// </summary>
+/// <remarks>
+/// Several assertions are anchored to <see cref="MatrixDataBlock"/> / <see cref="TryBlockBody"/> /
+/// <see cref="FinallyBlockBody"/> rather than the whole file, specifically because the header
+/// comment restates the matrix and the safety story in prose (for a human skimming the script) —
+/// text that stays behind even if the code it describes is deleted. A whole-file
+/// <c>Contains</c> check on those same words would keep passing after exactly the regression it
+/// claims to catch (RemEx-8q7de round 2 review).
+/// </remarks>
+public class PaletteSweepScriptTests
+{
+    private static string ScriptPath() =>
+        Path.Combine(RepoRoot(), "scripts", "ui-palette-sweep.ps1");
+
+    private static string ScriptText() => File.ReadAllText(ScriptPath());
+
+    [Fact]
+    public void ScriptExistsAndIsNotEmpty()
+    {
+        File.Exists(ScriptPath()).Should().BeTrue("the sweep script must be tracked at scripts/ui-palette-sweep.ps1");
+        ScriptText().Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void MatrixHasExactlyFifteenCells()
+    {
+        // Negative lookbehind for a letter so "ThemeId = 'BaseDarkGlass'" isn't double-counted as
+        // an "Id = " row alongside the actual "Id = 'Default'" it sits next to.
+        var idRows = Regex.Matches(MatrixDataBlock(), @"(?<![A-Za-z])Id\s*=\s*'[^']+'");
+        idRows.Should().HaveCount(15,
+            "the axis is 1 default + 3 adversarial seeds x 2 modes x 2 contrasts + 2 background cells = 15 - a row added or lost here silently shrinks or pads the sweep");
+    }
+
+    [Fact]
+    public void TheTwoBackgroundCellsCarryTheirModeAndBlur()
+    {
+        var text = ScriptText();
+
+        // Contrast is pinned too: a cell that drifts to contrast 1.0 tests something else entirely
+        // while every other fact here stays green.
+        text.Should().MatchRegex(@"Id = 'Aurora-Light';[^\n]*Background = 'Aurora'[^\n]*Mode = 'Light'[^\n]*Contrast = 0\.0");
+        text.Should().MatchRegex(@"Id = 'Wallpaper-Dark-B06';[^\n]*Seed = '#00FF00'[^\n]*Background = 'Wallpaper'[^\n]*WallpaperBlur = 0\.6[^\n]*Mode = 'Dark'[^\n]*Contrast = 0\.0");
+        text.Should().Contain("'canvasBackgroundType'", "a cell's background reaches the profile the host reads");
+        // Tied to the constant, not a literal: when the next migration arm bumps the schema, this
+        // fails until the sweep writes the new number, instead of letting the host re-migrate every
+        // sweep profile on read.
+        text.Should().Contain($"-NotePropertyValue {CustomizationMigration.CurrentSchemaVersion} ",
+            "the sweep writes the schema this build writes (CustomizationMigration.CurrentSchemaVersion), or the host re-migrates the file");
+    }
+
+    [Fact]
+    public void MatrixCoversBothThemeModes()
+    {
+        var matrix = MatrixDataBlock();
+        matrix.Should().MatchRegex(@"Mode\s*=\s*'Light'", "the matrix data must include a Light-mode row");
+        matrix.Should().MatchRegex(@"Mode\s*=\s*'Dark'", "the matrix data must include a Dark-mode row");
+    }
+
+    [Fact]
+    public void MatrixIncludesTheShippedDefaultPreset()
+    {
+        var matrix = MatrixDataBlock();
+        matrix.Should().MatchRegex(@"Id\s*=\s*'Default'.*?ThemeId\s*=\s*'BaseDarkGlass'",
+            "the Default cell must be the shipped preset (SeedPresetCatalog.BaseDarkGlass), not just another arbitrary seed");
+        matrix.Should().Contain("#6C4CFF",
+            "the Default cell's seed must be the shipped preset's own seed colour");
+    }
+
+    [Fact]
+    public void MatrixHasAtLeastThreeDistinctAdversarialSeedHexLiterals()
+    {
+        // Distinct hex colour literals in the DATA ROWS ONLY (see MatrixDataBlock) - the header
+        // comment above the data also spells out Chalk/Ink/Chroma's hex values, so scanning the
+        // whole file here would keep passing even if every seed row were deleted.
+        var hexLiterals = Regex.Matches(MatrixDataBlock(), @"#[0-9A-Fa-f]{6}")
+            .Select(m => m.Value.ToUpperInvariant())
+            .Distinct()
+            .ToList();
+
+        hexLiterals.Should().HaveCountGreaterThanOrEqualTo(3,
+            "the axis is the default preset plus three adversarial seeds (near-white, near-black, max-chroma) - losing one silently shrinks the matrix");
+    }
+
+    [Fact]
+    public void RestoresTheBackupInAFinallyBlock()
+    {
+        // A real 'finally {' block statement, not the word merely appearing in a doc comment
+        // (the header prose says "restored in a finally block" regardless of whether the code
+        // still has one).
+        Regex.IsMatch(ScriptText(), @"(?m)^\s*finally\s*\{").Should().BeTrue(
+            "the profile restore MUST run in a finally block - a crash mid-sweep must not leave an adversarial palette as the user's real profile");
+    }
+
+    [Fact]
+    public void FinallyBlockActuallyRestoresTheBackupFromTheRightPath()
+    {
+        var finallyBody = FinallyBlockBody();
+        finallyBody.Should().MatchRegex(@"Copy-Item\s+-Path\s+\$backupPath\s+-Destination\s+\$profilePath",
+            "the finally block must actually copy the backup back over the real profile ($backupPath -> $profilePath), not merely exist");
+    }
+
+    [Fact]
+    public void BacksUpTheProfileBeforeWriting()
+    {
+        ScriptText().Should().Contain("sweep-backup",
+            "the backup/restore/refuse-if-backup-exists contract is built around this exact suffix - dashboard_layout.json.sweep-backup");
+    }
+
+    [Fact]
+    public void NeverBuildsTheHost()
+    {
+        var text = ScriptText();
+
+        // Every actual invocation of ui-hotreload.ps1 with '-Start' must carry '-NoBuild' - a
+        // build mid-sweep can lock the very DLLs a running host holds (ui-hotreload.ps1's own
+        // MSB3026 note) and, worse, silently screenshot a stale binary if it fails after the
+        // process kept running. Anchored to '& $hotReloadScript' so prose in the header comment
+        // that merely mentions '-Start' (e.g. "run ... -Start once by hand first") is not a hit.
+        var startInvocations = Regex.Matches(text, @"&\s*\$hotReloadScript\s+-Start\b[^\r\n]*");
+        startInvocations.Should().NotBeEmpty("the sweep must actually start the host somewhere");
+        foreach (Match invocation in startInvocations)
+        {
+            invocation.Value.Should().Contain("-NoBuild",
+                $"found a '-Start' without '-NoBuild': \"{invocation.Value.Trim()}\"");
+        }
+    }
+
+    /// <summary>
+    /// RemEx-8q7de round 2 (CRITICAL): <c>ui-hotreload.ps1 -Stop</c> relaunches the installed
+    /// Release build by default, which would auto-connect and read/write the profile the sweep is
+    /// mid-write on. Every <c>-Stop</c> INSIDE the main loop must carry <c>-NoRelaunch</c>; only
+    /// the one <c>-Stop</c> after the loop, in <c>finally</c>, may relaunch — and only once the
+    /// real profile is safely restored.
+    /// </summary>
+    [Fact]
+    public void EveryStopInsideTheSweepLoopCarriesNoRelaunch()
+    {
+        var tryBody = TryBlockBody();
+
+        var stopInvocations = Regex.Matches(tryBody, @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*");
+        stopInvocations.Should().NotBeEmpty("the sweep's main loop must actually stop the host somewhere");
+        foreach (Match invocation in stopInvocations)
+        {
+            invocation.Value.Should().Contain("-NoRelaunch",
+                $"found a '-Stop' inside the sweep loop without '-NoRelaunch': \"{invocation.Value.Trim()}\" - " +
+                "a relaunched Release host would auto-connect and read/write the profile mid-sweep");
+        }
+    }
+
+    /// <summary>
+    /// RemEx-l5vck: an exception thrown between a loop iteration's <c>-Start</c> and its paired
+    /// <c>-Stop -NoRelaunch</c> (the process never appearing, a snapshot failing, a profile write
+    /// throwing) skips that paired <c>-Stop</c> entirely and lands directly on
+    /// <c>Assert-NoRemexProcessAlive</c> below — which then, correctly, finds the just-started
+    /// host still alive and refuses to continue, stranding it. The <c>finally</c> block must
+    /// attempt its own <c>-Stop -NoRelaunch</c> FIRST — textually before the assertion — so a
+    /// mid-cell exception can no longer strand a host.
+    /// </summary>
+    [Fact]
+    public void FinallyBlockStopsTheHostBeforeAssertingNoneAreAlive()
+    {
+        var finallyBody = FinallyBlockBody();
+
+        // Anchored to an actual call (only whitespace before the name on its line) rather than a
+        // plain Contains/IndexOf - the doc comment right above the real call ALSO says the words
+        // "Assert-NoRemexProcessAlive" in prose (explaining what this fix prevents), and a naive
+        // text search would find that mention instead of the code (the exact anti-pattern this
+        // file's own remarks warn about for MatrixDataBlock). Checked via .Success, not by
+        // comparing .Index to -1 - a FAILED Regex.Match still reports Index 0, so that comparison
+        // would silently pass even when the call is missing entirely.
+        var stopMatch = Regex.Match(finallyBody, @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch");
+        var assertMatch = Regex.Match(finallyBody, @"(?m)^\s*Assert-NoRemexProcessAlive\b");
+
+        stopMatch.Success.Should().BeTrue(
+            "the finally block must itself call '-Stop -NoRelaunch' - without it, an exception between a loop iteration's -Start and its paired -Stop strands that host");
+        assertMatch.Success.Should().BeTrue("the finally block must still assert no Remex process is alive");
+        stopMatch.Index.Should().BeLessThan(assertMatch.Index,
+            "the finally block's own cleanup stop must run BEFORE Assert-NoRemexProcessAlive - otherwise the assertion is the only thing left to throw, and a mid-cell exception strands the host it was reported to strand (RemEx-l5vck)");
+    }
+
+    /// <summary>
+    /// ui-hotreload.ps1's own Stop-Remex blocks on WaitForExit before <c>-Stop</c> returns, so
+    /// this poll is normally redundant - it exists for whatever that guarantee does not cover, and
+    /// it must run IMMEDIATELY after each in-loop <c>-Stop -NoRelaunch</c>, not merely exist
+    /// somewhere in the loop (RemEx-l5vck review).
+    /// </summary>
+    [Fact]
+    public void EveryLoopStopIsImmediatelyFollowedByAPoll()
+    {
+        var lines = TryBlockBody().Replace("\r\n", "\n").Split('\n');
+
+        var stopLineIndexes = Enumerable.Range(0, lines.Length)
+            .Where(i => Regex.IsMatch(lines[i], @"&\s*\$hotReloadScript\s+-Stop\b[^\r\n]*-NoRelaunch"))
+            .ToList();
+
+        stopLineIndexes.Should().NotBeEmpty("the sweep's main loop must actually stop the host somewhere");
+        foreach (var i in stopLineIndexes)
+        {
+            lines[i + 1].Should().Contain("Wait-NoRemexProcess",
+                $"the '-Stop -NoRelaunch' call on \"{lines[i].Trim()}\" must be immediately followed by a Wait-NoRemexProcess poll");
+        }
+    }
+
+    /// <summary>
+    /// Everything between the top-level <c>$Script:CellMatrix = @(</c> and its matching closing
+    /// <c>)</c> — the DATA, not the header comment above it that restates the same facts in prose.
+    /// </summary>
+    private static string MatrixDataBlock()
+    {
+        var match = Regex.Match(ScriptText(), @"\$Script:CellMatrix\s*=\s*@\(\r?\n(.*?)\r?\n\)\r?\n",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("$Script:CellMatrix moved or was reshaped - re-point this test rather than deleting it");
+        return match.Groups[1].Value;
+    }
+
+    /// <summary>The body of the top-level <c>try { ... }</c> that precedes <c>finally</c>.</summary>
+    private static string TryBlockBody()
+    {
+        var match = Regex.Match(ScriptText(), @"(?m)^try\s*\{\r?\n(.*?)\r?\n^\}\r?$",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("expected a top-level 'try { ... }' block before 'finally' - re-point this test if the script's shape changed");
+        return match.Groups[1].Value;
+    }
+
+    /// <summary>The body of the top-level <c>finally { ... }</c> block.</summary>
+    private static string FinallyBlockBody()
+    {
+        var match = Regex.Match(ScriptText(), @"(?m)^finally\s*\{\r?\n(.*?)\r?\n^\}\r?$",
+            RegexOptions.Singleline);
+        match.Success.Should().BeTrue("expected a top-level 'finally { ... }' block - re-point this test if the script's shape changed");
+        return match.Groups[1].Value;
+    }
+
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
+}

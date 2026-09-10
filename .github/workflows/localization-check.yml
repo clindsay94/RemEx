@@ -1,8 +1,10 @@
 name: Localization check
 
-# Catches the three ways a translation can go wrong: a key missing from one language,
-# a translation that has fallen behind its English source, and a key used in code that
-# no language file defines at all. See scripts/check-localization.ps1 for the detail.
+# Catches the five ways a translation can go wrong: a key missing from one language, a
+# translation that has fallen behind its English source, a key used in code that no language
+# file defines at all, a translation that no longer takes the same format arguments as its
+# English source, and a value that was never translated at all - still byte-identical to the
+# English. See scripts/check-localization.ps1 for the detail.
 
 on:
   pull_request:

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -42,6 +44,10 @@ public sealed class FileTransferService : IFileTransferService
         var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");
         _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_configPath);
         _thumbnailService = new ThumbnailService(logger);
     }
 
@@ -55,6 +61,10 @@ public sealed class FileTransferService : IFileTransferService
     {
         _logger = logger;
         _configPath = configFilePath;
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_configPath);
         _thumbnailService = new ThumbnailService(logger);
     }
 
@@ -145,6 +155,20 @@ public sealed class FileTransferService : IFileTransferService
         var entries = new List<FileEntry>();
         foreach (var fsi in dir.EnumerateFileSystemInfos())
         {
+            // A cross-volume promotion lands its bytes in a temp file beside the destination before
+            // renaming it into place, so one can legitimately be here for the length of a transfer,
+            // and can be left behind for good by a process killed mid-copy. Neither is anything the
+            // person browsing this folder from their phone can act on (RemEx-cojhy).
+            //
+            // Tested with `is not DirectoryInfo` rather than by reading .Attributes: this sits ahead
+            // of the try below, whose whole job is to keep one unreadable entry from failing the
+            // listing, so it must not be able to throw. It is also the same question the loop body
+            // already answers that way.
+            if (fsi is not DirectoryInfo && IsSibling(fsi.Name))
+            {
+                continue;
+            }
+
             try
             {
                 entries.Add(new FileEntry
@@ -184,10 +208,36 @@ public sealed class FileTransferService : IFileTransferService
     {
         if (!File.Exists(resolved))
             throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
-        return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true));
+        // SEQUENTIALSCAN ON EVERY BULK STREAM IN THIS FILE, AND FOUR OF THEM WERE NEARLY MISSED
+        // (RemEx-ygapg). The re-measurement that split this work looked for them under
+        // remex.core and found none, because this file lives under remex.agent - so the split
+        // recorded that these sites no longer existed, which would have discharged half of the
+        // item while arguing against anyone looking again. A transfer walks a file once, start to
+        // end, and never seeks back; the hint asks the cache manager to read ahead and to stop
+        // retaining pages behind the cursor, so a large transfer does not evict what else the
+        // machine had cached. Asynchronous is what useAsync was setting and is still required.
+        return Task.FromResult<Stream>(new FileStream(
+            resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan));
     }
 
     public Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct)
+        => Task.FromResult<Stream>(new FileStream(
+            ResolveForWrite(rootId, relativePath, expectedBytes),
+            FileMode.Create, FileAccess.Write, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan));
+
+    /// <summary>
+    /// Applies every write-side check and returns the absolute destination path, creating the parent
+    /// directory if needed.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so that opening a stream and promoting a staged file cannot drift apart. These four
+    /// checks — size cap, root writability, root-escape safety via <c>ResolvePath</c>, and parent
+    /// creation — ARE the write authorization for this service, so a second caller that needed a path
+    /// rather than a stream had to reuse them rather than reimplement them (RemEx-fq6f).
+    /// </remarks>
+    private string ResolveForWrite(string rootId, string relativePath, long expectedBytes)
     {
         if (expectedBytes > MaxUploadBytes)
             throw new ArgumentOutOfRangeException(nameof(expectedBytes), $"File too large ({expectedBytes} bytes). Max is {MaxUploadBytes}.");
@@ -201,7 +251,260 @@ public sealed class FileTransferService : IFileTransferService
         if (dir is not null && !Directory.Exists(dir))
             Directory.CreateDirectory(dir);
 
-        return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true));
+        return resolved;
+    }
+
+    public async Task PromoteStagedFileAsync(
+        string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct)
+    {
+        var destination = ResolveForWrite(rootId, relativePath, expectedBytes);
+
+        // Same volume: a rename. This is the whole point of the bead — the previous code re-read the
+        // staged file and streamed it to the destination, so a 5 GB push cost 10 GB of writes plus a
+        // 5 GB read to move bytes that were already on the right disk.
+        //
+        // On this branch it is also SAFER, not just faster, for two separate reasons. First, the copy
+        // opened the destination with FileMode.Create, which truncates before the first byte arrives,
+        // so a failure midway left the user's pre-existing file destroyed and replaced by a fragment;
+        // a true rename replaces atomically. Second, ResolveWithinRoot is purely lexical and does not
+        // resolve reparse points, so FileMode.Create would happily write THROUGH a symlink or junction
+        // planted in the shared root to a target outside it — MoveFileEx and rename() replace the link
+        // itself. (Atomicity is claimed only here: see the fallback below.)
+        if (AreSameVolume(stagingPath, destination))
+        {
+            MoveIntoPlace(stagingPath, destination);
+            RestoreInheritedAcl(destination);
+            return;
+        }
+
+        // Different volume: bytes genuinely have to cross, so stream them. File.Move would fall back to
+        // an internal copy here anyway (MOVEFILE_COPY_ALLOWED on Windows, an EXDEV fallback on Unix),
+        // but that copy is synchronous, uncancellable and NOT atomic — this keeps the await points and
+        // honours ct on a transfer that can legitimately run for minutes.
+        //
+        // THE BYTES LAND BESIDE THE DESTINATION AND ARE RENAMED ONTO IT — this path must never open
+        // the destination itself for write (RemEx-cojhy). It used to, with FileMode.Create, which
+        // truncates before the first byte arrives. Uploading a file that already lives in this root
+        // makes the destination the very file the client still has open and is reading from, and on
+        // any platform where that open succeeds — Linux does — the user's file is destroyed mid-read
+        // and replaced with a copy of itself streamed through a socket. Landing via a rename gives
+        // this path the same all-or-nothing replace the same-volume branch above already had.
+        //
+        // The sibling is created in the destination's own directory, so it inherits that directory's
+        // ACL and needs no fixup — unlike the rename above, whose file arrives from staging. NOTE
+        // that this also means an overwrite RESETS a destination file's own explicit ACL to the
+        // directory's inherited one. That is a deliberate change and it makes this branch agree with
+        // the same-volume branch, which has always reset it through RestoreInheritedAcl.
+        //
+        // Any sibling left by a process killed mid-copy is swept the next time this directory is
+        // promoted into, and hidden from browse listings meanwhile (see SiblingPattern).
+        SweepAbandonedSiblings(Path.GetDirectoryName(destination));
+
+        var sibling = SiblingPathFor(destination);
+        var created = false;
+        try
+        {
+            await using (var src = new FileStream(
+                stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536,
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
+            await using (var dst = new FileStream(
+                sibling, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536,
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                created = true;
+                await src.CopyToAsync(dst, 65536, ct);
+                await dst.FlushAsync(ct);
+            }
+
+            MoveIntoPlace(sibling, destination);
+        }
+        catch
+        {
+            // A half-written sibling is litter in the user's own folder, so it goes whatever went
+            // wrong — including a cancellation part-way through the copy. Guarded on `created` so
+            // this only deletes a file this call actually made: CreateNew can also fail with
+            // directory-not-found, access-denied, name-too-long or disk-full, and in none of those
+            // is there anything of ours on disk to remove.
+            if (created) TryDelete(sibling);
+            throw;
+        }
+    }
+
+    /// <summary>Names the temp file a cross-volume promotion lands in before renaming it into place.</summary>
+    /// <remarks>
+    /// THE STEM IS TRUNCATED TO KEEP THE COMPONENT LEGAL. The suffix adds 43 characters, and nothing
+    /// upstream caps a filename's length — <c>FilePathValidation</c> has no length rule — so a legal
+    /// 245-character name would produce an illegal 288-character sibling and fail a transfer that
+    /// works fine when the root happens to sit on the staging volume. NAME_MAX is 255 on both NTFS
+    /// and ext4 regardless of long-path settings.
+    /// </remarks>
+    internal static string SiblingPathFor(string destination)
+    {
+        // BYTES, NOT CHARACTERS. ext4 measures a name component in UTF-8 bytes; NTFS measures it in
+        // UTF-16 code units. Budgeting on string.Length is therefore right on Windows and wrong on
+        // Linux for any non-ASCII name — a 150-character CJK name is ~250 bytes, passes a character
+        // budget untouched, and produces a sibling that fails ENAMETOOLONG. Counting bytes is
+        // correct on both, because it is never larger than the UTF-16 count for the ASCII case that
+        // NTFS is strict about.
+        const int nameMaxBytes = 255;
+
+        var directory = Path.GetDirectoryName(destination) ?? string.Empty;
+        var suffix = ".remexnew-" + Guid.NewGuid().ToString("N");
+        var stem = Path.GetFileName(destination);
+
+        var budget = nameMaxBytes - suffix.Length; // The suffix is ASCII, so bytes == chars for it.
+        if (Encoding.UTF8.GetByteCount(stem) > budget)
+        {
+            stem = TrimToBytes(stem, budget);
+        }
+
+        return Path.Combine(directory, stem + suffix);
+    }
+
+    /// <summary>Trims <paramref name="text"/> to at most <paramref name="maxBytes"/> of UTF-8.</summary>
+    /// <remarks>
+    /// Cuts on rune boundaries. Slicing by index instead can split a surrogate pair, and .NET's UTF-8
+    /// encoder turns the lone surrogate that leaves behind into U+FFFD — so the name would not merely
+    /// be shortened, it would contain a replacement character.
+    /// </remarks>
+    private static string TrimToBytes(string text, int maxBytes)
+    {
+        var kept = 0;
+        var bytes = 0;
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var runeBytes = rune.Utf8SequenceLength;
+            if (bytes + runeBytes > maxBytes) break;
+
+            bytes += runeBytes;
+            kept += rune.Utf16SequenceLength;
+        }
+
+        return text[..kept];
+    }
+
+    /// <summary>The glob that finds candidate temp files. Always confirm a hit with <see cref="IsSibling"/>.</summary>
+    /// <remarks>
+    /// Every other staged-then-renamed write in this project sweeps its own orphans, and each says
+    /// why: a process killed between staging and rename leaves one behind forever. This one stages
+    /// inside a directory the USER browses, which is what makes it worth both sweeping and hiding —
+    /// an abandoned 600 MB <c>report.pdf.remexnew-…</c> showing up on the phone is not something
+    /// anyone can be expected to interpret.
+    /// </remarks>
+    private const string SiblingGlob = "*.remexnew-*";
+
+    /// <summary>
+    /// Whether a name is one this service produced — the marker plus exactly 32 hex, at the end.
+    /// </summary>
+    /// <remarks>
+    /// ANCHORED, BECAUSE BOTH CONSUMERS ACT ON A MATCH AND ONE OF THEM DELETES. A loose
+    /// "contains .remexnew-" also matches a file the user named themselves — <c>design.remexnew-v2.psd</c>
+    /// is a perfectly ordinary name — and that file would then be hidden from every browse listing
+    /// with no indication, and unlinked by the next sweep of its directory. Hiding a user's file is
+    /// worse than showing a temp one: a visible temp file is confusing and self-resolving, a hidden
+    /// one is unreachable, and here it was also unrecoverable.
+    /// </remarks>
+    internal static bool IsSibling(string name)
+    {
+        const int tokenLength = 32;
+        const string marker = ".remexnew-";
+
+        if (name.Length < marker.Length + tokenLength) return false;
+
+        var token = name.AsSpan(name.Length - tokenLength);
+        if (!name.AsSpan(name.Length - tokenLength - marker.Length, marker.Length).SequenceEqual(marker))
+        {
+            return false;
+        }
+
+        foreach (var c in token)
+        {
+            if (!Uri.IsHexDigit(c)) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>How long an abandoned sibling is left alone before it is assumed dead.</summary>
+    /// <remarks>
+    /// Long enough that a concurrent transfer's in-flight temp is never swept out from under it. A
+    /// cross-volume copy is bounded by the transfer cap, so this is generous rather than tuned.
+    /// </remarks>
+    private static readonly TimeSpan AbandonedSiblingAge = TimeSpan.FromHours(12);
+
+    private void SweepAbandonedSiblings(string? directory)
+    {
+        if (directory is null || !Directory.Exists(directory)) return;
+
+        try
+        {
+            var cutoff = DateTime.UtcNow - AbandonedSiblingAge;
+            foreach (var orphan in Directory.EnumerateFiles(directory, SiblingGlob))
+            {
+                // The glob is the cheap filter; IsSibling is the one that decides. Deleting on the
+                // glob alone would take a user's own design.remexnew-v2.psd with it.
+                if (!IsSibling(Path.GetFileName(orphan))) continue;
+
+                if (File.GetLastWriteTimeUtc(orphan) < cutoff) TryDelete(orphan);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogDebug(ex, "Could not sweep abandoned promotion temp files in {Directory}.", directory);
+        }
+    }
+
+    /// <summary>
+    /// Replaces <paramref name="destination"/> with <paramref name="from"/>, atomically.
+    /// </summary>
+    /// <remarks>
+    /// The rethrow exists for the message. Replacing a file that another process holds open without
+    /// <c>FileShare.Delete</c> surfaces from <c>MoveFileEx</c> as
+    /// <see cref="UnauthorizedAccessException"/> — "Access to the path is denied" — which the client
+    /// then shows as <c>Verified but could not be saved: Access to the path is denied</c>. That reads
+    /// as a permissions problem with the shared folder, and the commonest cause is not that at all:
+    /// it is uploading a file that already lives in the folder being uploaded to, where the client's
+    /// own read handle is what blocks the replace (RemEx-cojhy).
+    /// </remarks>
+    private static void MoveIntoPlace(string from, string destination)
+    {
+        try
+        {
+            File.Move(from, destination, overwrite: true);
+        }
+        // The two not-found subtypes are deliberately let through unwrapped. Both derive from
+        // IOException and File.Move throws them when the SOURCE is gone — an antivirus quarantining
+        // the staging file, say. Flattening those into "the destination may be open in another
+        // program" would be a confident diagnosis of the wrong file, which is the exact failure this
+        // message exists to stop.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                   && ex is not (FileNotFoundException or DirectoryNotFoundException))
+        {
+            throw new IOException(
+                $"'{Path.GetFileName(destination)}' could not be replaced. It may be open in another "
+                + "program — including this transfer, if the file being sent is the one already in "
+                + "this folder — or its permissions may not allow it to be changed.",
+                ex);
+        }
+    }
+
+    /// <summary>Best-effort delete of a temp file this service owns.</summary>
+    /// <remarks>
+    /// Swallows on purpose: this runs from a catch that is about to rethrow the real failure, and
+    /// masking that with a cleanup error would be worse. It logs because it is the only thing between
+    /// a failed transfer and permanent litter in a folder the user can see.
+    /// </remarks>
+    private void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not remove the promotion temp file {Path}; it will be swept later.", path);
+        }
     }
 
     public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct)
@@ -262,7 +565,9 @@ public sealed class FileTransferService : IFileTransferService
             throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
 
         using var sha = System.Security.Cryptography.SHA256.Create();
-        await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
+        await using var stream = new FileStream(
+            resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         var hash = await sha.ComputeHashAsync(stream, ct);
         return Convert.ToBase64String(hash);
     }
@@ -332,7 +637,11 @@ public sealed class FileTransferService : IFileTransferService
     // browse/transfer. Permission flags: copy/mkdir require IsWritable; move additionally requires the
     // (previously unwired) CanMove flag.
 
-    public Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+    /// <summary>
+    /// Copies within a root, honouring a client's answer to a filename collision (RemEx-6vd8).
+    /// </summary>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    public Task<string?> CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null)
     {
         var root = GetConfiguredRoot(rootId);
         if (!root.IsWritable)
@@ -346,31 +655,65 @@ public sealed class FileTransferService : IFileTransferService
 
         EnsureParentDirectory(destination);
 
+        // RESOLVED AFTER the destination has been confined to the root, never before - doing it on
+        // the raw request would hand path composition back to the untrusted side.
+        //
+        // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
+        // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
+        // the share, so a sibling rename there escaped entirely.
+        // A CASE-BLIND MOUNT UNDER A LINUX HOST GETS ONE SECOND CHANCE (RemEx-2knx). Ordinal is the
+        // right comparison for ext4 and the wrong one for SMB, exFAT or ntfs-3g, and nothing can tell
+        // them apart in advance without probing. This does not probe: it re-resolves only once the
+        // mount has contradicted the listing, which is the same deterministic condition that used to
+        // hand the user the identical taken name on every retry.
+        var plan = ConflictResolver.ResolveAllowingForACaseBlindMount(
+            conflictResolution,
+            destination,
+            root.AbsolutePath,
+            overwrite,
+            ListDirectoryNames,
+            ConflictResolver.HostFileSystemIsCaseSensitive,
+            IsOccupied);
+
+        destination = plan.DestinationPath;
+        overwrite = plan.Overwrite;
+
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw new IOException($"A folder already exists at the destination '{Path.GetFileName(destination)}'.");
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             if (File.Exists(destination) && !overwrite)
-                throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
-            File.Copy(source, destination, overwrite);
+                throw Occupied(plan, FileConflictException.FileExists);
+            RunRenamedCreate(plan, () => File.Copy(source, destination, overwrite));
         }
         else if (Directory.Exists(source))
         {
             if (IsDestinationInsideSource(source, destination))
                 throw new IOException("Cannot copy a folder into itself.");
             if (Directory.Exists(destination) && !overwrite)
-                throw new IOException($"A folder named '{Path.GetFileName(destination)}' already exists.");
-            CopyDirectoryRecursive(source, destination, overwrite, ct);
+                throw Occupied(plan, FileConflictException.DirectoryExists);
+
+            // A FILE STANDING WHERE A FOLDER IS GOING — the last collision path that carried no
+            // code. Review found it falling through to CopyDirectoryRecursive, which surfaces a raw
+            // OS IOException the client cannot branch on, so the sheet never opened for it.
+            if (File.Exists(destination))
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
+
+            RunRenamedCreate(plan, () => CopyDirectoryRecursive(source, destination, overwrite, ct));
         }
         else
         {
             throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(plan.ResolvedName);
     }
 
-    public Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+    /// <summary>
+    /// Moves within a root, honouring a client's answer to a filename collision (RemEx-6vd8).
+    /// </summary>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    public Task<string?> MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null)
     {
         var root = GetConfiguredRoot(rootId);
         if (!root.CanMove)
@@ -384,25 +727,74 @@ public sealed class FileTransferService : IFileTransferService
 
         EnsureParentDirectory(destination);
 
+        // RESOLVED AFTER the destination has been confined to the root, never before - doing it on
+        // the raw request would hand path composition back to the untrusted side.
+        //
+        // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
+        // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
+        // the share, so a sibling rename there escaped entirely.
+        // A CASE-BLIND MOUNT UNDER A LINUX HOST GETS ONE SECOND CHANCE (RemEx-2knx). Ordinal is the
+        // right comparison for ext4 and the wrong one for SMB, exFAT or ntfs-3g, and nothing can tell
+        // them apart in advance without probing. This does not probe: it re-resolves only once the
+        // mount has contradicted the listing, which is the same deterministic condition that used to
+        // hand the user the identical taken name on every retry.
+        var plan = ConflictResolver.ResolveAllowingForACaseBlindMount(
+            conflictResolution,
+            destination,
+            root.AbsolutePath,
+            overwrite,
+            ListDirectoryNames,
+            ConflictResolver.HostFileSystemIsCaseSensitive,
+            IsOccupied);
+
+        destination = plan.DestinationPath;
+        overwrite = plan.Overwrite;
+
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw new IOException($"A folder already exists at the destination '{Path.GetFileName(destination)}'.");
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             if (File.Exists(destination))
             {
                 if (!overwrite)
-                    throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
+                    throw Occupied(plan, FileConflictException.FileExists);
                 File.Delete(destination);
             }
 
-            if (AreSameVolume(source, destination))
-                File.Move(source, destination);
-            else
+            // PROBED LIKE COPY, and move is the branch that needed it more. Copy gained this in
+            // RemEx-cirk while move kept composing a name it never checked, so the identical request
+            // produced a coded, answerable refusal one way and a raw OS error the other - "the
+            // filename, directory name, or volume label syntax is incorrect" - which the client
+            // cannot branch on, so no sheet opened at all.
+            //
+            // ORDER IS THE SAFETY PROPERTY HERE. RunRenamedCreate throws BEFORE it runs the
+            // operation, so a name that turns out to be unusable or already taken leaves the source
+            // exactly where it was. A move that failed after deleting its source would be the one
+            // unrecoverable outcome in this file THAT NOBODY ASKED FOR - DeleteAsync and an
+            // overwriting move are equally irreversible, but the user requested those.
+            RunRenamedCreate(plan, () =>
             {
-                // Cross-volume move: File.Move can throw across devices, so realize it as copy+delete.
-                File.Copy(source, destination, overwrite: true);
-                File.Delete(source);
-            }
+                if (AreSameVolume(source, destination))
+                {
+                    File.Move(source, destination);
+                }
+                else
+                {
+                    // Cross-volume move: File.Move can throw across devices, so realize it as
+                    // copy+delete. The source delete stays INSIDE the probed operation, so it is
+                    // reached only once the copy has actually succeeded.
+                    //
+                    // PASSING overwrite RATHER THAN A LITERAL true, which review caught as the last
+                    // path where keep-both could still destroy something. Under keep-both overwrite
+                    // is always false, so if the invented name gets claimed between the probe
+                    // releasing it and this line, the copy REFUSES - which is what the same-drive
+                    // path and CopyAsync already do. A hardcoded true overwrote it instead. On the
+                    // plain-overwrite path the value is true anyway and the destination was already
+                    // removed above, so nothing else changes.
+                    File.Copy(source, destination, overwrite);
+                    File.Delete(source);
+                }
+            });
         }
         else if (Directory.Exists(source))
         {
@@ -411,31 +803,260 @@ public sealed class FileTransferService : IFileTransferService
             if (Directory.Exists(destination))
             {
                 if (!overwrite)
-                    throw new IOException($"A folder named '{Path.GetFileName(destination)}' already exists.");
+                    throw Occupied(plan, FileConflictException.DirectoryExists);
                 Directory.Delete(destination, recursive: true);
             }
             else if (File.Exists(destination))
             {
-                if (!overwrite)
-                    throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
-                File.Delete(destination);
+                // A FILE STANDING WHERE A FOLDER IS GOING, REFUSED UNCONDITIONALLY — the overwrite
+                // flag does not reach this. Review caught two things here: it reported the plain
+                // collision code, and it honoured overwrite by DELETING the user's file to make room
+                // for a directory.
+                //
+                // Copy already refused this outright; move did not, so the same request destroyed a
+                // file on one path and was rejected on the other. The bead's own principle is that
+                // the HOST decides rather than trusting the client to withhold a button, and this is
+                // an unrecoverable delete of a different kind of thing than the user was moving.
+                // Making move agree with copy is the reading that cannot lose data.
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             }
 
-            if (AreSameVolume(source, destination))
-                Directory.Move(source, destination);
-            else
+            RunRenamedCreate(plan, () =>
             {
-                // Cross-volume directory move: Directory.Move fails across devices, so copy then delete.
-                CopyDirectoryRecursive(source, destination, overwrite: true, ct);
-                Directory.Delete(source, recursive: true);
-            }
+                if (AreSameVolume(source, destination))
+                {
+                    Directory.Move(source, destination);
+                }
+                else
+                {
+                    // Cross-volume directory move: Directory.Move fails across devices, so copy then
+                    // delete. As above, the source is removed only after the copy has succeeded,
+                    // and overwrite is passed through rather than forced for the reason given above.
+                    CopyDirectoryRecursive(source, destination, overwrite, ct);
+                    Directory.Delete(source, recursive: true);
+                }
+            });
         }
         else
         {
             throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(plan.ResolvedName);
+    }
+
+    /// <summary>
+    /// Reports an occupied destination with the code that fits WHO CHOSE THE NAME.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE CODE IS A BUTTON, NOT A SENTENCE (RemEx-nhw2).** When the user named the destination,
+    /// "that already exists" is a question they can answer, and the client offers Replace for it.
+    /// When "keep both" made the host INVENT the name, the same code is a trap: Replace re-answers
+    /// the ORIGINAL request — overwrite the file the user first named — while the sheet is showing
+    /// the invented sibling. Somebody who chose keep-both precisely to preserve that file would
+    /// destroy it by answering a question about a different one.
+    /// </para>
+    /// <para>
+    /// So a name WE picked reports <c>resolved_name_taken</c>, which carries keep-both and skip and
+    /// never replace. Asking again re-lists the directory and takes the next free name.
+    /// </para>
+    /// <para>
+    /// THE MOUNT WHERE THAT RETRY USED NOT TO CONVERGE IS HANDLED NOW (RemEx-2knx). On a
+    /// case-INSENSITIVE volume under a Linux host — SMB, exFAT, ntfs-3g — <c>NextAvailableName</c>
+    /// compares Ordinal, so it could pick "b (2).txt" while "B (2).txt" was sitting there and the
+    /// pre-check rejected it every single time. <c>ResolveAllowingForACaseBlindMount</c> now sees
+    /// that contradiction and re-resolves case-insensitively, and where even that cannot find a name
+    /// it returns a plain refusal so the user is offered Replace and Skip rather than the same
+    /// rejected name again.
+    /// </para>
+    /// <para>
+    /// STILL TRUE FOR THE RECURSIVE CHILD PATH, which that fix does not reach — see the remarks on
+    /// <c>CopyDirectoryRecursive</c>, where the non-convergence note is left standing because it is
+    /// still accurate there.
+    /// </para>
+    /// <para>
+    /// The kind distinction is dropped for an invented name on purpose. "A folder is where your file
+    /// was going" is useful about a destination the user chose; about a sibling they never saw it is
+    /// noise, and the answer — pick another name — is the same either way.
+    /// </para>
+    /// </remarks>
+    /// <summary>Whether anything at all sits at that path.</summary>
+    /// <remarks>
+    /// ONE COPY, USED BY THE RESOLVER'S FALLBACK AND BY THE PROBE (RemEx-2knx). The resolver's notion
+    /// of "taken" and <c>RunRenamedCreate</c>'s have to agree: if they drift, the resolver clears a
+    /// name the probe then refuses, which is the livelock again with the two halves disagreeing
+    /// instead of the mount. No overwrite exemption, because keep-both never overwrites — a plan
+    /// carrying a ResolvedName always has Overwrite false, so an invented name is blocked by anything.
+    /// </remarks>
+    internal static bool IsOccupied(string path) => File.Exists(path) || Directory.Exists(path);
+
+    internal static FileConflictException Occupied(
+        ConflictResolutionPlan plan, Func<string, FileConflictException> ifTheUserChoseTheName) =>
+        plan.ResolvedName is null
+            ? ifTheUserChoseTheName(Path.GetFileName(plan.DestinationPath))
+            : FileConflictException.ResolvedNameTaken(plan.ResolvedName);
+
+    /// <summary>
+    /// Runs a create whose destination "keep both" renamed, probing the chosen name first and
+    /// translating only the PROBE's refusal into its own code.
+    /// </summary>
+    /// <remarks>
+    /// **THE GAP THIS CLOSES (RemEx-cirk), REPRODUCED BEFORE IT WAS FIXED.** NextAvailableName
+    /// guarantees the chosen name is ABSENT from the destination; it never guarantees it is
+    /// CREATABLE. Measured: a 255-character name creates fine, the same name with " (2)" appended is
+    /// 259 and throws — and Windows long-path support does not save it, because the limit breached
+    /// is the COMPONENT limit, not the path limit. The user then gets the OS's opaque "filename,
+    /// directory name, or volume label syntax is incorrect" AFTER choosing Keep both, which is worse
+    /// than getting it before.
+    ///
+    /// ONLY PROBES THE RENAMED CASE, and probes rather than wraps. When the destination is the one
+    /// the caller asked for, an IOException means whatever it has always meant — this code asserts
+    /// "the name WE chose is unusable", which can only be true when we chose one. And the operation
+    /// itself runs UNWRAPPED, because choosing a name never established that a later failure is
+    /// ABOUT that name; only touching the name alone does.
+    /// </remarks>
+    internal static void RunRenamedCreate(ConflictResolutionPlan plan, Action create)
+    {
+        if (plan.ResolvedName is null)
+        {
+            create();
+            return;
+        }
+
+        // PROBE THE NAME, THEN RUN THE OPERATION UNWRAPPED. The guard this replaces wrapped the
+        // WHOLE operation - including a recursive copy over an entire tree - so a disk-full partway
+        // through, an ACL denial on a nested child, or a deep CHILD path breaching MAX_PATH all
+        // emerged as "the name we chose is unusable". A confident wrong diagnosis, and one the client
+        // renders as an offer to rename, which fixes none of those.
+        //
+        // The precondition (we chose a name) never established the ATTRIBUTION (this failure is
+        // about that name). Only a probe does: creating and removing the exact path tests exactly
+        // the thing that might be wrong, and asks the OS rather than guessing a length limit - which
+        // is the same reason FileConflictNaming refuses to clamp, since ext4 counts 255 BYTES and
+        // exFAT and CIFS differ again.
+        //
+        // DELETE-ON-CLOSE RATHER THAN A finally, and review is the reason. A finally runs on the
+        // THROW path too, where CreateNew failed BECAUSE THE PATH ALREADY EXISTS - so the cleanup
+        // deleted a file the probe never created, on its way to reporting a name it had just
+        // destroyed. Letting the kernel own the lifetime makes "remove only what we made" structural
+        // rather than a condition someone can drop later. ON WINDOWS it also closes the window where
+        // the process dying between create and delete strands a zero-byte file where the copy is
+        // about to land, because the kernel owns the deletion. ON LINUX IT DOES NOT: .NET performs
+        // the unlink itself at handle disposal, so a hard kill still strands the file - measured
+        // under WSL, not assumed. The consequence is bounded (see below), and no cleanup that could
+        // run after a kill exists to fix it anyway.
+        //
+        // A filesystem that silently ignores delete-on-close - an SMB or FUSE-backed shared root is
+        // not hypothetical here - leaves that stray file behind, and the cost is a FAILED COPY rather
+        // than mere litter: the create() below runs File.Copy with overwrite false, or
+        // CreateDirectory over a file, and hits the leftover. Accepted rather than papered over: a
+        // follow-up "delete it if it is still there" check would reopen the exact window this design
+        // closed, since another writer can claim the name in between and we delete theirs.
+        FileStream? probe = null;
+        try
+        {
+            probe = new FileStream(plan.DestinationPath, FileMode.CreateNew, FileAccess.Write,
+                                   FileShare.None, bufferSize: 1, FileOptions.DeleteOnClose);
+        }
+        catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
+        {
+            // ASK THE FILESYSTEM, NOT THE EXCEPTION TYPE, and the platforms are why. Something
+            // OCCUPYING the path is refused as UnauthorizedAccessException on Windows when it is a
+            // directory, and as EEXIST - which .NET surfaces as IOException - on Linux, because
+            // O_EXCL fails before the kind is ever considered (measured; an earlier version of this
+            // comment claimed EISDIR, which is what you get WITHOUT O_EXCL, a call this never
+            // makes). No type test can span that. Asking what is actually there can.
+            // The same predicate the resolver's fallback consulted, deliberately shared: if these two
+            // ever disagree, the resolver clears a name this probe then refuses (RemEx-2knx).
+            var occupied = IsOccupied(plan.DestinationPath);
+
+            if (occupied)
+            {
+                // TAKEN, NOT UNUSABLE, and the difference is whether asking again can work. This name
+                // is perfectly creatable; something simply got there first. Retrying keep-both
+                // re-lists and picks the next free name, so the client can offer that - which
+                // resolved_name_unusable, a Skip-only dead end, could not (RemEx-od7s).
+                //
+                // NOT destination_exists either, however true that sentence is. That code unlocks
+                // Replace, and Replace re-answers the ORIGINAL request - overwrite the destination
+                // the user first named - while the sheet is showing this invented sibling. A user
+                // who chose keep-both precisely to protect the original would destroy it by
+                // answering a question about a different file.
+                throw FileConflictException.ResolvedNameTaken(plan.ResolvedName);
+            }
+
+            if (ex is not (UnauthorizedAccessException or DirectoryNotFoundException))
+            {
+                // REPORTED AS AN UNUSABLE NAME EVEN WHEN IT IS MERELY TAKEN, and that is a deliberate
+                // under-claim (RemEx-od7s). "That name is taken" is the truer sentence, but the only
+                // existing code carrying it is destination_exists, and the client unlocks REPLACE for
+                // that. Replace re-answers the ORIGINAL request - overwrite b.txt - while the sheet
+                // is naming the sibling b (2).txt, so a user who chose "keep both" to protect b.txt
+                // would destroy it by answering a question about a different file. resolved_name_
+                // unusable is Skip-only, so it costs a retry - and, until RemEx-od7s, a body string
+                // that names the WRONG CAUSE, since the client renders this code as "this name is
+                // too long for the destination folder". A wrong cause the user can recover from
+                // still beats a right one wired to a button that deletes their file. RemEx-od7s adds
+                // a code that can say "taken" AND offer keep-both safely.
+                throw FileConflictException.ResolvedNameUnusable(plan.ResolvedName, ex);
+            }
+
+            // FALLING THROUGH TO THE OPERATION IS THE POINT of what is left: nothing is in the way,
+            // so a denial or a missing parent is a property of the FOLDER rather than of the name we
+            // picked - the same denial, and the same missing parent, would meet any name at all. The
+            // operation below hits them too and reports them honestly.
+            //
+            // THE PROBE IS ALWAYS A FILE, even when the operation will create a DIRECTORY, so that
+            // nobody re-derives this: a folder granting FILE_ADD_SUBDIRECTORY while denying
+            // FILE_ADD_FILE lands exactly here - UnauthorizedAccessException, nothing occupying the
+            // path - and falls through, so the directory copy proceeds and reports for itself. No
+            // configuration is known where file creation is refused by some OTHER type while
+            // directory creation would have succeeded, which is the only case this would misjudge.
+            //
+            // THE ONE CASE THE THROW ABOVE STILL OVER-CLAIMS, stated rather than hidden: a
+            // volume-level refusal - a full disk, an exhausted quota, a read-only mount - arrives as
+            // a bare IOException with nothing at the path, and lands there as a name verdict.
+            // Separating it means sniffing HResults per platform, which is the guessing this code
+            // refuses to do; the exposure is one zero-byte create rather than a whole recursive copy.
+        }
+
+        // DISPOSED OUTSIDE THE CLASSIFYING CATCH, so "everything in that catch means the OPEN failed"
+        // holds without exception. Inside a using, a disposal failure - delete-on-close refused at
+        // handle close - would run the classifier with the probe's OWN file still on disk, and it
+        // would dutifully report a squatter that is us. Out here a disposal failure propagates raw,
+        // which is honest: nothing about it is a verdict on the name.
+        probe?.Dispose();
+
+        create();
+    }
+
+    /// <summary>
+    /// The bare names already present in <paramref name="directory"/>, for conflict renaming.
+    /// </summary>
+    /// <remarks>
+    /// FILES AND FOLDERS TOGETHER, because a name is taken either way — offering "report (2)" as a
+    /// free name when a FOLDER called "report (2)" is sitting there produces the collision the
+    /// rename existed to avoid, one step later and with the user believing it was handled.
+    ///
+    /// A directory that cannot be listed yields nothing, which makes every candidate look free. That
+    /// is the safe direction: the operation then proceeds and fails on the real filesystem with the
+    /// ordinary collision error, rather than this method deciding an outcome it could not see.
+    /// </remarks>
+    private static IReadOnlyList<string> ListDirectoryNames(string directory)
+    {
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(directory)
+                .Select(Path.GetFileName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Select(n => n!)
+                .ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return [];
+        }
     }
 
     public Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct)
@@ -446,10 +1067,20 @@ public sealed class FileTransferService : IFileTransferService
 
         var resolved = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
 
+        // MKDIR IS REFUSAL-ONLY, AND THAT IS A LIMIT WORTH STATING. Both throws below carry a
+        // conflict code, but this method takes no conflictResolution and the handler passes
+        // none - so a client that offers Replace or Keep both here gets the same refusal back.
+        // The codes are still right (they say WHY, and "skip" is a valid answer to both), but a
+        // client must not present the retry actions on this operation. RemEx-agpn carries that.
         if (Directory.Exists(resolved))
-            throw new IOException($"A folder named '{Path.GetFileName(resolved)}' already exists.");
+            throw FileConflictException.DirectoryExists(Path.GetFileName(resolved));
+
+        // A FILE STANDING WHERE A FOLDER IS GOING is the different-kind case here too, and review
+        // caught it reporting the plain collision code — which would have had the sheet offer
+        // "Replace" for a mkdir blocked by a file, i.e. deleting the user's file to make a folder.
+        // The physical situation is identical to the copy/move branches, so the code must be.
         if (File.Exists(resolved))
-            throw new IOException($"A file named '{Path.GetFileName(resolved)}' already exists.");
+            throw FileConflictException.DifferentKindExists(Path.GetFileName(resolved));
 
         Directory.CreateDirectory(resolved);
         return Task.CompletedTask;
@@ -484,6 +1115,300 @@ public sealed class FileTransferService : IFileTransferService
             SearchRecursive(rootPath, baseDir, query, cap, results, ct);
 
         return Task.FromResult<IReadOnlyList<FileSearchEntry>>(results);
+    }
+
+    // ── Folder transfer: subtree enumeration (RemEx-q3twg) ──
+
+    public Task<FileManifestPage> EnumerateSubtreeAsync(
+        string rootId, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var root = GetConfiguredRoot(rootId);
+        return ManifestCore(Path.GetFullPath(root.AbsolutePath), root.DisplayName, relativePath, cursor, maxEntries, ct);
+    }
+
+    /// <summary>Volume-mode counterpart of <see cref="EnumerateSubtreeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<FileManifestPage> EnumerateVolumeSubtreeAsync(
+        string volumeAbsolutePath, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var rootPath = Path.GetFullPath(volumeAbsolutePath);
+        return ManifestCore(rootPath, volumeAbsolutePath, relativePath, cursor, maxEntries, ct);
+    }
+
+    /// <summary>
+    /// Walks the subtree pre-order, emitting at most one page and returning the cursor that resumes
+    /// exactly where it stopped. Directories are emitted in their own right so an empty folder is
+    /// recreated on the receiving side rather than silently dropped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE WALK IS STATELESS BETWEEN PAGES</b>, which is why the cursor carries a path rather than a
+    /// session id: pages then survive a reconnect and a host restart, and an abandoned enumeration
+    /// costs nothing to forget. The price is that each page re-descends the cursor path — bounded by
+    /// tree DEPTH, not by tree size, because <see cref="ManifestWalk"/> skips whole sibling ranges by
+    /// name comparison instead of re-emitting them.
+    /// </para>
+    /// <para>
+    /// <b>ORDER IS ORDINAL BY NAME AND MUST STAY THAT WAY.</b> The cursor is only meaningful against a
+    /// deterministic sequence; a culture-sensitive or filesystem-supplied order would silently skip or
+    /// repeat entries across a page boundary, and the client — which is only consuming a flat list —
+    /// would have no way to notice.
+    /// </para>
+    /// </remarks>
+    private static Task<FileManifestPage> ManifestCore(
+        string rootPath, string rootDisplay, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var baseDir = FilePathValidation.ResolveWithinRoot(rootPath, relativePath, rootDisplay);
+        if (!Directory.Exists(baseDir))
+            throw new DirectoryNotFoundException($"'{relativePath}' is not a folder in root '{rootDisplay}'.");
+
+        var pageSize = maxEntries <= 0
+            ? FileTransferLimits.ManifestDefaultEntriesPerPage
+            : Math.Min(maxEntries, FileTransferLimits.ManifestMaxEntriesPerPage);
+
+        var (emittedBefore, cursorPath) = ParseManifestCursor(cursor);
+        var state = new ManifestState
+        {
+            PageSize = pageSize,
+            EmittedBefore = emittedBefore,
+        };
+
+        var cursorSegments = string.IsNullOrEmpty(cursorPath)
+            ? null
+            : cursorPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        var baseRelative = ToManifestBase(rootPath, baseDir);
+        ManifestWalk(new DirectoryInfo(baseDir), baseRelative, cursorSegments, 0, state, ct);
+
+        var isFirstPage = cursorSegments is null || cursorSegments.Length == 0;
+        long? files = null, directories = null, bytes = null;
+        var totalsComplete = false;
+        if (isFirstPage)
+        {
+            var counted = CountSubtree(new DirectoryInfo(baseDir), ct);
+            files = counted.Files;
+            directories = counted.Directories;
+            bytes = counted.Bytes;
+            totalsComplete = counted.Complete;
+        }
+
+        return Task.FromResult(new FileManifestPage
+        {
+            Entries = state.Entries,
+            NextCursor = state.Truncated || !state.MorePending
+                ? null
+                : FormatManifestCursor(state.EmittedBefore + state.Entries.Count, state.LastPath!),
+            TotalFiles = files,
+            TotalDirectories = directories,
+            TotalBytes = bytes,
+            TotalsComplete = totalsComplete,
+            Truncated = state.Truncated,
+        });
+    }
+
+    /// <summary>Root-relative form of the enumerated base, or the empty string when it IS the root.</summary>
+    private static string ToManifestBase(string rootPath, string baseDir)
+    {
+        var relative = ToRootRelative(rootPath, baseDir);
+        return relative is "." or "/" ? string.Empty : relative.Trim('/');
+    }
+
+    /// <summary>
+    /// Mutable walk state. <see cref="MorePending"/> is the single source of truth for whether a cursor
+    /// is owed: a page that ended because it filled up has more to give, one that simply ran out does not.
+    /// </summary>
+    private sealed class ManifestState
+    {
+        public required int PageSize { get; init; }
+        public required long EmittedBefore { get; init; }
+        public List<FileManifestEntry> Entries { get; } = [];
+        /// <summary>Root-relative path of the last entry emitted on this page.</summary>
+        public string? LastPath { get; set; }
+        /// <summary>Set when <see cref="FileTransferLimits.ManifestMaxTotalEntries"/> stopped the walk.</summary>
+        public bool Truncated { get; set; }
+        /// <summary>True once this page is full (or the walk was truncated) and unwinding should stop.</summary>
+        public bool Full => Truncated || Entries.Count >= PageSize;
+        /// <summary>
+        /// True when the walk stopped because the page filled rather than because the subtree ended —
+        /// the ONLY case in which a next cursor is meaningful.
+        /// </summary>
+        public bool MorePending => !Truncated && LastPath is not null && Entries.Count >= PageSize;
+    }
+
+    /// <summary>
+    /// Emits one directory's children in ordinal name order, recursing depth-first. When
+    /// <paramref name="cursorSegments"/> is non-null the walk is positioning rather than emitting: names
+    /// ordering before the cursor segment at this <paramref name="depth"/> are skipped outright, the name
+    /// equal to it is descended into (it was emitted on an earlier page), and everything after it resumes
+    /// ordinary emission.
+    /// </summary>
+    private static void ManifestWalk(
+        DirectoryInfo dir, string dirRelative, string[]? cursorSegments, int depth, ManifestState state, CancellationToken ct)
+    {
+        if (state.Full)
+            return;
+
+        ct.ThrowIfCancellationRequested();
+
+        FileSystemInfo[] children;
+        try
+        {
+            children = dir.GetFileSystemInfos();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable subtree is skipped, not fatal — the same choice SearchRecursive makes. The
+            // alternative fails a whole folder transfer because one directory said no.
+            return;
+        }
+
+        Array.Sort(children, static (a, b) => string.CompareOrdinal(a.Name, b.Name));
+
+        var onCursorPath = cursorSegments is not null && depth < cursorSegments.Length;
+
+        foreach (var child in children)
+        {
+            if (state.Full)
+                return;
+            ct.ThrowIfCancellationRequested();
+
+            // Reparse points are not followed. A directory symlink can point back above the base or at
+            // itself, and either one turns a bounded enumeration into a walk that never ends.
+            if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
+                continue;
+            if (FilePathValidation.IsRestrictedSystemPath(child.FullName))
+                continue;
+
+            var childRelative = dirRelative.Length == 0 ? child.Name : $"{dirRelative}/{child.Name}";
+            var isDirectory = child is DirectoryInfo;
+
+            if (onCursorPath)
+            {
+                var comparison = string.CompareOrdinal(child.Name, cursorSegments![depth]);
+                if (comparison < 0)
+                    continue;
+
+                if (comparison == 0)
+                {
+                    var isCursorLeaf = depth == cursorSegments.Length - 1;
+                    if (isDirectory)
+                    {
+                        // Either this directory contains the cursor (descend, still positioning), or it IS
+                        // the cursor — in which case its children are the next thing owed to the client.
+                        ManifestWalk(
+                            (DirectoryInfo)child,
+                            childRelative,
+                            isCursorLeaf ? null : cursorSegments,
+                            isCursorLeaf ? 0 : depth + 1,
+                            state,
+                            ct);
+                    }
+
+                    // The cursor entry itself was emitted on the previous page; never emit it twice.
+                    continue;
+                }
+
+                // Past the cursor at this level: this sibling and every later one is new, and so is
+                // everything beneath them.
+                onCursorPath = false;
+                cursorSegments = null;
+            }
+
+            if (state.EmittedBefore + state.Entries.Count >= FileTransferLimits.ManifestMaxTotalEntries)
+            {
+                state.Truncated = true;
+                return;
+            }
+
+            state.Entries.Add(new FileManifestEntry
+            {
+                RelativePath = childRelative,
+                IsDirectory = isDirectory,
+                SizeBytes = child is FileInfo file ? file.Length : 0,
+                ModifiedUnixMs = ToUnixMs(child.LastWriteTimeUtc),
+            });
+            state.LastPath = childRelative;
+
+            if (isDirectory)
+                ManifestWalk((DirectoryInfo)child, childRelative, null, 0, state, ct);
+        }
+    }
+
+    /// <summary>
+    /// Cursor format: <c>{entriesEmittedSoFar}|{lastRelativePath}</c>. Opaque to clients by contract —
+    /// the count rides along only so the whole-enumeration ceiling can be enforced without the host
+    /// keeping per-request state. A malformed cursor restarts from the beginning rather than throwing:
+    /// it is client-supplied text, and the walk it positions grants nothing the request did not already.
+    /// </summary>
+    private static (long EmittedBefore, string? Path) ParseManifestCursor(string? cursor)
+    {
+        if (string.IsNullOrWhiteSpace(cursor))
+            return (0, null);
+
+        var separator = cursor.IndexOf('|');
+        // Invariant: the cursor is a wire token this host formats and the peer echoes back, so the
+        // two ends must agree on it whatever locale either is running under.
+        if (separator <= 0
+            || !long.TryParse(cursor.AsSpan(0, separator), NumberStyles.Integer, CultureInfo.InvariantCulture, out var emitted)
+            || emitted < 0)
+            return (0, null);
+
+        var path = cursor[(separator + 1)..];
+        return string.IsNullOrEmpty(path) ? (0, null) : (emitted, path);
+    }
+
+    private static string FormatManifestCursor(long emitted, string lastPath) => $"{emitted}|{lastPath}";
+
+    /// <summary>
+    /// Counts the whole subtree for the first page's totals, giving up at
+    /// <see cref="FileTransferLimits.ManifestCountBudgetEntries"/> and reporting the numbers as lower
+    /// bounds. Iterative so a pathological depth cannot overflow the stack in the one place a folder
+    /// transfer has not yet moved a single byte.
+    /// </summary>
+    private static (long Files, long Directories, long Bytes, bool Complete) CountSubtree(DirectoryInfo baseDir, CancellationToken ct)
+    {
+        long files = 0, directories = 0, bytes = 0, visited = 0;
+        var pending = new Stack<DirectoryInfo>();
+        pending.Push(baseDir);
+
+        while (pending.Count > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            var dir = pending.Pop();
+
+            FileSystemInfo[] children;
+            try
+            {
+                children = dir.GetFileSystemInfos();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            foreach (var child in children)
+            {
+                if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
+                    continue;
+                if (FilePathValidation.IsRestrictedSystemPath(child.FullName))
+                    continue;
+
+                if (++visited > FileTransferLimits.ManifestCountBudgetEntries)
+                    return (files, directories, bytes, false);
+
+                if (child is DirectoryInfo subdirectory)
+                {
+                    directories++;
+                    pending.Push(subdirectory);
+                }
+                else if (child is FileInfo file)
+                {
+                    files++;
+                    bytes += file.Length;
+                }
+            }
+        }
+
+        return (files, directories, bytes, true);
     }
 
     public Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct)
@@ -641,13 +1566,82 @@ public sealed class FileTransferService : IFileTransferService
         return string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), comparison);
     }
 
+    /// <summary>
+    /// Restores normal ACL inheritance on a file that arrived by rename (Windows only, no-op elsewhere).
+    /// </summary>
+    /// <remarks>
+    /// NTFS does not recompute inherited ACEs when a file is renamed across directories: the moved file
+    /// keeps the ACEs it inherited from where it came from, still flagged as inherited but from the old
+    /// parent. Staging lives machine-wide under ProgramData, so without this a file promoted into the
+    /// user's Documents would arrive carrying ProgramData's ACL — the owner would get read-only access
+    /// to their own received file, and every other local account would gain read access it never had
+    /// under the old copy. Clearing protection with preserveInheritance:false drops the stale ACEs and
+    /// lets the new parent's inheritable ACEs apply, which reproduces exactly what creating the file in
+    /// place used to produce. Unix rename() preserves owner and mode and the agent already runs as the
+    /// signed-in user, so there is nothing to repair there (RemEx-fq6f).
+    /// </remarks>
+    private void RestoreInheritedAcl(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        try
+        {
+            var security = new System.Security.AccessControl.FileSecurity();
+            security.SetAccessRuleProtection(isProtected: false, preserveInheritance: false);
+            new FileInfo(path).SetAccessControl(security);
+        }
+        catch (Exception ex)
+        {
+            // Deliberately catch-all. By this point the file is already sitting complete and correct at
+            // its destination, so letting anything escape would report verified:false for a transfer
+            // that actually succeeded — strictly worse than delivering it with a stale ACL. A narrower
+            // filter missed the generic exceptions SetAccessControl raises for unrecognized Win32
+            // errors, which is exactly the case this is here to absorb.
+            _logger.LogWarning(ex, "Could not restore inherited permissions on {Path} after promotion.", path);
+        }
+    }
+
     private static bool AreSameVolume(string a, string b)
     {
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        return string.Equals(
-            Path.GetPathRoot(Path.GetFullPath(a)),
-            Path.GetPathRoot(Path.GetFullPath(b)),
-            comparison);
+        var fullA = Path.GetFullPath(a);
+        var fullB = Path.GetFullPath(b);
+
+        if (OperatingSystem.IsWindows())
+        {
+            return string.Equals(Path.GetPathRoot(fullA), Path.GetPathRoot(fullB), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Path.GetPathRoot returns "/" for EVERY absolute Unix path, so the comparison above would call
+        // any two paths same-volume and a genuinely cross-device promotion would silently take the
+        // rename branch — where .NET falls back to an internal copy that is synchronous, uncancellable
+        // and not atomic. Compare mount points instead (RemEx-fq6f).
+        return string.Equals(MountPointOf(fullA), MountPointOf(fullB), StringComparison.Ordinal);
+    }
+
+    /// <summary>Longest mounted filesystem root that contains <paramref name="fullPath"/>.</summary>
+    private static string MountPointOf(string fullPath)
+    {
+        var best = "/";
+        try
+        {
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                var mount = drive.RootDirectory.FullName;
+                if (mount.Length <= best.Length)
+                    continue;
+                var prefix = mount.EndsWith('/') ? mount : mount + '/';
+                if (fullPath.StartsWith(prefix, StringComparison.Ordinal) || fullPath == mount)
+                    best = mount;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Unreadable mount table: fall back to "/" for both sides, which reports same-volume and
+            // therefore behaves exactly as this did before. Degrading to the old behaviour is the right
+            // failure here — it still delivers the file.
+        }
+        return best;
     }
 
     private static bool IsDestinationInsideSource(string sourceDir, string destination)
@@ -659,8 +1653,30 @@ public sealed class FileTransferService : IFileTransferService
             || normalizedDest.StartsWith(normalizedSource + Path.AltDirectorySeparatorChar, comparison);
     }
 
-    private static void CopyDirectoryRecursive(string sourceDir, string destDir, bool overwrite, CancellationToken ct)
+    /// <summary>Copies a tree, refusing a child collision with the code that cannot destroy anything.</summary>
+    /// <remarks>
+    /// INTERNAL FOR THE TESTS. When <paramref name="overwrite"/> is FALSE — the only case the
+    /// collision below can fire in — the destination directory is always one this method just
+    /// created, because both callers refuse an existing one first; so no fixture can stage the
+    /// collision and calling it directly is the only way to pin which code it emits. With
+    /// <paramref name="overwrite"/> true it CAN run onto a populated destination — that is
+    /// <c>CopyAsync</c>; <c>MoveAsync</c> deletes the destination first — which is exactly what an
+    /// overwriting folder copy is asked to do.
+    /// </remarks>
+    internal static void CopyDirectoryRecursive(string sourceDir, string destDir, bool overwrite, CancellationToken ct)
     {
+        // A FILE SITTING WHERE THIS FOLDER GOES (RemEx-xty3). CreateDirectory raises a raw IOException
+        // there, and a raw one is worse than it sounds: an absent errorCode sends the client's
+        // FileConflictPolicy.actionsFor to an empty list, so no sheet opens, Replace is never offered
+        // and the user gets a failure with nothing to act on. That is precisely what
+        // FileTransferErrorCodes exists to remove, and it is the identical hole CopyAsync and
+        // MoveAsync already closed at the top level — this is the nested case they do not reach.
+        //
+        // THE CHILD'S NAME, NOT THE FOLDER THE USER DRAGGED, for the reason the file collision below
+        // gives at length: a code naming the top of the tree sends them looking at the wrong thing.
+        if (File.Exists(destDir))
+            throw FileConflictException.DifferentKindExists(Path.GetFileName(destDir));
+
         Directory.CreateDirectory(destDir);
 
         foreach (var file in Directory.EnumerateFiles(sourceDir))
@@ -668,7 +1684,51 @@ public sealed class FileTransferService : IFileTransferService
             ct.ThrowIfCancellationRequested();
             var target = Path.Combine(destDir, Path.GetFileName(file));
             if (File.Exists(target) && !overwrite)
-                throw new IOException($"A file named '{Path.GetFileName(target)}' already exists.");
+            {
+                // THE NAME IS THE CHILD'S, THE CODE IS "TAKEN" (RemEx-f448). The name was already
+                // right - a code naming the folder they dragged would send the user looking at the
+                // wrong thing - but the CODE said destination_exists, which the client answers with
+                // a Replace button, and Replace re-answers the ORIGINAL request. Tapping it would
+                // retry the whole copy with overwrite onto the folder the user was copying, so a
+                // stray file appearing inside a fresh tree could destroy the tree it collided with.
+                //
+                // WHY "TAKEN" IS ALWAYS THE TRUTH HERE, not merely the safe answer: this throw is
+                // guarded by !overwrite, and reaching this recursion with overwrite false requires
+                // the destination directory NOT to have existed at the pre-check - both callers
+                // refuse an existing directory in that case. So destDir was created by the
+                // CreateDirectory above, and anything already sitting at a child path got there
+                // after we made the folder.
+                //
+                // "SO IT IS ALWAYS A RACE" WAS TOO STRONG, and review built the counterexample. It
+                // is a race only where both filesystems agree on what makes two names the same, and
+                // they do not always. The cross-volume caller straddles two filesystems by
+                // definition, and copy reaches the same thing wherever a shared root spans a mount
+                // point - it makes no volume check at all. So a source holding "README.md" and
+                // "readme.md" - legal on ext4 - lands on a
+                // case-INSENSITIVE destination where the second collides with the first, every time,
+                // with nobody racing. The same class of mount recorded on Occupied above
+                // (RemEx-2knx). "Taken" is still the honest code there, because the name genuinely
+                // is taken and Replace would still be a data-loss button - keep-both simply cannot
+                // converge, so the client's round cap ends it as an ordinary failure.
+                //
+                // IN THE RACING CASE, asking again genuinely resolves it: keep-both re-lists, picks
+                // a new name for the FOLDER, and the child lands inside it. In the folding case above
+                // it cannot, and the client's round cap ends it instead. The body text says "trying again will
+                // pick a different name", which is true of the folder rather than of this file - a
+                // child-aware string is the improvement if that ever reads wrong, not a different
+                // action set.
+                throw FileConflictException.ResolvedNameTaken(Path.GetFileName(target));
+            }
+
+            // AND A DIRECTORY SITTING WHERE THIS FILE GOES — the mirror of the case above, and the
+            // one File.Copy answers with a raw UnauthorizedAccessException or IOException depending
+            // on the platform. Checked even when overwrite is true, because overwrite means "replace
+            // the file that is there" and there is no file there to replace: File.Copy cannot
+            // overwrite a directory on any platform, so letting it through only changes which
+            // uncoded exception the user cannot act on.
+            if (Directory.Exists(target))
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(target));
+
             File.Copy(file, target, overwrite);
         }
 
@@ -789,8 +1849,46 @@ public sealed class FileTransferService : IFileTransferService
     private void SaveConfiguredRoots(IReadOnlyList<ConfiguredRoot> roots)
     {
         var json = JsonSerializer.Serialize(roots, JsonOptions);
-        File.WriteAllText(_configPath, json);
+        // Staged, not written over the live file (RemEx-fqzp).
+        RemexDataPaths.WriteAllTextAtomic(_configPath, json);
     }
+
+    /// <summary>
+    /// Where a well-known folder ACTUALLY is, falling back to the conventional name (RemEx-ocl9).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THESE FOLDERS MOVE, AND ON A LOT OF MACHINES THEY HAVE.** Composing them as
+    /// <c>home/Pictures</c> is right only where nothing redirected them. OneDrive's Known Folder Move
+    /// - the ordinary consumer setup on Windows - relocates Desktop, Documents and Pictures into
+    /// <c>OneDrive\</c>, and every localised Linux desktop resolves XDG to <c>~/Bilder</c>,
+    /// <c>~/Images</c> or <c>~/Imagenes</c>. In both cases the composed path either does not exist,
+    /// so the candidate is silently dropped and the user gets NO Pictures root at all, or it is a
+    /// leftover empty directory and the root points somewhere with nothing in it.
+    /// </para>
+    /// <para>
+    /// The rest of this process already knew: the screenshot folder resolves
+    /// <c>SpecialFolder.MyPictures</c>, so the two halves disagreed about where Pictures is.
+    /// </para>
+    /// <para>
+    /// FALLS BACK RATHER THAN TRUSTING THE API BLINDLY. <c>GetFolderPath</c> returns an empty string
+    /// when it cannot resolve - a stripped profile, or HOME unset under an XDG autostart - and an
+    /// empty path here would produce a RELATIVE root, which is a far worse failure than a missing
+    /// one. Downloads is deliberately not in this list: it has no SpecialFolder at all.
+    /// </para>
+    /// </remarks>
+    internal static string SpecialFolderOrDefault(Environment.SpecialFolder folder, string home, string conventionalName) =>
+        OrConventional(Environment.GetFolderPath(folder), home, conventionalName);
+
+    /// <summary>The decision on its own, so the empty case can be tested without faking the platform.</summary>
+    /// <remarks>
+    /// Split out because the empty case cannot be provoked through <c>GetFolderPath</c>: a VALID
+    /// folder that cannot be resolved returns "", but an invalid one throws, so there is no enum value
+    /// a test can pass to reach the branch. Testing the rule directly is the only way to cover the
+    /// path that matters - an empty answer becoming a relative root.
+    /// </remarks>
+    internal static string OrConventional(string? resolved, string home, string conventionalName) =>
+        string.IsNullOrEmpty(resolved) ? Path.Combine(home, conventionalName) : resolved;
 
     private static List<ConfiguredRoot> CreateDefaultRoots()
     {
@@ -823,7 +1921,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "desktop",
                 DisplayName = "Desktop",
-                AbsolutePath = Path.Combine(home, "Desktop"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.DesktopDirectory, home, "Desktop"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },
@@ -831,7 +1929,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "documents",
                 DisplayName = "Documents",
-                AbsolutePath = Path.Combine(home, "Documents"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.MyDocuments, home, "Documents"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },
@@ -839,7 +1937,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "pictures",
                 DisplayName = "Pictures",
-                AbsolutePath = Path.Combine(home, "Pictures"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.MyPictures, home, "Pictures"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },

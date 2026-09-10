@@ -188,6 +188,101 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_FileManifestRequest_PreservesAllFields()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestRequest,
+            ProtocolVersion = 3,
+            FileManifestRequest = new FileManifestRequest
+            {
+                RequestId = "rq-manifest",
+                RootId = "root-1",
+                RelativePath = "photos/2026",
+                Cursor = "42|photos/2026/b/b1.jpg",
+                MaxEntries = 500,
+            },
+        });
+
+        var m = back.FileManifestRequest;
+        Assert.NotNull(m);
+        Assert.Equal("rq-manifest", m!.RequestId);
+        Assert.Equal("root-1", m.RootId);
+        Assert.Equal("photos/2026", m.RelativePath);
+        Assert.Equal("42|photos/2026/b/b1.jpg", m.Cursor);
+        Assert.Equal(500, m.MaxEntries);
+    }
+
+    [Fact]
+    public void RoundTrip_FileManifestResponse_PreservesAllFields()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestResponse,
+            FileManifestResponse = new FileManifestResponse
+            {
+                RequestId = "rq-manifest",
+                RootId = "root-1",
+                RelativePath = "photos/2026",
+                Entries =
+                [
+                    new FileManifestEntry { RelativePath = "photos/2026/b", IsDirectory = true, SizeBytes = 0, ModifiedUnixMs = 111 },
+                    new FileManifestEntry { RelativePath = "photos/2026/b/b1.jpg", IsDirectory = false, SizeBytes = 2048, ModifiedUnixMs = 222 },
+                ],
+                NextCursor = "2|photos/2026/b/b1.jpg",
+                TotalFiles = 9,
+                TotalDirectories = 3,
+                TotalBytes = 4096,
+                TotalsComplete = true,
+                Truncated = false,
+            },
+        });
+
+        var m = back.FileManifestResponse;
+        Assert.NotNull(m);
+        Assert.Equal("rq-manifest", m!.RequestId);
+        Assert.Equal("root-1", m.RootId);
+        Assert.Equal("photos/2026", m.RelativePath);
+        Assert.Equal(2, m.Entries.Length);
+        Assert.True(m.Entries[0].IsDirectory);
+        Assert.Equal("photos/2026/b/b1.jpg", m.Entries[1].RelativePath);
+        Assert.Equal(2048, m.Entries[1].SizeBytes);
+        Assert.Equal(222, m.Entries[1].ModifiedUnixMs);
+        Assert.Equal("2|photos/2026/b/b1.jpg", m.NextCursor);
+        Assert.Equal(9, m.TotalFiles);
+        Assert.Equal(3, m.TotalDirectories);
+        Assert.Equal(4096, m.TotalBytes);
+        Assert.True(m.TotalsComplete);
+        Assert.False(m.Truncated);
+    }
+
+    /// <summary>
+    /// The totals are NULLABLE on purpose: a continuation page reports "not counted here", which a
+    /// client must be able to tell apart from "counted zero". Serializing null as 0 would erase that
+    /// distinction silently, so it is pinned here.
+    /// </summary>
+    [Fact]
+    public void RoundTrip_FileManifestResponse_ContinuationPage_KeepsTotalsNull()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestResponse,
+            FileManifestResponse = new FileManifestResponse
+            {
+                RequestId = "rq",
+                Entries = [],
+                NextCursor = "10|a/b",
+            },
+        });
+
+        var m = back.FileManifestResponse!;
+        Assert.Null(m.TotalFiles);
+        Assert.Null(m.TotalDirectories);
+        Assert.Null(m.TotalBytes);
+        Assert.False(m.TotalsComplete);
+    }
+
+    [Fact]
     public void RoundTrip_Metadata_PreservesAllFields()
     {
         var back = RoundTrip(new RemexMessage
@@ -270,6 +365,173 @@ public class FileTransferProtocolSerializationTests
         });
         Assert.True(pushResp.FilePushResponse!.Accepted);
         Assert.Equal(new[] { "t1", "t2" }, pushResp.FilePushResponse.TransferIds);
+    }
+
+    [Fact]
+    public void RoundTrip_UnaskedDenials_CarryTheirReasonCode()
+    {
+        // RemEx-l580. The reason exists so the phone can say something followable instead of a flat
+        // no; a field that does not survive the wire says nothing at all. Both responses carry it
+        // because both refuse without asking anyone, and both used to look exactly like a user's Deny.
+        var volumesMessage = new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesResponse,
+            FileVolumesResponse = new FileVolumesResponse
+            {
+                RequestId = "req-vol",
+                Volumes = [],
+                FullBrowseGranted = false,
+                DenyReason = FileConsentDenyReasons.ClientUnreachable,
+            },
+        };
+        var volumes = RoundTrip(volumesMessage);
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, volumes.FileVolumesResponse!.DenyReason);
+
+        // errorMessage stays null: a deny is not an error, and the desktop client throws on that field.
+        Assert.Null(volumes.FileVolumesResponse.ErrorMessage);
+
+        var pushMessage = new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse
+            {
+                PushId = "p2",
+                Accepted = false,
+                DenyReason = FileConsentDenyReasons.ClientUnreachable,
+            },
+        };
+        var push = RoundTrip(pushMessage);
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, push.FilePushResponse!.DenyReason);
+
+        // AND UNDER THAT EXACT NAME, on both responses. A round-trip alone cannot prove it — it reads
+        // back whatever name it wrote, so a typo in [JsonPropertyName] passes every other assertion
+        // here while breaking every non-.NET reader. The phone half (RemEx-3qmd) will read this key by
+        // hand out of org.json, so the string IS the contract.
+        var volumesJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(volumesMessage));
+        Assert.Contains("""
+            "denyReason":"client_unreachable"
+            """, volumesJson, StringComparison.Ordinal);
+
+        var pushJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(pushMessage));
+        Assert.Contains("""
+            "denyReason":"client_unreachable"
+            """, pushJson, StringComparison.Ordinal);
+
+        // ADDITIVE AND OPTIONAL, so no protocolVersion bump: an omitted field must deserialize to
+        // null rather than throwing, which is what every already-installed host will send.
+        var olderMessage = new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse { PushId = "p3", Accepted = false },
+        };
+        Assert.Null(RoundTrip(olderMessage).FilePushResponse!.DenyReason);
+
+        // AND OMITTED RATHER THAN WRITTEN AS AN EXPLICIT NULL, which the round-trip cannot tell apart
+        // because both deserialize to null. Android's optString() on a JSON null hands back the
+        // literal string "null" — the defect WhenWritingNull exists to prevent — so a phone would
+        // read "the PC could not reach you" out of a deny somebody made.
+        var olderJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(olderMessage));
+        Assert.DoesNotContain("denyReason", olderJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RoundTrip_HostPromptTimeoutDenial_CarriesTheHostTimeoutReasonCode()
+    {
+        // RemEx-c7v4n. HostPromptTimedOut rides the same string DenyReason property ClientUnreachable
+        // already uses — no new type, no serializer-context entry — so this pins that the wire value
+        // travels intact under its own name rather than assuming a plain string constant needs no
+        // coverage of its own. FileVolumesResponse is the case this bead is actually about (full
+        // browse routes to the Desktop dialog). FilePushResponse is pinned defensively — the host
+        // does not currently emit this reason on the push path (RequestConsentAsync's only caller is
+        // FileTransferHandler's volumes handling, and the host only ever consumes FilePushResponse,
+        // never emits one) — so that a future push-side deny path inherits working wire coverage
+        // instead of a gap nobody noticed.
+        var volumesMessage = new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesResponse,
+            FileVolumesResponse = new FileVolumesResponse
+            {
+                RequestId = "req-vol",
+                Volumes = [],
+                FullBrowseGranted = false,
+                DenyReason = FileConsentDenyReasons.HostPromptTimedOut,
+            },
+        };
+        var volumes = RoundTrip(volumesMessage);
+        Assert.Equal(FileConsentDenyReasons.HostPromptTimedOut, volumes.FileVolumesResponse!.DenyReason);
+
+        var pushMessage = new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse
+            {
+                PushId = "p4",
+                Accepted = false,
+                DenyReason = FileConsentDenyReasons.HostPromptTimedOut,
+            },
+        };
+        var push = RoundTrip(pushMessage);
+        Assert.Equal(FileConsentDenyReasons.HostPromptTimedOut, push.FilePushResponse!.DenyReason);
+
+        // AND UNDER THAT EXACT NAME. FileManagerLogic.kt reads this key by hand out of org.json, so
+        // the string IS the contract, same as ClientUnreachable above.
+        var volumesJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(volumesMessage));
+        Assert.Contains("""
+            "denyReason":"host_prompt_timed_out"
+            """, volumesJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RoundTrip_ConsentRequest_PreservesTheAutoDenyDeadline()
+    {
+        // RemEx-6mxu. The deadline reaching the renderer intact is the entire bead: the phone cannot
+        // show a countdown for a number it never received, and a prompt with no deadline is one the
+        // user can still answer after this side has already denied.
+        var message = new RemexMessage
+        {
+            Type = MessageTypes.FileConsentRequest,
+            FileConsentRequest = new FileConsentRequest
+            {
+                ConsentId = "c1",
+                Kind = FileConsentKinds.IncomingPush,
+                ExpiresAtUnixMs = 1_754_500_000_123L,
+            },
+        };
+
+        Assert.Equal(1_754_500_000_123L, RoundTrip(message).FileConsentRequest!.ExpiresAtUnixMs);
+
+        // AND UNDER THAT EXACT NAME, which a round-trip alone cannot prove — it reads back whatever
+        // name it wrote, so renaming the property passes it while breaking every non-.NET reader. The
+        // phone sheet (RemEx-vyhm) parses this key by hand, so the string IS the contract. Also pins
+        // the number as a bare integer: quote it and Kotlin's Long parse fails on arrival.
+        var json = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(message));
+        Assert.Contains("\"expiresAtUnixMs\":1754500000123", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AConsentRequestWithoutAnExpiryIsStillValidOnTheWireInBothDirections()
+    {
+        // ADDITIVE, WHICH IS WHY THIS NEEDS NO protocolVersion BUMP — asserted rather than assumed,
+        // in both directions. Inbound: a host that predates the field sends JSON without it, and that
+        // must parse rather than throw. Outbound: an unstamped request must not put `expiresAtUnixMs`
+        // on the wire at all, so a peer cannot read a null as "expires at the epoch" and dismiss the
+        // prompt the instant it arrives.
+        var fromAnOlderHost = System.Text.Encoding.UTF8.GetBytes(
+            """{"type":"file_consent_request","fileConsentRequest":{"consentId":"c1","kind":"full_browse"}}""");
+
+        var parsed = MessageSerializer.Deserialize(fromAnOlderHost);
+
+        Assert.NotNull(parsed);
+        Assert.Equal("c1", parsed!.FileConsentRequest!.ConsentId);
+        Assert.Null(parsed.FileConsentRequest.ExpiresAtUnixMs);
+
+        var json = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(new RemexMessage
+        {
+            Type = MessageTypes.FileConsentRequest,
+            FileConsentRequest = new FileConsentRequest { ConsentId = "c1", Kind = FileConsentKinds.FullBrowse },
+        }));
+
+        Assert.DoesNotContain("expiresAtUnixMs", json, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -357,6 +619,8 @@ public class FileTransferProtocolSerializationTests
             FileVolumesResponse = new FileVolumesResponse { RequestId = "r", Volumes = [] },
             FileSearchRequest = new FileSearchRequest { RequestId = "r", RootId = "x", Query = "q", MaxResults = 1 },
             FileSearchResponse = new FileSearchResponse { RequestId = "r", Entries = [] },
+            FileManifestRequest = new FileManifestRequest { RequestId = "r", RootId = "x", MaxEntries = 1 },
+            FileManifestResponse = new FileManifestResponse { RequestId = "r", Entries = [] },
             FileMetadataRequest = new FileMetadataRequest { RequestId = "r", RootId = "x", RelativePath = "p" },
             FileMetadataResponse = new FileMetadataResponse { RequestId = "r" },
             FileThumbnailRequest = new FileThumbnailRequest { RequestId = "r", RootId = "x", RelativePath = "p", MaxDim = 128 },
@@ -378,6 +642,8 @@ public class FileTransferProtocolSerializationTests
         Assert.NotNull(back.FileVolumesResponse);
         Assert.NotNull(back.FileSearchRequest);
         Assert.NotNull(back.FileSearchResponse);
+        Assert.NotNull(back.FileManifestRequest);
+        Assert.NotNull(back.FileManifestResponse);
         Assert.NotNull(back.FileMetadataRequest);
         Assert.NotNull(back.FileMetadataResponse);
         Assert.NotNull(back.FileThumbnailRequest);

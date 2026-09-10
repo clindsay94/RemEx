@@ -50,6 +50,18 @@ public interface IFileTransferService
 
     Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
     Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
+
+    /// <summary>
+    /// Moves an already-written staging file into <paramref name="relativePath"/> under
+    /// <paramref name="rootId"/>, applying the same write checks as
+    /// <see cref="OpenForWriteAsync"/> and replacing any existing file.
+    /// </summary>
+    /// <remarks>
+    /// Exists so a verified transfer does not have to be read back and rewritten to land in its
+    /// destination. On the same volume this is a rename, which is both instant and an atomic
+    /// replacement; only a genuine cross-volume promotion copies (RemEx-fq6f).
+    /// </remarks>
+    Task PromoteStagedFileAsync(string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct);
     Task DeleteAsync(string rootId, string relativePath, CancellationToken ct);
     Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct);
     Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct);
@@ -60,13 +72,23 @@ public interface IFileTransferService
     // Implemented by the PC host in WP3; the Android host mirrors the same operations over SAF in WP6.
 
     /// <summary>Copies a file/directory to a destination relative path within the same root.</summary>
-    Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct);
+    /// <param name="conflictResolution">
+    /// What to do if the destination name is taken - one of <see cref="Remex.Core.Models.FileConflictResolutions"/>,
+    /// or null to fail with a collision error, which is what every caller predating RemEx-6vd8 does.
+    /// </param>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    Task<string?> CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null);
 
     /// <summary>
     /// Moves a file/directory to a destination relative path within the same root. A cross-volume move is
     /// realized as copy+delete by the implementation.
     /// </summary>
-    Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct);
+    /// <param name="conflictResolution">
+    /// What to do if the destination name is taken - one of <see cref="Remex.Core.Models.FileConflictResolutions"/>,
+    /// or null to fail with a collision error, which is what every caller predating RemEx-6vd8 does.
+    /// </param>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    Task<string?> MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null);
 
     /// <summary>Creates a new directory at the given relative path within a root.</summary>
     Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct);
@@ -76,6 +98,24 @@ public interface IFileTransferService
     /// Results are capped at min(<paramref name="maxResults"/>, <see cref="Models.FileTransferLimits.SearchMaxResults"/>).
     /// </summary>
     Task<IReadOnlyList<FileSearchEntry>> SearchAsync(string rootId, string relativePath, string query, int maxResults, CancellationToken ct);
+
+    /// <summary>
+    /// Enumerates the whole subtree under <paramref name="relativePath"/> as a flat, pre-order page of
+    /// entries (RemEx-q3twg) - the host-side half of folder transfer. The client pages through with the
+    /// returned cursor and then enqueues the ordinary per-file transfers itself.
+    /// </summary>
+    /// <param name="cursor">
+    /// Opaque continuation token from the previous page, or null for the first page. The format belongs
+    /// to the implementation; callers pass it back verbatim and never construct one.
+    /// </param>
+    /// <param name="maxEntries">
+    /// Requested page size, clamped to <see cref="Models.FileTransferLimits.ManifestMaxEntriesPerPage"/>;
+    /// &lt;= 0 means <see cref="Models.FileTransferLimits.ManifestDefaultEntriesPerPage"/>.
+    /// </param>
+    Task<FileManifestPage> EnumerateSubtreeAsync(string rootId, string relativePath, string? cursor, int maxEntries, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="EnumerateSubtreeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<FileManifestPage> EnumerateVolumeSubtreeAsync(string volumeAbsolutePath, string relativePath, string? cursor, int maxEntries, CancellationToken ct);
 
     /// <summary>Returns detailed metadata for a single file/directory.</summary>
     Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct);

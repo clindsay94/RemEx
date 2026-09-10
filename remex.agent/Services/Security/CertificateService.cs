@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
 using Remex.Core.Services.Security;
 
 namespace Remex.Agent.Services.Security;
@@ -292,10 +293,40 @@ public sealed class CertificateService : ICertificateService
         return Convert.ToBase64String(hash);
     }
 
+    /// <summary>
+    /// Where this machine's certificate lives. READ-ONLY, and deliberately so (RemEx-id37).
+    /// </summary>
+    /// <remarks>
+    /// The readiness probe needs a path to test for readability, and computing it a second time
+    /// elsewhere is how two copies drift apart - the Linux branch alone has a legacy-migration rule
+    /// that nobody would remember to mirror.
+    /// <para>
+    /// **NOT SIDE-EFFECT FREE ON LINUX, WHICH AN EARLIER VERSION OF THIS REMARK WRONGLY CLAIMED.**
+    /// On Windows it is a Path.Combine and nothing more. On Linux the first call runs
+    /// ResolveNonWindowsCertificatePath, which may complete the legacy migration - reading
+    /// /var/lib/remex/cert.pfx, writing it to the per-user path WITH its protection, and removing
+    /// the old copy. No key material changes and the SPKI is preserved, so no pairing is at risk,
+    /// but it is a move and an ACL write rather than a read. CACHED so that happens at most once
+    /// here, and in practice Kestrel has already forced the same migration long before.
+    /// </para>
+    /// </remarks>
+    internal string CertificatePath => _resolvedCertificatePath ??= GetCertificatePath();
+
+    private string? _resolvedCertificatePath;
+
     private string GetCertificatePath()
     {
         if (_certPathOverride is not null)
             return _certPathOverride;
+
+        // Ahead of the platform branches, for the same reason as the pairing store (RemEx-4u29) and
+        // with more at stake: a test that resolves the production path does not merely read the
+        // machine's TLS certificate, it CREATES one when the file is absent — and a regenerated
+        // cert.pfx is a new SPKI, which unpairs every pinned client on the machine.
+        if (RemexDataPaths.HostStateDirectoryOverride is { } stateDirectory)
+        {
+            return Path.Combine(stateDirectory, "cert.pfx");
+        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {

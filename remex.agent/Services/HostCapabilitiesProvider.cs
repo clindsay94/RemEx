@@ -1,3 +1,4 @@
+using Remex.Core.Services.Network;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Remex.Core.Guards;
@@ -33,18 +34,102 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
     private readonly Lazy<HostCapabilities> _cached;
+    private readonly Func<string> _macProbe;
+    private readonly Func<bool> _mediaStateProbe;
     private LinuxPrerequisiteReport? _linuxReport;
 
+    /// <summary>
+    /// A MAC discovered AFTER the cached record was built, memoized so the re-probe stops.
+    /// </summary>
+    /// <remarks>
+    /// Only ever written with a non-empty value, so it is a one-way latch: once an adapter has been
+    /// found there is nothing left to retry, and every later call is the same cheap read it was
+    /// before this fix.
+    /// </remarks>
+    private string? _lateResolvedMac;
+
+    /// <param name="macProbe">
+    /// How to discover the primary adapter's MAC. Injectable ONLY so the re-probe behaviour below
+    /// can be tested without a network interface that obligingly appears mid-test; production
+    /// always uses <see cref="PrimaryNetworkAdapter"/>.
+    /// </param>
+    /// <param name="mediaStateProbe">
+    /// Whether this host can read a media session (RemEx-xx6xf).
+    /// </param>
+    /// <remarks>
+    /// A <c>Func&lt;bool&gt;</c> RATHER THAN THE READER ITSELF, and not to make it testable — that is
+    /// a side benefit. <c>IMediaSessionReader</c> is internal to the agent while this constructor is
+    /// public, so taking it directly would mean widening a platform-detail interface to public to
+    /// satisfy a call this class makes exactly once. The one fact needed is a bool.
+    /// <para>
+    /// DEFAULTS TO FALSE, WHICH IS THE SAFE END. A caller that forgets to supply it advertises a host
+    /// that will never report — and the phone's fallback for that is the neutral play triangle it drew
+    /// before this feature existed. Defaulting true would make every such host promise a reading that
+    /// never comes.
+    /// </para>
+    /// </remarks>
     public HostCapabilitiesProvider(
         IScreenCaptureService screenCapture,
-        IInputSimulationService inputSimulation)
+        IInputSimulationService inputSimulation,
+        Func<string>? macProbe = null,
+        Func<bool>? mediaStateProbe = null)
     {
         _screenCapture = Guard.NotNull(screenCapture);
         _inputSimulation = Guard.NotNull(inputSimulation);
+        _macProbe = macProbe ?? (() => PrimaryNetworkAdapter.Find().Mac);
+        _mediaStateProbe = mediaStateProbe ?? (static () => false);
         _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
     }
 
-    public HostCapabilities GetCurrent() => _cached.Value;
+    /// <summary>
+    /// The capability record, with the MAC re-probed if the cached one came back empty (RemEx-bgq8).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// EVERY OTHER FIELD IS SAFE TO CACHE FOREVER; THIS ONE IS NOT. The OS, the env vars, the
+    /// installed tools and the session ID are all stable for the process lifetime. A network
+    /// interface is not: on Linux the agent is started by XDG autostart at login, and
+    /// <c>HostBootstrapper</c> forces this record during startup, so an interface still coming up
+    /// means <see cref="PrimaryNetworkAdapter.Find"/> returns nothing and the empty answer is then
+    /// cached for the WHOLE SESSION. Every phone that connects is told this PC has no MAC, and
+    /// Wake-on-LAN silently reverts to "the user must type it in" — the exact setup step RemEx-izuj
+    /// removed — with nothing on either end explaining why, and with a reconnect unable to fix it
+    /// because the value is cached rather than re-read.
+    /// </para>
+    /// <para>
+    /// Windows does not have the problem: there the record is first forced by the first client
+    /// connect, by which point the network is provably up, because a client just reached the host
+    /// over it.
+    /// </para>
+    /// <para>
+    /// The re-probe is deliberately NOT a rebuild of the whole record. Re-running the Linux
+    /// prerequisite evaluation on every handshake would spawn <c>which</c> subprocesses for facts
+    /// that genuinely cannot change, which is what the cache exists to avoid. Only the one
+    /// time-dependent field is retried, and only while it is still empty — a good answer is never
+    /// re-probed and so can never be made worse.
+    /// </para>
+    /// </remarks>
+    public HostCapabilities GetCurrent()
+    {
+        var snapshot = _cached.Value;
+        if (!string.IsNullOrEmpty(snapshot.MacAddress)) return snapshot;
+
+        var resolved = Volatile.Read(ref _lateResolvedMac);
+        if (string.IsNullOrEmpty(resolved))
+        {
+            // Two threads racing here both probe, which is cheaper than holding a lock on a path
+            // every handshake takes. But they must not hand DIFFERENT answers to different phones:
+            // during interface bring-up - exactly the situation this retry exists for - wlan0 and
+            // eth0 can come up microseconds apart, so two concurrent probes can genuinely return
+            // two different adapters. CompareExchange makes the first winner authoritative and has
+            // every later racer adopt it, so a machine reports one MAC rather than two.
+            resolved = _macProbe();
+            if (string.IsNullOrEmpty(resolved)) return snapshot;
+            resolved = Interlocked.CompareExchange(ref _lateResolvedMac, resolved, null) ?? resolved;
+        }
+
+        return snapshot with { MacAddress = resolved };
+    }
 
     public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport()
         => OperatingSystem.IsLinux() ? _linuxReport : null;
@@ -75,12 +160,20 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return new HostCapabilities
         {
             Version = version,
+            // The stamp Directory.Build.props writes into every assembly; ResolveBuildId maps
+            // both "no stamp" and the literal "unknown" to empty, which is what receivers want -
+            // an About row reading "unknown" beside a real version is worse than no row (RemEx-d9guj).
+            BuildId = Remex.Desktop.Services.AppVersion.ResolveBuildId(typeof(HostCapabilitiesProvider).Assembly),
             Platform = platform,
             RuntimeMode = runtimeMode,
             IsInteractiveSession = isInteractiveSession,
             SupportsTelemetry = true,
             SupportsSystemCommands = true,
             SupportsWakeOnLan = true,
+            // Discovered here rather than in the UI so it is present headless and on Linux too
+            // (RemEx-izuj). Empty when no adapter qualifies at all; wired is PREFERRED by the
+            // ordering, not required by the filter.
+            MacAddress = _macProbe(),
             SupportsProcessList = true,
             SupportsLauncherSync = true,
             SupportsRemoteDesktop = supportsRemoteDesktop,
@@ -88,6 +181,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsCursorQuery = SupportsCursorQuery(isInteractiveSession, linuxBackend),
             SupportsAdvancedWindowControl = SupportsAdvancedWindowControl(isInteractiveSession, linuxBackend),
             SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession,
+            SupportsMediaState = _mediaStateProbe(),
             InputBackend = GetInputBackendName(linuxBackend, prereqReport, windowsReport),
             WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,
@@ -209,6 +303,51 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return (true, null);
     }
 
+    /// <summary>
+    /// Whether the host can actually inject input, as opposed to merely stream (RemEx-jvme).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// STREAMING AND INJECTING ARE DIFFERENT QUESTIONS ON LINUX, and answering the second with the
+    /// first is what this fixes. It used to return <c>prereqReport.CanStream</c>, and
+    /// <c>DetermineTier</c> never probes xdotool or ydotool — any X11 session with a session bus
+    /// returns <c>X11Degraded</c> — so an X11 box with neither tool installed advertised input it
+    /// could not perform, which is the shape of RemEx-is52.
+    /// </para>
+    /// <para>
+    /// BE HONEST ABOUT WHAT THIS FIXES TODAY: nothing the user can see. A first draft of this comment
+    /// said the client "enabled its input UI" on the strength of the flag; it does not. Nothing
+    /// anywhere reads <c>SupportsInputSimulation</c> — the Android side gates every input and stream
+    /// path on <c>supportsRemoteDesktop</c> instead — so the phone behaves identically before and
+    /// after. The lost-taps symptom is real but is caused by the host having no injector, and this
+    /// change does not by itself cure it. What it does is make the advertisement true, so that wiring
+    /// a consumer to it (RemEx-q9zw) becomes correct rather than another way to be wrong.
+    /// </para>
+    /// <para>
+    /// The three answers differ by what actually does the injecting, which is why this is not simply
+    /// ANDed with <c>SupportsBasicInput</c>. The Wayland tiers inject through
+    /// <c>LinuxInputSimulationService</c>'s portal injector, which is constructed for any Wayland
+    /// session and needs the RemoteDesktop portal that <c>DetermineTier</c> already required to reach
+    /// those tiers — so demanding a shell tool there would deny input on a working Wayland host that
+    /// happens not to have xdotool installed. <c>X11Degraded</c> has no portal injector at all, so a
+    /// shell tool is the only thing that can inject and its absence is decisive.
+    /// </para>
+    /// <para>
+    /// Deliberately NOT expressed by making <c>DetermineTier</c> refuse the tier, and the real reason
+    /// is stronger than the one first written here. "Capture and input are separate capabilities" is
+    /// not supported by this codebase — nothing consumes the input flag at all. What rules it out is
+    /// that <c>SelectedTier</c> drives things that ARE consumed: <c>SupportsRemoteDesktop</c>, which
+    /// the Android client reads and gates streaming on, plus <c>GetInputBackendName</c> and
+    /// <c>HostDoctor</c>'s exit codes. Probing for a shell tool inside <c>DetermineTier</c> would
+    /// therefore have turned an X11 box with no xdotool from "streams, cannot inject" into "cannot
+    /// stream at all", and made <c>--doctor</c> exit 1 on a machine that works.
+    /// </para>
+    /// <para>
+    /// Internal rather than private so this can be tested as the pure function it is. Every input is
+    /// already a parameter; the alternative is driving it through a probe of the machine the tests
+    /// happen to run on, which would answer for that machine rather than for the three tiers.
+    /// </para>
+    /// </remarks>
     private static bool SupportsInputSimulation(
         bool isInteractiveSession,
         LinuxDesktopBackendStatus? linuxBackend,
@@ -216,18 +355,44 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         WindowsRemoteDesktopDiagnosticReport? windowsReport)
     {
         if (OperatingSystem.IsWindows()) return windowsReport?.SupportsRemoteDesktopSession ?? isInteractiveSession;
-        if (OperatingSystem.IsLinux())
+        if (OperatingSystem.IsLinux()) return SupportsInputSimulationOnLinux(isInteractiveSession, linuxBackend, prereqReport);
+        return true;
+    }
+
+    /// <summary>
+    /// The Linux half of <see cref="SupportsInputSimulation"/>, as a function of its inputs rather
+    /// than of the machine it runs on.
+    /// </summary>
+    /// <remarks>
+    /// Split out so it is testable from Windows, which is where this repo is usually built. Left
+    /// inside <see cref="SupportsInputSimulation"/> it was unreachable from a test here — the OS
+    /// dispatch above would take the Windows branch and answer a different question — so the only
+    /// coverage possible would have been on a Linux runner, and this is precisely the decision that
+    /// was wrong for months without anyone noticing.
+    /// </remarks>
+    internal static bool SupportsInputSimulationOnLinux(
+        bool isInteractiveSession,
+        LinuxDesktopBackendStatus? linuxBackend,
+        LinuxPrerequisiteReport? prereqReport)
+    {
+        if (!isInteractiveSession) return false;
+
+        if (prereqReport is not null)
         {
-            if (!isInteractiveSession) return false;
+            // Cannot stream at all — no tier, nothing to inject into.
+            if (!prereqReport.CanStream) return false;
 
-            // With Stage 5 input router: portal/EIS or legacy tools are all valid.
-            if (prereqReport is not null)
-                return prereqReport.CanStream; // any tier that can stream can inject basic input
+            // PortalNoPen and WaylandNative: the portal injector is the mechanism, and the portal it
+            // needs is the same one DetermineTier required to select these tiers.
+            if (prereqReport.HasPortalCapture) return true;
 
+            // X11Degraded: shell tools or nothing.
             linuxBackend ??= LinuxDesktopBackendProbe.Probe();
             return linuxBackend.SupportsBasicInput;
         }
-        return true;
+
+        linuxBackend ??= LinuxDesktopBackendProbe.Probe();
+        return linuxBackend.SupportsBasicInput;
     }
 
     private string? GetInputBackendName(
@@ -271,9 +436,40 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return linuxBackend.SupportsCursorQuery;
     }
 
+    /// <summary>
+    /// Whether this host can list and manipulate desktop windows for the client's window panel.
+    /// </summary>
+    /// <remarks>
+    /// WINDOWS WAS ANSWERING FALSE WHILE FULLY CAPABLE, which is the bug this method carried
+    /// (RemEx-is52). <c>WindowsDesktopWindowControlService</c> is a complete Win32 implementation —
+    /// list, activate, raise, minimize, close, resize — and <c>HostBootstrapper</c> registers it for
+    /// <c>IDesktopWindowControlService</c> on Windows, overriding the unsupported default. The
+    /// handler dispatches <c>desktop_window_query</c> straight to it with no capability check of its
+    /// own, so the host would have served those queries perfectly well. Only this advertisement said
+    /// otherwise, and the Android client hides its entire window-control section on it — so a
+    /// working, registered, dispatched feature was invisible on the platform it was written for.
+    /// The check simply was never updated when the Win32 backend landed.
+    ///
+    /// The interactive-session requirement is real on both platforms: enumerating and focusing
+    /// windows means having a desktop to enumerate.
+    ///
+    /// Virtual-desktop MOVES remain unsupported on Windows (the virtual-desktop COM API is
+    /// undocumented) and that one action returns a clear, non-fatal error — which is a property of
+    /// the action, not a reason to withhold the whole capability.
+    /// </remarks>
     private static bool SupportsAdvancedWindowControl(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {
-        if (!OperatingSystem.IsLinux() || !isInteractiveSession)
+        if (!isInteractiveSession)
+        {
+            return false;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return true;
+        }
+
+        if (!OperatingSystem.IsLinux())
         {
             return false;
         }

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
@@ -173,30 +174,110 @@ object AndroidFileTransferHost {
             stagingDir = stagingDir(),
             scope = scope,
             pushConsent = pushConsent,
+            onPushRefused = ::notifyPushRefused,
+            onPushReceived = { fileName, uri ->
+                FileTransferNotificationManager.showIncomingFileReceived(context, fileName, uri)
+            },
         )
     }
+
+    /**
+     * Tells the user that a file they agreed to receive is not coming, and why (RemEx-gipu).
+     *
+     * Before this, every one of these ended in silence: the consent prompt was answered, the transfer
+     * was declined on the wire, the reason went into the PC's log, and the phone showed nothing. That
+     * is indistinguishable from the app being broken — and it was the exact symptom of RemEx-h1p5,
+     * where pushes really were broken, which is why nobody could tell the two apart.
+     *
+     * The reason code becomes a localized sentence HERE rather than in [FileHostHandler], which is
+     * deliberately pure logic with no Context to resolve strings from.
+     */
+    private fun notifyPushRefused(refusal: PushRefusal) {
+        // Deduped. A grant on a device that remembered an earlier answer is issued with no prompt and
+        // no tap, so a paired-but-hostile PC can drive the same refusal in a loop with no interaction
+        // at all. Repeating one identical notification is noise rather than information; the FIRST is
+        // what the user needs, and each distinct reason still gets through.
+        if (!reportedRefusals.add(refusal)) return
+
+        val message =
+            context.getString(
+                when (refusal) {
+                    PushRefusal.NoWritableSharedFolder -> R.string.file_push_failed_no_folder
+                    PushRefusal.OfferedFileDiffers -> R.string.file_push_failed_wrong_file
+                    PushRefusal.UnusableFileName -> R.string.file_push_failed_bad_name
+                    PushRefusal.DestinationUnavailable -> R.string.file_push_failed_destination
+                    PushRefusal.CouldNotBeSaved -> R.string.file_push_failed_not_saved
+                    PushRefusal.ChannelUnavailable -> R.string.file_push_failed_no_channel
+                }
+            )
+        FileTransferNotificationManager.showIncomingPushFailed(context, message)
+    }
+
+    /**
+     * Refusal reasons already shown, so a repeat does not re-post the same notification.
+     *
+     * Cleared whenever a push is freshly consented to, so a genuinely new attempt is reported again —
+     * the point is to suppress a loop, not to silence the feature after one failure.
+     */
+    private val reportedRefusals = java.util.Collections.synchronizedSet(mutableSetOf<PushRefusal>())
 
     /**
      * Ensures the shared binary `/ws/files` socket is open before serving a v3 transfer. The socket is
      * always Android-initiated (cert-pinned via the SPKI captured at pairing time). Returns true once
      * connected.
      */
+    /**
+     * Opens the binary `/ws/files` channel if it is not already up.
+     *
+     * **EACH FAILURE SAYS WHICH ONE IT WAS (RemEx-iq484).** This used to return a bare `false` three
+     * different ways, and its one caller discarded it — so a transfer that died because no SPKI pin
+     * was stored looked exactly like one that died because the host refused the socket, and both
+     * looked like nothing at all. The three causes want different fixes (re-pair, check the host
+     * address, look at the host log), so they are worth a line each.
+     */
     private suspend fun ensureBinaryChannel(): Boolean {
-        if (FileTransferChannelClient.isOpen) return true
         val host = settingsManager.hostFlow.first()
         val port = settingsManager.portFlow.first()
-        if (host.isBlank()) return false
+        if (host.isBlank()) {
+            Log.w(TAG, "Cannot open the binary file channel: no host is configured.")
+            return false
+        }
         val clientId = settingsManager.getOrCreateClientId()
-        val spki =
-            PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() } ?: return false
-        return FileTransferChannelClient.ensureConnected(context, host, port, clientId, spki)
+
+        // **ASKED OF THIS HOST, NOT OF THE WORLD (RemEx-5t4k9).** This used to shortcut on a bare
+        // isOpen before reading any of the settings above, so a channel still open to a PC the user
+        // has since stopped using answered yes - and ensureConnected, which DOES compare the host,
+        // was never reached. The transfer was then negotiated over a connection to the wrong machine.
+        // The shortcut itself is worth keeping: it is what stops an offer paying for a pin lookup
+        // when the channel is already up and already correct.
+        if (FileTransferChannelClient.isOpenTo(host, port, clientId)) return true
+        val spki = PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() }
+        if (spki == null) {
+            // Not a transient failure - this device has no pinned key for that host, so it cannot
+            // verify the socket it is about to open. Re-pairing is what fixes it.
+            Log.w(TAG, "Cannot open the binary file channel: no pinned SPKI for the configured host.")
+            return false
+        }
+        val opened = FileTransferChannelClient.ensureConnected(context, host, port, clientId, spki)
+        if (!opened) {
+            // FileTransferChannelClient already logged the transport-level detail, including the HTTP
+            // status of a rejection. This line is what ties that to a transfer.
+            Log.w(TAG, "Cannot open the binary file channel: the host did not accept the connection.")
+        }
+        return opened
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Consent hooks (plan §2 / WP9). The serving-side consent for full-device
     // browse is handled by the settings toggle (a SAF root pick is the OS-level
     // consent, mirrored into the per-device trust key). The live prompt below is
-    // for an incoming file push, mirroring the PC's HandleFilePushOfferAsync.
+    // for a file push arriving from the PC.
+    //
+    // It used to say "mirroring the PC's HandleFilePushOfferAsync". That handler
+    // is gone: RemEx-e11w removed the PC's incoming-push consent path, because a
+    // push is an upload and a shared writable root IS the consent. This prompt
+    // guards the OTHER direction — PC pushes TO phone — which e11w did not touch
+    // and which has no counterpart on the PC to mirror.
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
@@ -226,17 +307,14 @@ object AndroidFileTransferHost {
                 put("pushId", pushId)
                 put("accepted", decision.granted)
                 if (decision.granted) {
-                    val ids = JSONArray()
-                    val minted = ArrayList<String>(fileCount)
-                    repeat(fileCount) {
-                        val id = UUID.randomUUID().toString().replace("-", "")
-                        minted.add(id)
-                        ids.put(id)
-                    }
+                    val minted = mintPushGrants(filesArr)
                     // Record BEFORE replying: the PC may negotiate the first file the instant this
                     // response lands, and an offer arriving before the grant would be refused.
                     pushConsent.grant(minted)
-                    put("transferIds", ids)
+                    // A fresh acceptance is a fresh chance to be told what went wrong: without this,
+                    // one failure would silence that reason for the rest of the process's life.
+                    reportedRefusals.clear()
+                    put("transferIds", JSONArray().apply { minted.keys.forEach { put(it) } })
                 }
             }
         RemexCoreClient.SendMessage(
@@ -248,30 +326,65 @@ object AndroidFileTransferHost {
         )
     }
 
+    /**
+     * Handles an inbound `file_consent_request`: the paired PC asking THIS phone to decide a question
+     * about the PC's own files, because this phone is the device that asked for them (RemEx-vyhm).
+     *
+     * The opposite direction to [handlePushOffer], and the reason [FileConsentPrompt] carries an
+     * origin: the two arrive as the same two [FileConsentKinds] values and mean opposite things.
+     * Answering happens on the wire — see [RemoteConsentResponder], which owns the fail-closed rules.
+     *
+     * `expiresAtUnixMs` is read as ABSENT-vs-present rather than through `optLong`, whose 0 default
+     * would be indistinguishable from a host stamping the epoch and would render as an expiry 56 years
+     * in the past. A host that predates the field must produce no deadline at all.
+     */
+    private suspend fun handleRemoteConsentRequest(req: JSONObject) {
+        val consentId = req.optString("consentId")
+        if (consentId.isBlank()) return
+
+        FileConsentManager.handleRemoteRequest(
+            deviceId = peerDeviceId(),
+            consentId = consentId,
+            kind = req.optString("kind"),
+            detail = req.optString("detail").takeIf { it.isNotBlank() },
+            expiresAtUnixMs =
+                if (req.has("expiresAtUnixMs") && !req.isNull("expiresAtUnixMs")) {
+                    req.optLong("expiresAtUnixMs")
+                } else null,
+        )
+    }
+
     /** Stable per-device trust id for the paired PC (its configured host address). */
     private suspend fun peerDeviceId(): String =
         FilePeerIdentity.deviceId(runCatching { settingsManager.hostFlow.first() }.getOrNull())
 
     /**
-     * Human-readable summary of a push offer's files (capped names + total size) for the consent
-     * prompt. Mirrors the PC's FileTransferHandler.DescribePushFiles so both prompts read the same.
+     * Human-readable summary of a push offer's files (names, elided by length, plus the total size)
+     * for the consent prompt.
+     *
+     * THIS IS THE ONLY IMPLEMENTATION NOW (RemEx-e11w). It was written to mirror the PC's
+     * `FileTransferHandler.DescribePushFiles` so both prompts read the same; that helper went with
+     * the PC's incoming-push consent path, which e11w deleted on the grounds that a push is an upload
+     * and a shared writable root IS the consent. What this describes — a push arriving from the PC —
+     * is prompted for on this side only, so there is nothing left to read the same as.
      */
     private fun describePushFiles(filesArr: JSONArray): String {
-        val count = filesArr.length()
-        if (count == 0) return ""
-        val maxNames = 5
-        val names = StringBuilder()
+        if (filesArr.length() == 0) return ""
+
         var totalBytes = 0L
-        for (i in 0 until count) {
-            val f = filesArr.optJSONObject(i) ?: continue
-            totalBytes += f.optLong("size", 0L)
-            if (i < maxNames) {
-                if (names.isNotEmpty()) names.append(", ")
-                names.append(f.optString("name"))
-            }
+        // ONE ENTRY PER SLOT, malformed included — do not `continue` past them. mintPushGrants mints a
+        // transfer id for every index, so skipping here would make the prompt's "+N" count fewer files
+        // than the grant actually covers: an offer of one real file and ten junk entries would show a
+        // single name and no remainder at all, while eleven ids went back. Understating the offer is
+        // the exact failure this bead exists to fix.
+        val names = ArrayList<String>(filesArr.length())
+        for (i in 0 until filesArr.length()) {
+            val f = filesArr.optJSONObject(i)
+            totalBytes += f?.optLong("size", 0L) ?: 0L
+            names.add(f?.optString("name").orEmpty())
         }
-        if (count > maxNames) names.append(", …")
-        return "$names (${formatBytes(totalBytes)})"
+
+        return "${joinOfferedNames(names)} (${formatBytes(totalBytes)})"
     }
 
     private fun formatBytes(bytes: Long): String =
@@ -297,7 +410,16 @@ object AndroidFileTransferHost {
                     // A v3 transfer needs the binary channel; open it before negotiating. Per-file
                     // push offers ride this after the file_push_offer below was already consented, so
                     // no second prompt is raised here (mirrors the PC's file_push_offer → offer flow).
-                    ensureBinaryChannel()
+                    //
+                    // THE MESSAGE IS STILL HANDED ON WHEN THIS FAILS, AND THAT IS DELIBERATE.
+                    // handleOffer refuses an offer it has no open channel for and answers with a
+                    // stated reason (RemEx-iq484); short-circuiting here instead would leave the PC
+                    // waiting out its 30-second ready timeout for a phone that already knew.
+                    // ensureBinaryChannel has already logged WHICH of its three failures happened;
+                    // this line is what ties that to the transfer the user is watching.
+                    if (!ensureBinaryChannel()) {
+                        Log.w(TAG, "Binary channel unavailable for an incoming v3 offer; declining it.")
+                    }
                     hostHandler?.handleControlMessage(json)
                 }
                 // Incoming push from the PC: consent-gated on this (serving) device (plan §2 / WP9).
@@ -306,6 +428,14 @@ object AndroidFileTransferHost {
                 "file_push_offer" -> {
                     val offer = obj.optJSONObject("filePushOffer")
                     if (offer != null) scope.launch { handlePushOffer(offer) }
+                }
+                // A consent question the PC routed BACK to this phone, because this phone is what asked
+                // (RemEx-vyhm). Dispatched off the collector for the same reason file_push_offer is: it
+                // suspends for as long as the user takes, and the browse/manage responses this phone is
+                // waiting on share this one stream.
+                "file_consent_request" -> {
+                    val req = obj.optJSONObject("fileConsentRequest")
+                    if (req != null) scope.launch { handleRemoteConsentRequest(req) }
                 }
                 else -> {
                     // roots/browse/manage/root_manage/volumes/search/metadata/thumbnail/

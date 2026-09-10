@@ -59,9 +59,67 @@
         breaking. Repeating a placeholder is legal in both syntaxes and is not a finding: sets
         are compared, not counts, so "Delete {0}? {0} is gone" is fine against a single "{0}".
 
+    AXIS 6 - DECLARED BUT UNREFERENCED ("is the key used anywhere at all?")
+        The mirror image of axis 3. A key that exists in the English file but that nothing in code
+        ever asks for is dead weight at best - at worst it is the leftover of a removed feature that
+        a translator keeps re-translating for no reader. This is what shipped four real orphans:
+        rc_category_media in the Android strings, plus three unreferenced pairing strings
+        (RemEx-ra2m). Axes 1-5 are all blind to this the same way axis 3's opposite number is blind
+        to undefined keys - an orphan has perfect parity, is fresh, is defined, has matching
+        placeholders, and may even be genuinely translated. Nothing else in this script looks at
+        whether a key is USED at all.
+
+        Reuses Get-ReferencedKeys - the same source scan axis 3 runs - so a key counts as referenced
+        the instant either axis finds it in code. That scan was extended with one more extraction
+        pattern for this axis's sake: the PC `Binding Path="[Key]"` indexer form (Canvas_Sensors,
+        TaskMgr_PidFormat, RemoteDesktop_ResolutionFormat and friends), which none of the other
+        patterns caught because it is neither `Instance["Key"]` nor `{ns:Localize Key}` nor
+        `Strings.Key` - it is a literal key inside a XAML attribute string. That extraction is exact,
+        not a guess, so it also tightens axis 3 for free.
+
+        TWO THINGS THIS AXIS MUST NOT FALSE-POSITIVE ON, both confirmed real in this repo:
+
+          (a) Keys built at runtime by string concatenation, so no literal instance of the full key
+              ever appears in source. PrefixedLabelConverter's ConverterParameter is one: the XAML
+              carries only the prefix ("Custom_Source_", "Custom_BgType_", "Custom_WallpaperSource_")
+              and the converter appends the bound enum value's name at runtime
+              (PrefixedLabelConverter.cs). TransferProgressText.FormatRemaining is another: it builds
+              "FileTransfer_Eta{Unit}Format_{PluralCategory}" by interpolating a base key with a
+              plural-category suffix chosen at runtime (TransferProgressText.cs) - only the base
+              ("FileTransfer_EtaSecondsFormat" etc.) is a literal.
+
+          (b) The `Binding Path="[Key]"` indexer form above is NOT in this category - the full key
+              is a literal in the XAML, so the extended Get-ReferencedKeys pattern finds it directly.
+              It is called out here only because it looks similar to (a) at a glance and must not be
+              added to the allowlist by mistake - doing so would silently stop checking those keys.
+
+        The fix for (a) is $UnreferencedKeyAllowlist below: PREFIX patterns, not exact keys, each
+        with a comment pointing at the call site that builds the rest of the key at runtime. A key
+        is treated as referenced if either the full key is found in code, OR the key starts with an
+        allowlisted prefix for its platform. Adding a new legitimately-dynamic key family is meant
+        to be a one-line entry there, not a reason to skip this axis or baseline the whole family.
+
+        Like axis 3, this only checks the English/base file - a key with parity problems is already
+        reported by axis 1, and this axis is not the place to re-derive per-locale usage.
+
+    AXIS 5 - IDENTICAL TO ENGLISH ("was this translated at all?")
+        A value that is byte-identical to its English source. Axis 2(a) is supposed to catch this
+        and structurally cannot: it scores word overlap and skips anything under
+        -MinSimilarityLength, which is 40 characters - most of the UI. Every one of Turkish's
+        identical values is under that floor, so the entire class was invisible. Connor found it
+        by eye, the Pair button still reading "Pair" in Turkish and Portuguese, while the output
+        of this very script said "Translations are complete and current" (RemEx-0bygp).
+
+        Identity does not suffer the cognate ambiguity that forced the length floor, because it is
+        not a similarity judgement - but plenty of values are identical for good reasons: "RAM",
+        "FPS:", "Windows", "macOS", preset names like "Neon". So this reports rather than fails,
+        and the baseline below absorbs the existing set. What it buys is that a NEWLY untranslated
+        string is loud the day it appears. Values with no translatable word at all - "{0} - {1}",
+        an emoji and a number - are skipped rather than baselined.
+
     Parity, undefined-key and placeholder-index problems are ERRORS - they are objective and
-    always wrong. Staleness findings are WARNINGS by default, because they are heuristic; pass
-    -StrictStaleness to make them fail the build too.
+    always wrong. Staleness and untranslated findings are WARNINGS by default, because they are
+    heuristic; pass -StrictStaleness to make them fail the build too.
 
     KNOWN LIMITATION of the freshness detector: it can only see drift that git can see. When all
     nine files are edited in one commit - which the .resx sync workflow often does - every
@@ -81,8 +139,8 @@
     'all'. Defaults to 'all'.
 
 .PARAMETER Axis
-    Which check to run: 'parity', 'staleness', 'undefined', or 'all'. Defaults to 'all'.
-    Use -Axis parity for a fast check that needs no git history.
+    Which check to run: 'parity', 'staleness', 'undefined', 'placeholder', 'untranslated', 'unreferenced',
+    or 'all'. Defaults to 'all'. Use -Axis parity for a fast check that needs no git history.
 
 .PARAMETER SimilarityThreshold
     How much word overlap with English counts as "probably not translated", from 0.0 to 1.0.
@@ -131,8 +189,11 @@ param(
     [string]$Platform = 'all',
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet('all', 'parity', 'staleness', 'undefined', 'placeholder')]
+    [ValidateSet('all', 'parity', 'staleness', 'undefined', 'placeholder', 'untranslated', 'unreferenced')]
     [string]$Axis = 'all',
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SelfTest,
 
     [Parameter(Mandatory = $false)]
     [ValidateRange(0.0, 1.0)]
@@ -200,6 +261,45 @@ $Platforms = @{
 # while still being entirely English - which is exactly how a stale-English value hides from an
 # exact-match detector.
 $TokenSynonyms = @{ 'host' = 'pc' }
+
+# ---------------------------------------------------------------------------------------------
+# AXIS 6 allowlist - key PREFIXES that are genuinely referenced at runtime but whose full key
+# never appears as a literal anywhere in source, because the rest of the key is assembled from a
+# bound value at runtime. See the AXIS 6 header comment for why these two are real and confirmed.
+#
+# Adding a new dynamic key family: add one prefix here with a comment pointing at the call site
+# that appends the rest of the key. Do NOT add an exact key here - that belongs in the normal
+# resource files - and do NOT reach for this list to silence a genuinely unreferenced key.
+# ---------------------------------------------------------------------------------------------
+$UnreferencedKeyAllowlist = @{
+    pc      = @(
+        # PrefixedLabelConverter appends the bound enum value's name to the ConverterParameter
+        # prefix at runtime (remex.desktop/Converters/PrefixedLabelConverter.cs). The three prefixes
+        # in use today, per remex.desktop/Views/PersonalizationPanelView.axaml.
+        '^Custom_Source_'
+        '^Custom_BgType_'
+        '^Custom_WallpaperSource_'
+        # TransferProgressText.FormatRemaining builds "<baseKey>_<PluralCategory>" at runtime from
+        # one of these three base keys (remex.desktop/Services/FileTransfer/TransferProgressText.cs).
+        # The base key itself IS a literal in source and is found by the normal scan; only the
+        # per-plural-category suffixed forms need the allowlist.
+        '^FileTransfer_EtaSecondsFormat_'
+        '^FileTransfer_EtaMinutesFormat_'
+        '^FileTransfer_EtaHoursFormat_'
+    )
+    android = @()
+}
+
+function Test-KeyIsAllowlisted {
+    param(
+        [Parameter(Mandatory = $true)][string]$Key,
+        [Parameter(Mandatory = $true)][string]$PlatformKey
+    )
+    foreach ($pattern in $UnreferencedKeyAllowlist[$PlatformKey]) {
+        if ($Key -match $pattern) { return $true }
+    }
+    return $false
+}
 
 $script:Findings = [System.Collections.Generic.List[object]]::new()
 
@@ -541,6 +641,157 @@ function Test-EnglishSimilarity {
     }
 }
 
+function Test-IdenticalToEnglish {
+    <#
+    .SYNOPSIS
+        Reports translations whose value is byte-identical to the English source.
+
+    .DESCRIPTION
+        THIS IS THE AXIS THAT CATCHES WHAT Test-EnglishSimilarity CANNOT (RemEx-0bygp). That one
+        scores word overlap, and deliberately skips anything shorter than -MinSimilarityLength,
+        because below that cognates and loanwords drown the signal. Forty characters is most of the
+        UI: every one of Turkish's identical values is under it, so the whole class was invisible.
+        Connor found it by eye - the Pair button still reading 'Pair' in Turkish and Portuguese -
+        and the gate said "Translations are complete and current" underneath.
+
+        Byte-identity does not have the cognate problem that forced the length floor, because it is
+        not a similarity judgement. It has a different one: plenty of values are identical for good
+        reasons - 'RAM', 'FPS:', 'Windows', 'macOS', preset names like 'Neon' and 'Ember'. So this
+        reports rather than fails, and the existing baseline absorbs the current set. What it buys
+        is that a NEW untranslated string is loud on the day it appears.
+
+        Values with no translatable word at all - '{0} - {1}', a hex mask, an emoji plus a number -
+        are skipped outright rather than baselined, since 'untranslated' is not a thing they can be.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$BaseEntries,
+        [Parameter(Mandatory = $true)][hashtable]$LocaleEntries
+    )
+
+    foreach ($key in ($BaseEntries.Keys | Sort-Object)) {
+        $english = $BaseEntries[$key].Value
+        if (-not $BaseEntries[$key].Translatable) { continue }
+        if ([string]::IsNullOrWhiteSpace($english)) { continue }
+        if (-not (Test-HasTranslatableWord -Text $english)) { continue }
+
+        foreach ($locale in $Config.Locales) {
+            if (-not $LocaleEntries.ContainsKey($locale)) { continue }
+            if (-not $LocaleEntries[$locale].ContainsKey($key)) { continue }
+
+            # ORDINAL, NOT -ceq. PowerShell's -ceq is case-sensitive but CULTURE-sensitive: it calls
+            # 'Pair' and "Pai<soft hyphen>r" equal, and NFC "é" equal to NFD "e" + combining acute.
+            # Nothing in the repo currently differs between the two comparisons, but this axis says
+            # "byte-identical" in its own findings, and a script whose purpose is to stop overstating
+            # what it measures should not overstate this one.
+            if ([string]::Equals($LocaleEntries[$locale][$key].Value, $english, [System.StringComparison]::Ordinal)) {
+                Add-Finding -Severity Warning -Category 'Untranslated: identical to English' -Platform $Config.Name `
+                    -Id "$($Config.Kind)/identical-to-english/$locale/$key" `
+                    -Message ("{0} '{1}' is byte-identical to the English: `"{2}`"" -f `
+                        $locale, $key, (Get-Excerpt $english))
+            }
+        }
+    }
+}
+
+function Invoke-SelfTest {
+    <#
+    .SYNOPSIS
+        Checks the parts of this script that fail silently in the direction of the bug it fixes.
+    .DESCRIPTION
+        THE FIX FOR RemEx-0bygp RESTS ON A STRING CONTRACT BETWEEN TWO FILES. This script emits one
+        LOCALIZATION-SUMMARY line and verify.ps1 parses it; if the marker is renamed, or moved above
+        where $known is computed, this script still exits 0, verify.ps1's match finds nothing, and it
+        prints "No NEW translation problems" underneath a screen of warnings. That is RemEx-0bygp
+        reproduced exactly - correct findings with a wrong summary over the top - and nothing would
+        have failed.
+
+        Test-HasTranslatableWord is the other silent one: loosen its regex and axis 5 quietly stops
+        measuring a whole class of value, which is the failure being fixed.
+
+        Same shape as verify.ps1's Invoke-ResultParserSelfTest and ralph-cluster.ps1's -SelfTest:
+        pure, milliseconds, and run by the gate rather than left for someone to remember.
+    #>
+    $failures = 0
+    function Assert-Check {
+        param([bool]$Condition, [string]$What)
+        if (-not $Condition) {
+            Write-Host "    FAIL  $What" -ForegroundColor Red
+            $script:selfTestFailures++
+        }
+    }
+    $script:selfTestFailures = 0
+
+    # (a) What counts as a value worth judging.
+    # The last two leave exactly ONE letter after stripping, which is what separates "a run of at
+    # least two letters" from "any letter at all". Without them the rule can be loosened to \p{L}
+    # and every self-test still passes - checked, by making that exact edit.
+    foreach ($wordless in @('{0} - {1}', '%1$s * %2$s', '%1$d%%', '%1$d°', '✅ {0}', '{0}', '%.1f',
+                            '%1$.1fx', '{0}x')) {
+        Assert-Check (-not (Test-HasTranslatableWord -Text $wordless)) `
+            "'$wordless' has no translatable word and must be skipped, not baselined"
+    }
+    foreach ($word in @('Pair', '#RRGGBB', 'Cursor Speed: %.1fx', '{0} files copied', 'Unnamed App')) {
+        Assert-Check (Test-HasTranslatableWord -Text $word) `
+            "'$word' is translatable and must be judged"
+    }
+
+    # (b) The axis itself: fails before the fix, passes after. An in-memory fixture rather than the
+    #     real files, so this asserts the rule and not the current state of the translations.
+    $config = @{ Name = 'SelfTest'; Kind = 'resx'; Locales = @('xx') }
+    $base = @{ Btn = @{ Value = 'Pair'; Translatable = $true } }
+
+    $script:Findings = [System.Collections.Generic.List[object]]::new()
+    Test-IdenticalToEnglish -Config $config -BaseEntries $base `
+        -LocaleEntries @{ xx = @{ Btn = @{ Value = 'Pair'; Translatable = $true } } }
+    Assert-Check ($script:Findings.Count -eq 1) 'an untranslated value must produce exactly one finding'
+    Assert-Check ($script:Findings.Count -eq 1 -and $script:Findings[0].Id -eq 'resx/identical-to-english/xx/Btn') `
+        'the finding id must be <kind>/identical-to-english/<locale>/<key>, which is what the baseline matches on'
+
+    $script:Findings = [System.Collections.Generic.List[object]]::new()
+    Test-IdenticalToEnglish -Config $config -BaseEntries $base `
+        -LocaleEntries @{ xx = @{ Btn = @{ Value = 'Eşleştir'; Translatable = $true } } }
+    Assert-Check ($script:Findings.Count -eq 0) 'a translated value must produce no finding'
+
+    # (c) The contract with verify.ps1, expressed the way verify.ps1 reads it. This is the assertion
+    #     that catches a renamed marker - and the one that would have caught the wrong premise this
+    #     fix was first built on.
+    $sample = 'LOCALIZATION-SUMMARY errors=0 warnings=3 known=849'
+    Assert-Check ($sample -match '^LOCALIZATION-SUMMARY ') 'verify.ps1 selects the summary line by this prefix'
+    Assert-Check (($sample -match 'warnings=(\d+)') -and ([int]$Matches[1] -eq 3)) `
+        'verify.ps1 reads the warning count out of the summary line'
+
+    $failures = $script:selfTestFailures
+    return $failures
+}
+
+function Test-HasTranslatableWord {
+    <#
+    .SYNOPSIS
+        Whether a value contains a word that could meaningfully be translated at all.
+    .DESCRIPTION
+        Placeholders and format specifiers are removed first, so '{0} - {1}' and '%1$s' are correctly
+        seen as wordless. What is left has to contain a run of at least two letters in any script.
+        '#RRGGBB' survives this and is baselined rather than skipped, because RGGBB is letters and
+        the rule stays mechanical instead of accruing special cases.
+    #>
+    param([string]$Text)
+
+    # Doubled braces are a LITERAL brace in .NET composite formatting, so they go first - stripping
+    # {...} against "{{0}}" would eat "{{0}" and leave a stray "}".
+    $withoutPlaceholders = [regex]::Replace($Text, '\{\{|\}\}', ' ')
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '\{[^}]*\}', ' ')
+
+    # The Android form with its flags and precision. A narrower '%[0-9$]*[a-zA-Z]' leaves the 'f' of
+    # "%.1f" behind, which is inert only because \p{L}{2,} wants two letters - "%.1f%.1f" would
+    # survive as "ff" and be baselined as an untranslated string forever. Shaped after
+    # Get-PlaceholderSet's Android pattern so the two agree on what the syntax is.
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%%', ' ')
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%(?:\d+\$)?[-#+0,( ]*\d*(?:\.\d+)?[a-zA-Z]', ' ')
+
+    return $withoutPlaceholders -match '\p{L}{2,}'
+}
+
 function Get-Excerpt {
     param([string]$Text)
     $flat = ($Text -replace '\s+', ' ').Trim()
@@ -655,22 +906,58 @@ function Get-ReferencedKeys {
 
             if ($Config.Kind -eq 'android') {
                 $patterns = @(
-                    '(?<!android\.)\bR\.string\.\s*([A-Za-z0-9_]+)',
-                    '(?<!android\.)\bR\.plurals\.\s*([A-Za-z0-9_]+)',
+                    # \s* on BOTH sides of the dot. Collapsing whitespace above turns a ktfmt-wrapped
+                    # "R.string\n    .some_key" into "R.string .some_key" - the space lands BEFORE the
+                    # dot, not after it, so a pattern anchored on 'R.string.' misses every wrapped
+                    # reference. That was 85 live keys reported as unreferenced on the first axis-6 run
+                    # (connection_cert_repair_*, button_dismiss, ...), all of them real references.
+                    '(?<!android\.)\bR\.string\s*\.\s*([A-Za-z0-9_]+)',
+                    '(?<!android\.)\bR\.plurals\s*\.\s*([A-Za-z0-9_]+)',
                     '@string/([A-Za-z0-9_]+)',
                     '@plurals/([A-Za-z0-9_]+)'
                 )
             }
             else {
                 $patterns = @(
-                    'Instance\[\s*"([A-Za-z0-9_]+)"\s*\]',
+                    # NOT just 'Instance["X"]': a bracket can hold a ternary of two literals -
+                    # Instance[cond ? "A" : "B"] (SettingsViewModel.cs) - where neither literal sits
+                    # immediately after '['. So every Instance[...] bracket is captured whole here and
+                    # every quoted plain literal inside it is pulled out in the pass below, rather than
+                    # anchoring the pattern to the bracket's opening character.
+                    'Instance\[([^\[\]]*)\]',
                     # ANY namespace prefix, not just 'local'. This file family uses two -
                     # {local:Localize} 528 times and {conv:Localize} 116 - and matching only the
                     # first left 116 references invisible to this axis, which is precisely the
                     # blind spot it exists to close. (RemEx-fxkg.)
                     '\{\s*[A-Za-z_][A-Za-z0-9_]*:Localize\s+([A-Za-z0-9_]+)',
-                    '(?<![A-Za-z0-9_.])Strings\.([A-Z][A-Za-z0-9_]*)'
+                    '(?<![A-Za-z0-9_.])Strings\.([A-Z][A-Za-z0-9_]*)',
+                    # The indexer binding form - Binding Path="[Key]" against
+                    # LocalizationService.Instance (e.g. RemoteDesktopView.axaml, TaskManagerView.axaml).
+                    # Added for AXIS 6 (declared-but-unreferenced); the key is a literal here, so this
+                    # sharpens axis 3 (undefined) too rather than needing a separate extractor.
+                    'Path="\[([A-Za-z0-9_]+)\]"'
                 )
+            }
+
+            $rel = $file.FullName.Substring($RepoRoot.Length).TrimStart('\', '/') -replace '\\', '/'
+
+            if ($Config.Kind -eq 'resx') {
+                # The Instance[...] bracket pattern above captures the WHOLE bracket contents in
+                # group 1 (which may hold a ternary of two literals, or none if it is a pure
+                # interpolation - see Get-DynamicKeyTemplates for that case) - pull every plain
+                # quoted literal out of it here instead of trying to do it in one regex pass.
+                foreach ($bracket in [regex]::Matches($flat, 'Instance\[([^\[\]]*)\]')) {
+                    foreach ($lit in [regex]::Matches($bracket.Groups[1].Value, '(?<!\$)"([A-Za-z0-9_]+)"')) {
+                        $key = $lit.Groups[1].Value
+                        if (-not $referenced.ContainsKey($key)) {
+                            $referenced[$key] = [System.Collections.Generic.List[string]]::new()
+                        }
+                        if (-not $referenced[$key].Contains($rel)) { $referenced[$key].Add($rel) }
+                    }
+                }
+                # Drop the raw bracket-capture pattern from the generic loop below - it was only a
+                # vehicle to get the whole bracket text above and its group 1 is not a key.
+                $patterns = $patterns | Select-Object -Skip 1
             }
 
             foreach ($pattern in $patterns) {
@@ -679,7 +966,6 @@ function Get-ReferencedKeys {
                     if (-not $referenced.ContainsKey($key)) {
                         $referenced[$key] = [System.Collections.Generic.List[string]]::new()
                     }
-                    $rel = $file.FullName.Substring($RepoRoot.Length).TrimStart('\', '/') -replace '\\', '/'
                     if (-not $referenced[$key].Contains($rel)) { $referenced[$key].Add($rel) }
                 }
             }
@@ -687,6 +973,64 @@ function Get-ReferencedKeys {
     }
 
     return $referenced
+}
+
+function Get-DynamicKeyTemplates {
+    <#
+    .SYNOPSIS
+        PC only. Turns Instance[$"..."] interpolated-string templates found in source into regex
+        patterns, so a key that is ASSEMBLED at runtime - never a literal anywhere - can still be
+        recognised as referenced for AXIS 6.
+    .DESCRIPTION
+        SystemStatusPresentation.TitleKey does `$"SystemStatus_{id}_Title"`; AboutViewModel builds
+        `$"Faq_Q{q}_Question"`; ActivityService builds `$"Activity_{Kind}"`. None of those full keys
+        exists as a literal in source, so Get-ReferencedKeys - built to find literal references -
+        structurally cannot see them, and a naive exact-string scan would flag every one of them as
+        an orphan. This is deliberately narrower than the fixed $UnreferencedKeyAllowlist prefix
+        list: it is derived from what the code actually interpolates, so a new dynamic key family
+        the source builds this way is picked up automatically rather than needing a new allowlist
+        line. The allowlist stays for forms this cannot parse - like PrefixedLabelConverter's XAML
+        ConverterParameter, where the prefix is a string but the suffix comes from a bound enum with
+        no C# interpolation to read at all.
+    #>
+    param([Parameter(Mandatory = $true)][hashtable]$Config)
+
+    $patterns = [System.Collections.Generic.List[string]]::new()
+    # NOT `return $patterns` - PowerShell unrolls a collection returned through the pipeline, and an
+    # EMPTY one unrolls to nothing at all, so the caller's assignment becomes $null rather than an
+    # empty collection. android has no dynamic key construction today, so this path is exactly the
+    # one that would hit that trap.
+    if ($Config.Kind -ne 'resx') { return , @() }
+
+    foreach ($glob in $Config.SourceGlobs) {
+        $root = Join-Path $RepoRoot $glob
+        if (-not (Test-Path -LiteralPath $root)) { continue }
+
+        $files = Get-ChildItem -LiteralPath $root -Recurse -File -Include $Config.SourceExts |
+            Where-Object { $_.FullName -notmatch '[\\/](bin|obj|build|generated)[\\/]' -and
+                           $_.Name -ne 'Strings.Designer.cs' }
+
+        foreach ($file in $files) {
+            $text = Get-Content -LiteralPath $file.FullName -Raw -Encoding utf8
+            if ([string]::IsNullOrEmpty($text)) { continue }
+            $flat = $text -replace '\s+', ' '
+
+            foreach ($bracket in [regex]::Matches($flat, 'Instance\[([^\[\]]*)\]')) {
+                foreach ($interp in [regex]::Matches($bracket.Groups[1].Value, '\$"([^"]*)"')) {
+                    $template = $interp.Groups[1].Value
+                    # Split on each {...} hole, escape what is left as literal text, and rejoin with
+                    # ".*" for the hole - "SystemStatus_{id}_Title" becomes
+                    # ^SystemStatus_.*_Title$, which matches SystemStatus_Firewall_Title but not
+                    # some unrelated key that merely starts with "SystemStatus_".
+                    $segments = [regex]::Split($template, '\{[^}]*\}') | ForEach-Object { [regex]::Escape($_) }
+                    if ($segments.Count -lt 2) { continue }  # no hole at all - not actually dynamic
+                    [void]$patterns.Add('^' + ($segments -join '.*') + '$')
+                }
+            }
+        }
+    }
+
+    return , @($patterns | Sort-Object -Unique)
 }
 
 function Test-UndefinedKeys {
@@ -709,6 +1053,46 @@ function Test-UndefinedKeys {
         Add-Finding -Severity Error -Category 'Undefined: key used but never declared' -Platform $Config.Name `
             -Id "$($Config.Kind)/undefined/$key" `
             -Message "'$key' is referenced in code but defined in no localization file, so users see the raw key name. Used in: $shown"
+    }
+}
+
+# ---------------------------------------------------------------------------------------------
+# AXIS 6 - DECLARED BUT UNREFERENCED (the inverse of axis 3)
+# ---------------------------------------------------------------------------------------------
+function Test-UnreferencedKeys {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$BaseEntries,
+        [Parameter(Mandatory = $true)][string]$PlatformKey
+    )
+
+    $referenced = Get-ReferencedKeys -Config $Config
+    Write-Step "Found $($referenced.Count) distinct keys referenced in code."
+
+    # NOT wrapped in another @() here - Get-DynamicKeyTemplates already returns its collection via
+    # `return ,X`, which delivers exactly one pipeline object (the collection itself, empty or not).
+    # Wrapping that again in @() re-adds the unrolling PowerShell already skipped, turning an empty
+    # result into a 1-element array containing an empty array - Count 1 instead of 0. Confirmed by
+    # running both forms directly rather than assumed.
+    $dynamicPatterns = Get-DynamicKeyTemplates -Config $Config
+    if ($dynamicPatterns.Count -gt 0) {
+        Write-Step "Found $($dynamicPatterns.Count) dynamic key template(s) built by string interpolation."
+    }
+
+    $orphans = @(
+        $BaseEntries.Keys | Where-Object {
+            $key = $_
+            $BaseEntries[$key].Translatable -and
+            -not $referenced.ContainsKey($key) -and
+            -not (Test-KeyIsAllowlisted -Key $key -PlatformKey $PlatformKey) -and
+            -not ($dynamicPatterns | Where-Object { $key -match $_ } | Select-Object -First 1)
+        } | Sort-Object
+    )
+
+    foreach ($key in $orphans) {
+        Add-Finding -Severity Error -Category 'Unreferenced: key declared but never used' -Platform $Config.Name `
+            -Id "$($Config.Kind)/unreferenced/$key" `
+            -Message "'$key' is defined in English but nothing in code references it - either dead weight or a removed feature's leftover"
     }
 }
 
@@ -865,6 +1249,17 @@ function Format-Placeholder {
 Write-Host 'RemEx localization check' -ForegroundColor White
 Write-Host "Repository: $RepoRoot" -ForegroundColor DarkGray
 
+if ($SelfTest) {
+    $selfTestFailures = Invoke-SelfTest
+    if ($selfTestFailures -eq 0) {
+        Write-Host '  Self-test passed: the untranslated axis fires when it should and the summary line parses.' -ForegroundColor Green
+        exit 0
+    }
+
+    Write-Host "  $selfTestFailures self-test check(s) failed - this script is not measuring what it claims." -ForegroundColor Red
+    exit 1
+}
+
 $selected = if ($Platform -eq 'all') { @('pc', 'android') } else { @($Platform) }
 
 foreach ($platformKey in $selected) {
@@ -917,6 +1312,16 @@ foreach ($platformKey in $selected) {
         Write-Step 'Axis 4: placeholders match English...'
         Test-PlaceholderParity -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
     }
+
+    if ($Axis -in @('all', 'untranslated')) {
+        Write-Step 'Axis 5: values identical to English...'
+        Test-IdenticalToEnglish -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
+    }
+
+    if ($Axis -in @('all', 'unreferenced')) {
+        Write-Step 'Axis 6: keys declared but never referenced in code...'
+        Test-UnreferencedKeys -Config $config -BaseEntries $baseEntries -PlatformKey $platformKey
+    }
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -934,7 +1339,7 @@ if ($UpdateBaseline) {
         )
         known   = @($script:Findings | ForEach-Object { $_.Id } | Sort-Object -Unique)
     }
-    $payload | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $baselinePath -Encoding utf8
+    [IO.File]::WriteAllText($baselinePath, ((($payload | ConvertTo-Json -Depth 4) -replace "`r`n", "`n") + "`n"), [Text.UTF8Encoding]::new($false))
     Write-Heading 'Baseline updated'
     Write-Host "  Wrote $($payload.known.Count) known finding(s) to scripts/localization-baseline.json" -ForegroundColor Yellow
     Write-Host '  Review that diff carefully - every line you added is a defect you chose not to fix.' -ForegroundColor Yellow
@@ -972,6 +1377,20 @@ if ($active.Count -eq 0) {
     Write-Host '  No new localization problems. Every key exists in all 9 files on both platforms,' -ForegroundColor Green
     Write-Host '  every key used in code is declared somewhere, and every translation takes the' -ForegroundColor Green
     Write-Host '  same arguments as its English source.' -ForegroundColor Green
+
+    # THIS IS NOT THE SAME AS "the translations are done", and the difference is what RemEx-0bygp
+    # was about. Everything above is a statement about structure. Whether a value was translated at
+    # all is axis 5, and its existing findings are in the baseline - so a green run here is
+    # compatible with hundreds of strings still sitting in English. Say the number rather than
+    # letting the green imply otherwise.
+    $untranslated = @($known | Where-Object { $_.Category -like 'Untranslated:*' }).Count
+    if ($untranslated -gt 0) {
+        Write-Host ''
+        Write-Host "  $untranslated string(s) are still byte-identical to English and known to the baseline." -ForegroundColor DarkYellow
+        Write-Host '  That is a backlog, not a pass: -Axis untranslated -NoBaseline lists them.' -ForegroundColor DarkYellow
+    }
+
+    Write-Output "LOCALIZATION-SUMMARY errors=0 warnings=0 known=$($known.Count)"
     exit 0
 }
 
@@ -1026,6 +1445,11 @@ if ($categories -contains 'Undefined: key used but never declared') {
     Write-Host '   - "key used but never declared": the app will show the user the raw key name in' -ForegroundColor Gray
     Write-Host '     every language. Either add the key to all 9 files, or fix the typo in the code.' -ForegroundColor Gray
 }
+if ($categories -contains 'Unreferenced: key declared but never used') {
+    Write-Host '   - "declared but never used": remove the key from all 9 (or 9 android) files, or if' -ForegroundColor Gray
+    Write-Host '     it really is consumed dynamically, add its prefix to $UnreferencedKeyAllowlist' -ForegroundColor Gray
+    Write-Host '     in this script with a comment pointing at the call site that builds the rest.' -ForegroundColor Gray
+}
 if ($categories -like 'Placeholder:*') {
     Write-Host '   - "locale has one English lacks": nothing supplies that argument, so the user' -ForegroundColor Gray
     Write-Host '     of that language sees the placeholder printed literally, or the screen throws.' -ForegroundColor Gray
@@ -1044,6 +1468,12 @@ if ($categories -like '*Staleness*') {
 }
 Write-Host '   - If a finding is wrong, tune -SimilarityThreshold / -MinSimilarityLength rather' -ForegroundColor Gray
 Write-Host '     than deleting the check. If it is right but not yours to fix today, file a bead.' -ForegroundColor Gray
+
+# THE ONLY LINE OF THIS SCRIPT A CALLER CAN READ. Everything above goes through Write-Host, which
+# writes to the console and cannot be captured or piped - so verify.ps1 could see the exit code and
+# nothing else, and printed "Translations are complete and current" over the top of warnings it had
+# no way to know about (RemEx-0bygp). This goes to the success stream on purpose.
+Write-Output "LOCALIZATION-SUMMARY errors=$errorCount warnings=$warningCount known=$($known.Count)"
 
 $failed = ($errorCount -gt 0) -or ($StrictStaleness -and $warningCount -gt 0)
 if ($failed) { exit 1 }

@@ -1,16 +1,97 @@
 package com.clindsay94.remex.service
 
 import android.util.Base64
+import java.util.Base64 as JavaBase64
 import java.io.File
 import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+
+/**
+ * Why an incoming push could not be received, for somebody who is owed an explanation (RemEx-gipu).
+ *
+ * A reason code rather than a sentence, because [FileHostHandler] is pure logic over injected seams
+ * and has no Context: turning this into something a person reads is the Android layer's job, and
+ * prose here would be untranslated English in eight of the nine languages.
+ *
+ * **ONLY RAISED WHERE A GRANT FOR THAT TRANSFER ID EXISTS.** That is the line, and it is narrower
+ * than "after a tap": on a device that remembered an earlier answer, `requestConsent` grants without
+ * prompting, so nobody taps anything and a refusal is still worth reporting. What the line does
+ * guarantee is that this device minted the id after deciding to accept, so an offer under an id
+ * nobody granted — the forged case — stays silent. Notifying there would let a paired PC post silent
+ * notifications on somebody's phone at will, by inventing ids.
+ *
+ * That protection is real but partial: on an auto-accept device a hostile PC can still drive
+ * [NoWritableSharedFolder] in a loop with no interaction, which is why the reporting side dedupes.
+ */
+enum class PushRefusal {
+    /** Nothing writable is shared, so there is nowhere to put the file. The user can fix this. */
+    NoWritableSharedFolder,
+
+    /**
+     * The offer named a different file than the grant it used.
+     *
+     * NOT the forged case — a grant for this id exists, so this device did accept something under it.
+     * The user agreed to receive one file and the PC negotiated another (RemEx-tutz), which from their
+     * side looks like the file they approved simply never arriving.
+     */
+    OfferedFileDiffers,
+
+    /** A name containing a path separator, which this device cannot file under. Not user-fixable. */
+    UnusableFileName,
+
+    /** The folder this device picked went away or turned read-only. Re-sharing it fixes this. */
+    DestinationUnavailable,
+
+    /**
+     * The bytes arrived but could not be committed — incomplete, hash mismatch, or the destination
+     * file could not be created. The remedy is the same in every case: ask the PC to send it again.
+     */
+    CouldNotBeSaved,
+
+    /**
+     * This device could not open the binary channel the transfer needs, so it refused the offer.
+     *
+     * Distinct from [CouldNotBeSaved], which is scoped to "the bytes arrived and could not be
+     * committed" — here nothing arrived at all, and the remedy is different: try again, and re-pair
+     * if it persists, since a missing SPKI pin is one of the three causes. The user is owed this one
+     * as much as any other push refusal: they answered a prompt, and without it the file they
+     * approved simply never appears (RemEx-iq484).
+     */
+    ChannelUnavailable,
+}
+
+/**
+ * Which shared folder a pushed file goes into, or null when nothing writable is shared (RemEx-h1p5).
+ *
+ * Top-level and pure so the choice can be tested without a handler, a socket or a filesystem — it is
+ * the whole decision, and everything around it is plumbing.
+ *
+ * **FIRST WRITABLE, AND THE ORDER IS NOT A GUARANTEE — REVIEW CAUGHT THIS BEING CLAIMED AS ONE.**
+ * Today the list arrives in the order folders were shared, but only incidentally: the underlying
+ * store is a DataStore `Set<String>` (`SettingsManager.sharedFolderUrisFlow`) with no ordering
+ * contract, preserved by `Set.plus` happening to return a LinkedHashSet. It also genuinely moves —
+ * `sharedRoots()` drops any root it can no longer read, so unmounting the card holding the first
+ * shared folder shifts the destination to the next one with nothing said to anybody.
+ *
+ * So this is "wherever the provider puts first", which is stable enough to ship and not stable enough
+ * to promise. Giving the user an explicit "save incoming files here" choice is RemEx-pwkc's business
+ * and would replace this rule outright.
+ *
+ * Read-only roots are skipped rather than tried and failed: `sharedRoots()` admits a root on
+ * `canRead` alone, so a readable-but-unwritable share is a real entry in this list, and offering to
+ * receive into one produces a refusal after the user has already agreed to the transfer.
+ */
+internal fun pushDestinationRoot(roots: List<RootDescriptor>): String? =
+    roots.firstOrNull { it.isWritable && it.rootId.isNotBlank() }?.rootId
 
 /** Sends a control-plane JSON envelope to the peer over the native `/ws` socket. */
 fun interface ControlMessageSender {
@@ -22,6 +103,46 @@ interface RootMutator {
     suspend fun removeRoot(rootId: String): Boolean
 
     suspend fun addRoot(sourceRootId: String, sourceRelativePath: String?): Boolean
+}
+
+/**
+ * Capacity for [FileHostHandler.HostSendSession.ackSignal] (RemEx-3uv7s). **MUST STAY
+ * [Channel.CONFLATED]** — see that field's KDoc for why a rendezvous buffer silently drops an ack.
+ *
+ * Pulled out to one named constant, rather than left as a literal on the field, so [awaitAck]'s
+ * direct coverage test can build its probe channel against the SAME value production uses. A test
+ * that typed `Channel.CONFLATED` again itself would go on passing forever if this constant were
+ * ever flipped to [Channel.RENDEZVOUS] — the test's channel and production's would simply have
+ * quietly diverged.
+ *
+ * That coverage test pins the CONSTANT, not the call site — typing `Channel<Unit>(Channel.RENDEZVOUS)`
+ * directly where `HostSendSession.ackSignal` is built would bypass this constant entirely and leave
+ * the whole suite green while a real transfer freezes mid-file. `FileHostHandlerTest`'s
+ * `ackSignal_isBuiltFromTheCapacityConstant_notALiteral` source-scans for that construction site and
+ * fails on anything but this constant appearing there — see `docs/REGRESSION-GUARDS.md`.
+ */
+internal const val ACK_SIGNAL_CAPACITY = Channel.CONFLATED
+
+/**
+ * Parks until [conditionMet] holds, re-checking it after every token drained from [ackSignal].
+ * Identical in behaviour to the inlined `while (!conditionMet()) ackSignal.receive()` it replaces
+ * at both [FileHostHandler.HostSendSession] wait sites (backpressure and the completion drain) —
+ * this is a refactor for testability, not a change to the wait itself (RemEx-3uv7s).
+ *
+ * Extracted as a free function taking the channel, rather than left as a method on the session,
+ * specifically so the "ack arrives with nobody parked in receive()" race described on
+ * [FileHostHandler.HostSendSession.ackSignal] can be driven directly and synchronously in a test:
+ * build a channel with [ACK_SIGNAL_CAPACITY], call `trySend` on it BEFORE calling this function —
+ * that ordering IS the race, a token delivered before anyone is waiting — and confirm the token
+ * survives rather than being dropped. See
+ * `ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks` in FileHostHandlerTest.kt,
+ * which used to be a documented, measured gap (RemEx-68wwl) rather than an oversight; it is
+ * covered now.
+ */
+internal suspend fun awaitAck(ackSignal: Channel<Unit>, conditionMet: () -> Boolean) {
+    while (!conditionMet()) {
+        ackSignal.receive()
+    }
 }
 
 /**
@@ -49,9 +170,68 @@ class FileHostHandler(
      * tests that never exercise push keep working; AndroidFileTransferHost passes the shared one.
      */
     private val pushConsent: PushConsentRegistry = PushConsentRegistry(),
+    /**
+     * Told when a push the user accepted cannot be received, so somebody can be shown why
+     * (RemEx-gipu). Defaulted to a no-op so the existing tests and call sites are unaffected;
+     * [AndroidFileTransferHost] supplies the real one.
+     */
+    private val onPushRefused: (PushRefusal) -> Unit = {},
+    /**
+     * Told when a pushed file has actually landed, so somebody can be shown that it did (RemEx-pwkc).
+     *
+     * The second argument is a `content://` URI for the saved file, or null when the destination has
+     * none — it is what makes Open and Share possible, and without it the notification can only say
+     * that something arrived.
+     */
+    private val onPushReceived: (fileName: String, contentUri: String?) -> Unit = { _, _ -> },
+    /**
+     * How many bytes may be outstanding unacked before the send loop stops reading (RemEx-68wwl).
+     *
+     * A TEST SEAM. It adopts the PATTERN recorded on the C# side's
+     * `TransferSessionManager.MaxTransferBytes` — a const made injectable so a guard gets coverage,
+     * because one that never goes red "is exactly how a guard like this gets deleted by a tidy-up".
+     *
+     * **IT IS NOT THE COUNTERPART OF THAT PROPERTY, AND SAYING SO WOULD BE WORSE THAN SAYING
+     * NOTHING** (review). `MaxTransferBytes` is the 5 GB RECEIVE-side total-transfer ceiling
+     * (`TransferSessionManager.cs:67`, applied at `:201`); it has nothing to do with backpressure.
+     * The C# BACKPRESSURE loop has the same shape now: an injectable init-only seam,
+     * `MaxUnackedBytes` (`TransferSessionManager.cs:90`), compared against in `StreamSenderAsync`
+     * at `TransferSessionManager.cs:1337` and covered by `HostSendBackpressureTests` (RemEx-xefvb).
+     * `FileTransferEngine.runUpload`'s upload-path loop is covered the same way, via the
+     * `UploadSendLoop` collaborator (RemEx-yi7id).
+     *
+     * Defaulted, so production and every existing call site are unchanged.
+     *
+     * **MUST EXCEED THE PEER'S ACK INTERVAL.** The PC acks only on `Final || committed - lastAcked
+     * >= AckIntervalBytes` (4 MB), so a cap below that against a real peer deadlocks in silence: the
+     * sender parks here, the receiver has less buffered than its interval and nothing final, and
+     * neither moves. A value under 4 MB is valid ONLY against a fake that acks by hand, which is
+     * what the tests do. Deliberately not a `require` — that would reject the tests' cap of 100.
+     *
+     * What it guards is real: this is the only thing stopping a sender from queueing an unbounded
+     * amount of unacked data into a peer that has stopped reading. It is NOT the completion drain —
+     * see docs/REGRESSION-GUARDS.md, which exists partly because those two were once confused.
+     */
+    private val maxUnackedBytes: Long = FileTransferLimits.MAX_UNACKED_BYTES.toLong(),
 ) {
     private val receiveSessions = ConcurrentHashMap<String, HostReceiveSession>()
     private val sendSessions = ConcurrentHashMap<String, HostSendSession>()
+
+    /**
+     * Hands a refusal to whoever can show it, without letting that get in the way of the protocol.
+     *
+     * **LAUNCHED, NOT CALLED INLINE, AND REVIEW CAUGHT THE VERSION THAT WAS.** The reporter ends in a
+     * `NotificationManagerCompat.notify` — a synchronous binder call that can throw. Called inline
+     * before `sendReady`, a throw would skip the decline entirely: the PC would hear nothing, sit out
+     * its thirty-second deadline and log "the peer never acknowledged", turning a clean refusal into
+     * a hang. In the method whose whole purpose is removing unexplained silence.
+     *
+     * Dispatching also keeps it off the inbound control-message collector, which this file already
+     * requires of anything slow — the consent prompt is launched for exactly that reason.
+     */
+    private fun reportRefusal(refusal: PushRefusal) {
+        scope.launch { onPushRefused(refusal) }
+    }
 
     /** Dispatches one inbound control-plane message. Returns true if this handler consumed it. */
     suspend fun handleControlMessage(json: String): Boolean {
@@ -70,6 +250,7 @@ class FileHostHandler(
             }
             "file_volumes_request" -> { handleVolumes(obj.optJSONObject("fileVolumesRequest")); true }
             "file_search_request" -> { handleSearch(obj.optJSONObject("fileSearchRequest")); true }
+            "file_manifest_request" -> { handleManifest(obj.optJSONObject("fileManifestRequest")); true }
             "file_metadata_request" -> { handleMetadata(obj.optJSONObject("fileMetadataRequest")); true }
             "file_thumbnail_request" -> { handleThumbnail(obj.optJSONObject("fileThumbnailRequest")); true }
             "file_transfer_offer" -> { handleOffer(obj.optJSONObject("fileTransferOffer")); true }
@@ -112,6 +293,7 @@ class FileHostHandler(
                     put(FileManageOperations.MOVE)
                     put(FileManageOperations.MKDIR)
                     put("search")
+                    put("manifest")
                 },
             )
             put("fullBrowse", rootsProvider.isFullBrowseGranted())
@@ -419,6 +601,217 @@ class FileHostHandler(
         sender.send(envelope("file_search_response", "fileSearchResponse", payload, v3 = true))
     }
 
+    /**
+     * Answers `file_manifest_request` (RemEx-q3twg): one page of a recursive subtree listing, so a peer
+     * can fan a folder out into the ordinary per-file transfers it already performs.
+     *
+     * The manifest is a LISTING and moves no bytes — every file it names still faces the normal
+     * transfer authorization when it is actually asked for.
+     *
+     * Mirrors the PC host's walk exactly, and the two halves must stay in step: pre-order, children in
+     * ordinal name order, directories emitted in their own right (so an empty folder survives the trip),
+     * and a cursor of `{emittedSoFar}|{lastRelativePath}` that carries all the resume state there is. The
+     * cursor is opaque to clients by contract, which is what lets this side hold no per-request state —
+     * a page survives a reconnect, and an abandoned enumeration costs nothing to forget.
+     */
+    private fun handleManifest(req: JSONObject?) {
+        req ?: return
+        val requestId = req.optString("requestId")
+        val rootId = req.optString("rootId")
+        val relativePath = if (req.has("relativePath")) req.optString("relativePath").trim('/') else ""
+        val requestedPageSize = req.optInt("maxEntries", FileTransferLimits.MANIFEST_DEFAULT_ENTRIES_PER_PAGE)
+        val pageSize =
+            if (requestedPageSize <= 0) FileTransferLimits.MANIFEST_DEFAULT_ENTRIES_PER_PAGE
+            else minOf(requestedPageSize, FileTransferLimits.MANIFEST_MAX_ENTRIES_PER_PAGE)
+
+        val base = facade.resolve(rootId, relativePath)
+        if (base == null || !base.canRead || !base.isDirectory) {
+            sendManifest(requestId, rootId, relativePath, JSONArray(), null, null, false, "Folder not found.")
+            return
+        }
+
+        val (emittedBefore, cursorPath) = parseManifestCursor(req.optString("cursor"))
+        val cursorSegments = cursorPath?.split('/')?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
+
+        val state = ManifestPageState(pageSize = pageSize, emittedBefore = emittedBefore)
+        manifestWalk(base, relativePath, cursorSegments, 0, state)
+
+        val totals =
+            if (cursorSegments == null) countSubtree(base) else null
+
+        val nextCursor =
+            if (state.truncated || state.lastPath == null || state.entries.length() < pageSize) null
+            else "${emittedBefore + state.entries.length()}|${state.lastPath}"
+
+        sendManifest(requestId, rootId, relativePath, state.entries, nextCursor, totals, state.truncated, null)
+    }
+
+    /** Running state of one manifest page. See [handleManifest]. */
+    private class ManifestPageState(val pageSize: Int, val emittedBefore: Long) {
+        val entries = JSONArray()
+        var lastPath: String? = null
+        var truncated = false
+        val full: Boolean get() = truncated || entries.length() >= pageSize
+    }
+
+    /** Whole-subtree totals for the first page. [complete] is false when the budget cut the count short. */
+    private class ManifestTotals(val files: Long, val directories: Long, val bytes: Long, val complete: Boolean)
+
+    /**
+     * Emits one directory's children in ordinal name order, recursing depth-first. While
+     * [cursorSegments] is non-null the walk is POSITIONING rather than emitting: names ordering before
+     * the cursor segment at this [depth] are skipped, the name equal to it is descended into (it was
+     * emitted on an earlier page), and everything after it resumes ordinary emission.
+     */
+    private fun manifestWalk(
+        dir: FileNode,
+        dirRelative: String,
+        cursorSegments: List<String>?,
+        depth: Int,
+        state: ManifestPageState,
+    ) {
+        if (state.full) return
+
+        val children =
+            try {
+                dir.listChildren().sortedWith(compareBy { it.name })
+            } catch (e: Exception) {
+                // An unreadable subtree is skipped, not fatal — the same choice handleSearch makes.
+                // Failing the whole folder because one directory said no is the worse answer.
+                return
+            }
+
+        var positioning = cursorSegments != null && depth < cursorSegments.size
+        var segments = cursorSegments
+
+        for (child in children) {
+            if (state.full) return
+
+            val childRelative = if (dirRelative.isEmpty()) child.name else "$dirRelative/${child.name}"
+
+            if (positioning) {
+                val comparison = child.name.compareTo(segments!![depth])
+                if (comparison < 0) continue
+                if (comparison == 0) {
+                    val isCursorLeaf = depth == segments.size - 1
+                    if (child.isDirectory) {
+                        manifestWalk(
+                            child,
+                            childRelative,
+                            if (isCursorLeaf) null else segments,
+                            if (isCursorLeaf) 0 else depth + 1,
+                            state,
+                        )
+                    }
+                    // The cursor entry itself was emitted on the previous page; never emit it twice.
+                    continue
+                }
+                // Past the cursor at this level: this sibling and everything after it is new.
+                positioning = false
+                segments = null
+            }
+
+            if (state.emittedBefore + state.entries.length() >= FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) {
+                state.truncated = true
+                return
+            }
+
+            state.entries.put(
+                JSONObject().apply {
+                    put("relativePath", childRelative)
+                    put("isDirectory", child.isDirectory)
+                    put("sizeBytes", if (child.isDirectory) 0L else child.length)
+                    put("modifiedUnixMs", child.lastModifiedMs)
+                }
+            )
+            state.lastPath = childRelative
+
+            if (child.isDirectory) manifestWalk(child, childRelative, null, 0, state)
+        }
+    }
+
+    /**
+     * Counts the whole subtree for the first page's totals, giving up at
+     * [FileTransferLimits.MANIFEST_COUNT_BUDGET_ENTRIES] and reporting the numbers as lower bounds.
+     * Iterative, so a pathological depth cannot blow the stack.
+     */
+    private fun countSubtree(base: FileNode): ManifestTotals {
+        var files = 0L
+        var directories = 0L
+        var bytes = 0L
+        var visited = 0L
+        val pending = ArrayDeque<FileNode>()
+        pending.add(base)
+
+        while (pending.isNotEmpty()) {
+            val dir = pending.removeFirst()
+            val children =
+                try {
+                    dir.listChildren()
+                } catch (e: Exception) {
+                    continue
+                }
+
+            for (child in children) {
+                if (++visited > FileTransferLimits.MANIFEST_COUNT_BUDGET_ENTRIES) {
+                    return ManifestTotals(files, directories, bytes, complete = false)
+                }
+                if (child.isDirectory) {
+                    directories++
+                    pending.add(child)
+                } else {
+                    files++
+                    bytes += child.length
+                }
+            }
+        }
+
+        return ManifestTotals(files, directories, bytes, complete = true)
+    }
+
+    /**
+     * Cursor format: `{entriesEmittedSoFar}|{lastRelativePath}`. A malformed cursor restarts from the
+     * beginning rather than failing: it is client-supplied text, and the position it names grants
+     * nothing the request did not already have.
+     */
+    private fun parseManifestCursor(cursor: String?): Pair<Long, String?> {
+        if (cursor.isNullOrBlank()) return 0L to null
+        val separator = cursor.indexOf('|')
+        if (separator <= 0) return 0L to null
+        val emitted = cursor.substring(0, separator).toLongOrNull()?.takeIf { it >= 0 } ?: return 0L to null
+        val path = cursor.substring(separator + 1)
+        return if (path.isEmpty()) 0L to null else emitted to path
+    }
+
+    private fun sendManifest(
+        requestId: String,
+        rootId: String,
+        relativePath: String,
+        entries: JSONArray,
+        nextCursor: String?,
+        totals: ManifestTotals?,
+        truncated: Boolean,
+        error: String?,
+    ) {
+        val payload =
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relativePath)
+                put("entries", entries)
+                if (nextCursor != null) put("nextCursor", nextCursor)
+                if (totals != null) {
+                    put("totalFiles", totals.files)
+                    put("totalDirectories", totals.directories)
+                    put("totalBytes", totals.bytes)
+                    put("totalsComplete", totals.complete)
+                }
+                put("truncated", truncated)
+                if (error != null) put("errorMessage", error)
+            }
+        sender.send(envelope("file_manifest_response", "fileManifestResponse", payload, v3 = true))
+    }
+
     private fun handleMetadata(req: JSONObject?) {
         req ?: return
         val requestId = req.optString("requestId")
@@ -483,10 +876,55 @@ class FileHostHandler(
         val destRoot = if (req.has("destRoot")) req.optString("destRoot") else null
         val destRelativePath = if (req.has("destRelativePath")) req.optString("destRelativePath") else null
         val fileName = req.optString("fileName")
+        // Defaulted to 0, NOT to the -1 that mintPushGrants uses, and the difference is load-bearing:
+        // an offer that omits the size must not accidentally match a grant minted from an offer that
+        // also omitted it. Harmonising these two defaults would silently reopen that hole with every
+        // test still green. (RemEx-ccqb.)
         val size = req.optLong("size", 0L)
         val resumeRequested = req.optBoolean("resumeRequested", false)
 
         if (transferId.isBlank()) return
+
+        // `size` is a bare long on the wire — remex.core declares it `required long Size` with no
+        // validator — so a peer can state a negative one. Nothing downstream is written to expect
+        // that: it would disable the byte ceiling in HostReceiveSession and let the completion check
+        // wave the transfer through, which is the same unbounded-write hole a zero size used to open.
+        // Refused for every mode, because an upload has no business declaring one either.
+        if (size < 0) {
+            sendReady(transferId, false, 0, "A transfer cannot declare a negative size.")
+            return
+        }
+
+        // **ACCEPTING AN OFFER WE CANNOT CARRY IS WORSE THAN REFUSING IT (RemEx-iq484).** Every mode
+        // below moves its bytes over the binary channel, and the Android wiring opens that channel
+        // lazily, in response to this very offer - AndroidFileTransferHost awaits ensureBinaryChannel
+        // immediately before handing the message here. That await can fail three silent ways: a blank
+        // host, no pinned SPKI for it, or a dial the host refused. Its result was discarded, so a
+        // failure arrived here as an ordinary offer and was answered accepted=true.
+        //
+        // What the PC did with that: believed the phone was ready, found no channel, logged "the peer
+        // acknowledged but its binary channel is not connected" and sent NOTHING back. No cancel, no
+        // result. The transfer was abandoned mid-negotiation, this device kept a receive session and a
+        // staging .remexpart that only the 7-day orphan sweep would collect, and the person watching
+        // saw a transfer they had accepted simply never arrive.
+        //
+        // Declining is symmetric with what the PC already does in the mirror-image case: when IT has
+        // no channel on the download path it answers accepted=false with a reason rather than going
+        // quiet (TransferSessionManager.cs:1184-1188). The reason names THIS device deliberately - the
+        // PC's own message says only that the channel is not connected, which reads as the PC's fault.
+        if (!channel.isOpen) {
+            sendReady(transferId, false, 0, "This device could not open its binary file channel.")
+
+            // REPORTED ONLY WHEN A GRANT EXISTS, WHICH IS THE SAME RULE EVERY OTHER PUSH REFUSAL
+            // FOLLOWS. A user who answered a prompt is owed an explanation for the silence that
+            // came after it; a download or upload raised no prompt and has a caller to report to.
+            // The grant check is also what stops a paired PC from using a dead channel to raise
+            // notifications for pushes nobody agreed to - hasGrant, not isGrantedFor, because a
+            // grant for the wrong file still means this user answered something under this id.
+            if (pushConsent.hasGrant(transferId)) reportRefusal(PushRefusal.ChannelUnavailable)
+            return
+        }
+
         when (mode) {
             FileTransferModes.DOWNLOAD -> beginHostSend(transferId, destRoot, destRelativePath, fileName)
             FileTransferModes.UPLOAD ->
@@ -501,11 +939,70 @@ class FileHostHandler(
                 // Checked HERE rather than in beginHostReceive because UPLOAD shares that function
                 // and must not be gated - an upload targets a folder the user already shared for
                 // writing, so the share is the consent.
-                if (!pushConsent.isGranted(transferId)) {
+                // Checked against the FILE NAME AND SIZE, not the id alone. An id proves some prompt
+                // was answered; only the name and size prove it was answered about this file. Without
+                // the name, an id minted for one file could be negotiated carrying another
+                // (RemEx-tutz); without the size, the same name could arrive five gigabytes larger
+                // than the figure the prompt showed (RemEx-ccqb). Both were accepted with no second
+                // prompt.
+                //
+                // No release on this path, unlike the declines inside beginHostReceive: the id may be
+                // perfectly valid and merely mis-addressed, and throwing away a grant on the strength
+                // of a message that failed its own check would let a bad offer cancel a good one.
+                if (!pushConsent.isGrantedFor(transferId, fileName, size)) {
                     sendReady(transferId, false, 0, "This push was not accepted on the device.")
+
+                    // A MISMATCH IS NOT THE FORGED CASE, and an earlier version of this reported
+                    // neither. isGrantedFor fails two ways: no grant for the id at all (nobody here
+                    // agreed to anything — stay silent), or a grant that names a different file. The
+                    // second means this device DID accept something under that id and the PC then
+                    // negotiated another file, which to the user is simply the file they approved
+                    // never arriving. hasGrant is what tells the two apart.
+                    if (pushConsent.hasGrant(transferId)) reportRefusal(PushRefusal.OfferedFileDiffers)
                     return
                 }
-                beginHostReceive(transferId, destRoot, destRelativePath, fileName, size, resumeRequested)
+
+                // **THE PHONE PICKS WHERE A PUSHED FILE LANDS, NOT THE PC (RemEx-h1p5).** The PC sends
+                // no destRoot at all — it has no way to know what this device has shared, and no
+                // business choosing a folder on somebody else's phone. beginHostReceive requires one
+                // and refused every push outright, so the consent-gated push has never delivered a
+                // byte: the user tapped Allow, the PC got its transfer ids, and each file was then
+                // declined with "A destination shared root is required."
+                //
+                // Resolving it from this device's own shared folders is the same reasoning the UPLOAD
+                // branch above already relies on — a folder shared for writing IS the consent to write
+                // there — with the push prompt on top of it, not instead of it.
+                val pushRoot = pushDestinationRoot(facade.listRoots())
+                if (pushRoot == null) {
+                    // Release the id: this transfer is over, and a grant left behind would sit in the
+                    // registry authorising a push that can never arrive.
+                    pushConsent.release(transferId)
+                    // The most actionable refusal there is: a file was accepted and there is nowhere
+                    // to put it.
+                    reportRefusal(PushRefusal.NoWritableSharedFolder)
+                    sendReady(
+                        transferId,
+                        false,
+                        0,
+                        "No folder on this device is shared for writing, so there is nowhere to save " +
+                            "the file. Share a folder in RemEx first.",
+                    )
+                    return
+                }
+
+                // Null relative path: pushed files go to the top of the chosen folder. The PC named no
+                // subfolder and inventing one would put the file somewhere the user did not expect.
+                // It is also what keeps the fileName guard below sufficient — with no relative path
+                // there is no path assembly for a crafted name to escape through.
+                beginHostReceive(
+                    transferId,
+                    pushRoot,
+                    null,
+                    fileName,
+                    size,
+                    resumeRequested,
+                    replaceExisting = false,
+                )
             }
             else -> sendReady(transferId, false, 0, "Unsupported transfer mode.")
         }
@@ -519,18 +1016,42 @@ class FileHostHandler(
         fileName: String,
         size: Long,
         resumeRequested: Boolean,
+        /** True for UPLOAD (replace on name collision), false for PUSH (let SAF uniquify). */
+        replaceExisting: Boolean = true,
     ) {
+        // Every decline below hands a PUSH grant back, and the reason is narrower than it was when
+        // this was written. A grant is now bound to the file name it was minted for (RemEx-tutz), so
+        // a leftover one can only ever re-deliver the very file the user approved — it is no longer a
+        // blank cheque a hostile PC could spend on something else. What is left is simply that these
+        // declines end the transfer: the destination is unusable or the name is unfilable, and a grant
+        // for a transfer that can never happen is the wrong thing to keep sitting in the registry.
+        //
+        // Contrast the name-mismatch check in the PUSH branch, which deliberately does NOT release:
+        // a decline here is evidence about the TRANSFER, while a mismatch is evidence about one
+        // MESSAGE, and the grant behind it may be perfectly good. (RemEx-h1p5, RemEx-tutz.)
+        //
+        // The refusal is also reported to whoever can show it (RemEx-gipu), but ONLY for a push: the
+        // user answered a prompt and is owed an explanation for the silence that followed. An upload
+        // is the PC's own operation and the PC already sees the decline reason.
+        fun decline(reason: String, refusal: PushRefusal) {
+            if (!replaceExisting) {
+                pushConsent.release(transferId)
+                reportRefusal(refusal)
+            }
+            sendReady(transferId, false, 0, reason)
+        }
+
         if (destRoot.isNullOrBlank()) {
-            sendReady(transferId, false, 0, "A destination shared root is required.")
+            decline("A destination shared root is required.", PushRefusal.NoWritableSharedFolder)
             return
         }
         if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\')) {
-            sendReady(transferId, false, 0, "Invalid file name.")
+            decline("Invalid file name.", PushRefusal.UnusableFileName)
             return
         }
         val parent = facade.resolve(destRoot, (destRelativePath ?: "").trim('/'))
         if (parent == null || !parent.canWrite) {
-            sendReady(transferId, false, 0, "Destination folder not found or read-only.")
+            decline("Destination folder not found or read-only.", PushRefusal.DestinationUnavailable)
             return
         }
 
@@ -574,6 +1095,7 @@ class FileHostHandler(
                 digest = digest,
                 bytesReceived = startOffset,
                 lastAcked = startOffset,
+                replaceExisting = replaceExisting,
             )
         receiveSessions[transferId]?.close()
         receiveSessions[transferId] = session
@@ -603,33 +1125,132 @@ class FileHostHandler(
 
         val session = HostSendSession(transferId)
         sendSessions[transferId] = session
-        channel.registerSink(transferId, session)
 
+        // STARTED LAZILY SO session.job IS SET BEFORE THE BODY CAN RUN (review of RemEx-xrb2v).
+        // `session.job = scope.launch { … }` only writes the field when launch RETURNS, and on any
+        // dispatcher but Unconfined the body can already be suspended in the drain by then. Both of
+        // this send's abort paths are `job?.cancel()` — onChannelClosed and the inbound ERROR frame —
+        // so a null job in that window makes them silent no-ops and the drain, which has no deadline
+        // by design, waits until the socket itself drops. The drain's whole safety argument rests on
+        // those two cancels actually landing.
         session.job =
-            scope.launch {
+            scope.launch(start = CoroutineStart.LAZY) {
                 val digest = MessageDigest.getInstance("SHA-256")
                 var sent = 0L
                 try {
                     val input = facade.openInput(node) ?: throw IllegalStateException("Cannot open source.")
                     input.use {
-                        val buf = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
-                        while (true) {
-                            val read = it.read(buf)
-                            if (read <= 0) break
+                        // TWO BUFFERS AND A ONE-CHUNK LOOKAHEAD, so `final` is derived from EOF rather
+                        // than from `size` (review of RemEx-xrb2v). `size` is node.length, read BEFORE
+                        // the file was opened, and it is not reliable: FileSystemFacade returns
+                        // DocumentFile.length(), which is 0 whenever a SAF provider omits COLUMN_SIZE.
+                        // The old `sent + read >= size` then marked the FIRST frame final on a
+                        // multi-megabyte file, and on a file that had shrunk since it was measured it
+                        // marked NO frame final at all. Reading one chunk ahead removes the dependence.
+                        //
+                        // Swapped rather than copied: this runs once per 64 KB of every transfer, and
+                        // copying each chunk into a right-sized array would add an allocation per frame.
+                        var cur = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
+                        var next = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
+                        var curLen = it.read(cur)
+                        while (curLen > 0) {
+                            val nextLen = it.read(next)
+                            val isFinal = nextLen <= 0
                             // Backpressure: never exceed the unacked cap.
-                            while (sent - session.committedOffset > FileTransferLimits.MAX_UNACKED_BYTES) {
-                                session.ackSignal.receive()
-                            }
-                            val isFinal = sent + read >= size
-                            if (!FileTransferChannelClient.sendData(transferId, sent, buf, read, isFinal)) {
+                            awaitAck(session.ackSignal) { sent - session.committedOffset <= maxUnackedBytes }
+                            if (!channel.sendData(transferId, sent, cur, curLen, isFinal)) {
                                 throw IllegalStateException("Binary channel closed.")
                             }
-                            digest.update(buf, 0, read)
-                            sent += read
+                            digest.update(cur, 0, curLen)
+                            sent += curLen
+
+                            val swap = cur
+                            cur = next
+                            next = swap
+                            curLen = nextLen
                         }
                     }
-                    val sha = Base64.encodeToString(digest.digest(), Base64.NO_WRAP)
+
+                    // WHAT WE PROMISED AND WHAT WE SENT MUST MATCH, and a mismatch is loud rather than
+                    // silent (review). The PC negotiated this transfer against `size`; sending a
+                    // different number of bytes leaves it verifying a file it was told the wrong length
+                    // for. Both directions were previously silent: a file that shrank produced a
+                    // permanent hang below, and a provider reporting 0 made the drain a no-op and left
+                    // this bead's bug fully live behind a guard doc claiming it was fixed.
+                    // GATED ON size > 0, BECAUSE ZERO MEANS "UNKNOWN" ON THIS WIRE, NOT "EMPTY".
+                    // The PC receiver says so explicitly and treats it as a product decision:
+                    // TransferSessionManager.cs:60 — "a declared size of ZERO is legitimate — a phone
+                    // reports it for a content URI whose length it cannot read" — and it gates both
+                    // its overshoot bound (:345) and its completion check (:385) on ExpectedSize > 0.
+                    // An unconditional throw here would have failed every download from a SAF provider
+                    // that omits COLUMN_SIZE: a path that works today, where the ONLY defect was the
+                    // missing drain this bead exists to add. Bounding the drain on `sent` already makes
+                    // the unknown-size case correct without needing a declared length at all.
+                    if (size > 0 && sent != size) {
+                        throw IllegalStateException(
+                            "Source changed size mid-transfer (declared $size, read $sent).",
+                        )
+                    }
+
+                    // DRAIN BEFORE COMPLETING (RemEx-xrb2v). The bulk data frames go out on
+                    // /ws/files and file_transfer_complete goes out on the control /ws — two
+                    // sockets. TCP orders bytes within one connection, never between two, so
+                    // announcing completion the instant the last frame is ENQUEUED lets the tiny
+                    // completion overtake the still-in-flight bulk bytes. The PC then tears its sink
+                    // down and finalizes a short or empty file, reporting "Transfer incomplete"
+                    // while the data is still arriving.
+                    //
+                    // THE BACKPRESSURE WAIT ABOVE IS NOT THIS WAIT. It only blocks once outstanding
+                    // unacked bytes exceed MAX_UNACKED_BYTES (8 MB), so every transfer smaller than
+                    // that reached sendComplete without ever forcing an ack round trip. That inverse
+                    // sizing is why the two sibling bugs looked like a flaky feature rather than a
+                    // defect: large transfers incidentally survived because backpressure had already
+                    // drained them, and small ones always failed.
+                    //
+                    // Third and last instance of the pattern, after RemEx-zd8ws (the C# sender) and
+                    // RemEx-y6x6 (the Kotlin upload sender). Mirrors FileTransferEngine.kt's drain in
+                    // runUpload. Never observed in the field on this path — the PC-side receiver is
+                    // faster than the phone-side one, which is probably why it had not bitten yet.
+                    //
+                    // Placed AFTER input.use closes, unlike the engine's, so the source file handle
+                    // is released rather than held open across a wait of unbounded length.
+                    //
+                    // No deadline, by design: up to 8 MB may still legitimately be draining, so any
+                    // total budget safe on a slow link is useless as a backstop. A dead socket does
+                    // not depend on one — HostSendSession.onChannelClosed cancels this job, and an
+                    // ERROR frame cancels it too, so both failure paths break the wait.
+                    //
+                    // BOUNDED ON `sent`, NOT ON `size` (review). The peer's committedOffset can never
+                    // exceed what was actually put on the wire, so bounding on a declared length that
+                    // turned out to be larger waits forever — and there is deliberately no deadline
+                    // here, so "forever" is exactly what it means. The reconcile above now rejects a
+                    // mismatch before we ever get here; this bound is what makes the wait correct
+                    // rather than merely usually-correct.
+                    awaitAck(session.ackSignal) { session.committedOffset >= sent }
+
+                    // java.util.Base64, NOT android.util.Base64, and only on this path (RemEx-xrb2v).
+                    // This class's own doc says it is "pure logic over injected seams so it can be
+                    // unit-tested against fakes" — and android.util.Base64 breaks that: unit tests run
+                    // with isReturnDefaultValues, so encodeToString returns NULL, sendComplete's
+                    // non-null parameter throws, and the completion is never sent. Every assertion
+                    // about WHEN the completion goes out was therefore impossible to write, which is
+                    // presumably why this sender went three beads without the drain its two siblings got.
+                    //
+                    // Safe: minSdk is 34 and java.util.Base64 is API 26+. Byte-identical output —
+                    // both emit standard base64 with padding and no line wrapping (NO_WRAP is what
+                    // the android call asked for).
+                    val sha = JavaBase64.getEncoder().encodeToString(digest.digest())
                     sendComplete(transferId, sha)
+                } catch (e: CancellationException) {
+                    // RETHROWN, NOT REPORTED (review of RemEx-xrb2v). Cancellation is now this send's
+                    // DESIGNED abort path — the drain below has no deadline and relies on
+                    // onChannelClosed or an inbound ERROR frame cancelling this job. Since
+                    // CancellationException is an Exception, the general handler below would have
+                    // caught it and answered the peer with an ERROR frame reading "StandaloneCoroutine
+                    // was cancelled", attributing the PC's own reported failure to an opaque
+                    // sender-side fault — and swallowing the cancel so it never reached the scope.
+                    // The finally still runs; unregisterSink and the map removal do not suspend.
+                    throw e
                 } catch (e: Exception) {
                     channel.sendFrame(
                         FileFrameEnvelope(FileFrameKinds.ERROR, transferId, error = e.message ?: "send failed"),
@@ -640,6 +1261,22 @@ class FileHostHandler(
                     sendSessions.remove(transferId)
                 }
             }
+
+        // THE SINK GOES UP LAST, immediately before the start (review). Registering it at the top
+        // reopened the very window the LAZY start closed: a frame arriving between registerSink and
+        // the assignment still met `job?.cancel()` with a null job, so a PC that answered with ERROR
+        // microseconds after file_transfer_ready got a silent no-op and left this send parked in a
+        // drain that has no deadline. Nothing can reach the session before it can be cancelled now.
+        channel.registerSink(transferId, session)
+
+        // AND A FAILED START MUST NOT LEAK THE SESSION. start() returns false if the job was already
+        // cancelled — a scope torn down during shutdown, say — and in that case the body never runs,
+        // so neither does its `finally`. Without this the sink and the sendSessions entry would
+        // outlive the transfer with nothing left to clear them.
+        if (session.job?.start() != true) {
+            channel.unregisterSink(transferId)
+            sendSessions.remove(transferId)
+        }
     }
 
     private fun handleComplete(req: JSONObject?) {
@@ -752,6 +1389,11 @@ class FileHostHandler(
         val digest: MessageDigest,
         var bytesReceived: Long,
         var lastAcked: Long,
+        /**
+         * Whether a same-named file in the destination is replaced (upload) or left alone so SAF
+         * uniquifies the incoming one (push). See the commit site in [finalizeAndCommit].
+         */
+        val replaceExisting: Boolean,
     ) : FileFrameSink {
         private val raf = RandomAccessFile(partial, "rw").apply { seek(bytesReceived) }
         private val lock = Any()
@@ -767,7 +1409,14 @@ class FileHostHandler(
                         close()
                         return
                     }
-                    if (expectedSize > 0 && bytesReceived + payload.size > expectedSize) {
+                    // `>= 0`, not `> 0`, AND REVIEW CAUGHT WHY THAT MATTERS. A declared size of zero
+                    // used to switch this ceiling OFF entirely, which was survivable only while
+                    // nothing else trusted the number. Binding the size to consent (RemEx-ccqb) made
+                    // zero a value the user could be shown and could approve — so a peer offering
+                    // "holiday.jpg (0 B)", getting a grant for it, and then streaming without limit
+                    // was the bead's own attack surviving at the one size it forgot to cover.
+                    // Negative sizes are refused before a session is built, so this covers the rest.
+                    if (expectedSize >= 0 && bytesReceived + payload.size > expectedSize) {
                         FileTransferChannelClient.sendError(transferId, "Overshot declared size.")
                         deleteStaging()
                         receiveSessions.remove(transferId)
@@ -802,18 +1451,34 @@ class FileHostHandler(
             val matches = expectedSha.isNullOrEmpty() || actual == expectedSha
             if (!complete || !matches) {
                 deleteStaging()
+                // Post-consent and post-transfer: every byte arrived and the file still is not
+                // there. The silence here was the longest of the lot (RemEx-gipu).
+                if (!replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
                 return TransferOutcome(false, actual, if (!complete) "Transfer incomplete." else "SHA-256 mismatch.")
             }
             // Commit the verified partial into the SAF destination.
             val parent = facade.resolve(destRoot, (destRelativePath ?: "").trim('/'))
             if (parent == null || !parent.canWrite) {
                 deleteStaging()
+                if (!replaceExisting) reportRefusal(PushRefusal.DestinationUnavailable)
                 return TransferOutcome(false, actual, "Destination no longer writable.")
             }
-            parent.findChild(fileName)?.delete()
+            // **ONLY AN UPLOAD REPLACES (RemEx-h1p5).** SAF's createFile uniquifies a colliding name
+            // by itself ("resume (1).pdf"); this delete exists to defeat that, which is right for an
+            // upload — the PC user is looking at that folder and named that file, so replacing it is
+            // what they asked for.
+            //
+            // A PUSH is the opposite situation and used to be unreachable, so this never applied to
+            // one. Nobody chose the folder: the PC does not know it and the phone picks it, and the
+            // consent prompt names the incoming files without ever saying where they will go. Deleting
+            // a same-named file there would destroy something the user never mentioned — silently,
+            // with no undo, and with no prompt at all for a device on remembered auto-accept. Letting
+            // SAF uniquify costs an odd file name in a rare case; the alternative costs a document.
+            if (replaceExisting) parent.findChild(fileName)?.delete()
             val target = parent.createFile("application/octet-stream", fileName)
             if (target == null) {
                 deleteStaging()
+                if (!replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
                 return TransferOutcome(false, actual, "Could not create destination file.")
             }
             val ok =
@@ -828,6 +1493,22 @@ class FileHostHandler(
                     false
                 }
             deleteStaging()
+            if (!ok && !replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
+
+            // A pushed file that lands says so (RemEx-pwkc). Until this, the ONLY outcome the phone
+            // ever reported was failure: a file the user agreed to receive simply appeared somewhere
+            // they were never told about, with nothing to open it from. target.name rather than the
+            // offered fileName, because SAF uniquifies a collision and the user needs the name that
+            // actually exists.
+            //
+            // Dispatched like the refusals, and for the same reason: this ends in a binder call, and
+            // it must not be able to disturb the transfer result that follows it.
+            if (ok && !replaceExisting) {
+                val savedName = target.name
+                val savedUri = target.contentUri
+                scope.launch { onPushReceived(savedName, savedUri) }
+            }
+
             return if (ok) TransferOutcome(true, actual, null)
             else TransferOutcome(false, actual, "Verified but could not be saved.")
         }
@@ -845,7 +1526,33 @@ class FileHostHandler(
     /** Sender session (Android → PC). A [FileFrameSink] that consumes inbound ack frames. */
     private inner class HostSendSession(val transferId: String) : FileFrameSink {
         @Volatile var committedOffset: Long = 0L
-        val ackSignal = Channel<Unit>(Channel.CONFLATED)
+        /**
+         * Wakes the send loop when an ack lands. **[ACK_SIGNAL_CAPACITY] IS LOAD-BEARING — DO NOT
+         * MAKE THIS A RENDEZVOUS** (review of RemEx-68wwl; extraction + coverage: RemEx-3uv7s).
+         *
+         * The capacity-1 buffer is what closes the gap between the sender evaluating its wait
+         * condition (in [awaitAck]) and actually parking in `receive()`. On a real device the ack
+         * arrives on the frame-reader thread; if it lands in that gap, `trySend` on a RENDEZVOUS
+         * channel finds no waiter, returns false, and the token is dropped. The sender then parks
+         * forever — and the peer, having nothing left to receive, never acks again. The transfer
+         * freezes mid-file with no error on either side, which is the failure mode both waits here
+         * exist to avoid.
+         *
+         * Every unit test would stay green through that change if it exercised the full send path:
+         * under `Dispatchers.Unconfined` the ack is always delivered while the coroutine is already
+         * suspended, and `trySend` to a waiting receiver succeeds on RENDEZVOUS too — the "token
+         * arrives with nobody waiting" case is unreachable that way. [awaitAck] exists so that gap
+         * can be driven directly instead: see its KDoc and
+         * `ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks` in
+         * FileHostHandlerTest.kt, which covers what used to be a recorded, deliberate absence
+         * (RemEx-68wwl) rather than an oversight.
+         *
+         * Conflation itself is safe for both consumers: each call into [awaitAck] is a
+         * `while (!conditionMet()) receive()` re-check over a `@Volatile` field, so a stale token
+         * just re-tests and re-parks. And no wakeup can be lost the other way either, because
+         * `committedOffset` is written *before* `trySend` below.
+         */
+        val ackSignal = Channel<Unit>(ACK_SIGNAL_CAPACITY)
         var job: Job? = null
 
         override fun onFrame(envelope: FileFrameEnvelope, payload: ByteArray) {

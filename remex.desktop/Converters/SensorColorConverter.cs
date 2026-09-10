@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 using System.Globalization;
 using Remex.Core.Messages;
 
@@ -52,25 +53,11 @@ public class SensorColorConverter : IValueConverter
         return Neutral();
     }
 
-    private static IBrush Neutral() => Resolve("TextPrimaryBrush", FallbackNeutral);
+    private static IBrush Neutral() => ThemeResources.Brush("TextPrimaryBrush", FallbackNeutral);
 
-    private static IBrush Warm() => Resolve("SystemWarningBrush", FallbackYellow);
+    private static IBrush Warm() => ThemeResources.Brush("SystemWarningBrush", FallbackYellow);
 
-    private static IBrush TooHot() => Resolve("SystemErrorBrush", FallbackRed);
-
-    /// <summary>Looks <paramref name="key"/> up in the active theme, falling back if absent.</summary>
-    private static IBrush Resolve(string key, IBrush fallback)
-    {
-        var app = Application.Current;
-        if (app is null)
-            return fallback;
-
-        // TryGetResource, not the indexer: a missing key must degrade rather than throw inside a
-        // converter. Note TryFindResource does not exist on Application in this Avalonia version.
-        return app.TryGetResource(key, app.ActualThemeVariant, out var found) && found is IBrush brush
-            ? brush
-            : fallback;
-    }
+    private static IBrush TooHot() => ThemeResources.Brush("SystemErrorBrush", FallbackRed);
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {

@@ -3,14 +3,10 @@ package com.clindsay94.remex.tile
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.RemexCoreClient
-import org.json.JSONObject
 
 class RemexHibernateTileService : TileService() {
-    private fun executeCommand() {
-        val commandJson = JSONObject().apply { put("action", "Hibernate") }.toString()
-        RemexCoreClient.SendCommand(commandJson).getOrNull()
-    }
+    private fun executeCommand() =
+        confirmTileCommand("Hibernate", com.clindsay94.remex.R.string.tile_hibernate_label)
 
     override fun onClick() {
         super.onClick()

@@ -155,6 +155,15 @@
             </intent-filter>
         </service>
 
+        <!-- Confirmation gate for a Quick Settings tile's destructive PC command (RemEx-sxfp);
+             launched via TileService.startActivityAndCollapse(PendingIntent), never externally. -->
+        <activity
+            android:name=".tile.TileConfirmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.RemEx.TileConfirm" />
+
         <!-- Service for backwards compatibility of per-app languages -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

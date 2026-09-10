@@ -1,0 +1,1240 @@
+#!/usr/bin/env pwsh
+<#
+.SYNOPSIS
+    Builds RemEx from clean, runs the tests, and writes a receipt proving it actually happened.
+
+.DESCRIPTION
+    This is the one accepted way to verify that a piece of work is finished. It exists because
+    "the tests passed" turned out to be an unreliable claim: tests were passing against builds
+    that predated the change, edits were reported as applied without landing, and nothing in the
+    output distinguished a real green run from a stale one.
+
+    The fix is a RECEIPT. Every run writes a small JSON file recording what was verified and,
+    crucially, a fingerprint of the source code it was verified against. The fingerprint is a
+    SHA-256 over the path and content of every source file in scope. Change any one of them by
+    a single character and the fingerprint changes.
+
+    That turns a judgement call into a check anybody can run:
+
+        ./scripts/verify.ps1 -Check
+
+    If the code has moved on since the receipt was written, that prints STALE and exits nonzero.
+    A receipt is not "a run that passed once" - it is "a run that passed against exactly the code
+    that is on disk right now". Those are different claims and only the second one is worth
+    anything.
+
+    The fingerprint covers tracked files AND new files that are not gitignored. Tracked-only
+    would let you add an entire new source file without the fingerprint noticing, which is the
+    same blind spot in a different costume.
+
+    The fingerprint is also taken a second time after the tests finish. If it moved during the
+    run, something edited the source mid-flight and the result means nothing, so the receipt is
+    marked FAIL rather than PASS. This matters here because this working copy can be shared with
+    another session.
+
+.PARAMETER Scope
+    What to verify. 'dotnet' (default) builds and tests the .NET solution. 'android' runs the
+    Android release unit tests AND the full release lint gate (lintRelease) - the tests
+    compile the release sources but do not pull lint in, and lint is the gate the release-only
+    rule exists for. 'all' does both.
+
+.PARAMETER NoClean
+    Skip the clean step and reuse existing build output. Faster, but you are giving up the
+    guarantee this script exists to provide. Only use it while iterating, never to close work.
+
+.PARAMETER Check
+    Do not build anything. Read the existing receipt, recompute the fingerprint, and report
+    whether the receipt still describes the code on disk. Exits 0 for VALID, 1 for STALE or if
+    there is no receipt.
+
+.PARAMETER Receipt
+    Where to read/write the receipt. Defaults to .ralph/verify-receipt.json, which is
+    deliberately gitignored - a receipt describes one machine's working copy at one moment and
+    is meaningless anywhere else.
+
+.PARAMETER SkipLocalization
+    Skip the translation check. It is the slowest single step because it walks git history.
+
+.PARAMETER Json
+    Print only the receipt as a single line of JSON and nothing else. For scripts and loops.
+
+.EXAMPLE
+    ./scripts/verify.ps1
+    Clean build plus full .NET test suite, with friendly progress output.
+
+.EXAMPLE
+    ./scripts/verify.ps1 -Scope all -Json
+    Verify everything, print one line of JSON. This is what an automated loop should call.
+
+.EXAMPLE
+    ./scripts/verify.ps1 -Check
+    Ask whether the last receipt still describes the current code. Cheap, no build.
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('dotnet', 'android', 'all')]
+    [string]$Scope = 'dotnet',
+
+    [Parameter(Mandatory = $false)]
+    [switch]$NoClean,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Check,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Receipt,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipLocalization,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Json,
+
+    # Check the .trx result parser against known input and exit. Needs no build, no test run and no
+    # repository - the parser is pure, which is what makes it checkable at all.
+    [Parameter(Mandatory = $false)]
+    [switch]$SelfTest
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+$IsWin = $IsWindows -or ($env:OS -eq 'Windows_NT')
+
+if (-not $Receipt) {
+    $Receipt = Join-Path $RepoRoot '.ralph' 'verify-receipt.json'
+}
+
+# ---------------------------------------------------------------------------
+# Output helpers. Everything human-facing goes through these so that -Json can
+# silence the lot and leave a single parseable line on stdout.
+# ---------------------------------------------------------------------------
+
+function Write-Say {
+    param([string]$Text, [string]$Colour = 'Gray')
+    if (-not $Json) { Write-Host $Text -ForegroundColor $Colour }
+}
+
+function Write-Stage {
+    param([string]$Text)
+    if (-not $Json) { Write-Host "`n$Text" -ForegroundColor Cyan }
+}
+
+function Write-Problem {
+    param([string]$Text, [string]$WhatToDo)
+    if (-not $Json) {
+        Write-Host "`n  Problem: $Text" -ForegroundColor Red
+        if ($WhatToDo) { Write-Host "  What to do: $WhatToDo" -ForegroundColor Yellow }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# The fingerprint.
+#
+# git ls-files -c -o --exclude-standard = tracked files plus untracked files that
+# are not gitignored. Both halves matter: tracked-only misses a newly added source
+# file, and including ignored files would fold build output into the fingerprint,
+# which would make it change on every build and prove nothing.
+# ---------------------------------------------------------------------------
+
+function Get-Platform {
+    # Recorded in the receipt because this repo shares artifacts/ between the Windows
+    # build and the WSL/Linux one (see CLAUDE.md). A Linux run overwrites the build
+    # output Windows was using. The fingerprint covers source, not build output, so
+    # without this a Windows -Check would happily call a receipt valid while the
+    # artifacts on disk were left behind by the other platform.
+    if ($IsWin) { return 'windows' }
+    elseif ($IsMacOS) { return 'macos' }
+    else { return 'linux' }
+}
+
+function Get-ScopePatterns {
+    param([string]$ForScope)
+
+    $dotnet = @(
+        '*.cs', '*.csproj', '*.props', '*.targets', '*.sln', '*.resx',
+        '*.editorconfig', '*.manifest', '*.json',
+        '*.axaml', # Avalonia compiles XAML into the assembly; a XAML-only edit is a source change.
+        '*.ps1'    # remex.desktop.tests scrapes scripts/*.ps1 as source (PaletteSweepScriptTests
+                    # and friends), so a script-only edit is also a source change to what those
+                    # tests assert about.
+        # The ralph loop's .psd1 config is deliberately NOT in this list: fingerprinting it would
+        # invalidate every receipt whenever that config changes, which is unrelated to whether the
+        # code still verifies (see the .ralph.psd1 header).
+    )
+    $android = @(
+        'remex.android/*', 'remex.core/*'
+    )
+
+    switch ($ForScope) {
+        'dotnet'  { return $dotnet }
+        'android' { return $android }
+        'all'     { return ($dotnet + $android) }
+    }
+}
+
+function Get-SourceFingerprint {
+    param([string]$ForScope)
+
+    Push-Location $RepoRoot
+    try {
+        $patterns = Get-ScopePatterns -ForScope $ForScope
+        $files = @(git ls-files -c -o --exclude-standard -- $patterns)
+        if ($LASTEXITCODE -ne 0) {
+            throw "git ls-files failed. Is this a git working copy?"
+        }
+
+        # --exclude-standard above only filters the "-o" (untracked) half of the listing.
+        # "-c" (tracked) is unconditional, so a file that is both tracked AND gitignored
+        # rides along regardless. That happened for real: .token-savior-cache.json was a
+        # 4.3MB auto-generated MCP index that was tracked, gitignored, and matched the
+        # dotnet scope's '*.json' pattern, so it silently invalidated every receipt each
+        # time the MCP server touched it. Run the tracked-or-untracked list back through
+        # check-ignore and drop anything it flags, so no other tracked-and-ignored file
+        # can do that again.
+        if ($files.Count -gt 0) {
+            # --no-index is required here, not optional: by default check-ignore skips
+            # paths that are already in the index and reports them as NOT ignored, which
+            # is precisely the tracked-and-ignored case this block exists to catch.
+            #
+            # The stdin payload is built as one LF-joined string with a trailing newline
+            # rather than piped as a PowerShell array. Piping the array (or a joined
+            # string missing the final newline) leaves check-ignore's last record without
+            # a terminating LF, and on Windows that corrupts its output - the last path
+            # comes back misattributed with a stray trailing CR. A trailing newline avoids
+            # that entirely.
+            $stdinPayload = ($files -join "`n") + "`n"
+            $ignoredOutput = @($stdinPayload | git check-ignore --no-index --stdin)
+            $checkIgnoreExit = $LASTEXITCODE
+            # Exit code 1 from check-ignore means "none of the paths are ignored" - that
+            # is the expected, common case, not a failure. Only treat 2+ as real trouble.
+            if ($checkIgnoreExit -gt 1) {
+                throw "git check-ignore failed while filtering the fingerprint file list."
+            }
+            if ($ignoredOutput.Count -gt 0) {
+                $ignored = [System.Collections.Generic.HashSet[string]]::new([string[]]$ignoredOutput)
+                $files = $files | Where-Object { -not $ignored.Contains($_) }
+            }
+        }
+
+        # Sort explicitly. git's ordering is stable in practice but the fingerprint
+        # must not depend on that, or the same tree could hash two different ways.
+        $files = $files | Where-Object { $_ } | Sort-Object -CaseSensitive
+
+        $hasher = [System.Security.Cryptography.IncrementalHash]::CreateHash(
+            [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+        try {
+            $counted = 0
+            foreach ($rel in $files) {
+                # The path goes into the hash as well as the content, so that renaming a
+                # file changes the fingerprint even when its bytes are identical.
+                $hasher.AppendData([System.Text.Encoding]::UTF8.GetBytes("$rel`n"))
+
+                $full = Join-Path $RepoRoot $rel
+                if (Test-Path -LiteralPath $full -PathType Leaf) {
+                    $hasher.AppendData([System.IO.File]::ReadAllBytes($full))
+                    $counted++
+                }
+            }
+            $bytes = $hasher.GetHashAndReset()
+            return @{
+                Hash  = [System.Convert]::ToHexString($bytes).ToLowerInvariant()
+                Files = $counted
+            }
+        }
+        finally {
+            $hasher.Dispose()
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+# ---------------------------------------------------------------------------
+# -Check: is the existing receipt still true?
+# ---------------------------------------------------------------------------
+
+if ($Check) {
+    if (-not (Test-Path -LiteralPath $Receipt)) {
+        Write-Problem "There is no receipt at $Receipt." "Run ./scripts/verify.ps1 to create one."
+        if ($Json) { Write-Output '{"schema":1,"check":"MISSING"}' }
+        exit 1
+    }
+
+    $prior = Get-Content -LiteralPath $Receipt -Raw | ConvertFrom-Json
+    $now = Get-SourceFingerprint -ForScope $prior.scope
+    $herePlatform = Get-Platform
+    # A receipt written on the other platform does not describe this machine's build output,
+    # because artifacts/ is shared between the Windows and WSL/Linux builds.
+    $priorPlatform = if ($prior.PSObject.Properties.Name -contains 'platform') { $prior.platform } else { 'unknown' }
+    $samePlatform = ($priorPlatform -ceq $herePlatform)
+    $valid = ($now.Hash -ceq $prior.sourceHash) -and ($prior.result -ceq 'PASS') -and $samePlatform
+
+    if ($Json) {
+        $verdict = if ($valid) { 'VALID' } else { 'STALE' }
+        Write-Output (@{
+            schema = 1; check = $verdict; scope = $prior.scope
+            receiptHash = $prior.sourceHash; currentHash = $now.Hash
+            receiptPlatform = $priorPlatform; currentPlatform = $herePlatform
+            receiptResult = $prior.result; timestampUtc = $prior.timestampUtc
+        } | ConvertTo-Json -Compress)
+    }
+    elseif ($valid) {
+        Write-Say "VALID - the receipt from $($prior.timestampUtc) still describes the code on disk." 'Green'
+        Write-Say "  $($prior.testsPassed) of $($prior.testsRun) tests passed, scope '$($prior.scope)'."
+    }
+    else {
+        if (-not $samePlatform) {
+            Write-Problem "This receipt was written on $priorPlatform, but you are on $herePlatform." `
+                "Run ./scripts/verify.ps1 again here. The build output in artifacts/ is shared between the Windows and Linux builds, so the other platform's run has overwritten it."
+        }
+        elseif ($prior.result -cne 'PASS') {
+            Write-Problem "The last verification did not pass (result: $($prior.result))." `
+                "Fix the failure, then run ./scripts/verify.ps1 again."
+        }
+        else {
+            Write-Problem "STALE - the code has changed since this receipt was written." `
+                "Run ./scripts/verify.ps1 again. The previous result no longer applies."
+            Write-Say "  receipt fingerprint: $($prior.sourceHash)"
+            Write-Say "  current fingerprint: $($now.Hash)"
+        }
+    }
+
+    exit $(if ($valid) { 0 } else { 1 })
+}
+
+# ---------------------------------------------------------------------------
+# Failing test names, read out of the .trx the counters already come from.
+# ---------------------------------------------------------------------------
+# A count with no name is indistinguishable from noise. On 2026-08-05 a run here failed 1 of 1884,
+# an immediate re-run passed, and the flake could not be filed because nothing had recorded WHICH
+# test it was (RemEx-ffxl). The name and the error sit in the same file this already opens for the
+# counters, so reading them costs no extra test run and no new tooling.
+#
+# Kept pure and given its own self-test because this is the gate's own diagnostics: if it silently
+# returns nothing, every future failure looks exactly like the one that could not be filed.
+function Get-TrxFailedTests {
+    param([xml]$Document, [int]$Limit = 20)
+
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    # GetElementsByTagName and GetAttribute rather than a dotted walk: .trx carries a default XML
+    # namespace, and under Set-StrictMode a dotted walk over a node that is absent - a run that
+    # produced no results at all, which is exactly when this matters - throws instead of yielding
+    # nothing. GetAttribute returns '' for a missing attribute, which is the behaviour needed here.
+    # Known gap, left deliberately: a data-driven test whose cases nest under <InnerResults> matches
+    # both the parent rollup and each failing case, so one logical failure can produce more than one
+    # name. There are none in this repo's current output, the extra line names the same test, and the
+    # counter is reported separately - so it reads as noisy rather than wrong. Worth fixing when the
+    # first [Theory] with non-serializable data appears, not before.
+    foreach ($node in $Document.GetElementsByTagName('UnitTestResult')) {
+        if ($node.GetAttribute('outcome') -ne 'Failed') { continue }
+
+        $name = $node.GetAttribute('testName')
+        if (-not $name) { $name = '(unnamed test)' }
+
+        # First non-blank line of the assertion message only. A full stack trace in the receipt
+        # buries the one fact worth keeping, and the receipt is what outlives the .trx directory.
+        #
+        # ErrorInfo/Message first, then any Message: the TRX schema puts TextMessages BEFORE
+        # ErrorInfo, so a test that also wrote a trace line would otherwise have that trace reported
+        # in place of the assertion that actually failed.
+        $firstLine = ''
+        $messages = $null
+        foreach ($errorInfo in $node.GetElementsByTagName('ErrorInfo')) {
+            $candidate = $errorInfo.GetElementsByTagName('Message')
+            if ($candidate.Count -gt 0) { $messages = $candidate; break }
+        }
+        if ($null -eq $messages) { $messages = $node.GetElementsByTagName('Message') }
+        if ($messages.Count -gt 0) {
+            foreach ($line in ([string]$messages[0].InnerText -split "`r?`n")) {
+                if ($line.Trim()) { $firstLine = $line.Trim(); break }
+            }
+            if ($firstLine.Length -gt 160) { $firstLine = $firstLine.Substring(0, 157) + '...' }
+        }
+
+        $failures.Add($(if ($firstLine) { "$name - $firstLine" } else { $name }))
+        # Per .trx, not per run: a caller reading several assemblies gets up to $Limit from each.
+        # Deliberate - a breakage confined to one assembly should not be truncated away because
+        # another assembly failed first - and the count is always reported separately, so a
+        # truncated list is visibly a subset rather than the whole story.
+        if ($failures.Count -ge $Limit) { break }
+    }
+
+    # No unary comma here. Wrapping to defeat PowerShell's single-element unrolling would nest the
+    # array one level deeper, and every caller already uses @(...) which handles both shapes. The
+    # first draft did wrap, and this function's own self-test is what caught it.
+    return $failures.ToArray()
+}
+
+# Same defect, same fix, other platform: the Android branch reads testsuite/@failures and
+# @errors and never looks at the <testcase> nodes carrying the names, so an Android failure
+# reports a count with nothing to file (identical shape to RemEx-ffxl, just JUnit XML instead
+# of .trx). Kept pure and self-tested for the same reason as Get-TrxFailedTests above.
+function Get-JUnitFailedTests {
+    param([xml]$Document, [int]$Limit = 20)
+
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    # GetElementsByTagName / GetAttribute, not a dotted walk - same reasoning as
+    # Get-TrxFailedTests: this file runs under Set-StrictMode with $ErrorActionPreference =
+    # 'Stop', and a dotted walk over a document with no <testcase> nodes at all (a run that
+    # produced no results) would throw instead of yielding nothing, which is exactly the case
+    # that matters here.
+    foreach ($node in $Document.GetElementsByTagName('testcase')) {
+        # Gradle's JUnit XML marks a non-passing case with a <failure> or an <error> child -
+        # both mean the case did not pass, and a case can only sensibly carry one, but check
+        # both rather than assume which.
+        $failureNode = $null
+        $candidates = $node.GetElementsByTagName('failure')
+        if ($candidates.Count -gt 0) { $failureNode = $candidates[0] }
+        else {
+            $candidates = $node.GetElementsByTagName('error')
+            if ($candidates.Count -gt 0) { $failureNode = $candidates[0] }
+        }
+        if ($null -eq $failureNode) { continue }
+
+        $className = $node.GetAttribute('classname')
+        $name = $node.GetAttribute('name')
+        $label = if ($className -and $name) { "$className.$name" }
+                 elseif ($name) { $name }
+                 elseif ($className) { $className }
+                 else { '(unnamed test)' }
+
+        # First non-blank line of the failure message only - same reasoning as the .trx parser:
+        # a full stack trace in the receipt buries the one fact worth keeping.
+        $firstLine = ''
+        $message = [string]$failureNode.GetAttribute('message')
+        foreach ($line in ($message -split "`r?`n")) {
+            if ($line.Trim()) { $firstLine = $line.Trim(); break }
+        }
+        if ($firstLine.Length -gt 160) { $firstLine = $firstLine.Substring(0, 157) + '...' }
+
+        $failures.Add($(if ($firstLine) { "$label - $firstLine" } else { $label }))
+        # Per file, not per run - same reasoning as Get-TrxFailedTests.
+        if ($failures.Count -ge $Limit) { break }
+    }
+
+    # No unary comma - see Get-TrxFailedTests.
+    return $failures.ToArray()
+}
+
+# ---------------------------------------------------------------------------
+# Violation lines out of AGP's lint console output.
+# ---------------------------------------------------------------------------
+# Same reasoning as the two test parsers: the lint report under app/build is overwritten by the next
+# run, so a receipt saying only "violations" is a count nobody can act on afterwards (RemEx-lju6).
+#
+# Pure, and self-tested below, because this is the most drift-prone parser in the file - it reads a
+# tool's console formatting rather than a schema, and AGP has already renamed lint tasks across major
+# versions. If it silently stopped matching, every receipt would say "no violation line could be
+# parsed" and nothing would notice.
+function Get-LintViolationLines {
+    param([string[]]$Output, [int]$Limit = 15)
+
+    # AGP prints the offending line as  path\File.kt:218: Error: message [RuleId]
+    # The second alternative catches a bare "Error:"/"Warning:" summary line. Anchored at the start
+    # so the MSBuild, ILC and NativeAOT noise that shares this console - and the "Wrote HTML report
+    # to file:///..." line - cannot be mistaken for a violation.
+    $pattern = '^\s*[^\s].*\.(kt|java|xml):\d+:|^\s*(Error|Warning):'
+
+    # Unique before Limit: AGP prints only the FIRST failure, and prints it three times (task output,
+    # the summary block, and inside "* What went wrong:"). Without this the receipt carries the same
+    # violation three times, which reads like three problems and like a complete list. It is neither.
+    return @(@($Output) |
+        Select-String -Pattern $pattern |
+        ForEach-Object { "$_".Trim() } |
+        Where-Object { $_ } |
+        Select-Object -Unique |
+        Select-Object -First $Limit)
+}
+
+<#
+.SYNOPSIS
+    Checks Get-TrxFailedTests, Get-JUnitFailedTests and Get-LintViolationLines against known input.
+    Returns the number
+    of failed checks.
+#>
+function Invoke-ResultParserSelfTest {
+    function Assert-Check {
+        param([bool]$Condition, [string]$What)
+        if (-not $Condition) {
+            Write-Host "    FAIL  $What" -ForegroundColor Red
+            $script:parserCheckFailures++
+        }
+    }
+    $script:parserCheckFailures = 0
+
+    # A real .trx, reduced: default namespace, one pass, one failure with a multi-line message.
+    [xml]$sample = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult testName="Remex.Sample.PassingTest" outcome="Passed" />
+    <UnitTestResult testName="Remex.Sample.FailingTest" outcome="Failed">
+      <Output><ErrorInfo><Message>Assert.True() Failure
+Expected: True
+Actual:   False</Message></ErrorInfo></Output>
+    </UnitTestResult>
+    <UnitTestResult testName="Remex.Sample.SkippedTest" outcome="NotExecuted" />
+  </Results>
+  <ResultSummary><Counters total="3" executed="2" passed="1" failed="1" /></ResultSummary>
+</TestRun>
+'@
+
+    $found = @(Get-TrxFailedTests -Document $sample)
+    Assert-Check ($found.Count -eq 1) "exactly one failure is reported (got $($found.Count))"
+    Assert-Check ($found -join '' -like '*Remex.Sample.FailingTest*') 'the failing test is named'
+    Assert-Check ($found -join '' -like '*Assert.True() Failure*') 'the first line of the error is included'
+    # The other direction, which is the one that would make this useless rather than merely noisy:
+    # a parser that reported everything would hide the failure among the passes.
+    Assert-Check (-not ($found -join '' -like '*PassingTest*')) 'a passing test is not reported'
+    Assert-Check (-not ($found -join '' -like '*SkippedTest*')) 'a skipped test is not reported'
+    Assert-Check (-not ($found -join '' -like '*Actual:   False*')) 'only the first line is kept'
+
+    # A test that wrote a trace line AND failed an assertion. The TRX schema puts TextMessages before
+    # ErrorInfo, so a parser that took the first Message it found would report the trace and hide the
+    # assertion - a name with the wrong reason attached, which is harder to argue with than no reason.
+    [xml]$noisy = @'
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult testName="Remex.Sample.NoisyTest" outcome="Failed">
+      <Output>
+        <TextMessages><Message>starting the fixture</Message></TextMessages>
+        <ErrorInfo><Message>Assert.Equal() Failure: Values differ</Message></ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+</TestRun>
+'@
+    $noisyFound = @(Get-TrxFailedTests -Document $noisy) -join ''
+    Assert-Check ($noisyFound -like '*Assert.Equal() Failure*') 'the assertion is preferred over a trace line'
+    Assert-Check (-not ($noisyFound -like '*starting the fixture*')) 'a trace line is not mistaken for the failure reason'
+
+    # A run that produced no results at all. This is the StrictMode case the dotted walk could not
+    # survive, and it is precisely when a silent empty answer would be mistaken for "nothing failed".
+    [xml]$empty = '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><ResultSummary /></TestRun>'
+    $none = @(Get-TrxFailedTests -Document $empty)
+    Assert-Check ($none.Count -eq 0) 'a result-less run yields nothing instead of throwing'
+
+    # The cap exists so a suite-wide breakage cannot write thousands of lines into the receipt.
+    [xml]$many = '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results>' +
+        ((1..30 | ForEach-Object { "<UnitTestResult testName=`"T$_`" outcome=`"Failed`" />" }) -join '') +
+        '</Results></TestRun>'
+    $capped = @(Get-TrxFailedTests -Document $many -Limit 5)
+    Assert-Check ($capped.Count -eq 5) "the limit is honoured (got $($capped.Count))"
+
+    # A real Gradle JUnit report, reduced: one pass, one <failure>, one <error>, one <skipped>.
+    [xml]$junitSample = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.remex.SampleTest" tests="4" failures="1" errors="1" skipped="1">
+  <testcase classname="com.remex.SampleTest" name="testPassing" time="0.01" />
+  <testcase classname="com.remex.SampleTest" name="testFailing" time="0.02">
+    <failure message="expected:&lt;true&gt; but was:&lt;false&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;true&gt; but was:&lt;false&gt;
+	at com.remex.SampleTest.testFailing(SampleTest.java:42)</failure>
+  </testcase>
+  <testcase classname="com.remex.SampleTest" name="testErroring" time="0.01">
+    <error message="null pointer" type="java.lang.NullPointerException">java.lang.NullPointerException: null pointer
+	at com.remex.SampleTest.testErroring(SampleTest.java:55)</error>
+  </testcase>
+  <testcase classname="com.remex.SampleTest" name="testSkipped" time="0.0">
+    <skipped />
+  </testcase>
+</testsuite>
+'@
+
+    $junitFound = @(Get-JUnitFailedTests -Document $junitSample)
+    Assert-Check ($junitFound.Count -eq 2) "exactly two JUnit failures are reported (got $($junitFound.Count))"
+    Assert-Check (($junitFound -join '|') -like '*com.remex.SampleTest.testFailing - expected:<true> but was:<false>*') `
+        'the <failure> case is named with its message'
+    Assert-Check (($junitFound -join '|') -like '*com.remex.SampleTest.testErroring - null pointer*') `
+        'the <error> case is also reported, not just <failure>'
+    Assert-Check (-not (($junitFound -join '') -like '*testPassing*')) 'a passing JUnit testcase is not reported'
+    Assert-Check (-not (($junitFound -join '') -like '*testSkipped*')) 'a skipped JUnit testcase is not reported'
+
+    # A run that produced no results at all - the JUnit equivalent of the empty-.trx case above,
+    # and the same StrictMode trap a dotted walk would not survive.
+    [xml]$junitEmpty = '<testsuite name="empty" tests="0" failures="0" errors="0" skipped="0" />'
+    $junitNone = @(Get-JUnitFailedTests -Document $junitEmpty)
+    Assert-Check ($junitNone.Count -eq 0) 'a result-less JUnit run yields nothing instead of throwing'
+
+    # The cap exists here for the same reason it exists on the .trx side.
+    [xml]$junitMany = '<testsuite name="many">' +
+        ((1..30 | ForEach-Object { "<testcase classname=`"T`" name=`"t$_`"><failure message=`"boom`" /></testcase>" }) -join '') +
+        '</testsuite>'
+    $junitCapped = @(Get-JUnitFailedTests -Document $junitMany -Limit 5)
+    Assert-Check ($junitCapped.Count -eq 5) "the JUnit limit is honoured (got $($junitCapped.Count))"
+
+    # --- The lint violation parser -------------------------------------------------------------
+    # Real AGP 9.2.1 console output, shortened. The noise lines are the point: this console is shared
+    # with MSBuild and the NativeAOT compiler, so the parser has to reject far more than it accepts.
+    $lintSample = @(
+        'MSBuild version 18.6.11+35b593beb for .NET',
+        '  ILC: Method ''[Mono.Android.Runtime]Android.Runtime.RuntimeNativeMethods'' will always throw because: Invalid IL',
+        'Z:\RemEx\artifacts\obj\remex.core\linked\Mono.Android.dll : warning IL3053: Assembly produced AOT analysis warnings.',
+        '> Task :app:lintAnalyzeRelease',
+        'Z:\RemEx\remex.android\app\src\main\java\com\clindsay94\remex\FileTransferNotificationManager.kt:218: Error: Missing permissions required by NotificationManagerCompat.notify [MissingPermission]',
+        '        NotificationManagerCompat.from(context).notify(notificationId, builder.build())',
+        'Wrote HTML report to file:///Z:/RemEx/remex.android/app/build/reports/lint-results-release.html',
+        'Lint found 1 errors, 0 warnings'
+    )
+    $lintFound = @(Get-LintViolationLines -Output $lintSample)
+    Assert-Check ($lintFound.Count -eq 1) "exactly one lint violation line is kept (got $($lintFound.Count))"
+    Assert-Check ($lintFound -join '' -like '*FileTransferNotificationManager.kt:218*') 'the offending file and line are named'
+    Assert-Check ($lintFound -join '' -like '*MissingPermission*') 'the rule id is kept'
+    # The rejections matter more than the match: a parser that accepted these would fill the receipt
+    # with build noise and bury the one line worth keeping.
+    Assert-Check (-not ($lintFound -join '' -like '*IL3053*')) 'an AOT warning is not mistaken for a lint violation'
+    Assert-Check (-not ($lintFound -join '' -like '*Wrote HTML report*')) 'the report path is not mistaken for a violation'
+    Assert-Check (-not ($lintFound -join '' -like '*MSBuild version*')) 'MSBuild banner text is not mistaken for a violation'
+
+    # AGP prints the first failure three times over. The receipt should carry it once.
+    $lintDuped = @(Get-LintViolationLines -Output @($lintSample[4], $lintSample[4], $lintSample[4]))
+    Assert-Check ($lintDuped.Count -eq 1) "a repeated violation line is reported once (got $($lintDuped.Count))"
+
+    $lintNone = @(Get-LintViolationLines -Output @('> Task :app:lintRelease', 'BUILD SUCCESSFUL in 11s'))
+    Assert-Check ($lintNone.Count -eq 0) 'clean lint output yields no violation lines'
+
+    return $script:parserCheckFailures
+}
+
+if ($SelfTest) {
+    Write-Host "`nverify.ps1 result-parser self-test" -ForegroundColor Cyan
+    $selfTestFailures = Invoke-ResultParserSelfTest
+    if ($selfTestFailures -eq 0) {
+        Write-Host "  PASS - the failing-test parser reports what it should and nothing else.`n" -ForegroundColor Green
+        exit 0
+    }
+    Write-Host "  FAIL - $selfTestFailures check(s) failed.`n" -ForegroundColor Red
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
+# Verification proper.
+# ---------------------------------------------------------------------------
+
+$started = Get-Date
+$problems = [System.Collections.Generic.List[string]]::new()
+$testsRun = 0; $testsPassed = 0; $testsFailed = 0; $testsSkipped = 0
+$warnings = 0
+
+Write-Stage "Fingerprinting the source"
+$before = Get-SourceFingerprint -ForScope $Scope
+Write-Say "  $($before.Files) files, fingerprint $($before.Hash.Substring(0,16))..."
+
+$gitHead = (git -C $RepoRoot rev-parse --short HEAD 2>$null)
+if ($LASTEXITCODE -ne 0) { $gitHead = 'unknown' }
+$gitDirty = [bool](git -C $RepoRoot status --porcelain 2>$null)
+
+# --- .NET ------------------------------------------------------------------
+
+if ($Scope -in @('dotnet', 'all')) {
+    $sln = Join-Path $RepoRoot 'Remex.sln'
+
+    # The WSL/Linux .NET install commonly ships Microsoft.NETCore.App without
+    # Microsoft.AspNetCore.App, which makes the agent test host fail to start with a
+    # message about installing .NET. Publishing self-contained bundles the runtime into
+    # the test output and needs no change to the machine. Detect rather than assume, so
+    # a properly provisioned Linux box is not penalised.
+    $extra = @()
+    $runtimes = @(dotnet --list-runtimes 2>$null)
+    if (-not ($runtimes -match 'Microsoft\.AspNetCore\.App')) {
+        Write-Say "  ASP.NET Core runtime not found - building self-contained for this machine."
+        $extra = @('-p:RuntimeIdentifier=linux-x64', '-p:SelfContained=true')
+    }
+
+    if (-not $NoClean) {
+        Write-Stage "Cleaning previous .NET build output"
+        dotnet clean $sln -c Release --nologo -v quiet 2>&1 | Out-Null
+        Write-Say "  Done."
+    }
+    else {
+        Write-Say "`n  Skipping clean (-NoClean). This result is weaker than a clean one." 'Yellow'
+    }
+
+    Write-Stage "Building the .NET solution"
+    $buildLog = dotnet build $sln -c Release --no-incremental --nologo @extra 2>&1
+    $buildOk = ($LASTEXITCODE -eq 0)
+    $warnings = @($buildLog | Select-String -Pattern ': warning ' -SimpleMatch).Count
+
+    if (-not $buildOk) {
+        $problems.Add('dotnet build failed')
+        Write-Problem "The .NET build failed." "Scroll up for the compiler errors, or run: dotnet build Remex.sln -c Release"
+        $buildLog | Select-String -Pattern ': error ' -SimpleMatch |
+            Select-Object -First 15 | ForEach-Object { Write-Say "    $_" 'Red' }
+    }
+    else {
+        Write-Say "  Built successfully. $warnings warning(s)."
+
+        Write-Stage "Running the .NET test suite"
+        $trxDir = Join-Path $RepoRoot '.ralph' 'trx'
+        if (Test-Path -LiteralPath $trxDir) { Remove-Item -LiteralPath $trxDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $trxDir -Force | Out-Null
+
+        # RemEx-zzf7d: two of three verify runs on 2026-09-08 sat 50-60 min at this line with one
+        # idle testhost and no log advance, then the same suite passed in ~130s run directly. A
+        # hang here must end with the test NAMED, not an hour of silence. --blame-hang-timeout is
+        # PER TEST (180s of no progress on one test), not a budget for the whole run, so a slow but
+        # alive suite is unaffected - only a test that stops responding gets killed. The output is
+        # STREAMED through ForEach-Object so each project's Passed!/Failed! line appears the moment
+        # that project finishes - a stall before vstest even starts a session (the 2026-09-08
+        # shape: idle testhost, ten idle dotnet processes) never arms the blame timer, and the only
+        # evidence of it is progress stopping. $LASTEXITCODE is still the native call's: nothing
+        # downstream of the first pipeline stage is a native command.
+        $testLines = dotnet test $sln -c Release --no-build --nologo @extra `
+            --blame-hang --blame-hang-timeout 180s --blame-hang-dump-type none `
+            --logger 'trx' --results-directory $trxDir 2>&1 | ForEach-Object {
+                if ($_ -match '^(Passed!|Failed!)|Test Run Aborted|was aborted|inactivity time|hang dump') {
+                    Write-Say "  $_"
+                }
+                $_
+            }
+        $testExit = $LASTEXITCODE
+
+        $trxFiles = @(Get-ChildItem -LiteralPath $trxDir -Filter '*.trx' -ErrorAction SilentlyContinue)
+        if ($trxFiles.Count -eq 0) {
+            $problems.Add('no .NET test results produced')
+            Write-Problem "The test run produced no results file." "Run: dotnet test Remex.sln -c Release"
+        }
+        $failedTestNames = [System.Collections.Generic.List[string]]::new()
+        foreach ($trx in $trxFiles) {
+            try {
+                [xml]$doc = Get-Content -LiteralPath $trx.FullName -Raw
+                $c = $doc.TestRun.ResultSummary.Counters
+                $testsRun += [int]$c.total
+                $testsPassed += [int]$c.passed
+                $testsFailed += [int]$c.failed
+                # 'total minus executed' is the honest skipped count; a test that never ran
+                # is not a test that passed, and rolling it into passed would inflate the number.
+                $testsSkipped += ([int]$c.total - [int]$c.executed)
+
+                # Same file, same read: the names cost nothing extra here (RemEx-ffxl).
+                foreach ($f in @(Get-TrxFailedTests -Document $doc)) { $failedTestNames.Add($f) }
+            }
+            catch {
+                $problems.Add("could not read test results from $($trx.Name)")
+            }
+        }
+
+        # RemEx-zzf7d: when --blame-hang fires it drops a Sequence XML under the results directory
+        # listing tests in the order they ran; the last one was the one still running when the
+        # 180s-per-test timeout hit. Read it now so a hang has a name by the time anyone asks.
+        # One file per hung test host - a solution run has one host per project, so two stuck
+        # projects mean two files, and every one of them gets named. GetAttribute, not .Name: on
+        # an XmlElement .Name falls back to the TAG when the attribute is missing, which would
+        # report a test called "Test" and suggest a --filter matching the entire repo.
+        $hungTestNames = [System.Collections.Generic.List[string]]::new()
+        if ($testExit -ne 0) {
+            foreach ($seqFile in @(Get-ChildItem -LiteralPath $trxDir -Filter '*equence*.xml' -Recurse -ErrorAction SilentlyContinue)) {
+                try {
+                    [xml]$seqDoc = Get-Content -LiteralPath $seqFile.FullName -Raw
+                    $lastTest = @($seqDoc.TestSequence.Test) | Select-Object -Last 1
+                    if ($lastTest -is [System.Xml.XmlElement]) {
+                        $n = $lastTest.GetAttribute('Name')
+                        if ($n) { $hungTestNames.Add($n) }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        if ($testExit -ne 0 -or $testsFailed -gt 0) {
+            $problems.Add("$testsFailed .NET test(s) failed")
+            # Into problems, so the NAME survives in the receipt. The .ralph/trx directory is wiped
+            # at the start of the next run, so by the time anyone asks which test it was, the receipt
+            # is the only place the answer can still exist.
+            foreach ($f in $failedTestNames) { $problems.Add("failed: $f") }
+
+            Write-Problem "$testsFailed of $testsRun tests failed." `
+                "Run: dotnet test Remex.sln -c Release --filter <name of a failing test>"
+            foreach ($f in $failedTestNames) { Write-Say "    $f" 'Red' }
+
+            # A hang is reported at THIS level, not only when nothing else failed: a real failure in
+            # one project and a hang in another would otherwise print "1 of N failed" and throw the
+            # hung test's name away - the one diagnostic this block exists to keep (RemEx-zzf7d).
+            foreach ($h in $hungTestNames) {
+                $problems.Add("test run hung: $h")
+                Write-Problem "The test run hung on $h." `
+                    "It made no progress for 180s and its test host was aborted. Run: dotnet test Remex.sln -c Release --filter `"FullyQualifiedName~$h`""
+            }
+
+            if ($failedTestNames.Count -eq 0) {
+                if ($testsFailed -eq 0) {
+                    # Nonzero exit, nothing counted as failed, nothing named: the run died before or
+                    # outside the tests - a crashed host, a missing runtime. Looking for a flaky test
+                    # would be looking in the wrong place entirely.
+                    $problems.Add('no individual test was recorded as failed - the run itself failed')
+                    Write-Say "    No individual test was recorded as failed - the run itself failed." 'Yellow'
+                }
+                else {
+                    # Counters DID record failures but no name came back, which means this parser has
+                    # gone blind - a renamed or re-namespaced .trx element would do it. Reporting
+                    # "the run itself failed" here would be a confident wrong answer at exactly the
+                    # moment the diagnostics broke, which is worse than the silence this replaced.
+                    $problems.Add("$testsFailed test failure(s) recorded but no test name could be parsed - the result parser needs attention")
+                    Write-Problem "$testsFailed test(s) failed but none could be named." `
+                        "The .trx parser matched nothing. Run: ./scripts/verify.ps1 -SelfTest"
+                }
+            }
+        }
+        else {
+            Write-Say "  $testsPassed of $testsRun tests passed."
+        }
+    }
+}
+
+# --- Android ---------------------------------------------------------------
+
+if ($Scope -in @('android', 'all')) {
+    Write-Stage "Running the Android release unit tests"
+    $androidDir = Join-Path $RepoRoot 'remex.android'
+    $gradlew = Join-Path $androidDir $(if ($IsWin) { 'gradlew.bat' } else { 'gradlew' })
+
+    # RemEx-kou55: a JDK update refreshed only one scope and left JAVA_HOME pointing at a
+    # directory that no longer exists. Gradle then died at JVM init with zero tests recorded,
+    # and "Android unit tests failed" was the only reason in the receipt - which quarantined
+    # desktop-only beads that never touched Android. Catch the dead path before either Gradle
+    # invocation below runs, so the receipt names JAVA_HOME instead. Unset is fine - Gradle
+    # finds java on PATH - so this only fires when the variable is set AND wrong.
+    if ($env:JAVA_HOME -and -not (Test-Path -LiteralPath $env:JAVA_HOME -PathType Container)) {
+        $problems.Add('JAVA_HOME points at a missing directory')
+        Write-Problem "JAVA_HOME=$($env:JAVA_HOME) does not exist." `
+            "A JDK update refreshed only one scope; check User vs Machine scope: [Environment]::GetEnvironmentVariable('JAVA_HOME','User') / ('JAVA_HOME','Machine'), and remove the stale override so the Adoptium-maintained value is the single source of truth."
+    }
+    elseif (-not (Test-Path -LiteralPath $gradlew)) {
+        $problems.Add('gradle wrapper not found')
+        Write-Problem "Could not find the Gradle wrapper at $gradlew." `
+            "Check that remex.android is complete, or run the Android build once via ./build-remex.ps1 -t android"
+    }
+    else {
+        Push-Location $androidDir
+        try {
+            # Release variant only. Debug is never installed on device here, and only the
+            # release variant runs the lintRelease gate.
+            # This task only exists because app/build.gradle.kts sets testBuildType =
+            # "release"; AGP 9 builds a unit-test component for that variant and no other.
+            $gradleArgs = @('testReleaseUnitTest', '--console=plain')
+            if (-not $NoClean) { $gradleArgs = @('clean') + $gradleArgs }
+
+            # Capture rather than discard. This used to pipe to Out-Null, so when the task
+            # name was wrong Gradle's "Task 'testReleaseUnitTest' not found" went nowhere and
+            # the only thing reported was "Android unit tests failed" - which reads like a
+            # failing test and sent the reader looking in entirely the wrong place. Whatever
+            # goes wrong here, the person running it should see what Gradle actually said.
+            $gradleOutput = & $gradlew @gradleArgs 2>&1
+            $gradleOk = ($LASTEXITCODE -eq 0)
+        }
+        finally {
+            Pop-Location
+        }
+
+        $resultsDir = Join-Path $androidDir 'app' 'build' 'test-results' 'testReleaseUnitTest'
+        $suites = @(Get-ChildItem -LiteralPath $resultsDir -Filter '*.xml' -ErrorAction SilentlyContinue)
+        # Local to this run, unlike $testsFailed which also carries the .NET total - the
+        # "recorded but none named" split below needs to know what THIS run counted.
+        $androidTestsFailed = 0
+        $androidFailedTestNames = [System.Collections.Generic.List[string]]::new()
+        foreach ($suite in $suites) {
+            try {
+                [xml]$doc = Get-Content -LiteralPath $suite.FullName -Raw
+                $ts = $doc.testsuite
+                $total = [int]$ts.tests
+                $failed = [int]$ts.failures + [int]$ts.errors
+                $skipped = [int]$ts.skipped
+                $testsRun += $total
+                $testsFailed += $failed
+                $testsSkipped += $skipped
+                $testsPassed += ($total - $failed - $skipped)
+                $androidTestsFailed += $failed
+
+                # Same file, same read: the names cost nothing extra here - mirrors the .NET
+                # fix (RemEx-ffxl). The Android test-results directory is not cleaned between
+                # runs by this script, but Gradle overwrites it on the next test run, so this
+                # is the only place a name survives past that.
+                foreach ($f in @(Get-JUnitFailedTests -Document $doc)) { $androidFailedTestNames.Add($f) }
+            }
+            catch {
+                $problems.Add("could not read Android results from $($suite.Name)")
+            }
+        }
+
+        if (-not $gradleOk) {
+            # Distinguish "a test failed" from "the build never got as far as running tests".
+            # They need completely different responses and the old message conflated them.
+            $text = ($gradleOutput | Out-String)
+            $noSuchTask = $text -match "Task '.*' not found"
+
+            if ($noSuchTask) {
+                $problems.Add('Android test task does not exist')
+                Write-Problem "The Android test task does not exist, so nothing was tested." `
+                    "app/build.gradle.kts must set testBuildType = `"release`" for testReleaseUnitTest to exist (AGP 9 only builds a unit-test component for testBuildType). Check that line is still present."
+            }
+            else {
+                $problems.Add('Android unit tests failed')
+                Write-Problem "The Android unit tests failed." `
+                    "Run: cd remex.android; ./gradlew testReleaseUnitTest"
+
+                # Into problems, so the NAME survives in the receipt - same reasoning as the
+                # .NET branch (RemEx-ffxl): the Android test-results directory is overwritten
+                # by the next run, so by the time anyone asks which test it was, the receipt is
+                # the only place the answer can still exist.
+                foreach ($f in $androidFailedTestNames) { $problems.Add("failed: $f") }
+                foreach ($f in $androidFailedTestNames) { Write-Say "    $f" 'Red' }
+
+                if ($androidFailedTestNames.Count -eq 0) {
+                    if ($androidTestsFailed -eq 0) {
+                        # Gradle reported failure but no individual case was counted as failed -
+                        # the run itself died (a crashed test JVM, an instrumentation error)
+                        # rather than a flaky test. Looking for a failing test would be looking
+                        # in the wrong place entirely.
+                        $problems.Add('no individual Android test was recorded as failed - the run itself failed')
+                        Write-Say "    No individual test was recorded as failed - the run itself failed." 'Yellow'
+                    }
+                    else {
+                        # Counters DID record failures but no name came back, which means this
+                        # parser has gone blind - a changed JUnit report shape would do it.
+                        # Reporting "the run itself failed" here would be a confident wrong
+                        # answer at exactly the moment the diagnostics broke, which is worse
+                        # than the silence this replaced.
+                        $problems.Add("$androidTestsFailed Android test failure(s) recorded but no test name could be parsed - the result parser needs attention")
+                        Write-Problem "$androidTestsFailed Android test(s) failed but none could be named." `
+                            "The JUnit XML parser matched nothing. Run: ./scripts/verify.ps1 -SelfTest"
+                    }
+                }
+            }
+
+            # Show what Gradle actually said. The 'What went wrong' block is the useful part;
+            # fall back to the tail if Gradle failed in some way that does not produce one.
+            $reason = @($gradleOutput | Select-String -Pattern '^\* What went wrong:' -Context 0, 6)
+            if ($reason.Count -gt 0) {
+                Write-Host ""
+                Write-Host "  Gradle said:"
+                foreach ($line in ($reason[0].Context.PostContext)) {
+                    # Stop at Gradle's boilerplate. "* Try: > Run with --stacktrace" and the
+                    # docs links are the same six lines on every failure and bury the one
+                    # line that actually differs.
+                    if ($line -match '^\* Try:') { break }
+                    if ($line.Trim()) { Write-Host "    $line" }
+                }
+            }
+            elseif ($text.Trim()) {
+                Write-Host ""
+                Write-Host "  Last few lines of the Gradle output:"
+                foreach ($line in (@($gradleOutput) | Select-Object -Last 8)) {
+                    if ("$line".Trim()) { Write-Host "    $line" }
+                }
+            }
+        }
+        elseif ($suites.Count -eq 0) {
+            $problems.Add('no Android test results produced')
+            Write-Problem "The Android test run produced no results." `
+                "Run: cd remex.android; ./gradlew testReleaseUnitTest"
+        }
+        else {
+            Write-Say "  Android tests finished. Running totals now include them."
+        }
+
+        # --- The release lint gate ---------------------------------------------------------
+        # testReleaseUnitTest compiles the release sources but does NOT pull lint in: lint is a
+        # separate task graph. So this script could not fail on a lint-vital violation, while the
+        # standing release-only rule names that gate as the whole reason release is the variant that
+        # matters - a bead could close green against a violation that would fail a real release
+        # build (RemEx-lju6).
+        #
+        # lintRelease alone, not assembleRelease. MEASURED FOR THE TASK THIS ACTUALLY RUNS: the
+        # android scope went 57s -> 81-83s when it switched from lintVitalRelease to lintRelease, so
+        # this stage costs about 25s warm. The 11s that used to sit here was lintVitalRelease's, and
+        # in a file whose whole idiom is "measured, not estimated" a re-labelled measurement is worse
+        # than none. assembleRelease was ~93s cold, which is still why this is a lint task and not a
+        # build - though the margin is nearer 3x than the 8x the old pair of numbers implied. Not an
+        # opt-in switch either: a gate you have to remember is not a gate.
+        #
+        # **THE FULL RUN, NOT lintVitalRelease, SINCE RemEx-cljx.** lintVital covers only the
+        # fatal-severity subset; the rest reported 262 errors that nothing ran and nobody had read.
+        # Triaging them found no defects - 255 were Material's own colour-science APIs that M3 dynamic
+        # theming has no public alternative to, 5 were notify() calls whose guard lint cannot follow,
+        # 1 was a @Preview, and 1 was a developer's local.properties. They are suppressed at the
+        # declarations that earn it and in app/lint.xml, and the count is zero. Gating on the full run
+        # is what keeps it there: a number nothing checks goes back to 262 one commit at a time,
+        # which is how it got there.
+        #
+        # Its own stage and its own message, deliberately. Appending the task to the test invocation
+        # above would fold a lint violation into "Android unit tests failed" - precisely the
+        # mis-attribution the comment on that invocation exists to prevent.
+        Write-Stage "Running the Android release lint gate"
+        Push-Location $androidDir
+        try {
+            $lintOutput = & $gradlew @('lintRelease', '--console=plain') 2>&1
+            $lintOk = ($LASTEXITCODE -eq 0)
+        }
+        finally {
+            Pop-Location
+        }
+
+        $lintText = ($lintOutput | Out-String)
+
+        if ($lintOk) {
+            Write-Say "  lintRelease passed."
+        }
+        elseif ($lintText -match "(?m)^Task '.*' not found in root project") {
+            # "The task is gone" and "the code has violations" need completely different responses,
+            # and the second is a far more comfortable thing to read than the truth. This is the same
+            # conflation the test stage above was fixed for; found here by pointing the stage at a
+            # deliberately non-existent task and watching it report violations that did not exist.
+            # Anchored to the line start so a source line lint echoes back cannot trip it.
+            $problems.Add('Android lint task does not exist - nothing was linted')
+            Write-Problem "The release lint task does not exist, so nothing was linted." `
+                "AGP renames tasks between major versions. Check the task still exists: cd remex.android; ./gradlew tasks --all | Select-String lintRelease"
+        }
+        elseif ($lintText -match 'Lint found \d+ error') {
+            # POSITIVE evidence before claiming violations. Everything else that makes this task exit
+            # nonzero - a Kotlin compile error upstream, a dead daemon, a JVM OOM, a missing
+            # JAVA_HOME - is not a lint violation, and asserting one would put a confident falsehood
+            # in the receipt and point the reader at an HTML report that was never written.
+            $problems.Add('Android lint violations')
+            Write-Problem "The release lint gate found violations." `
+                "Run: cd remex.android; ./gradlew lintRelease - full report at remex.android/app/build/reports/lint-results-release.html"
+
+            # The offending lines into problems, not just a verdict. Same reasoning as the test
+            # names (RemEx-ffxl): the lint report under app/build is overwritten by the next run, so
+            # a receipt saying only "violations" is a count nobody can act on afterwards. Note AGP
+            # prints only the FIRST failure, so this is that one line, not the full list.
+            # **@() BECAUSE ONE VIOLATION IS THE COMMON CASE AND WAS THE BROKEN ONE.** AGP prints
+            # only the first failure, so this usually returns exactly one line - and under
+            # Set-StrictMode an unwrapped single result is a scalar whose .Count throws "The property
+            # 'Count' cannot be found on this object", three lines below. The gate named the file,
+            # rule and line correctly and then the script died instead of printing its FAIL summary.
+            # Never seen because lintVitalRelease never failed; enabling the full run reached this on
+            # its first try. Strict mode throws on zero results too, so the "gate went blind" branch
+            # below was equally unreachable. This parser's own self-test already wraps with @() - the
+            # production call site was the one that did not.
+            $lintLines = @(Get-LintViolationLines -Output $lintOutput)
+            foreach ($line in $lintLines) {
+                $problems.Add("lint: $line")
+                Write-Say "    $line" 'Red'
+            }
+            if ($lintLines.Count -eq 0) {
+                # Lint said it found errors but printed none this parser recognised - the same "the
+                # gate went blind" case the test parsers guard against, and worth saying rather than
+                # leaving a bare verdict in the receipt.
+                $problems.Add('lint reported errors but no violation line could be parsed - check the HTML report')
+                Write-Say "    No violation line could be parsed - open the HTML report." 'Yellow'
+            }
+        }
+        else {
+            # Nonzero, not a missing task, and no lint findings: the RUN failed rather than the code.
+            $problems.Add('the Android lint run itself failed - no violations were reported')
+            Write-Problem "The release lint run failed before it could report anything." `
+                "This is not a lint violation. Run: cd remex.android; ./gradlew lintRelease"
+
+            # Show what Gradle actually said, the same way the test stage does - on this path it is
+            # the only diagnostic there is.
+            $lintReason = @($lintOutput | Select-String -Pattern '^\* What went wrong:' -Context 0, 6)
+            if ($lintReason.Count -gt 0) {
+                foreach ($line in ($lintReason[0].Context.PostContext)) {
+                    if ($line -match '^\* Try:') { break }
+                    if ($line.Trim()) { Write-Say "    $line" 'Red' }
+                }
+            }
+        }
+    }
+}
+
+# --- The edit guard itself -------------------------------------------------
+# The guard runs on every Edit and Write, so a silent regression in it would either
+# block real work or, worse, stop catching the corruption it exists to catch. Its own
+# tests are cheap, so there is no reason not to run them here.
+
+# This gate's own diagnostics, checked by the gate. The failing-test parser is the only thing that
+# turns "1 test failed" into a name someone can act on, and if it quietly stopped reporting, every
+# failure would look exactly like the unattributable one that prompted it (RemEx-ffxl). Pure, so the
+# whole check is milliseconds; run it here rather than trusting anyone to remember -SelfTest.
+Write-Stage "Checking the result parser"
+$parserFailures = Invoke-ResultParserSelfTest
+if ($parserFailures -eq 0) {
+    Write-Say "  The failing-test parser reports what it should and nothing else."
+}
+else {
+    $problems.Add('result parser self-test failed')
+    Write-Problem "The failing-test parser is not reporting correctly." `
+        "Run: ./scripts/verify.ps1 -SelfTest"
+}
+
+Write-Stage "Checking the edit guard"
+$guardTests = Join-Path $RepoRoot '.claude' 'scripts' 'test_guard_edit.py'
+if (Test-Path -LiteralPath $guardTests) {
+    $guardOut = python3 $guardTests 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('edit guard tests failed')
+        Write-Problem "The edit guard is not behaving correctly." `
+            "Run: python3 .claude/scripts/test_guard_edit.py"
+        $guardOut | Select-String -Pattern '[FAIL]' -SimpleMatch |
+            ForEach-Object { Write-Say "    $_" 'Red' }
+    }
+    else {
+        Write-Say "  The edit guard passes its own tests."
+    }
+}
+else {
+    Write-Say "  Skipped - .claude/scripts/test_guard_edit.py is not present."
+}
+
+# --- Lane placement --------------------------------------------------------
+# The dispatcher's whole safety argument is that concurrent lanes touch disjoint files, and the
+# rule enforcing it is pure - no board, no git, no network - so it is checkable here for
+# milliseconds. It is checked here because the failure is silent: a wrong rule still produces a
+# plan that looks reasonable, and the only symptom is a lane returning on a conflict an hour later.
+
+Write-Stage "Checking lane placement"
+$cluster = Join-Path $PSScriptRoot 'ralph-cluster.ps1'
+if (Test-Path -LiteralPath $cluster) {
+    # No capture: the self-test reports through Write-Host, which goes to the console rather than
+    # down the pipeline, so its failures are already on screen and a variable would hold nothing.
+    & $cluster -SelfTest
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('lane placement self-test failed')
+        Write-Problem "Lanes could be scheduled over the same files." `
+            "Run: ./scripts/ralph-cluster.ps1 -SelfTest"
+    }
+    else {
+        Write-Say "  Concurrent lanes are scheduled over disjoint files."
+    }
+}
+else {
+    Write-Say "  Skipped - scripts/ralph-cluster.ps1 is not present."
+}
+
+# The queue is the serialised step, so a defect in it stalls or misreports every landing rather
+# than one. Both things its self-test covers reached production and neither showed up in the
+# queue's own output: a passing build filed as an integration failure, and a landing that sat for
+# three and a half hours after 139 seconds of work.
+
+Write-Stage "Checking the merge queue"
+$mergeQueue = Join-Path $PSScriptRoot 'ralph-merge-queue.ps1'
+if (Test-Path -LiteralPath $mergeQueue) {
+    & $mergeQueue -SelfTest
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('merge queue self-test failed')
+        Write-Problem "The merge queue would misread or stall a landing." `
+            "Run: ./scripts/ralph-merge-queue.ps1 -SelfTest"
+    }
+}
+else {
+    Write-Say "  Skipped - scripts/ralph-merge-queue.ps1 is not present."
+}
+
+# --- Translations ----------------------------------------------------------
+
+if (-not $SkipLocalization) {
+    Write-Stage "Checking translations"
+    $checker = Join-Path $PSScriptRoot 'check-localization.ps1'
+    if (Test-Path -LiteralPath $checker) {
+        # Self-test first, for the reason the result-parser one runs unconditionally above: the
+        # contract between this file and that one is a string, and if it breaks, the checker still
+        # exits 0 and this block prints "no NEW problems" over a screen of warnings - RemEx-0bygp
+        # reproduced with a green gate. No capture; it reports through Write-Host like its siblings.
+        & $checker -SelfTest
+        if ($LASTEXITCODE -ne 0) {
+            $problems.Add('localization self-test failed')
+            Write-Problem "The translation checker is not measuring what it claims." `
+                "Run: ./scripts/check-localization.ps1 -SelfTest"
+        }
+
+        # The checker reports through Write-Host, which goes straight to the console and cannot be
+        # captured, so its findings have always been visible here. What was NOT true was the line
+        # this branch used to print underneath them. It emits one machine-readable summary on the
+        # success stream for that reason - it is the only part of its output a caller can read.
+        $checkerSummary = & $checker 2>&1 | Where-Object { $_ -is [string] -and $_ -match '^LOCALIZATION-SUMMARY ' }
+
+        if ($LASTEXITCODE -ne 0) {
+            $problems.Add('translation check failed')
+            Write-Problem "The translation check found problems." `
+                "Run ./scripts/check-localization.ps1 on its own to see them in full."
+        }
+        elseif ("$checkerSummary" -match 'warnings=(\d+)' -and [int]$Matches[1] -gt 0) {
+            # Green, but not clean, and the difference has to be said out loud. These do not fail
+            # the gate - they are heuristic, and a new preset name that legitimately matches English
+            # should not block a build - but printing "no new problems" over the top of them is how
+            # a wrong claim gets made in this file's own output (RemEx-0bygp).
+            Write-Say "  $($Matches[1]) NEW translation warning(s) above - not failing the gate, but new since the baseline."
+        }
+        else {
+            # DELIBERATELY NARROWER THAN IT USED TO BE. This said "Translations are complete and
+            # current", which was a claim about the translations. It is not: it is a claim about
+            # the axes the checker measures, minus everything already in its baseline. Connor found
+            # the Pair button reading "Pair" in Turkish while this line was printing underneath
+            # (RemEx-0bygp), and the wording is what made that surprising rather than expected.
+            Write-Say "  No NEW translation problems on the axes the checker measures."
+            Write-Say "  Run ./scripts/check-localization.ps1 -NoBaseline for the standing backlog."
+        }
+    }
+    else {
+        Write-Say "  Skipped - scripts/check-localization.ps1 is not present."
+    }
+}
+
+# --- Did the source move while we were working? ----------------------------
+
+Write-Stage "Re-checking the fingerprint"
+$after = Get-SourceFingerprint -ForScope $Scope
+if ($after.Hash -cne $before.Hash) {
+    $problems.Add('source changed during the run')
+    Write-Problem "The source code changed while this was running, so the result proves nothing." `
+        "Make sure nothing else is editing this working copy, then run ./scripts/verify.ps1 again."
+}
+else {
+    Write-Say "  Unchanged. The result describes the code on disk."
+}
+
+# --- Receipt ---------------------------------------------------------------
+
+$result = if ($problems.Count -eq 0) { 'PASS' } else { 'FAIL' }
+$receiptObj = [ordered]@{
+    schema       = 1
+    result       = $result
+    scope        = $Scope
+    platform     = (Get-Platform)
+    gitHead      = $gitHead
+    gitDirty     = $gitDirty
+    sourceHash   = $after.Hash
+    sourceFiles  = $after.Files
+    testsRun     = $testsRun
+    testsPassed  = $testsPassed
+    testsFailed  = $testsFailed
+    testsSkipped = $testsSkipped
+    warnings     = $warnings
+    clean        = (-not $NoClean)
+    problems     = @($problems)
+    durationSec  = [int]((Get-Date) - $started).TotalSeconds
+    timestampUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+}
+
+$receiptDir = Split-Path -Parent $Receipt
+if ($receiptDir -and -not (Test-Path -LiteralPath $receiptDir)) {
+    New-Item -ItemType Directory -Path $receiptDir -Force | Out-Null
+}
+$receiptObj | ConvertTo-Json -Compress -Depth 5 |
+    Set-Content -LiteralPath $Receipt -Encoding utf8NoBOM
+
+if ($Json) {
+    Write-Output ($receiptObj | ConvertTo-Json -Compress -Depth 5)
+}
+elseif ($result -ceq 'PASS') {
+    Write-Host "`nPASS" -ForegroundColor Green
+    Write-Host "  $testsPassed of $testsRun tests passed" -ForegroundColor Green -NoNewline
+    if ($testsSkipped -gt 0) { Write-Host ", $testsSkipped skipped" -ForegroundColor Yellow -NoNewline }
+    Write-Host " in $($receiptObj.durationSec)s."
+    Write-Host "  Receipt written to $Receipt"
+    Write-Host "  Anyone can confirm it still applies with: ./scripts/verify.ps1 -Check"
+}
+else {
+    Write-Host "`nFAIL" -ForegroundColor Red
+    foreach ($p in $problems) { Write-Host "  - $p" -ForegroundColor Red }
+    Write-Host "  Receipt written to $Receipt (recorded as FAIL)."
+    Write-Host "  Nothing should be marked done until this passes." -ForegroundColor Yellow
+}
+
+exit $(if ($result -ceq 'PASS') { 0 } else { 1 })

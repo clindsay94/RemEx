@@ -88,9 +88,9 @@
     <string name="settings_tab_input">Entrée</string>
     <string name="settings_tab_file_transfer">Transfert de fichiers</string>
     <string name="settings_tab_help">Aide</string>
-    <string name="settings_help_title">Aide et À propos</string>
+    <string name="settings_help_title">Aide</string>
     <string name="settings_replay_tutorial">📖  Revoir le Tutoriel</string>
-    <string name="settings_replay_tutorial_body">Revoir le guide de démarrage couvrant la configuration, l\'autodécouverte et la connexion à votre PC.</string>
+    <string name="settings_replay_tutorial_body">Revoir le guide de prise en main pour la configuration, l\'appairage QR, la connexion manuelle et les conseils d\'utilisation quotidienne.</string>
     <string name="settings_faq_hint">Une question ? Consultez la FAQ disponible via le menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lanceur d\'Apps</string>
     <string name="app_launcher_no_apps">Aucune application trouvée</string>
@@ -117,6 +117,24 @@
     <string name="rc_category_session">Session</string>
     <string name="rc_category_power">Alimentation</string>
     <string name="rc_category_energy">Énergie</string>
+    <string name="rc_media_volume_down">Baisser le volume</string>
+    <string name="rc_media_volume_up">Augmenter le volume</string>
+    <string name="rc_media_mute">Couper le son</string>
+    <string name="rc_media_previous">Piste précédente</string>
+    <string name="rc_media_play_pause">Lire ou mettre en pause</string>
+    <string name="rc_media_play">Lire</string>
+    <string name="rc_media_pause">Mettre en pause</string>
+    <string name="rc_media_next">Piste suivante</string>
+    <string name="rc_media_hint">Maintenez les boutons de volume pour continuer à le modifier.</string>
+    <string name="rc_media_unavailable">Ce PC n’est pas configuré pour accepter les frappes de touches, ces boutons n’auront donc aucun effet.</string>
+    <string name="rc_media_disconnected">Connectez-vous à votre PC pour utiliser ces commandes.</string>
+    <string name="rc_media_state_playing">Lecture en cours</string>
+    <string name="rc_media_state_paused">En pause</string>
+    <string name="rc_media_state_idle">Aucune lecture en cours</string>
+    <string name="rc_media_now_playing">Lecture en cours</string>
+    <string name="rc_media_open_now_playing">Ouvrir la lecture en cours</string>
+    <string name="rc_media_artwork">Pochette de l’album</string>
+    <string name="rc_media_seek">Rechercher la position de lecture</string>
     <string name="screen_remote_desktop_title">Bureau à Distance</string>
     <string name="cd_show_keyboard">Afficher le Clavier</string>
     <string name="cd_key_escape">Esc (Échap)</string>
@@ -167,7 +185,7 @@
     <string name="dashboard_pc_status">État du PC</string>
     <string name="dashboard_pc_status_subtitle">Indicateur de connexion</string>
     <string name="dashboard_wake_pc">Réveiller le PC</string>
-    <string name="dashboard_wake_pc_subtitle">Envoyer un paquet magique WOL</string>
+    <string name="dashboard_wake_pc_subtitle">Envoyer le signal de réveil WOL</string>
     <string name="dashboard_telemetry_fallback">Télémétrie</string>
     <string name="dashboard_card_drawer_title">Tiroir de Cartes</string>
     <string name="dashboard_card_drawer_hint">Cochez pour placer, décochez pour retirer, ou faites glisser une carte sur l\'écran.</string>
@@ -175,11 +193,10 @@
     <string name="dashboard_host_online">PC EN LIGNE</string>
     <string name="dashboard_connecting">CONNEXION…</string>
     <string name="dashboard_tap_to_connect">APPUYER POUR CONNECTER</string>
+    <string name="dashboard_connection_card_action">vous connecter à votre PC</string>
     <string name="dashboard_wake_pc_button">RÉVEILLER PC</string>
     <string name="dashboard_collecting_data">Collecte des données…</string>
     <string name="screen_connection_title">Connexion</string>
-    <string name="screen_splash_title">Chargement</string>
-    <string name="screen_tutorial_title">Tutoriel</string>
     <string name="connection_auto_discover_title">Autodécouverte sur LAN</string>
     <string name="connection_auto_discover_hint">Assurez-vous que l\'application RemEx est en cours d\'exécution sur votre PC et que les deux appareils sont sur le même réseau Wi-Fi.</string>
     <string name="connection_searching">Recherche de votre PC…</string>
@@ -221,6 +238,21 @@
     <string name="connection_status_label">État : %1$s</string>
     <string name="connection_paired">Couplé</string>
     <string name="connection_unpair">Découpler</string>
+    <string name="connection_known_pcs_title">PC connus</string>
+    <string name="connection_known_pcs_hint">Touchez une adresse pour vous connecter.</string>
+    <string name="connection_known_pc_last_connected">Dernière connexion : %1$s</string>
+    <string name="connection_known_pc_never_connected">Jamais connecté</string>
+    <string name="connection_known_pc_actions">Options pour %1$s</string>
+    <string name="connection_known_pc_rename">Renommer</string>
+    <string name="connection_known_pc_rename_title">Nommer ce PC</string>
+    <string name="connection_known_pc_nickname_label">Surnom</string>
+    <string name="connection_known_pc_unpair_title">Découpler %1$s ?</string>
+    <string name="connection_known_pc_unpair_message">Ce téléphone oubliera ce PC, à toutes les adresses auxquelles il répond. Vous aurez besoin du code PIN affiché sur le PC pour le coupler à nouveau.</string>
+    <string name="connection_known_pc_needs_pairing">Couplage requis</string>
+    <string name="connection_known_pc_forget">Retirer de la liste</string>
+    <string name="connection_known_pc_pair_title">Coupler avec %1$s ?</string>
+    <string name="connection_known_pc_pair_message">Ce téléphone n\'est pas couplé à cette adresse. Saisissez le code PIN à 6 chiffres affiché sur le PC.</string>
+    <string name="connection_known_pc_pair_confirm">Coupler</string>
     <string name="pairing_title">Couplage sécurisé</string>
     <string name="pairing_prompt">Saisissez le code PIN à 6 chiffres affiché sur votre PC</string>
     <string name="pairing_auto_pin_failed">Impossible de récupérer le code PIN automatiquement — saisissez le code PIN affiché sur votre PC.</string>
@@ -315,6 +347,8 @@
     <string name="tile_hibernate_label">Hiberner le PC</string>
     <string name="tile_monitor_off_label">Éteindre l\'écran</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Confirmer l\'action</string>
+    <string name="tile_confirm_message">Envoyer \"%1$s\" à votre PC maintenant ?</string>
     <string name="screen_file_transfer_title">Transfert de fichiers</string>
     <string name="file_transfer_upload">Envoyer ↑</string>
     <string name="file_transfer_download">Télécharger ↓</string>
@@ -329,6 +363,54 @@
     <string name="file_transfer_notification_download_title">Téléchargement de %1$s</string>
     <string name="file_transfer_notification_preparing">Préparation du transfert…</string>
     <string name="file_transfer_notification_progress">%1$d sur %2$d octets transférés</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d copié</item>
+        <item quantity="other">%1$d copiés</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d déplacé</item>
+        <item quantity="other">%1$d déplacés</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d échec</item>
+        <item quantity="other">%1$d échecs</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d ignoré</item>
+        <item quantity="other">%1$d ignorés</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s existe déjà</string>
+    <string name="file_conflict_body_exists">Un fichier ou un dossier portant ce nom existe déjà dans le dossier de destination.</string>
+    <string name="file_conflict_body_different_kind">Un élément d’un autre type porte déjà ce nom dans le dossier de destination.</string>
+    <string name="file_conflict_body_name_unusable">Ce nom est trop long pour le dossier de destination.</string>
+    <string name="file_conflict_body_name_taken">Un autre élément a pris le nouveau nom avant l\'enregistrement. Une nouvelle tentative choisira un autre nom.</string>
+    <string name="file_conflict_body_unknown">Cette opération ne peut pas aboutir.</string>
+    <string name="file_conflict_replace">Remplacer</string>
+    <string name="file_conflict_keep_both">Conserver les deux</string>
+    <string name="file_conflict_skip">Ignorer</string>
+    <string name="file_conflict_apply_to_all">Appliquer à tous les suivants</string>
+    <string name="file_conflict_saved_as">Enregistré sous %1$s</string>
+    <string name="file_transfer_rate_bytes">%1$s o/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s ko/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s Mo/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s Go/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Finalisation…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d seconde restante</item>
+        <item quantity="other">%1$d secondes restantes</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d minute restante</item>
+        <item quantity="other">%1$d minutes restantes</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d heure restante</item>
+        <item quantity="other">%1$d heures restantes</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transfert terminé</string>
     <string name="file_transfer_notification_upload_complete">%1$s envoyé</string>
     <string name="file_transfer_notification_upload_failed">Envoi de %1$s échoué</string>
@@ -418,7 +500,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN envoyé</string>
     <string name="widget_toast_not_connected">Non connecté - ouvrez RemEx pour vous connecter</string>
     <string name="widget_toast_command_sent">%1$s envoyé</string>
-    <string name="widget_toast_launching">Lancement de %1$s…</string>
     <string name="widget_hardware_title">Info Matériel</string>
     <string name="sensor_cpu_usage">Utilisation CPU</string>
     <string name="sensor_gpu_usage">Utilisation GPU</string>
@@ -428,19 +509,20 @@
     <string name="sensor_gpu_temp">Température GPU</string>
     <string name="sensor_fallback_label">Capteur %1$d</string>
     <string name="about_android_client_label">Client Android</string>
+    <string name="about_build_id">Compilation %1$s</string>
     <string name="about_pc_host_label">Votre PC</string>
     <string name="about_status_unknown">Inconnu</string>
     <string name="about_view_github">Voir le code source sur GitHub</string>
-    <string name="about_whats_new_1_label">Tableau de bord 2.0</string>
-    <string name="about_whats_new_1_body">Le tableau de bord d\'accueil a été repensé : choisissez un style de graphique par carte, renommez les cartes, choisissez leur forme et réorganisez par glisser et sélection multiple. Une visite guidée l\'explique à la première ouverture.</string>
-    <string name="about_whats_new_2_label">Cartes de capteurs plus intelligentes</string>
-    <string name="about_whats_new_2_body">Les cartes comprennent ce qu\'elles mesurent : la vue s\'adapte automatiquement à chaque métrique, les titres sont personnalisables et des relevés comme la RAM totale ne restent plus bloqués sur « Collecte des données ».</string>
-    <string name="about_whats_new_3_label">Partage de fichiers</string>
-    <string name="about_whats_new_3_body">Transférez des fichiers dans les deux sens avec reprise, vérification SHA-256 et progression en direct. Partager vers RemEx depuis une autre application fonctionne désormais même si RemEx n\'est pas lancée.</string>
-    <string name="about_whats_new_4_label">Animations expressives</string>
-    <string name="about_whats_new_4_body">Les ressorts Material 3 Expressive animent toute l\'application, des tutoriels aux transferts — et chaque animation respecte le réglage d\'accessibilité Réduire les animations du système.</string>
-    <string name="about_whats_new_5_label">Renforcement de la sécurité</string>
-    <string name="about_whats_new_5_body">Les anciens points d\'accès d\'appairage en HTTP non chiffré ont été supprimés, fermant la dernière voie non chiffrée vers le PIN. L\'appairage reste chiffré ECDH de bout en bout, avec l\'empreinte du certificat du PC épinglée à chaque reconnexion.</string>
+    <string name="about_whats_new_1_label">Alertes de capteurs</string>
+    <string name="about_whats_new_1_body">Sur votre PC, définissez un seuil sur n\'importe quel capteur et sa carte affiche une cloche qui devient rouge dès qu\'il est dépassé. L\'alerte reste allumée jusqu\'à ce que vous l\'acquittiez, si bien qu\'un pic manqué pendant votre absence reste signalé, et une alerte critique déclenche aussi une notification de bureau tant que la fenêtre est hors de vue.</string>
+    <string name="about_whats_new_2_label">Assortir mon thème</string>
+    <string name="about_whats_new_2_body">Votre téléphone partage désormais son thème avec votre PC, si bien que Personnalisation peut assortir vos couleurs, claires ou sombres, en un geste. Changez le thème de votre téléphone plus tard et le PC peut le reprendre dès que vous le demandez.</string>
+    <string name="about_whats_new_3_label">Presse-papiers partagé</string>
+    <string name="about_whats_new_3_body">Copiez du texte sur votre téléphone et envoyez-le vers le presse-papiers de votre PC depuis l\'écran Télécommande — il est prêt à coller dès son arrivée. Rien n\'est conservé en chemin, si bien qu\'un mot de passe ou un code de connexion passe puis disparaît.</string>
+    <string name="about_whats_new_4_label">PC connus</string>
+    <string name="about_whats_new_4_body">L\'écran Connexion liste désormais tous les PC avec lesquels vous vous êtes appairé, si bien que changer de machine tient en un geste plutôt qu\'en ressaisir une adresse. Chacun garde son propre nom et la date de votre dernière connexion.</string>
+    <string name="about_whats_new_5_label">Transfert de dossiers</string>
+    <string name="about_whats_new_5_body">Envoyez ou recevez un dossier entier d\'un coup, sous-dossiers vides compris, plutôt que de choisir les fichiers un par un. Une connexion interrompue reprend simplement, comme pour un seul fichier.</string>
     <string name="about_whats_new_title">Nouveautés de la version %1$s</string>
     <string name="app_launcher_recent">Récents</string>
     <string name="cd_close_settings">Fermer les paramètres</string>
@@ -531,17 +613,23 @@
     <string name="task_manager_host_unresponsive">Le PC ne répond pas aux requêtes de la liste des processus. Vérifiez que l\'appairage est terminé et que le PC a la permission de lire les informations sur les processus.</string>
     <string name="task_manager_kill_failed_format">Échec de l\'arrêt du processus %1$d</string>
     <string name="task_manager_retry">Réessayer</string>
-    <string name="rd_err_capture_unavailable">La capture d’écran ne fonctionne pas sur votre PC.</string>
-    <string name="rd_err_capture_stopped">La capture d’écran s’est arrêtée après %1$d images. Votre PC a peut-être été verrouillé ou déconnecté.</string>
-    <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible.</string>
-    <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion.</string>
-    <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur votre PC pour le moment.</string>
+    <string name="rd_err_capture_unavailable">La capture d’écran ne fonctionne pas sur votre PC. Relancez le flux — si l’échec persiste, redémarrez RemEx sur le PC.</string>
+    <string name="rd_err_capture_stopped">La capture d’écran s’est arrêtée après %1$d images. Le PC a peut-être été verrouillé ou déconnecté. Déverrouillez-le, puis relancez le flux.</string>
+    <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible. Choisissez-en un autre et relancez le flux.</string>
+    <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion. Arrêtez le flux, puis relancez-le sur l’écran voulu.</string>
+    <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur votre PC pour le moment. Cela signifie généralement que RemEx doit être mis à jour sur le PC, ou qu’il lui manque les composants nécessaires.</string>
+    <string name="rd_err_input_unavailable">Votre PC n’accepte pas les entrées clavier ou souris. Une invite d’autorisation a peut-être été refusée sur le PC — appuyez sur Redemander pour qu’elle s’affiche à nouveau là-bas. Vous pouvez toujours voir l’écran.</string>
+    <string name="rd_input_retry_button">Redemander</string>
+    <string name="rd_input_retry_sent">Votre PC a été sollicité de nouveau — acceptez l’invite là-bas.</string>
+    <string name="rd_err_connect_timeout">Votre PC à l’adresse %1$s n’a pas répondu. Vérifiez qu’il est allumé et connecté au même réseau Wi‑Fi que ce téléphone, puis réessayez.</string>
+    <string name="rd_err_handshake_timeout">Votre PC à l’adresse %1$s a répondu, puis s’est arrêté pendant la vérification de cet appareil. Il s’est peut-être mis en veille. Réessayez de vous connecter.</string>
     <string name="cd_clear_search">Effacer la recherche</string>
     <string name="pairing_error_timeout">Le PC n’a pas répondu. Vérifiez qu’il est allumé et connecté au même réseau, puis réessayez.</string>
     <string name="host_discovered_snackbar">PC trouvé : %1$s</string>
     <string name="widget_refresh">Actualiser</string>
     <string name="widget_toast_refreshing">Actualisation…</string>
     <string name="widget_toast_refreshed">Télémétrie actualisée</string>
+    <string name="widget_toast_refresh_failed">Impossible d\'actualiser la télémétrie</string>
     <string name="widget_toast_connecting">Connexion au PC…</string>
     <string name="widget_config_poll_interval_label">Actualiser toutes les %1$d s</string>
     <string name="widget_config_poll_interval_hint">Fréquence à laquelle le widget interroge le PC pour obtenir une télémétrie à jour lorsqu\'il est connecté.</string>
@@ -554,6 +642,20 @@
     <string name="connection_error_generic">Échec de la connexion.</string>
     <string name="connection_error_native_missing">Impossible de démarrer le moteur de connexion de RemEx. Essayez de redémarrer l\'application ; si le problème persiste, réinstallez RemEx.</string>
     <string name="connection_action_repair">Recoupler</string>
+    <string name="connection_cert_repair_title">Recoupler ce PC ?</string>
+    <string name="connection_cert_repair_title_unchanged">Rien à réparer</string>
+    <string name="connection_cert_repair_changed">Ce PC répond avec une identité de sécurité différente de celle avec laquelle votre téléphone a été couplé.</string>
+    <string name="connection_cert_repair_when_safe">C\'est normal si vous avez réinstallé RemEx ou Windows sur le PC, ou remplacé son matériel.</string>
+    <string name="connection_cert_repair_when_unsafe">Si rien de tout cela n\'est arrivé, arrêtez-vous. Autre chose répond peut-être à cette adresse et lit ce que vous envoyez.</string>
+    <string name="connection_cert_repair_effect">Recoupler fait oublier à votre téléphone l\'identité à laquelle il fait confiance et relance le couplage. Vous aurez besoin du code PIN affiché sur le PC.</string>
+    <string name="connection_cert_repair_label_pinned">Couplé avec</string>
+    <string name="connection_cert_repair_label_presented">Répond maintenant</string>
+    <string name="connection_cert_repair_checking">Vérification de ce qui répond à cette adresse…</string>
+    <string name="connection_cert_repair_unknown">Ce PC n\'a pas répondu, son identité actuelle n\'a donc pas pu être lue. Ne recouplez que si vous savez pourquoi elle a changé.</string>
+    <string name="connection_cert_repair_unchanged">Ce PC répond avec l\'identité à laquelle votre téléphone fait déjà confiance : il n\'y a rien à réparer. La connexion a échoué pour une autre raison.</string>
+    <string name="connection_cert_repair_fingerprint_unavailable">(inconnue)</string>
+    <string name="connection_cert_repair_fingerprint_checking">Vérification…</string>
+    <string name="connection_cert_repair_confirm">Oublier et recoupler</string>
     <string name="wake_pc_sent">Signal de réveil envoyé</string>
     <string name="wake_pc_failed">Échec de l\'envoi du signal de réveil</string>
     <string name="wake_pc_mac_not_configured">Adresse MAC non configurée — à définir dans les paramètres</string>
@@ -606,9 +708,21 @@
     <string name="file_manager_prop_readonly">Lecture seule</string>
     <string name="file_manager_prop_yes">Oui</string>
     <string name="file_manager_prop_no">Non</string>
-    <string name="file_manager_requesting_volumes">Chargement des disques…</string>
+    <string name="file_manager_full_browse_pending">En attente d’approbation sur votre PC…</string>
+    <string name="file_manager_full_browse_unreachable">Votre PC n’a pas pu joindre ce téléphone pour vous poser la question. Reconnectez-le et réessayez.</string>
+    <string name="file_manager_full_browse_refused">L’exploration de tout l’appareil a été refusée.</string>
+    <string name="file_manager_full_browse_timed_out">Votre PC n’a pas répondu à temps. Réessayez.</string>
     <string name="file_manager_queued_upload">Envoi en file : %1$s</string>
     <string name="file_manager_queued_download">Téléchargement en file : %1$s</string>
+    <string name="file_manager_download_folder">Télécharger le dossier</string>
+    <string name="file_manager_folder_scanning">Lecture du dossier…</string>
+    <string name="file_manager_folder_scan_failed">Impossible de lister le dossier.</string>
+    <string name="file_manager_folder_empty">Ce dossier ne contient aucun fichier à transférer.</string>
+    <string name="file_manager_folder_queued_download">%1$d fichiers en file d\'attente pour le téléchargement.</string>
+    <string name="file_manager_upload_folder">Envoyer un dossier</string>
+    <string name="file_manager_folder_queued_upload">%1$d fichiers en file d\'attente pour l\'envoi.</string>
+    <string name="file_manager_folder_too_large">Ce dossier contient trop de fichiers pour un transfert en une seule fois.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d fichiers en file d\'attente, mais le dossier était trop volumineux pour être listé entièrement : certains fichiers ont été omis.</string>
     <string name="file_manager_transfers_title">Transferts (%1$d)</string>
     <string name="file_manager_clear_finished">Effacer les terminés</string>
     <string name="file_manager_pause">Pause</string>
@@ -652,6 +766,11 @@
     <string name="file_consent_push_message_generic">Votre PC veut envoyer des fichiers vers ce téléphone. Autoriser ?</string>
     <string name="file_consent_full_browse_title">Demande d\'exploration de l\'appareil</string>
     <string name="file_consent_full_browse_message">Votre PC veut explorer le stockage de ce téléphone. Autoriser ?</string>
+    <string name="file_consent_remote_full_browse_title">Explorer les fichiers de votre PC ?</string>
+    <string name="file_consent_remote_full_browse_message">Ce téléphone demande à explorer tout le contenu de votre PC, et pas seulement ses dossiers partagés. Autoriser ?</string>
+    <string name="file_consent_remote_push_title">Envoyer des fichiers vers votre PC ?</string>
+    <string name="file_consent_remote_push_message">Ce téléphone demande à envoyer : %1$s. Autoriser ?</string>
+    <string name="file_consent_remote_push_message_generic">Ce téléphone demande à envoyer des fichiers vers votre PC. Autoriser ?</string>
     <string name="file_consent_allow">Autoriser</string>
     <string name="file_consent_deny">Refuser</string>
     <string name="file_consent_remember">Mémoriser mon choix pour ce PC</string>
@@ -754,4 +873,53 @@
     <string name="personalization_shape_cat_network">Cartes réseau</string>
     <string name="personalization_shape_cat_action">Cartes d’action</string>
     <string name="personalization_shape_cat_other">Autres cartes</string>
+
+    <string name="action_take_screenshot">Prendre une capture d\'écran du PC</string>
+    <string name="screenshot_taken">Capture d\'écran prise sur le PC. Surveillez vos notifications pour la recevoir.</string>
+    <string name="screenshot_failed">Le PC n\'a pas pu prendre de capture d\'écran.</string>
+    <string name="file_push_failed_no_folder">Un fichier n\'a pas pu être enregistré : aucun dossier de ce téléphone n\'est partagé en écriture. Partagez-en un dans RemEx pour recevoir des fichiers.</string>
+    <string name="file_push_failed_bad_name">Un fichier n\'a pas pu être enregistré à cause de son nom.</string>
+    <string name="file_push_failed_destination">Un fichier n\'a pas pu être enregistré : le dossier de destination n\'est plus disponible.</string>
+    <string name="file_push_failed_wrong_file">Un fichier n\'a pas pu être enregistré : ce n\'était pas celui que vous aviez accepté.</string>
+    <string name="file_push_failed_not_saved">Un fichier du PC n\'a pas pu être enregistré. Demandez au PC de le renvoyer.</string>
+    <string name="file_push_failed_no_channel">Un fichier du PC n\'a pas pu être reçu : ce téléphone n\'a pas pu ouvrir sa connexion de fichiers. Réessayez, et réassociez si le problème persiste.</string>
+    <string name="file_received_title">Fichier reçu</string>
+    <string name="file_received_text">%1$s est arrivé depuis votre PC.</string>
+    <string name="file_received_share">Partager</string>
+    <string name="pairing_phase_probe">Vérification que votre PC répond…</string>
+    <string name="pairing_phase_securing">Établissement d’une connexion sécurisée…</string>
+    <string name="pairing_phase_awaiting_host">En attente du code PIN sur votre PC…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Partager le diagnostic</string>
+    <string name="settings_share_diagnostics_body">Créez un rapport sur cette application et sa connexion à votre PC, que vous pouvez envoyer à la personne qui vous aide. Vous le lisez entièrement avant, et rien ne quitte votre téléphone tant que vous ne l’envoyez pas.</string>
+    <string name="screen_share_diagnostics_title">Partager le diagnostic</string>
+    <string name="share_diagnostics_explainer">Ce rapport contient la version de l’application, le modèle du téléphone, la version d’Android, ce que votre PC a annoncé en dernier à son sujet et les lignes de journal récentes de cette application. Les clés d’association sont supprimées et les chemins de fichiers sont réduits au seul nom du fichier. Ce que vous voyez ci-dessous est exactement ce qui sera envoyé.</string>
+    <string name="share_diagnostics_network_toggle">Inclure les adresses réseau</string>
+    <string name="share_diagnostics_network_toggle_body">Désactivé par défaut. Ne l’activez que pour un problème de connexion : les adresses IP restent alors dans le rapport.</string>
+    <string name="share_diagnostics_preview_title">Aperçu du rapport</string>
+    <string name="share_diagnostics_collecting">Création du rapport…</string>
+    <string name="share_diagnostics_send">Partager le rapport</string>
+    <string name="share_diagnostics_chooser">Partager le diagnostic</string>
+    <string name="share_diagnostics_failed">Le rapport n’a pas pu être préparé pour le partage.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Envoyer le presse-papiers au PC</string>
+    <string name="clipboard_send_ok">Envoyé au presse-papiers du PC</string>
+    <string name="clipboard_send_empty">Le presse-papiers est vide</string>
+    <string name="clipboard_send_too_large">C’est trop volumineux pour être envoyé. La limite est de %1$d Ko.</string>
+    <string name="clipboard_send_failed">Impossible d’envoyer le presse-papiers</string>
+    <string name="clipboard_send_refused">Le PC l’a refusé : associez d’abord le téléphone à votre PC</string>
+    <string name="clipboard_send_not_connected">Connectez-vous d’abord à votre PC</string>
+    <string name="clipboard_send_unsupported">Seul du texte copié peut être envoyé</string>
+    <string name="clipboard_fetch_button">Récupérer le presse-papiers du PC</string>
+    <string name="clipboard_fetch_ok">Copié depuis le PC</string>
+    <string name="clipboard_fetch_empty">Rien n’est copié sur le PC</string>
+    <string name="clipboard_fetch_too_large">Le presse-papiers du PC est trop volumineux pour être copié</string>
+    <string name="clipboard_fetch_failed">Impossible de récupérer le presse-papiers du PC</string>
+    <string name="clipboard_fetch_label">Presse-papiers du PC</string>
 </resources>

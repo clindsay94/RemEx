@@ -1,9 +1,35 @@
+<!-- ATTRIBUTE ORDER IS LOAD-BEARING on the root element below: `Classes="palette-crossfade"` MUST
+     stay before `Classes.palette-transition-suppressed`. Assigning the Classes property calls
+     Classes.Replace, so a literal assignment applied second wipes the bound class, and the binding
+     does not re-add it until SuppressPaletteTransitions next CHANGES value — meaning reduced motion
+     silently stops suppressing until the user toggles the setting twice. Nothing throws
+     (RemEx-zgtn1, review LOW). -->
+<!-- TransparencyBackgroundFallback binds GlassBaseDarkBrush rather than a hardcoded literal:
+     ThemeService.cs overrides GlassBaseDark/GlassBaseDarkBrush with palette.Surface (opaque),
+     so the fallback painted when no backdrop is available follows the active seed on both a
+     light and a dark palette instead of always going near-black (RemEx-l2yqy). -->
 <Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:Remex.Desktop.Views"
-    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="PreferSystemChrome" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen">
+    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterScreen" Classes="palette-crossfade" Classes.palette-transition-suppressed="{Binding SuppressPaletteTransitions}">
+
+    <!-- ═══ THE FIX FOR THE DEAD ACRYLIC BACKDROP (RemEx-c437b, root-caused 2026-08-26).
+         Material.Avalonia's window-decorations theme laid an opaque MaterialPaperBrush underlay
+         between the OS backdrop and everything this app draws, so Acrylic was applied and
+         then covered — a dead-constant #303030 while ActualTransparencyLevel reported Acrylic. The full
+         account, the five lighter fixes that were tried and measured inert, and the sync rules
+         against the upstream file live in Themes/Chrome/WindowChrome.axaml. It is applied per-window in the
+         constructor rather than as an attribute here: the theme is a resource in a merged
+         dictionary, and the assignment has to run after InitializeComponent. -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Remex.Desktop/Themes/Chrome/WindowChrome.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
 
     <Window.KeyBindings>
         <!-- Direct navigation shortcuts -->
@@ -20,11 +46,12 @@
         <KeyBinding Gesture="Escape" Command="{Binding DismissOverlaysCommand}" />
         <!-- Refresh / sync sensors -->
         <KeyBinding Gesture="F5" Command="{Binding NavigateToCanvasCommand}" />
-        <!-- Command palette. Ctrl+Shift+P is the documented shortcut: the tutorial body and
-             Shell_OpenCommandPaletteTooltip both name it, in all 9 locales. Ctrl+K stays as an
-             undocumented alias so anyone who learned the old binding is not stranded. -->
-        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
+        <!-- Command palette. Ctrl+K is the documented shortcut: the tutorial body,
+             Shell_OpenCommandPaletteTooltip, and the visible hints in ShellView and HomeView all
+             name it, in all 9 locales. Ctrl+Shift+P stays as an undocumented alias so anyone who
+             learned it from the old tooltip is not stranded. -->
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
         <!-- Canvas undo / redo -->
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />

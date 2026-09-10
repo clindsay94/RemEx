@@ -61,17 +61,65 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnIsCheckForUpdatesEnabledChanged(bool value) => Save();
 
+    // Guards the load-time assignment so SEEDING the toggle from the real registration state does not
+    // turn straight back into a write. Its neighbour (keep-session-unlocked) has had this guard since
+    // RemEx-l6o; launch-at-login did not, so every trip through Settings re-registered the logon task
+    // - rewriting it with whatever Environment.ProcessPath happened to be at that moment.
+    private bool _suppressLaunchAtLoginWrite;
+
     [ObservableProperty]
     private bool _isLaunchAtLoginEnabled;
 
     partial void OnIsLaunchAtLoginEnabledChanged(bool value)
     {
+        if (_suppressLaunchAtLoginWrite) return;
+
         var startupService = App.Services?.GetService(typeof(IStartupRegistrationService)) as IStartupRegistrationService;
         if (startupService != null && startupService.IsSupported)
         {
             startupService.SetEnabled(value);
         }
     }
+
+    /// <summary>
+    /// What seeding the launch-at-login toggle from a tri-state read should produce.
+    /// </summary>
+    /// <param name="Enabled">The value the switch should take.</param>
+    /// <param name="StateUnknown">Whether the query failed, and the user must be told so.</param>
+    internal readonly record struct LaunchAtLoginSeed(bool Enabled, bool StateUnknown);
+
+    /// <summary>
+    /// Decides what the toggle shows given the real registration state (RemEx-h5lr).
+    /// </summary>
+    /// <param name="registered">From <c>TryIsEnabled()</c>; null means the query failed.</param>
+    /// <param name="currentToggleState">What the switch shows now.</param>
+    /// <remarks>
+    /// **INTERNAL AND PURE SO A TEST CAN CALL THE REAL RULE.** Review caught the first version of
+    /// this covered only by a private reimplementation inside the test file — the same "the test
+    /// exercises a stand-in" gap that mutation testing had already found once in this change, on the
+    /// schtasks mapping. A copy of the logic in the test verifies the copy.
+    /// <para>
+    /// UNKNOWN HOLDS THE CURRENT VALUE rather than asserting either state. Forcing "off" is the
+    /// drift this bead exists to fix; forcing "on" is the same lie in the other direction. And since
+    /// the switch is also the write control, the caller must apply this WITHOUT triggering a write.
+    /// </para>
+    /// </remarks>
+    internal static LaunchAtLoginSeed SeedLaunchAtLogin(bool? registered, bool currentToggleState) =>
+        new(registered ?? currentToggleState, registered is null);
+
+    /// <summary>
+    /// True when the real registration state could not be read (RemEx-h5lr).
+    /// </summary>
+    /// <remarks>
+    /// **THE SWITCH IS ALSO THE CONTROL THAT WRITES, WHICH IS WHY THIS IS NOT COSMETIC.** The query
+    /// can fail for reasons that say nothing about the task — an EDR blocking <c>schtasks</c>, an
+    /// unavailable Task Scheduler endpoint, an unreadable autostart directory — and the old read
+    /// reported every one of those as "off". A user who then flips the switch to correct it issues a
+    /// real registration against a state nobody established, and the UI has meanwhile told them
+    /// their PC will not start RemEx at sign-in, which may be untrue.
+    /// </remarks>
+    [ObservableProperty]
+    private bool _isLaunchAtLoginStateUnknown;
 
     [ObservableProperty]
     private bool _isLaunchAtLoginSupported;
@@ -152,6 +200,290 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
 
+    /// <summary>True while <see cref="LoadTrustedDevicesAsync"/> is fetching the trust list — drives
+    /// the skeleton-row placeholder over the card's first fill and every manual refresh (RemEx-kjdi).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoTrustedDevices))]
+    private bool _isLoadingTrustedDevices;
+
+    /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
+    /// (RemEx-kjdi). <c>_shell</c> is <see langword="null"/> in some existing tests.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — low stakes, since reduced motion is a settings
+    /// toggle, not something flipped mid-wait.</remarks>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
+    /// <summary>
+    /// The phones paired to this PC (RemEx-kirdm).
+    /// </summary>
+    /// <remarks>
+    /// A DIFFERENT LIST FROM <see cref="TrustedDevices"/>, AND THEY MUST NOT BE MERGED. That one is
+    /// the File-Sharing Trust list — per-device file grants, revocable without touching pairing. This
+    /// one is the pairing itself. Showing them as a single list would let a user revoke the wrong
+    /// thing, which on the pairing side means a phone that has to pair again with a new PIN.
+    /// </remarks>
+    public ObservableCollection<PairedDeviceItem> PairedDevices { get; } = new();
+
+    /// <summary>Whether this PC can list its pairings at all — false when no host is in this process.</summary>
+    /// <remarks>
+    /// COMPUTED, NOT A FLAG SET BY THE REFRESH (review). It was an [ObservableProperty] defaulting to
+    /// false, assigned true only inside RefreshPairedDevices — whose only caller was the Refresh
+    /// button INSIDE the card this gates. A closed loop: the card was never visible, so the button
+    /// was never reachable, so the flag was never set. The whole feature was dead in the shipped
+    /// binary and nothing failed, logged or looked wrong. SupportsTrustManagement, six lines up, is
+    /// computed for exactly this reason and is why the Trust card renders before anything loads.
+    /// </remarks>
+    public bool CanListPairedDevices => ResolvePairedDeviceSource() is not null;
+
+    /// <summary>Finds the host's paired-device list, or null when no host is in this process.</summary>
+    /// <remarks>
+    /// Resolved on every call rather than cached: the embedded host publishes its container after it
+    /// starts and this view model can be built first, so a cached null would stick for the session
+    /// (the mistake found in review of RemEx-n8xk, on the same two-container arrangement).
+    /// </remarks>
+    private static IPairedDeviceSource? ResolvePairedDeviceSource() => ResolveHostService<IPairedDeviceSource>();
+
+    /// <summary>
+    /// Finds a service the embedded host registered, or null when no host is in this process.
+    /// </summary>
+    /// <remarks>
+    /// ONE RESOLVER, BECAUSE THE THIRD COPY WAS ABOUT TO LAND. The paired-device surface now has a
+    /// list, a renamer and a revoker, and each had its own verbatim copy of this two-container
+    /// fallback (review of RemEx-4gbp2 called it before the third arrived).
+    /// <para>
+    /// DELEGATES TO <see cref="EmbeddedHostServiceLocator.TryResolve{T}"/> (review, LOW,
+    /// RemEx-rjnbo.1) rather than re-implementing the same two-container fallback a second time —
+    /// the tray flyout's device-count badge became the fourth copy the summary above warned about,
+    /// so the logic now lives once, on the locator, and this stays only as the name every existing
+    /// call site here already uses.
+    /// </para>
+    /// </remarks>
+    private static T? ResolveHostService<T>() where T : class
+        => EmbeddedHostServiceLocator.TryResolve<T>();
+
+    /// <summary>
+    /// Re-reads the paired devices and their live state.
+    /// </summary>
+    /// <remarks>
+    /// THE SOURCE IS RESOLVED ON EVERY CALL, not cached — the embedded host publishes its container
+    /// after it starts and this view model can be built first, so a cached null would stick for the
+    /// session (the mistake found in review of RemEx-n8xk, on the same two-container arrangement).
+    /// <para>
+    /// The rows are REPLACED rather than diffed. The list is a handful of items a person reads, the
+    /// refresh is user-initiated or on-navigate, and a diff would buy nothing but a way to leave a
+    /// stale row on screen.
+    /// </para>
+    /// </remarks>
+    public void RefreshPairedDevices()
+    {
+        var source = ResolvePairedDeviceSource();
+
+        OnPropertyChanged(nameof(CanListPairedDevices));
+        OnPropertyChanged(nameof(CanRenamePairedDevices));
+        OnPropertyChanged(nameof(CanUnpairDevices));
+        PairedDevices.Clear();
+        if (source is null) return;
+
+        var unknown = LocalizationService.Instance["Settings_PairedDeviceUnknownDate"];
+        var rows = source.PairedDevices();
+        var names = BuildDeviceNameMap(rows);
+
+        foreach (var row in rows)
+        {
+            PairedDevices.Add(new PairedDeviceItem
+            {
+                ClientId = row.ClientId,
+                DisplayName = PairedDeviceDisplayName.Resolve(row.ClientId, names),
+                FirstPairedText = PairedDeviceRowText.Describe(
+                    row.FirstPairedUtc, unknown, System.Globalization.CultureInfo.CurrentCulture),
+                LastSeenText = PairedDeviceRowText.Describe(
+                    row.LastSeenUtc, unknown, System.Globalization.CultureInfo.CurrentCulture),
+                IsOnline = row.IsOnline,
+                // SEEDED FROM THE OVERRIDE, NOT LEFT EMPTY (review). An empty field beside a Rename
+                // button makes the button's RESTING state destructive: blank means clear, so a second
+                // click — or a click after the post-apply refresh — would wipe the name just set.
+                // Seeding it means clearing is "select all, delete, apply", which is the deliberate
+                // act the hint describes.
+                PendingName = row.NameOverride ?? string.Empty,
+                StatusAccessibleName = LocalizationService.Instance[
+                    row.IsOnline ? "A11y_PairedDeviceOnline" : "A11y_PairedDeviceOffline"],
+            });
+        }
+
+        // THE TRUST CARD READS THE SAME NAMES, SO IT REFRESHES HERE — one wiring point, not four
+        // (RemEx-9me77, review). This was hung off ApplyPairedDeviceRename alone, which covered the
+        // rename button and missed the other three callers of this method. The map's value is
+        // (NameOverride ?? DeviceName), and the DeviceName half changes without anyone renaming
+        // anything: a phone renamed in Android settings that then re-pairs shifts it. Pressing
+        // Refresh on the paired card would have updated that row and left the trust row below it
+        // showing the old string.
+        //
+        // Free when the trust list is empty — RefreshTrustedDeviceNames early-returns on Count == 0 —
+        // and deliberately after the early return above, so a vanished host leaves the last known
+        // names on screen rather than degrading them all to raw ids.
+        RefreshTrustedDeviceNames();
+    }
+
+    [RelayCommand]
+    private void RefreshPairedDeviceList() => RefreshPairedDevices();
+
+    /// <summary>
+    /// The friendly names to show for paired devices, keyed by client id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE USER'S OVERRIDE OUTRANKS THE DEVICE'S REPORTED NAME, which is what
+    /// <see cref="PairedDeviceDisplayName.Resolve"/> implements — it takes this map and falls back.
+    /// The two are kept apart all the way from their separate stores to here, so a re-pair can
+    /// refresh one without discarding the other (review of RemEx-4gbp2).
+    /// </para>
+    /// <para>
+    /// SHARED BY BOTH CARDS, and that is the point of it being a method (RemEx-9me77). This was
+    /// inline in <see cref="RefreshPairedDevices"/>, so the File-Sharing Trust list had no way to
+    /// reach it and rendered raw ids instead — the exact "opaque" list
+    /// <see cref="PairedDeviceDisplayName"/>'s own remarks cite as the bad example it was written to
+    /// avoid. Two lists on one page deriving names from two places is how they come to disagree.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string> BuildDeviceNameMap(
+        IEnumerable<PairedDeviceRow> rows)
+        => rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.NameOverride) || !string.IsNullOrWhiteSpace(r.DeviceName))
+            .ToDictionary(
+                r => r.ClientId,
+                r => (r.NameOverride ?? r.DeviceName)!,
+                StringComparer.Ordinal);
+
+    /// <summary>
+    /// The current name map, or null when no host is in this process.
+    /// </summary>
+    /// <remarks>
+    /// Resolved fresh rather than cached, for the reason given on
+    /// <see cref="ResolvePairedDeviceSource"/>: the embedded host publishes its container after it
+    /// starts and this view model can be built first, so a cached null would stick for the session.
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string>? CurrentDeviceNames()
+        => ResolvePairedDeviceSource() is { } source
+            ? BuildDeviceNameMap(source.PairedDevices())
+            : null;
+
+    /// <summary>Whether this PC can rename a paired device — false when no host is in this process.</summary>
+    public bool CanRenamePairedDevices => ResolvePairedDeviceNameWriter() is not null;
+
+    private static IPairedDeviceNameWriter? ResolvePairedDeviceNameWriter()
+        => ResolveHostService<IPairedDeviceNameWriter>();
+
+    /// <summary>Whether this PC can end a pairing — false when no host is in this process.</summary>
+    public bool CanUnpairDevices => ResolveHostService<IPairedDeviceRevoker>() is not null;
+
+    /// <summary>
+    /// Ends a device's pairing, after a confirmation that says what it costs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// FAILS CLOSED, matching every other confirmed action in this class: an unwired view model, or a
+    /// view with no visible parent window, DECLINES rather than revoking unconfirmed. This is the one
+    /// action here that cannot be undone — the phone must pair again with a new PIN, because the
+    /// credential is gone — so an unconfirmed revocation is the worst possible failure mode.
+    /// </para>
+    /// <para>
+    /// The confirmation names the device and says what happens next. "Remove" on its own reads like
+    /// tidying a list, and a user who reads it that way will be surprised when their phone stops
+    /// connecting.
+    /// </para>
+    /// <para>
+    /// AND IT REPORTS, like the two sibling confirmed actions twelve lines apart from it. The revoker
+    /// throws when a teardown failed; letting that escape an <c>AsyncRelayCommand</c> kills the app
+    /// on the dispatcher, and swallowing it would be worse — the row vanishes from a rebuilt list, the
+    /// user reads that as success, and the pairing is still on disk after a restart.
+    /// </para>
+    /// </remarks>
+    [RelayCommand]
+    private async Task UnpairDeviceAsync(PairedDeviceItem? item)
+    {
+        if (item is null) return;
+
+        var revoker = ResolveHostService<IPairedDeviceRevoker>();
+        if (revoker is null) return;
+
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_Unpair_Title"],
+                string.Format(
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    LocalizationService.Instance["Confirm_Unpair_Message"],
+                    item.DisplayName),
+                LocalizationService.Instance["Confirm_Unpair_Btn"]))
+        {
+            return;
+        }
+
+        string? failureStatus = null;
+        try
+        {
+            await revoker.RevokeAsync(item.ClientId, CancellationToken.None);
+        }
+        catch (PairedDeviceRevocationException ex)
+        {
+            // THE ONE FAILURE WITH SOMETHING TO DO ABOUT IT (RemEx-pynli). The credential store
+            // removes from memory and then persists, so a failed write leaves this device unpaired
+            // now and still on disk — it is back the next time the host starts. "Something went
+            // wrong" would leave the user believing a pairing they ended is over.
+            //
+            // ex.Reason, NOT ex.Message: the message is a fixed summary for the log, and putting it
+            // where the reason belongs would show every non-English user one untranslated English
+            // sentence and tell nobody what actually failed (review).
+            failureStatus = string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance[ex.PairingMayReturn
+                    ? "Settings_UnpairFailedPairingReturns"
+                    : "Status_ErrorFormat"],
+                ex.Reason);
+        }
+        catch (Exception ex)
+        {
+            failureStatus = string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Status_ErrorFormat"], ex.Message);
+        }
+
+        // BOTH CARDS, AND ON THE FAILURE PATH TOO. The device appears twice on this page — once as a
+        // pairing and once, if it has file-access grants, under Trusted Devices — and revoking clears
+        // both stores. Rebuilding only the first would leave the same phone listed below with a
+        // "revoke trust" button for a pairing that no longer exists. Rebuilding after a FAILED
+        // revocation matters more: a partial teardown is exactly when the two lists can disagree, and
+        // the screen should show what is actually stored rather than what was meant to happen.
+        RefreshPairedDevices();
+        await LoadTrustedDevicesAsync();
+
+        ShowTransientStatus(failureStatus ?? LocalizationService.Instance["Settings_DeviceUnpaired"]);
+    }
+
+    /// <summary>
+    /// Applies the name typed into a row, then rebuilds the list so the row shows the result.
+    /// </summary>
+    /// <remarks>
+    /// REFRESHING AFTERWARDS IS THE POINT, not tidiness. The store normalizes — it trims, caps at 48
+    /// characters, and treats blank as CLEAR — so what the user typed and what is now stored are not
+    /// always the same string. Showing the typed text would tell them a 60-character name had been
+    /// kept whole. Re-reading shows what a phone will actually be called.
+    /// </remarks>
+    [RelayCommand]
+    private void ApplyPairedDeviceRename(PairedDeviceItem? item)
+    {
+        if (item is null) return;
+
+        var writer = ResolvePairedDeviceNameWriter();
+        if (writer is null) return;
+
+        writer.Rename(item.ClientId, item.PendingName);
+
+        // Refreshes BOTH cards: the trust list resolves names from the same map and is refreshed at
+        // the tail of RefreshPairedDevices, so the two can never show different names for one device
+        // (RemEx-9me77).
+        RefreshPairedDevices();
+    }
+
     /// <summary>
     /// True when the trust-management UI should be shown, i.e. an embedded host is present.
     /// </summary>
@@ -164,6 +496,30 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public bool SupportsTrustManagement => ResolveTrustService() is not null;
 
     public bool HasTrustedDevices => TrustedDevices.Count > 0;
+
+    /// <summary>Gates the "no trusted devices" caption (review finding, RemEx-kjdi): without the
+    /// loading half of this, the caption sat OUTSIDE the BusyPlaceholder and rendered on top of the
+    /// skeleton rows during every refresh, since an empty list makes <see cref="HasTrustedDevices"/>
+    /// false whether or not a fetch is in flight.</summary>
+    public bool ShowNoTrustedDevices => !HasTrustedDevices && !IsLoadingTrustedDevices;
+
+    /// <summary>
+    /// Test-only seam: supplies the trust service instead of resolving it from the embedded host.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ResolveTrustService"/> reaches into <c>EmbeddedHostServiceLocator</c>, which in a
+    /// test run has no host to find — so every trust action returned early and the destructive-action
+    /// coverage stopped at the guard rather than proving anything past it. Setting this also latches
+    /// the resolution flag, so the locator is never consulted (RemEx-e1re).
+    /// </remarks>
+    internal IFileTrustService? FileTrustServiceForTests
+    {
+        set
+        {
+            _fileTrustService = value;
+            _fileTrustServiceResolved = true;
+        }
+    }
 
     private IFileTrustService? ResolveTrustService()
     {
@@ -208,7 +564,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ConnectionViewModel connection,
         ShellViewModel shell,
         FileTransferRootSettingsService fileTransferRootSettings,
-        RemexSavefileService savefileService)
+        RemexSavefileService savefileService,
+        SensorAlertStore alertStore,
+        SensorAlertTracker alertTracker,
+        ISensorCatalog sensorCatalog)
     {
         _layoutService = layoutService;
         _connection = connection;
@@ -217,10 +576,31 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _savefileService = Guard.NotNull(savefileService);
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+
+        // RemEx-8wpvr.5: constructed here, not resolved lazily, because ShellViewModel builds its
+        // CanvasDashboardViewModel (the ISensorCatalog implementation) in its own constructor, before
+        // EnsureSettingsVm can ever run — unlike this ViewModel, the canvas is never null by the time
+        // Settings is first opened.
+        AlertsSection = new SensorAlertsSectionViewModel(alertStore, alertTracker, sensorCatalog);
     }
+
+    /// <summary>Backs the Settings "Sensor alerts" card (RemEx-8wpvr.5).</summary>
+    public SensorAlertsSectionViewModel AlertsSection { get; }
+
+    /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
+    /// <remarks>
+    /// The same singleton the shell reads. Bound by this screen's status dot so it cannot disagree
+    /// with the sidebar about whether a phone is there — which is what happened when RemEx-0z7w
+    /// rebound only the shell.
+    /// </remarks>
+    public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
 
     /// <summary>Live connection view-model — bound directly from the Connection settings card.</summary>
     public ConnectionViewModel Connection => _connection;
+
+    /// <summary>Exposes ShellViewModel so the view's code-behind can gate the entrance animation on
+    /// reduced motion (RemEx-alwfa.2), same pattern as HomeViewModel.Shell.</summary>
+    public ShellViewModel Shell => _shell;
 
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -230,6 +610,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         // in the codebase getting this right.
         if (!string.IsNullOrEmpty(e.PropertyName))
             return;
+
+        // The paired-device rows hold ALREADY-FORMATTED strings, including the localized "unknown"
+        // date marker, so nothing in the binding layer can re-translate them on a language switch —
+        // they have to be rebuilt (review; RemEx-q3h0's pattern).
+        RefreshPairedDevices();
+
+        // Same defect, same card stack: every alert row's Summary and TrippedSummary are composed
+        // once at row-build time from the localizer, so a language switch leaves them in the
+        // previous language until the store happens to change (review; RemEx-8wpvr.5).
+        AlertsSection.Refresh();
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -270,7 +660,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 IsLaunchAtLoginSupported = startupService.IsSupported;
                 if (IsLaunchAtLoginSupported)
                 {
-                    IsLaunchAtLoginEnabled = startupService.IsEnabled();
+                    // TRI-STATE READ, SEEDED WITHOUT WRITING BACK. A null means the query failed, and
+                    // the switch must not present that as "off" - that is the drift RemEx-q0j7 was a
+                    // real instance of, and it is worse than a stale display because the switch is
+                    // also the write path.
+                    var seed = SeedLaunchAtLogin(startupService.TryIsEnabled(), IsLaunchAtLoginEnabled);
+                    IsLaunchAtLoginStateUnknown = seed.StateUnknown;
+
+                    _suppressLaunchAtLoginWrite = true;
+                    try
+                    {
+                        IsLaunchAtLoginEnabled = seed.Enabled;
+                    }
+                    finally
+                    {
+                        _suppressLaunchAtLoginWrite = false;
+                    }
                 }
             }
 
@@ -301,6 +706,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         await LoadSharedRootsAsync();
         await LoadTrustedDevicesAsync();
+
+        // MARSHALLED, because this mutates an ObservableCollection bound to an ItemsControl and we
+        // are on a continuation after two awaits, not necessarily on the UI thread (review).
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(RefreshPairedDevices);
     }
 
     /// <summary>
@@ -316,6 +725,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             UnsubscribeSharedRoot(root);
         foreach (var device in TrustedDevices)
             UnsubscribeTrustDevice(device);
+        AlertsSection.Dispose();
     }
 
     public void RefreshSensors()
@@ -583,6 +993,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (service is null)
             return;
 
+        IsLoadingTrustedDevices = true;
         try
         {
             var records = await service.GetAllAsync(CancellationToken.None);
@@ -593,26 +1004,64 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message)));
         }
+        finally
+        {
+            IsLoadingTrustedDevices = false;
+        }
     }
 
     [RelayCommand]
     private async Task RefreshTrustedDevicesAsync() => await LoadTrustedDevicesAsync();
 
-    private void ReplaceTrustedDevices(IReadOnlyList<FileTrustRecord> records)
+    /// <summary>
+    /// Rebuilds the trust list from freshly-fetched records.
+    /// </summary>
+    /// <remarks>
+    /// INTERNAL RATHER THAN PRIVATE, AND WITHOUT A ForTests ALIAS (the RemEx-mzbn lesson). The load
+    /// path above hops through <c>Dispatcher.UIThread.Post</c>, which never runs in a headless test,
+    /// so a test driving the async loader would assert against an empty list forever. Tests call
+    /// this — the method production actually uses — rather than a parallel alias that could drift
+    /// from it.
+    /// </remarks>
+    internal void ReplaceTrustedDevices(IReadOnlyList<FileTrustRecord> records)
     {
         foreach (var existing in TrustedDevices)
             UnsubscribeTrustDevice(existing);
 
         TrustedDevices.Clear();
 
+        // The SAME name map the Paired Devices card above uses (RemEx-9me77). Resolved once for the
+        // whole list rather than per row, because it walks the host's pairing list each time.
+        var names = CurrentDeviceNames();
+
         foreach (var record in records)
         {
-            var item = new FileTrustDeviceItem(record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming);
+            var item = new FileTrustDeviceItem(
+                record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming, names);
             SubscribeTrustDevice(item);
             TrustedDevices.Add(item);
         }
 
         OnPropertyChanged(nameof(HasTrustedDevices));
+        OnPropertyChanged(nameof(ShowNoTrustedDevices));
+    }
+
+    /// <summary>
+    /// Re-resolves the trust rows' display names in place, after a rename (RemEx-9me77).
+    /// </summary>
+    /// <remarks>
+    /// WITHOUT THIS THE TWO CARDS ON THIS PAGE DISAGREE until the user hits Refresh — the paired row
+    /// shows the new name and the trust row below it still shows the old one, which reads as the
+    /// rename having half-failed. Renaming only touches the name map, so nothing needs re-fetching
+    /// from the trust service; the rows already on screen just resolve again.
+    /// </remarks>
+    internal void RefreshTrustedDeviceNames()
+    {
+        if (TrustedDevices.Count == 0) return;
+
+        var names = CurrentDeviceNames();
+        foreach (var item in TrustedDevices)
+            item.DisplayName = PairedDeviceDisplayName.Resolve(item.ClientId, names);
     }
 
     private void SubscribeTrustDevice(FileTrustDeviceItem item)
@@ -659,9 +1108,31 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Event plumbing only. The work lives in <see cref="RevokeTrustAsync"/> so it can be awaited.
+    /// </summary>
+    /// <remarks>
+    /// An <c>async void</c> handler cannot be awaited, so a test can raise the event but not know
+    /// when the handler finished — which left this destructive action, and the shared-root one below,
+    /// as the two of six that RemEx-w9ui could not cover with the fail-closed cases. Splitting the
+    /// body out costs one line and makes the same three cases apply here as everywhere else
+    /// (RemEx-e1re).
+    /// </remarks>
     private async void OnTrustRevokeRequested(object? sender, EventArgs e)
     {
-        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
+        if (sender is FileTrustDeviceItem item) await RevokeTrustAsync(item);
+    }
+
+    /// <summary>
+    /// Revokes one paired device's file-access trust, after confirmation.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private purely so the fail-closed tests can await it; nothing in
+    /// production calls it except the handler above.
+    /// </remarks>
+    internal async Task RevokeTrustAsync(FileTrustDeviceItem item)
+    {
+        if (ResolveTrustService() is not { } service)
             return;
 
         // One mis-click here severs that phone's file access until the user pairs and approves it
@@ -673,7 +1144,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 LocalizationService.Instance["Confirm_RevokeTrust_Title"],
                 string.Format(
                     LocalizationService.Instance["Confirm_RevokeTrust_Format"],
-                    item.ShortId),
+                    // The NAME, not the raw id (RemEx-9me77). What this dialog has to establish is
+                    // WHICH device is about to lose access, and an id the user has never seen cannot
+                    // do that. Resolve's contract is that this is never blank.
+                    item.DisplayName),
                 LocalizationService.Instance["Settings_TrustRevoke"]))
         {
             return;
@@ -685,6 +1159,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             UnsubscribeTrustDevice(item);
             TrustedDevices.Remove(item);
             OnPropertyChanged(nameof(HasTrustedDevices));
+            OnPropertyChanged(nameof(ShowNoTrustedDevices));
             ShowTransientStatus(LocalizationService.Instance["Settings_TrustRevoked"]);
         }
         catch (Exception ex)
@@ -865,11 +1340,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
     }
 
+    /// <summary>
+    /// Event plumbing only. The work lives in <see cref="RemoveSharedRootAsync"/> so it can be
+    /// awaited — see the note on <see cref="OnTrustRevokeRequested"/>.
+    /// </summary>
     private async void OnSharedRootRemoveRequested(object? sender, EventArgs e)
     {
-        if (sender is not FileTransferSharedRootItem item)
-            return;
+        if (sender is FileTransferSharedRootItem item) await RemoveSharedRootAsync(item);
+    }
 
+    /// <summary>
+    /// Removes one shared folder, after confirmation. Internal so the fail-closed tests can await it.
+    /// </summary>
+    internal async Task RemoveSharedRootAsync(FileTransferSharedRootItem item)
+    {
         // Removing a shared root revokes the phone's access to that whole folder tree, so confirm
         // first (RemEx-6p1f). Same reasoning as trust revocation: the confirmation belongs in this
         // handler, not in the item's Remove() command, because the removal happens here. Fails
@@ -1050,7 +1534,37 @@ public partial class FileTrustDeviceItem : ObservableObject
 {
     public string ClientId { get; }
 
+    /// <summary>
+    /// The name this device is shown under — the user's own, when they have set one (RemEx-9me77).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE HEADLINE OF THE ROW, because "07ca4e9d5383…" is not something anyone can act on and this
+    /// row carries a Revoke button. Resolved through <see cref="PairedDeviceDisplayName.Resolve"/>,
+    /// the same helper the Paired Devices card on this page already uses, so the two cards cannot
+    /// disagree about what a device is called.
+    /// </para>
+    /// <para>
+    /// SETTABLE, so a rename applied on the paired card can refresh this one in place. Trust rows
+    /// and pairing rows are separate lists over separate stores; a rename only touches the name map,
+    /// so re-fetching trust records to pick up a new name would be a round trip for nothing.
+    /// </para>
+    /// <para>
+    /// Never blank — that is <see cref="PairedDeviceDisplayName.Resolve"/>'s documented contract, and
+    /// its fallback is the id itself. A nameless row beside a Revoke button is a decision the user
+    /// cannot make safely.
+    /// </para>
+    /// </remarks>
+    [ObservableProperty]
+    private string _displayName;
+
     /// <summary>Short, friendly identifier for a (non-technical) user — the leading chars of the client id.</summary>
+    /// <remarks>
+    /// KEPT, AND DEMOTED TO A SECOND LINE (RemEx-9me77). It is no longer the row's headline, but it
+    /// stays visible because it is the one thing on this card comparable against what the phone
+    /// shows — which is how a user tells two identically-named devices apart, and how anyone
+    /// debugging a trust problem matches a row to a log line.
+    /// </remarks>
     public string ShortId => ClientId.Length > 12 ? ClientId[..12] + "…" : ClientId;
 
     private readonly bool _seeding;
@@ -1065,9 +1579,27 @@ public partial class FileTrustDeviceItem : ObservableObject
     public event EventHandler<bool>? AutoAcceptChanged;
     public event EventHandler? RevokeRequested;
 
-    public FileTrustDeviceItem(string clientId, bool fullBrowseGranted, bool autoAcceptIncoming)
+    /// <param name="names">
+    /// The friendly-name map, or null when there is genuinely none.
+    /// </param>
+    /// <remarks>
+    /// <c>names</c> IS REQUIRED, NOT OPTIONAL, and that is deliberate (review of RemEx-9me77). A
+    /// default would make "no name map" the compiler-blessed path, so the next list to construct one
+    /// of these — a pending-trust-request card, say — would compile, ship, and render raw ids: this
+    /// bead again, in a new place. Passing an explicit null documents "deliberately no map here"
+    /// instead of hiding it.
+    /// </remarks>
+    public FileTrustDeviceItem(
+        string clientId,
+        bool fullBrowseGranted,
+        bool autoAcceptIncoming,
+        IReadOnlyDictionary<string, string>? names)
     {
         ClientId = clientId;
+        // Resolve BEFORE the seeding window opens: DisplayName is not one of the properties whose
+        // change events write back to the trust service, but constructing it in the same shape as
+        // the others keeps that obvious.
+        _displayName = PairedDeviceDisplayName.Resolve(clientId, names);
         _seeding = true;
         FullBrowseGranted = fullBrowseGranted;
         AutoAcceptIncoming = autoAcceptIncoming;

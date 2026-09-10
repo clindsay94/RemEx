@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -19,12 +18,16 @@ namespace Remex.Desktop.Controls.Splash;
 /// Hosts the SkiaSharp splash variants inside Avalonia. Owns the frame loop (DispatcherTimer + real
 /// Stopwatch dt), tap-to-skip, the version label + skip hint, and completion. Leases Avalonia's Skia
 /// canvas so the pure-SkiaSharp variants (remex.branding) draw straight onto the render surface.
-/// Fixed brand palette by design (not theme-adaptive) — replaces the old BootSequenceControl.
+/// Brand default, runtime recolour allowed (RemEx-alwfa.1) — replaces the old BootSequenceControl.
+/// <see cref="OnAttachedToVisualTree"/> reads the last-seed sidecar and applies the resolved
+/// palette to <see cref="SplashBrand"/> before the frame timer starts, so the very first frame — not
+/// just later ones — paints in the user's seed colours. Missing/corrupt sidecar falls back to the
+/// fixed brand palette, never throws.
 /// </summary>
 public sealed class SkiaSplashControl : Control, IDisposable
 {
     public static readonly StyledProperty<string> SplashStyleProperty =
-        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "RemexCommand");
+        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "CosmicZoom");
 
     public string SplashStyle
     {
@@ -39,7 +42,7 @@ public sealed class SkiaSplashControl : Control, IDisposable
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = new();
-    private ISplashVariant _variant = new RemexCommandVariant();
+    private ISplashVariant _variant = new CosmicZoomVariant();
     private double _elapsed;
     private double _lastDt;
     private bool _completed;
@@ -78,6 +81,10 @@ public sealed class SkiaSplashControl : Control, IDisposable
     {
         base.OnAttachedToVisualTree(e);
         EnsureTypeface();
+        // BEFORE the timer starts and BEFORE the variant is created, so the very first painted
+        // frame already carries the resolved palette (RemEx-alwfa.1, decision (b)) — the dashboard
+        // profile has not loaded yet at this point, only the tiny sidecar has.
+        SplashBrand.ApplyPalette(SplashPaletteResolver.ResolveFromSidecar());
         _variant = CreateVariant(SplashStyle);
         _elapsed = 0;
         _completed = false;
@@ -92,6 +99,19 @@ public sealed class SkiaSplashControl : Control, IDisposable
         base.OnDetachedFromVisualTree(e);
         _timer.Stop();
         _stopwatch.Stop();
+    }
+
+    /// <summary>Plays the current <see cref="SplashStyle"/> from the start while attached — the sheet's Preview.</summary>
+    public void Restart()
+    {
+        _variant = CreateVariant(SplashStyle);
+        _elapsed = 0;
+        _completed = false;
+        _skipping = false;
+        _skipElapsed = 0;
+        _stopwatch.Restart();
+        _timer.Start();
+        InvalidateVisual();
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -172,11 +192,8 @@ public sealed class SkiaSplashControl : Control, IDisposable
 
     private static string ResolveVersion()
     {
-        var info = typeof(SkiaSplashControl).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                   ?? typeof(SkiaSplashControl).Assembly.GetName().Version?.ToString(3)
-                   ?? "";
-        int plus = info.IndexOf('+');
-        if (plus >= 0) info = info[..plus];
+        // Shared with the About page so the splash and About never disagree about the version.
+        var info = AppVersion.Display;
         return string.IsNullOrEmpty(info) ? "" : "v" + info;
     }
 

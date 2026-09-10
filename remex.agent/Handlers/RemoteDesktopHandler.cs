@@ -26,6 +26,32 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly IDesktopWindowControlService _windowControl;
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
+
+    /// <summary>
+    /// Set if the input consuming loop exited on an exception rather than on shutdown (RemEx-q4wm).
+    /// </summary>
+    /// <remarks>
+    /// Written on the input thread and read on the disposing thread, hence <c>volatile</c>. It exists
+    /// because the loop's own handler makes that exit look SUCCESSFUL to everyone downstream — the
+    /// task completes normally, so <c>Task.Wait</c> returns true and nothing at teardown would
+    /// otherwise have anything to report about a session that stopped accepting input.
+    /// </remarks>
+    private volatile bool _inputThreadDiedUnexpectedly;
+
+    /// <summary>
+    /// Set as the first act of <see cref="Dispose"/>, so the input thread can tell a teardown race
+    /// from a genuine failure (RemEx-q4wm).
+    /// </summary>
+    private volatile bool _disposing;
+
+    /// <summary>
+    /// Keys this client has pressed and not released, so teardown can release them (RemEx-e2p4).
+    /// </summary>
+    /// <remarks>
+    /// Per handler, and the handler is constructed per connection, so this is exactly one client's
+    /// session — a second phone's held keys cannot be released by this one's disconnect.
+    /// </remarks>
+    private readonly HeldKeyTracker _heldKeys = new();
     private readonly Task _inputProcessingTask;
 
     // Upper bound on the target frame rate, shared with clients via DesktopConfig.MaxTargetFps so the
@@ -95,16 +121,76 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             foreach (var input in _inputQueue.GetConsumingEnumerable())
             {
-                DispatchInput(input);
+                try
+                {
+                    DispatchInput(input);
+                }
+                catch (Exception ex)
+                {
+                    // BELT AS WELL AS BRACES, AND THE TWO CATCH DIFFERENT THINGS (RemEx-q4wm).
+                    // DispatchInput has its own catch-all, so in the ordinary case nothing arrives
+                    // here. What this adds is the case that one cannot cover: a throw from INSIDE one
+                    // of its catch arms — GetWindowsInputFailureHint, or a logging provider — which
+                    // leaves DispatchInput entirely. Sibling catch clauses do not catch each other, so
+                    // without this the loop would still end, which is the one outcome that costs the
+                    // session rather than the event.
+                    _logger.LogError(
+                        ex,
+                        "Input dispatch failed outside its own handlers; event dropped, session " +
+                        "continues: {Type}",
+                        input.EventType);
+                }
             }
+        }
+        catch (ObjectDisposedException ex) when (_disposing)
+        {
+            // Teardown racing the consumer, not a failure. Dispose calls _inputQueue.Dispose() after a
+            // bounded wait that may expire while this thread is still mid-dispatch, and the next
+            // MoveNext then throws. Without the filter this became a Critical "input is dead" on
+            // every ordinary disconnect that happened to be slow.
+            //
+            // Note where an UNFILTERED one would go, because it is not the catch-all:
+            // ObjectDisposedException derives from InvalidOperationException, so it lands on the arm
+            // below (which must stay ordered after this one — more-derived first, or CS0160). That
+            // arm ends the loop too, which is why it sets the same flag this one deliberately does
+            // not: teardown is not a session failure and must not be reported as one.
+            _logger.LogDebug(ex, "Input queue disposed while the consumer was still draining it.");
         }
         catch (InvalidOperationException ex)
         {
+            // Sets the flag for the same reason the catch-all does: reaching here ends the consuming
+            // loop, and a session whose input has stopped must not go quiet at teardown just because
+            // the failure happened to be one of the named kinds. Every arm that ends this loop keeps
+            // Dispose honest, or the guarantee has a hole shaped exactly like the original bug
+            // (RemEx-q4wm).
+            _inputThreadDiedUnexpectedly = true;
             _logger.LogError(ex, "Input processing thread faulted (collection was modified).");
         }
         catch (OperationCanceledException)
         {
+            // NOT how this loop shuts down, despite how it reads. Shutdown is Dispose calling
+            // CompleteAdding, which ends the foreach NORMALLY; the queue is constructed without a
+            // cancellation token and GetConsumingEnumerable is called without one, so nothing in the
+            // enumeration can raise this. Kept for the token-based shutdown this would need if one is
+            // ever added — but it is deliberately NOT a route for a backend's cancellation to reach.
+            // Treating it as one is the mistake this arm's existence invited and RemEx-q4wm made:
+            // DispatchInput used to exclude OperationCanceledException from its catch-all "so
+            // shutdown still unwinds", which in reality handed a backend OCE a silent path to killing
+            // the session's input while logging that it had stopped gracefully.
             _logger.LogInformation("Input processing thread cancelled gracefully.");
+        }
+        catch (Exception ex)
+        {
+            // Last resort. Both guards above have to have failed to reach this, but this thread ending
+            // is not a failure that may stay quiet (RemEx-q4wm). Nothing restarts it — it is created
+            // once in the constructor — so from here on every event the client sends is queued and
+            // never drained while the stream keeps running. Whoever reads the log has to be able to
+            // tell "input is dead" from "the user stopped touching the screen", and before this the
+            // two looked identical.
+            _inputThreadDiedUnexpectedly = true;
+            _logger.LogCritical(
+                ex,
+                "Input processing thread died; ALL further input for this session will be ignored.");
         }
     }
 
@@ -302,7 +388,8 @@ public sealed class RemoteDesktopHandler : IDisposable
         var captureStopwatch = new Stopwatch();
         // Absolute-timeline frame pacer (hybrid coarse-sleep + spin). See PrecisionPacer: a bare
         // Task.Delay rounds up to the ~15.6 ms OS timer floor and would cap the stream near 60 FPS.
-        var pacer = new PrecisionPacer();
+        // Disposed with the loop: it owns a native waitable-timer handle (RemEx-ccen).
+        using var pacer = new PrecisionPacer();
         // Monotonic clock for the keyframe-reinit cooldown timestamps below (independent of pacing).
         var rebuildClock = Stopwatch.StartNew();
 
@@ -313,6 +400,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         // Timing metrics
         double totalCaptureMs = 0;
         double totalSendMs = 0;
+        // Encoded throughput, for the quality meter that does not exist yet (RemEx-93n2). It COUNTS
+        // and nothing more: desktop_meta is sent from two EVENT-DRIVEN places - stream bootstrap and
+        // geometry change - so "per second in desktop_meta" would mean adding a timed emitter beside
+        // the frame pacer, and how often anyone samples this is RemEx-grc5's property, not this
+        // loop's. Sampling from the metrics block below would need the counter's threading contract
+        // read first: Add runs here, that block runs on the send loop.
+        var throughput = new StreamThroughputCounter(DateTime.UtcNow);
         int totalFramesCaptured = 0;
         int totalFramesSent = 0;
         int totalFramesDropped = 0;
@@ -377,9 +471,15 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     consecutiveFailures = 0;
                     errorReported = false;
-                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
+                    // AFTER the delay, never before it. Reset() anchors the absolute timeline to
+                    // "now" (PrecisionPacer.Reset), so resetting first leaves _nextTickMs 500 ms in
+                    // the past by the time the pause ends — and WaitForNextTickAsync only steps
+                    // _nextTickMs forward by one interval, so it returns a zero wait ~60 times in a
+                    // row at 120 FPS. That is exactly the recovery burst the PrecisionPacer guard in
+                    // docs/REGRESSION-GUARDS.md says Reset() exists to prevent.
+                    pacer.Reset();
                     continue;
                 }
 
@@ -388,7 +488,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     var captureSerial = sessionState.StreamSerial;
                     var configVersion = Volatile.Read(ref _encoderConfigVersion);
-                    byte[]? frameBytes = null;
+                    // ReadOnlyMemory, so the MJPEG path can hand over the encoder stream's own
+                    // buffer rather than a trimmed copy of it (RemEx-hgox). The H.264 branch below
+                    // still produces an exact-size array and converts implicitly.
+                    ReadOnlyMemory<byte> frameBytes = default;
                     DesktopCodecKind frameCodec = _activeCodec;
                     var frameFlags = DesktopFrameFlags.None;
 
@@ -576,8 +679,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                             }
                             else
                             {
-                                frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
-                                if (frameBytes is { Length: > 0 })
+                                frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe) ?? ReadOnlyMemory<byte>.Empty;
+                                if (!frameBytes.IsEmpty)
                                     frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
                                 // else: encoder warmup/pipelining — frameBytes stays null. NOT a failure.
                             }
@@ -595,14 +698,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                         if (jpegResult.IsLive)
                         {
                             frameBytes = jpegResult.Pixels;
-                            captureSucceeded = frameBytes is { Length: > 0 };
+                            captureSucceeded = !frameBytes.IsEmpty;
                         }
                         // else: stale cached replay (IsLive == false) — leave frameBytes null and
                         // captureSucceeded false so a sustained freeze advances consecutiveFailures and
                         // trips the coded desktop_error instead of re-sending the last good frame (RemEx-ltd).
                     }
 
-                    if (frameBytes is { Length: > 0 })
+                    if (!frameBytes.IsEmpty)
                     {
                         consecutiveFailures = 0;
                         errorReported = false;
@@ -610,6 +713,12 @@ public sealed class RemoteDesktopHandler : IDisposable
                         var captureDuration = captureStopwatch.Elapsed.TotalMilliseconds;
                         totalCaptureMs += captureDuration;
                         totalFramesCaptured++;
+
+                        // Counted where the ENCODED size is known - after the encoder, before the
+                        // pacer decides whether this frame is the one that ships. Counting at the
+                        // send site instead would silently exclude every frame the latest-frame
+                        // buffer overwrites, which is exactly the loss a quality meter is for.
+                        throughput.Add(frameBytes.Length);
 
                         // Store the latest frame with thread-safe overwrite (latest-frame semantics)
                         var capturedFrame = new CapturedFrame
@@ -678,11 +787,15 @@ public sealed class RemoteDesktopHandler : IDisposable
                 // first successful frame, restoring the normal FPS cadence.
                 if (consecutiveFailures >= 5)
                 {
-                    // Reset the absolute timeline so the loop doesn't burst through a backlog
-                    // of "missed" ticks when capture recovers.
-                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
+                    // Re-anchor the absolute timeline so the loop doesn't burst through a backlog of
+                    // "missed" ticks when capture recovers. AFTER the delay, never before it:
+                    // Reset() anchors to "now", so resetting first would leave _nextTickMs 500 ms in
+                    // the past and WaitForNextTickAsync — which only steps forward by one interval —
+                    // would return a zero wait ~60 times in a row at 120 FPS. That backlog burst is
+                    // the thing this call exists to prevent.
+                    pacer.Reset();
                 }
                 else
                 {
@@ -699,11 +812,27 @@ public sealed class RemoteDesktopHandler : IDisposable
             CapturedFrame? lastSentFrame = null;
             var sendStopwatch = new Stopwatch();
 
+            // Reused across every frame this loop sends. Safe to share because SendFramedBinaryAsync
+            // is awaited to completion and both of its fragments go out inside ONE acquisition of
+            // sendLock, so no other send can be interleaved between filling this and putting it on
+            // the wire. Local to this loop rather than a field: SendBinaryAsync has another caller.
+            var frameHeader = new byte[DesktopFrameEnvelope.HeaderSize];
+
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 // Wait for a frame to be available
                 try { await frameAvailable.WaitAsync(ct); }
                 catch (OperationCanceledException) { break; }
+
+                // **ALSO CHECKED HERE, NOT ONLY WHERE INPUT ARRIVES (RemEx-iaxc).** The input path
+                // can only notice on the event AFTER the one that failed, which assumes another event
+                // is coming. Two cases break that: a user who presses one key, sees nothing happen and
+                // stops; and hosts with a live unified capture session, where pointer motion is
+                // injected through the capture lifetime and never touches the portal at all, so the
+                // continuous stream of moves that argument leans on never triggers the detection.
+                // This loop runs as long as the stream does, so the notice no longer depends on the
+                // client doing anything more. The one-shot guard inside makes the double call free.
+                await ReportInputSilentlyDroppedOnceAsync(webSocket, sendLock, ct);
 
                 // Retrieve the latest frame (and clear it from the buffer)
                 var currentFrame = Interlocked.Exchange(ref frameBuffer.Frame, null);
@@ -731,16 +860,28 @@ public sealed class RemoteDesktopHandler : IDisposable
                 sendStopwatch.Restart();
                 try
                 {
-                    var payload = sessionState.UseFrameEnvelope
-                        ? DesktopFrameEnvelope.Wrap(
-                            currentFrame.Bytes,
+                    if (sessionState.UseFrameEnvelope)
+                    {
+                        // Header and payload go out as two fragments of ONE WebSocket message rather
+                        // than being concatenated into a new buffer first. That concatenation copied
+                        // the entire access unit every frame — at full rate, the whole stream's worth
+                        // of bytes again — purely to put 28 bytes in front of it. Fragmentation is a
+                        // transport detail: the wire format the client parses is unchanged, and its
+                        // receive loop already reassembles on EndOfMessage. (RemEx-41xu)
+                        DesktopFrameEnvelope.WriteHeader(
+                            frameHeader,
+                            currentFrame.Bytes.Length,
                             currentFrame.StreamSerial,
                             currentFrame.Sequence,
                             currentFrame.Codec,
-                            currentFrame.Flags)
-                        : currentFrame.Bytes;
+                            currentFrame.Flags);
 
-                    await SendBinaryAsync(webSocket, payload, sendLock, ct);
+                        await SendFramedBinaryAsync(webSocket, frameHeader, currentFrame.Bytes, sendLock, ct);
+                    }
+                    else
+                    {
+                        await SendBinaryAsync(webSocket, currentFrame.Bytes, sendLock, ct);
+                    }
 
                     totalSendMs += sendStopwatch.Elapsed.TotalMilliseconds;
                     totalFramesSent++;
@@ -792,6 +933,65 @@ public sealed class RemoteDesktopHandler : IDisposable
             h264Encoder?.Dispose();
             frameAvailable.Dispose();
         }
+    }
+
+    /// <summary>Set once this session has told the client its input is going nowhere (RemEx-iaxc).</summary>
+    private int _inputSilentlyDroppedReported;
+
+    /// <summary>
+    /// Tells the client, at most once per session, that the host is discarding its input (RemEx-iaxc).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE HOST ADVERTISED THAT INPUT WORKS AND WAS RIGHT AT THE TIME.** On Wayland the portal
+    /// injector is started lazily on the first event, so the permission dialog appears only once a
+    /// remote session actually begins sending input. Decline it with no xdotool or ydotool installed
+    /// and every click and keystroke is discarded — the stream keeps running, the cursor does not
+    /// move, and nothing anywhere says why. No capability flag can carry this, because at capability
+    /// time the prediction was correct; it is only knowable once a user has answered a dialog.
+    /// </para>
+    /// <para>
+    /// **CALLED FROM BOTH THE INPUT PATH AND THE FRAME LOOP, BECAUSE THE INPUT PATH ALONE CAN MISS
+    /// IT.** The reason is set by the input worker while dispatching, so the input-side call can only
+    /// observe it on the event AFTER the one that failed — which assumes another event is coming. It
+    /// usually is, and that call is the fast path. But a user who presses one key, sees nothing happen
+    /// and stops sends no second event; and on hosts with a live unified capture session, pointer
+    /// motion is injected through the capture lifetime and never touches the portal at all, so the
+    /// continuous stream of moves is not even a trigger there. The frame loop runs for as long as the
+    /// stream does and closes both gaps.
+    /// </para>
+    /// <para>
+    /// Once per session because the condition does not clear on its own: the portal is asked once and,
+    /// on refusal, every later event fails the same way. Repeating it per event would put a dialog on
+    /// the phone for every pixel of mouse travel. It DOES clear on a user-initiated re-arm
+    /// (<see cref="MessageTypes.DesktopInputPermissionRetry"/>, RemEx-5bwpv): that handler resets the
+    /// reported-once guard alongside the input service's reason, so a second refusal (or a fresh
+    /// success) is reported afresh instead of staying silent forever.
+    /// </para>
+    /// </remarks>
+    private async Task ReportInputSilentlyDroppedOnceAsync(
+        WebSocket webSocket, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        if (_inputSimulation.InputSilentlyDroppedReason is not { } reason)
+            return;
+
+        if (Interlocked.Exchange(ref _inputSilentlyDroppedReported, 1) != 0)
+            return;
+
+        // RE-READ AFTER WINNING THE EXCHANGE (RemEx-5bwpv fix-round finding). The reason above can go
+        // stale between that read and this line: a concurrent RetryInputPermission() clears the reason
+        // synchronously but only after this method has already read it, so without this check a frame
+        // tick landing in that window would report the old refusal, latch the guard, and the retry's
+        // GENUINE second refusal (if any) would then find the guard already set and never be told. If
+        // the reason cleared in that window, un-latch and say nothing rather than report stale state.
+        if (_inputSimulation.InputSilentlyDroppedReason is not { } current)
+        {
+            Interlocked.Exchange(ref _inputSilentlyDroppedReported, 0);
+            return;
+        }
+
+        _logger.LogWarning("Telling the client its input is being discarded: {Reason}", current);
+        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.InputUnavailable, current, sendLock, ct);
     }
 
     private async Task SendDesktopError(WebSocket webSocket, string text, SemaphoreSlim sendLock, CancellationToken ct)
@@ -855,7 +1055,8 @@ public sealed class RemoteDesktopHandler : IDisposable
         var tick = 0;
         // ~90 Hz cursor pacing via the shared precision pacer. Task.Delay(11) rounds up to the
         // ~15.6 ms OS timer floor (~64 Hz, missing the 90 Hz target) — see PrecisionPacer. (RD-A)
-        var pacer = new PrecisionPacer();
+        // Disposed with the loop: it owns a native waitable-timer handle (RemEx-ccen).
+        using var pacer = new PrecisionPacer();
         const double cursorIntervalMs = 1000.0 / 90.0;
 
         try
@@ -964,6 +1165,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                             _logger.LogWarning("Input queue full ({Capacity} items) — dropping {Type} event.",
                                 _inputQueue.BoundedCapacity, message.InputEvent.EventType);
                         }
+
+                        await ReportInputSilentlyDroppedOnceAsync(webSocket, sendLock, ct);
                         break;
 
                     case MessageTypes.DesktopConfig when message.DesktopConfig is not null:
@@ -992,6 +1195,19 @@ public sealed class RemoteDesktopHandler : IDisposable
                     // constant so host and client agree on the wire string. (RemEx-bqc / RemEx-kjq)
                     case MessageTypes.DesktopKeyframeRequest:
                         _activeH264Encoder?.RequestKeyframe();
+                        break;
+
+                    // User-initiated re-arm from the phone's "Ask again" action after a declined
+                    // desktop input permission (RemEx-5bwpv). No payload; additive and
+                    // backward-compatible (this switch has no default case, so an old host just
+                    // ignores it). ORDER MATTERS: RetryInputPermission clears the silently-dropped
+                    // reason synchronously; only after that do we reset the reported-once guard.
+                    // Reversed, the frame loop's ReportInputSilentlyDroppedOnceAsync call (below) could
+                    // re-send the stale reason on the very next frame before the retry has cleared it.
+                    case MessageTypes.DesktopInputPermissionRetry:
+                        _logger.LogInformation("Client requested a desktop input permission retry.");
+                        _inputSimulation.RetryInputPermission();
+                        Interlocked.Exchange(ref _inputSilentlyDroppedReported, 0);
                         break;
 
                     case MessageTypes.DesktopPointerBatch when message.DesktopPointerBatch is not null:
@@ -1038,7 +1254,16 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private void DispatchInput(InputEvent input)
+    /// <summary>
+    /// Applies one input event to the host.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private so the held-key bookkeeping can be tested end to end: the queue
+    /// that normally feeds this is private and driven by a WebSocket, so without a seam the wiring
+    /// between here and <see cref="Dispose"/> is exactly the kind of link that can be deleted with
+    /// every unit test still green (RemEx-e2p4).
+    /// </remarks>
+    internal void DispatchInput(InputEvent input)
     {
         try
         {
@@ -1079,13 +1304,21 @@ public sealed class RemoteDesktopHandler : IDisposable
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
-                    _inputSimulation.MouseScroll(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    // Clamped, not passed through: an unbounded delta off the wire reaches Math.Abs
+                    // in the Linux backends, and int.MinValue throws there rather than saturating.
+                    // The escape kills this handler's input thread for the rest of the session
+                    // (RemEx-hnin).
+                    _inputSimulation.MouseScroll(
+                        CoordinateValidation.ClampScrollDelta(input.DeltaX),
+                        CoordinateValidation.ClampScrollDelta(input.DeltaY));
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     _inputSimulation.KeyDown(input.KeyCode.Value);
+                    _heldKeys.Pressed(input.KeyCode.Value);
                     break;
                 case InputEventTypes.KeyUp when input.KeyCode.HasValue:
                     _inputSimulation.KeyUp(input.KeyCode.Value);
+                    _heldKeys.Released(input.KeyCode.Value);
                     break;
                 case InputEventTypes.TypeText when input.Text is not null:
                     _inputSimulation.TypeText(input.Text);
@@ -1103,6 +1336,37 @@ public sealed class RemoteDesktopHandler : IDisposable
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Failed to dispatch input (invalid argument): {Type}", input.EventType);
+        }
+        catch (Exception ex)
+        {
+            // THE LIST ABOVE IS INCOMPLETE BY CONSTRUCTION, NOT BY OVERSIGHT (RemEx-q4wm). Behind this
+            // switch are three platform backends that shell out, P/Invoke, and talk to a portal over
+            // D-Bus; enumerating everything they can throw is not a thing anyone can finish. Before
+            // this arm, whatever was missing from the list did not cost the event — it ended the
+            // consuming loop in ProcessInputQueue and with it every remaining input for the session,
+            // while the video stream carried on. RemEx-hnin was that bug with OverflowException as
+            // the instance: one scroll message and the desktop stopped responding for good.
+            //
+            // Swallowing is the right trade for THIS payload specifically, not a general habit. Input
+            // events are independent and already explicitly best-effort — the queue drops them under
+            // flood and says so in InputEvent's own remarks — so a client cannot assume any single
+            // event landed. Losing one is within the contract; losing the session is not.
+            //
+            // Error rather than Warning because, unlike the three arms above, reaching here means an
+            // exception nobody predicted: the log line is the only record that the event class exists
+            // at all.
+            //
+            // NO OperationCanceledException CARVE-OUT, and that was a real bug in the first draft of
+            // this fix. Excluding it looked harmless because ProcessInputQueue has an arm that logs
+            // cancellation as a graceful stop — but that arm is unreachable from the queue, which is
+            // constructed and enumerated WITHOUT a token and shuts down via CompleteAdding instead. So
+            // the exclusion did not preserve a shutdown path; it built a fresh one for a backend OCE
+            // to end the session's input on, logged at Information as if it were normal. Exactly the
+            // silence this bead exists to remove.
+            _logger.LogError(
+                ex,
+                "Unexpected failure dispatching input; the event was dropped and the session continues: {Type}",
+                input.EventType);
         }
     }
 
@@ -1504,7 +1768,24 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private async Task SendBinaryAsync(WebSocket webSocket, byte[] payload, SemaphoreSlim sendLock, CancellationToken ct)
+    /// <summary>
+    /// Sends <paramref name="header"/> and <paramref name="payload"/> as two fragments of a single
+    /// binary message.
+    /// </summary>
+    /// <remarks>
+    /// BOTH FRAGMENTS GO OUT UNDER ONE ACQUISITION OF <paramref name="sendLock"/>, and that is the
+    /// whole safety argument. A WebSocket permits one message in flight per socket; releasing between
+    /// the two would let another sender interleave its own fragments into the middle of this message,
+    /// which the client would reassemble into a single corrupt frame — and because the envelope
+    /// validates by exact length, it would fail to parse and fall through to the legacy untagged path
+    /// rather than erroring. (RemEx-41xu)
+    /// </remarks>
+    internal async Task SendFramedBinaryAsync(
+        WebSocket webSocket,
+        ReadOnlyMemory<byte> header,
+        ReadOnlyMemory<byte> payload,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
     {
         await sendLock.WaitAsync(ct);
         try
@@ -1514,7 +1795,51 @@ public sealed class RemoteDesktopHandler : IDisposable
                 return;
             }
 
-            await webSocket.SendAsync(new ArraySegment<byte>(payload), WebSocketMessageType.Binary, endOfMessage: true, ct);
+            await webSocket.SendAsync(header, WebSocketMessageType.Binary, endOfMessage: false, ct);
+
+            try
+            {
+                await webSocket.SendAsync(payload, WebSocketMessageType.Binary, endOfMessage: true, ct);
+            }
+            catch
+            {
+                // The header is on the wire and the message was never terminated. .NET marks the NEXT
+                // data send on this socket as a continuation of it whatever message type is asked for,
+                // so a subsequent send — the input loop's window_result runs on a different token and
+                // can still fire during teardown — would be spliced onto an orphaned header. The client
+                // would reassemble header + JSON, fail the envelope's exact-length check, and fall
+                // through to the legacy untagged path rather than erroring. Killing the socket is the
+                // only way to make that unreachable; it is already unusable for framed data.
+                try { webSocket.Abort(); } catch { /* already dead: nothing left to protect */ }
+                throw;
+            }
+        }
+        finally
+        {
+            sendLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Sends one complete binary WebSocket message.
+    /// </summary>
+    /// <remarks>
+    /// Takes <see cref="ReadOnlyMemory{T}"/> because a frame may be a slice of a larger buffer — the
+    /// MJPEG path hands over the encoder stream's own array, which is bigger than the frame
+    /// (RemEx-hgox). Passing that as a bare <c>byte[]</c> would ship the zero-padded tail. The
+    /// overload used below is the one <c>WebSocket</c> already prefers, so this is not an adapter.
+    /// </remarks>
+    private async Task SendBinaryAsync(WebSocket webSocket, ReadOnlyMemory<byte> payload, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        await sendLock.WaitAsync(ct);
+        try
+        {
+            if (webSocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            await webSocket.SendAsync(payload, WebSocketMessageType.Binary, endOfMessage: true, ct);
         }
         finally
         {
@@ -1528,6 +1853,96 @@ public sealed class RemoteDesktopHandler : IDisposable
     // which makes the encoder fail to open. We downscale the encoded surface to fit and reuse the
     // exact same scale for capture so the raw BGRA buffer still matches the encoder's -s WxH input.
     private const int MaxH264EncodeDimension = 4096;
+
+    /// <summary>
+    /// Ceiling on the RAW bytes per second full-resolution capture may produce before the stream falls
+    /// back to capturing at the encoded size instead.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Capturing full-res and letting ffmpeg downscale is a large win at ordinary sizes — 20.7 ms of
+    /// capture-thread time drops to 1.7 ms at 2560x1440 (RemEx-evzv). But the ENCODED size is clamped
+    /// to the 4096px hardware limit while the RAW frame is not, so a very large virtual desktop
+    /// produces several times the bytes for identical output.
+    /// </para>
+    /// <para>
+    /// WHAT THIS ACTUALLY GUARDS IS ALLOCATION, NOT BANDWIDTH. There is no backpressure to hit: the
+    /// encoder's input channel is capacity-3 <c>DropWrite</c> and <c>EncodeFrame</c> submits with a
+    /// non-blocking <c>TryWrite</c>, so a saturated pipe silently DROPS frames rather than stalling
+    /// anything. The real cost is that <c>BgraFrameConverter</c> allocates a fresh unpooled array per
+    /// frame BEFORE submission, so a 7680x2160 desktop paced at 120 fps churns roughly 8 GB/s of Large
+    /// Object Heap — a large share of which is allocated and then thrown away at a full channel. This
+    /// budget is therefore a workaround for the unpooled capture buffer, which is its own issue and is
+    /// blocked on the same buffer-ownership question that reverted RemEx-lcp8. Say so plainly rather
+    /// than leaving a pipe-bandwidth story that does not match the code.
+    /// </para>
+    /// <para>
+    /// THE THRESHOLD IS CHOSEN TO CHANGE NOTHING THAT CURRENTLY WORKS, against the ~5.2 GB/s
+    /// anonymous-pipe figure measured on the reference machine:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>2560x1440 @120 — 1.77 GB/s — full-res, the case that motivated it</description></item>
+    /// <item><description>5120x1440 @120 — 3.54 GB/s — full-res</description></item>
+    /// <item><description>3840x2160 @120 — 3.98 GB/s — full-res, deliberately: demoting it would be a
+    /// silent regression on a common setup</description></item>
+    /// <item><description>7680x2160 @60 — 3.98 GB/s — full-res; the surface is huge, the rate is not</description></item>
+    /// <item><description>7680x2160 @120 — 7.96 GB/s — falls back; the bead's case</description></item>
+    /// </list>
+    /// <para>
+    /// ERR HIGH, NOT LOW. The two failure directions are asymmetric. Too high and the surplus frames
+    /// are dropped by the channel — the stream degrades smoothly to whatever rate keeps up. Too low and
+    /// capture goes back onto single-threaded GDI+ bilinear resampling at the largest source size,
+    /// which is a hard CPU cliff and precisely what RemEx-evzv existed to remove. A threshold nobody
+    /// can measure should fail toward the soft mode.
+    /// </para>
+    /// <para>
+    /// Bytes per SECOND, against the REQUESTED frame rate. Per-second because the same surface is fine
+    /// at 60 fps and not at 120; requested rather than achieved because the capture loop is paced at
+    /// the requested rate, so that is the true ceiling on allocation — and because feeding achieved fps
+    /// back in would make the capture size flap, and every flap is a full encoder rebuild. Systematically
+    /// conservative, which argues for a higher constant rather than a different unit.
+    /// </para>
+    /// <para>
+    /// NOTE THE BUDGET IS TOOTHLESS WHEN THE ENCODE SCALE IS ALREADY 1.0 — the fallback captures at the
+    /// encoded size, so when that equals the screen size there is nothing to give back. It bites only
+    /// where the 4096px clamp has actually reduced the encoded surface, which is the case it was written
+    /// for. Re-measure on the target hardware before changing it. (RemEx-zs7l)
+    /// </para>
+    /// </remarks>
+    private const long MaxFullResCaptureBytesPerSecond = 4_500_000_000L;
+
+    /// <summary>The raw capture size for an H.264 stream, and the scale that produces it.</summary>
+    /// <remarks>
+    /// Pulled out of <c>TryCreateH264Encoder</c> so the decision is testable without ffmpeg. Both
+    /// conditions have to hold for full-res capture, and each rules it out for its own reason: an odd
+    /// dimension means capturing at 1.0 still resamples (so full-res would be the SLOW path at the
+    /// largest possible size), and the byte budget means the pipe cannot carry the raw frames however
+    /// fast the capture is. Otherwise capture matches the encoded size, which is what shipped before
+    /// RemEx-evzv. (RemEx-zs7l)
+    /// </remarks>
+    internal static (int Width, int Height, double Scale) ChooseH264CaptureSize(
+        int screenWidth, int screenHeight, int targetWidth, int targetHeight, double encodeScale, int targetFps)
+    {
+        bool noResampleAtFullRes =
+            CaptureScaling.ScaledEven(screenWidth, 1.0) == screenWidth
+            && CaptureScaling.ScaledEven(screenHeight, 1.0) == screenHeight;
+
+        return noResampleAtFullRes && FullResCaptureFitsBudget(screenWidth, screenHeight, targetFps)
+            ? (screenWidth, screenHeight, 1.0)
+            : (targetWidth, targetHeight, encodeScale);
+    }
+
+    /// <summary>Raw BGRA bytes per second a full-resolution capture of this surface would produce.</summary>
+    internal static long FullResCaptureBytesPerSecond(int screenWidth, int screenHeight, int targetFps)
+        => (long)screenWidth * screenHeight * 4 * Math.Max(targetFps, 1);
+
+    /// <summary>
+    /// Whether capturing this surface at full resolution stays inside
+    /// <see cref="MaxFullResCaptureBytesPerSecond"/>.
+    /// </summary>
+    internal static bool FullResCaptureFitsBudget(int screenWidth, int screenHeight, int targetFps)
+        => screenWidth > 0 && screenHeight > 0
+           && FullResCaptureBytesPerSecond(screenWidth, screenHeight, targetFps) <= MaxFullResCaptureBytesPerSecond;
     private double _h264CaptureScale = 1.0;
 
     private static double ClampScaleForH264(int screenWidth, int screenHeight, double requestedScale)
@@ -1558,11 +1973,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
 
-        // Fit the encoded surface within the hardware H.264 limit, then capture at that same scale so
-        // the raw buffer size matches the encoder's fixed -s WxH input (CaptureScaling.ScaledEven on
-        // the identical scale guarantees this; a 1-pixel mismatch makes nvenc emit 0 frames).
+        // Fit the ENCODED surface within the hardware H.264 limit. Capture is no longer tied to this
+        // scale — ffmpeg downscales from full resolution — but the raw buffer must still match the
+        // encoder's -s WxH INPUT exactly, which is why both sizes go through CaptureScaling.ScaledEven
+        // below; a 1-pixel mismatch makes nvenc emit 0 frames.
         var scale = ClampScaleForH264(screenWidth, screenHeight, _scale);
-        _h264CaptureScale = scale;
         if (scale < _scale)
         {
             _logger.LogInformation(
@@ -1573,8 +1988,31 @@ public sealed class RemoteDesktopHandler : IDisposable
         int targetWidth = CaptureScaling.ScaledEven(screenWidth, scale);
         int targetHeight = CaptureScaling.ScaledEven(screenHeight, scale);
 
+        // CAPTURE AT FULL RESOLUTION and let ffmpeg downscale. The capture backend only has a fast
+        // path (one row-wise copy) when it is not resampling; asking it to shrink drops it into a
+        // GDI+ bilinear DrawImage measured at 20.7 ms per frame at 2560x1440 -> 0.6, single-threaded
+        // on the capture thread, which alone caps the stream near 48 FPS. Full-res capture is 1.7 ms
+        // and swscale does the resize on ffmpeg's own threads (RemEx-evzv).
+        // ODD-DIMENSION GUARD: ScaledEven rounds an odd width DOWN, so at scale 1.0 an odd-width
+        // surface still needs a resample — which puts the capture back on the GDI+ path, now at FULL
+        // resolution and therefore SLOWER than the 0.6 path it replaced, plus 14 MB on the pipe. Only
+        // take the full-res route when it genuinely lands on the no-resample fast path.
+        var (captureWidth, captureHeight, captureScale) =
+            ChooseH264CaptureSize(screenWidth, screenHeight, targetWidth, targetHeight, scale, _targetFps);
+        _h264CaptureScale = captureScale;
+
+        if (captureWidth != screenWidth && !FullResCaptureFitsBudget(screenWidth, screenHeight, _targetFps))
+        {
+            _logger.LogInformation(
+                "Full-resolution capture of {W}x{H} at {Fps} fps would push {GBs:F1} GB/s of raw frames " +
+                "(budget {BudgetGBs:F1} GB/s); capturing at the encoded size {TW}x{TH} instead.",
+                screenWidth, screenHeight, _targetFps,
+                FullResCaptureBytesPerSecond(screenWidth, screenHeight, _targetFps) / 1e9,
+                MaxFullResCaptureBytesPerSecond / 1e9, targetWidth, targetHeight);
+        }
+
         var encoder = new FFmpegH264Encoder(_logger);
-        if (encoder.Initialize(targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))
+        if (encoder.Initialize(captureWidth, captureHeight, targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))
         {
             return encoder;
         }
@@ -1600,7 +2038,14 @@ public sealed class RemoteDesktopHandler : IDisposable
     /// Non-stylus samples are mapped to mouse events. Stylus-specific data (pressure, tilt,
     /// hover) is silently dropped here — it will be preserved end-to-end once Stage 5 lands.
     /// </summary>
-    private void EnqueuePointerSampleAsInputEvent(DesktopPointerSample sample)
+    /// <remarks>
+    /// Internal rather than private for the same reason <see cref="DispatchInput"/> is: it is the only
+    /// way a test can put an event through the REAL queue and the real consuming loop, rather than
+    /// calling the loop's body directly. Containing an exception inside <c>DispatchInput</c> and
+    /// keeping <see cref="ProcessInputQueue"/> alive are two different claims, and the second is the
+    /// one that was worth a session (RemEx-q4wm).
+    /// </remarks>
+    internal void EnqueuePointerSampleAsInputEvent(DesktopPointerSample sample)
     {
         InputEvent? input = null;
 
@@ -1677,16 +2122,107 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     public void Dispose()
     {
+        _disposing = true;
         _inputQueue.CompleteAdding();
+        bool inputDrained = false;
+        AggregateException? inputThreadFault = null;
         try
         {
-            _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
+            inputDrained = _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
         }
-        catch (AggregateException)
+        catch (AggregateException ex)
         {
-            // Expected if the task faulted or was already completed.
+            // KEPT, BUT NO LONGER ANONYMOUS (RemEx-q4wm). Task.Wait reports a faulted task by
+            // THROWING and returns true for one that merely finished, so — contrary to the comment
+            // that used to sit here — "or was already completed" was never a way to reach this arm.
+            // ONLY a fault does. Discarding it therefore discarded the single signal that the thread
+            // had died, and execution fell into the timeout branch below, which blames a slow
+            // dispatch. That was the last place the failure could have been noticed, and it was
+            // labelled "expected".
+            //
+            // Still reachable after this bead, though it should be vanishingly rare: the loop now
+            // catches everything, so the only way to fault the task is for one of ITS OWN catch arms
+            // to throw — sibling clauses do not catch each other.
+            inputThreadFault = ex;
         }
+
+        // Checked BEFORE the drain result, because a thread that caught its way out reports a
+        // perfectly successful Wait. That is the shape this bead's containment creates and it would
+        // otherwise be the quietest failure of the three: the loop caught, logged, and returned, so
+        // Dispose sees a completed task and says nothing at all — about a session whose input had
+        // stopped working. The flag is what makes the teardown message agree with reality.
+        if (_inputThreadDiedUnexpectedly)
+        {
+            _logger.LogError(
+                "Input processing thread had already died during this session; input stopped being " +
+                "applied then, not at teardown. See the earlier Critical entry for the cause.");
+        }
+        else if (inputThreadFault is not null)
+        {
+            _logger.LogError(
+                inputThreadFault,
+                "Input processing thread faulted; input for this session stopped being applied when " +
+                "it did, not at teardown.");
+        }
+        else if (!inputDrained)
+        {
+            // The release below assumes nothing more will be dispatched. If the wait timed out the
+            // input thread may still be mid-dispatch, so a queued KeyDown can land after the release
+            // and re-hold a key that is no longer tracked — the same stuck key as before, which is
+            // status quo rather than a regression, but it must not be silent. More plausible on
+            // Linux, where each event can spawn a subprocess. (RemEx-e2p4)
+            //
+            // Now reached ONLY for a genuine timeout: a fault takes the branch above, so this message
+            // no longer claims "still mid-dispatch" about a thread that is gone.
+            _logger.LogWarning(
+                "Input queue did not drain within 2s; keys held by the client may not be released.");
+        }
+
+        // AFTER the queue has drained, deliberately. Releasing earlier would race the input thread,
+        // and a queued KeyDown arriving afterwards would silently re-hold the key we just released.
+        ReleaseKeysHeldByClient();
+
         _inputQueue.Dispose();
+    }
+
+    /// <summary>
+    /// Releases every key this client still had down when its session ended (RemEx-e2p4).
+    /// </summary>
+    /// <remarks>
+    /// A key press is two messages and a chord is six, and nothing guarantees the client sends the
+    /// closing half: it can be force-stopped, lose Wi-Fi, or tear the stream down before its own
+    /// keyUps drain. The host has already told Windows the key is down, so without this a modifier is
+    /// left physically held on the user's desktop and every later keystroke becomes a chord — with no
+    /// way to clear it from the phone, because the phone is what went away. Client-side ordering
+    /// (RemEx-3uhp, RemEx-7rq3, RemEx-krvz) makes the messages arrive in order when they arrive; this
+    /// is for when they do not.
+    ///
+    /// Best-effort per key: one failing release must not strand the rest, which for modifiers is the
+    /// difference between a stuck Ctrl and a stuck Ctrl+Shift+Alt.
+    /// </remarks>
+    private void ReleaseKeysHeldByClient()
+    {
+        var held = _heldKeys.TakeAll();
+        if (held.Count == 0)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "Releasing {Count} key(s) still held by the client at session end: {Keys}",
+            held.Count, string.Join(", ", held));
+
+        foreach (var keyCode in held)
+        {
+            try
+            {
+                _inputSimulation.KeyUp(keyCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to release held key {KeyCode} at session end.", keyCode);
+            }
+        }
     }
 
     private string BuildWindowsDesktopUnavailableMessage(WindowsRemoteDesktopDiagnosticReport report)
@@ -1763,7 +2299,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private sealed class CapturedFrame
     {
-        public byte[] Bytes { get; init; } = Array.Empty<byte>();
+        public ReadOnlyMemory<byte> Bytes { get; init; }
         public long StreamSerial { get; init; }
         public long Sequence { get; init; }
         public DesktopFrameFlags Flags { get; init; }

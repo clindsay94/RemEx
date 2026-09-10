@@ -60,6 +60,18 @@ public class DraggableCard : ContentControl
         set => SetValue(IsDraggingProperty, value);
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Elevation: the :dragging pseudo-class drives the CanvasView shadow-depth selector
+        // (RemEx-la0rk). Drag behaviour itself (scale/opacity/BringToFront) is unchanged.
+        if (change.Property == IsDraggingProperty)
+        {
+            PseudoClasses.Set(":dragging", change.GetNewValue<bool>());
+        }
+    }
+
     public DraggableCard()
     {
         // Set up the scale/opacity transitions for visual drag feedback.
@@ -84,7 +96,36 @@ public class DraggableCard : ContentControl
             cardVm.PropertyChanged += OnCardViewModelPropertyChanged;
             UpdateSelectedClass(cardVm.IsSelected);
             UpdateAlertClass(cardVm.IsAlertActive);
+            UpdateReducedMotionClass();
         }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        // FindCanvasDashboard() walks GetVisualParent(), so it only resolves once this card is
+        // actually in the tree — OnDataContextChanged above can fire earlier (e.g. container
+        // recycling), when the walk would just return null. Re-check here so a card that starts
+        // pulsing gets the right glow (steady vs. animated) instead of always defaulting to
+        // animated because the dashboard wasn't reachable yet (RemEx-8wpvr.4).
+        UpdateReducedMotionClass();
+    }
+
+    /// <summary>
+    /// Mirrors <see cref="CanvasDashboardViewModel.IsReducedMotion"/> onto the "reduced-motion"
+    /// class, which only matters in combination with "alert-active" (RemEx-8wpvr.4) — see
+    /// <c>CanvasView.axaml</c>'s <c>ctrl|DraggableCard.alert-active.reduced-motion</c> style. Same
+    /// accepted gap as the property it reads: not live-updated on a mid-session toggle, only
+    /// re-read on attach and whenever the alert-active class is (re)applied.
+    /// </summary>
+    private void UpdateReducedMotionClass()
+    {
+        var reduced = FindCanvasDashboard()?.IsReducedMotion ?? false;
+        if (reduced)
+            Classes.Add("reduced-motion");
+        else
+            Classes.Remove("reduced-motion");
     }
 
     private void OnCardViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -94,7 +135,10 @@ public class DraggableCard : ContentControl
         if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
             UpdateSelectedClass(cardVm.IsSelected);
         else if (e.PropertyName == nameof(CanvasCardViewModel.IsAlertActive))
+        {
             UpdateAlertClass(cardVm.IsAlertActive);
+            UpdateReducedMotionClass();
+        }
     }
 
     private void UpdateSelectedClass(bool isSelected)
@@ -147,6 +191,14 @@ public class DraggableCard : ContentControl
 
         var props = e.GetCurrentPoint(this).Properties;
         if (!props.IsLeftButtonPressed) return;
+
+        // Acknowledge a tripped alert on press, without altering selection or drag below
+        // (RemEx-8wpvr.2). Execute() runs the delegate unconditionally regardless of CanExecute, so
+        // the IsAlertTripped check here is the only guard.
+        if (DataContext is CanvasCardViewModel { IsAlertTripped: true } trippedVm)
+        {
+            trippedVm.AcknowledgeAlertCommand.Execute(null);
+        }
 
         // Ctrl+Click: toggle card selection without starting a drag.
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Pointer.Type != PointerType.Touch)

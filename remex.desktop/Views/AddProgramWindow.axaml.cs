@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Desktop.Services;
@@ -47,8 +46,11 @@ public partial class AddProgramWindow : Window
         Title = LocalizationService.Instance[isEditMode ? "AddProgram_EditTitle" : "AddProgram_Title"];
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent: a parameterless one shadows the generated
+    // InitializeComponent(bool loadXaml = true) override, so AvaloniaXamlLoader.Load(this) never
+    // runs and every x:Name field stays null — that NullReferenceException, in
+    // ConfirmationDialog's TitleText field, is what froze RemEx on every destructive action
+    // (RemEx-wdqx; ConfirmationDialog.axaml.cs itself is gone, deleted on this branch). This
+    // markup names nothing, so the declaration was inert here; it is removed so the pattern
+    // cannot be primed by a later edit that adds a named control.
 }

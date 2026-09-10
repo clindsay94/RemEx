@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
+import androidx.compose.runtime.LongState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
@@ -13,8 +15,11 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +32,62 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 private const val TAG = "RemoteDesktopVM"
+
+/** Separates code, optional argument and English fallback in a coded desktop error. */
+private const val ERROR_CODE_DELIMITER = '\u001F'
+
+/**
+ * Wire error codes the host tags onto a remote-desktop `errorText` (RemEx-728, RemEx-nl0z).
+ *
+ * Mirrors `Remex.Core.Models.DesktopErrorCodes` VERBATIM. These travel inside the existing
+ * `errorText` field as `"code<delim>arg<delim>englishFallback"` ([ERROR_CODE_DELIMITER]) and are
+ * protocol tokens, not prose — duplicated here because the two sides do not share a build, the
+ * same reason `FileConflictCodes` (service/FileConflictPolicy.kt) duplicates its own host-side
+ * enum.
+ */
+private object DesktopErrorCodes {
+    const val CAPTURE_UNAVAILABLE = "capture_unavailable"
+    const val CAPTURE_STOPPED = "capture_stopped"
+    const val TARGET_UNAVAILABLE = "target_unavailable"
+    const val TARGET_SWITCH_UNSUPPORTED = "target_switch_unsupported"
+    const val RUNTIME_UNAVAILABLE = "runtime_unavailable"
+
+    /** Raised client-side (RemEx-nl0z), not sent by the host — see [isConnectFailure]. */
+    const val CONNECT_TIMEOUT = "connect_timeout"
+
+    /** Raised client-side (RemEx-nl0z), not sent by the host — see [isConnectFailure]. */
+    const val HANDSHAKE_TIMEOUT = "handshake_timeout"
+
+    /**
+     * The host is discarding our input while the stream itself is fine (RemEx-iaxc). Matched
+     * BEFORE the localizing `when` in `localizeDesktopError`, by [isInputUnavailableError], to
+     * keep it off the fatal error path entirely.
+     */
+    const val INPUT_UNAVAILABLE = "input_unavailable"
+}
+
+/**
+ * True when a coded desktop error is the advisory "the PC is discarding your input" (RemEx-iaxc).
+ *
+ * **A TOP-LEVEL FUNCTION SO IT CAN BE TESTED WITHOUT AN ANDROID RUNTIME.** The code it matches,
+ * [DesktopErrorCodes.INPUT_UNAVAILABLE], is a cross-language contract with
+ * `DesktopErrorCodes.InputUnavailable` on the host, duplicated here because the two do not share a
+ * build. If they ever drift, this returns false, the message falls through to the fatal handler
+ * that clears `isStreaming` and reconnects, and a declined permission prompt turns into a reconnect
+ * loop that blanks a healthy picture once per input event — worse than the silent bug this fixes.
+ * Both sides are pinned by tests for that reason.
+ */
+internal fun isInputUnavailableError(errorText: String?): Boolean =
+        errorText?.substringBefore(ERROR_CODE_DELIMITER) == DesktopErrorCodes.INPUT_UNAVAILABLE
+
+/**
+ * Wire literal for the user-initiated "ask again" that re-arms the PC's input-permission prompt
+ * (RemEx-5bwpv). Phone -> PC, no payload. A cross-language contract with the host the same way
+ * [DesktopErrorCodes.INPUT_UNAVAILABLE] is: the two sides do not share a build, so a rename on either end
+ * silently breaks the retry instead of failing to compile. Internal, like [isInputUnavailableError],
+ * so the unit test can pin it directly.
+ */
+internal const val DESKTOP_INPUT_PERMISSION_RETRY = "desktop_input_permission_retry"
 
 /** Frame-arrival watchdog poll interval and stall threshold (RemEx-5t4). */
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
@@ -56,16 +117,56 @@ internal const val VK_WIN = 91
 internal const val VK_ALTGR = 165
 internal val MODIFIER_VIRTUAL_KEY_CODES = setOf(VK_SHIFT, VK_CTRL, VK_ALT, VK_WIN, VK_ALTGR)
 
-data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
-
 data class RemoteDesktopCapabilityState(
         val supportsRemoteDesktop: Boolean = true,
         val unavailableReason: String? = null,
         val supportsCursorQuery: Boolean = false,
         val supportsAdvancedWindowControl: Boolean = false,
+        /**
+         * Whether the host can actually inject input, as opposed to merely stream (RemEx-q9zw).
+         *
+         * DEFAULTS TO TRUE, UNLIKE ITS SIBLINGS, AND THAT IS DELIBERATE. The others are opt-in
+         * features whose absence means "this host is too old to offer it", so defaulting them false
+         * is right. This one is a REFUSAL: the host only ever reports false to say it cannot inject.
+         * Defaulting it false would mean any host that omits the key loses all input, turning a
+         * missing field into a bricked session. Absence therefore means "assume yes", which is
+         * exactly today's behaviour.
+         *
+         * ONLY ONE THING CAN PRODUCE AN ABSENT KEY, and a first draft of this comment named two. The
+         * property is a non-nullable bool serialized with WhenWritingNull, so every host that has it
+         * emits it, false included; the only omitter is a build predating the field. A truncated
+         * payload does NOT arrive here - it throws in JSONObject() and lands in the collector's
+         * catch, which sets this false explicitly.
+         */
+        val supportsInputSimulation: Boolean = true,
         val inputBackend: String? = null,
         val windowBackend: String? = null
 )
+
+/**
+ * Parses the host capability payload.
+ *
+ * Split out of the collector so it can be tested. The gate it feeds decides whether input reaches
+ * the host at all, and the interesting cases - a key that is absent versus one explicitly false -
+ * are exactly the ones that never occur on the developer's own machine (RemEx-q9zw).
+ *
+ * Deliberately still THROWS on a malformed payload rather than returning a default: the collector's
+ * catch already handles that, and it sets a strictly safer state than this function could, having
+ * the Application context needed for the user-facing reason string.
+ */
+internal fun parseHostCapabilities(hostInfoJson: String): RemoteDesktopCapabilityState {
+    val json = JSONObject(hostInfoJson)
+    return RemoteDesktopCapabilityState(
+            supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false),
+            supportsCursorQuery = json.optBoolean("supportsCursorQuery", false),
+            supportsAdvancedWindowControl = json.optBoolean("supportsAdvancedWindowControl", false),
+            supportsInputSimulation = json.optBoolean("supportsInputSimulation", true),
+            inputBackend = json.optString("inputBackend").takeIf { it.isNotBlank() },
+            windowBackend = json.optString("windowControlBackend").takeIf { it.isNotBlank() },
+            unavailableReason =
+                    json.optString("remoteDesktopUnavailableReason").takeIf { it.isNotBlank() }
+    )
+}
 
 /**
  * Frame-rate ceiling shared with the host via DesktopConfig.MaxTargetFps. The FPS slider's top stop
@@ -124,15 +225,99 @@ val DESKTOP_PRESET_BUNDLES =
         )
 
 /**
- * A selectable remote-display target. [token] is the persisted identity:
- * "virtual" for the combined (both-screens) view, or "monitor:<displayId>" for a single display.
+ * The string stored for a chosen display — deliberately NOT its [DisplayTargetOption.token].
+ *
+ * A token embeds `displayId`, which the host renumbers whenever monitors change, so storing one
+ * means the remembered monitor silently becomes a different physical screen after a replug. It
+ * fails QUIETLY, because the stored value still resolves — it just resolves to the wrong thing.
+ * The host supplies a stable `persistentDisplayKey` for exactly this (RemEx-zftu).
+ *
+ * THE `monitorkey:` PREFIX IS WHAT MAKES THIS SAFE TO SHIP. Values written by earlier builds are
+ * `monitor:<displayId>`, and they must never be read as a persistent key. Under the new prefix
+ * they simply fail to match, and the selection falls through to the primary display — the correct
+ * handling of "we no longer know which monitor you meant". Silently reinterpreting them would
+ * reintroduce the bug wearing a different hat.
+ */
+internal fun rememberedTargetFor(option: DisplayTargetOption): String = when {
+    option.captureMode == "VirtualDesktop" -> "virtual"
+    // Older host with no stable key: remember nothing rather than remember the wrong thing.
+    option.persistentKey.isNullOrBlank() -> ""
+    else -> "monitorkey:${option.persistentKey}"
+}
+
+/** Does [option] correspond to the stored choice [remembered]? */
+internal fun matchesRememberedTarget(option: DisplayTargetOption, remembered: String): Boolean = when {
+    remembered.isBlank() -> false
+    remembered == "virtual" -> option.captureMode == "VirtualDesktop"
+    remembered.startsWith("monitorkey:") ->
+            !option.persistentKey.isNullOrBlank() &&
+                    option.persistentKey == remembered.removePrefix("monitorkey:")
+    // Legacy "monitor:<displayId>" and anything else unrecognised: deliberately no match.
+    else -> false
+}
+
+/**
+ * The capture modes a host says it can serve, from its display catalog.
+ *
+ * Absent or unparseable means the EMPTY set rather than "everything": a host that did not say cannot
+ * be assumed to support anything, and offering a target it will refuse is worse than offering none —
+ * the picker then shows choices that simply fail, with nothing explaining why (RemEx-e1x4).
+ */
+internal fun supportedCaptureModes(catalog: JSONObject): Set<String> {
+    val modes = catalog.optJSONArray("supportedCaptureModes") ?: return emptySet()
+    return (0 until modes.length())
+            .mapNotNull { modes.optString(it).takeIf { mode -> mode.isNotBlank() } }
+            .toSet()
+}
+
+/**
+ * Whether to offer per-monitor targets.
+ *
+ * This was unconditional while the whole-desktop option was already gated, so a host advertising only
+ * VirtualDesktop — which the fallback catalog does, because it could not enumerate outputs at all —
+ * still got a monitor picker whose every entry the host would reject (RemEx-e1x4).
+ */
+internal fun offersMonitorTargets(modes: Set<String>): Boolean = "Monitor" in modes
+
+/**
+ * Whether to offer the combined "both screens" target.
+ *
+ * Needs more than one display as well as host support: combining one screen with nothing is a target
+ * identical to that screen, under a name suggesting otherwise.
+ */
+internal fun offersVirtualTarget(modes: Set<String>, displayCount: Int): Boolean =
+        "VirtualDesktop" in modes && displayCount > 1
+
+/** One host cursor position sample, streamed rather than held in composition (RemEx-zc9r). */
+data class HostCursorSample(val x: Float, val y: Float, val visible: Boolean)
+
+/**
+ * A selectable remote-display target for the current catalog.
+ *
+ * Deliberately has TWO identities. [token] selects within this session; [persistentKey] is what may
+ * be stored across sessions. Conflating them is what RemEx-ynur fixed.
  */
 data class DisplayTargetOption(
+        /**
+         * SESSION-SCOPED identity, for selection within this catalog only. It embeds displayId, which
+         * the host renumbers whenever monitors are added, removed or replugged, so persisting it
+         * makes the user's remembered monitor silently become a different screen. Store
+         * [persistentKey] instead (RemEx-ynur).
+         */
         val token: String,
         val label: String,
         val captureMode: String, // "VirtualDesktop" | "Monitor"
         val displayId: String?,
-        val isPrimary: Boolean
+        val isPrimary: Boolean,
+        /**
+         * The host's `persistentDisplayKey` for this monitor (RemEx-zftu) — more stable than
+         * [token], not a guarantee. The host documents its own limits: it survives reboots and
+         * same-port replugs but not a port change, and cannot tell two IDENTICAL panels apart when
+         * they are swapped. Null for the virtual desktop, and null when the host is too old to send
+         * one, in which case the choice is deliberately NOT remembered rather than remembered
+         * wrongly.
+         */
+        val persistentKey: String? = null
 )
 
 data class DesktopWindowModel(
@@ -170,19 +355,58 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /** Previous frame bitmap kept for inBitmap reuse (avoids GC churn). */
     private var reusableBitmap: Bitmap? = null
 
-    private val _currentFrame = MutableStateFlow<DesktopFrame?>(null)
-    val currentFrame: StateFlow<DesktopFrame?> = _currentFrame.asStateFlow()
+    /**
+     * The bitmap on screen — the INSTANCE, not a per-frame wrapper.
+     *
+     * This used to be a `DesktopFrame(bitmap, timestamp = nanoTime())`, and the timestamp existed
+     * only to defeat StateFlow's equality check: inBitmap reuse means the same Bitmap object comes
+     * back from every decode, so an unwrapped flow would drop the emission. Defeating that check is
+     * what cost the screen a full recomposition per frame at 30-60 fps, for a value whose one use was
+     * `?.bitmap`. Being dropped as equal is now the DESIRED behaviour — composition should only wake
+     * when the instance actually changes, which happens on a geometry change — and repainting is
+     * handled by [frameTick] in the draw phase instead (RemEx-9esj).
+     */
+    private val _currentBitmap = MutableStateFlow<Bitmap?>(null)
+    val currentBitmap: StateFlow<Bitmap?> = _currentBitmap.asStateFlow()
+
+    /**
+     * Counts decoded MJPEG frames, as Compose state rather than a flow, so the remote-desktop Canvas
+     * can subscribe to it from its DRAW lambda alone (RemEx-9esj).
+     *
+     * A snapshot read inside a draw lambda invalidates only the draw phase. Read the same value in
+     * composition instead and every frame recomposes the whole screen — which is exactly what was
+     * happening: the frame wrapper stamped a fresh nanoTime per frame purely so StateFlow did not
+     * discard it as equal (the bitmap is reused in place, so the instance never changes), that
+     * timestamp was passed down as a composable parameter, and although nothing in the body still
+     * read it, changing it recomposed everything 30-60 times a second.
+     *
+     * It is therefore LOAD-BEARING for repaints: nothing else the draw lambda reads changes between
+     * frames, because the bitmap instance is identical. Stop incrementing this and the video freezes
+     * while the stream keeps running.
+     */
+    private val _frameTick = mutableLongStateOf(0L)
+    val frameTick: LongState = _frameTick
 
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
 
-    // Cursor position from host (for trackpad mode visibility).
-    // Sentinel -1f means "not yet reported" so (0,0) is a valid visible position.
-    private val _hostCursorX = MutableStateFlow(-1f)
-    val hostCursorX: StateFlow<Float> = _hostCursorX.asStateFlow()
+    /**
+     * The host cursor as ONE value, published in a single assignment.
+     *
+     * The position and the visibility used to be three separate flows, and a consumer that needed all
+     * three had to `combine` them — which can emit up to three times per packet and can hand out torn
+     * intermediates (a new X with an old Y). Composition used to hide that by batching per frame; a
+     * flow collector does not. One flow, one write, one emission per packet, no tearing possible
+     * (RemEx-zc9r).
+     */
+    private val _hostCursor = MutableStateFlow(HostCursorSample(-1f, -1f, false))
+    val hostCursor: StateFlow<HostCursorSample> = _hostCursor.asStateFlow()
 
+    // Last known position, kept so a visibility-only update does not have to invent coordinates.
+    // Sentinel -1f means "not yet reported" so (0,0) is a valid visible position. Not exposed:
+    // consumers read [hostCursor], which carries both axes and visibility as one value.
+    private val _hostCursorX = MutableStateFlow(-1f)
     private val _hostCursorY = MutableStateFlow(-1f)
-    val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
 
     // Cursor visibility is tracked separately from position. We must NOT encode "hidden" as a
     // negative coordinate: a monitor positioned left of/above the primary has legitimately
@@ -211,17 +435,118 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val cursorShapeCache = java.util.concurrent.ConcurrentHashMap<Long, CursorShapeEntry>()
     @Volatile private var activeCursorShapeSerial = -1L
 
+    /**
+     * Off the main thread, but STRICTLY ONE AT A TIME.
+     *
+     * Every send from this view model — input, pointer batches, config, queries, keyframe requests —
+     * used to launch on plain `Dispatchers.IO`, a 64-thread dispatcher, so each send raced the others
+     * through JSON build and JNI marshalling and could reach the native side in any order.
+     *
+     * That is not a subtle problem here, because [sendKeyEvent] sends one message per event and a
+     * keystroke is several. Ctrl+Shift+C is SIX ordered messages — keyDown Ctrl, keyDown Shift,
+     * keyDown C, keyUp C, keyUp Shift, keyUp Ctrl — and any permutation was reachable. Two of them
+     * are bad in ways the user cannot undo from the phone: a modifier keyUp arriving before the key's
+     * keyDown sends a plain `c` instead of the copy they asked for, and a modifier keyUp that lands
+     * before its own keyDown leaves the modifier PHYSICALLY HELD DOWN on the host, turning every
+     * subsequent keystroke into a chord until they walk over to the PC. It also desyncs
+     * [physicallyDownModifiers], which believes it released a modifier the host still holds.
+     *
+     * `limitedParallelism(1)` keeps all that work off the main thread while restoring FIFO submission
+     * order. This is the UPSTREAM half of the guarantee: RemEx-krvz made the native side preserve
+     * whatever order it is handed, and this is what makes the order it is handed the order the user
+     * actually acted in. Neither half is sufficient alone. (RemEx-7rq3)
+     *
+     * TWO LIMITS WORTH KNOWING. FIFO holds up to a body's first SUSPENSION POINT — six of the seven
+     * have none, but `restartStreamWithCurrentTarget` has a `delay`, so its stop and start are not
+     * atomic and other sends interleave between them. That is deliberate: pinning the queue for the
+     * duration would stall input for no benefit.
+     *
+     * And not every send goes through here. `actuallyStartStreaming`, `stopStreaming` and
+     * `pushConfigIfStreaming` send inline on their caller's thread rather than launching, so they are
+     * ordered against each other but not against these. Converting them would turn synchronous calls
+     * into asynchronous ones their callers were not written for. `pushConfigIfStreaming` does not
+     * matter (capture config is idempotent state, not an ordered event), but `stopStreaming` does —
+     * see RemEx-e2p4.
+     *
+     * DECLARED HERE, ABOVE `init`, AND IT MUST STAY ABOVE IT. Kotlin runs initialisers in declaration
+     * order, and `init` reaches `requestDisplayCatalog` synchronously — `viewModelScope` is
+     * `Main.immediate`, so its collector runs inline in the constructor and a StateFlow delivers its
+     * current value before suspending. Declared below `init`, this is still null at that point and
+     * the screen dies with an NPE in its constructor. `Dispatchers.IO` was an object, so the old code
+     * could not hit this; no build gate catches it.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)
+
+    /**
+     * Queue feeding the single pointer-batch sender, replacing a coroutine launch per MotionEvent.
+     */
+    /*
+     * The stylus path is unthrottled by design - fidelity beats bandwidth for inking - so it called
+     * sendPointerBatch on every event, and every call did `viewModelScope.launch(sendDispatcher)`.
+     * That is a Job, a continuation and a dispatch per event, thousands per second during a stroke,
+     * producing GC pressure exactly when latency is what the user feels (RemEx-ugvo).
+     *
+     * ORDER IS PRESERVED, which is the property that matters: sendDispatcher is
+     * limitedParallelism(1), so the launches were already serialized through one thread, and a
+     * channel with one consumer on that same dispatcher serializes them identically.
+     *
+     * UNLIMITED rather than a bounded buffer, deliberately. A bounded channel would have to drop or
+     * suspend, and dropping loses stroke fidelity - the exact thing this path exists to protect.
+     * It is not a new risk: the per-event launches queued without bound on the same single thread,
+     * so the backlog behaviour under a stalled JNI call is what it always was.
+     */
+    private val pointerBatchQueue = Channel<String>(Channel.UNLIMITED)
+    private val pointerSenderStarted = AtomicBoolean(false)
+
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
 
     private val _desktopError = MutableStateFlow<String?>(null)
     val desktopError: StateFlow<String?> = _desktopError.asStateFlow()
 
+    /**
+     * Set when the PC says it is discarding our input, or null when input is believed to work
+     * (RemEx-iaxc).
+     *
+     * **SEPARATE FROM [desktopError] BECAUSE THIS ONE IS NOT FATAL, AND ROUTING IT THERE WOULD BE
+     * WORSE THAN THE BUG.** Everything arriving on `desktopErrors` clears `_isStreaming` and calls
+     * `attemptReconnect()`. The host raises this one while the video stream is perfectly healthy —
+     * only input is dead — so taking that path would blank a working picture, reconnect, re-trigger
+     * the very permission dialog the user just declined, and do it again on the next event.
+     *
+     * The picture keeps running and this is shown over it, because a remote desktop you can watch but
+     * not control is still worth seeing, and the user needs to be told which half stopped.
+     */
+    private val _inputUnavailable = MutableStateFlow<String?>(null)
+    val inputUnavailable: StateFlow<String?> = _inputUnavailable.asStateFlow()
+
+    /**
+     * Confirmation that [retryInputPermission] fired, shown as a transient overlay the same way
+     * [screenshotStatus] is (RemEx-5bwpv). Separate from [inputUnavailable] because that one is
+     * persistent — it says input is still dead — while this is a brief "message sent" pill that
+     * auto-clears whether or not the user ends up accepting the prompt.
+     */
+    private val _inputRetryNotice = MutableStateFlow<String?>(null)
+    val inputRetryNotice: StateFlow<String?> = _inputRetryNotice.asStateFlow()
+
     private val _windowResults = MutableStateFlow<List<DesktopWindowModel>>(emptyList())
     val windowResults: StateFlow<List<DesktopWindowModel>> = _windowResults.asStateFlow()
 
     private val _windowActionError = MutableStateFlow<String?>(null)
     val windowActionError: StateFlow<String?> = _windowActionError.asStateFlow()
+
+    /**
+     * Outcome of the most recent screenshot request, or null when there is nothing to say (RemEx-byij).
+     *
+     * Shown as a transient pill overlaid on the video rather than a snackbar. This screen's only
+     * `SnackbarHost` is declared INSIDE the settings ModalBottomSheet (RemEx-vj31), so a snackbar
+     * posted from the toolbar would be invisible unless that sheet happened to be open — and the
+     * button is reachable in fullscreen, where an overlay is what actually renders. The screen owns
+     * where it goes and why; see the block that draws it.
+     */
+    private val _screenshotStatus = MutableStateFlow<String?>(null)
+    val screenshotStatus: StateFlow<String?> = _screenshotStatus.asStateFlow()
 
     private val _modifierStates = MutableStateFlow<Map<Int, ModifierState>>(emptyMap())
     /** Latch state of each PC-key modifier, keyed by virtual-key code. Absent from the map == OFF. */
@@ -233,6 +558,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val frameTimestampsMs = ArrayDeque<Long>()
     private val _fps = MutableStateFlow(0f)
     val fps: StateFlow<Float> = _fps.asStateFlow()
+
+    /**
+     * Publishes a freshly decoded frame. The two steps are bundled deliberately: [_frameTick] is what
+     * makes the Canvas repaint, so a decode path that set [_currentBitmap] without it would leave the
+     * picture frozen with no error anywhere (RemEx-9esj). Assigning the same instance is a no-op for
+     * the flow by design; the tick is what tells the draw phase there are new pixels in it.
+     */
+    private fun publishDecodedFrame(decoded: Bitmap) {
+        _currentBitmap.value = decoded
+        _frameTick.longValue++
+        recordFrameTimestamp()
+    }
 
     private fun recordFrameTimestamp() {
         val now = System.currentTimeMillis()
@@ -263,8 +600,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     @Volatile private var lastDecodeProgressMs = 0L
     @Volatile private var decodeStallRestarts = 0
 
+    // Connect-time failures — the PC never answered, or went quiet mid-handshake (RemEx-nl0z).
+    // SURVIVES STREAM STARTS for the same reason decodeStallRestarts does, and it is not optional
+    // here: actuallyStartStreaming sets reconnectAttempts = 0, so routing these through the ordinary
+    // reconnect budget would make maxReconnectAttempts unreachable and pin the backoff at its first
+    // step. Against a sleeping PC that is a 15-second connect plus a radio wake, once every sixteen
+    // seconds, until the user notices — the most expensive possible response to the one failure that
+    // retrying cannot fix. Reset when a frame actually arrives, and on manual stop.
+    @Volatile private var connectFailures = 0
+
     private fun onFrameArrived() {
         lastFrameArrivalMs = System.currentTimeMillis()
+        // A frame is proof the PC answered, so the connect-failure episode is over (RemEx-nl0z).
+        connectFailures = 0
     }
 
     /**
@@ -272,15 +620,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * that arrives before its decoder surface exists (the brief codec-switch window) is dropped rather
      * than mis-fed to the JPEG path — subsequent frames decode once the surface is created. (RemEx-w5v)
      */
-    private fun routeFrameByCodec(codec: String, payload: ByteArray) {
+    private fun routeFrameByCodec(codec: String, bytes: ByteArray, offset: Int, length: Int) {
         if (codec == RemoteDesktopFrameEnvelope.CODEC_H264) {
             val decoder = activeH264Decoder
             if (decoder != null) {
-                decoder.decodeFrame(payload)
+                decoder.decodeFrame(bytes, offset, length)
                 recordFrameTimestamp()
             }
         } else {
-            decodeFrame(payload)
+            decodeFrame(bytes, offset, length)
         }
     }
 
@@ -352,6 +700,21 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
+     * Whether a tagged desktop error describes a failure to REACH the PC rather than something going
+     * wrong on a PC that answered (RemEx-nl0z).
+     *
+     * Matched on the code, not the message, for the same reason the messages are localized at all:
+     * the text is composed in Remex.Core and varies by locale, so any comparison against it would be
+     * a check that silently passes in English and fails everywhere else. An untagged or unknown error
+     * is treated as NOT a connect failure — the conservative answer, since it keeps the pre-existing
+     * retry behaviour for everything this function does not recognise.
+     */
+    private fun isConnectFailure(raw: String?): Boolean {
+        val code = raw.orEmpty().substringBefore('\u001F', missingDelimiterValue = "")
+        return code == DesktopErrorCodes.CONNECT_TIMEOUT || code == DesktopErrorCodes.HANDSHAKE_TIMEOUT
+    }
+
+    /**
      * Maps a host desktop-error string to a localized message. The host may tag errors as
      * "code\u001Farg\u001FenglishFallback" (see Remex.Core DesktopErrorCodes); untagged/legacy errors
      * and unknown codes fall back to the host's plain English text. (RemEx-728)
@@ -365,14 +728,26 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         val fallback = parts.subList(2, parts.size).joinToString("\u001F")
         val app = getApplication<Application>()
         return when (code) {
-            "capture_unavailable" -> app.getString(R.string.rd_err_capture_unavailable)
-            "capture_stopped" ->
+            DesktopErrorCodes.CAPTURE_UNAVAILABLE -> app.getString(R.string.rd_err_capture_unavailable)
+            DesktopErrorCodes.CAPTURE_STOPPED ->
                     arg.toIntOrNull()?.let { app.getString(R.string.rd_err_capture_stopped, it) }
                             ?: fallback
-            "target_unavailable" -> app.getString(R.string.rd_err_target_unavailable)
-            "target_switch_unsupported" ->
+            DesktopErrorCodes.TARGET_UNAVAILABLE -> app.getString(R.string.rd_err_target_unavailable)
+            DesktopErrorCodes.TARGET_SWITCH_UNSUPPORTED ->
                     app.getString(R.string.rd_err_target_switch_unsupported)
-            "runtime_unavailable" -> app.getString(R.string.rd_err_runtime_unavailable)
+            DesktopErrorCodes.RUNTIME_UNAVAILABLE -> app.getString(R.string.rd_err_runtime_unavailable)
+            DesktopErrorCodes.INPUT_UNAVAILABLE -> app.getString(R.string.rd_err_input_unavailable)
+            // Raised client-side rather than by the host (RemEx-nl0z). Both take host:port as the
+            // arg, and both are kept distinct because the next step differs: a connect timeout means
+            // the PC was never reached, while a handshake timeout means it WAS reached and the
+            // certificate matched, so telling the user to check the network would send them the
+            // wrong way.
+            DesktopErrorCodes.CONNECT_TIMEOUT ->
+                    if (arg.isNotEmpty()) app.getString(R.string.rd_err_connect_timeout, arg)
+                    else fallback.ifEmpty { raw }
+            DesktopErrorCodes.HANDSHAKE_TIMEOUT ->
+                    if (arg.isNotEmpty()) app.getString(R.string.rd_err_handshake_timeout, arg)
+                    else fallback.ifEmpty { raw }
             else -> fallback.ifEmpty { raw }
         }
     }
@@ -396,7 +771,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /** Guards against firing duplicate catalog queries while one is in flight. */
     private var catalogRequested = false
     /** Desired target token loaded from persisted prefs; resolved against the catalog on arrival. */
-    private var desiredDisplayToken: String = ""
+    /**
+     * The remembered display choice AS STORED, which is not a [DisplayTargetOption.token].
+     * See [rememberedTargetFor] for the format and why they differ (RemEx-ynur).
+     */
+    private var desiredDisplayTarget: String = ""
     /** Set when startStreaming() is waiting for the catalog before it can begin. */
     private var pendingStreamStart = false
     private var catalogTimeoutJob: Job? = null
@@ -456,6 +835,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 5
 
+    // Lower than maxReconnectAttempts on purpose (RemEx-nl0z): each of these costs a full 15-second
+    // connect timeout against a PC that is not answering, so three is already about 50 seconds of
+    // trying before the phone stops and explains itself.
+    private val maxConnectFailures = 3
+
     var activeH264Decoder: H264StreamDecoder? = null
 
     /**
@@ -494,7 +878,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f),
                                 preset = DesktopPreset.fromId(prefs.preset)
                         )
-                desiredDisplayToken = prefs.displayTarget
+                desiredDisplayTarget = prefs.displayTarget
             }
         }
 
@@ -506,9 +890,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 // route those by the negotiated codec as before. (RemEx-w5v)
                 val env = RemoteDesktopFrameEnvelope.tryRead(bytes)
                 if (env != null) {
-                    routeFrameByCodec(env.codec, env.payload)
+                    routeFrameByCodec(env.codec, env.bytes, env.payloadOffset, env.payloadLength)
                 } else {
-                    routeFrameByCodec(_activeCodecState.value, bytes)
+                    // Legacy host: the whole frame IS the payload.
+                    routeFrameByCodec(_activeCodecState.value, bytes, 0, bytes.size)
                 }
                 // Reset the stall watchdog on every arriving frame, regardless of codec. (RemEx-5t4)
                 onFrameArrived()
@@ -518,27 +903,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             RemexClientManager.hostCapabilities.collect { hostInfo ->
                 try {
-                    val json = JSONObject(hostInfo)
-                    _capabilityState.value =
-                            RemoteDesktopCapabilityState(
-                                    supportsRemoteDesktop =
-                                            json.optBoolean("supportsRemoteDesktop", false),
-                                    supportsCursorQuery =
-                                            json.optBoolean("supportsCursorQuery", false),
-                                    supportsAdvancedWindowControl =
-                                            json.optBoolean("supportsAdvancedWindowControl", false),
-                                    inputBackend =
-                                            json.optString("inputBackend").takeIf {
-                                                it.isNotBlank()
-                                            },
-                                    windowBackend =
-                                            json.optString("windowControlBackend").takeIf {
-                                                it.isNotBlank()
-                                            },
-                                    unavailableReason =
-                                            json.optString("remoteDesktopUnavailableReason")
-                                                    .takeIf { it.isNotBlank() }
-                            )
+                    _capabilityState.value = parseHostCapabilities(hostInfo)
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse host capabilities", e)
                     _capabilityState.value =
@@ -546,6 +911,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     supportsRemoteDesktop = false,
                                     supportsCursorQuery = false,
                                     supportsAdvancedWindowControl = false,
+                                    // False here rather than the field's usual "assume yes" default:
+                                    // an unparseable payload also sets supportsRemoteDesktop false,
+                                    // so there is no session to input into and nothing is lost by
+                                    // agreeing.
+                                    supportsInputSimulation = false,
                                     unavailableReason = getApplication<Application>().getString(R.string.status_metadata_unavailable)
                             )
                 }
@@ -578,9 +948,43 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
+                // **ADVISORY, NOT FATAL — TAKE IT OFF THIS PATH BEFORE ANYTHING ELSE (RemEx-iaxc).**
+                // The PC is telling us it cannot inject our input (a declined Wayland portal prompt,
+                // with no xdotool or ydotool to fall back to) while the video stream is entirely
+                // healthy. Everything below clears _isStreaming and reconnects, which here would blank
+                // a working picture and then re-trigger the very dialog the user just declined - on a
+                // loop, once per input event. Say so over the video and carry on streaming.
+                if (isInputUnavailableError(errorText)) {
+                    Log.w(TAG, "Host is discarding our input: $errorText")
+                    _inputUnavailable.value = localizeDesktopError(errorText)
+                    return@collect
+                }
+
                 Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = localizeDesktopError(errorText)
                 _isStreaming.value = false
+
+                // Connect-time failures are budgeted separately from stream errors (RemEx-nl0z).
+                // A stream error means the PC was there and something went wrong, so retrying is
+                // usually right; these mean the PC never answered at all, where each retry costs a
+                // 15-second connect and buys nothing. Their counter survives the stream start that
+                // resets reconnectAttempts, so this budget is the one that actually bounds them.
+                if (isConnectFailure(errorText)) {
+                    connectFailures++
+                    if (connectFailures >= maxConnectFailures) {
+                        Log.w(TAG, "Giving up after $connectFailures connect failures")
+                        // Nothing will restart the stream now, so the 1 Hz watchdog poll has nothing
+                        // left to watch. It is already inert (it gates on _isStreaming, cleared just
+                        // above), but leaving a timer running on the screen the user is now sitting
+                        // on reading an error is waste with no upside.
+                        cancelFrameWatchdog()
+                        // Deliberately no attemptReconnect: leave the explanation on screen. It is
+                        // the whole point of RemEx-nl0z that this case says something rather than
+                        // stalling silently, and a retry would clear it a second later.
+                        return@collect
+                    }
+                }
+
                 attemptReconnect()
             }
         }
@@ -609,6 +1013,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
                             _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
                         }
+                        _hostCursor.value = HostCursorSample(
+                                _hostCursorX.value, _hostCursorY.value, cursorVisible)
                     }
                     // Only update the codec when codecInfo is actually present. Live cursor-position
                     // updates arrive as lightweight DesktopMeta messages with no codecInfo, and must
@@ -718,9 +1124,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * Decodes a JPEG frame using bitmap pooling to avoid OOM. Uses inBitmap for memory reuse when
      * dimensions match.
      */
-    private fun decodeFrame(bytes: ByteArray) {
-        if (bytes.isEmpty()) {
-            Log.w(TAG, "decodeFrame: Received empty byte array")
+    private fun decodeFrame(bytes: ByteArray, offset: Int, length: Int) {
+        if (length <= 0) {
+            Log.w(TAG, "decodeFrame: Received empty payload")
+            return
+        }
+        // Bounds are guaranteed by the envelope parser today, but check anyway: a bad range makes
+        // BitmapFactory throw ArrayIndexOutOfBoundsException, which is NOT an IllegalArgumentException
+        // and so would escape the catch below, cancel the frames collector, and stop video with no
+        // error shown. Dropping one frame is the recoverable failure; losing the collector is not.
+        if (offset < 0 || offset + length > bytes.size) {
+            Log.w(TAG, "decodeFrame: range $offset+$length outside ${bytes.size}-byte buffer; dropping")
             return
         }
 
@@ -733,21 +1147,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 decodeOptions.inBitmap = null
             }
 
-            val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+            val decoded = BitmapFactory.decodeByteArray(bytes, offset, length, decodeOptions)
             if (decoded != null) {
                 if (System.currentTimeMillis() % 1000 < 50) {
                     Log.d(
                             TAG,
-                            "decodeFrame: Decoded frame, size: ${bytes.size} bytes, reused: ${decodeOptions.inBitmap != null}"
+                            "decodeFrame: Decoded frame, size: $length bytes, reused: ${decodeOptions.inBitmap != null}"
                     )
                 }
                 reusableBitmap = decoded
-                // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
-                _currentFrame.value = DesktopFrame(decoded)
-                recordFrameTimestamp()
+                publishDecodedFrame(decoded)
                 lastDecodeProgressMs = System.currentTimeMillis()
             } else {
-                Log.e(TAG, "decodeFrame: BitmapFactory returned null for ${bytes.size} bytes")
+                Log.e(TAG, "decodeFrame: BitmapFactory returned null for $length bytes")
                 // Fallback: Reset reuse if decoding failed
                 decodeOptions.inBitmap = null
             }
@@ -755,12 +1167,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             // inBitmap reuse failed (dimensions changed) — decode without reuse
             decodeOptions.inBitmap = null
             try {
-                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+                val decoded = BitmapFactory.decodeByteArray(bytes, offset, length, decodeOptions)
                 if (decoded != null) {
-                    reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
+                    // Deliberately NOT recycled here. The draw lambda may still hold the old bitmap,
+                    // and its isRecycled guard is evaluated during composition rather than at draw
+                    // time, so recycling before the replacement reaches composition can throw
+                    // "Cannot draw recycled bitmaps". Dropping the reference and letting the GC
+                    // reclaim it is the policy recycleCurrentFrame() already documents for exactly
+                    // this reason; this path had simply not followed it. The window is wider now that
+                    // repaints come from an independent draw-phase tick (RemEx-9esj).
                     reusableBitmap = decoded
-                    _currentFrame.value = DesktopFrame(decoded)
-                    recordFrameTimestamp()
+                    publishDecodedFrame(decoded)
                     lastDecodeProgressMs = System.currentTimeMillis()
                 }
             } catch (e2: Exception) {
@@ -776,7 +1193,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun recycleCurrentFrame() {
-        _currentFrame.value = null
+        _currentBitmap.value = null
         // Don't recycle the bitmap eagerly — Compose may still be rendering the
         // previous frame.  Clearing the StateFlow reference lets the GC collect it
         // once the recomposition is done.
@@ -869,6 +1286,72 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch { settingsManager.markUnlimitedWarningShown() }
     }
 
+    /** How long the screenshot outcome stays on screen before clearing itself. */
+    private val screenshotStatusVisibleMs = 5_000L
+
+    private var screenshotStatusJob: Job? = null
+
+    /**
+     * Asks the PC to capture its screen (RemEx-byij).
+     *
+     * **REPORTS THE CAPTURE, NOT THE DELIVERY.** Since RemEx-66rf the host's real `command_response`
+     * reaches this side, so `success` genuinely means the PC captured the screen and wrote the PNG —
+     * a dead socket, an unknown verb and a failed capture now all come back false. (Before that they
+     * read as success, and the first version of this method believed them.)
+     *
+     * What it still cannot promise is that the file ARRIVED. The host answers as soon as the PNG is
+     * written and then OFFERS it to this phone separately, which the user accepts or declines
+     * (RemEx-y7my). So the wording stops at "taken on the PC" and points at the notifications rather
+     * than claiming a file the user may yet refuse is already here.
+     *
+     * No `DisplayLabel` parameter, though the host accepts one: it only shapes the FILE NAME and does
+     * not choose which monitor is captured, and the label this screen holds for the selected display
+     * is an already-localized string ("Primary display") that the host would sanitise to ASCII —
+     * leaving nothing at all for a locale that does not use Latin script.
+     */
+    fun takeScreenshot() {
+        // Cancel rather than queue: a second tap replaces the first message instead of waiting five
+        // seconds behind it, and the timer restarts so the newest outcome gets its full time.
+        screenshotStatusJob?.cancel()
+        // No dispatcher: SendCommand switches to a background thread itself (RemEx-66rf), so naming
+        // one here would decide nothing. It waits for the PC's answer, which is why it must not be
+        // called from a thread that cannot afford to wait — and why it no longer lets anyone do that.
+        screenshotStatusJob =
+                viewModelScope.launch {
+                    val request =
+                            JSONObject().apply {
+                                put("action", "SCREENSHOT")
+                                put("parameters", JSONObject())
+                            }
+
+                    // Two distinct failures collapse into one message on purpose. runCatching covers
+                    // the native library being missing; `success: false` covers everything the PC
+                    // reports - not connected, timed out, capture refused. The host's own text is
+                    // deliberately not shown: it is developer English it never translates.
+                    val captured =
+                            runCatching {
+                                        JSONObject(
+                                                        RemexCoreClient.SendCommand(
+                                                                        request.toString()
+                                                                )
+                                                                .getOrThrow()
+                                                )
+                                                .optBoolean("success", false)
+                                    }
+                                    .onFailure { Log.w(TAG, "Screenshot command failed", it) }
+                                    .getOrDefault(false)
+
+                    _screenshotStatus.value =
+                            getApplication<Application>()
+                                    .getString(
+                                            if (captured) R.string.screenshot_taken
+                                            else R.string.screenshot_failed
+                                    )
+                    delay(screenshotStatusVisibleMs)
+                    _screenshotStatus.value = null
+                }
+    }
+
     fun updateDirectTouch(enabled: Boolean) {
         viewModelScope.launch { settingsManager.saveRemoteDesktopDirectTouch(enabled) }
     }
@@ -911,7 +1394,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // Query it first; once it arrives (handleDisplayCatalog) the stream starts with the
         // chosen target. If the catalog never arrives, fall back to a legacy (host-default) start.
         if (!displaysLoaded) {
-            _desktopError.value = null
+            clearErrorIfFreshAttempt()
             pendingStreamStart = true
             requestDisplayCatalog()
             scheduleCatalogTimeoutFallback()
@@ -921,13 +1404,43 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         actuallyStartStreaming()
     }
 
+    /**
+     * Clears the on-screen error, but ONLY when this start is not itself the consequence of one.
+     *
+     * A retry driven by a connect failure must not erase the explanation that triggered it, or the
+     * user gets a one-second flash of the message every sixteen seconds and a stalled screen in
+     * between — barely better than the silence RemEx-nl0z existed to fix.
+     *
+     * ONE FUNCTION BECAUSE THERE ARE TWO EXITS, and guarding only the obvious one is the bug this
+     * replaced. startStreaming returns early when the display catalog has not loaded, and that is
+     * durably reachable rather than transient — an empty catalog, a catalog that fails to parse, or
+     * a host whose control socket is up but never answers the display query all leave displaysLoaded
+     * false indefinitely. On exactly those hosts the unguarded clear reproduced the flashing message
+     * this exists to prevent.
+     */
+    private fun clearErrorIfFreshAttempt() {
+        if (connectFailures == 0) {
+            _desktopError.value = null
+        }
+    }
+
     private fun actuallyStartStreaming() {
+        // Cleared unconditionally, unlike the fatal error above (RemEx-iaxc). This is NOT because a
+        // new session re-asks for permission on its own - it does not, which is exactly why
+        // retryInputPermission() exists (RemEx-5bwpv): a refusal usually outlives the reconnect, and
+        // Connor decided 2026-08-20 that re-arming the PC's prompt must stay user-initiated rather
+        // than firing automatically here or from attemptReconnect. It is cleared because the new
+        // session re-reports from scratch (the host's once-per-session guard is per connection), so
+        // holding a stale banner would only race the fresh one, and on a PC where the user has since
+        // fixed it by restarting RemEx the banner would be a lie that never cleared.
+        _inputUnavailable.value = null
+
         catalogTimeoutJob?.cancel()
         catalogTimeoutJob = null
         pendingStreamStart = false
 
         val config = buildConfigJson()
-        _desktopError.value = null
+        clearErrorIfFreshAttempt()
         // Wait for THIS stream's metadata before the initial fit fires (RemEx-4k4).
         _desktopMetaReady.value = false
         reconnectAttempts = 0
@@ -954,7 +1467,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (!RemexCoreClient.isLibraryLoaded) return
         catalogRequested = true
         Log.i(TAG, "Requesting display catalog from host")
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val message = JSONObject().apply { put("type", "desktop_display_query") }
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
@@ -976,21 +1489,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private fun handleDisplayCatalog(catalogJson: String) {
         try {
             val json = JSONObject(catalogJson)
-            val modes = json.optJSONArray("supportedCaptureModes")
-            val supportsVirtual =
-                    modes != null &&
-                            (0 until modes.length()).any {
-                                modes.optString(it) == "VirtualDesktop"
-                            }
+            val modes = supportedCaptureModes(json)
             val arr = json.optJSONArray("displays")
             val options = mutableListOf<DisplayTargetOption>()
             val displayCount = arr?.length() ?: 0
 
-            if (arr != null) {
+            if (arr != null && offersMonitorTargets(modes)) {
                 for (i in 0 until displayCount) {
                     val d = arr.optJSONObject(i) ?: continue
                     val displayId = d.optString("displayId")
                     if (displayId.isBlank()) continue
+                    val persistentKey = d.optString("persistentDisplayKey").takeIf { it.isNotBlank() }
                     val isPrimary = d.optBoolean("isPrimary", false)
                     val label =
                             if (isPrimary)
@@ -1005,7 +1514,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     label = label,
                                     captureMode = "Monitor",
                                     displayId = displayId,
-                                    isPrimary = isPrimary
+                                    isPrimary = isPrimary,
+                                    persistentKey = persistentKey
                             )
                     )
                 }
@@ -1013,7 +1523,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
             // Offer the combined "both screens" view when the host supports it and there is
             // more than one physical display to combine.
-            if (supportsVirtual && displayCount > 1) {
+            if (offersVirtualTarget(modes, displayCount)) {
                 options.add(
                         DisplayTargetOption(
                                 token = "virtual",
@@ -1028,20 +1538,31 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             }
 
             if (options.isEmpty()) {
-                Log.w(TAG, "Display catalog had no usable targets")
+                Log.w(TAG, "Display catalog had no usable targets (modes=$modes)")
+
+                // Clear rather than keep the previous host's list. Targets are deliberately RETAINED
+                // across a stop or disconnect so the picker does not blank out, but this is a fresh
+                // catalog that offers nothing — and a stale monitor:<id> left selected here would be
+                // sent to a host that cannot serve Monitor at all, producing exactly the rejection
+                // this gating exists to prevent. Reachable by reconnecting to a degraded host after a
+                // monitor-capable one; harmless before, because this branch was effectively dead
+                // until the gating above made it the normal path for such a host. (RemEx-e1x4)
+                _displayTargets.value = emptyList()
+                _selectedDisplayToken.value = ""
+
                 if (pendingStreamStart) actuallyStartStreaming()
                 return
             }
 
             Log.i(
                     TAG,
-                    "Display catalog received: $displayCount display(s), ${options.size} option(s), supportsVirtual=$supportsVirtual"
+                    "Display catalog received: $displayCount display(s), ${options.size} option(s), modes=$modes"
             )
             _displayTargets.value = options
 
             // Resolve the selection: remembered choice → primary monitor → first option.
             val resolved =
-                    options.firstOrNull { it.token == desiredDisplayToken }
+                    options.firstOrNull { matchesRememberedTarget(it, desiredDisplayTarget) }
                             ?: options.firstOrNull {
                                 it.captureMode == "Monitor" && it.isPrimary
                             }
@@ -1070,8 +1591,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (option.token == _selectedDisplayToken.value) return
 
         _selectedDisplayToken.value = option.token
-        desiredDisplayToken = option.token
-        viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(option.token) }
+        val remembered = rememberedTargetFor(option)
+        desiredDisplayTarget = remembered
+
+        // Only WRITE when there is something worth remembering. On a host too old to send a stable
+        // key this is empty, and storing it would wipe a good key the user set on another PC — the
+        // preference is global, not per-host. Skipping the write is behaviourally identical in this
+        // session (nothing here matches a key the host does not send, so it falls to primary either
+        // way) and keeps the good value for when they connect to the updated machine again.
+        if (remembered.isNotEmpty()) {
+            viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(remembered) }
+        }
 
         if (_isStreaming.value) {
             restartStreamWithCurrentTarget()
@@ -1079,7 +1609,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun restartStreamWithCurrentTarget() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             reconnectJob?.cancel()
             reconnectAttempts = 0
             if (RemexCoreClient.isLibraryLoaded) {
@@ -1100,6 +1630,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
         decodeStallRestarts = 0 // Manual stop ends the episode; the next session gets fresh restarts (RemEx-vj7b)
+        connectFailures = 0 // Likewise: the user acted, so the next attempt starts with a full budget (RemEx-nl0z)
         cancelFrameWatchdog()
 
         catalogTimeoutJob?.cancel()
@@ -1130,9 +1661,37 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * .
      */
     fun sendPointerBatch(batchJson: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!RemexCoreClient.isLibraryLoaded) return@launch
-            RemexCoreClient.SendDesktopPointerBatch(batchJson).getOrNull()
+        if (!_capabilityState.value.supportsInputSimulation) return
+        startPointerSenderIfNeeded()
+        // UNLIMITED, so this cannot fail or block the input thread.
+        pointerBatchQueue.trySend(batchJson)
+    }
+
+    /**
+     * Starts the single consumer that drains [pointerBatchQueue], once.
+     *
+     * Started on first send rather than from an initializer or `init` block ON PURPOSE. Kotlin runs
+     * initializers in declaration order, and this class already has an `init` that reaches the send
+     * path synchronously - a null dispatcher there was a real defect caught in review, which is why
+     * `SendDispatcherDeclarationOrderTest` exists. Starting lazily means this cannot participate in
+     * that hazard at all, whatever anyone later declares above it.
+     */
+    private fun startPointerSenderIfNeeded() {
+        if (!pointerSenderStarted.compareAndSet(false, true)) return
+
+        viewModelScope.launch(sendDispatcher) {
+            for (batchJson in pointerBatchQueue) {
+                if (!RemexCoreClient.isLibraryLoaded) continue
+                // runCatching buys back the failure isolation the old launch-per-event had for
+                // free: viewModelScope is a SupervisorJob, so one throwing send could not affect
+                // the next. One consumer instead of thousands means an escaping Throwable would
+                // end the loop PERMANENTLY - and pointerSenderStarted stays true, so it would
+                // never restart, killing pointer input for the rest of this ViewModel's life with
+                // nothing surfaced on either side. Nothing here is expected to throw
+                // (SendDesktopPointerBatch already returns a Result), which is exactly why the
+                // failure mode would be invisible if it ever did.
+                runCatching { RemexCoreClient.SendDesktopPointerBatch(batchJson) }
+            }
         }
     }
 
@@ -1346,7 +1905,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val message =
                     JSONObject().apply {
                         put("type", "desktop_window_query")
@@ -1403,42 +1962,74 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * ImageBitmap and caches it by shape serial. If the shape is the one the current cursor state is
      * waiting on, it becomes the active overlay bitmap immediately.
      */
-    private fun handleCursorShape(shapeJson: String) {
+    /**
+     * Decodes an incoming cursor shape and publishes it.
+     *
+     * **THE DECODE IS OFF THE MAIN THREAD AND THE PUBLISH IS ON IT (RemEx-z2db8).** This collector
+     * runs in `viewModelScope`, which is `Dispatchers.Main.immediate`, and the work below is a
+     * Base64 decode plus a `width * height` per-pixel repack. That is not the 1Hz hygiene the rest
+     * of RemEx-cite describes: cursor shapes change whenever the pointer crosses a UI element on the
+     * host, so it fires on ordinary mouse movement, and it scales with the cursor — a 32x32 cursor
+     * is a thousand iterations, a high-DPI 256x256 one is sixty-five thousand plus a quarter-megabyte
+     * decode. All of it on the thread composing the frame the user is watching.
+     *
+     * ONLY THE CPU WORK MOVED. The assignments stay where they were, because `collect` is sequential
+     * and a `withContext` inside it does not reorder emissions — which matters here, since the serial
+     * decides which shape is active and applying two out of order would leave the wrong cursor on
+     * screen. `cursorShapeCache` is a `ConcurrentHashMap` and the three destinations are StateFlows,
+     * so none of this needed new synchronisation; it needed the heavy part to stop running on Main.
+     */
+    private suspend fun handleCursorShape(shapeJson: String) {
         try {
-            val json = JSONObject(shapeJson)
-            val serial = json.optLong("shapeSerial", -1L)
-            val width = json.optInt("width", 0)
-            val height = json.optInt("height", 0)
-            if (width <= 0 || height <= 0) return
-            val hotspotX = json.optInt("hotspotX", 0)
-            val hotspotY = json.optInt("hotspotY", 0)
-            val b64 = json.optString("shapeBytes", "")
-            if (b64.isEmpty()) return
-            val bgra = Base64.decode(b64, Base64.DEFAULT)
-            if (bgra.size < width * height * 4) return
+            val decoded = withContext(Dispatchers.Default) { decodeCursorShape(shapeJson) } ?: return
 
-            // BGRA8888 -> ARGB int pixels (Android Bitmap.Config.ARGB_8888 expects packed ARGB ints).
-            val pixels = IntArray(width * height)
-            var src = 0
-            for (dst in pixels.indices) {
-                val b = bgra[src].toInt() and 0xFF
-                val g = bgra[src + 1].toInt() and 0xFF
-                val r = bgra[src + 2].toInt() and 0xFF
-                val a = bgra[src + 3].toInt() and 0xFF
-                pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
-                src += 4
-            }
-            val bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
-            val entry = CursorShapeEntry(bitmap.asImageBitmap(), hotspotX, hotspotY)
-            cursorShapeCache[serial] = entry
-            if (serial == activeCursorShapeSerial) {
-                _cursorShapeBitmap.value = entry.bitmap
-                _cursorHotspotX.value = entry.hotspotX
-                _cursorHotspotY.value = entry.hotspotY
+            cursorShapeCache[decoded.serial] = decoded.entry
+            if (decoded.serial == activeCursorShapeSerial) {
+                _cursorShapeBitmap.value = decoded.entry.bitmap
+                _cursorHotspotX.value = decoded.entry.hotspotX
+                _cursorHotspotY.value = decoded.entry.hotspotY
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to decode cursor shape", e)
         }
+    }
+
+    /** A decoded shape and the serial it answers to. */
+    private data class DecodedCursorShape(val serial: Long, val entry: CursorShapeEntry)
+
+    /**
+     * The pure decode half: JSON in, bitmap out, nothing touched that the UI owns.
+     *
+     * Separated so the expensive part has somewhere to run that is not Main. Returns null for every
+     * shape that cannot be used, which is what the caller's early returns used to express.
+     */
+    private fun decodeCursorShape(shapeJson: String): DecodedCursorShape? {
+        val json = JSONObject(shapeJson)
+        val serial = json.optLong("shapeSerial", -1L)
+        val width = json.optInt("width", 0)
+        val height = json.optInt("height", 0)
+        if (width <= 0 || height <= 0) return null
+        val hotspotX = json.optInt("hotspotX", 0)
+        val hotspotY = json.optInt("hotspotY", 0)
+        val b64 = json.optString("shapeBytes", "")
+        if (b64.isEmpty()) return null
+        val bgra = Base64.decode(b64, Base64.DEFAULT)
+        if (bgra.size < width * height * 4) return null
+
+        // BGRA8888 -> ARGB int pixels (Android Bitmap.Config.ARGB_8888 expects packed ARGB ints).
+        val pixels = IntArray(width * height)
+        var src = 0
+        for (dst in pixels.indices) {
+            val b = bgra[src].toInt() and 0xFF
+            val g = bgra[src + 1].toInt() and 0xFF
+            val r = bgra[src + 2].toInt() and 0xFF
+            val a = bgra[src + 3].toInt() and 0xFF
+            pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            src += 4
+        }
+
+        val bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+        return DecodedCursorShape(serial, CursorShapeEntry(bitmap.asImageBitmap(), hotspotX, hotspotY))
     }
 
     /**
@@ -1455,6 +2046,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _hostCursorX.value = json.optInt("x", 0).toFloat()
                 _hostCursorY.value = json.optInt("y", 0).toFloat()
             }
+            _hostCursor.value = HostCursorSample(_hostCursorX.value, _hostCursorY.value, visible)
             val serial = json.optLong("shapeSerial", -1L)
             activeCursorShapeSerial = serial
             // Swap in the cached shape for this serial if we already have it; otherwise the shape
@@ -1487,6 +2079,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _hostCursorX.value = x.toFloat()
                 _hostCursorY.value = y.toFloat()
             }
+            _hostCursor.value = HostCursorSample(_hostCursorX.value, _hostCursorY.value, visible)
             activeCursorShapeSerial = shapeSerial
             // Swap in the cached shape for this serial if present; the shape collector swaps it in later
             // when the matching desktop_cursor_shape (still JSON) arrives.
@@ -1563,7 +2156,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun sendInput(input: JSONObject) {
-        viewModelScope.launch(Dispatchers.IO) {
+        // ONE OF THE TWO PLACES INPUT LEAVES THIS CLASS, the other being sendPointerBatch. Gating
+        // here rather than at each caller is what makes the guard total: mouse, keyboard, scroll and
+        // typed text all funnel through this, so a future input kind is covered by construction
+        // instead of by remembering (RemEx-q9zw).
+        if (!_capabilityState.value.supportsInputSimulation) return
+        viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded) {
                 return@launch
             }
@@ -1584,7 +2182,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * recognize the message type simply ignore it (no protocolVersion bump). (RemEx-bqc)
      */
     fun requestKeyframe() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded || !_isStreaming.value) {
                 return@launch
             }
@@ -1592,6 +2190,54 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     JSONObject().apply { put("type", "desktop_keyframe_request") }
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
+    }
+
+    /** How long the "asked your PC again" confirmation stays on screen before clearing itself. */
+    private val inputRetryNoticeVisibleMs = 4_000L
+
+    private var inputRetryNoticeJob: Job? = null
+
+    /**
+     * User-initiated re-ask of the desktop input-permission prompt (RemEx-5bwpv). Sends
+     * [DESKTOP_INPUT_PERMISSION_RETRY] so a Linux host re-shows the portal's input-permission dialog,
+     * for when the user declined it or was not at the PC when it appeared.
+     *
+     * **DELIBERATELY NOT AUTOMATIC.** Connor decided 2026-08-20 this stays user-initiated only: no
+     * retry on session start, session end, or reconnect. `attemptReconnect()` already fires on every
+     * stream error, and an automatic re-arm riding along with it would put a permission dialog back
+     * in front of the user on every reconnect - worse than the restart this replaces.
+     *
+     * Mirrors [requestKeyframe]'s guard and message shape exactly: same dispatcher, same
+     * library-loaded + streaming check, same bare `type`-only message.
+     *
+     * **DELIBERATELY DOES NOT CLEAR [inputUnavailable].** The first version of this cleared the
+     * banner the moment the retry message was handed to [sendDispatcher] — not gated on the send
+     * succeeding, let alone on the host re-arming. Nothing ever tells the phone the host succeeded:
+     * `DesktopErrorCodes.InputUnavailable` is reported at most once per session on the host
+     * (`Interlocked.Exchange` in `ReportInputSilentlyDroppedOnceAsync`). So an old host that does
+     * not understand the retry message, or a send that never left the phone, would leave the banner
+     * gone and the "asked your PC again" pill asserting something false, with nothing indicating for
+     * the rest of the session that input was still dead. A visible-stale banner beats a silently
+     * missing one, and there is no success signal to gate a clear on instead. If one is ever added,
+     * clear on THAT, never on the tap.
+     */
+    fun retryInputPermission() {
+        viewModelScope.launch(sendDispatcher) {
+            if (!RemexCoreClient.isLibraryLoaded || !_isStreaming.value) {
+                return@launch
+            }
+            val message =
+                    JSONObject().apply { put("type", DESKTOP_INPUT_PERMISSION_RETRY) }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+        inputRetryNoticeJob?.cancel()
+        inputRetryNoticeJob =
+                viewModelScope.launch {
+                    _inputRetryNotice.value =
+                            getApplication<Application>().getString(R.string.rd_input_retry_sent)
+                    delay(inputRetryNoticeVisibleMs)
+                    _inputRetryNotice.value = null
+                }
     }
 
     private fun sendWindowAction(
@@ -1604,7 +2250,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val actionJson =
                     JSONObject().apply {
                         put("requestId", java.util.UUID.randomUUID().toString().replace("-", ""))

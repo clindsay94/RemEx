@@ -118,10 +118,6 @@ namespace Remex.Desktop.Localization {
         public static string AddProgram_AccentColor => ResourceManager.GetString("AddProgram_AccentColor", resourceCulture)!;
         public static string AddProgram_IconPreview => ResourceManager.GetString("AddProgram_IconPreview", resourceCulture)!;
 
-        // Tray Flyout
-        public static string TrayFlyout_Home => ResourceManager.GetString("TrayFlyout_Home", resourceCulture)!;
-        public static string TrayFlyout_Workspace => ResourceManager.GetString("TrayFlyout_Workspace", resourceCulture)!;
-
         // Canvas / Dashboard
         public static string Canvas_Header => ResourceManager.GetString("Canvas_Header", resourceCulture)!;
         public static string Canvas_Connection => ResourceManager.GetString("Canvas_Connection", resourceCulture)!;

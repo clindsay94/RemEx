@@ -1,13 +1,10 @@
 package com.clindsay94.remex.ui.screens
 
-import android.app.Activity
+import android.annotation.SuppressLint
 import android.app.LocaleManager
 import android.content.Context
-import android.content.ContextWrapper
-import android.os.Build
 import android.os.LocaleList
 import android.view.HapticFeedbackConstants
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -45,8 +42,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import androidx.core.graphics.toColorInt
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
@@ -61,12 +58,6 @@ import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
 
 @OptIn(
         ExperimentalMaterial3Api::class,
@@ -149,6 +140,7 @@ private fun PersonalizationLoading(showHeader: Boolean) {
         ExperimentalLayoutApi::class
 )
 @Composable
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 fun PersonalizationScreenContent(
     settings: SettingsManager.PersonalizationPreferences,
     showHeader: Boolean,
@@ -303,7 +295,7 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
 
-                    val currentLangTag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val currentLangTag = run {
                         val localeManager = view.context.getSystemService(LocaleManager::class.java)
                         val appLocales = localeManager?.applicationLocales
                         if (appLocales == null || appLocales.isEmpty) {
@@ -311,16 +303,6 @@ fun PersonalizationScreenContent(
                         } else {
                             val tag = appLocales.get(0).toLanguageTag()
                             if (tag == "in" || tag == "id") "id" else tag
-                        }
-                    } else {
-                        val currentLocales = AppCompatDelegate.getApplicationLocales()
-                        if (currentLocales.isEmpty) {
-                            "system"
-                        } else {
-                            when (currentLocales[0]?.toLanguageTag()) {
-                                "in", "id" -> "id"
-                                else -> currentLocales[0]?.toLanguageTag() ?: "system"
-                            }
                         }
                     }
 
@@ -411,18 +393,11 @@ fun PersonalizationScreenContent(
                                             )
                                             expanded = false
                                             val tags = if (tag == "system") "" else tag
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                val lm = view.context.getSystemService(LocaleManager::class.java)
-                                                if (lm != null) {
-                                                    lm.applicationLocales =
-                                                        if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
-                                                        else LocaleList.forLanguageTags(tags)
-                                                }
-                                            } else {
-                                                val locales = if (tags.isEmpty()) LocaleListCompat.getEmptyLocaleList()
-                                                              else LocaleListCompat.forLanguageTags(tags)
-                                                AppCompatDelegate.setApplicationLocales(locales)
-                                                view.context.findActivity()?.recreate()
+                                            val lm = view.context.getSystemService(LocaleManager::class.java)
+                                            if (lm != null) {
+                                                lm.applicationLocales =
+                                                    if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
+                                                    else LocaleList.forLanguageTags(tags)
                                             }
                                         }
                                 )
@@ -466,7 +441,11 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { themeMode = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(displayModeLabel(option), maxLines = 1)
+                                Text(
+                                        displayModeLabel(option),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
@@ -573,36 +552,35 @@ fun PersonalizationScreenContent(
                             Icons.Default.Palette
                     )
 
-                    // Material You wallpaper color — only exists on API 31+, and the custom
-                    // palette branch in RemExTheme overrides it, so disable it there (RemEx-9429).
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                        stringResource(R.string.personalization_dynamic_color),
-                                        style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                        stringResource(
-                                                R.string.personalization_dynamic_color_desc
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                    checked = dynamicColor,
-                                    onCheckedChange = {
-                                        dynamicColor = it
-                                        onDynamicColorChange(it)
-                                    },
-                                    enabled = palette == "default"
+                    // Material You wallpaper colour. The custom-palette branch in RemExTheme
+                    // overrides it, so it is disabled there — that override, not an API level, is
+                    // why this is conditional at all (RemEx-9429, RemEx-jcl4p).
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                    stringResource(R.string.personalization_dynamic_color),
+                                    style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                    stringResource(
+                                            R.string.personalization_dynamic_color_desc
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Switch(
+                                checked = dynamicColor,
+                                onCheckedChange = {
+                                    dynamicColor = it
+                                    onDynamicColorChange(it)
+                                },
+                                enabled = palette == "default"
+                        )
                     }
 
                     Text(
@@ -621,7 +599,11 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { palette = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(paletteModeLabel(option), maxLines = 1)
+                                Text(
+                                        paletteModeLabel(option),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
@@ -1151,7 +1133,20 @@ fun PersonalizationScreenContent(
                                 dismissOnClickOutside = false
                         )
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            // The splash content itself paints a fixed, theme-independent dark backdrop
+            // (SplashBrand docs: "rendered identically regardless of the active in-app theme"),
+            // but it fades to transparent during the tap-to-skip / finish transition, briefly
+            // exposing whatever is behind this preview dialog — which, unlike the splash canvas,
+            // DOES follow the current theme. Give the dialog the same seed-derived backdrop the
+            // real splash exit crossfades into (SplashPaletteResolver), and tint the dismiss
+            // control from that same resolved palette instead of a hardcoded white, so it stays
+            // readable in a light theme instead of vanishing white-on-near-white.
+            val previewPalette =
+                    SplashPaletteResolver.resolve(MaterialTheme.colorScheme)
+            Box(
+                    modifier =
+                            Modifier.fillMaxSize().background(previewPalette.backdrop)
+            ) {
                 SplashScreen(
                         splashStyle = splashStyle,
                         onFinished = { showSplashPreview = false }
@@ -1164,7 +1159,7 @@ fun PersonalizationScreenContent(
                             Icons.Default.Close,
                             contentDescription =
                                     stringResource(R.string.personalization_splash_preview_close),
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.contentColorFor(previewPalette.backdrop)
                     )
                 }
             }
@@ -1339,6 +1334,7 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
 }
 
 @Composable
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 private fun TonalRow(hct: Hct) {
     val tones = listOf(10, 30, 50, 70, 90, 95)
     val palette = remember(hct) { TonalPalette.fromHueAndChroma(hct.hue, hct.chroma) }

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using System.Text;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
@@ -22,7 +23,26 @@ public sealed class FileTransferHandler(
     // start.TotalBytes, but mobile clients send 0 for unknown content URIs, so
     // a malicious / buggy peer could otherwise stream unbounded bytes past the
     // initial check. Kept identical to FileTransferService.MaxUploadBytes.
-    private const long MaxUploadBytes = 5_000_000_000L;
+    private const long DefaultMaxUploadBytes = 5_000_000_000L;
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). The running
+    /// upload cap, overridable so a test can reach the branch without streaming 5 GB. Not used by DI —
+    /// the default container only binds constructors, so an <c>init</c> property is invisible to host
+    /// bootstrapping and production always gets <see cref="DefaultMaxUploadBytes"/>.
+    /// </summary>
+    /// <remarks>
+    /// IT WAS A <c>const</c> (RemEx-9xs1), and the consequence was that the one guard standing between a
+    /// peer that declares <c>totalBytes: 0</c> and an unbounded write had NO coverage at all — proving it
+    /// would have meant streaming 5 GB through a unit test, so nobody did, and deleting the branch broke
+    /// nothing visible.
+    /// <para>
+    /// An <c>init</c> property rather than a constructor parameter or a mutable static: the container
+    /// cannot pick it up by accident, and there is no shared state for xUnit's parallel runner to race
+    /// on — the handler is registered <c>AddTransient</c> and resolved per WebSocket connection.
+    /// </para>
+    /// </remarks>
+    internal long MaxUploadBytes { get; init; } = DefaultMaxUploadBytes;
 
     private sealed class FileTransferState
     {
@@ -54,9 +74,17 @@ public sealed class FileTransferHandler(
         Ops =
         [
             FileManageOperations.Delete, FileManageOperations.Rename, FileManageOperations.Copy,
-            FileManageOperations.Move, FileManageOperations.Mkdir, "search",
+            FileManageOperations.Move, FileManageOperations.Mkdir, "search", "manifest",
         ],
         FullBrowse = true,
+
+        // STILL TRUE, BUT NOT VIA THE file_push_offer HANDSHAKE (RemEx-e11w). This host accepts
+        // client-initiated incoming files — that is what the flag claims — but it accepts them the
+        // ordinary way, as file_transfer_offer(mode="push") onto a shared writable root. The two-step
+        // offer/response consent handshake is DELIBERATELY UNIMPLEMENTED on this side: a phone-initiated
+        // push is an upload, so the writable root is the consent and the extra prompt was protecting
+        // nothing while reading as though it were. An inbound file_push_offer is therefore not answered
+        // at all. Do not "fix" that silence by reviving the handler without re-reading RemEx-e11w.
         Push = true,
     };
 
@@ -94,7 +122,45 @@ public sealed class FileTransferHandler(
     public async Task HandleFileBrowseRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileBrowseRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // ANSWER, RATHER THAN GO QUIET (RemEx-rie6). This used to `return` and send nothing at all,
+            // so a request whose body did not bind produced pure silence on the socket. RemEx-9i4b fixed
+            // the one instance that had been observed; this is the same one-line shape in every sibling
+            // that owes a response, and it is reachable from the wire - a client that spells the wrapper
+            // differently across a protocol change is all it takes.
+            //
+            // WHAT THE PEER ACTUALLY DOES WITH THIS VARIES, and the difference is worth knowing before
+            // reading too much into it. The requestId is empty because the part of the message that
+            // would carry it is the part that is missing, and most phone-side handlers correlate on it:
+            // browse, manage, rootManage, search, metadata and thumbnail all drop a response whose id
+            // they do not recognise. For those this is protocol correctness and a log line, not a
+            // cleared spinner - they fall through to their own 30s timeout, or to a stale affordance
+            // where there is no timeout. Only fileVolumesResponse and fileRootsResponse apply whatever
+            // arrives, which is why RemEx-9i4b's volumes fix was directly visible to the user.
+            //
+            // SENDING IT IS SAFE, not merely probably safe, and that is worth stating because "send an
+            // uncorrelated response" sounds like it could clobber something. Every pending id on the
+            // phone is a String? initialised to null, while optString("requestId") yields "" - and in
+            // Kotlin "" != null, so an empty id can never false-match a waiting slot. That includes
+            // pendingDestinationRequestId, which is set but never cleared. There is no state to corrupt.
+            //
+            // The log line is the part that helps regardless. "No response and no log line pointing at
+            // the cause" is the shape that bricked v3 file transfer (RemEx-y6x6); this removes the
+            // second half of that everywhere, and the first half where the peer will listen.
+            logger.LogWarning("Received a file_browse_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileBrowseResponse,
+                FileBrowseResponse = new FileBrowseResponse
+                {
+                    RequestId = string.Empty,
+                    Entries = [],
+                    ErrorMessage = "The file_browse_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -152,7 +218,24 @@ public sealed class FileTransferHandler(
     public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var start = message.FileTransferStart;
-        if (start is null) return;
+        if (start is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // The phone keys transfer state by transferId, which is also missing here, so this is a
+            // log-and-be-honest case rather than one the UI can attribute to a transfer.
+            logger.LogWarning("Received a file_transfer_start with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileTransferEnd,
+                FileTransferEnd = new FileTransferEnd
+                {
+                    TransferId = string.Empty,
+                    Success = false,
+                    ErrorMessage = "The file_transfer_start carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         try
         {
@@ -345,7 +428,26 @@ public sealed class FileTransferHandler(
     public async Task HandleFileManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
     {
         var req = message.FileManageRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // handleManageResponse correlates through pendingManageOps, so the phone drops this and
+            // falls through to its own 30s timeout. NO SHIPPING CLIENT SURFACES IT - the desktop's
+            // FileTransferClient correlates every one of these too, and only its roots waiter does not.
+            // Sent for protocol correctness and for a future client; the log line is what helps today.
+            logger.LogWarning("Received a file_manage_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = string.Empty,
+                    Success = false,
+                    ErrorMessage = "The file_manage_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -369,6 +471,9 @@ public sealed class FileTransferHandler(
                 }
             }
 
+            // Set only by the copy/move arms, and only when "keep both" actually renamed.
+            string? resolvedName = null;
+
             switch (req.Operation)
             {
                 case FileManageOperations.Delete:
@@ -383,12 +488,14 @@ public sealed class FileTransferHandler(
                 case FileManageOperations.Copy:
                     if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for copy.");
-                    await fileTransferService.CopyAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
+                    resolvedName = await fileTransferService.CopyAsync(
+                        rootId, relativePath, destinationPath, req.Overwrite, ct, req.ConflictResolution);
                     break;
                 case FileManageOperations.Move:
                     if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for move.");
-                    await fileTransferService.MoveAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
+                    resolvedName = await fileTransferService.MoveAsync(
+                        rootId, relativePath, destinationPath, req.Overwrite, ct, req.ConflictResolution);
                     break;
                 case FileManageOperations.Mkdir:
                     // Wire contract: RelativePath is the parent directory (empty = root) and NewName is the
@@ -406,7 +513,16 @@ public sealed class FileTransferHandler(
             response = new RemexMessage
             {
                 Type = MessageTypes.FileManageResponse,
-                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = true }
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = req.RequestId,
+                    Success = true,
+
+                    // Reported even on success, because a "keep both" that succeeded SILENTLY would
+                    // leave the user believing they have report.pdf when the file on disk is
+                    // report (2).pdf. Null whenever the requested name was the one used.
+                    ResolvedName = resolvedName,
+                }
             };
         }
         catch (Exception ex)
@@ -415,7 +531,18 @@ public sealed class FileTransferHandler(
             response = new RemexMessage
             {
                 Type = MessageTypes.FileManageResponse,
-                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = false, ErrorMessage = ex.Message }
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = req.RequestId,
+                    Success = false,
+                    ErrorMessage = ex.Message,
+
+                    // THE SENDER THE CODE WAS WAITING FOR. The bead is explicit that the field must
+                    // not exist before something populates it - a declared-but-never-set wire field
+                    // is how RemEx-mneb left a handler that could not fire.
+                    ErrorCode = (ex as FileConflictException)?.ErrorCode,
+                    ConflictingName = (ex as FileConflictException)?.ConflictingName,
+                }
             };
         }
 
@@ -425,7 +552,25 @@ public sealed class FileTransferHandler(
     public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileHashRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // RemEx-0e54 was the matching failure on the other side: a hash request that never got an
+            // answer hung forever, which is exactly what this branch used to guarantee. That one is closed
+            // and the desktop's hash wait is bounded now (HashRequestTimeoutSeconds), so this is about the
+            // host being honest rather than about an unbounded wait.
+            logger.LogWarning("Received a file_hash_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileHashResponse,
+                FileHashResponse = new FileHashResponse
+                {
+                    RequestId = string.Empty,
+                    ErrorMessage = "The file_hash_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -456,7 +601,23 @@ public sealed class FileTransferHandler(
     public async Task HandleFileRootManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
     {
         var req = message.FileRootManageRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // handleRootManageResponse correlates through pendingRootManageOps; 30s timeout behind it.
+            logger.LogWarning("Received a file_root_manage_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageResponse,
+                FileRootManageResponse = new FileRootManageResponse
+                {
+                    RequestId = string.Empty,
+                    Roots = [],
+                    ErrorMessage = "The file_root_manage_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -502,21 +663,66 @@ public sealed class FileTransferHandler(
     /// <summary>
     /// Handles a <c>file_volumes_request</c> (plan §1.2). Full-device browse is consent-gated per paired
     /// device: if <paramref name="clientId"/> does not already hold a full-browse grant, a consent prompt
-    /// is raised on this (serving) host and the response is held until the user decides or the 60-second
-    /// timeout auto-denies. On a grant the mounted volumes are enumerated and returned; on a deny an empty
-    /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error).
+    /// is raised — on the phone that asked when it can render one, otherwise on this (serving) host
+    /// (RemEx-220r) — and the response is held until the user decides or the 60-second timeout
+    /// auto-denies. It may instead be refused outright, with no prompt and no wait, when the asking
+    /// client no longer has a live session. On a grant the mounted volumes are enumerated and returned; on a deny an empty
+    /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error) — carrying a
+    /// <c>denyReason</c> when nobody was asked, so the phone can tell that apart from a refusal its user made
+    /// (RemEx-l580). A request whose body did not bind is answered too — with an error response rather
+    /// than with nothing at all (RemEx-9i4b).
     /// </summary>
     public async Task HandleFileVolumesRequestAsync(
         RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileVolumesRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // ANSWER, RATHER THAN GO QUIET (RemEx-9i4b). This used to `return` and send nothing at
+            // all - not a response, not an error response, nothing - so a file_volumes_request whose
+            // body did not bind produced pure silence on the socket. The phone has no timeout of its
+            // own here, so it sat on "Requesting volumes..." indefinitely and the user saw "Peer did
+            // not respond" with no log line pointing at the cause: the exact shape that bricked v3
+            // file transfer (RemEx-y6x6). It is reachable from the wire - a client that spells the
+            // wrapper differently across a protocol change is all it takes - so this is an answer the
+            // host owes, not an impossible state.
+            //
+            // The id is empty because the part of the message that would carry it is the part that is
+            // missing. That still reaches the phone, which is the client this branch is for:
+            // handleVolumesResponse applies whatever arrives instead of correlating by requestId, so
+            // an uncorrelated error clears the spinner and shows the failure. The PC's own
+            // FileTransferClient DOES correlate, and would fall through to its own bounded timeout
+            // instead - which costs it nothing, because it always sends a body and so cannot reach
+            // this branch at all.
+            //
+            // ErrorMessage, not DenyReason: this is a malformed request, not a refusal. DenyReason is
+            // for a host that declined without asking anyone (RemEx-l580), and routing a protocol
+            // fault through it would tell the phone a person said no.
+            logger.LogWarning("Received a file_volumes_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileVolumesResponse,
+                FileVolumesResponse = new FileVolumesResponse
+                {
+                    RequestId = string.Empty,
+                    Volumes = [],
+                    FullBrowseGranted = false,
+                    ErrorMessage = "The file_volumes_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
         {
             if (string.IsNullOrWhiteSpace(clientId))
                 throw new UnauthorizedAccessException("A paired client identity is required to browse volumes.");
+
+            // Null unless the host refused without a person answering — either nobody was asked, or
+            // the prompt expired unanswered; see FileConsentDenyReasons. It stays null on the
+            // already-granted path above, which never denies anything (RemEx-l580, RemEx-c7v4n).
+            string? denyReason = null;
 
             var granted = await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct);
             if (!granted)
@@ -528,6 +734,7 @@ public sealed class FileTransferHandler(
                 };
                 var decision = await fileTrustService.RequestConsentAsync(clientId, consent, ct);
                 granted = decision.Granted;
+                denyReason = decision.DenyReason;
             }
 
             var volumes = granted ? volumeEnumerator.Enumerate() : Array.Empty<FileVolumeInfo>();
@@ -539,6 +746,7 @@ public sealed class FileTransferHandler(
                     RequestId = req.RequestId,
                     Volumes = [.. volumes],
                     FullBrowseGranted = granted,
+                    DenyReason = denyReason,
                 }
             };
         }
@@ -566,128 +774,39 @@ public sealed class FileTransferHandler(
     /// <summary>
     /// Handles an inbound <c>file_consent_response</c> (plan §1.2 / §2). This is the peer's decision for a
     /// consent prompt this (serving) host previously raised via <see cref="IFileTrustService.RequestConsentAsync"/>
-    /// — it resolves the matching pending prompt exactly as the local consent UI would. Resolution is keyed
-    /// solely by <see cref="FileConsentResponse.ConsentId"/>, so whichever responder arrives first (the local
-    /// dialog or this remote message) wins; an unknown/already-resolved id is a no-op. There is no reply.
+    /// — it resolves the matching pending prompt exactly as the local consent UI would. Whichever
+    /// responder arrives first (the local dialog or this remote message) wins; an unknown or
+    /// already-resolved id is a no-op. There is no reply.
     /// </summary>
-    public void HandleFileConsentResponse(RemexMessage message)
+    /// <param name="clientId">
+    /// The AUTHENTICATED id of the connection this arrived on — not <c>message.ClientId</c>, which is
+    /// whatever the sender wrote. Resolution used to key on the consent id alone, which was harmless
+    /// only while nothing sent these prompts; now that the host asks a named phone (RemEx-220r), an
+    /// unbound response would let any paired device answer somebody else's question.
+    /// </param>
+    public void HandleFileConsentResponse(RemexMessage message, string? clientId)
     {
         var response = message.FileConsentResponse;
         if (response is null)
             return;
 
-        fileTrustService.ResolveConsent(response.ConsentId, response.Granted, response.Remember);
+        var applied = fileTrustService.TryResolveRemoteConsent(
+            clientId, response.ConsentId, response.Granted, response.Remember);
+
+        if (!applied)
+        {
+            // Expected and uninteresting in the ordinary case — a prompt that already timed out, or
+            // that the PC dialog answered first. Logged at a level that will not drown a real log,
+            // but logged, because the other cause is a client answering a question it was not asked.
+            logger.LogDebug(
+                "Ignored a file consent response for {ConsentId}: no matching prompt for this client.",
+                response.ConsentId);
+            return;
+        }
+
         logger.LogInformation(
             "Resolved file consent {ConsentId}: granted={Granted}, remember={Remember}.",
             response.ConsentId, response.Granted, response.Remember);
-    }
-
-    /// <summary>
-    /// Handles an inbound <c>file_push_offer</c> (plan §1.2 / §2): a paired client offering to push one or
-    /// more files to this PC. Incoming pushes are consent-gated per device — if <paramref name="clientId"/>
-    /// does not already hold an auto-accept-incoming grant, a consent prompt is raised on this host and held
-    /// until the user decides or the 60-second timeout auto-denies. On acceptance the host assigns a fresh
-    /// transfer id per offered file (index-aligned to <see cref="FilePushOffer.Files"/>) and returns them in
-    /// the <c>file_push_response</c>; the client then negotiates each file with a
-    /// <c>file_transfer_offer(mode="push")</c> carrying its assigned id. On denial (or timeout) the response
-    /// is <c>accepted=false</c> with no ids (a deny is not an error).
-    /// </summary>
-    public async Task HandleFilePushOfferAsync(
-        RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
-    {
-        var offer = message.FilePushOffer;
-        if (offer is null) return;
-
-        RemexMessage response;
-        try
-        {
-            var consent = new FileConsentRequest
-            {
-                ConsentId = Guid.NewGuid().ToString("N"),
-                Kind = FileConsentKinds.IncomingPush,
-                Detail = DescribePushFiles(offer.Files),
-            };
-
-            var decision = await fileTrustService.RequestConsentAsync(clientId ?? string.Empty, consent, ct);
-
-            string[]? transferIds = null;
-            if (decision.Granted)
-            {
-                // Receiver-assigned ids, index-aligned to the offered files. The client echoes each id back
-                // on its follow-up file_transfer_offer(mode="push") so the receive session lines up 1:1.
-                transferIds = new string[offer.Files.Length];
-                for (var i = 0; i < transferIds.Length; i++)
-                    transferIds[i] = Guid.NewGuid().ToString("N");
-            }
-
-            response = new RemexMessage
-            {
-                Type = MessageTypes.FilePushResponse,
-                ProtocolVersion = ProtocolVersionPolicy.Current,
-                FilePushResponse = new FilePushResponse
-                {
-                    PushId = offer.PushId,
-                    Accepted = decision.Granted,
-                    TransferIds = transferIds,
-                }
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "File push offer {PushId} failed.", offer.PushId);
-            response = new RemexMessage
-            {
-                Type = MessageTypes.FilePushResponse,
-                ProtocolVersion = ProtocolVersionPolicy.Current,
-                FilePushResponse = new FilePushResponse
-                {
-                    PushId = offer.PushId,
-                    Accepted = false,
-                }
-            };
-        }
-
-        await MessageSerializer.SendAsync(ws, response, ct);
-    }
-
-    /// <summary>
-    /// Builds the human-readable <see cref="FileConsentRequest.Detail"/> for an incoming-push prompt: the
-    /// offered file names (capped) plus the total size. Kept data-forward (names + a locale-neutral size)
-    /// so the localized chrome lives in the consent dialog, not in this wire summary.
-    /// </summary>
-    private static string DescribePushFiles(FilePushFile[] files)
-    {
-        if (files is null || files.Length == 0)
-            return string.Empty;
-
-        const int maxNames = 5;
-        var names = files.Take(maxNames).Select(f => f.Name);
-        var joined = string.Join(", ", names);
-        if (files.Length > maxNames)
-            joined += ", …";
-
-        var totalBytes = files.Sum(f => f.Size);
-        return $"{joined} ({FormatBytes(totalBytes)})";
-    }
-
-    /// <summary>Formats a byte count into a compact, locale-neutral size string (e.g. "12.4 MB").</summary>
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)
-            return $"{bytes} B";
-
-        string[] units = ["KB", "MB", "GB", "TB"];
-        double size = bytes;
-        var unit = -1;
-        do
-        {
-            size /= 1024;
-            unit++;
-        }
-        while (size >= 1024 && unit < units.Length - 1);
-
-        return string.Create(
-            System.Globalization.CultureInfo.InvariantCulture, $"{size:0.#} {units[unit]}");
     }
 
     /// <summary>
@@ -699,7 +818,25 @@ public sealed class FileTransferHandler(
     public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileSearchRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // handleSearchResponse correlates (FileTransferViewModel.kt) and has NO timeout behind it,
+            // so the phone's search affordance stays stale. Named in the bead as needing a different
+            // answer - there is none available here, because the id it would need is the missing part.
+            logger.LogWarning("Received a file_search_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileSearchResponse,
+                FileSearchResponse = new FileSearchResponse
+                {
+                    RequestId = string.Empty,
+                    Entries = [],
+                    ErrorMessage = "The file_search_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -745,13 +882,108 @@ public sealed class FileTransferHandler(
     }
 
     /// <summary>
+    /// Handles a <c>file_manifest_request</c> (RemEx-q3twg): one page of a recursive subtree listing, so
+    /// a client can fan a folder out into the ordinary per-file transfers it already performs. Like
+    /// browse and search this runs against a configured shared root (already gated by pairing) or, for a
+    /// non-configured rootId, a consent-granted volume — it adds no reach of its own.
+    /// </summary>
+    /// <remarks>
+    /// The manifest is a LISTING, not a transfer: it moves no bytes and grants no write. Every file it
+    /// names still has to survive the normal download authorization when the client asks for it, which
+    /// is why a folder transfer needs no consent prompt beyond the ones its files already trigger.
+    /// </remarks>
+    public async Task HandleFileManifestRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
+    {
+        var req = message.FileManifestRequest;
+        if (req is null)
+        {
+            // Answer rather than go quiet — see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // The client correlates by requestId and a folder transfer blocks on the first page, so a
+            // silent drop leaves the queue waiting on a page that will never arrive.
+            logger.LogWarning("Received a file_manifest_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = string.Empty,
+                    Entries = [],
+                    ErrorMessage = "The file_manifest_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
+
+        RemexMessage response;
+        try
+        {
+            var relativePath = req.RelativePath ?? string.Empty;
+            var page = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.EnumerateSubtreeAsync(req.RootId, relativePath, req.Cursor, req.MaxEntries, ct)
+                : await fileTransferService.EnumerateVolumeSubtreeAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, relativePath, req.Cursor, req.MaxEntries, ct);
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = req.RequestId,
+                    RootId = req.RootId,
+                    RelativePath = relativePath,
+                    Entries = [.. page.Entries],
+                    NextCursor = page.NextCursor,
+                    TotalFiles = page.TotalFiles,
+                    TotalDirectories = page.TotalDirectories,
+                    TotalBytes = page.TotalBytes,
+                    TotalsComplete = page.TotalsComplete,
+                    Truncated = page.Truncated,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File manifest failed for root {RootId}, path {Path}", req.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = req.RequestId,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath,
+                    Entries = [],
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
     /// Handles a <c>file_metadata_request</c> (plan §1.2): detailed metadata for a single file/directory
     /// (size, timestamps, item count, MIME type, read-only).
     /// </summary>
     public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileMetadataRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // handleMetadataResponse correlates on pendingPropertiesRequestId; no timeout behind it.
+            logger.LogWarning("Received a file_metadata_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileMetadataResponse,
+                FileMetadataResponse = new FileMetadataResponse
+                {
+                    RequestId = string.Empty,
+                    ErrorMessage = "The file_metadata_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -800,7 +1032,22 @@ public sealed class FileTransferHandler(
     public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileThumbnailRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // Answer rather than go quiet - see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // handleThumbnailResponse correlates through pendingThumbnailPaths; no timeout behind it.
+            logger.LogWarning("Received a file_thumbnail_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileThumbnailResponse,
+                FileThumbnailResponse = new FileThumbnailResponse
+                {
+                    RequestId = string.Empty,
+                    ErrorMessage = "The file_thumbnail_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try
@@ -915,8 +1162,11 @@ public sealed class FileTransferHandler(
         {
             while ((read = await state.FileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
             {
-                var slice = buffer[..read];
-                state.Hasher.TransformBlock(slice, 0, read, null, 0);
+                // NO SLICE. buffer[..read] allocated a fresh array every chunk purely to carry a
+                // length that both consumers below already accept as an offset and count - so the
+                // copy existed to tell them something they were being told anyway. On the v2 base64
+                // path that is one array per chunk for the whole of a large file (RemEx-ygapg).
+                state.Hasher.TransformBlock(buffer, 0, read, null, 0);
                 state.BytesTransferred += read;
                 chunkCount++;
 
@@ -927,7 +1177,7 @@ public sealed class FileTransferHandler(
                     {
                         TransferId = state.TransferId,
                         Offset = state.BytesTransferred - read,
-                        DataBase64 = Convert.ToBase64String(slice)
+                        DataBase64 = Convert.ToBase64String(buffer, 0, read)
                     }
                 }, ct);
 

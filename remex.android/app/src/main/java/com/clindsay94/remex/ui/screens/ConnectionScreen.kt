@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateUtils
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
+import com.clindsay94.remex.data.KnownHost
+import com.clindsay94.remex.data.KnownPcEntry
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -69,8 +73,11 @@ fun ConnectionScreen(
         val capabilitySummary by viewModel.capabilitySummary.collectAsStateWithLifecycle()
         val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
         val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
+        val knownPcRows by viewModel.knownPcRows.collectAsStateWithLifecycle()
+        val certRepair by viewModel.certRepair.collectAsStateWithLifecycle()
 
         ConnectionScreenContent(
+                certRepair = certRepair,
                 connectionPrefs = connectionPrefs,
                 desktopPrefs = desktopPrefs,
                 isConnecting = isConnecting,
@@ -81,6 +88,7 @@ fun ConnectionScreen(
                 capabilitySummary = capabilitySummary,
                 isDiscovering = isDiscovering,
                 discoveredHost = discoveredHost,
+                knownPcRows = knownPcRows,
                 onNavigateToQrScanner = onNavigateToQrScanner,
                 onConnect = { host, port, mac, broadcast, subnet, pairingPin, quality, fps, scale ->
                         viewModel.connect(
@@ -97,8 +105,23 @@ fun ConnectionScreen(
                 },
                 onClearError = { viewModel.clearError() },
                 onDiscoverHost = { viewModel.discoverHost() },
-                onRepair = { context, host -> viewModel.clearPinForHost(context, host) },
-                onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() }
+                onRepair = { context, host, port -> viewModel.beginCertRepair(context, host, port) },
+                onDismissCertRepair = { viewModel.dismissCertRepair() },
+                onConfirmCertRepair = { context -> viewModel.confirmCertRepair(context) },
+                onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() },
+                onConnectToKnownPc = { entry, pairingPin ->
+                        viewModel.connectToKnownPc(entry, pairingPin)
+                },
+                onRenameKnownHost = { identity, nickname ->
+                        viewModel.renameKnownHost(identity, nickname)
+                },
+                onUnpairKnownHost = { context, knownHost ->
+                        viewModel.unpairKnownHost(context, knownHost)
+                },
+                onForgetRecentConnection = { address ->
+                        viewModel.forgetRecentConnection(address)
+                },
+                onRefreshKnownHosts = { viewModel.refreshKnownHosts() }
         )
 }
 
@@ -115,12 +138,21 @@ fun ConnectionScreenContent(
         capabilitySummary: String,
         isDiscovering: Boolean,
         discoveredHost: DiscoveredHost?,
+        knownPcRows: List<KnownPcEntry>,
+        certRepair: CertRepairPrompt? = null,
         onNavigateToQrScanner: () -> Unit,
         onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
         onClearError: () -> Unit,
         onDiscoverHost: () -> Unit,
-        onRepair: (android.content.Context, String) -> Unit,
-        onConsumeDiscoveredHost: () -> Unit
+        onRepair: (android.content.Context, String, Int) -> Unit,
+        onDismissCertRepair: () -> Unit = {},
+        onConfirmCertRepair: (android.content.Context) -> Unit = {},
+        onConsumeDiscoveredHost: () -> Unit,
+        onConnectToKnownPc: (KnownPcEntry, String) -> Unit,
+        onRenameKnownHost: (String, String) -> Unit,
+        onUnpairKnownHost: (android.content.Context, KnownHost) -> Unit,
+        onForgetRecentConnection: (String) -> Unit,
+        onRefreshKnownHosts: () -> Unit
 ) {
         val view = LocalView.current
         val context = LocalContext.current
@@ -138,13 +170,47 @@ fun ConnectionScreenContent(
         var scaleInput by remember { mutableFloatStateOf(1.0f) }
         var showHelpSection by remember { mutableStateOf(false) }
 
+        // Known PCs row actions (RemEx-k62t). Held at screen level rather than inside the row so a
+        // dialog is not torn down by the very action it confirms — unpairing removes the row.
+        var renamingHost by remember { mutableStateOf<KnownHost?>(null) }
+        var unpairingHost by remember { mutableStateOf<KnownHost?>(null) }
+        var nicknameInput by remember { mutableStateOf("") }
+
+        // The row whose address is not pinned and is waiting on a PIN (RemEx-obxlo). Its own input
+        // rather than the form's pairingPinInput: the form's PIN belongs to whatever the user typed
+        // into the form, and sending that to a different machine would fail the pairing exchange
+        // while looking like the row was broken.
+        var pairingEntry by remember { mutableStateOf<KnownPcEntry?>(null) }
+        var rowPinInput by remember { mutableStateOf("") }
+
         // Pending flags for deferred actions after permission grants
         var pendingConnect by remember { mutableStateOf(false) }
         var pendingConnectNeedsLan by remember { mutableStateOf(false) }
+        // The Known PCs row whose tap is waiting on a permission grant, if it was a row rather than
+        // the form, and the PIN that tap carried. Without these the deferred path falls through to
+        // doConnect(), which sends the FORM's pairing PIN — and a 6-digit PIN makes
+        // RemexClientManager drop the pinned hash and force a re-pair, so a tap meant to RECONNECT
+        // to an already-paired PC would try to pair it again with a PIN belonging to a different
+        // machine. The PIN is held alongside the row rather than re-read at resume time because the
+        // dialog that collected it is dismissed the moment the permission prompt appears.
+        var pendingKnownPc by remember { mutableStateOf<KnownPcEntry?>(null) }
+        var pendingKnownPcPin by remember { mutableStateOf("") }
         var pendingDiscover by remember { mutableStateOf(false) }
 
         // Snackbar state declared early so permission launchers below can reference it.
         val snackbarHostState = remember { SnackbarHostState() }
+
+        // READ IN COMPOSABLE SCOPE, NOT INSIDE THE LAMBDAS THAT USE THEM (RemEx-2evl3). A resource
+        // read through LocalContext.current is not configuration-aware and can hand back a stale
+        // string after a Configuration change — and with nine locales shipped, a language change is
+        // the Configuration change these users actually make. stringResource cannot be called from
+        // the callbacks below because it is @Composable, so the value is hoisted and closed over.
+        val localNetworkDeniedMessage = stringResource(R.string.error_local_network_permission_denied)
+
+        // THE FORMAT STRING RATHER THAN THE FORMATTED RESULT, because the host name is only known
+        // inside the callback. Hoisting the template still gets the locale-correct text; only the
+        // substitution happens late.
+        val hostDiscoveredFormat = stringResource(R.string.host_discovered_snackbar)
 
         // Runtime permissions required to connect, scoped to the target host. A loopback or
         // VPN/Tailscale host is not on the local network, so the LAN-scoped permissions
@@ -156,10 +222,8 @@ fun ConnectionScreenContent(
                 val needsLan =
                         com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(host)
                 return buildList {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        add(Manifest.permission.POST_NOTIFICATIONS)
-                                        if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
-                                }
+                                add(Manifest.permission.POST_NOTIFICATIONS)
+                                if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
                                 // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN access.
                                 if (needsLan && Build.VERSION.SDK_INT >= 36) {
                                         add("android.permission.ACCESS_LOCAL_NETWORK")
@@ -169,7 +233,6 @@ fun ConnectionScreenContent(
         }
 
         fun hasNearbyWifiPermission(): Boolean {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
                 val hasNearby = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.NEARBY_WIFI_DEVICES
@@ -209,6 +272,10 @@ fun ConnectionScreenContent(
                 ) { results ->
                         if (pendingConnect) {
                                 pendingConnect = false
+                                val knownPc = pendingKnownPc
+                                val knownPcPin = pendingKnownPcPin
+                                pendingKnownPc = null
+                                pendingKnownPcPin = ""
                                 // Only treat a LAN-permission denial as fatal when this connection
                                 // actually needs the local network. A Tailscale/VPN target does not,
                                 // so a denial there must still fall through to doConnect().
@@ -218,15 +285,55 @@ fun ConnectionScreenContent(
                                 if (localNetworkDenied) {
                                         scope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                        localNetworkDeniedMessage
                                                 )
                                         }
                                         // Do not attempt connection — it will fail silently without LAN access.
                                         return@rememberLauncherForActivityResult
                                 }
-                                doConnect()
+                                // A deferred Known PCs tap resumes as that tap, not as the form.
+                                // doConnect() would carry the FORM's pairing PIN, which belongs to
+                                // whatever the user typed there — for a paired row that PIN makes
+                                // RemexClientManager drop the pinned hash and force a re-pair, and
+                                // for an unpaired row it is a PIN for the wrong machine. The row's
+                                // own PIN, captured with the tap, travels with it instead.
+                                if (knownPc != null) onConnectToKnownPc(knownPc, knownPcPin)
+                                else doConnect()
                         }
                 }
+
+        /**
+         * Starts a Known PCs row's connection, asking for permissions first if they are missing.
+         *
+         * Shared by the row tap and the pairing dialog's confirm so both take the same route: the
+         * permission check is scoped to the row's own address, which is what lets a Tailscale row
+         * proceed on a phone that has declined local-network access.
+         */
+        fun startKnownPcConnect(entry: KnownPcEntry, pin: String) {
+                // Fill the form as well as connect: it shows what was tapped, and the deferred
+                // permission path reads it back.
+                hostInput = entry.address
+                portInput = entry.port.toString()
+
+                val perms = connectPermissionsFor(entry.address)
+                pendingConnectNeedsLan =
+                        com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(
+                                entry.address
+                        )
+                val allGranted =
+                        perms.all {
+                                ContextCompat.checkSelfPermission(context, it) ==
+                                        PackageManager.PERMISSION_GRANTED
+                        }
+                if (perms.isNotEmpty() && !allGranted) {
+                        pendingKnownPc = entry
+                        pendingKnownPcPin = pin
+                        pendingConnect = true
+                        connectPermissionLauncher.launch(perms)
+                } else {
+                        onConnectToKnownPc(entry, pin)
+                }
+        }
 
         // Separate permission launcher for "Discover" — needs NEARBY_WIFI_DEVICES and
         // ACCESS_LOCAL_NETWORK.  Same denial handling: show rationale and abort.
@@ -241,7 +348,7 @@ fun ConnectionScreenContent(
                                 if (localNetworkDenied) {
                                         scope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                        localNetworkDeniedMessage
                                                 )
                                         }
                                         return@rememberLauncherForActivityResult
@@ -268,6 +375,29 @@ fun ConnectionScreenContent(
                 }
         }
 
+        // The Known PCs list is a snapshot of a separate DataStore, so refresh it on entry rather
+        // than showing whatever was true when the ViewModel was created.
+        LaunchedEffect(Unit) { onRefreshKnownHosts() }
+
+        // Most recently used PC as the default connect target (RemEx-k62t). The stored host is
+        // normally already that PC — tapping a row saves it — so this is the fallback for the case
+        // where nothing is stored, not the mechanism. It is deliberately narrow: the stored host is
+        // the last one ATTEMPTED rather than the last one that succeeded, and replacing a failed
+        // address the user is still trying to reach would be the screen arguing with them. Waits
+        // for prefs to load, so a slow DataStore read cannot lose to this and leave them unused.
+        LaunchedEffect(knownPcRows, connectionPrefs) {
+                if (connectionPrefs == null) return@LaunchedEffect
+                if (hostInput.isNotEmpty() || connectionPrefs.host.isNotEmpty()) return@LaunchedEffect
+                // The rows are already most-recent-first, so the first one that has ever connected
+                // IS the last address used — which is a sharper answer than the PC-level record it
+                // replaced: that one named a machine, and a machine reached at three addresses could
+                // only offer whichever of them it happened to have stored.
+                knownPcRows.firstOrNull { it.hasEverConnected }?.let { mostRecent ->
+                        hostInput = mostRecent.address
+                        portInput = mostRecent.port.toString()
+                }
+        }
+
         // Autofill host/port and show snackbar when a host is discovered. Consume the event
         // *before* showing the snackbar (and fire the snackbar on the screen's own scope, not this
         // effect) so a configuration change — e.g. rotation — during the snackbar's few seconds can't
@@ -280,10 +410,7 @@ fun ConnectionScreenContent(
                         onConsumeDiscoveredHost()
                         scope.launch {
                                 snackbarHostState.showSnackbar(
-                                        context.getString(
-                                                R.string.host_discovered_snackbar,
-                                                discoveredHostName
-                                        )
+                                        hostDiscoveredFormat.format(discoveredHostName)
                                 )
                         }
                 }
@@ -392,7 +519,21 @@ fun ConnectionScreenContent(
                                                                 )
                                                                 if (isCertMismatch) {
                                                                         TextButton(
-                                                                                onClick = { onRepair(context, hostInput) },
+                                                                                // Opens the
+                                                                                // comparison
+                                                                                // dialog; nothing
+                                                                                // is cleared until
+                                                                                // the user
+                                                                                // confirms there
+                                                                                // (RemEx-vnps).
+                                                                                onClick = {
+                                                                                        onRepair(
+                                                                                                context,
+                                                                                                hostInput,
+                                                                                                portInput.toIntOrNull()
+                                                                                                        ?: 5005
+                                                                                        )
+                                                                                },
                                                                                 modifier = Modifier.align(Alignment.End)
                                                                         ) {
                                                                                 Text(stringResource(R.string.connection_action_repair), color = MaterialTheme.colorScheme.onErrorContainer)
@@ -648,6 +789,635 @@ fun ConnectionScreenContent(
                                                         }
                                                 }
                                         }
+                                }
+
+                                // --- Known PCs (RemEx-k62t, RemEx-obxlo) ---
+                                // One row per ADDRESS, most recently connected first, and the
+                                // reversal of RemEx-k62t is deliberate. Certificate-keyed rows are
+                                // the right model for "which machines am I paired with" and are
+                                // still what rename and unpair act on — but they answer the wrong
+                                // question here: a PC whose DHCP lease moved collapsed into a single
+                                // row showing one address, and the address the user needed was the
+                                // one that had been hidden. RecentConnections caps the list at two
+                                // rows per machine so this cannot swing the other way and let one
+                                // churning PC bury the others.
+                                AnimatedVisibility(
+                                        visible = knownPcRows.isNotEmpty(),
+                                        enter =
+                                                expandVertically(motionScheme.fastSpatialSpec()) +
+                                                        fadeIn(motionScheme.fastEffectsSpec()),
+                                        exit =
+                                                shrinkVertically(motionScheme.fastSpatialSpec()) +
+                                                        fadeOut(motionScheme.fastEffectsSpec())
+                                ) {
+                                        Card(modifier = Modifier.fillMaxWidth()) {
+                                                Column(
+                                                        modifier = Modifier.padding(16.dp),
+                                                        verticalArrangement =
+                                                                Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.CenterVertically
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Computer,
+                                                                        contentDescription = null,
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                                Spacer(Modifier.width(8.dp))
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_known_pcs_title
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .titleSmallEmphasized
+                                                                )
+                                                        }
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pcs_hint
+                                                                ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodySmall,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant
+                                                        )
+                                                        knownPcRows.forEach { entry ->
+                                                                // Keyed by address, not by
+                                                                // position: the list re-sorts when
+                                                                // a connection lands, and a row's
+                                                                // remembered state (its open
+                                                                // overflow menu) would otherwise
+                                                                // stay with the SLOT and end up
+                                                                // acting on whichever address moved
+                                                                // into it. The address is unique
+                                                                // per row — RecentConnections.rows
+                                                                // dedupes on it — where the
+                                                                // identity no longer is, since one
+                                                                // machine can hold two rows.
+                                                                key(entry.address) {
+                                                                KnownPcRow(
+                                                                        entry = entry,
+                                                                        enabled = !isConnecting,
+                                                                        onConnect = {
+                                                                                // AN UNPINNED
+                                                                                // ADDRESS PAIRS
+                                                                                // RATHER THAN
+                                                                                // CONNECTS, and it
+                                                                                // has to ask for the
+                                                                                // PIN before the
+                                                                                // permission prompt:
+                                                                                // the connection
+                                                                                // cannot succeed
+                                                                                // without one, and
+                                                                                // spending a system
+                                                                                // dialog on an
+                                                                                // attempt that is
+                                                                                // already doomed
+                                                                                // reads as the row
+                                                                                // being broken.
+                                                                                if (entry.isTrusted
+                                                                                ) {
+                                                                                        startKnownPcConnect(
+                                                                                                entry,
+                                                                                                ""
+                                                                                        )
+                                                                                } else {
+                                                                                        rowPinInput =
+                                                                                                ""
+                                                                                        pairingEntry =
+                                                                                                entry
+                                                                                }
+                                                                        },
+                                                                        onRename = {
+                                                                                entry.knownHost
+                                                                                        ?.let {
+                                                                                                nicknameInput =
+                                                                                                        it.nickname
+                                                                                                renamingHost =
+                                                                                                        it
+                                                                                        }
+                                                                        },
+                                                                        onUnpair = {
+                                                                                entry.knownHost
+                                                                                        ?.let {
+                                                                                                unpairingHost =
+                                                                                                        it
+                                                                                        }
+                                                                        },
+                                                                        onForget = {
+                                                                                onForgetRecentConnection(
+                                                                                        entry.address
+                                                                                )
+                                                                        }
+                                                                )
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // Pairing a row whose address is not pinned (RemEx-obxlo). Its own
+                                // PIN field rather than the form's: the form's PIN belongs to
+                                // whatever the user typed there, and sending it to a different
+                                // machine fails the pairing exchange while looking like this row
+                                // does not work.
+                                pairingEntry?.let { target ->
+                                        AlertDialog(
+                                                onDismissRequest = { pairingEntry = null },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_pair_title,
+                                                                        target.displayName
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        Column(
+                                                                verticalArrangement =
+                                                                        Arrangement.spacedBy(12.dp)
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_known_pc_pair_message
+                                                                        )
+                                                                )
+                                                                OutlinedTextField(
+                                                                        value = rowPinInput,
+                                                                        onValueChange = {
+                                                                                rowPinInput = it
+                                                                        },
+                                                                        singleLine = true,
+                                                                        label = {
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_label_pairing_pin
+                                                                                        )
+                                                                                )
+                                                                        },
+                                                                        keyboardOptions =
+                                                                                androidx.compose
+                                                                                        .foundation
+                                                                                        .text
+                                                                                        .KeyboardOptions(
+                                                                                                keyboardType =
+                                                                                                        KeyboardType
+                                                                                                                .NumberPassword,
+                                                                                                imeAction =
+                                                                                                        ImeAction.Done
+                                                                                        )
+                                                                )
+                                                        }
+                                                },
+                                                confirmButton = {
+                                                        TextButton(
+                                                                // A blank PIN would reach
+                                                                // connect() as "already paired",
+                                                                // which for an unpinned address is
+                                                                // a trust-on-first-use the user did
+                                                                // not ask for.
+                                                                enabled =
+                                                                        rowPinInput
+                                                                                .isNotBlank(),
+                                                                onClick = {
+                                                                        val pin =
+                                                                                rowPinInput.trim()
+                                                                        pairingEntry = null
+                                                                        rowPinInput = ""
+                                                                        startKnownPcConnect(
+                                                                                target,
+                                                                                pin
+                                                                        )
+                                                                }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_known_pc_pair_confirm
+                                                                        )
+                                                                )
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(
+                                                                onClick = { pairingEntry = null }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
+                                }
+
+                                renamingHost?.let { target ->
+                                        AlertDialog(
+                                                onDismissRequest = { renamingHost = null },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_rename_title
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        OutlinedTextField(
+                                                                value = nicknameInput,
+                                                                onValueChange = {
+                                                                        nicknameInput = it
+                                                                },
+                                                                singleLine = true,
+                                                                label = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_known_pc_nickname_label
+                                                                                )
+                                                                        )
+                                                                },
+                                                                keyboardOptions =
+                                                                        androidx.compose.foundation
+                                                                                .text
+                                                                                .KeyboardOptions(
+                                                                                        capitalization =
+                                                                                                KeyboardCapitalization
+                                                                                                        .Words,
+                                                                                        imeAction =
+                                                                                                ImeAction.Done
+                                                                                )
+                                                        )
+                                                },
+                                                confirmButton = {
+                                                        TextButton(
+                                                                onClick = {
+                                                                        onRenameKnownHost(
+                                                                                target.identity,
+                                                                                nicknameInput
+                                                                        )
+                                                                        renamingHost = null
+                                                                }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .button_confirm
+                                                                        )
+                                                                )
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(
+                                                                onClick = { renamingHost = null }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
+                                }
+
+                                // Confirm first: unpairing is not undoable from the phone. Pairing
+                                // again needs the PIN showing on the PC, which the user may not be
+                                // standing in front of.
+                                unpairingHost?.let { target ->
+                                        AlertDialog(
+                                                onDismissRequest = { unpairingHost = null },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_unpair_title,
+                                                                        target.nickname.ifBlank {
+                                                                                target.preferredAddress
+                                                                        }
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_unpair_message
+                                                                )
+                                                        )
+                                                },
+                                                confirmButton = {
+                                                        TextButton(
+                                                                onClick = {
+                                                                        onUnpairKnownHost(
+                                                                                context,
+                                                                                target
+                                                                        )
+                                                                        unpairingHost = null
+                                                                }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_unpair
+                                                                        ),
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .error
+                                                                )
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(
+                                                                onClick = { unpairingHost = null }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
+                                }
+
+                                // The certificate-change confirmation (RemEx-vnps). What used to be
+                                // behind the Re-pair tap was the clearing itself: an error the user
+                                // wanted rid of, one button, and the pin protecting them from an
+                                // impostor was gone before they had read the sentence above it.
+                                // Nothing here clears anything — only the confirm button does.
+                                certRepair?.let { prompt ->
+                                        AlertDialog(
+                                                // Tapping outside is a cancel, and cancel costs the
+                                                // user nothing. Fail closed.
+                                                onDismissRequest = onDismissCertRepair,
+                                                icon = {
+                                                        Icon(
+                                                                Icons.Default.ErrorOutline,
+                                                                contentDescription = null
+                                                        )
+                                                },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        if (prompt.state ==
+                                                                                        CertRepairState
+                                                                                                .Unchanged
+                                                                        )
+                                                                                R.string
+                                                                                        .connection_cert_repair_title_unchanged
+                                                                        else
+                                                                                R.string
+                                                                                        .connection_cert_repair_title
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        Column(
+                                                                modifier =
+                                                                        Modifier.verticalScroll(
+                                                                                rememberScrollState()
+                                                                        ),
+                                                                verticalArrangement =
+                                                                        Arrangement.spacedBy(12.dp)
+                                                        ) {
+                                                                when (prompt.state) {
+                                                                        CertRepairState.Checking ->
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_checking
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                        CertRepairState.Unchanged ->
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_unchanged
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                        CertRepairState.Unknown -> {
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_unknown
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                // The warning
+                                                                                // belongs here MORE
+                                                                                // than under
+                                                                                // Changed, not
+                                                                                // less: this branch
+                                                                                // also offers to
+                                                                                // discard the pin,
+                                                                                // and it does so
+                                                                                // against a host
+                                                                                // that did not even
+                                                                                // answer.
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_unsafe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium,
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .error
+                                                                                )
+                                                                        }
+                                                                        CertRepairState.Changed -> {
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_changed
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_safe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                // The one line that
+                                                                                // must not read as
+                                                                                // routine. Error
+                                                                                // ROLE, not a
+                                                                                // literal — it has
+                                                                                // to survive
+                                                                                // monochrome and
+                                                                                // contrast 1.0.
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_unsafe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium,
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .error
+                                                                                )
+                                                                        }
+                                                                }
+
+                                                                // SpkiFingerprint's own marker for
+                                                                // an absent pin is a model value,
+                                                                // not display text — this dialog is
+                                                                // the first thing to put one on
+                                                                // screen, and it must not be the
+                                                                // one English word in a Ukrainian
+                                                                // dialog. "Not known" and
+                                                                // "checking" are also genuinely
+                                                                // different states, and the user
+                                                                // draws opposite conclusions from
+                                                                // them.
+                                                                val unavailable =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_cert_repair_fingerprint_unavailable
+                                                                        )
+                                                                val checking =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_cert_repair_fingerprint_checking
+                                                                        )
+
+                                                                CertFingerprintRow(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_label_pinned
+                                                                                ),
+                                                                        fingerprint =
+                                                                                if (prompt.pinnedPin
+                                                                                                .isNullOrBlank()
+                                                                                )
+                                                                                        unavailable
+                                                                                else
+                                                                                        prompt.pinnedFingerprint
+                                                                )
+                                                                CertFingerprintRow(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_label_presented
+                                                                                ),
+                                                                        fingerprint =
+                                                                                when {
+                                                                                        prompt.state ==
+                                                                                                CertRepairState
+                                                                                                        .Checking ->
+                                                                                                checking
+                                                                                        prompt.presentedPin
+                                                                                                .isNullOrBlank() ->
+                                                                                                unavailable
+                                                                                        else ->
+                                                                                                prompt.presentedFingerprint
+                                                                                }
+                                                                )
+
+                                                                if (prompt.canRepair) {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_effect
+                                                                                ),
+                                                                                style =
+                                                                                        MaterialTheme
+                                                                                                .typography
+                                                                                                .bodySmall,
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .onSurfaceVariant
+                                                                        )
+                                                                }
+                                                        }
+                                                },
+                                                confirmButton = {
+                                                        // Absent entirely while checking, and when
+                                                        // the certificate turns out to be
+                                                        // unchanged. A disabled button still reads
+                                                        // as "this is the way forward"; no button
+                                                        // says there is nothing to decide.
+                                                        if (prompt.canRepair) {
+                                                                TextButton(
+                                                                        onClick = {
+                                                                                view.performHapticFeedback(
+                                                                                        HapticFeedbackConstants
+                                                                                                .KEYBOARD_TAP
+                                                                                )
+                                                                                onConfirmCertRepair(
+                                                                                        context
+                                                                                )
+                                                                        }
+                                                                ) {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_confirm
+                                                                                ),
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .error
+                                                                        )
+                                                                }
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(onClick = onDismissCertRepair) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
                                 }
 
                                 // --- How to connect help section ---
@@ -1280,10 +2050,16 @@ fun ConnectionScreenContent(
                                                                         )
                                                                         scope.launch {
                                                                                 PinnedHostStore
-                                                                                        .removePin(
+                                                                                        .forgetHost(
                                                                                                 context,
                                                                                                 hostInput
                                                                                         )
+                                                                                // That address may
+                                                                                // be one of a Known
+                                                                                // PCs row's — the
+                                                                                // list is a
+                                                                                // snapshot.
+                                                                                onRefreshKnownHosts()
                                                                         }
                                                                         isPaired = false
                                                                 },
@@ -1314,6 +2090,30 @@ fun ConnectionScreenContent(
         }
 }
 
+/**
+ * One labelled fingerprint in the certificate-change dialog (RemEx-vnps).
+ *
+ * Monospaced on purpose. The value is already grouped in fours by [SpkiFingerprint], and grouping
+ * only helps if the groups line up vertically between the two rows — in a proportional face they do
+ * not, and the comparison the dialog is asking the user to make gets harder than reading one long
+ * run would have been.
+ */
+@Composable
+private fun CertFingerprintRow(label: String, fingerprint: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = fingerprint,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun ConnectionScreenPreview() {
@@ -1339,14 +2139,234 @@ private fun ConnectionScreenPreview() {
             isDiscovering = false,
             discoveredHost = null,
             isCertMismatch = false,
+            knownPcRows = run {
+                val studio =
+                    KnownHost(
+                        identity = "0123456789abcdef",
+                        nickname = "Studio PC",
+                        addresses = listOf("192.168.1.10", "100.72.10.4"),
+                        port = 5005,
+                        lastConnectedAtMillis = 1_700_000_000_000L
+                    )
+                listOf(
+                    // The same machine at two addresses, which is the case the address-keyed list
+                    // exists for and the one the PC-keyed list could not show.
+                    KnownPcEntry(
+                        address = "192.168.1.10",
+                        port = 5005,
+                        nickname = "Studio PC",
+                        lastConnectedAtMillis = 1_700_000_000_000L,
+                        knownHost = studio,
+                        isTrusted = true
+                    ),
+                    KnownPcEntry(
+                        address = "100.72.10.4",
+                        port = 5005,
+                        nickname = "Studio PC",
+                        lastConnectedAtMillis = 1_699_900_000_000L,
+                        knownHost = studio,
+                        isTrusted = true
+                    ),
+                    // Connected to once, no longer paired: still listed, and tapping it pairs.
+                    KnownPcEntry(
+                        address = "192.168.1.42",
+                        port = 5005,
+                        nickname = "",
+                        lastConnectedAtMillis = 1_699_000_000_000L,
+                        knownHost = null,
+                        isTrusted = false
+                    )
+                )
+            },
             onNavigateToQrScanner = {},
             onConnect = { _, _, _, _, _, _, _, _, _ -> },
             onClearError = {},
             onDiscoverHost = {},
-            onRepair = { _, _ -> },
-            onConsumeDiscoveredHost = {}
+            onRepair = { _, _, _ -> },
+            onConsumeDiscoveredHost = {},
+            onConnectToKnownPc = { _, _ -> },
+            onRenameKnownHost = { _, _ -> },
+            onUnpairKnownHost = { _, _ -> },
+            onForgetRecentConnection = {},
+            onRefreshKnownHosts = {}
         )
     }
+}
+
+/**
+ * One remembered ADDRESS in the Known PCs list (RemEx-k62t, RemEx-obxlo).
+ *
+ * Tap the row or its Connect button to reach it; the overflow holds the actions that belong to the
+ * machine behind it. The whole row stays clickable alongside the explicit button because
+ * reconnecting is the common action on this screen and it should not need aim — the button is there
+ * so a list of near-identical addresses still has an unambiguous target on each line.
+ *
+ * The destructive actions live behind the overflow for the reason they always did: an unpair one
+ * mis-tap from a connect is one mis-tap from needing the PIN off the PC to undo.
+ *
+ * **Rename and unpair are hidden when [KnownPcEntry.knownHost] is null**, which is the case for an
+ * address whose PC this phone is no longer paired with anywhere. There is nothing left to rename or
+ * unpair there, so those rows offer "remove from list" instead — without it a dead address would sit
+ * in the card forever, since the unpair that normally clears history has nothing to act on.
+ */
+@Composable
+private fun KnownPcRow(
+        entry: KnownPcEntry,
+        enabled: Boolean,
+        onConnect: () -> Unit,
+        onRename: () -> Unit,
+        onUnpair: () -> Unit,
+        onForget: () -> Unit
+) {
+        val view = LocalView.current
+        var menuExpanded by remember { mutableStateOf(false) }
+        val displayName = entry.displayName
+        val endpoint = "${entry.address}:${entry.port}"
+        val lastConnected =
+                if (entry.hasEverConnected) {
+                        stringResource(
+                                R.string.connection_known_pc_last_connected,
+                                // The system's own relative-time wording, so it is localized and
+                                // formatted the way the rest of the phone does it rather than by a
+                                // string this app would have to translate nine times.
+                                DateUtils.getRelativeTimeSpanString(
+                                                entry.lastConnectedAtMillis,
+                                                System.currentTimeMillis(),
+                                                DateUtils.MINUTE_IN_MILLIS
+                                        )
+                                        .toString()
+                        )
+                } else {
+                        stringResource(R.string.connection_known_pc_never_connected)
+                }
+
+        ListItem(
+                modifier =
+                        Modifier.clickable(enabled = enabled) {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onConnect()
+                        },
+                leadingContent = {
+                        Icon(
+                                Icons.Default.Computer,
+                                contentDescription = null,
+                                tint =
+                                        if (entry.isTrusted) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                },
+                supportingContent = {
+                        Column {
+                                // Only when the name is a nickname, otherwise the headline already
+                                // IS the endpoint and this would print it twice.
+                                if (entry.nickname.isNotBlank()) {
+                                        Text(
+                                                endpoint,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                }
+                                Text(
+                                        lastConnected,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                // Said before the tap rather than after it: pairing needs the PIN
+                                // showing on the PC, so a user who is not standing at it should
+                                // learn that from the row instead of from a dialog they cannot
+                                // answer.
+                                if (!entry.isTrusted) {
+                                        Text(
+                                                stringResource(
+                                                        R.string.connection_known_pc_needs_pairing
+                                                ),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                }
+                        }
+                },
+                trailingContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(enabled = enabled, onClick = onConnect) {
+                                        Text(stringResource(R.string.button_connect))
+                                }
+                                Box {
+                                        IconButton(onClick = { menuExpanded = true }) {
+                                                Icon(
+                                                        Icons.Default.MoreVert,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_actions,
+                                                                        displayName
+                                                                )
+                                                )
+                                        }
+                                        DropdownMenu(
+                                                expanded = menuExpanded,
+                                                onDismissRequest = { menuExpanded = false }
+                                        ) {
+                                                if (entry.knownHost != null) {
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_known_pc_rename
+                                                                                )
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        menuExpanded = false
+                                                                        onRename()
+                                                                }
+                                                        )
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_unpair
+                                                                                ),
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .error
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        menuExpanded = false
+                                                                        onUnpair()
+                                                                }
+                                                        )
+                                                } else {
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_known_pc_forget
+                                                                                )
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        menuExpanded = false
+                                                                        onForget()
+                                                                }
+                                                        )
+                                                }
+                                        }
+                                }
+                        }
+                },
+                colors =
+                        ListItemDefaults.colors(
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        )
+        ) {
+                Text(displayName, style = MaterialTheme.typography.bodyLargeEmphasized)
+        }
 }
 
 @Composable

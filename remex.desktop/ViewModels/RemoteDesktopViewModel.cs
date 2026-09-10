@@ -38,6 +38,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(SwitchDisplayCommand))]
     private bool _isStreaming;
 
+    /// <summary>
+    /// Whether the live-stream dot should pulse (RemEx-s19yc): only while actually streaming and
+    /// the user hasn't opted in to reduced motion. Notified both when streaming starts/stops and
+    /// when the shell's reduced-motion preference changes.
+    /// </summary>
+    public bool ShowStreamPulse => IsStreaming && !_shell.IsReducedMotion;
+
+    partial void OnIsStreamingChanged(bool value) => OnPropertyChanged(nameof(ShowStreamPulse));
+
     [ObservableProperty]
     private Bitmap? _currentFrame;
 
@@ -267,6 +276,13 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.Disconnected += OnDisconnected;
         Connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+        _shell.PropertyChanged += OnShellPropertyChanged;
+
+        // A REPLACED PROFILE MUST NOT LEAVE Quality/TargetFps/Scale STALE (RemEx-w6ipy). Unlike
+        // RemoteViewModel this VM can hold a live stream, so a savefile import must never drop or
+        // rebuild the cached instance mid-session - only the three fields snapshotted below are
+        // re-read, in place, and the stream itself is left untouched.
+        _shell.LayoutService.ProfileReplaced += OnProfileReplaced;
 
         // Sync stream defaults from persisted Settings panel values.
         // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
@@ -1039,10 +1055,40 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Re-raises <see cref="ShowStreamPulse"/> when reduced motion is toggled mid-stream.</summary>
+    private void OnShellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellViewModel.IsReducedMotion))
+        {
+            OnPropertyChanged(nameof(ShowStreamPulse));
+        }
+    }
+
+    /// <summary>
+    /// Re-reads Quality/TargetFps/Scale off the freshly-replaced profile (RemEx-w6ipy). Marshalled
+    /// through <see cref="ShellViewModel.ProfileReplacedDispatch"/>, same reason as
+    /// ShellViewModel's own ProfileReplaced handler: ReloadAsync is not guaranteed to complete on
+    /// the UI thread. Deliberately does not touch <see cref="IsStreaming"/> or the desktop service -
+    /// a live stream must survive a savefile import untouched; only the next ApplySettingsAsync
+    /// picks up the imported values.
+    /// </summary>
+    private void OnProfileReplaced() => _shell.ProfileReplacedDispatch(() =>
+    {
+        var profile = _shell.LayoutService.CurrentProfile;
+        if (profile is null)
+            return;
+
+        Quality = profile.StreamQuality;
+        TargetFps = profile.StreamFps;
+        Scale = SnapScale(profile.StreamScale);
+    });
+
     public void Dispose()
     {
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+        _shell.PropertyChanged -= OnShellPropertyChanged;
+        _shell.LayoutService.ProfileReplaced -= OnProfileReplaced;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;

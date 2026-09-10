@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,14 +15,34 @@ namespace Remex.Desktop.ViewModels;
 /// ViewModel for the Canvas workspace. Manages placed cards, the staging
 /// drawer for new sensors, snap-to-grid logic, and persistence triggers.
 /// </summary>
-public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
+public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, ISensorCatalog
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ShellViewModel _shell;
+
+    /// <summary>Forwards the shell's reduced-motion setting so <c>DraggableCard</c> can gate the
+    /// alert pulse animation (RemEx-8wpvr.4), the same shell-proxy shape as
+    /// <see cref="SettingsViewModel.IsReducedMotion"/> / <see cref="TaskManagerViewModel.IsReducedMotion"/>.
+    /// </summary>
+    /// <remarks>Accepted gap, same as those: no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — <c>DraggableCard</c> re-reads it on attach and
+    /// whenever the alert-active class is (re)applied, which is when the pulse would start anyway.
+    /// </remarks>
+    public bool IsReducedMotion => _shell.IsReducedMotion;
+
     private DashboardProfile _profile = new();
     private int _nextZIndex = 1;
     private bool _isInitialized;
     private DashboardProfile? _pendingSyncProfile;
+
+    // Set around the alert-store seed inside ApplyProfile (RemEx-8wpvr.2, HIGH review round 2): every
+    // ApplyProfile call re-seeds _alertStore from the incoming profile via ReplaceAll, which raises
+    // SensorAlertStore.Changed unconditionally. Once OnAlertStoreChanged is subscribed (after first
+    // init - see the subscription's own remarks) that Changed would otherwise trigger a save on every
+    // profile application (pending host sync, LayoutProfileReceived, SyncLayoutAsync's offline
+    // reload, ReloadFromPersistedLayout) even though nothing the user did actually changed. The
+    // re-apply-to-sensors half must still run - only the save half is suppressed.
+    private bool _suppressAlertStoreSave;
     private bool _isRefreshingSensorActivation;
 
     // ═══════════════ Undo / Redo ═══════════════
@@ -40,11 +61,47 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alerts ═══════════════
 
-    private readonly Dictionary<string, SensorAlert> _sensorAlerts = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _subscribedSensorNames = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The single source of configured alerts (RemEx-8wpvr.2). Case-insensitive by sensor
+    /// name inside the store itself, matching every other name comparison in this class.</summary>
+    private readonly SensorAlertStore _alertStore;
 
-    /// <summary>Raised when a sensor crosses its configured threshold.</summary>
-    public event Action<SensorAlert>? SensorAlertFired;
+    /// <summary>Runtime trip state and the notification cooldown (RemEx-8wpvr.2). Session-only.</summary>
+    private readonly SensorAlertTracker _alertTracker;
+
+    /// <summary>Sensor IDENTITIES whose alert handler is already wired, so it is wired exactly once.</summary>
+    /// <remarks>
+    /// ORDINAL, because it is keyed by <see cref="SensorIdentity(SensorReading)"/> — the host-stamped
+    /// <c>Id</c> such as <c>wmi:cpu:load</c> — and every other consumer of that identity compares it
+    /// ordinally, including the card index this subscription parallels. It was case-INSENSITIVE while
+    /// the matching side was not, so two sensors whose ids differ only in case produced two cards and
+    /// two view models (correct) but only ONE subscription: the second sensor's threshold alerts then
+    /// never fired, with no error and nothing in the log (RemEx-228x).
+    ///
+    /// Named for identities rather than names, which is the mismatch that allowed it: the field said
+    /// "names" while holding identities, and names really are compared case-insensitively two lines up.
+    /// </remarks>
+    private readonly HashSet<string> _subscribedSensorIdentities = new(SensorIdentityComparer);
+
+    /// <summary>
+    /// How two <see cref="SensorIdentity(SensorReading)"/> values are compared, everywhere.
+    /// </summary>
+    /// <remarks>
+    /// ONE comparer shared by every consumer of an identity, so they cannot drift apart again — which
+    /// is exactly what RemEx-228x was. The card index compared ordinally while the subscription set
+    /// compared case-insensitively, both keyed by the same string, so two sensors whose ids differed
+    /// only in case got two cards and one subscription and the second sensor's alerts silently never
+    /// fired. Ordinal is the right side of that disagreement: an identity is normally the host-stamped
+    /// <c>Id</c>, a machine token like <c>wmi:cpu:load</c>, and case is meaningful in it.
+    ///
+    /// Note this is NOT the comparer for sensor NAMES, which are user-facing and deliberately
+    /// case-insensitive so a host relabel does not orphan a pin or an alert.
+    /// </remarks>
+    internal static StringComparer SensorIdentityComparer => StringComparer.Ordinal;
+
+    /// <summary>Raised when a sensor crosses its configured threshold and the tracker says a
+    /// notification is due (i.e. it has not already notified for this sensor within the cooldown).
+    /// Carries the value that crossed the threshold.</summary>
+    public event Action<SensorAlert, double>? SensorAlertFired;
 
     /// <summary>Raised when the view should open the "Set Alert" dialog for a sensor.</summary>
     public event Action<string, SensorAlert?>? ShowSetAlertRequested;
@@ -233,59 +290,135 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     {
         if (card?.Sensor is null) return;
         var sensorName = card.Sensor.Name;
-        _sensorAlerts.TryGetValue(sensorName, out var existing);
+        _alertStore.TryGet(sensorName, out var existing);
         ShowSetAlertRequested?.Invoke(sensorName, existing);
     }
 
     /// <summary>
-    /// Applies an alert result returned from the SetAlertDialog.
-    /// Pass null to remove the alert; pass a SensorAlert with empty SensorName to clear.
+    /// Applies an alert result returned from the SetAlertDialog. Pass null to remove the alert; pass a
+    /// SensorAlert with empty SensorName to clear. A thin call into <see cref="_alertStore"/> —
+    /// <see cref="OnAlertStoreChanged"/> does the re-apply-to-sensors and the save.
     /// </summary>
     public void ApplySensorAlert(string sensorName, SensorAlert? result)
     {
         if (result is null || string.IsNullOrEmpty(result.SensorName))
-        {
-            // Clear alert
-            _sensorAlerts.Remove(sensorName);
-            ApplyAlertToSensors(sensorName, null);
-        }
+            _alertStore.Remove(sensorName);
         else
-        {
-            _sensorAlerts[sensorName] = result;
-            ApplyAlertToSensors(sensorName, result);
-        }
+            _alertStore.Set(result);
+    }
+
+    /// <summary>
+    /// Re-applies every configured alert from <see cref="_alertStore"/> onto the matching sensors,
+    /// case-insensitively by name, and forgets tracker state for any alert no longer configured
+    /// (review addendum on RemEx-8wpvr.1: <c>Forget</c>, not just <c>Acknowledge</c>, so a re-added
+    /// alert notifies fresh instead of inheriting a stale cooldown).
+    /// </summary>
+    /// <remarks>
+    /// Runs on every <see cref="SensorAlertStore.Changed"/>, not just the one alert that changed — the
+    /// store's event carries no name, by design (see its own remarks).
+    /// </remarks>
+    /// <summary>
+    /// Test-only counter of saves actually triggered by <see cref="OnAlertStoreChanged"/> — same
+    /// pattern as <see cref="SensorCustomizationNotifications"/> below. Lets RemEx-8wpvr.2 (review
+    /// round 2, HIGH) regression tests prove ApplyProfile's alert-store reseed does not fire an extra,
+    /// redundant save on top of the unconditional layout-sync save ApplyProfile already issues.
+    /// </summary>
+    internal int AlertStoreSaveCount { get; private set; }
+
+    private void OnAlertStoreChanged()
+    {
+        ReapplyAlertsToSensors();
+        if (_suppressAlertStoreSave) return;
+        AlertStoreSaveCount++;
         TriggerSave();
     }
 
-    private void ApplyAlertToSensors(string sensorName, SensorAlert? alert)
+    /// <summary>
+    /// The re-apply half of <see cref="OnAlertStoreChanged"/>, split out so <see cref="InitializeAsync"/>
+    /// can run it once on load WITHOUT saving. <see cref="OnAlertStoreChanged"/> itself is not
+    /// subscribed until the load path's own restore work is done (see the comment on that
+    /// subscription) — <see cref="_alertStore"/>'s load-time <c>ReplaceAll</c> must not have a save
+    /// wired up yet, or the debounced write lands on a canvas that hasn't restored its non-sensor
+    /// cards, silently deleting them from the profile (RemEx-8wpvr.2, HIGH).
+    /// </summary>
+    private void ReapplyAlertsToSensors()
     {
         foreach (var card in Cards.Concat(StagedCards)
-            .Where(c => c.CardType == "Sensor" &&
-                   string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase)))
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null))
         {
-            if (card.Sensor is not null)
-                card.Sensor.Alert = alert;
+            var sensor = card.Sensor!;
+            sensor.Alert = _alertStore.TryGet(sensor.Name, out var alert) ? alert : null;
+        }
+
+        foreach (var tripped in _alertTracker.Tripped.ToList())
+        {
+            if (!_alertStore.TryGet(tripped.SensorName, out _))
+                _alertTracker.Forget(tripped.SensorName);
         }
     }
 
-    private void OnSensorAlertTriggered(SensorAlert alert)
+    /// <summary>Refreshes <see cref="CanvasCardViewModel.IsAlertTripped"/> (and the trip snapshot
+    /// backing its tooltip) on every card for the tracker's current state. Runs on every
+    /// <see cref="SensorAlertTracker.TrippedChanged"/>.</summary>
+    private void OnTrippedChanged()
     {
-        // Flash all canvas cards for the sensor
-        var affected = Cards
-            .Where(c => c.CardType == "Sensor" &&
-                   string.Equals(c.Sensor?.Name, alert.SensorName, StringComparison.OrdinalIgnoreCase))
+        var tripped = _alertTracker.Tripped;
+        foreach (var card in Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null))
+        {
+            var trip = tripped.FirstOrDefault(t =>
+                string.Equals(t.SensorName, card.Sensor!.Name, StringComparison.OrdinalIgnoreCase));
+            card.IsAlertTripped = trip is not null;
+            card.SetTrippedAlert(trip);
+        }
+    }
+
+    private void OnSensorAlertTriggered(SensorAlert alert, double value)
+    {
+        var shouldNotify = _alertTracker.Trip(alert.SensorName, value, alert);
+        OnTrippedChanged();
+
+        if (shouldNotify)
+            SensorAlertFired?.Invoke(alert, value);
+    }
+
+    // ═══════════════ ISensorCatalog ═══════════════
+
+    /// <summary>
+    /// Every sensor the canvas has seen this session, distinct by name (case-insensitive, matching
+    /// every other sensor-name comparison in this class), sourced from <see cref="Cards"/> and
+    /// <see cref="StagedCards"/> together so a sensor that was only ever staged still shows up.
+    /// <see cref="SensorInfo.IsConnected"/> is true when at least one card for the sensor has ever
+    /// received a live reading (<see cref="SensorViewModel.RawReading"/> is set by
+    /// <see cref="SensorViewModel.Update"/> on every telemetry tick and never cleared) — NOT
+    /// <see cref="CanvasCardViewModel.IsStale"/>, which is false for every placed card by contract, so
+    /// a sensor that was placed but never actually reported would otherwise read as connected forever
+    /// — AND, RemEx-8wpvr.2 (review round 2, MEDIUM), <see cref="Connection"/>.<see cref="ConnectionViewModel.IsConnected"/>:
+    /// <c>RawReading is not null</c> alone is itself monotonic (it is set on the first reading and never
+    /// cleared), so once a sensor had ever reported once it read as connected forever even after the
+    /// host dropped. Gating on the live host connection too makes IsConnected fall back to false the
+    /// moment the host disconnects, without forgetting that the sensor was seen.
+    /// </summary>
+    public IReadOnlyList<SensorInfo> Known =>
+        Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null)
+            .GroupBy(c => c.Sensor!.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var sensor = g.First().Sensor!;
+                return new SensorInfo(
+                    sensor.Name,
+                    sensor.DisplayName,
+                    string.IsNullOrEmpty(sensor.Unit) ? null : sensor.Unit,
+                    Connection.IsConnected && g.Any(c => c.Sensor!.RawReading is not null));
+            })
             .ToList();
 
-        foreach (var c in affected) c.IsAlertActive = true;
-
-        SensorAlertFired?.Invoke(alert);
-
-        // Auto-reset the flash after 2 s
-        _ = Task.Delay(2000).ContinueWith(_ =>
-            Dispatcher.UIThread.Post(() =>
-            {
-                foreach (var c in affected) c.IsAlertActive = false;
-            }));
+    /// <inheritdoc />
+    public bool TryResolve(string name, [MaybeNullWhen(false)] out SensorInfo info)
+    {
+        info = Known.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
+        return info is not null;
     }
 
     /// <summary>Cards currently placed on the canvas.</summary>
@@ -330,11 +463,15 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     public CanvasDashboardViewModel(
         ConnectionViewModel connection,
         DashboardLayoutService layoutService,
-        ShellViewModel shell)
+        ShellViewModel shell,
+        SensorAlertStore alertStore,
+        SensorAlertTracker alertTracker)
     {
         Connection = connection;
         _layoutService = layoutService;
         _shell = shell;
+        _alertStore = alertStore;
+        _alertTracker = alertTracker;
 
         // Listen for telemetry updates to create/update sensor cards.
         Connection.PropertyChanged += OnConnectionPropertyChanged;
@@ -347,6 +484,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         StagedCards.CollectionChanged += OnStagedCardsCollectionChanged;
 
         SelectedCards.CollectionChanged += OnSelectedCardsChanged;
+
+        // _alertStore.Changed is deliberately NOT subscribed here — see InitializeAsync, which
+        // subscribes it once the load path's restore work is done (RemEx-8wpvr.2, HIGH).
+        _alertTracker.TrippedChanged += OnTrippedChanged;
     }
 
     private void OnConnectionPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -386,6 +527,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void OnStagedCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
+        // **A REORDER IS NOT A MEMBERSHIP CHANGE, AND REBUILDING ON ONE IS PURE WASTE (RemEx-yqpa).**
+        // RefreshSensorActivationItems below clears and rebuilds a UI-BOUND collection, resubscribing
+        // every item's ActiveChanged and re-running RefreshSecondaryWiring. None of it can produce a
+        // different answer for a Move: the names it reads are Distinct().OrderBy()'d, so they do not
+        // depend on staging order, and the active set reads Cards, which a staged move never touches.
+        // Without this, a host stalling with 250 staged sensors flips ~125 of them at once and issues
+        // ~125 Moves - so ~125 synchronous rebuilds of that list in one tick, each resetting its
+        // ListBox. Count cannot change on a Move either, so HasStagedCards is unaffected, and the
+        // moved items already had RequestPinToggle wired when they were added.
+        if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Move) return;
+
         if (e.NewItems != null)
         {
             foreach (CanvasCardViewModel card in e.NewItems)
@@ -406,29 +558,49 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         var localProfile = await _layoutService.LoadAsync();
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(() => FinishInitialize(localProfile));
+    }
+
+    /// <summary>
+    /// The synchronous, UI-thread half of <see cref="InitializeAsync"/>'s load path — split into its
+    /// own method (RemEx-8wpvr.2) purely so tests can invoke it directly by reflection instead of
+    /// through <see cref="Dispatcher"/>.<see cref="Dispatcher.UIThread"/>, the same seam shape
+    /// <c>ApplyProfile</c> already gets from <c>CanvasDashboardViewModelLayoutSyncTests</c>. This
+    /// assembly has no Avalonia.Headless reference, so nothing ever drains a real
+    /// <see cref="Dispatcher.UIThread"/> post; awaiting the real, dispatcher-wrapped
+    /// <see cref="InitializeAsync"/> from a test hangs whenever "the" UI thread — bound to whichever
+    /// thread anywhere in the process first touched <see cref="Dispatcher.UIThread"/> (a
+    /// <c>PhonePresenceMonitor</c>'s polling <c>DispatcherTimer</c>, say) — differs from the thread this
+    /// call's own preceding <c>await _layoutService.LoadAsync()</c> happens to resume on. Measured
+    /// directly, not assumed: two rewritten tests hung exactly that way before this split
+    /// (<c>CanvasAlertStateTests</c>, <c>CanvasDashboardViewModelAlertLoadSaveTests</c>).
+    /// </summary>
+    private void FinishInitialize(DashboardProfile localProfile)
+    {
+        _isInitialized = true;
+
+        // Seed the first-visit coach mark from whatever profile is now loaded.
+        InitCoachMark();
+
+        // If a host sync arrived before we finished local load, prioritize the host.
+        if (_pendingSyncProfile != null)
         {
-            _isInitialized = true;
-
-            // Seed the first-visit coach mark from whatever profile is now loaded.
-            InitCoachMark();
-
-            // If a host sync arrived before we finished local load, prioritize the host.
-            if (_pendingSyncProfile != null)
-            {
-                ApplyProfile(_pendingSyncProfile);
-                _pendingSyncProfile = null;
-                return;
-            }
-
+            ApplyProfile(_pendingSyncProfile);
+            _pendingSyncProfile = null;
+        }
+        else
+        {
             // Otherwise, use the local profile.
             _profile = localProfile;
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
 
-            // Restore sensor alerts from profile.
-            foreach (var alert in _profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>())
-                _sensorAlerts[alert.SensorName] = alert;
+            // Restore sensor alerts from profile. _alertStore.Changed is NOT subscribed yet (see
+            // below) — ReplaceAll fires Changed unconditionally, and OnAlertStoreChanged saves,
+            // so if it were live here the debounced save would land before the non-sensor cards
+            // below are back on the canvas and silently drop them from the profile
+            // (RemEx-8wpvr.2, HIGH).
+            _alertStore.ReplaceAll(_profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
 
             // Restore non-sensor cards from profile.
             foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
@@ -444,16 +616,24 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             // Create default cards if this is a fresh profile.
             EnsureDefaultCards();
 
-            // If we're already connected, maybe the host is empty?
-            // We should probably push our local layout if the host didn't send anything.
-            // But for now, let's just ensure we stay in sync.
+            // Re-apply the alerts just restored onto any sensors already materialized, without
+            // saving — saving is OnAlertStoreChanged's job once it is subscribed below.
+            ReapplyAlertsToSensors();
+        }
 
-            RefreshSensorActivationItems();
+        // Subscribed here, once, after the restore work above (whichever branch ran) has
+        // finished — never in the constructor. See the remark on the (absent) ctor subscription.
+        _alertStore.Changed += OnAlertStoreChanged;
 
-            // Final refresh of home pinned sensors after local load.
-            if (_shell.CurrentView is HomeViewModel home)
-                home.RefreshPinnedSensors();
-        });
+        // If we're already connected, maybe the host is empty?
+        // We should probably push our local layout if the host didn't send anything.
+        // But for now, let's just ensure we stay in sync.
+
+        RefreshSensorActivationItems();
+
+        // Final refresh of home pinned sensors after local load.
+        if (_shell.CurrentView is HomeViewModel home)
+            home.RefreshPinnedSensors();
     }
 
     [RelayCommand]
@@ -590,6 +770,13 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     {
         PushOperation(new RemoveCardOperation(Cards, card));
         Cards.Remove(card);
+
+        // A sensor card removed here is a placed CLONE (see PlaceFromStaging) — the reusable
+        // template stays in StagedCards untouched, so this instance is genuinely discarded, not
+        // reused. Detach so it stops mirroring PropertyChanged from a SensorViewModel that outlives
+        // it for the rest of the session (RemEx-8wpvr.2, MEDIUM). No-op for non-sensor cards, which
+        // never have a Sensor set.
+        card.Detach();
 
         // Sensor templates remain in staging; removing from canvas is enough.
         if (card.CardType == "Sensor")
@@ -747,6 +934,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             ops.Add(new RemoveCardOperation(Cards, card));
             Cards.Remove(card);
+            card.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
         }
 
         ClearSelection();
@@ -939,11 +1127,132 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     private static string? SensorIdentity(SensorViewModel? sensor) =>
         sensor?.RawReading is { } r ? SensorIdentity(r) : sensor?.Name;
 
-    private void ProcessTelemetry(TelemetryPayload payload)
+    /// <summary>
+    /// Groups every sensor-bound card's <see cref="SensorViewModel"/> by its stable identity, so a
+    /// telemetry tick can look each reading up once instead of scanning the card lists per reading.
+    /// </summary>
+    /// <remarks>
+    /// THIS IS THE WHOLE POINT OF RemEx-8tdf. The previous code ran a
+    /// <c>Where + Concat + Distinct + ToList</c> over <c>Cards</c> AND <c>StagedCards</c> for EVERY
+    /// reading — and because every sensor ever seen leaves a staged template card behind,
+    /// <c>StagedCards.Count</c> tracks the sensor count, so the work was ~N² identity-string
+    /// comparisons plus ~5 LINQ allocations and a closure per reading, on the UI thread, once a
+    /// second, even minimized to tray. Building the index once per tick makes it N + M.
+    /// <para>
+    /// Rebuilt per tick rather than cached across ticks, deliberately. A <see cref="SensorViewModel"/>
+    /// has NO identity until its first <c>Update</c> — <see cref="SensorIdentity(SensorViewModel)"/>
+    /// reads <c>RawReading</c> — so a VM created during a tick would be indexed under the wrong key
+    /// by any cache built when its card was added. A per-tick rebuild is O(cards) and cannot go
+    /// stale; the quadratic term is what mattered.
+    /// </para>
+    /// <para>
+    /// Mirrors the replaced LINQ exactly: sensor cards only, null <c>Sensor</c> skipped, and
+    /// duplicates removed by REFERENCE (the old <c>Distinct()</c> on a reference type), so one VM
+    /// shared by several cards is still updated once.
+    /// </para>
+    /// </remarks>
+    internal static Dictionary<string, List<SensorViewModel>> BuildSensorIndex(
+        IEnumerable<CanvasCardViewModel> placed,
+        IEnumerable<CanvasCardViewModel> staged)
     {
-        Dispatcher.UIThread.Post(() =>
+        var index = new Dictionary<string, List<SensorViewModel>>(SensorIdentityComparer);
+
+        foreach (var card in placed.Concat(staged))
+        {
+            if (card.CardType != "Sensor" || card.Sensor is null) continue;
+
+            // Blank as well as null: a SensorViewModel that has not had its first Update yet falls
+            // back to Name, which is empty — and a READING's identity is never empty (it defaults to
+            // "Unknown"), so such a card could never be matched anyway. Skipping keeps an unmatchable
+            // "" bucket out of the index instead of quietly collecting every un-updated sensor in it.
+            var identity = SensorIdentity(card.Sensor);
+            if (string.IsNullOrEmpty(identity)) continue;
+
+            if (!index.TryGetValue(identity, out var vms))
+            {
+                index[identity] = vms = new List<SensorViewModel>();
+            }
+
+            // Reference comparison, matching the Distinct() this replaced. A plain loop rather than
+            // Any(lambda): buckets are size 1 in practice so the scan is free either way, but the
+            // closure and delegate would be one allocation per sensor card per tick — in the exact
+            // hot path this bead exists to stop allocating in.
+            bool alreadyIndexed = false;
+            for (int i = 0; i < vms.Count; i++)
+            {
+                if (ReferenceEquals(vms[i], card.Sensor)) { alreadyIndexed = true; break; }
+            }
+
+            if (!alreadyIndexed) vms.Add(card.Sensor);
+        }
+
+        return index;
+    }
+
+    /// <summary>
+    /// Hands a telemetry tick to the UI thread.
+    /// </summary>
+    /// <remarks>
+    /// Internal for the same reason <see cref="ApplyTelemetry"/> is, but covering the other half:
+    /// that one exists so the BODY can be tested without a dispatcher, and this one so the POST
+    /// itself can be (RemEx-r8c6). Testing only the body leaves the line that schedules it
+    /// uncovered, which is where the failure actually lives - a post that never runs looks like an
+    /// unchanged collection and no error at all.
+    ///
+    /// It needed no new infrastructure under Avalonia 11, which was the surprise at the time: Post
+    /// plus Dispatcher.UIThread.RunJobs() ran the callback with no Avalonia application booted, and
+    /// nobody had called RunJobs.
+    ///
+    /// AVALONIA 12 TOOK THAT BACK (RemEx-jcma3). The dispatcher is genuinely thread-affine now, so
+    /// RunJobs() throws unless the caller owns it, and ownership goes to whichever thread touched
+    /// Dispatcher.UIThread first anywhere in the process. The test passed alone and failed in the
+    /// suite. Two fixes were built and measured before this one: a dedicated dispatcher-owning
+    /// thread started from a [ModuleInitializer] deadlocked the whole suite under the loader lock,
+    /// and the same thread started lazily lost the binding race to an earlier test. So the coupling
+    /// is removed instead of being worked around - see <see cref="Dispatch"/>.
+    /// </remarks>
+    internal void ProcessTelemetry(TelemetryPayload payload)
+        => Dispatch(() => ApplyTelemetry(payload));
+
+    /// <summary>
+    /// How <see cref="ProcessTelemetry"/> reaches the UI thread. Replaceable so the post can be
+    /// tested without a dispatcher (RemEx-jcma3).
+    /// </summary>
+    /// <remarks>
+    /// Mirrors <c>NotificationService.Dispatch</c>, which exists for exactly this reason and states
+    /// the property that matters: the lambda is NOT evaluated at construction, so a test never
+    /// touches <see cref="Dispatcher.UIThread"/> - and never binds it to a thread-pool thread -
+    /// merely by creating a view model. That mattered less when the binding was harmless; under
+    /// Avalonia 12 an accidental binding is what breaks other tests.
+    ///
+    /// Deliberately narrow. The other Dispatcher.UIThread calls in this class are untouched, because
+    /// widening the seam to all of them would be a refactor riding along on a framework upgrade, and
+    /// only this one has a test that needs it.
+    /// </remarks>
+    internal Action<Action> Dispatch { get; set; } = static work => Dispatcher.UIThread.Post(work);
+
+    /// <summary>
+    /// The body of a telemetry tick, split out from the dispatcher post so it can be tested.
+    /// </summary>
+    /// <remarks>
+    /// Testing through <see cref="ProcessTelemetry"/> is not possible: its work is queued on
+    /// Avalonia's UI dispatcher, which never pumps in a unit test, so the assertions would run against
+    /// a tick that had not happened. Splitting the body out lets the tests exercise the REAL matching
+    /// — including the create branch, whose in-tick index mutation is the subtlest thing in here —
+    /// rather than only the index builder.
+    /// </remarks>
+    internal void ApplyTelemetry(TelemetryPayload payload)
+    {
         {
             if (payload.Sensors == null) return;
+
+            // One pass over the cards for the whole tick, instead of one pass PER READING.
+            var sensorIndex = BuildSensorIndex(Cards, StagedCards);
+
+            // Collected as the readings are walked rather than in a second pass: the identity is
+            // already being computed below for the index lookup, and deriving it twice is how the two
+            // derivations come to disagree.
+            var seenThisTick = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var reading in payload.Sensors)
             {
@@ -951,38 +1260,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 // Match by stable identity (host-stamped Id, name fallback), not raw name, so a live
                 // relabel or two same-named sensors bind correctly (RemEx-km0i.14).
                 var identity = SensorIdentity(reading);
+                seenThisTick.Add(identity);
 
-                var sensorVms = Cards
-                    .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
-                    .Select(c => c.Sensor)
-                    .Concat(
-                        StagedCards
-                            .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
-                            .Select(c => c.Sensor))
-                    .Where(s => s is not null)
-                    .Select(s => s!)
-                    .Distinct()
-                    .ToList();
+                if (!sensorIndex.TryGetValue(identity, out var sensorVms))
+                {
+                    sensorVms = new List<SensorViewModel>();
+                    sensorIndex[identity] = sensorVms;
+                }
 
                 // First time seeing this sensor in the current session.
                 if (sensorVms.Count == 0)
                 {
                     var sensor = new SensorViewModel();
 
-                    // Persist per-sensor customization (color, title, overlay, graph type) as it changes.
-                    sensor.PropertyChanged += OnSensorCustomizationChanged;
-
                     // Apply any persisted alert for this sensor.
-                    if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
+                    if (_alertStore.TryGet(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
-
-                    // Subscribe once per stable sensor identity to prevent duplicate firings on
-                    // reconnect or a live host relabel (see SensorIdentity; RemEx-km0i.14).
-                    if (_subscribedSensorNames.Add(identity))
-                    {
-                        sensor.AlertTriggered -= OnSensorAlertTriggered;
-                        sensor.AlertTriggered += OnSensorAlertTriggered;
-                    }
 
                     // Keep one reusable template in staging so users can add more cards.
                     // Default size is a clean multiple of the 50px snap grid (4×3 cells) so
@@ -996,6 +1289,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         Height = 150,
                     };
                     staged.RequestPinToggle = () => TogglePinToHome(staged);
+                    staged.RequestAcknowledgeAlert = () => _alertTracker.Acknowledge(sensor.Name);
                     StagedCards.Add(staged);
 
                     // Restore every persisted card for this sensor.
@@ -1013,6 +1307,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
                         restored.IsPinnedToHome = pinnedIds.Contains(sensorName);
                         restored.RequestPinToggle = () => TogglePinToHome(restored);
+                        restored.RequestAcknowledgeAlert = () => _alertTracker.Acknowledge(sensor.Name);
                         Cards.Add(restored);
                         TrackZIndex(saved.ZIndex);
                     }
@@ -1020,12 +1315,136 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     sensorVms.Add(sensor);
                 }
 
+                // Wire the alert handler for this identity — OUTSIDE the first-sight branch above,
+                // which is what RemEx-k74x fixed. Disconnecting calls CleanupSensorSubscriptions,
+                // which detaches every handler and empties this set; but the staged template card
+                // keeps its view model across the disconnect, so on reconnect the create branch is
+                // skipped and nothing ever re-attached. Threshold alerts were then dead for every
+                // sensor the dashboard had ever seen, for the rest of the process — silently, with
+                // cards still updating so the dashboard looked perfectly healthy.
+                //
+                // The set still makes this once per identity rather than once per tick, and the
+                // detach-then-attach keeps it idempotent besides. One view model is shared by every
+                // card for a sensor, so this cannot multiply firings by card count.
+                if (_subscribedSensorIdentities.Add(identity))
+                {
+                    foreach (var sensorVm in sensorVms)
+                    {
+                        sensorVm.AlertTriggered -= OnSensorAlertTriggered;
+                        sensorVm.AlertTriggered += OnSensorAlertTriggered;
+
+                        // Wired HERE, with the alert handler, rather than only on first sight —
+                        // RemEx-9qgb, the same defect RemEx-k74x fixed for its sibling. Both are
+                        // detached together on disconnect, so both have to be re-attached together;
+                        // leaving one behind meant per-card customization silently stopped being
+                        // saved from the first reconnect on, and the user's theme, custom title,
+                        // overlay toggle and graph type were lost at restart. Keeping the two in one
+                        // block is the point: they were separated before, which is how one of them
+                        // got fixed and the other did not.
+                        //
+                        // SECOND, DELIBERATE EFFECT: this now attaches AFTER the persisted-state
+                        // restore rather than before it. ApplyPersistedSensorState sets five
+                        // properties that all match the save filter, so the old position made every
+                        // restored card request a save while the canvas was still half-materialized —
+                        // several redundant writes of dashboard_layout.json on the first tick after
+                        // launch. Nothing is lost by skipping them: a load has nothing new to persist,
+                        // and the other restore path still requests its save explicitly.
+                        sensorVm.PropertyChanged -= OnSensorCustomizationChanged;
+                        sensorVm.PropertyChanged += OnSensorCustomizationChanged;
+                    }
+                }
+
                 foreach (var sensorVm in sensorVms)
                 {
                     sensorVm.Update(reading);
                 }
             }
-        });
+
+            RefreshStagingFreshness(seenThisTick);
+        }
+    }
+
+    /// <summary>
+    /// Marks staged sensors the host has stopped reporting and sinks them below the live ones
+    /// (RemEx-yqpa).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The drawer used to only ever grow - a template is created on first sight and nothing removed
+    /// it - so across a session it filled with overlapping, partly-stale sensor sets to scroll past.
+    /// The recorded decision is to GROUP AND MARK rather than evict, because the host alternates its
+    /// sensor set by category and eviction would make entries flicker.
+    /// </para>
+    /// <para>
+    /// **THE COLLECTION IS ONLY REWRITTEN WHEN THE ORDER ACTUALLY CHANGED**, which on a steady host
+    /// is never. Telemetry lands about once a second, and replacing the contents raises a reset that
+    /// rebuilds every row: entrance animations restart, the scroll position drops, and a drag out of
+    /// the drawer is cancelled as its source disappears mid-gesture. A drawer that reshuffles under
+    /// the pointer every second would be worse than the unsorted one this replaces.
+    /// </para>
+    /// </remarks>
+    private void RefreshStagingFreshness(IReadOnlySet<string> seenThisTick)
+    {
+        if (StagedCards.Count == 0) return;
+
+        var entries = new List<StagedSensor>(StagedCards.Count);
+
+        foreach (var card in StagedCards)
+        {
+            // NOT A SENSOR, SO NEVER STALE. ReturnToStaging adds every non-sensor card here, and
+            // those have no Sensor to resolve an identity from. Their IsStale is false and stays
+            // false - staleness is a statement about a host that stopped reporting a reading, and a
+            // card with no reading cannot have one made about it.
+            if (SensorIdentity(card.Sensor) is not { } identity) continue;
+
+            card.IsStale = StagingDrawerFreshness.IsStale(identity, seenThisTick);
+            entries.Add(new StagedSensor(identity, card.CardTitle ?? identity));
+        }
+
+        var desired = StagingDrawerFreshness.Order(entries, seenThisTick);
+        if (!StagingDrawerFreshness.OrderWouldChange(entries, desired)) return;
+
+        // **MOVED IN PLACE, NOT CLEARED AND REFILLED, AND THE FIRST VERSION HERE WAS THE SECOND.**
+        // Two things were wrong with that. A Clear drops every card whose identity did not resolve,
+        // because only the classified ones come back - so the rows this method deliberately declines
+        // to judge would have been deleted by it. And Clear-then-add raises a reset plus one event
+        // per item, which rebuilds every container, restarts the entrance animations and blinks
+        // HasStagedCards through false on the way past. Move raises a Move: containers survive, the
+        // count never changes, and only the rows that actually moved are touched.
+        for (var target = 0; target < desired.Count; target++)
+        {
+            var identity = desired[target].Identity;
+            var current = IndexOfStaged(identity, target);
+            if (current > target) StagedCards.Move(current, target);
+        }
+    }
+
+    /// <summary>Where the staged card with this identity currently sits, searching from <paramref name="from"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// Searching forward only is what makes the loop above a selection sort rather than an O(n^2)
+    /// scan per position: everything before <paramref name="from"/> is already in its final place,
+    /// and the identities in <c>desired</c> are distinct, so the match is never behind it.
+    /// </para>
+    /// <para>
+    /// **UNCLASSIFIED CARDS DRIFT TO THE END; THEY ARE NOT HELD IN PLACE, AND AN EARLIER VERSION OF
+    /// THIS COMMENT CLAIMED THEY WERE.** A staged card with no resolvable sensor identity - which
+    /// <c>ReturnToStaging</c> produces for every non-sensor card - is not in <c>desired</c> at all, so
+    /// classified cards are pulled past it and it ends up after the classified block. That is benign,
+    /// because <c>StagedCards.Add</c> already appends, but it is not what "stepped over" means. The
+    /// <c>return from</c> fallback is likewise unreachable: every identity searched for came out of
+    /// this same collection.
+    /// </para>
+    /// </remarks>
+    private int IndexOfStaged(string identity, int from)
+    {
+        for (var i = from; i < StagedCards.Count; i++)
+        {
+            if (string.Equals(SensorIdentity(StagedCards[i].Sensor), identity, StringComparison.Ordinal))
+                return i;
+        }
+
+        return from;
     }
 
     // ═══════════════ Persistence ═══════════════
@@ -1047,12 +1466,31 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Notifications that have reached <see cref="OnSensorCustomizationChanged"/>. Test seam.
+    /// </summary>
+    /// <remarks>
+    /// Counted BEFORE the save filter on purpose — it therefore counts Name/Value/Unit changes too,
+    /// which the filter below deliberately ignores. That is what lets a test prove the handler is
+    /// ATTACHED without provoking a real profile write: the alternative is not merely inconvenient
+    /// but unavailable, since the view model takes the sealed concrete layout service and the test
+    /// harness has none, so a provoked save throws rather than writing.
+    /// <para>
+    /// KNOWN LIMIT: counting before the filter cannot distinguish "attached" from "attached and still
+    /// routing the right property names". Drop <c>Theme</c> from the filter below and a test on this
+    /// counter stays green while the same user-visible symptom returns.
+    /// </para>
+    /// </remarks>
+    internal int SensorCustomizationNotifications { get; private set; }
+
+    /// <summary>
     /// Persists the layout when a user changes a sensor's customization (color theme, custom title,
     /// value-overlay visibility, or graph type). Telemetry updates (Name/Value/Unit) are ignored so
     /// the incoming reading stream does not spam saves.
     /// </summary>
     private void OnSensorCustomizationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        SensorCustomizationNotifications++;
+
         if (e.PropertyName is nameof(SensorViewModel.Theme)
             or nameof(SensorViewModel.CustomTitle)
             or nameof(SensorViewModel.ShowValueOverlay)
@@ -1093,7 +1531,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             HostAddress = Connection.HostAddress,
             Cards = CanvasLayoutMerge.MergeCards(baseProfile.Cards, liveCardStates, materializedSensorNames),
             PinnedSensorIds = CanvasLayoutMerge.MergePinnedSensors(baseProfile.PinnedSensorIds, livePinned, materializedSensorNames),
-            SensorAlerts = _sensorAlerts.Values.ToList(),
+            SensorAlerts = _alertStore.All.ToList(),
         };
 
         _profile = profile;
@@ -1260,6 +1698,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 {
                     Cards.Remove(card);
                     SelectedCards.Remove(card);
+                    card.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
                 }
                 TriggerSave();
             }
@@ -1301,6 +1740,39 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
         GridSize = profile.GridSize;
 
+        // Seed the alert store from every profile this canvas ever applies (RemEx-8wpvr.2, HIGH
+        // review round 2) - not just the local-load path in FinishInitialize's else branch. Before
+        // this, the _pendingSyncProfile != null branch of FinishInitialize called ApplyProfile without
+        // ever seeding the store, so a host sync that landed before the local LoadAsync completed left
+        // _alertStore empty for the whole session - and every later save writes
+        // `SensorAlerts = _alertStore.All.ToList()`, so the next card drag wiped every alert from disk.
+        // Suppressed here (try/finally, exception-safe) because ReplaceAll raises Changed
+        // unconditionally, and once OnAlertStoreChanged is subscribed (every ApplyProfile call except
+        // the very first, pre-subscription one from FinishInitialize) that would fire an unwanted
+        // TriggerSave on every profile application.
+        //
+        // Seed from the LOCAL profile, not `profile` (RemEx-8wpvr.2, HIGH review round 3). Alerts
+        // are device-local by design - the trailing save below layers only Cards/PinnedSensorIds/
+        // IsSnapToGridEnabled/GridSize from `profile` onto localBase and never carries SensorAlerts
+        // (RemEx-hmigd). On two of this method's five call sites (OnLayoutProfileReceivedAsync and
+        // FinishInitialize's pending-sync branch) `profile` is the CONNECTED HOST's own
+        // DashboardProfile, whose host_dashboard_layout.json never has alerts - so seeding from
+        // `profile` reset _alertStore to empty on every host sync, and the next card drag then
+        // persisted that empty list to THIS device's own disk. Use the same source the save below
+        // resolves to (`_layoutService.CurrentProfile`), falling back to `profile` only when there is
+        // no local profile yet (first-ever ApplyProfile, before any local load has completed).
+        try
+        {
+            _suppressAlertStoreSave = true;
+            var alertSeedProfile = _layoutService.CurrentProfile ?? profile;
+            _alertStore.ReplaceAll(alertSeedProfile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
+            ReapplyAlertsToSensors();
+        }
+        finally
+        {
+            _suppressAlertStoreSave = false;
+        }
+
         var profileCardIds = (profile.Cards ?? Enumerable.Empty<CardState>())
             .Select(c => c.CardId)
             .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -1309,6 +1781,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         foreach (var existing in Cards.Where(c => !profileCardIds.Contains(c.CardId)).ToList())
         {
             Cards.Remove(existing);
+            existing.Detach(); // Stop mirroring the sensor's PropertyChanged (RemEx-8wpvr.2, MEDIUM).
         }
 
         foreach (var state in profile.Cards ?? Enumerable.Empty<CardState>())
@@ -1361,8 +1834,23 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         foreach (var c in Cards) TrackZIndex(c.ZIndex);
 
-        // Also update local storage so they stay in sync even when offline next time
-        _layoutService.RequestSave(profile);
+        // Also update local storage so the layout stays in sync even when offline next time - but
+        // layer only the layout fields this method actually applied onto THIS device's own profile
+        // (the same "base on CurrentProfile" shape TriggerSave/DismissCoachMark already use), not the
+        // received profile wholesale. `profile` here is the CONNECTED HOST's own DashboardProfile -
+        // a loopback self-connect's host_dashboard_layout.json is a separate, machine-wide file from
+        // this device's per-user one - and it carries its own Customization, Language, Wake-on-LAN,
+        // etc. Saving it wholesale silently overwrote this device's own settings with the host's the
+        // moment a sync arrived, which is how an explicit Light/seed theme reverted to whatever the
+        // host's profile happened to carry (RemEx-hmigd).
+        var localBase = _layoutService.CurrentProfile ?? _profile;
+        _layoutService.RequestSave(localBase with
+        {
+            Cards = profile.Cards ?? new(),
+            PinnedSensorIds = profile.PinnedSensorIds ?? new(),
+            IsSnapToGridEnabled = profile.IsSnapToGridEnabled,
+            GridSize = profile.GridSize,
+        });
 
         // Refresh home pinned sensors if the home view is cached, but do NOT
         // forcibly navigate — the user may be on a different screen.
@@ -1384,14 +1872,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             sensor.AlertTriggered -= OnSensorAlertTriggered;
 
-            // PropertyChanged is subscribed once per SensorViewModel at creation (line ~922) but was
-            // never detached here, so every sensor kept this view model alive for its own lifetime
-            // (a leak) and, on the reconnect/relabel path that recreates subscriptions, could leave
-            // OnSensorCustomizationChanged firing more than once per property change.
+            // Paired with the re-attach above, which is the whole of RemEx-9qgb: detaching here was
+            // always correct, but nothing re-attached on reconnect, so customization silently stopped
+            // being saved. Note the direction — a subscription stores a delegate on the SENSOR whose
+            // target is this dashboard, so it is the sensor that holds the dashboard alive, not the
+            // reverse; and the dashboard retains every view model through Cards/StagedCards anyway
+            // ("created on first sighting, never dropped on disconnect"). So this detach is not what
+            // releases the view models, whatever earlier comments here claimed.
             sensor.PropertyChanged -= OnSensorCustomizationChanged;
         }
 
-        _subscribedSensorNames.Clear();
+        _subscribedSensorIdentities.Clear();
     }
 
     /// <summary>
@@ -1411,6 +1902,13 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         Cards.CollectionChanged -= OnCardsCollectionChanged;
         StagedCards.CollectionChanged -= OnStagedCardsCollectionChanged;
         SelectedCards.CollectionChanged -= OnSelectedCardsChanged;
+        _alertStore.Changed -= OnAlertStoreChanged;
+        _alertTracker.TrippedChanged -= OnTrippedChanged;
+
+        // Every card's PropertyChanged mirror onto its (session-lived) Sensor, unsubscribed
+        // (RemEx-8wpvr.2, MEDIUM) — same reasoning as every Cards.Remove call site above.
+        foreach (var card in Cards.Concat(StagedCards))
+            card.Detach();
     }
 }
 

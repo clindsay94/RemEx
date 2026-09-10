@@ -37,11 +37,15 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 _lastTotalCpuTime = currentTotalCpuTime;
             }
 
-            var processDirs = Directory.GetDirectories("/proc").Where(d => int.TryParse(Path.GetFileName(d), out _)).ToList();
+            // Invariant throughout: /proc is C-locale, and TryComputeStartUnixMs below already parses
+            // it that way. The rest of this file was left on the ambient culture.
+            var processDirs = Directory.GetDirectories("/proc")
+                .Where(d => int.TryParse(Path.GetFileName(d), NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                .ToList();
 
             foreach (var dir in processDirs)
             {
-                if (!int.TryParse(Path.GetFileName(dir), out int pid)) continue;
+                if (!int.TryParse(Path.GetFileName(dir), NumberStyles.Integer, CultureInfo.InvariantCulture, out int pid)) continue;
                 activePids.Add(pid);
 
                 string name = "";
@@ -64,8 +68,8 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                     // After comm: state(0), ppid(1), pgrp(2), session(3), tty_nr(4), tpgid(5),
                     // flags(6), minflt(7), cminflt(8), majflt(9), cmajflt(10), utime(11), stime(12)
                     if (parts.Length < 13) continue;
-                    long utime = long.Parse(parts[11]);
-                    long stime = long.Parse(parts[12]);
+                    long utime = long.Parse(parts[11], NumberStyles.Integer, CultureInfo.InvariantCulture);
+                    long stime = long.Parse(parts[12], NumberStyles.Integer, CultureInfo.InvariantCulture);
                     processTotalCpuTime = utime + stime;
                     startTimeUnixMs = TryComputeStartUnixMs(parts, bootTimeUnixSeconds);
                 }
@@ -74,7 +78,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 try
                 {
                     var statmParts = File.ReadAllText(Path.Combine(dir, "statm")).Split(' ');
-                    long rssPages = long.Parse(statmParts[1]);
+                    long rssPages = long.Parse(statmParts[1], NumberStyles.Integer, CultureInfo.InvariantCulture);
                     memory = rssPages * Environment.SystemPageSize;
                 }
                 catch
@@ -379,7 +383,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 long total = 0;
                 for (int i = 1; i < parts.Length; i++)
                 {
-                    if (long.TryParse(parts[i], out long val)) total += val;
+                    if (long.TryParse(parts[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out long val)) total += val;
                 }
                 return total;
             }

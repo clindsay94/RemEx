@@ -1,0 +1,126 @@
+using System.Runtime.CompilerServices;
+
+namespace Remex.Desktop.Tests.Views;
+
+/// <summary>
+/// RemEx-133ik. Pins <c>TrayBalloonWindow</c> to the Material toast restyle: the app-wide
+/// <c>material:Card</c> surface, a <c>MaterialIcon</c> severity glyph resolved through the same
+/// <c>SnackbarSeverityMapping</c> the in-app snackbar uses, and no leftover hand-styled Border,
+/// hardcoded shadow/brush or Unicode glyph.
+/// </summary>
+/// <remarks>
+/// Source-scan rather than a rendered check, per RemEx-r8c6: there is no Avalonia headless harness
+/// here, so this reads the .axaml and .axaml.cs text directly instead of constructing the window.
+/// </remarks>
+public class TrayBalloonMaterialToastTests
+{
+    // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
+    // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
+
+    private static string AxamlText()
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayBalloonWindow.axaml"));
+
+    private static string CodeBehindText()
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayBalloonWindow.axaml.cs"));
+
+    [Fact]
+    public void Axaml_uses_the_material_card_surface()
+        => Assert.Contains("<material:Card", AxamlText());
+
+    [Fact]
+    public void Axaml_uses_a_material_icon_for_the_severity_glyph()
+        => Assert.Contains("mi:MaterialIcon", AxamlText());
+
+    [Fact]
+    public void Axaml_has_no_hardcoded_box_shadow()
+        => Assert.DoesNotContain("BoxShadow=", AxamlText());
+
+    [Fact]
+    public void Axaml_has_no_hardcoded_glass_brush()
+        => Assert.DoesNotContain("GlassBaseDarkBrush", AxamlText());
+
+    [Fact]
+    public void Axaml_has_no_leftover_glyph_text_block()
+        => Assert.DoesNotContain("GlyphText", AxamlText());
+
+    [Fact]
+    public void Axaml_keeps_the_accent_stripe_that_present_recolours()
+    {
+        // Present() touches AccentStripe by name; a sweep that drops it passes every other
+        // assertion here and only fails at runtime on a surface no test can render.
+        Assert.Contains("x:Name=\"AccentStripe\"", AxamlText());
+        Assert.Contains("Classes=\"accent-stripe\"", AxamlText());
+    }
+
+    [Fact]
+    public void Card_states_its_inside_clipping()
+        // The stripe relies on the Card clipping its content to the rounded corners. Material's
+        // default is True today; stating it keeps a package bump from squaring the corner silently.
+        => Assert.Contains("InsideClipping=\"True\"", AxamlText());
+
+    [Fact]
+    public void CodeBehind_resolves_the_glyph_through_the_shared_severity_mapping()
+        => Assert.Contains("SnackbarSeverityMapping.For(", CodeBehindText());
+
+    [Fact]
+    public void CodeBehind_still_drives_dismissal_with_the_dispatcher_timer()
+        => Assert.Contains("DispatcherTimer", CodeBehindText());
+
+    /// <summary>
+    /// RemEx-alwfa.3 (ripple audit follow-up). The balloon body was a plain <c>StackPanel</c> with
+    /// a <c>PointerPressed</c> handler and Cursor="Hand" — no ripple mechanism at all, since
+    /// StackPanel is not a themed control. <c>ripple:RippleEffect</c> now wraps that body directly.
+    /// </summary>
+    [Fact]
+    public void Axaml_declares_the_material_ripple_namespace()
+        => Assert.Contains("xmlns:ripple=\"clr-namespace:Material.Ripple;assembly=Material.Ripple\"", AxamlText());
+
+    [Fact]
+    public void Axaml_wraps_the_balloon_body_in_a_ripple_effect_carrying_the_press_handler()
+    {
+        var xaml = AxamlText();
+        Assert.Contains("<ripple:RippleEffect", xaml);
+
+        // On the SAME element, not merely present somewhere in the file: the ripple wrapper has to
+        // be what actually receives the press, not a StackPanel that still floats unwired beside it.
+        var rippleOpenTag = xaml[xaml.IndexOf("<ripple:RippleEffect", StringComparison.Ordinal)..];
+        rippleOpenTag = rippleOpenTag[..(rippleOpenTag.IndexOf('>') + 1)];
+        Assert.Contains("PointerPressed=\"OnBalloonPressed\"", rippleOpenTag);
+        Assert.Contains("Cursor=\"Hand\"", rippleOpenTag);
+    }
+
+    [Fact]
+    public void Axaml_tints_the_balloon_ripple_from_the_app_palette_not_materials_default()
+        => Assert.Contains("RippleFill=\"{DynamicResource TextPrimaryBrush}\"", AxamlText());
+
+    /// <summary>
+    /// Review of RemEx-alwfa.3: a ripple started by PointerPressed never draws if the same handler
+    /// hides the window synchronously, because nothing is composited before the dispatcher turn
+    /// ends. The press handler must schedule the hide, and a new Present() must cancel a pending one
+    /// so it cannot take the next balloon down.
+    /// </summary>
+    [Fact]
+    public void CodeBehind_lets_the_press_ripple_draw_before_hiding_the_balloon()
+    {
+        var code = CodeBehindText();
+        var pressBody = MethodBody(code, "OnBalloonPressed");
+
+        var scheduled = pressBody.IndexOf("DispatcherTimer.RunOnce(", StringComparison.Ordinal);
+        var hidden = pressBody.IndexOf("Hide()", StringComparison.Ordinal);
+        Assert.True(scheduled >= 0, "the press handler schedules the hide through DispatcherTimer.RunOnce");
+        Assert.True(hidden > scheduled, "Hide() may only appear inside the scheduled callback, never before it");
+
+        Assert.Contains("_pendingHide?.Dispose()", MethodBody(code, "Present"));
+    }
+
+    private static string MethodBody(string code, string methodName)
+    {
+        var start = code.IndexOf($"void {methodName}(", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"{methodName} exists in the code-behind");
+        var end = code.IndexOf("\n    }", start, StringComparison.Ordinal);
+        Assert.True(end > start, $"{methodName} has a block body to inspect");
+        return code[start..end];
+    }
+}

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -21,9 +22,45 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 class SettingsManager(val context: Context) {
 
         companion object {
+                /**
+                 * Which MAC Wake-on-LAN should use for the PC currently selected (RemEx-263f).
+                 *
+                 * **A MANUAL MAC IS ONLY PREFERRED FOR THE PC IT WAS ENTERED FOR.** The MAC,
+                 * broadcast address and subnet are stored once, globally, while tap-to-connect on a
+                 * Known PC changes only the host - so a MAC typed for PC A was still broadcast after
+                 * switching to PC B. That wakes the wrong machine, and it does so silently: nothing on
+                 * the phone looks wrong, and the machine that woke is not the one being looked at. The
+                 * typed-address path at least showed a MAC field to notice; tap-to-connect shows none.
+                 *
+                 * **A BLANK [manualHost] STILL PREFERS THE MANUAL MAC, DELIBERATELY.** That is the
+                 * pre-RemEx-263f data of anyone upgrading, and the alternative - treating unknown as
+                 * mismatched - would silently discard a MAC someone set on purpose for a different NIC
+                 * or a router quirk, which the manual slot exists to respect. Those installs heal the
+                 * next time settings are saved, since the host is recorded in the same edit.
+                 */
+                internal fun resolveMacAddress(
+                        manual: String,
+                        manualHost: String,
+                        hostReported: String,
+                        currentHost: String,
+                ): String {
+                        val manualAppliesHere =
+                                manual.isNotBlank() &&
+                                        (manualHost.isBlank() || manualHost == currentHost)
+                        return if (manualAppliesHere) manual else hostReported
+                }
+
                 val HOST_KEY = stringPreferencesKey("host")
                 val PORT_KEY = intPreferencesKey("port")
                 val MAC_KEY = stringPreferencesKey("mac_address")
+                // The MAC the HOST reported in host_info, kept apart from the one the user typed
+                // so auto-discovery can never overwrite a manual entry (RemEx-izuj).
+                val HOST_MAC_KEY = stringPreferencesKey("host_mac_address")
+                // The host the MANUAL mac was entered for (RemEx-263f). MAC, broadcast and subnet
+                // are stored globally, but tap-to-connect on a Known PC changes only the host - so a
+                // manual MAC entered for PC A was still being broadcast after switching to PC B,
+                // silently waking the wrong machine with nothing on screen to notice.
+                val MAC_MANUAL_HOST_KEY = stringPreferencesKey("mac_manual_host")
                 val BROADCAST_IP_KEY = stringPreferencesKey("broadcast_ip")
                 val SUBNET_MASK_KEY = stringPreferencesKey("subnet_mask")
 
@@ -39,7 +76,11 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
                 val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
                 // Persisted display-target selection token: "" (primary/default), "virtual"
-                // (both screens combined), or "monitor:<displayId>" for a specific monitor.
+                // (both screens combined), or "monitorkey:<persistentDisplayKey>" for a specific
+                // monitor. NOT "monitor:<displayId>" - that was the pre-RemEx-ynur format and is
+                // session-scoped, so it silently resolved to a different physical screen after a
+                // replug. Old values are deliberately left unrecognised so they fall through to the
+                // primary display rather than being reinterpreted.
                 val DESKTOP_DISPLAY_TARGET_KEY = stringPreferencesKey("desktop_display_target")
                 val VERTICAL_SCROLL_SENSITIVITY_KEY =
                         floatPreferencesKey("vertical_scroll_sensitivity")
@@ -221,8 +262,26 @@ class SettingsManager(val context: Context) {
         val portFlow: Flow<Int> =
                 context.dataStore.data.map { preferences -> preferences[PORT_KEY] ?: 5005 }
 
+        /**
+         * The MAC to wake: what the user typed if they typed one, otherwise what the host told us.
+         *
+         * MANUAL WINS BY DESIGN (RemEx-izuj). Wake-on-LAN was already built end to end and still
+         * needed the one setup step a non-technical user cannot do - reading their PC's MAC off a
+         * screen and typing it in. The host now reports it, so the common case needs no entry at
+         * all; but a user who has deliberately set one (a different NIC, a router quirk) keeps it.
+         *
+         * Existing consumers - the Wake-on-LAN card and the quick-settings tile - read this flow, so
+         * they inherit the prefill without a UI change.
+         */
         val macAddressFlow: Flow<String> =
-                context.dataStore.data.map { preferences -> preferences[MAC_KEY] ?: "" }
+                context.dataStore.data.map { preferences ->
+                        resolveMacAddress(
+                                manual = preferences[MAC_KEY] ?: "",
+                                manualHost = preferences[MAC_MANUAL_HOST_KEY] ?: "",
+                                hostReported = preferences[HOST_MAC_KEY] ?: "",
+                                currentHost = preferences[HOST_KEY] ?: "",
+                        )
+                }
 
         val broadcastIpFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
@@ -381,6 +440,8 @@ class SettingsManager(val context: Context) {
                         preferences[HOST_KEY] = host
                         preferences[PORT_KEY] = port
                         preferences[MAC_KEY] = mac
+                        // Recorded in the same edit as the host it belongs to (RemEx-263f).
+                        preferences[MAC_MANUAL_HOST_KEY] = host
                         preferences[BROADCAST_IP_KEY] = broadcast
                         preferences[SUBNET_MASK_KEY] = subnetMask
                 }
@@ -407,10 +468,19 @@ class SettingsManager(val context: Context) {
                 context.dataStore.edit { it[DESKTOP_UNLIMITED_WARNING_SHOWN_KEY] = true }
         }
 
-        suspend fun saveRemoteDesktopDisplayTarget(token: String) {
+        suspend fun saveRemoteDesktopDisplayTarget(target: String) {
                 context.dataStore.edit { preferences ->
-                        preferences[DESKTOP_DISPLAY_TARGET_KEY] = token
+                        preferences[DESKTOP_DISPLAY_TARGET_KEY] = target
                 }
+        }
+
+        /**
+         * Records the MAC the host reported. Ignores a blank, which is how a host with no suitable
+         * adapter says "ask the user" (RemEx-izuj).
+         */
+        suspend fun saveHostReportedMacAddress(mac: String) {
+                if (mac.isBlank()) return
+                context.dataStore.edit { preferences -> preferences[HOST_MAC_KEY] = mac }
         }
 
         suspend fun markOnboardingCompleted() {
@@ -679,5 +749,200 @@ class SettingsManager(val context: Context) {
 
         suspend fun setFileTrustAutoAccept(deviceId: String, enabled: Boolean) {
                 context.dataStore.edit { prefs -> prefs[fileTrustAutoAcceptKey(deviceId)] = enabled }
+        }
+
+        // ── Known PCs: per-PC nickname and last-connected record (RemEx-k62t) ─────
+        // Keyed by HostIdentity, NEVER by address: one PC answers at a LAN IP, a Tailscale address
+        // and a hostname, so an address-keyed nickname would show one machine three times with a
+        // third of the user's settings each. Same prefixed-key shape as fileTrust_ above; the
+        // scheme itself lives in KnownHosts so it can be tested without DataStore.
+
+        private fun knownHostNicknameKey(identity: String) =
+                stringPreferencesKey(KnownHosts.nicknameKeyName(identity))
+
+        private fun knownHostLastAddressKey(identity: String) =
+                stringPreferencesKey(KnownHosts.lastAddressKeyName(identity))
+
+        private fun knownHostLastPortKey(identity: String) =
+                intPreferencesKey(KnownHosts.lastPortKeyName(identity))
+
+        private fun knownHostLastConnectedKey(identity: String) =
+                longPreferencesKey(KnownHosts.lastConnectedKeyName(identity))
+
+        val knownHostRecordsFlow: Flow<Map<String, KnownHostRecord>> =
+                context.dataStore.data.map { prefs ->
+                        KnownHosts.parseRecords(prefs.asMap().mapKeys { it.key.name })
+                }
+
+        /** Blank clears the nickname rather than storing one, so the row falls back to its address. */
+        suspend fun setKnownHostNickname(identity: String, nickname: String) {
+                if (identity.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val trimmed = nickname.trim()
+                        if (trimmed.isEmpty()) prefs.remove(knownHostNicknameKey(identity))
+                        else prefs[knownHostNicknameKey(identity)] = trimmed
+                }
+        }
+
+        /**
+         * Records a connection that actually succeeded.
+         *
+         * Attempts are deliberately not recorded: "last connected" ordering the user can trust has
+         * to mean connected, or a PC that is powered off climbs to the top of the list every time
+         * they try it and fail.
+         */
+        suspend fun recordKnownHostConnection(
+                identity: String,
+                address: String,
+                port: Int,
+                atMillis: Long
+        ) {
+                if (identity.isBlank() || address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        prefs[knownHostLastAddressKey(identity)] = address
+                        prefs[knownHostLastPortKey(identity)] = port
+                        prefs[knownHostLastConnectedKey(identity)] = atMillis
+                }
+        }
+
+        /**
+         * Moves a PC's remembered details onto the identity it has after a certificate change
+         * (RemEx-bye7).
+         *
+         * ONLY THE NICKNAME IS CARRIED, and the omissions are the point. The address, port and
+         * timestamp are all being written by the connection that triggered this, so copying the old
+         * ones would either be redundant or actively wrong — an older "last connected" would sort
+         * the PC the user is sitting on below one they have not touched in a week. The nickname is
+         * the only thing here that a person chose and that no reconnection can reproduce.
+         *
+         * A NICKNAME ALREADY ON THE DESTINATION WINS, and the case is DHCP address reuse rather than
+         * a contrived one. PC A, "Studio", was paired at 192.168.1.50; the router later gives .50 to
+         * PC B, which is separately paired under its own hostname and named "Laptop". Connecting to
+         * .50 shows a certificate change, the user believes the reinstall story and confirms — and
+         * the re-pair derives PC B's identity, which already has a live row. The recorded decision
+         * covers a NEW row inheriting a name; it does not cover silently relabelling a different PC
+         * the user is still paired to. Skipping the write also makes this idempotent under replay.
+         *
+         * A blank source nickname is not written either, so a PC that never had one does not gain an
+         * empty entry.
+         *
+         * The source's remaining keys are then dropped. NOTE WHAT THAT DOES AND DOES NOT DO: it does
+         * not make the old row disappear. Rows come from the pinned-host map via
+         * `KnownHosts.build`/`groupByIdentity`, and the old one goes because `confirmCertRepair`
+         * called `PinnedHostStore.forgetHost`, which removes every alias holding the old hash. This
+         * removal is orphan-preference hygiene — worth doing so a dead identity stops carrying a
+         * nickname and a timestamp, but not the mechanism that clears the list.
+         *
+         * This and the `recordKnownHostConnection` that follows it are two separate DataStore
+         * transactions, deliberately not merged. Cancellation between them leaves the new row named
+         * but unstamped, which the next connection repairs, and the nickname — the thing that cannot
+         * be reproduced — is the half that lands first.
+         */
+        suspend fun migrateKnownHostIdentity(oldIdentity: String, newIdentity: String) {
+                if (oldIdentity.isBlank() || newIdentity.isBlank()) return
+                if (oldIdentity == newIdentity) return
+                context.dataStore.edit { prefs ->
+                        val nickname = prefs[knownHostNicknameKey(oldIdentity)]?.trim()
+                        val destinationAlreadyNamed =
+                                !prefs[knownHostNicknameKey(newIdentity)].isNullOrBlank()
+                        if (!nickname.isNullOrEmpty() && !destinationAlreadyNamed) {
+                                prefs[knownHostNicknameKey(newIdentity)] = nickname
+                        }
+
+                        prefs.remove(knownHostNicknameKey(oldIdentity))
+                        prefs.remove(knownHostLastAddressKey(oldIdentity))
+                        prefs.remove(knownHostLastPortKey(oldIdentity))
+                        prefs.remove(knownHostLastConnectedKey(oldIdentity))
+                }
+        }
+
+        /**
+         * Drops everything remembered about one PC.
+         *
+         * Called when the user unpairs it. Leaving the nickname behind would silently re-attach it
+         * to the next PC that derived the same identity — which can only be the same machine, but
+         * would also mean an unpair that did not forget.
+         */
+        suspend fun forgetKnownHost(identity: String) {
+                if (identity.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        prefs.remove(knownHostNicknameKey(identity))
+                        prefs.remove(knownHostLastAddressKey(identity))
+                        prefs.remove(knownHostLastPortKey(identity))
+                        prefs.remove(knownHostLastConnectedKey(identity))
+                }
+        }
+
+        // ── Recent connections: the last few ADDRESSES, whichever PC (RemEx-obxlo) ───
+        // The mirror image of the known-host record above, and both are needed. That one is
+        // identity-keyed so a machine reached three ways keeps one nickname; this one is
+        // address-keyed because "where did I connect" is a question the identity grouping
+        // deliberately throws away. Not derived from the pinned-host store either, so an entry
+        // outlives its pairing and a reinstalled PC stays one tap from being paired again.
+        //
+        // The whole list lives under one key so it is rewritten atomically; the ordering, the caps
+        // and the parsing live in RecentConnections, where they can be tested without DataStore.
+
+        private val recentConnectionsKey = stringPreferencesKey(RecentConnections.KeyName)
+
+        val recentConnectionsFlow: Flow<List<RecentConnection>> =
+                context.dataStore.data.map { prefs ->
+                        RecentConnections.parse(prefs[recentConnectionsKey])
+                }
+
+        /**
+         * Records a connection that actually succeeded.
+         *
+         * The read-modify-write happens INSIDE the transaction rather than against a value read
+         * beforehand. Two connections landing close together — a host switch is exactly that — would
+         * otherwise both start from the same list and the second would drop the first.
+         */
+        suspend fun recordRecentConnection(
+                address: String,
+                port: Int,
+                identity: String,
+                atMillis: Long
+        ) {
+                if (address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.record(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        address = address,
+                                        port = port,
+                                        identity = identity,
+                                        atMillis = atMillis
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
+        }
+
+        /** Drops every remembered address of a PC the user just unpaired. */
+        suspend fun forgetRecentConnectionsOf(identity: String, addresses: Collection<String>) {
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.forgetMachine(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        identity = identity,
+                                        addresses = addresses
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
+        }
+
+        /** Drops one address, for a row no unpair can reach because nothing is paired at it. */
+        suspend fun forgetRecentConnection(address: String) {
+                if (address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.forgetAddress(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        address = address
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
         }
 }

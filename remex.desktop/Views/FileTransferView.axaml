@@ -1,8 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
     x:Class="Remex.Desktop.Views.FileTransferView"
     x:DataType="vm:FileTransferViewModel"
     DragDrop.AllowDrop="True">
@@ -12,74 +15,6 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="CornerRadius" Value="0"/>
-        </Style>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.action-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.subtle-btn">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.subtle-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.danger-btn">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
-            <Setter Property="Padding" Value="12,7"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
-        <Style Selector="Button.danger-btn:disabled">
-            <Setter Property="Opacity" Value="0.35"/>
-        </Style>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Padding" Value="6"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="14"/>
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        </Style>
-        <Style Selector="Button.crumb-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.crumb-btn:pointerover">
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -92,34 +27,38 @@
         </StackPanel>
 
         <!-- ═══ REMOTE FILE MANAGER ═══ -->
-        <Border Grid.Row="1" Classes="glass-card" Padding="0" ClipToBounds="True">
+        <material:Card Grid.Row="1" Padding="0" InsideClipping="True">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*">
 
                 <!-- Row 0: Root selector + search + volumes -->
                 <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
                     <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SharedFolderLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="180" HorizontalAlignment="Stretch">
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SharedFolderLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="180" HorizontalAlignment="Stretch" AutomationProperties.Name="{local:Localize FileTransfer_SharedFolderLabel}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:FileSharedRoot">
                                     <StackPanel Spacing="2">
                                         <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{local:Localize FileTransfer_ReadOnly}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsWritable}"/>
+                                        <TextBlock Text="{local:Localize FileTransfer_ReadOnly}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsWritable}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
 
-                        <TextBox Grid.Column="2" Text="{Binding SearchQuery}" Watermark="{local:Localize FileTransfer_SearchWatermark}" Width="200" Margin="10,0,0,0" IsEnabled="{Binding SupportsSearch}" IsVisible="{Binding SupportsSearch}" VerticalContentAlignment="Center" CornerRadius="8"/>
+                        <TextBox Grid.Column="2" Text="{Binding SearchQuery}" PlaceholderText="{local:Localize FileTransfer_SearchWatermark}" Width="200" Margin="10,0,0,0" IsEnabled="{Binding SupportsSearch}" IsVisible="{Binding SupportsSearch}" VerticalContentAlignment="Center" AutomationProperties.Name="{local:Localize FileTransfer_SearchWatermark}"/>
 
-                        <Button Grid.Column="3" Content="🖴" Classes="icon-btn" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0"/>
-                        <Button Grid.Column="4" Content="↺" Classes="icon-btn" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0">
+                            <mi:MaterialIcon Kind="Harddisk" Width="18" Height="18"/>
+                        </Button>
+                        <Button Grid.Column="4" Classes="tertiary icon-button" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0">
+                            <mi:MaterialIcon Kind="Sync" Width="18" Height="18"/>
+                        </Button>
                     </Grid>
                     <!-- Explains WHY upload is unavailable on a read-only root, which is otherwise
                          only discoverable by trying it and failing. Bound rather than declared and
                          unused: the property and its three localized strings already existed (RemEx-4p27). -->
-                    <TextBlock Text="{Binding RemoteRootHint}" FontSize="11" TextWrapping="Wrap"
+                    <TextBlock Text="{Binding RemoteRootHint}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextMutedBrush}"/>
                     </StackPanel>
                 </Border>
@@ -137,8 +76,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:BreadcrumbSegment">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="›" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="2,0"/>
-                                            <Button Classes="crumb-btn" Content="{Binding Label}"
+                                            <mi:MaterialIcon Kind="ChevronRight" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0"/>
+                                            <Button Classes="tertiary compact" Content="{Binding Label}"
                                                     Command="{Binding $parent[ItemsControl].((vm:FileTransferViewModel)DataContext).NavigateBreadcrumbCommand}"
                                                     CommandParameter="{Binding}"/>
                                         </StackPanel>
@@ -146,23 +85,39 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                        <Button Grid.Column="1" Content="📌" Classes="icon-btn" Command="{Binding PinCurrentFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="2" Content="✕" Classes="icon-btn" Command="{Binding RemoveCurrentRootCommand}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="3" Content="↑" Classes="icon-btn" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0"/>
-                        <Button Grid.Column="4" Content="↻" Classes="icon-btn" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_RefreshTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RefreshTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="1" Classes="tertiary icon-button" Command="{Binding PinCurrentFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0">
+                            <mi:MaterialIcon Kind="Pin" Width="18" Height="18"/>
+                        </Button>
+                        <Button Grid.Column="2" Classes="tertiary icon-button" Command="{Binding RemoveCurrentRootCommand}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0">
+                            <mi:MaterialIcon Kind="Close" Width="18" Height="18"/>
+                        </Button>
+                        <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0">
+                            <mi:MaterialIcon Kind="ArrowUp" Width="18" Height="18"/>
+                        </Button>
+                        <Button Grid.Column="4" Classes="tertiary icon-button" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_RefreshTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RefreshTooltip}" Margin="4,0,0,0">
+                            <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"/>
+                        </Button>
                     </Grid>
                 </Border>
 
                 <!-- Row 2: Sort bar -->
                 <Border Grid.Row="2" Padding="12,6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{local:Localize FileTransfer_SortLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
-                        <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
-                        <TextBlock Text="{Binding SortDescending, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=↓|↑}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                        <Button Classes="crumb-btn" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0" Content="{Binding IsIconView, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=☰|▦}"/>
-                        <Slider Minimum="64" Maximum="176" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}"/>
+                        <TextBlock Text="{local:Localize FileTransfer_SortLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
+                        <Panel VerticalAlignment="Center">
+                            <mi:MaterialIcon Kind="SortDescending" Width="16" Height="16" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding SortDescending}"/>
+                            <mi:MaterialIcon Kind="SortAscending" Width="16" Height="16" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !SortDescending}"/>
+                        </Panel>
+                        <Button Classes="tertiary compact" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0">
+                            <Panel>
+                                <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" IsVisible="{Binding !IsIconView}"/>
+                                <mi:MaterialIcon Kind="ViewGrid" Width="16" Height="16" IsVisible="{Binding IsIconView}"/>
+                            </Panel>
+                        </Button>
+                        <Slider Minimum="64" Maximum="176" SmallChange="8" LargeChange="32" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_IconSizeTooltip}"/>
                     </StackPanel>
                 </Border>
 
@@ -170,26 +125,38 @@
                 <Border Grid.Row="3" Padding="12,10,12,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding !IsRenaming}">
                     <StackPanel>
                         <WrapPanel Orientation="Horizontal" IsVisible="{Binding !IsCreatingFolder}">
-                            <Button Content="{local:Localize FileTransfer_UploadBtn}" Classes="action-btn" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_SendToPhoneBtn}" Classes="action-btn" Command="{Binding SendFileCommand}" ToolTip.Tip="{local:Localize FileTransfer_SendToPhoneTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_DownloadBtn}" Classes="subtle-btn" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="subtle-btn" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_RenameBtn}" Classes="subtle-btn" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_CopyBtn}" Classes="subtle-btn" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_CutBtn}" Classes="subtle-btn" Command="{Binding CutSelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CutTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_PasteBtn}" Classes="subtle-btn" Command="{Binding PasteCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_PasteTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_PropertiesBtn}" Classes="subtle-btn" Command="{Binding ShowPropertiesCommand}" ToolTip.Tip="{local:Localize FileTransfer_PropertiesTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_SelectAllBtn}" Classes="subtle-btn" Command="{Binding SelectAllCommand}" ToolTip.Tip="{local:Localize FileTransfer_SelectAllTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="subtle-btn" Command="{Binding VerifyHashCommand}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_DeleteBtn}" Classes="danger-btn" Command="{Binding DeleteRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadBtn}" Classes="primary compact" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
+                            <!-- "Send to phone" REMOVED (RemEx-74kfg), not hidden. It never sent anything to a
+                                 phone: SendFileAsync was byte-identical to UploadAsync bar a queue label, so it
+                                 uploaded into the HOST's own shared root over loopback. Worse than misleading —
+                                 when the picked file already lived in a shared root the host resolved the
+                                 destination to that same path and opened it for write while the client held it
+                                 for read, so the transfer failed with "The process cannot access the file ...
+                                 because it is being used by another process". Connor hit that twice pushing a
+                                 photo from Pictures on 2026-08-20.
+
+                                 The button beside it, Upload, is what this actually did. Restore a phone-directed
+                                 action when there is a PC-to-phone channel to carry it (RemEx-uov9y), and give it
+                                 its own code path rather than this one. -->
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="secondary compact" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadBtn}" Classes="secondary compact" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="secondary compact" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="secondary compact" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_RenameBtn}" Classes="secondary compact" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CopyBtn}" Classes="secondary compact" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CutBtn}" Classes="secondary compact" Command="{Binding CutSelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CutTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PasteBtn}" Classes="secondary compact" Command="{Binding PasteCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_PasteTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PropertiesBtn}" Classes="secondary compact" Command="{Binding ShowPropertiesCommand}" ToolTip.Tip="{local:Localize FileTransfer_PropertiesTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_SelectAllBtn}" Classes="secondary compact" Command="{Binding SelectAllCommand}" ToolTip.Tip="{local:Localize FileTransfer_SelectAllTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="secondary compact" Command="{Binding VerifyHashCommand}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DeleteBtn}" Classes="secondary danger compact" Command="{Binding DeleteRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
                         </WrapPanel>
 
                         <!-- New folder input -->
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding IsCreatingFolder}" Margin="0,0,0,8">
-                            <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_NewFolderLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding NewFolderName}" Watermark="{local:Localize FileTransfer_NewFolderWatermark}" FontSize="12" CornerRadius="6" Padding="8,4"/>
-                            <Button Grid.Column="2" Content="{local:Localize FileTransfer_CreateFolderConfirmBtn}" Classes="action-btn" Command="{Binding ConfirmNewFolderCommand}" Margin="8,0,8,0"/>
-                            <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="danger-btn" Command="{Binding CancelNewFolderCommand}" Margin="0"/>
+                            <TextBox Grid.Column="1" Text="{Binding NewFolderName}" PlaceholderText="{local:Localize FileTransfer_NewFolderWatermark}" FontSize="12" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize FileTransfer_NewFolderLabel}" AutomationProperties.Name="{local:Localize FileTransfer_NewFolderLabel}"/>
+                            <Button Grid.Column="2" Content="{local:Localize FileTransfer_CreateFolderConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmNewFolderCommand}" Margin="8,0,8,0"/>
+                            <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelNewFolderCommand}" Margin="0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -197,18 +164,65 @@
                 <!-- Row 3: Action bar (rename mode) -->
                 <Border Grid.Row="3" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding IsRenaming}">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBox Grid.Column="1" Text="{Binding RenameInputText}" Watermark="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="12" CornerRadius="6" Padding="8,4"/>
-                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_RenameConfirmBtn}" Classes="action-btn" Command="{Binding ConfirmRenameCommand}" Margin="8,0,8,0"/>
-                        <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="danger-btn" Command="{Binding CancelRenameCommand}" Margin="0"/>
+                        <TextBox Grid.Column="1" Text="{Binding RenameInputText}" PlaceholderText="{local:Localize FileTransfer_RenameInputPlaceholder}" FontSize="12" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize FileTransfer_RenameInputPlaceholder}" AutomationProperties.Name="{local:Localize FileTransfer_RenameInputPlaceholder}"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_RenameConfirmBtn}" Classes="primary compact" Command="{Binding ConfirmRenameCommand}" Margin="8,0,8,0"/>
+                        <Button Grid.Column="3" Content="{local:Localize FileTransfer_RenameCancelBtn}" Classes="secondary danger compact" Command="{Binding CancelRenameCommand}" Margin="0"/>
                     </Grid>
                 </Border>
 
-                <!-- Row 4/5: Content (file list / search results + properties pane) -->
+                <!-- Row 4: Filename collision prompt (RemEx-6vd8 protocol, PC half)
+
+                     ROW 4 WAS FREE, and that is why it is used rather than a third IsVisible on row
+                     3. Avalonia's compiled bindings have no `&&`, so hiding the action bar for a
+                     third mode would have meant a new computed property on the view model purely to
+                     express "not renaming AND not prompting". A row of its own says the same thing
+                     with no extra state to keep in step.
+
+                     EVERY SENTENCE HERE IS LOCALIZED AND NONE OF IT IS THE HOST'S. The host sends a
+                     code; PendingConflict.Message resolves it against Strings.resx. That is the
+                     whole reason FileTransferErrorCodes exists - see remex.core. -->
+                <Border Grid.Row="4" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding HasConflictPrompt}">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="FileAlert" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize FileTransfer_ConflictTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding PendingConflict.Message}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <WrapPanel Orientation="Horizontal">
+                            <!-- KEEP BOTH FIRST AND REPLACE SECOND, matching FileConflictPolicy's
+                                 render order and the phone's sheet. Position is a stronger
+                                 recommendation than emphasis: the first button is the one a hurried
+                                 user presses, and it must not be the one that destroys a file. Not
+                                 Classes="primary": row 3's Upload stays visible (and enabled - see
+                                 FileTransferViewModel.CanUpload) while this row is showing, so a
+                                 second .primary here would put two accent CTAs in the same Card at
+                                 once - exactly what AtMostOnePrimaryButtonPerViewSurface forbids
+                                 (RemEx-cgrv3). -->
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictKeepBothBtn}" Classes="secondary compact" Command="{Binding KeepBothOnConflictCommand}" IsVisible="{Binding PendingConflict.CanKeepBoth}" ToolTip.Tip="{local:Localize FileTransfer_ConflictKeepBothTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictReplaceBtn}" Classes="secondary danger compact" Command="{Binding ReplaceOnConflictCommand}" IsVisible="{Binding PendingConflict.CanReplace}" ToolTip.Tip="{local:Localize FileTransfer_ConflictReplaceTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictSkipBtn}" Classes="secondary compact" Command="{Binding SkipOnConflictCommand}" ToolTip.Tip="{local:Localize FileTransfer_ConflictSkipTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictCancelBtn}" Classes="tertiary compact" Command="{Binding CancelOnConflictCommand}" ToolTip.Tip="{local:Localize FileTransfer_ConflictCancelTooltip}"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Row 5: Content (file list / search results + properties pane) -->
                 <Grid Grid.Row="5" ColumnDefinitions="*,Auto">
 
                     <Grid Grid.Column="0">
-                        <TextBlock Text="{local:Localize FileTransfer_Loading}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+                        <!-- The word "Loading" on its own says a request was made, not that it is
+                             still running. The indeterminate ring is the part that distinguishes
+                             "working" from "stuck", and a directory listing over a slow link is
+                             exactly where that matters (RemEx-rcgmc). Indeterminate is honest here:
+                             the host sends the listing in one message, so there is no percentage to
+                             report. -->
+                        <StackPanel Orientation="Horizontal" Spacing="10"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    IsVisible="{Binding IsLoading}">
+                            <ProgressBar Classes="circular" IsIndeterminate="True"
+                                         AutomationProperties.Name="{local:Localize FileTransfer_Loading}"/>
+                            <TextBlock Text="{local:Localize FileTransfer_Loading}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
 
                         <!-- Folder listing: details list OR resizable icon grid; hidden during search -->
                         <Panel IsVisible="{Binding !ShowSearchResults}">
@@ -217,10 +231,13 @@
                                     <DataTemplate x:DataType="models:FileEntry">
                                         <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                                <TextBlock Grid.Column="0" Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="2" Text="{Binding ModifiedUnixMs, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" IsVisible="{Binding !IsDirectory}"/>
-                                                <TextBlock Grid.Column="3" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
+                                                <Panel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                    <mi:MaterialIcon Kind="FolderOutline" Width="18" Height="18" IsVisible="{Binding IsDirectory}"/>
+                                                    <mi:MaterialIcon Kind="FileDocumentOutline" Width="18" Height="18" IsVisible="{Binding !IsDirectory}"/>
+                                                </Panel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding ModifiedUnixMs, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" IsVisible="{Binding !IsDirectory}"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -238,15 +255,18 @@
                                     <DataTemplate x:DataType="models:FileEntry">
                                         <Grid RowDefinitions="*,Auto" Margin="6">
                                             <Viewbox Grid.Row="0" Stretch="Uniform" MaxHeight="120">
-                                                <TextBlock Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}"/>
+                                                <Panel>
+                                                    <mi:MaterialIcon Kind="FolderOutline" IsVisible="{Binding IsDirectory}"/>
+                                                    <mi:MaterialIcon Kind="FileDocumentOutline" IsVisible="{Binding !IsDirectory}"/>
+                                                </Panel>
                                             </Viewbox>
-                                            <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+                                            <TextBlock Grid.Row="1" Text="{Binding Name}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </Panel>
-                        <TextBlock Text="{local:Localize FileTransfer_FolderEmpty}" IsVisible="{Binding ShowEmptyFolder}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize FileTransfer_FolderEmpty}" IsVisible="{Binding ShowEmptyFolder}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                         <!-- Search results -->
                         <ListBox ItemsSource="{Binding SearchResults}" SelectionMode="Single" Background="Transparent" BorderThickness="0" IsVisible="{Binding ShowSearchResults}">
@@ -255,12 +275,15 @@
                                     <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1"
                                             Tapped="OnSearchResultTapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <Panel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <mi:MaterialIcon Kind="FolderOutline" Width="18" Height="18" IsVisible="{Binding IsDirectory}"/>
+                                                <mi:MaterialIcon Kind="FileDocumentOutline" Width="18" Height="18" IsVisible="{Binding !IsDirectory}"/>
+                                            </Panel>
                                             <StackPanel Grid.Column="1" Spacing="2">
-                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding RelativePath}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Name}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding RelativePath}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -269,7 +292,7 @@
                         <!-- A finished search that matched nothing, distinct from an empty
                              folder above. Both carry the not-IsLoading term so neither flashes
                              while results are still arriving (RemEx-n69m). -->
-                        <TextBlock Text="{local:Localize FileTransfer_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,32"/>
+                        <TextBlock Text="{local:Localize FileTransfer_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,32"/>
                     </Grid>
 
                     <!-- Properties pane -->
@@ -277,105 +300,131 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="12">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropertiesTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
-                                    <Button AutomationProperties.Name="{local:Localize A11y_Close}" Grid.Column="1" Content="✕" Classes="icon-btn" Command="{Binding ClosePropertiesCommand}"/>
+                                    <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropertiesTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
+                                    <Button AutomationProperties.Name="{local:Localize A11y_Close}" Grid.Column="1" Classes="tertiary icon-button" Command="{Binding ClosePropertiesCommand}">
+                                        <mi:MaterialIcon Kind="Close" Width="18" Height="18"/>
+                                    </Button>
                                 </Grid>
 
                                 <Border IsVisible="{Binding HasThumbnail}" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Center">
                                     <Image Source="{Binding SelectedThumbnailBase64, Converter={x:Static local:Base64ToImageConverter.Instance}}" MaxWidth="180" MaxHeight="180" Stretch="Uniform"/>
                                 </Border>
 
-                                <TextBlock Text="{Binding SelectedRemoteEntry.Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding SelectedRemoteEntry.Name}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
 
                                 <StackPanel Spacing="6" IsVisible="{Binding SelectedMetadata, Converter={x:Static ObjectConverters.IsNotNull}}">
                                     <Grid ColumnDefinitions="Auto,*">
-                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropSize}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.Size, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropSize}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.Size, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding SelectedMetadata.IsDirectory}">
-                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropItems}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.ItemCount}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropItems}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.ItemCount}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <Grid ColumnDefinitions="Auto,*">
-                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropModified}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.ModifiedUtc, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropModified}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.ModifiedUtc, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <Grid ColumnDefinitions="Auto,*">
-                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropCreated}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.CreatedUtc, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropCreated}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.CreatedUtc, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding SelectedMetadata.MimeType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropType}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.MimeType}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PropType}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SelectedMetadata.MimeType}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                                     </Grid>
-                                    <TextBlock Text="{local:Localize FileTransfer_PropReadOnly}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding SelectedMetadata.ReadOnly}"/>
+                                    <TextBlock Text="{local:Localize FileTransfer_PropReadOnly}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding SelectedMetadata.ReadOnly}"/>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>
                 </Grid>
             </Grid>
-        </Border>
+        </material:Card>
 
         <!-- ═══ VOLUMES + QUEUE + STATUS ═══ -->
         <StackPanel Grid.Row="2" Spacing="12" Margin="0,12,0,0">
 
             <!-- Volumes panel (informational; consent-gated) -->
-            <Border Classes="glass-card" Padding="16,12" IsVisible="{Binding HasVolumes}">
+            <material:Card Padding="16,12" IsVisible="{Binding HasVolumes}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="{local:Localize FileTransfer_VolumesTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1"/>
+                    <TextBlock Text="{local:Localize FileTransfer_VolumesTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1"/>
                     <ItemsControl ItemsSource="{Binding Volumes}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:FileVolumeInfo">
                                 <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
-                                    <TextBlock Grid.Column="0" Text="🖴" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <mi:MaterialIcon Grid.Column="0" Kind="Harddisk" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <StackPanel Grid.Column="1" Spacing="2">
-                                        <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{Binding Path}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" FontFamily="Consolas,monospace"/>
+                                        <TextBlock Text="{Binding Label}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Path}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" FontFamily="Consolas,monospace"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding FreeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding FreeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- Transfer queue panel -->
-            <Border Classes="glass-card" Padding="16,12" IsVisible="{Binding HasQueueItems}">
+            <material:Card Padding="16,12" IsVisible="{Binding HasQueueItems}">
                 <StackPanel Spacing="8">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_QueueTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="icon-btn" Command="{Binding ClearCompletedTransfersCommand}"/>
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_QueueTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueCancelAll}" Classes="tertiary compact" Command="{Binding CancelAllTransfersCommand}" ToolTip.Tip="{local:Localize FileTransfer_QueueCancelAllTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_QueueCancelAllTooltip}" Margin="0,0,8,0"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="tertiary compact" Command="{Binding ClearCompletedTransfersCommand}"/>
                     </Grid>
-                    <ItemsControl ItemsSource="{Binding TransferQueue.Items}">
+                    <!--
+                        SCROLLVIEWER + MaxHeight + VirtualizingStackPanel, and all three are load-bearing.
+                        A folder transfer enqueues one item PER FILE, so this list is not a handful of rows -
+                        Connor queued 900 and the window stopped responding (RemEx-u3abk). A bare ItemsControl
+                        defaults to a plain StackPanel, which realizes every row; and the panel sits inside a
+                        StackPanel, so it is measured with INFINITE height, under which a virtualizing panel
+                        would realize everything anyway. The MaxHeight is what gives virtualization a real
+                        viewport to work against, so it is a correctness constraint here rather than styling.
+                    -->
+                    <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding TransferQueue.Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:FileTransferQueueItem">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4">
-                                    <TextBlock Grid.Column="0" Text="{Binding ModeLabel}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="64"/>
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4" AutomationProperties.HelpText="{Binding RateEtaText}">
+                                    <TextBlock Grid.Column="0" Text="{Binding ModeLabel}" Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="64"/>
                                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" CornerRadius="2" IsVisible="{Binding IsActive}"/>
+                                        <TextBlock Text="{Binding FileName}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" IsVisible="{Binding IsActive}"/>
+                                        <!-- "12.3 MB/s · 3 minutes left". Only while active and only once the
+                                             estimator has enough to say something (RemEx-4lcq) - RateEtaText is
+                                             null rather than a placeholder until then, and again once the
+                                             transfer reaches a terminal state. -->
+                                        <TextBlock Text="{Binding RateEtaText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding RateEtaText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding StateLabel}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0"/>
-                                    <Button Grid.Column="3" Content="✕" Classes="icon-btn" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding StateLabel}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0"/>
+                                    <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}">
+                                        <mi:MaterialIcon Kind="Close" Width="18" Height="18"/>
+                                    </Button>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
-            </Border>
+            </material:Card>
 
             <!-- Status / hash -->
-            <Border Classes="glass-card" Padding="16,12">
+            <material:Card Padding="16,12">
                 <Grid RowDefinitions="Auto,Auto">
-                    <TextBlock Grid.Row="0" Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Row="0" Text="{Binding StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,6,0,0" IsVisible="{Binding HasVerifiedHash}">
-                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_HashLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_HashLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <SelectableTextBlock Grid.Column="1" Text="{Binding VerifiedHash}" FontSize="11" FontFamily="Cascadia Code,Consolas,monospace" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </Grid>
                 </Grid>
-            </Border>
+            </material:Card>
         </StackPanel>
 
     </Grid>

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia.Threading;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.Services;
 
@@ -33,13 +34,25 @@ public enum ActivityKind
 
     /// <summary>The connected phone completed its pairing/reconnect handshake with this PC.</summary>
     DeviceConnected,
+
+    /// <summary>
+    /// A phone's connection ended. The detail carries the device and, where the host knows it, WHY.
+    /// </summary>
+    /// <remarks>
+    /// A FEED THAT RECORDS ARRIVALS AND NOT DEPARTURES READS AS THOUGH EVERY PHONE THAT EVER
+    /// CONNECTED IS STILL ATTACHED (RemEx-2xjv). And the reason is not decoration: a phone that
+    /// closed cleanly and one whose socket died are different facts, and this feed is where somebody
+    /// would look to tell a flapping network from a device somebody walked away with.
+    /// </remarks>
+    DeviceDisconnected,
 }
 
 /// <summary>
 /// One entry in the Home recent-activity feed. Only <see cref="Kind"/>, <see cref="Detail"/> and
-/// <see cref="TimestampLocal"/> are persisted; the glyph and description are computed live from the
-/// current UI culture so a language switch relabels existing history correctly (the same lazy-read
-/// approach <c>FileTransferQueueItem</c> uses for its state labels).
+/// <see cref="TimestampLocal"/> are persisted; the description is computed live from the current UI
+/// culture so a language switch relabels existing history correctly (the same lazy-read approach
+/// <c>FileTransferQueueItem</c> uses for its state labels). The leading icon shown for
+/// <see cref="Kind"/> is resolved in XAML via <c>ActivityKindToIconKindConverter</c>, not here.
 /// </summary>
 public sealed class ActivityEntry
 {
@@ -49,20 +62,6 @@ public sealed class ActivityEntry
     public string Detail { get; set; } = string.Empty;
 
     public DateTime TimestampLocal { get; set; }
-
-    /// <summary>Emoji glyph shown at the leading edge of the row.</summary>
-    [JsonIgnore]
-    public string Glyph => Kind switch
-    {
-        ActivityKind.FileReceived => "\U0001F4E5",   // 📥
-        ActivityKind.FileSent => "\U0001F4E4",       // 📤
-        ActivityKind.FileUploaded => "⬆️", // ⬆️
-        ActivityKind.FileDownloaded => "⬇️", // ⬇️
-        ActivityKind.AppLaunched => "\U0001F680",    // 🚀
-        ActivityKind.CommandRun => "⚡",         // ⚡
-        ActivityKind.DeviceConnected => "\U0001F4F1", // 📱
-        _ => "•",                               // •
-    };
 
     /// <summary>Localized one-line description, e.g. "Sent report.pdf to phone".</summary>
     [JsonIgnore]
@@ -119,13 +118,24 @@ public sealed class ActivityService
     /// <summary>Live, newest-first feed bound by the Home page. Mutated only on the UI thread.</summary>
     public ObservableCollection<ActivityEntry> Recent { get; } = new();
 
+    /// <summary>
+    /// The activity file: the per-user RemEx directory, or the test redirect when it is set. This
+    /// singleton is reachable from the agent's message handlers, so a test that drove a transfer or
+    /// a ping appended fixture entries to the developer's own activity feed (RemEx-ln0k).
+    /// </summary>
+    private static string DefaultFilePath =>
+        Path.Combine(RemexDataPaths.PerUserDirectory, "recent_activity.json");
+
+    /// <summary>Exposes the resolved default path so tests can assert the redirect covers it.</summary>
+    internal static string DefaultFilePathForTests => DefaultFilePath;
+
+    /// <summary>The file this instance actually resolved, so a test can pin the constructor.</summary>
+    internal string FilePathForTests => _filePath;
+
     private ActivityService()
     {
-        var appData = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Remex");
-        Directory.CreateDirectory(appData);
-        _filePath = Path.Combine(appData, "recent_activity.json");
+        _filePath = DefaultFilePath;
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
         Load();
     }
 

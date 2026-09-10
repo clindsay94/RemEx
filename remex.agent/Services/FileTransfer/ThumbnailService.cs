@@ -134,7 +134,10 @@ public sealed class ThumbnailService
         var targetH = Math.Max(1, (int)Math.Round(source.Height * scale));
 
         var dst = new SKBitmap(new SKImageInfo(targetW, targetH, source.ColorType, source.AlphaType));
-        if (source.ScalePixels(dst, SKFilterQuality.Medium))
+        // Medium's SkiaSharp 3 equivalent: bilinear filter with mipmapping on reduction
+        // (RemEx-jcma3). Thumbnails are always a reduction, which is exactly the case the mipmap
+        // half covers.
+        if (source.ScalePixels(dst, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear)))
             return dst;
 
         dst.Dispose();

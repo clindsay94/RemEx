@@ -133,6 +133,22 @@ Copy-Item (Join-Path $PublishDir "*") $InstallDir -Recurse -Force
 Write-Host "Files updated." -ForegroundColor Green
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 3b. Re-apply the signed uiAccess=true manifest to the installed apphost.
+#     The publish output ships an unsigned, uiAccess="false" Remex.Agent.exe, so the
+#     copy above reverts the privilege that lets the agent drive a Windows UAC prompt
+#     remotely. Re-sign it here while the process is still stopped (step 1) and the
+#     file is unlocked. Requires PromptOnSecureDesktop=0 to be useful (machine policy,
+#     left to the operator). (RemEx-ywl7o)
+# ─────────────────────────────────────────────────────────────────────────────
+$agentExe = Join-Path $InstallDir "Remex.Agent.exe"
+try {
+    & (Join-Path $PSScriptRoot "sign-uiaccess.ps1") -ExePath $agentExe
+} catch {
+    Write-Warning "Could not apply signed uiAccess manifest to $agentExe : $_"
+    Write-Warning "Remote control of UAC prompts will not work until this succeeds (see scripts\sign-uiaccess.ps1)."
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 4. Start RemEx again (unless -NoRestart).
 # ─────────────────────────────────────────────────────────────────────────────
 if ($NoRestart) {

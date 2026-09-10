@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -150,7 +151,7 @@ public sealed class WindowsDesktopWindowControlService : IDesktopWindowControlSe
 
             results.Add(new DesktopWindowInfo
             {
-                Id = hwnd.ToInt64().ToString(),
+                Id = hwnd.ToInt64().ToString(CultureInfo.InvariantCulture),
                 Title = title,
                 ClassName = classBuffer.ToString(),
                 ProcessId = pid == 0 ? null : pid,
@@ -167,10 +168,19 @@ public sealed class WindowsDesktopWindowControlService : IDesktopWindowControlSe
         return results;
     }
 
-    private static bool TryParseHandle(string? windowId, out IntPtr hwnd)
+    internal static bool TryParseHandle(string? windowId, out IntPtr hwnd)
     {
         hwnd = IntPtr.Zero;
-        if (string.IsNullOrWhiteSpace(windowId) || !long.TryParse(windowId, out var raw))
+        // INVARIANT ON BOTH SIDES, even though this particular round trip was already safe (RemEx-j7el).
+        // The window Id is formatted into the wire payload and parsed back out of it, and both ends
+        // used CurrentCulture - self-consistent on one machine, and window handles are not realistically
+        // negative, so nothing was broken. It is fixed anyway because the pair is the last number
+        // crossing the wire without an explicit culture, and "self-consistent" stops being true the
+        // moment a client formats an Id itself or a payload is replayed on a differently-configured
+        // host. Cheaper to make it unconditional than to leave a reader deciding whether this one is
+        // the exception.
+        if (string.IsNullOrWhiteSpace(windowId) ||
+            !long.TryParse(windowId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var raw))
         {
             return false;
         }

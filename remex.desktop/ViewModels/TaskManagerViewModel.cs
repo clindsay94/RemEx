@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,6 +12,7 @@ namespace Remex.Desktop.ViewModels;
 public partial class TaskManagerViewModel : ObservableObject, IDisposable
 {
     private readonly ConnectionViewModel _connection;
+    private readonly ShellViewModel? _shell;
     private CancellationTokenSource? _pollingCts;
 
     /// <summary>Exposes the connection state for view bindings.</summary>
@@ -44,20 +46,52 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _sortDescending = false;
 
+    /// <summary>True until the first process list arrives, then true again only while an explicit
+    /// refresh has no data on screen yet (RemEx-kjdi) — drives the skeleton-row placeholder over the
+    /// list's first fill without blanking an already-populated list on a routine poll.</summary>
+    [ObservableProperty]
+    private bool _isLoading = true;
+
     private List<ProcessInfo> _lastRawProcesses = new();
 
     public ICommand RefreshCommand { get; }
     public ICommand KillProcessCommand { get; }
     public ICommand SortCommand { get; }
 
-    public TaskManagerViewModel(ConnectionViewModel connection)
+    /// <summary>Forwards the shell's reduced-motion setting for the busy placeholder's shimmer gate
+    /// (RemEx-kjdi). <c>_shell</c> is optional (see the constructor) — a null shell just answers
+    /// <see langword="false"/> here rather than throwing.</summary>
+    /// <remarks>Accepted gap (review, RemEx-kjdi): no <c>PropertyChanged</c> is re-raised when
+    /// <c>_shell.IsReducedMotion</c> changes live — low stakes, since reduced motion is a settings
+    /// toggle, not something flipped mid-wait.</remarks>
+    public bool IsReducedMotion => _shell?.IsReducedMotion ?? false;
+
+    public TaskManagerViewModel(ConnectionViewModel connection, ShellViewModel? shell = null)
     {
         _connection = connection;
+        _shell = shell;
         RefreshCommand = new AsyncRelayCommand(RefreshProcessesAsync);
         KillProcessCommand = new AsyncRelayCommand<ProcessInfo>(KillProcessAsync);
         SortCommand = new RelayCommand<string>(SortByColumn);
 
         _connection.ProcessListReceived += Connection_ProcessListReceived;
+        _connection.PropertyChanged += Connection_PropertyChanged;
+    }
+
+    /// <summary>
+    /// Clears the skeleton if the connection drops while a refresh is outstanding (review finding,
+    /// RemEx-kjdi). <see cref="RefreshProcessesAsync"/>'s own post-await check only catches a
+    /// refresh that was ALREADY disconnected; this catches the connected-then-dropped race, where
+    /// <see cref="ConnectionViewModel.RequestProcessListAsync"/> has already returned (its guarded
+    /// send is fire-and-forget) and no reply will ever arrive to run
+    /// <see cref="ApplyReceivedProcessList"/>.
+    /// </summary>
+    private void Connection_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && !_connection.IsConnected)
+        {
+            IsLoading = false;
+        }
     }
 
     partial void OnSearchTextChanged(string value)
@@ -82,11 +116,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     private void Connection_ProcessListReceived(List<ProcessInfo> list)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            _lastRawProcesses = list;
-            UpdateProcessList();
-        });
+        Dispatcher.UIThread.Post(() => ApplyReceivedProcessList(list));
+    }
+
+    /// <summary>
+    /// The real handler for a received process list. INTERNAL RATHER THAN PRIVATE (the RemEx-mzbn
+    /// pattern <c>SettingsViewModel.ReplaceTrustedDevices</c> already uses): the production path
+    /// above hops through <c>Dispatcher.UIThread.Post</c>, which never runs in a headless test, so a
+    /// test driving <see cref="Connection_ProcessListReceived"/> would assert against a first-fill
+    /// that never actually fills. Tests call this directly instead — the method production uses.
+    /// </summary>
+    internal void ApplyReceivedProcessList(List<ProcessInfo> list)
+    {
+        _lastRawProcesses = list;
+        UpdateProcessList();
+        IsLoading = false;
     }
 
     private void UpdateProcessList()
@@ -111,7 +155,31 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     private async Task RefreshProcessesAsync()
     {
-        await _connection.RequestProcessListAsync();
+        if (Processes.Count == 0)
+        {
+            IsLoading = true;
+        }
+
+        try
+        {
+            await _connection.RequestProcessListAsync();
+        }
+        catch
+        {
+            IsLoading = false;
+            throw;
+        }
+
+        // RequestProcessListAsync silently no-ops when the socket is not open
+        // (ConnectionViewModel.SendGuardedAsync returns early rather than throwing or reporting
+        // failure) - no reply will ever arrive to clear the flag via ApplyReceivedProcessList, so a
+        // refresh issued while disconnected must not leave the skeleton shimmering forever
+        // (review finding, RemEx-kjdi). The connected-then-dropped-before-the-reply race is instead
+        // caught by Connection_PropertyChanged above, since IsConnected is still true here.
+        if (!_connection.IsConnected)
+        {
+            IsLoading = false;
+        }
     }
 
     /// <summary>
@@ -201,10 +269,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         // There is no concurrent access here to defend against, so do NOT "harden" this with a lock
         // or Interlocked - that would only obscure why it is already safe. Connection_ProcessListReceived
         // writes _lastRawProcesses exclusively via Dispatcher.UIThread.Post, and this continuation also
-        // runs on the UI thread: Avalonia never captures a SynchronizationContext (docs/ASYNC_GUIDELINES.md,
-        // which is also why ConfigureAwait is banned repo-wide), so the code after the dialog's await
-        // resumes on the thread that completed it - the UI thread driving the dialog. Single-threaded
-        // access, not a race won by a lucky read. It also assigns a whole new list rather than mutating
+        // runs on the UI thread. TWO SEPARATE REASONS, and an earlier version of this comment gave a
+        // third that was simply wrong - that Avalonia never captures a SynchronizationContext, which
+        // is the opposite of the truth (RemEx-rbfq):
+        //
+        //   - The dialog await above resumes on the UI thread even without a captured context:
+        //     Avalonia's ShowDialog completes a plain TaskCompletionSource from the window's close
+        //     handler, which already runs there, so the continuation runs inline on that thread.
+        //   - The KillProcessWithResponseAsync await BELOW is the one that genuinely depends on the
+        //     capture. Its TaskCompletionSource is built with RunContinuationsAsynchronously and
+        //     completed by the receive loop, so the continuation cannot run on the completing thread;
+        //     the captured context is what returns it to the UI thread before KillError - a bound
+        //     property - is assigned. That is the concrete reason ConfigureAwait(false) is banned
+        //     rather than merely discouraged.
+        //
+        // Either way this read is single-threaded access, not a race won by a lucky read. It also assigns a whole new list rather than mutating
         // this one, so even a hypothetical cross-thread reader could not see a half-updated collection.
         if (!ConfirmedTargetStillPresent(process, _lastRawProcesses))
         {
@@ -306,6 +385,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _connection.ProcessListReceived -= Connection_ProcessListReceived;
+        _connection.PropertyChanged -= Connection_PropertyChanged;
         StopPolling();
     }
 }

@@ -245,4 +245,28 @@ class FileManagerLogicTest {
         )
         assertEquals("/ • /", subtitle)
     }
+
+    // ── "Browse this PC" control state (RemEx-c7v4n round 3) ────────────────────
+
+    @Test
+    fun browseDeviceEnabled_isTrue_whenBrowsingIsOfferedAndNothingIsPending() {
+        assertTrue(FileManagerLogic.browseDeviceEnabled(canBrowseDevice = true, pending = false))
+    }
+
+    @Test
+    fun browseDeviceEnabled_isFalse_whileAVolumesRequestIsPending() {
+        assertFalse(FileManagerLogic.browseDeviceEnabled(canBrowseDevice = true, pending = true))
+    }
+
+    @Test
+    fun browseDeviceEnabled_isFalse_whenBrowsingIsNotOffered_evenWithNothingPending() {
+        // The host never advertised full-browse capability, so there is nothing to enable regardless
+        // of the pending flag — this is the fact `!pending` alone could never express.
+        assertFalse(FileManagerLogic.browseDeviceEnabled(canBrowseDevice = false, pending = false))
+    }
+
+    @Test
+    fun browseDeviceEnabled_isFalse_whenBrowsingIsNotOffered_andARequestIsPending() {
+        assertFalse(FileManagerLogic.browseDeviceEnabled(canBrowseDevice = false, pending = true))
+    }
 }

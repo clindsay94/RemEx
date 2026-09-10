@@ -1,0 +1,945 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Text.Json;
+using FluentAssertions;
+using Remex.Core.Models;
+using Remex.Desktop.Models;
+using Remex.Desktop.Services;
+using Xunit;
+
+namespace Remex.Desktop.Tests.Services;
+
+/// <summary>
+/// Migrating a profile written before the seed engine (RemEx-dbkzy).
+/// </summary>
+/// <remarks>
+/// The bead's acceptance in two sentences: a settings file naming Cyber-NOC opens on the
+/// Cyber-NOC-equivalent seed, and a corrupted value opens on the default without a crash. Both are
+/// pinned below, along with the half nobody asks for until it breaks — that migrating a profile
+/// twice is the same as migrating it once.
+/// </remarks>
+public class CustomizationMigrationTests
+{
+    /// <summary>
+    /// Every other assertion here is relative to <see cref="CustomizationMigration.CurrentSchemaVersion"/>,
+    /// so a bump would keep the suite green. The number is pinned on purpose: schema 4 was the arm
+    /// that retired Mica (RemEx-8twk0.6), and the splash-default flip (RemEx-8twk0.9) EXTENDED that
+    /// arm rather than adding a schema 5, because 4 never shipped between the two tasks. Schema 5
+    /// (RemEx-ceu4x) could not do the same thing for the same reason arm 3 -&gt; 4 could not fold
+    /// into arm 2 -&gt; 3: schema 4 had already shipped, so a real profile on disk at schema 4 needs
+    /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness.
+    /// Move this number only with a new arm and a reason.
+    /// </summary>
+    [Fact]
+    public void TheCurrentSchemaIsSixUntilANewArmSaysOtherwise()
+    {
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(6);
+    }
+
+    /// <summary>
+    /// A profile exactly as 2.4.0 wrote it: a theme NAME, the seed its preset arm saved, and none
+    /// of the keys that did not exist yet.
+    /// </summary>
+    /// <remarks>
+    /// BUILT FROM JSON RATHER THAN FROM THE RECORD, on purpose. Constructing a
+    /// <c>CustomizationSettings</c> in C# cannot express "this key was absent" — every field gets
+    /// its default whether or not 2.4 would have written one — and absence is the entire input this
+    /// migration reads.
+    /// <para>
+    /// CAMELCASE, AND THROUGH THE SERVICE'S OWN OPTIONS. The first version of this fixture wrote
+    /// PascalCase keys and deserialised with the DEFAULT options, which agree with the property
+    /// names by coincidence — so it passed while testing a shape no real file has. The app reads
+    /// with <c>PropertyNamingPolicy = CamelCase</c>, and the one serialization contract this bead
+    /// introduces (<c>schemaVersion</c>) is exactly the one a fixture on its own options cannot pin:
+    /// rename the JSON property and every test here still passes while every profile on disk
+    /// deserialises to 0 and re-migrates forever.
+    /// </para>
+    /// <para>
+    /// Verified against <c>git show v2.4.0:remex.core/Models/DashboardProfile.cs</c>: only
+    /// <c>useLightPalette</c> and <c>schemaVersion</c> are genuinely new. <c>themeContrast</c>,
+    /// <c>themeSeedChroma</c> and <c>customAccentColors</c> all existed in 2.4 and are therefore
+    /// omitted here rather than assumed absent — an earlier revision of this comment claimed
+    /// <c>themeContrast</c> was not yet invented, which was wrong and was caught in review.
+    /// </para>
+    /// </remarks>
+    private static CustomizationSettings LegacyProfile(string themeId, string accent, string variant = "TonalSpot")
+    {
+        var json = $$"""
+        {
+          "baseTheme": "{{themeId}}",
+          "accentColor": "{{accent}}",
+          "schemeVariant": "{{variant}}",
+          "cornerRadius": 16,
+          "glowStrength": 2
+        }
+        """;
+
+        var settings = JsonSerializer.Deserialize<CustomizationSettings>(json, DashboardLayoutService.JsonOptions);
+        settings.Should().NotBeNull();
+
+        // ANTI-VACUITY, and it is the reason to route through the real options at all: if the keys
+        // above stopped binding, every field would silently be its default and the fixture would
+        // still "work" - a legacy profile is mostly defaults.
+        settings!.AccentColor.Should().Be(accent, "the fixture must actually bind, or it tests nothing");
+        settings.ThemeId.Should().Be(themeId);
+        settings.SchemaVersion.Should().Be(0, "an absent schemaVersion is what marks a legacy profile");
+        settings.UseLightPalette.Should().BeNull("2.4 had no such key, and null is what the migration reads");
+        return settings;
+    }
+
+    // ─── Arm 2: the tri-state mode (RemEx-zk5bc) ────────────────────────────────────────────────
+
+    [Fact]
+    public void AV1ProfileWithAnExplicitLightChoiceGetsTheMatchingMode()
+    {
+        // The whole point of the arm: nobody's app repaints on upgrade. A v1 profile carries the
+        // explicit bool dbkzy stamped; the mode has to say the same thing.
+        var v1Light = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = true };
+        var v1Dark = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = false };
+
+        CustomizationMigration.Migrate(v1Light, out _).ThemeMode.Should().Be(ThemeModes.Light);
+        CustomizationMigration.Migrate(v1Dark, out _).ThemeMode.Should().Be(ThemeModes.Dark);
+    }
+
+    [Fact]
+    public void AV1ProfileWithAHandEditedNullBoolKeepsANullMode()
+    {
+        // dbkzy stamps the bool on every migrated profile, so a null here means someone edited the
+        // JSON. Guessing a mode for them would be inventing a choice; null keeps every reader on
+        // the same legacy chain it always used.
+        var edited = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = null };
+
+        var migrated = CustomizationMigration.Migrate(edited, out _);
+
+        migrated.ThemeMode.Should().BeNull();
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion,
+            "a null mode is a resolved answer, not an unfinished migration");
+    }
+
+    [Fact]
+    public void ALegacyProfileRunsBothArmsAndLandsOnAMode()
+    {
+        // Schema 0 → arm 1 stamps the explicit bool → arm 2 turns it into the mode. The chain is
+        // what this pins: a reordering that runs arm 2 first reads a null bool and strands every
+        // pre-seed profile on a null mode.
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", "#00E5FF"), out _);
+
+        migrated.ThemeMode.Should().Be(ThemeModes.Dark, "Cyber-NOC is a dark preset");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void MigrationNeverInventsSystemMode()
+    {
+        // "Follow the OS" is only ever a person's choice. Every migration input maps to Light,
+        // Dark, or null - asserting over the full input space of the arm.
+        foreach (var useLight in new bool?[] { true, false, null })
+        {
+            var migrated = CustomizationMigration.Migrate(
+                new CustomizationSettings { SchemaVersion = 1, UseLightPalette = useLight }, out _);
+            migrated.ThemeMode.Should().NotBe(ThemeModes.System);
+        }
+    }
+
+    // ─── Arm 3: the personalization sheet (RemEx-ddynd / RemEx-z94c7) ──────────────────────────
+
+    private static CustomizationSettings SchemaTwo() => new()
+    {
+        SchemaVersion = 2,
+        ThemeMode = ThemeModes.Dark,
+        AccentColor = "#00F3FF",
+        ThemeSeedChroma = 61.0,
+        ThemeContrast = 0.25,
+        SchemeVariant = "Vibrant",
+    };
+
+    [Fact]
+    public void AMicaProfileBecomesWallpaperOverTheDesktopAtHighBlur()
+    {
+        var migrated = CustomizationMigration.Migrate(SchemaTwo() with { BackgroundMaterial = "Mica" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper", "Mica never rendered on this Avalonia build (RemEx-z94c7)");
+        migrated.WallpaperSource.Should().Be(WallpaperSources.Desktop);
+        migrated.WallpaperBlur.Should().Be(0.9);
+    }
+
+    [Fact]
+    public void ANonMicaBackgroundKeepsItsOwnWallpaperFields()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaTwo() with { BackgroundMaterial = "Gradient", WallpaperBlur = 0.3, WallpaperSource = WallpaperSources.Image }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Gradient");
+        migrated.WallpaperBlur.Should().Be(0.3);
+        migrated.WallpaperSource.Should().Be(WallpaperSources.Image);
+    }
+
+    [Theory]
+    [InlineData("Spritz", "Neutral")]
+    [InlineData("Content", "TonalSpot")]
+    [InlineData("Fidelity", "TonalSpot")]
+    [InlineData("", "TonalSpot")]
+    [InlineData("Vibrant", "Vibrant")]
+    [InlineData("FruitSalad", "FruitSalad")]
+    public void RetiredAndUnknownVariantsNormaliseToTheSevenAndroidNames(string stored, string expected)
+    {
+        CustomizationMigration.Migrate(SchemaTwo() with { SchemeVariant = stored }, out _)
+            .SchemeVariant.Should().Be(expected);
+    }
+
+    [Fact]
+    public void TheOldSplashDefaultBecomesCosmicZoom()
+    {
+        CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "RemexCommand" }, out _)
+            .SplashStyle.Should().Be("CosmicZoom");
+        CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "Pong" }, out _)
+            .SplashStyle.Should().Be("Pong", "only the old default is flipped; a choice is a choice");
+    }
+
+    [Fact]
+    public void EachSavedSwatchBecomesANamedCustomPaletteAndTheSwatchListIsEmptied()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaTwo() with { CustomAccentColors = new[] { "#112233", "#445566" } }, out _);
+
+        migrated.CustomAccentColors.Should().BeEmpty("the swatches moved into SavedPalettes");
+        migrated.SavedPalettes.Should().HaveCount(2);
+        migrated.SavedPalettes[0].Should().Be(new SavedPalette
+        {
+            Name = "Palette 1", ColorSource = ColorSources.Custom, Seed = "#112233",
+            Vibrancy = 61.0, Contrast = 0.25, Strategy = "Vibrant",
+        });
+        migrated.SavedPalettes[1].Name.Should().Be("Palette 2");
+        migrated.SavedPalettes[1].Seed.Should().Be("#445566");
+    }
+
+    [Fact]
+    public void AMigratedProfileIsOnTheCustomSource()
+    {
+        // The file's seed was chosen by hand or by a preset; only a NEW profile starts on the
+        // Windows accent.
+        CustomizationMigration.Migrate(SchemaTwo(), out _).ColorSource.Should().Be(ColorSources.Custom);
+        new CustomizationSettings().ColorSource.Should().Be(ColorSources.WindowsAccent);
+    }
+
+    [Fact]
+    public void AProfileWithAllFourOldValuesAtOnceMigratesEveryOne()
+    {
+        var old = SchemaTwo() with
+        {
+            BackgroundMaterial = "Mica",
+            SchemeVariant = "Spritz",
+            SplashStyle = "RemexCommand",
+            CustomAccentColors = new[] { "#ABCDEF" },
+        };
+
+        var migrated = CustomizationMigration.Migrate(old, out var warning);
+
+        warning.Should().BeNull("nothing had to be repaired, only translated");
+        migrated.BackgroundMaterial.Should().Be("Wallpaper");
+        migrated.SchemeVariant.Should().Be("Neutral");
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SavedPalettes.Should().ContainSingle(p => p.Seed == "#ABCDEF" && p.Strategy == "Neutral");
+        migrated.CustomAccentColors.Should().BeEmpty();
+        migrated.ColorSource.Should().Be(ColorSources.Custom);
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmThreeDropsNoField()
+    {
+        // The RemEx-8y3qy guard: the arm is one `with` expression, so every field it does not
+        // name survives verbatim. Built by reflection so a field added next year is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 2) with
+        {
+            BackgroundMaterial = "Gradient", SchemeVariant = "Rainbow", SplashStyle = "Pong",
+            CustomAccentColors = Array.Empty<string>(), SavedPalettes = Array.Empty<SavedPalette>(),
+        };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        // Arm 6 (RemEx-bnz2x) also runs here and resolves CardBorderThickness from the (nonsense,
+        // reflection-generated) ThemeId - the one field this "arm 3 only" test has to name
+        // explicitly now, the same way arm 4->5 already earns its own exclusion elsewhere.
+        after.Should().BeEquivalentTo(
+            before with
+            {
+                SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+                ColorSource = ColorSources.Custom,
+                CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+            },
+            "arm 3 rewrites only the fields the spec names");
+    }
+
+    // ─── Arm 4: Mica leaves the picker (RemEx-8twk0.6) ─────────────────────────────────────────
+
+    private static CustomizationSettings SchemaThree() => SchemaTwo() with { SchemaVersion = 3 };
+
+    [Fact]
+    public void ASchemaThreeMicaProfileBecomesWallpaperAtHighBlur()
+    {
+        var migrated = CustomizationMigration.Migrate(SchemaThree() with { BackgroundMaterial = "Mica" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper",
+            "Mica never rendered on this Avalonia build and every fresh install between task 1 and "
+            + "task 4 wrote it explicitly at schema 3, past arm 2->3 (RemEx-8twk0.6)");
+        migrated.WallpaperBlur.Should().Be(0.9);
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ASchemaThreeAuroraProfileIsByteIdenticalApartFromTheSchemaStamp()
+    {
+        var before = SchemaThree() with { BackgroundMaterial = "Aurora" };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here and seeds ThemeSeedChromaRequest from
+        // ThemeSeedChroma - the one field this "byte identical apart from the stamp" test has to
+        // name explicitly now, the same way arm 3 already earns its own exclusions elsewhere.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        });
+    }
+
+    [Fact]
+    public void ASchemaThreeWallpaperProfileKeepsItsOwnBlur()
+    {
+        var before = SchemaThree() with
+        {
+            BackgroundMaterial = "Wallpaper", WallpaperSource = WallpaperSources.Image, WallpaperBlur = 0.3,
+        };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here; see the Aurora test above for why.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        }, "a non-Mica background at schema 3 must not have its blur touched by arm 3->4");
+    }
+
+    [Fact]
+    public void ASchemaThreeRemexCommandProfileBecomesCosmicZoom()
+    {
+        // Fresh installs between task 1 and task 4 wrote SplashStyle="RemexCommand" explicitly at
+        // schema 3, past the 2->3 arm's flip, so a second arm is required here too.
+        var migrated = CustomizationMigration.Migrate(SchemaThree() with { SplashStyle = "RemexCommand" }, out _);
+
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ASchemaThreePongProfileKeepsPongApartFromTheStamp()
+    {
+        var before = SchemaThree() with { SplashStyle = "Pong" };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        // Arm 4 -> 5 (RemEx-ceu4x) also runs here; see the Aurora test above for why.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+        }, "only the old default is flipped; a choice is a choice");
+    }
+
+    [Fact]
+    public void ASchemaThreeMicaAndRemexCommandProfileGetsBothMappingsInOnePass()
+    {
+        var migrated = CustomizationMigration.Migrate(
+            SchemaThree() with { BackgroundMaterial = "Mica", SplashStyle = "RemexCommand" }, out _);
+
+        migrated.BackgroundMaterial.Should().Be("Wallpaper");
+        migrated.WallpaperBlur.Should().Be(0.9);
+        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ASchemaCurrentProfileIsUntouched()
+    {
+        // Was "ASchemaFourProfileIsUntouched" — renamed when RemEx-ceu4x moved current to 5, since a
+        // literal schema-4 profile is no longer a no-op (see the arm-5 tests below).
+        var current = SchemaTwo() with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            BackgroundMaterial = "Mica",
+            SplashStyle = "RemexCommand",
+        };
+
+        CustomizationMigration.Migrate(current, out _).Should().BeSameAs(current,
+            "a profile already at the current schema is returned as the same instance");
+    }
+
+    // ─── Arm 5: the Vibrancy request is persisted separately from the achieved chroma (RemEx-ceu4x) ──
+
+    private static CustomizationSettings SchemaFour() => SchemaTwo() with { SchemaVersion = 4 };
+
+    [Fact]
+    public void ASchemaFourProfileGetsItsRequestSeededFromWhatItAchieved()
+    {
+        // Schema 4 already shipped, so a real profile on disk at exactly schema 4 - not "current",
+        // which is 5 now - has no themeSeedChromaRequest key at all. The only honest seed for a
+        // request nobody has typed yet is the seed's own achieved chroma.
+        var before = SchemaFour() with { ThemeSeedChroma = 73.0 };
+        before.ThemeSeedChromaRequest.Should().Be(48.0, "anti-vacuity: the un-migrated record default, not a coincidence");
+
+        var migrated = CustomizationMigration.Migrate(before, out var warning);
+
+        warning.Should().BeNull("nothing here needed repairing, only seeding");
+        migrated.ThemeSeedChromaRequest.Should().Be(73.0, "seeded from what the seed actually achieved");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmFiveDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same as ArmThreeDropsNoField: one `with` expression, so every
+        // field it does not name survives verbatim. Built by reflection so a field added next year
+        // is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 4);
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        // Arm 6 (RemEx-bnz2x) also runs here; see ArmThreeDropsNoField above for why
+        // CardBorderThickness has to be named explicitly rather than assumed unchanged.
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeSeedChromaRequest = before.ThemeSeedChroma,
+            CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+        }, "arm 5 rewrites only ThemeSeedChromaRequest");
+    }
+
+    // ─── Arm 6: CardBorderThickness leaves the per-preset theme dictionary (RemEx-bnz2x) ────────
+
+    private static CustomizationSettings SchemaFive() => SchemaTwo() with { SchemaVersion = 5 };
+
+    [Fact]
+    public void ASchemaFiveProfileAdoptsItsPresetsBorderThickness()
+    {
+        // Schema 5 already shipped, so a real profile on disk at exactly schema 5 has no
+        // cardBorderThickness key at all - it deserialises to the record default (1) no matter which
+        // theme it names. A Monolith profile must not silently lose its 3px identity border on
+        // upgrade just because the field never existed to carry it.
+        var before = SchemaFive() with { ThemeId = "Monolith" };
+        before.CardBorderThickness.Should().Be(1, "anti-vacuity: the un-migrated record default, not a coincidence");
+
+        var migrated = CustomizationMigration.Migrate(before, out var warning);
+
+        warning.Should().BeNull("nothing here needed repairing, only seeding");
+        migrated.CardBorderThickness.Should().Be(3, "Monolith's preset entry is the only source of truth left for this value");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmSixDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same shape as ArmThreeDropsNoField/ArmFiveDropsNoField: one `with`
+        // expression, so every field it does not name survives verbatim. Built by reflection so a
+        // field added next year is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 5);
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+        }, "arm 6 rewrites only CardBorderThickness");
+    }
+
+    [Fact]
+    public void TheVersionStampBindsFromRealCamelCaseJson()
+    {
+        // THE ONE SERIALIZATION CONTRACT THIS BEAD ADDS. Everything else here is a pure function on
+        // a record; this is the round trip that decides whether any of it ever runs on a real file.
+        var current = JsonSerializer.Deserialize<CustomizationSettings>(
+            $$"""{"schemaVersion": {{CustomizationMigration.CurrentSchemaVersion}}}""",
+            DashboardLayoutService.JsonOptions);
+
+        current!.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+
+        var written = JsonSerializer.Serialize(
+            new CustomizationSettings { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
+            DashboardLayoutService.JsonOptions);
+
+        written.Should().Contain("\"schemaVersion\"",
+            "a renamed key reads back as 0 on every existing profile, and re-migrates it forever");
+    }
+
+    // ── The acceptance criteria ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ACyberNocProfileOpensOnTheCyberNocSeedAndScheme()
+    {
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", "#00F3FF"), out var warning);
+
+        warning.Should().BeNull("nothing about this profile needed repairing");
+
+        var preset = SeedPresetCatalog.Resolve("CyberNOC");
+        migrated.AccentColor.Should().Be(preset.Seed);
+        migrated.SchemeVariant.Should().Be(preset.SchemeVariant,
+            "2.4 never wrote a variant, so the profile carries the record default and the preset's "
+            + "choice is the one that reproduces the retired dictionary");
+        migrated.UseLightPalette.Should().Be(preset.IsLight,
+            "the mode stops being inferred from the theme's NAME the moment it is written down");
+        migrated.ThemeId.Should().Be("CyberNOC", "the id is the persistence key and is never rewritten");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ACorruptedAccentOpensOnAUsableSeedRatherThanCrashing()
+    {
+        // '#FF0O00' - a capital O for a zero. Seven characters, so 2.4's length-only validation
+        // accepted it, and it survives a restart to this day.
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("Monolith", "#FF0O00"), out var warning);
+
+        warning.Should().NotBeNull("a repaired value is the one occurrence worth logging");
+        warning.Should().Contain("#FF0O00", "the log has to name the value that was thrown away");
+
+        CustomizationMigration.IsUsableSeed(migrated.AccentColor).Should().BeTrue();
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void AGarbageThemeNameOpensOnTheDefaultPresetWithoutThrowing()
+    {
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("NoSuchTheme", "#00F3FF"), out _);
+
+        // The id itself is left alone - rewriting it would destroy the evidence of what the profile
+        // actually said - but everything derived from it comes off the default preset.
+        migrated.ThemeId.Should().Be("NoSuchTheme");
+        migrated.SchemeVariant.Should().Be(SeedPresetCatalog.Default.SchemeVariant);
+        migrated.UseLightPalette.Should().Be(SeedPresetCatalog.Default.IsLight);
+    }
+
+    // ── What must NOT be overwritten ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ASeedTheUserActuallyPickedSurvivesTheMigration()
+    {
+        // THE FAILURE IN THE OTHER DIRECTION, and the more insulting one: a migration that "fixes"
+        // a colour the user chose on purpose is an upgrade that changed their app.
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", "#22C55E"), out var warning);
+
+        warning.Should().BeNull();
+        migrated.AccentColor.Should().Be("#22C55E");
+    }
+
+    [Fact]
+    public void AVariantAndContrastTheUserSetSurviveTheMigration()
+    {
+        var chosen = LegacyProfile("CyberNOC", "#22C55E", variant: "Rainbow") with { ThemeContrast = 0.6 };
+
+        var migrated = CustomizationMigration.Migrate(chosen, out _);
+
+        migrated.SchemeVariant.Should().Be("Rainbow");
+        migrated.ThemeContrast.Should().Be(0.6);
+    }
+
+    [Fact]
+    public void APreTwoFourProfileWithNoSavedSeedAdoptsItsPresets()
+    {
+        // Before the preset arms started saving a seed, a Cyber-NOC profile carried the record's
+        // default violet - the palette came from the dictionary, not from this field. Read
+        // literally that user is handed violet on an upgrade.
+        var defaultAccent = new CustomizationSettings().AccentColor;
+
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", defaultAccent), out _);
+
+        migrated.AccentColor.Should().Be(SeedPresetCatalog.Resolve("CyberNOC").Seed);
+        migrated.AccentColor.Should().NotBe(defaultAccent);
+    }
+
+    [Fact]
+    public void ADefaultVIOLETTheUserActuallyPickedIsKept_BecauseTheSwatchListSaysSo()
+    {
+        // THE SIGNAL I CLAIMED DID NOT EXIST (review finding). CustomAccentColors is the colour
+        // picker's saved-swatch list, it shipped in 2.4, and it is written only when someone picks
+        // a colour - so the default violet APPEARING in it is evidence it was chosen rather than
+        // defaulted. Without this the Monolith user below is handed Monolith's blue on upgrade,
+        // which is the exact outcome the bead forbids.
+        var defaultAccent = new CustomizationSettings().AccentColor;
+        var chosen = LegacyProfile("Monolith", defaultAccent) with
+        {
+            CustomAccentColors = new[] { "#123456", defaultAccent },
+        };
+
+        CustomizationMigration.Migrate(chosen, out _).AccentColor.Should().Be(defaultAccent);
+    }
+
+    [Fact]
+    public void ADefaultVioletWithAnEmptySwatchListStillAdoptsThePreset()
+    {
+        // THE OTHER HALF, and the reason the signal is a strict improvement rather than a trade: a
+        // profile that never opened the picker has an empty list and behaves exactly as before.
+        var defaultAccent = new CustomizationSettings().AccentColor;
+        var untouched = LegacyProfile("Monolith", defaultAccent);
+
+        untouched.CustomAccentColors.Should().BeEmpty("anti-vacuity for the test above");
+        CustomizationMigration.Migrate(untouched, out _).AccentColor
+            .Should().Be(SeedPresetCatalog.Resolve("Monolith").Seed);
+    }
+
+    [Fact]
+    public void DynamicKeepsEverythingBecauseItPinsNothing()
+    {
+        var built = LegacyProfile("Dynamic", "#22C55E", variant: "Expressive");
+
+        var migrated = CustomizationMigration.Migrate(built, out _);
+
+        migrated.AccentColor.Should().Be("#22C55E");
+        migrated.SchemeVariant.Should().Be("Expressive");
+    }
+
+    // ── Running it more than once ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void MigratingTwiceIsTheSameAsMigratingOnce()
+    {
+        // THE BUG THIS PREVENTS IS SILENT AND PERMANENT. If a save forgets the version stamp, every
+        // launch re-runs the legacy arm - and the legacy arm adopts the PRESET's variant and
+        // contrast wherever the profile carries a default, so a user who deliberately returns a
+        // slider to 0.0 has it taken away again on the next start, forever.
+        var once = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", "#00F3FF"), out _);
+        var twice = CustomizationMigration.Migrate(once, out _);
+
+        twice.Should().BeEquivalentTo(once);
+    }
+
+    [Fact]
+    public void AnAlreadyCurrentProfileIsReturnedUntouched()
+    {
+        var current = new CustomizationSettings
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            ThemeId = "CyberNOC",
+            AccentColor = "#22C55E",
+            SchemeVariant = "Rainbow",
+        };
+
+        CustomizationMigration.Migrate(current, out var warning).Should().BeSameAs(current);
+        warning.Should().BeNull();
+    }
+
+    [Fact]
+    public void AProfileFromANewerBuildIsNotRewrittenBackwards()
+    {
+        // Reachable by running an older build over a newer one's settings file. Stamping our
+        // version onto it would erase the newer build's record of what it had already migrated.
+        var future = new CustomizationSettings { SchemaVersion = CustomizationMigration.CurrentSchemaVersion + 7 };
+
+        var result = CustomizationMigration.Migrate(future, out _);
+
+        result.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion + 7);
+    }
+
+    [Fact]
+    public void ANullRecordYieldsAUsableCurrentOne()
+    {
+        var migrated = CustomizationMigration.Migrate(null, out var warning);
+
+        migrated.Should().NotBeNull();
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+        warning.Should().BeNull();
+    }
+
+    // ── The usability screen ─────────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("#FF0O00")]    // capital O for a zero - seven characters, so 2.4 saved it
+    [InlineData("not a colour")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void AnUnusableSeedIsRejected(string? hex) =>
+        CustomizationMigration.IsUsableSeed(hex).Should().BeFalse();
+
+    [Fact]
+    public void BlackAndFullyTRANSPARENTBlackAreBothUsable_WhichIsNotWhatIExpected()
+    {
+        // MEASURED, NOT ASSUMED, AND THE ASSUMPTION WAS WRONG. This was written as a rejection case
+        // on the reasoning that #00000000 parses, that the generator reads only the RGB channels,
+        // and that black in dark mode therefore gives a surface and a text colour that are the same
+        // colour. The first two are true and the conclusion is not: a black seed has no chroma, so
+        // M3 builds a NEUTRAL tonal ramp and still separates surface (~tone 6) from on-surface
+        // (~tone 90). The generator is more robust here than the migration needed it to be.
+        //
+        // Pinned because it is the fact the screen below rests on. If a generator change ever made
+        // an achromatic seed collapse, this test says so directly instead of the migration quietly
+        // starting to rewrite people's black themes.
+        CustomizationMigration.IsUsableSeed("#000000").Should().BeTrue();
+        CustomizationMigration.IsUsableSeed("#00000000").Should().BeTrue();
+        CustomizationMigration.IsUsableSeed("#FFFFFF").Should().BeTrue();
+    }
+
+    [Fact]
+    public void NoParseableSeedIsRejectedToday_SoTheScreenIsAGuardOnTheGenerator()
+    {
+        // THE HONEST STATEMENT OF WHAT IsUsableSeed IS. A 216-point sweep of the RGB cube rejects
+        // nothing: M3 guarantees a readable surface/on-surface pair for every seed it is given, in
+        // both modes. So the contrast half of the screen does not filter real input - it is a
+        // regression guard on that guarantee, and saying so here stops the next reader believing
+        // it is load-bearing on the migration path.
+        //
+        // It earns its place because of what it protects: the legacy arm WRITES a seed into
+        // people's profiles, so a generator that stopped guaranteeing this would have the migration
+        // stamping unreadable palettes onto users who never chose one.
+        var rejected = (from r in Enumerable.Range(0, 6)
+                        from g in Enumerable.Range(0, 6)
+                        from b in Enumerable.Range(0, 6)
+                        let hex = $"#{r * 51:X2}{g * 51:X2}{b * 51:X2}"
+                        where !CustomizationMigration.IsUsableSeed(hex)
+                        select hex).ToArray();
+
+        rejected.Should().BeEmpty("M3 guarantees a readable surface pair for every seed");
+    }
+
+    [Fact]
+    public void EveryPresetSeedInTheCatalogIsUsable()
+    {
+        // A future preset whose seed generates a surface its own text cannot be read against would
+        // be migrated ONTO people by the legacy arm. This is the only place that asks.
+        foreach (var preset in SeedPresetCatalog.All.Where(p => p.Seed is not null))
+        {
+            CustomizationMigration.IsUsableSeed(preset.Seed)
+                .Should().BeTrue($"{preset.Id}'s seed is written into profiles by the migration");
+        }
+
+        CustomizationMigration.IsUsableSeed(CustomizationMigration.FallbackSeed)
+            .Should().BeTrue("the last-resort seed is the one that must never itself be unusable");
+    }
+
+    // ── That any of this actually runs ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The load path migrates, and migrates BEFORE it applies.
+    /// </summary>
+    /// <remarks>
+    /// EVERY TEST ABOVE IS VACUOUS IF NOTHING CALLS Migrate. That is not hypothetical — a pure
+    /// function with a thorough suite and no caller passes every assertion it makes while the app
+    /// behaves exactly as it did before. <c>LoadAsync</c> is the only caller, it posts through the
+    /// Avalonia dispatcher, and this repo has no headless render, so this reads the source: the
+    /// same approach <c>ThemeDictionary.AssertSelectThemeReadsTheCatalog</c> and the file-transfer
+    /// virtualization guards take, and for the same reason.
+    /// <para>
+    /// ORDER IS ASSERTED, NOT JUST PRESENCE. Migrating after the apply would still satisfy a
+    /// contains-check while painting the unmigrated palette on the first frame and correcting it
+    /// only once something happened to trigger a repaint — a flash of the wrong theme on every
+    /// upgrade launch, which is precisely the experience this bead exists to prevent.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void MigrateProfileReportsWhetherItActuallyChangedAnything()
+    {
+        // The signal the write-back is guarded on. If it were always true the app would write the
+        // profile to disk on every single launch; if it were always false the migration would never
+        // be persisted and would re-derive itself forever, which is the defect it was added for.
+        var legacy = new DashboardProfile { Customization = LegacyProfile("CyberNOC", "#00F3FF") };
+
+        DashboardLayoutService.MigrateProfile(legacy, out var legacyOutcome);
+        legacyOutcome.Changed.Should().BeTrue("a schema-0 profile is rewritten");
+
+        var current = new DashboardProfile
+        {
+            Customization = CustomizationMigration.Migrate(legacy.Customization, out _),
+        };
+
+        var unchanged = DashboardLayoutService.MigrateProfile(current, out var currentOutcome);
+        currentOutcome.Changed.Should().BeFalse("an already-current profile is left alone");
+        unchanged.Should().BeSameAs(current, "and is not even copied");
+    }
+
+    [Fact]
+    public void TheLoadPathPersistsAMigrationRatherThanRederivingItEveryLaunch()
+    {
+        // Behavioural coverage stops at MigrateProfile above: LoadAsync needs a ThemeService, which
+        // posts to a dispatcher there is no app for in this suite. So the WIRING is read from
+        // source, the same way the apply-order guard is, and for the same reason.
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Services", "DashboardLayoutService.cs"));
+
+        // LoadAsyncCore, not LoadAsync itself (RemEx-8y3qy round 2). The public LoadAsync() became a
+        // one-line forward to LoadAsyncCore so a test could plumb ReadExistingProfileAsync's
+        // attempt-observed callback through for a deterministic lock-release seam - the write-back
+        // logic this guard actually checks lives in the core method now.
+        var body = Regex.Match(source, @"private async Task<DashboardProfile> LoadAsyncCore\(.*?\n    \}",
+            RegexOptions.Singleline);
+        body.Success.Should().BeTrue("LoadAsyncCore moved or changed shape - this guard cannot see it");
+
+        body.Value.Should().MatchRegex(@"if \(outcome\.Changed[^)]*\)\s*RequestSave\(",
+            "a migration nobody writes back is a re-derivation: the repaired seed stays corrupt on "
+            + "disk, the warning logs every launch, and the user's values follow whatever the preset "
+            + "catalogue says today rather than what it said when they upgraded");
+
+        // AND NOT ON A FRESH INSTALL. A default profile is always schema 0, so it always reports
+        // Changed - writing it would raise ProfileSaved on first launch, which arms the savefile
+        // service's snapshot debounce, which autosnapshots the empty default and prunes a real
+        // backup from the previous install out of the rolling five (review finding).
+        body.Value.Should().MatchRegex(@"if \(outcome\.Changed && !ProfileFileMissingOnLoad\)",
+            "a brand-new profile has nothing worth persisting and a write costs a stale backup");
+    }
+
+    /// <summary>
+    /// Anything that hands a persisted record to <c>ApplyCustomization</c> migrated it first, in the
+    /// same method.
+    /// </summary>
+    /// <remarks>
+    /// THIS GUARD HAS NOW BEEN WRONG TWICE, IN OPPOSITE DIRECTIONS, AND BOTH WAYS ARE WORTH KEEPING
+    /// WRITTEN DOWN.
+    /// <list type="number">
+    /// <item>V1 scanned only <c>LoadAsync</c> and asserted an occurrence COUNT. It passed while the
+    /// real defect sat in <c>App.axaml.cs</c>, which had its own deserialize-and-apply for the
+    /// pre-window paint and never migrated at all. A guard scoped to the file you were thinking
+    /// about cannot see the file you were not.</item>
+    /// <item>V2 fixed the scope and broke the scope. It searched <c>source[..apply]</c> — the whole
+    /// file before the call — so the DECLARATIONS of <c>MigrateProfile(</c> and
+    /// <c>ReadAndMigrate(</c>, which sit near the top of <c>DashboardLayoutService.cs</c>, satisfied
+    /// it for every apply in that file forever. Emptying <c>LoadAsync</c>'s migration entirely left
+    /// it green. A guard that cannot fail for the reason its name gives is worse than a deleted
+    /// one, because it reads as coverage.</item>
+    /// </list>
+    /// So the scope is now the ENCLOSING METHOD, found by brace matching rather than by a regex
+    /// window — that distinction cost three vacuous tests on RemEx-5u0vy and is the same mistake.
+    /// The anti-vacuity assertions at the end are what would have caught V2: they demand that the
+    /// scan actually located bodies and applies, in a known quantity.
+    /// </remarks>
+    [Fact]
+    public void EveryThemeApplyInTheAppIsPrecededByAMigrationInTheSameMethod()
+    {
+        var offenders = new List<string>();
+        var examined = 0;
+
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("remex.desktop", "Services", "DashboardLayoutService.cs"),
+                     Path.Combine("remex.desktop", "App.axaml.cs"),
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(RepoRoot(), relative));
+
+            var applies = Regex.Matches(source, @"ApplyCustomization\(").Select(m => m.Index).ToArray();
+            applies.Should().NotBeEmpty(
+                $"anti-vacuity: {relative} is listed here because it applies a persisted theme");
+
+            var typeBraces = TypeBodyBraces(source);
+
+            foreach (var apply in applies)
+            {
+                var body = EnclosingBody(source, apply);
+                body.Should().NotBeNull($"{relative}: no enclosing method body found around offset {apply}");
+
+                // THE THIRD WAY THIS GUARD COULD PASS WHILE THE PROPERTY IS VIOLATED, found in
+                // review before it was reachable. An expression-bodied member has no brace, so the
+                // backward walk runs straight past it to the CLASS brace — and the class body
+                // contains the declarations of MigrateProfile and ReadAndMigrate, which is exactly
+                // the vacuity the brace matching was introduced to remove. This file already uses
+                // `=>` bodies for DefaultFilePath, FilePathForTests and ArmDebounce, so it is the
+                // shape a future edit will take. Failing loudly beats widening silently.
+                typeBraces.Should().NotContain(body!.Value.Start,
+                    $"{relative}: the apply at offset {apply} resolved to a TYPE body, not a method "
+                    + "body - an expression-bodied member cannot be scoped by brace matching, so "
+                    + "give it a braced body or teach EnclosingBody about '=>'");
+
+                examined++;
+
+                // MigrateProfile / ReadAndMigrate / CustomizationMigration.Migrate all count — the
+                // property is that a migration happened, not which spelling was used.
+                //
+                // NO LOOKBEHIND EXCLUDING DECLARATIONS, because the body scoping already does that
+                // and does it properly: a C# method declaration cannot appear inside another
+                // method's body. The first attempt at this line DID carry one — `(?<=[=(,]\s*)` —
+                // and it silently failed to match the one fully-qualified call in App.axaml.cs,
+                // where the character before the name is a '.'. Two mechanisms for one job, and the
+                // redundant one was the broken one.
+                var before = body!.Value.Text[..(apply - body.Value.Start)];
+                var migrated = Regex.IsMatch(
+                    before, @"\b(CustomizationMigration\.Migrate|MigrateProfile|ReadAndMigrate)\(");
+
+                if (!migrated)
+                    offenders.Add($"{relative}: an ApplyCustomization at offset {apply} with no migration before it in the same method");
+            }
+        }
+
+        offenders.Should().BeEmpty(
+            "a record applied before it is migrated paints the theme the migration exists to replace, "
+            + "and on the pre-window path that decides which palette the window OPENS on");
+
+        // ANTI-VACUITY, and the half that would have caught the version of this guard that could not
+        // fail: three apply sites exist today — LoadAsync's success path, LoadAsync's corrupt-file
+        // path, and App.ApplyThemeBeforeWindowShown. Fewer means the scan stopped finding them.
+        examined.Should().BeGreaterOrEqualTo(3, "the scan must actually reach every apply site");
+    }
+
+    /// <summary>The brace-matched body of the method containing <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// A REGEX WINDOW IS NOT A SCOPE (RemEx-5u0vy, where a fixed 1200-character "method body" quietly
+    /// swallowed the two handlers below an empty one). Walking braces outward is the only way to get
+    /// the real extent, and it is about ten lines.
+    /// </remarks>
+    private static (int Start, string Text)? EnclosingBody(string source, int index)
+    {
+        var depth = 0;
+        for (var i = index; i >= 0; i--)
+        {
+            if (source[i] == '}') depth++;
+            else if (source[i] == '{')
+            {
+                if (depth == 0)
+                {
+                    // Found the opening brace of the innermost block containing index. Walk forward
+                    // to its match so the body has a real end as well as a real start.
+                    var close = MatchingClose(source, i);
+                    return close < 0 ? null : (i, source[i..close]);
+                }
+
+                depth--;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The opening brace of every type body in the file.</summary>
+    private static int[] TypeBodyBraces(string source) =>
+        Regex.Matches(source, @"\b(?:class|struct|record|interface)\b[^;{}()]*\{")
+            .Select(m => m.Index + m.Length - 1)
+            .ToArray();
+
+    private static int MatchingClose(string source, int open)
+    {
+        var depth = 0;
+        for (var i = open; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0) return i;
+        }
+
+        return -1;
+    }
+
+    [Fact]
+    public void TheStampedVersionIsWhatTheRecordDefaultIsNot()
+    {
+        // If these ever coincide the whole mechanism silently stops working: every fresh record
+        // would look migrated and no legacy profile would ever be repaired.
+        new CustomizationSettings().SchemaVersion
+            .Should().NotBe(CustomizationMigration.CurrentSchemaVersion,
+                "the record's default is the marker for 'never migrated'");
+    }
+
+
+    // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
+    // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
+}

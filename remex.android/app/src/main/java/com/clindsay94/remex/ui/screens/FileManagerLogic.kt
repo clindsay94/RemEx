@@ -257,4 +257,131 @@ object FileManagerLogic {
             bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
             else -> "$bytes B"
         }
+
+    /**
+     * Machine-readable reasons the host sends when it refuses consent without anyone being asked.
+     *
+     * Mirrors `Remex.Core.Models.FileConsentDenyReasons` VERBATIM (RemEx-l580, RemEx-c7v4n).
+     */
+    object FileConsentDenyReasons {
+        /**
+         * ONE CODE FOR BOTH UNREACHABLE PATHS on the host — no live session when the prompt was
+         * routed, and a send that failed after it was routed. Both mean the same thing here, so
+         * this end does not need to tell them apart.
+         */
+        const val CLIENT_UNREACHABLE = "client_unreachable"
+
+        /**
+         * The Desktop consent prompt was shown on the PC and nobody there answered before the
+         * host's auto-deny timeout — the PC user simply never touched the dialog, which is not
+         * the same fact as somebody having decided no.
+         */
+        const val HOST_PROMPT_TIMED_OUT = "host_prompt_timed_out"
+    }
+
+    /**
+     * What a `file_volumes_response` means for the person who tapped "browse everything".
+     *
+     * The distinction that matters is [PHONE_UNREACHABLE] versus [REFUSED]: one is a situation the
+     * person can fix and the other is an answer they have to accept, and before RemEx-3qmd this end
+     * could not tell them apart because the wire carried no reason. [HOST_PROMPT_TIMED_OUT] is a
+     * further split off [REFUSED] (RemEx-c7v4n): the PC prompt expiring unanswered is not a decision
+     * either, and telling the user "declined" for it states as fact something that never happened.
+     */
+    enum class VolumesOutcome {
+        /** The grant is held; [RemoteVolume]s follow. */
+        GRANTED,
+
+        /** Somebody was asked and said no. Nothing for the user to do but ask again. */
+        REFUSED,
+
+        /** The host could not put the question to this phone at all. Reconnecting fixes it. */
+        PHONE_UNREACHABLE,
+
+        /** The PC dialog was shown and nobody answered it before the host gave up. Try again. */
+        HOST_PROMPT_TIMED_OUT,
+
+        /** The request itself failed — malformed, or the host threw. Not a refusal. */
+        FAILED,
+    }
+
+    /**
+     * Classifies a `file_volumes_response` so the screen can say something followable.
+     *
+     * WHAT THIS REPLACED WAS NOT A "FLAT NO" — IT WAS SILENCE. The old path set
+     * `fullBrowseGranted = false`, found no volumes, and then cleared the "Loading drives…" status to
+     * an empty string, so a person who tapped the button watched the message disappear and nothing
+     * take its place. A refusal that looks identical to a screen that simply finished is the worst of
+     * the three outcomes to render, because there is nothing to react to.
+     *
+     * ORDER MATTERS AND IS NOT ARBITRARY. `errorMessage` wins because the host sets it when the
+     * request never got as far as asking anybody (see `HandleFileVolumesRequestAsync`'s catch), and
+     * calling that a refusal would blame the user's PC for a fault. `fullBrowseGranted` is next
+     * because a grant already held never denies anything and carries no reason. Only then does
+     * [denyReasonOf] matter, and a null there genuinely means a person decided — that is the contract
+     * RemEx-l580 established, and reading an absent reason as "unreachable" would tell people to
+     * reconnect a phone that is working fine.
+     */
+    fun classifyVolumesResponse(
+        fullBrowseGranted: Boolean,
+        denyReason: String?,
+        errorMessage: String?,
+    ): VolumesOutcome = when {
+        !errorMessage.isNullOrBlank() -> VolumesOutcome.FAILED
+        fullBrowseGranted -> VolumesOutcome.GRANTED
+        denyReasonOf(denyReason) == FileConsentDenyReasons.CLIENT_UNREACHABLE -> VolumesOutcome.PHONE_UNREACHABLE
+        denyReasonOf(denyReason) == FileConsentDenyReasons.HOST_PROMPT_TIMED_OUT -> VolumesOutcome.HOST_PROMPT_TIMED_OUT
+        else -> VolumesOutcome.REFUSED
+    }
+
+    /**
+     * Whether the "Browse this PC" control should accept a tap right now (RemEx-c7v4n round 3): only
+     * when full-device browsing is actually on offer AND no answer to a previous request is still in
+     * flight. [canBrowseDevice] is the same host-capability fact [FileManagerQuickAccess] already gates
+     * the chip's visibility on — folded in here rather than inlining `!pending` at the call site, so
+     * this pins the real precondition ("possible AND not already waiting") instead of restating the
+     * `!` operator a bare `pending` flip would (review, round 3).
+     */
+    fun browseDeviceEnabled(canBrowseDevice: Boolean, pending: Boolean): Boolean =
+        canBrowseDevice && !pending
+
+    /**
+     * Normalizes a deny reason off the wire: blank and whitespace-only become null, so a host that
+     * spells "no reason" as `""` rather than by omitting the field cannot be mistaken for one that
+     * sent a code. Case is NOT folded — these are fixed protocol tokens, not prose.
+     */
+    private fun denyReasonOf(raw: String?): String? = raw?.trim()?.takeIf { it.isNotEmpty() }
+
+    /**
+     * What one item of a batch contributed to the summary counters.
+     *
+     * @property errors 1 when the item ended failed, 0 otherwise.
+     * @property renamed the name the host actually used, when the item succeeded under a rename.
+     */
+    data class ItemTally(val errors: Int, val renamed: String?)
+
+    /**
+     * Decides one batch item's contribution to the tally (RemEx-dtbd).
+     *
+     * **FIVE EXITS REACH THIS AND THE ACCOUNTING WAS VERIFIED ONLY BY INSPECTION.** The conflict loop
+     * can leave by: the first attempt succeeding, a not-a-collision break, the user choosing Skip,
+     * the round bound being exhausted, or success after N rounds. The guards in
+     * `FileConflictWiringTest` are source-shape assertions — they pin that the keyword is `while`,
+     * that `conflict` derives from `outcome`, and that the retry result is assigned back — so they
+     * would pass unchanged on a loop that double-counted skipped, dropped renamed, or lost the
+     * already-counted guard, while a semantically identical rewrite (`do/while`, or
+     * `repeat(MAX_CONFLICT_ROUNDS)`) would fail all three while being correct.
+     *
+     * Nothing here needs a socket, so the five paths are testable directly.
+     *
+     * **SKIPS ARE ALREADY COUNTED WHEN THEY GET HERE**, which is what [alreadyCounted] means — it is
+     * named for what it GUARDS rather than for what happened, because "the user resolved it" reads
+     * backwards: Skip is arguably the most decisive answer available. Adding a skipped item to
+     * `errors` would report a deliberate choice as a failure.
+     */
+    fun tallyItem(alreadyCounted: Boolean, failed: Boolean, resolvedName: String?): ItemTally = when {
+        alreadyCounted -> ItemTally(errors = 0, renamed = null)
+        failed -> ItemTally(errors = 1, renamed = null)
+        else -> ItemTally(errors = 0, renamed = resolvedName)
+    }
 }

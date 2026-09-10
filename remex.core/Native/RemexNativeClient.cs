@@ -21,6 +21,20 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     public static RemexNativeClient Current => Instance.Value;
 
     private ClientWebSocket? _webSocket;
+
+    /// <summary>
+    /// Latency, measured from the ping/pong round trip (RemEx-s2ksi).
+    /// </summary>
+    /// <remarks>
+    /// Not yet surfaced to callers beyond this type. RemEx-93n2 owns exposing it to Kotlin, and
+    /// warns that a new callback has to be wired fully through AndroidNativeExports and
+    /// RemexCoreClient "or it silently drops" — so it is measured here and left for that work rather
+    /// than half-plumbed.
+    /// </remarks>
+    private readonly Remex.Core.Services.RoundTripTracker _roundTrip = new();
+
+    /// <summary>The smoothed round-trip time in milliseconds, or null before the first pong.</summary>
+    public double? RoundTripMilliseconds => _roundTrip.RoundTripMilliseconds;
     private CancellationTokenSource? _connectionCts;
     private Task? _receiveLoopTask;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<CommandResponse>> _pendingCommands = new();
@@ -260,9 +274,22 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
         try
         {
-            await SendMessageAsync(message, ct);
+            // THE BUDGET COVERS THE SEND, NOT JUST THE REPLY (RemEx-66rf). It used to be created
+            // AFTER SendMessageAsync had already been awaited on the caller's token — and the caller
+            // is HandleDispatchCommand, which passes CancellationToken.None. That left two unbounded
+            // waits inside the send: `_sendGate.WaitAsync`, which a file-transfer chunk flood can
+            // hold (see the gate's own note above), and `_webSocket.SendAsync` on a half-open socket,
+            // which blocks for the OS retransmit timeout — minutes on Android.
+            //
+            // Harmless while nothing waited on this method. Now that the JNI export blocks on it, an
+            // unbounded send parks a Dispatchers.IO thread that coroutine cancellation cannot
+            // reclaim: there is no suspension point inside a native frame, so the thread is gone
+            // until the socket gives up. Sixty-four of those is every IO-dispatched coroutine in the
+            // app. The timeout has to start before the first await, not after it.
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+            await SendMessageAsync(message, linkedCts.Token);
 
             return await tcs.Task.WaitAsync(linkedCts.Token);
         }
@@ -280,18 +307,59 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// What this client build can do, told to the host on every message (RemEx-vyhm).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>SupportsConsentPrompt</c> is true because the Kotlin layer that ships in the same APK as this
+    /// library renders the routed consent sheet (<c>RemoteConsentResponder</c>). They cannot skew by
+    /// BUILD — there is no way to get this <c>.so</c> without the Kotlin that handles
+    /// <c>file_consent_request</c> — which is why the claim is hardcoded here rather than asserted by
+    /// Kotlin across the JNI boundary.
+    /// </para>
+    /// <para>
+    /// They CAN skew by runtime state, and this claim is deliberately the optimistic side of that. The
+    /// handler lives in <c>AndroidFileTransferHost</c>'s collector, which is started and cancelled with
+    /// <c>RemexConnectionService</c>, while the socket that carries this field is owned by
+    /// <c>RemexClientManager</c> and outlives it. Socket up with the service down means the host routes
+    /// a question nothing is listening for, and it dies on the host's clean-deny timeout instead of
+    /// being answered on the PC. That is a prompt lost, not a grant leaked — the safe direction — but it
+    /// is the window an on-device test should be looking for (RemEx-0p1q).
+    /// </para>
+    /// <para>
+    /// **STAMPED ON EVERY MESSAGE, NOT ONCE AT CONNECT.** The host keeps this in a per-session registry
+    /// entry that is born fresh with each connection, so a single announcement would be lost by any
+    /// reconnect — and the failure would be silent and intermittent: consent would simply start
+    /// appearing on the PC again. Repeating it is idempotent on the host side (a plain field write) and
+    /// costs ~48 bytes on a JSON control message.
+    /// </para>
+    /// </remarks>
+    public static ClientCapabilities BuildCapabilities { get; } = new() { SupportsConsentPrompt = true };
+
+    /// <summary>
+    /// Applies the identity and capability fields every outbound message must carry.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so it can be tested: the send paths themselves need a live socket, and "does the host
+    /// ever learn this client can render a prompt" is otherwise only answerable on a device.
+    /// </remarks>
+    public static RemexMessage StampOutbound(RemexMessage message, string? clientId) =>
+        // Ensure we satisfy Host protocol version and identity checks.
+        // RemexMessage defaults to version 2, but we set it explicitly here
+        // to be safe under NativeAOT serialization rules.
+        message with
+        {
+            ProtocolVersion = 2,
+            ClientId = clientId,
+            ClientCapabilities = BuildCapabilities,
+        };
+
     public async Task SendMessageAsync(RemexMessage message, CancellationToken ct = default)
     {
         if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
 
-        // Ensure we satisfy Host protocol version and identity checks.
-        // RemexMessage defaults to version 2, but we set it explicitly here 
-        // to be safe under NativeAOT serialization rules.
-        var outgoing = message with 
-        { 
-            ProtocolVersion = 2,
-            ClientId = _clientId 
-        };
+        var outgoing = StampOutbound(message, _clientId);
 
         var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
 
@@ -320,11 +388,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     {
         if (targetSocket is null || targetSocket.State != WebSocketState.Open) return;
 
-        var outgoing = message with
-        {
-            ProtocolVersion = 2,
-            ClientId = _clientId
-        };
+        var outgoing = StampOutbound(message, _clientId);
 
         var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
 
@@ -348,24 +412,43 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         {
             while (!ct.IsCancellationRequested && _webSocket?.State == WebSocketState.Open)
             {
-                using var ms = new System.IO.MemoryStream();
+                // Created only when a message actually spans more than one frame. Nearly all do not,
+                // and those are parsed straight out of the rented buffer (RemEx-tfi6).
+                System.IO.MemoryStream? accumulator = null;
                 WebSocketReceiveResult result;
-                do
+                try
                 {
-                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                    if (result.MessageType == WebSocketMessageType.Close)
+                    do
                     {
-                        await DisconnectAsync();
-                        return;
-                    }
-                    ms.Write(buffer, 0, result.Count);
-                } while (!result.EndOfMessage);
+                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await DisconnectAsync();
+                            return;
+                        }
 
-                if (result.MessageType == WebSocketMessageType.Text)
+                        if (result.EndOfMessage && accumulator is null)
+                            break;
+
+                        accumulator ??= new System.IO.MemoryStream(buffer.Length * 2);
+                        accumulator.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        // GetBuffer rather than ToArray: the accumulator already holds exactly these
+                        // bytes contiguously, and the copy was pure waste. Both spans stay valid for
+                        // the whole of Deserialize, which is synchronous and materializes its result.
+                        var utf8 = accumulator is null
+                            ? new ReadOnlySpan<byte>(buffer, 0, result.Count)
+                            : new ReadOnlySpan<byte>(accumulator.GetBuffer(), 0, (int)accumulator.Length);
+                        var msg = RemexJson.Deserialize(utf8, RemexJsonSerializerContext.Default.RemexMessage);
+                        if (msg != null) HandleMessage(msg);
+                    }
+                }
+                finally
                 {
-                    var bytes = ms.ToArray();
-                    var msg = RemexJson.Deserialize(bytes, RemexJsonSerializerContext.Default.RemexMessage);
-                    if (msg != null) HandleMessage(msg);
+                    accumulator?.Dispose();
                 }
             }
         }
@@ -376,7 +459,9 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            // Cleared, not just released: this buffer carries pairing material and file bytes, and
+            // ArrayPool.Shared is process-wide, so an uncleared return hands those to the next renter.
+            ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
         }
     }
 
@@ -386,6 +471,18 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         {
             case MessageTypes.Telemetry when msg.Telemetry != null:
                 TelemetryReceived?.Invoke(msg.Telemetry);
+                break;
+
+            case MessageTypes.Pong when msg.Timestamp is { } sentTicks:
+                // THE CASE THAT DID NOT EXIST (RemEx-s2ksi). The ping stamps DateTime.UtcNow.Ticks
+                // and the host echoes it back with a comment saying it is echoing for a consumer -
+                // and there was no consumer, so the round trip the stamp was put there for was never
+                // computed. Nothing else on the wire measures latency.
+                //
+                // Both ends of this subtraction come from the SAME machine's wall clock, so an NTP
+                // correction landing between send and receive corrupts exactly this sample and can
+                // make it negative. RoundTripTracker refuses those rather than averaging them in.
+                _roundTrip.Observe((DateTime.UtcNow.Ticks - sentTicks) / (double)TimeSpan.TicksPerMillisecond);
                 break;
 
             case MessageTypes.LauncherSync when msg.LauncherEntries != null:
@@ -404,29 +501,55 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 break;
 
             case MessageTypes.CommandResponse:
-                if (msg.CorrelationId is not null
-                    && _pendingCommands.TryRemove(msg.CorrelationId, out var matchedTcs))
+            {
+                var target = ResolveCommandTarget(msg.CorrelationId, _pendingCommands.Keys);
+
+                if (target is not null && _pendingCommands.TryRemove(target, out var matchedTcs))
                 {
-                    // Happy path: host echoed our CorrelationId — resolve the correct awaiter.
                     matchedTcs.TrySetResult(
                         new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText));
                 }
-                else if (msg.CorrelationId is null && !_pendingCommands.IsEmpty)
-                {
-                    // Fallback for hosts that do not echo CorrelationId (pre-2.0 or buggy).
-                    // Complete the first pending entry — this is best-effort and incorrect
-                    // under concurrency; upgrade the host to fix it properly.
-                    foreach (var tcs in _pendingCommands.Values)
-                    {
-                        if (tcs.TrySetResult(
-                            new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText)))
-                            break;
-                    }
-                }
+
                 break;
+            }
         }
 
         MessageReceived?.Invoke(msg);
+    }
+
+    /// <summary>
+    /// Which pending command a <c>command_response</c> belongs to, or null when it cannot be said.
+    /// </summary>
+    /// <param name="correlationId">The id the host echoed, or null if it echoed none.</param>
+    /// <param name="pendingIds">The ids currently awaiting a response.</param>
+    /// <remarks>
+    /// <para>
+    /// **THE FALLBACK THIS REPLACES RESOLVED THE FIRST PENDING COMMAND, AND ITS OWN COMMENT SAID IT
+    /// WAS WRONG** — "best-effort and incorrect under concurrency". Two commands in flight at once,
+    /// which is ordinary (a widget action landing while a task-manager kill is running), could have
+    /// their answers swapped: the kill would report the widget's result and vice versa. A wrong
+    /// answer delivered confidently is worse than no answer, because the caller acts on it.
+    /// </para>
+    /// <para>
+    /// **UNCORRELATED WITH EXACTLY ONE PENDING IS STILL SAFE**, and that is deliberately kept. There
+    /// is nothing to confuse it with, and it is what an older host that never echoed the id produces
+    /// in the ordinary sequential case — dropping it would break those hosts for no gain. The rule
+    /// removes the AMBIGUOUS case only.
+    /// </para>
+    /// <para>
+    /// **AN UNATTRIBUTABLE RESPONSE IS DROPPED, NOT BROADCAST.** Failing every pending command would
+    /// be a guess in the other direction: some of them may still receive a correctly correlated
+    /// answer, and cancelling those would invent a failure. Dropping leaves the existing per-command
+    /// timeout to report honestly that nothing came back.
+    /// </para>
+    /// </remarks>
+    internal static string? ResolveCommandTarget(string? correlationId, ICollection<string> pendingIds)
+    {
+        if (correlationId is not null) return correlationId;
+        if (pendingIds is null || pendingIds.Count != 1) return null;
+
+        foreach (var id in pendingIds) return id;
+        return null;
     }
 
     /// <summary>

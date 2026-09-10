@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Agent.Services.FileTransfer;
@@ -20,13 +21,14 @@ public sealed class TransferSessionManagerTests
     private const string ClientId = "paired-android-device";
     private const string DestRoot = "root-a";
 
-    private static TransferSessionManager NewManager(string stagingDir, FakeFileTransferService files)
+    private static TransferSessionManager NewManager(
+        string stagingDir, FakeFileTransferService files, ILogger<TransferSessionManager>? logger = null)
     {
         // The receiver state machine under test never resolves a read root, so a resolver over the same
         // (throwing) fake is enough here. The download-side tests below build a real one.
         var resolver = new SharedRootReadResolver(
             files, new Mock<IFileTrustService>().Object, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
-        return new TransferSessionManager(NullLogger<TransferSessionManager>.Instance, files, resolver, stagingDir);
+        return new TransferSessionManager(logger ?? NullLogger<TransferSessionManager>.Instance, files, resolver, stagingDir);
     }
 
     private static FileTransferOffer Offer(
@@ -51,6 +53,112 @@ public sealed class TransferSessionManagerTests
         var b = new byte[length];
         RandomNumberGenerator.Fill(b);
         return b;
+    }
+
+    // ── The offered-size range check (RemEx-9xs1) ──────────────────────────────
+    // TransferSessionManager.BeginReceiveAsync refuses `Size < 0 || Size > MaxTransferBytes` before it
+    // stages anything. That guard had no test, so deleting the line would have left every other test in
+    // this file green — they all offer honest sizes. The over-tightening direction needs no test of its
+    // own here: every other test in this class calls BeginReceiveAsync with an ordinary size and asserts
+    // it was accepted, so a guard that refused too much would take the whole file down with it.
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(long.MinValue)]
+    public async Task ANegativeOfferedSizeIsRefusedAndStagesNothing(long size)
+    {
+        // A negative offered size is not a size a real client can produce; it is a value that exists to
+        // see what arithmetic downstream of it does. Refusing at the door is why nothing downstream has
+        // to be careful about it.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(Guid.NewGuid().ToString("N"), size), default);
+
+            Assert.False(acceptance.Accepted);
+            Assert.False(string.IsNullOrWhiteSpace(acceptance.DeclineReason));
+
+            // A refusal that had already created the staging file would be a way to write into the
+            // staging directory without ever sending a byte.
+            Assert.Empty(Directory.GetFileSystemEntries(staging.FullName));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AnOfferedSizeAboveTheHardCeilingIsRefused()
+    {
+        // The ceiling is 5 GB, matching FileTransferService.MaxUploadBytes. Offering more is refused up
+        // front rather than discovered 5 GB into a transfer.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            var acceptance = await mgr.BeginReceiveAsync(
+                ClientId, Offer(Guid.NewGuid().ToString("N"), 5_000_000_001L), default);
+
+            Assert.False(acceptance.Accepted);
+            Assert.False(string.IsNullOrWhiteSpace(acceptance.DeclineReason));
+            Assert.Empty(Directory.GetFileSystemEntries(staging.FullName));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task DeclaringZeroBytesThenStreamingPastTheCap_IsRefusedMidTransfer()
+    {
+        // THE CASE THE OFFER-TIME CHECK CANNOT CATCH, and the reason the running cap exists (review of
+        // RemEx-9xs1). Size 0 is legitimate — a phone reports it for a content URI whose length it cannot
+        // read — and it is neither negative nor over the ceiling, so BeginReceiveAsync accepts. Zero then
+        // disables the declared-size bound (`ExpectedSize > 0 && ...`) AND the completion check in
+        // CompleteReceiveAsync, so the running cap is the only thing left. This is the exact twin of
+        // Upload_DeclaringZeroBytesThenStreamingPastTheCap_IsAbortedAndSaysSo on the legacy v2 path.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            var resolver = new SharedRootReadResolver(
+                files, new Mock<IFileTrustService>().Object, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+            using var mgr = new TransferSessionManager(
+                NullLogger<TransferSessionManager>.Instance, files, resolver, staging.FullName)
+            {
+                MaxTransferBytes = 1024,
+            };
+
+            var tid = Guid.NewGuid().ToString("N");
+            var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(tid, 0), default);
+            Assert.True(acceptance.Accepted, "size 0 is a legitimate offer and must still be accepted");
+
+            // Under the cap: accepted, because a guard that refused everything would pass the assertion
+            // below while breaking every unknown-length send.
+            var after = await mgr.WriteChunkAsync(tid, 0, new byte[512], default);
+            Assert.Equal(512, after);
+
+            // Over the cap: refused, even though the peer never declared a size to overshoot.
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => mgr.WriteChunkAsync(tid, 512, new byte[1024], default));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
     }
 
     [Fact]
@@ -85,7 +193,9 @@ public sealed class TransferSessionManagerTests
             Assert.True(File.Exists(files.LastWrittenPath!));
             Assert.Equal(payload, await File.ReadAllBytesAsync(files.LastWrittenPath!));
 
-            // Staging is cleared on success.
+            // Staging is cleared on success. NOTE the partial assertion is now satisfied by the
+            // promotion itself — a rename consumes it — so the MANIFEST assertion below is the one that
+            // still proves DeleteStaging ran (RemEx-fq6f).
             Assert.False(File.Exists(Path.Combine(staging.FullName, tid + ".remexpart")));
             Assert.False(File.Exists(Path.Combine(staging.FullName, tid + ".manifest.json")));
         }
@@ -278,7 +388,7 @@ public sealed class TransferSessionManagerTests
     /// <paramref name="pinVolumeRootAsSharedRoot"/> seeds the temp folder as a configured shared root, so the
     /// same call can be driven down the pinned branch instead of the volume branch.
     /// </summary>
-    private static (TransferSessionManager mgr, string baseTemp) NewDownloadManager(
+    private static async Task<(TransferSessionManager mgr, string baseTemp)> NewDownloadManagerAsync(
         string clientId, bool grantFullBrowse, bool pinVolumeRootAsSharedRoot = false)
     {
         var baseTemp = Directory.CreateTempSubdirectory("remex-v3dl-").FullName;
@@ -294,9 +404,10 @@ public sealed class TransferSessionManagerTests
         registry.RegisterClient(clientId);
         var trust = new FileTrustService(
             NullLogger<FileTrustService>.Instance, registry,
+            FileTrustServiceTests.ConnectedSession(clientId),
             Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
         if (grantFullBrowse)
-            trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
+            await trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None);
 
         var resolver = new SharedRootReadResolver(
             files, trust, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
@@ -319,7 +430,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromUnpinnedFullDeviceVolume_WithGrantedConsent_OpensTheFile()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: true);
         try
         {
             using (mgr)
@@ -345,7 +456,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromUnpinnedFullDeviceVolume_WithoutConsent_IsRefused()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: false);
         try
         {
             using (mgr)
@@ -367,7 +478,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_WithUnidentifiedClient_IsRefusedEvenWhenAnotherDeviceHasConsent()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: true);
         try
         {
             using (mgr)
@@ -390,7 +501,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromPinnedSharedRoot_StillResolvesThroughTheConfiguredRoot()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false, pinVolumeRootAsSharedRoot: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: false, pinVolumeRootAsSharedRoot: true);
         try
         {
             using (mgr)
@@ -412,46 +523,331 @@ public sealed class TransferSessionManagerTests
         }
     }
 
-    /// <summary>
-    /// Minimal <see cref="IFileTransferService"/> test double: only <see cref="OpenForWriteAsync"/> is real
-    /// (writes the verified partial to a temp destination directory and records the path); every other member
-    /// throws, since the receiver state machine under test never touches them.
-    /// </summary>
-    private sealed class FakeFileTransferService(string destDir) : IFileTransferService
-    {
-        public string? LastWrittenPath { get; private set; }
+    // --- RemEx-0719: a transferId is not a bearer capability -------------------------------------
+    // Every inbound-frame case in RunChannelAsync keyed on envelope.TransferId ALONE, with no check
+    // that the session belonged to the socket presenting the frame. RemEx-4u0d closed channel
+    // DISPLACEMENT by refusing a loopback caller that claims a paired id - but it deliberately still
+    // admits a loopback connection with a BLANK id, and such a connection needs no identity at all to
+    // reach the frame loop. Only a transferId. So it could cancel or inject into a paired phone's
+    // in-flight transfer without claiming anything at all.
 
-        public Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct)
+    [Fact]
+    public async Task AFrameOnItsOwnClientsChannel_IsNotForeign()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
         {
-            var full = Path.Combine(destDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
-            var parent = Path.GetDirectoryName(full);
-            if (!string.IsNullOrEmpty(parent))
-                Directory.CreateDirectory(parent);
-            LastWrittenPath = full;
-            Stream stream = new FileStream(full, FileMode.Create, FileAccess.Write, FileShare.None);
-            return Task.FromResult(stream);
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.False(mgr.IsForeignTransfer(ClientId, tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AFrameOnAnotherClientsChannel_IsForeign()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.True(mgr.IsForeignTransfer("some-other-device", tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AFrameOnAnIdentitylessLoopbackChannel_IsForeign()
+    {
+        // The attack RemEx-4u0d leaves open by design: a loopback connection with a blank clientId is
+        // still admitted, because refusing it would break the TestServer and buy nothing. This is the
+        // check that stops it touching a phone's transfer anyway.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.True(mgr.IsForeignTransfer(string.Empty, tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AnUnknownTransferId_IsNotForeign()
+    {
+        // The direction that would be a behaviour change smuggled in beside a security fix. An
+        // unrecognised id is already handled downstream - WriteChunkAsync ignores it, the ack and
+        // error cases TryGet and no-op - and that is what makes late-arriving and post-completion
+        // frames harmless. Treating unknown as foreign would silently change all of that.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            await mgr.BeginReceiveAsync(ClientId, Offer(Guid.NewGuid().ToString("N"), 1024), default);
+
+            Assert.False(mgr.IsForeignTransfer(ClientId, "a-transfer-nobody-has"));
+            Assert.False(mgr.IsForeignTransfer("some-other-device", "a-transfer-nobody-has"));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    // --- RemEx-juas: the control plane is bound to an identity too ---------------------------------
+    // RemEx-0719 bound the binary channel. These are the JSON entry points, which took no identity at
+    // all - and were the cheaper attack, because reaching them needs no binary channel and nothing
+    // claimed. PingPongHandler seeds isPaired = isLoopback, so an unelevated local process could open
+    // ws://127.0.0.1/ws and send one message.
+
+    [Fact]
+    public async Task ControlCancelFromAnotherClient_IsRefused()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+            await mgr.WriteChunkAsync(tid, 0, new byte[128], default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            Assert.True(File.Exists(partial));
+
+            mgr.HandleControl(
+                new FileTransferControl { TransferId = tid, Action = FileTransferControlActions.Cancel },
+                channelKey: string.Empty);
+
+            Assert.True(File.Exists(partial), "a cancel from an unbound connection must not delete the partial");
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task ControlCancelFromItsOwnClient_IsHonoured()
+    {
+        // The direction that matters if the guard is too broad: the owner must still be able to cancel.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+            await mgr.WriteChunkAsync(tid, 0, new byte[128], default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            Assert.True(File.Exists(partial));
+
+            mgr.HandleControl(
+                new FileTransferControl { TransferId = tid, Action = FileTransferControlActions.Cancel },
+                channelKey: ClientId);
+
+            Assert.False(File.Exists(partial), "the owning client's cancel must still delete the partial");
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AnOfferReusingAnotherClientsLiveTransferId_IsDeclined()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+
+            // Superseding used to take whatever id the offer named, so this re-owned the victim's
+            // transfer and pointed it at the attacker's destination.
+            var hijack = await mgr.BeginReceiveAsync("some-other-device", Offer(tid, 4096), default);
+
+            Assert.False(hijack.Accepted);
+            Assert.False(string.IsNullOrWhiteSpace(hijack.DeclineReason));
+            Assert.False(mgr.IsForeignTransfer(ClientId, tid), "the original owner must still hold it");
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AReOfferFromTheSameClient_StillSupersedes()
+    {
+        // A client retry, or a re-offer after a dropped socket, is a legitimate supersede and must not
+        // be caught by the guard above.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+
+            var again = await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+
+            Assert.True(again.Accepted);
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    /// <summary>
+    /// Records warnings so a refusal can be OBSERVED. The first draft of the HandleResult tests below
+    /// asserted on IsForeignTransfer instead, which holds whether or not HandleResult consults it - so
+    /// they passed with the guard deleted. Caught by injection, and it is the same mistake the review
+    /// of this bead failed the first pass for.
+    /// </summary>
+    private sealed class WarningCapturingLogger<T> : ILogger<T>
+    {
+        public List<string> Warnings { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel level) => true;
+        public void Log<TState>(
+            LogLevel level, EventId id, TState state, Exception? ex, Func<TState, Exception?, string> formatter)
+        {
+            if (level == LogLevel.Warning) Warnings.Add(formatter(state, ex));
+        }
+    }
+
+    /// <summary>A socket that records sends, and can be told that any send at all is a failure.</summary>
+    private sealed class RecordingSocket(bool failOnSend = false) : System.Net.WebSockets.WebSocket
+    {
+        public int Sends { get; private set; }
+
+        public override Task SendAsync(
+            ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType type, bool end, CancellationToken ct)
+        {
+            Sends++;
+            Assert.False(failOnSend, "the guard should have returned before anything was written to the socket");
+            return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<Stream> OpenVolumeForReadAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct) => throw new NotSupportedException();
-        public Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<string> ComputeVolumeSha256Async(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileSharedRoot>> AddRootFromPathAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileSharedRoot>> RemoveRootAsync(string rootId, CancellationToken ct) => throw new NotSupportedException();
-        public Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
-        public Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
-        public Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileSearchEntry>> SearchAsync(string rootId, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<FileSearchEntry>> SearchVolumeAsync(string volumeAbsolutePath, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
-        public Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
-        public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
-        public Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
-        public Task<(string RootId, string RelativePath)?> TryMapVolumePathToConfiguredRootAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => Task.FromResult<(string, string)?>(null);
+        public override System.Net.WebSockets.WebSocketState State => System.Net.WebSockets.WebSocketState.Open;
+        public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus => null;
+        public override string? CloseStatusDescription => null;
+        public override string? SubProtocol => null;
+        public override void Abort() { }
+        public override Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> b, CancellationToken c)
+            => Task.FromResult(new System.Net.WebSockets.WebSocketReceiveResult(0, System.Net.WebSockets.WebSocketMessageType.Close, true));
+        public override void Dispose() { }
+    }
+
+    // The two guards the first pass shipped without any coverage at all - found in review, and the
+    // reason "guards removed" broke only 3 of 4 tests rather than all of them. HandleCompleteAsync is
+    // the highest-impact of the four: it runs the hash verification and promotes the file out of
+    // staging into the destination root.
+
+    [Fact]
+    public async Task CompleteFromAnotherClient_IsRefused()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+            await mgr.WriteChunkAsync(tid, 0, new byte[128], default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            var socket = new RecordingSocket(failOnSend: true);
+
+            await mgr.HandleCompleteAsync(
+                new FileTransferComplete { TransferId = tid, Sha256Base64 = "" },
+                socket, isLoopback: false, channelKey: string.Empty, default);
+
+            Assert.Equal(0, socket.Sends);
+            Assert.True(File.Exists(partial), "the victim's partial must survive a foreign complete");
+            Assert.Empty(Directory.GetFiles(dest.FullName));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task CompleteFromItsOwnClient_IsHonoured()
+    {
+        // The over-broad direction: the owner must still be able to finish its own transfer.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var payload = RandomBytes(256);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+            await mgr.WriteChunkAsync(tid, 0, payload, default);
+
+            var socket = new RecordingSocket();
+            await mgr.HandleCompleteAsync(
+                new FileTransferComplete { TransferId = tid, Sha256Base64 = Sha256B64(payload) },
+                socket, isLoopback: false, channelKey: ClientId, default);
+
+            Assert.True(socket.Sends > 0, "the owner's complete must be answered with a result");
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task ResultFromAnotherClient_IsRefused()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            var logger = new WarningCapturingLogger<TransferSessionManager>();
+            using var mgr = NewManager(staging.FullName, files, logger);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+
+            mgr.HandleResult(new FileTransferResult { TransferId = tid, Verified = false }, channelKey: string.Empty);
+
+            Assert.Contains(logger.Warnings, w => w.Contains("Refusing a file_transfer_result", StringComparison.Ordinal));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task ResultFromItsOwnClient_IsAccepted()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            var logger = new WarningCapturingLogger<TransferSessionManager>();
+            using var mgr = NewManager(staging.FullName, files, logger);
+            var tid = Guid.NewGuid().ToString("N");
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 4096), default);
+
+            mgr.HandleResult(new FileTransferResult { TransferId = tid, Verified = true }, channelKey: ClientId);
+
+            // The over-broad direction: the owner's result must NOT be refused.
+            Assert.DoesNotContain(logger.Warnings, w => w.Contains("Refusing a file_transfer_result", StringComparison.Ordinal));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
     }
 }

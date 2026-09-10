@@ -227,6 +227,11 @@ public sealed class TransferQueueService
 
     private void LoadFromDisk()
     {
+        // BEFORE THE EXISTENCE CHECK, for the reason PairedClientRegistry gives (RemEx-njzcx):
+        // a first write killed between staging and rename leaves an orphan and NO store, so a sweep
+        // below an early return is walked past on every startup of the machine that most needs it.
+        RemexDataPaths.SweepStagingOrphans(_storePath);
+
         try
         {
             if (!File.Exists(_storePath))
@@ -280,9 +285,10 @@ public sealed class TransferQueueService
                 .ToList();
 
             var json = JsonSerializer.Serialize(ordered, JsonOptions);
-            var tempPath = _storePath + ".tmp";
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _storePath, overwrite: true);
+
+            // Per-write staging name, not a fixed <store>.tmp shared with every other writer of this
+            // file — see RemexDataPaths.WriteAllTextAtomic (RemEx-kow1).
+            RemexDataPaths.WriteAllTextAtomic(_storePath, json);
         }
         catch (IOException ex)
         {
