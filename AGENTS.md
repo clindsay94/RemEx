@@ -363,6 +363,21 @@ Every code change must also update `CHANGELOG.md` (Keep a Changelog format). Upd
 paired-device host facts were each shipped fully tested, mutation-verified — and consumed by nothing
 in production. `ClipboardValidation` was a fifth; RemEx-hgqs wired it and it is no longer stranded.
 
+**It happened again on 2026-09-09, and the second half is the part worth reading.** RemEx-5m3i
+shipped `TutorialNavigator` — `VisiblePages`, `ClampPosition`, `Next`, `Previous`, `IsLastPage`,
+`PositionOfPage`, 11 tests, mutation-verified twice — and left the axaml to RemEx-qgql. Nothing
+called it. Then RemEx-9iz00.1 rebuilt the tutorial as a real `Carousel` and, not knowing the
+Navigator existed, **hand-rolled a parallel implementation of the same rules** in `ShellViewModel`
+(`VisibleTutorialPageIndices`, `SnapToVisibleTutorialPage`, `CanTutorialNext`/`Previous`). So the
+repo carried two implementations of one rule for weeks, the tested one unreachable and the reachable
+one untested — and the reachable one had the defect: Back and Next keyed off hardcoded raw indices
+`0` and `16` rather than the filtered list, which `IsLastPage` exists to answer. Latent only because
+the first and last authored pages happen to be `PlatformFlags.All`; a Windows-only page at either
+end would have made it real, on the platform nobody was looking at.
+
+The lesson the earlier four did not show: a stranded pure half is not merely unused. It is an
+invitation for the next person to write the same logic again, badly, and never know they did.
+
 The mechanism is the same every time. A bead is split into "the logic" and "the surface". The logic
 half is the pleasant one — pure, testable, mutation-verifiable — so it lands first with a good test
 count and a signed-off decision record. The surface half is the awkward one: axaml, view models, nine
