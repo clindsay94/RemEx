@@ -103,10 +103,13 @@
         </Grid>
     </material:Card>
     <!-- ESCAPE DISMISSES, AND IT IS ROUTED TO THE ACTION ALREADY WRITTEN AS THIS DIALOG'S CANCEL
-         (RemEx-xxifk). Enter is deliberately NOT bound here: whether a default action is safe is a
-         per-dialog question and stays on RemEx-df08. Escape carries none of that, because cancelling
-         is never the destructive option. -->
+         (RemEx-xxifk). ENTER SUBMITS (RemEx-df08): SubmitCommand's own [RelayCommand(CanExecute =
+         nameof(CanEdit))] already gates it, so Enter is a no-op while busy/succeeded/failed - the
+         same guard the Pair button and the PIN TextBox's IsEnabled already rely on. Submitting is
+         never the destructive option here (a wrong PIN just fails and stays terminal per this
+         dialog's own no-retry design), so there is no "backwards" risk to weigh. -->
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Enter" Command="{Binding SubmitCommand}"/>
     </Window.KeyBindings>
 </Window>

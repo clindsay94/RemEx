@@ -23,6 +23,14 @@
          danger", RestoreAsync passes "primary"), so ButtonVocabularyTests sees a real Classes
          attribute (RemEx-z7pnx.1) without risking two emphases stacking if a future caller ever
          forgot to pass one. -->
+    <!-- RemEx-df08 fix round 1: an AutomationProperties-attached Name value USED to live here, on
+         this StackPanel. It announced nothing - Control.OnCreateAutomationPeer defaults to
+         NoneAutomationPeer for any element with no dedicated peer, and Avalonia has no
+         PanelAutomationPeer, so the name was set on a peer documented as "not contributing to the
+         logical structure of the application" and a screen reader never saw it. The real fix is on
+         the host WINDOW, not this content: MaterialDialogs.ConfirmAsync/RestoreAsync now call
+         AutomationProperties.SetName(window, title) after building this control, because
+         WindowAutomationPeer is a real peer that is actually announced. -->
     <StackPanel Spacing="18" Margin="24,24,24,24">
         <StackPanel Spacing="6">
             <TextBlock x:Name="HeaderText"
@@ -35,6 +43,20 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button x:Name="CancelButton" Classes="secondary" Click="OnCancelClick"/>
+            <!-- Enter confirms (RemEx-df08), but only when the caller says the action is safe to
+                 fire on a reflex - IsDefault is set in code-behind (DialogContent.axaml.cs), NOT
+                 hardcoded here, because it has to be a per-call-site decision: ConfirmAsync's action
+                 is "primary danger" (a destructive confirm, e.g. "Forget device?"), and a shared
+                 IsDefault="True" here would let Enter fire that destructively for every caller,
+                 including one who was just holding the key down. FIX ROUND 1 (RemEx-df08) found this
+                 exact bug - see DialogContent.axaml.cs's constructor remarks for which callers get
+                 the default and why. IsDefault still walks up to whatever Window this button ends up
+                 inside at runtime and raises Click - confirmed against Avalonia's own docs - so it
+                 reaches OnActionClick regardless of which builder call site created the host window,
+                 same as before; only whether it is *set* moved. CancelButton stays plain: Escape
+                 already closes the host window and resolves to a decline via
+                 MaterialDialogs.AttachEscapeDismiss, and duplicating that with IsCancel here is
+                 unnecessary. -->
             <Button x:Name="ActionButton" Classes="primary" Click="OnActionClick"/>
         </StackPanel>
     </StackPanel>

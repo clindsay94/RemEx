@@ -53,13 +53,21 @@ public partial class SecondMetricDialog : Window
     }
 
     /// <summary>
-    /// Escape dismisses, routed to the same handler the Cancel button uses (RemEx-xxifk).
+    /// Escape dismisses (RemEx-xxifk) and Enter applies the highlighted candidate (RemEx-df08), both
+    /// routed to the same handlers the Cancel/Set buttons use.
     /// </summary>
     /// <remarks>
-    /// An override rather than a KeyBinding because this dialog's cancel is a code-behind handler
-    /// and a KeyBinding can only reach a command. Enter is deliberately not handled: whether a
-    /// default action is safe to bind is a per-dialog question that stays on RemEx-df08, while
-    /// Escape carries none of that risk - cancelling is never the destructive option.
+    /// An override rather than a KeyBinding because this dialog has no view model - Cancel/Set/Clear
+    /// are code-behind handlers, and a KeyBinding can only reach a bound Command.
+    /// FIX ROUND 1 (RemEx-df08): the first pass called <c>Apply(SensorList.SelectedItem as string)</c>
+    /// unconditionally, on the reasoning that it mirrors "Set" including its null case. That reasoning
+    /// missed that <see cref="Filter"/> rebuilds <c>_filtered</c> on every keystroke in
+    /// <c>SearchBox</c> - typing a query that excludes the pre-selected item nulls out
+    /// <c>SelectedItem</c>, so Enter silently produced Clear's outcome (closing the dialog and clearing
+    /// the overlay) while the user was mid-search for a different sensor. Enter now requires
+    /// <c>SelectedItem</c> to actually be a string before doing anything; with nothing selected it is a
+    /// no-op rather than a reflex "Clear". SearchBox, the other focusable control, is single-line and
+    /// does not consume Enter itself, so this still gets it.
     /// </remarks>
     protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
     {
@@ -67,6 +75,13 @@ public partial class SecondMetricDialog : Window
         {
             e.Handled = true;
             Close();
+            return;
+        }
+
+        if (e.Key == Avalonia.Input.Key.Enter && SensorList.SelectedItem is string sel)
+        {
+            e.Handled = true;
+            Apply(sel);
             return;
         }
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -76,7 +77,10 @@ internal static class MaterialDialogs
     internal static async Task<bool> ConfirmAsync(Window owner, string title, string message, string confirmText)
     {
         var loc = LocalizationService.Instance;
-        var content = new DialogContent(title, message, loc["Btn_Cancel"], confirmText, "primary danger");
+        // actionIsDefault: false (RemEx-df08 fix round 1) - this action is "primary danger", a
+        // destructive confirm, so Enter must not be able to fire it reflexively.
+        var content = new DialogContent(
+            title, message, loc["Btn_Cancel"], confirmText, "primary danger", actionIsDefault: false);
 
         var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
@@ -88,7 +92,12 @@ internal static class MaterialDialogs
             DialogButtons = Array.Empty<DialogButton>(),
         });
 
-        AttachEscapeDismiss(dialog.GetWindow());
+        var window = dialog.GetWindow();
+        AttachEscapeDismiss(window);
+        // RemEx-df08 fix round 2: naming DialogContent's own StackPanel announced nothing (no
+        // PanelAutomationPeer in Avalonia). WindowAutomationPeer is a real peer, so the name goes on
+        // the host window instead.
+        AutomationProperties.SetName(window, title);
         await dialog.ShowDialog(owner);
         return Resolve(content.ResultTask);
     }
@@ -125,6 +134,10 @@ internal static class MaterialDialogs
 
         var window = dialog.GetWindow();
         AttachEscapeDismiss(window);
+        // RemEx-df08 fix round 2: naming FileConsentContent's own StackPanel announced nothing (no
+        // PanelAutomationPeer in Avalonia). WindowAutomationPeer is a real peer, so the name goes on
+        // the host window instead.
+        AutomationProperties.SetName(window, vm.Title);
 
         // Deny/Allow live in FileConsentContent now and resolve vm.ResultTask directly - this just
         // closes the window once that happens, instead of reading a library button's result string.
@@ -152,6 +165,8 @@ internal static class MaterialDialogs
         var loc = LocalizationService.Instance;
         var timestamp = TryParseSnapshotTimestamp(snapshotPath) ?? SafeGetLastWriteTimeUtc(snapshotPath);
 
+        // actionIsDefault: true (RemEx-df08 fix round 1) - "primary", non-destructive; cancelling
+        // (Skip) is never the risky option here, so Enter defaulting to Accept is safe.
         var content = new DialogContent(
             loc["Restore_PromptTitle"],
             string.Format(
@@ -160,7 +175,8 @@ internal static class MaterialDialogs
                 timestamp.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)),
             loc["Restore_Skip"],
             loc["Restore_Accept"],
-            "primary");
+            "primary",
+            actionIsDefault: true);
 
         var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {
@@ -172,7 +188,12 @@ internal static class MaterialDialogs
             DialogButtons = Array.Empty<DialogButton>(),
         });
 
-        AttachEscapeDismiss(dialog.GetWindow());
+        var window = dialog.GetWindow();
+        AttachEscapeDismiss(window);
+        // RemEx-df08 fix round 2: naming DialogContent's own StackPanel announced nothing (no
+        // PanelAutomationPeer in Avalonia). WindowAutomationPeer is a real peer, so the name goes on
+        // the host window instead.
+        AutomationProperties.SetName(window, loc["Restore_PromptTitle"]);
         await dialog.ShowDialog(owner);
         return Resolve(content.ResultTask);
     }

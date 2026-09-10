@@ -196,14 +196,18 @@ public class DialogsDismissOnEscapeTests
     {
         var source = MaterialDialogsSource();
 
-        Assert.Contains(
-            "new DialogContent(title, message, loc[\"Btn_Cancel\"], confirmText, \"primary danger\")",
-            source,
-            StringComparison.Ordinal);
+        // RemEx-df08 fix round 1 added a 6th `actionIsDefault` argument to both calls (see
+        // DialogsHandleEnterTests.MaterialDialogs_ConfirmPassesActionIsDefaultFalse_RestorePassesTrue,
+        // which pins its exact value) - these two checks stay loose about that trailing argument and
+        // only re-assert the button-vocabulary classes this test exists to guard.
+        Assert.Matches(
+            new Regex(
+                @"new DialogContent\(\s*title,\s*message,\s*loc\[""Btn_Cancel""\],\s*confirmText,\s*""primary danger"","),
+            source);
 
         Assert.Matches(
             new Regex(
-                @"new DialogContent\(\s*loc\[""Restore_PromptTitle""\].*?loc\[""Restore_Skip""\],\s*loc\[""Restore_Accept""\],\s*""primary""\);",
+                @"new DialogContent\(\s*loc\[""Restore_PromptTitle""\].*?loc\[""Restore_Skip""\],\s*loc\[""Restore_Accept""\],\s*""primary"",",
                 RegexOptions.Singleline),
             source);
     }

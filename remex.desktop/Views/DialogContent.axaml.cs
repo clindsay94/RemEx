@@ -28,6 +28,17 @@ namespace Remex.Desktop.Views;
 /// dismissal (Escape, Alt+F4, the title-bar close button) leaves <see cref="ResultTask"/> incomplete,
 /// which <see cref="MaterialDialogs.Resolve"/> treats as a decline.
 /// </remarks>
+/// <remarks>
+/// RemEx-df08 fix round 1: <c>actionIsDefault</c> replaces a hardcoded <c>IsDefault="True"</c> that
+/// used to live on <see cref="ActionButton"/> in the XAML. This content is shared by two call sites
+/// with opposite risk profiles - <c>MaterialDialogs.ConfirmAsync</c> builds its action with classes
+/// "primary danger" (a destructive confirm, e.g. "Forget device?"), and <c>MaterialDialogs.RestoreAsync</c>
+/// builds a plain "primary" non-destructive accept. A single shared <c>IsDefault="True"</c> cannot
+/// express "Enter should reflexively confirm this one but not that one", so it is now set per instance
+/// here instead: <c>false</c> from <c>ConfirmAsync</c> (a deliberate confirmation must not become a
+/// reflex), <c>true</c> from <c>RestoreAsync</c> (safe to default - cancelling is never the risky
+/// option, same reasoning <c>DialogsDismissOnEscapeTests</c> already applies to Escape).
+/// </remarks>
 public partial class DialogContent : UserControl
 {
     private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -38,9 +49,11 @@ public partial class DialogContent : UserControl
     /// </summary>
     public Task<bool> ResultTask => _tcs.Task;
 
-    public DialogContent() : this(string.Empty, string.Empty, string.Empty, string.Empty, "primary") { }
+    public DialogContent() : this(string.Empty, string.Empty, string.Empty, string.Empty, "primary", false) { }
 
-    public DialogContent(string header, string message, string cancelText, string actionText, string actionClasses)
+    public DialogContent(
+        string header, string message, string cancelText, string actionText, string actionClasses,
+        bool actionIsDefault)
     {
         InitializeComponent();
         HeaderText.Text = header;
@@ -53,6 +66,8 @@ public partial class DialogContent : UserControl
         ActionButton.Classes.Clear();
         foreach (var cls in actionClasses.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             ActionButton.Classes.Add(cls);
+        // Per-call-site Enter decision (RemEx-df08 fix round 1) - see this type's remarks.
+        ActionButton.IsDefault = actionIsDefault;
     }
 
     private void OnCancelClick(object? sender, RoutedEventArgs e) => Resolve(false);

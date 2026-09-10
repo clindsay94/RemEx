@@ -288,6 +288,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Enter now confirms the PC's dialogs, and a screen reader announces which dialog has opened. Four
+  dialogs had no Enter at all, so the keyboard could dismiss them but not accept them. Two others
+  carried an accessible name that was never actually read out, because it sat on a layout panel
+  rather than on the window; the name is now set on the window itself, which is the part assistive
+  technology reads. Enter is deliberately still absent on the file-consent sheet and on the
+  confirmation prompts that delete something, so that holding the key cannot approve a transfer or
+  agree to a removal you have not read. (RemEx-df08)
+- Setting a card's second metric could clear it instead. On the Second Metric dialog, typing a
+  filter that excluded the currently selected sensor and then pressing Enter removed the metric
+  from the card and closed the dialog, which is what the Clear button does. Enter now does nothing
+  unless a sensor is actually highlighted. (RemEx-df08)
 - The phone's About screen said "What's New in 2.5.0" over the five 2.4.0 entries. The list now
   describes 2.5.0: sensor alerts on the PC, Match my theme, clipboard send from the phone, Known
   PCs on the Connection screen, and folder transfers, in all nine languages. The diagnostics

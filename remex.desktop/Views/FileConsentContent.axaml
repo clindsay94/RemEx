@@ -19,6 +19,14 @@
          those commands' own logic (FileConsentDialogViewModel.cs:58-62) is unchanged. MaterialDialogs.cs
          hands the library an empty DialogButtons array and closes the window once vm.ResultTask
          completes, instead of building a fresh decision from a library button's result string. -->
+    <!-- RemEx-df08 fix round 1: an AutomationProperties-attached Name value USED to live here, on
+         this StackPanel. It announced nothing - Control.OnCreateAutomationPeer defaults to
+         NoneAutomationPeer for any element with no dedicated peer, and Avalonia has no
+         PanelAutomationPeer, so the name was set on a peer documented as "not contributing to the
+         logical structure of the application" and a screen reader never saw it. The real fix is on
+         the host WINDOW, not this content: MaterialDialogs.FileConsentAsync now calls
+         AutomationProperties.SetName(window, vm.Title) after building this control, because
+         WindowAutomationPeer is a real peer that is actually announced. -->
     <StackPanel Spacing="14" Margin="24,24,24,24">
 
         <StackPanel Spacing="6">
