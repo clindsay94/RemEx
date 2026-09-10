@@ -297,6 +297,14 @@ reaps a branch whose bead is not closed.
    - **An injection that leaves the tests green has proved the test blind, not the code correct.**
      The whole point is that the test must FAIL while the defect is present. If it does not, you
      have learned something about your test, and reporting the fix as verified would be false.
+   - **An injection that HANGS has proved nothing either, and is the worse outcome of the two.**
+     A hang emits no test name and no message, so it reads as CI infrastructure trouble rather than
+     as a caught regression — which is why `verify.ps1` carries `--blame-hang`. Do not report a
+     deadlock as evidence the test guards the behaviour; it is evidence of an unbounded drive loop
+     (`while (CanExecute)`) or an unbounded wait, which an off-by-one turns into "advance forever".
+     Bound every drive loop by a known count and assert the bound was not reached; give every
+     await/receive an explicit timeout. Four occurrences on 2026-09-09 alone. Full rule:
+     `bd memories a-test-that-hangs-under-injection-has-failed-to-guard-anything`.
    - **Re-run every injection after the last edit to the tests.** Adding or renaming a test changes
      the counts, and a figure carried across a review round is a false claim even when it was true
      when first measured.
