@@ -6,9 +6,12 @@ Thanks for your interest in contributing! This document covers how to set up the
 
 ## Prerequisites
 - [Android Studio](https://developer.android.com/studio/) or a standalone JDK 17+ and Android SDK with `ANDROID_HOME` set
-  - **New to Android development?** See our comprehensive [Android Setup Guide](docs/ANDROID_SETUP.md) for step-by-step instructions
+  - **New to Android development?** See our comprehensive [Android Setup Guide](ANDROID_SETUP.md) for step-by-step instructions
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - An IDE that supports .NET — Visual Studio 2022+, Rider, or VS Code with the C# Dev Kit
+
+If you just want to try the app rather than build it, the Android client is available through
+[Google Play Open Testing](https://play.google.com/store/apps/details?id=com.clindsay94.remex).
 
 ---
 
@@ -83,9 +86,9 @@ The native Android app requires `libRemexCore.so` to be built from `Remex.Core` 
 
 ## Development Guidelines
 We have established strict architectural patterns to ensure "Production Readiness." All contributions must adhere to these guidelines:
-- [**Async/Await Patterns**](docs/ASYNC_GUIDELINES.md) — Mandatory for all async code.
-- [**Null Safety**](docs/NULL_SAFETY_GUIDELINES.md) — Comprehensive rules for handling nullable types.
-- [**Validation**](docs/VALIDATION_GUIDELINES.md) — Unified validation logic for all network-facing services.
+- [**Async/Await Patterns**](ASYNC_GUIDELINES.md) — Mandatory for all async code.
+- [**Null Safety**](NULL_SAFETY_GUIDELINES.md) — Comprehensive rules for handling nullable types.
+- [**Validation**](VALIDATION_GUIDELINES.md) — Unified validation logic for all network-facing services.
 
 ---
 
@@ -97,8 +100,8 @@ Managed centrally in `Directory.Build.props`.
 ### Android Native App
 Managed in `remex.android/app/version.properties`:
 ```properties
-versionCode=26
-versionName=2.1.0
+versionCode=37
+versionName=2.5.0
 ```
 
 Use `.\gradlew remexPublishRelease` from the `remex.android/` directory to auto-increment these values and prepare a release build.
@@ -111,10 +114,10 @@ Use `.\gradlew remexFreshAssembleRelease` from the `remex.android/` directory to
 1. Fork the repository and create a feature branch.
 2. Ensure all tests pass: `dotnet test Remex.sln`.
 3. Follow existing code style and naming conventions.
-4. **Important:** All new features or bug fixes must include corresponding tests and adhere to our [Architectural Guidelines](docs/).
+4. **Important:** All new features or bug fixes must include corresponding tests and adhere to our [AGENTS.md (project rules)](../AGENTS.md).
 5. Open a pull request against `main`.
 
 ---
 
 ## License
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the [MIT License](../LICENSE).

@@ -31,7 +31,7 @@
 
 **This document previously said Avalonia "does not use `SynchronizationContext` for its dispatcher",
 and concluded the flag "has no effect". That is wrong**, and it was repeated in two code comments.
-Avalonia 11 installs `AvaloniaSynchronizationContext` on the UI thread via
+Avalonia 12 installs `AvaloniaSynchronizationContext` on the UI thread via
 `AvaloniaSynchronizationContext.Ensure(...)`, called from the dispatcher's main loop and from
 `DispatcherOperation`, so it is in place for the life of the application, and nothing in
 `Program.cs`'s `AppBuilder` disables it. (The type also exposes an `AutoInstall` / `InstallIfNeeded`

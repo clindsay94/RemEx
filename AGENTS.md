@@ -84,12 +84,14 @@ other doc, old commit message, or stale issue status disagrees with these, **the
 ### Autonomous board drain — `/ralph` and `/drain`
 
 The board-drain workflow is **installed globally**, not in this repo: skills at
-`~/.claude/skills/{ralph,drain}`, scripts and the generic procedure at `~/.claude/ralph/`. What
-lives here is what is actually about RemEx — `.ralph.psd1` at the repo root (the verify contract,
-the bead prefix, which paths force a full-suite verify and which force a code review),
-`docs/ralph-board-drain.md` as the project overlay appended to the generic procedure, and
-`docs/ralph-state.jsonl` as the journal. `.ralph.psd1` is tracked on purpose: lane worktrees only
-materialise tracked files, so an untracked config would leave lanes unable to find their settings.
+`~/.claude/skills/{ralph,drain}`, scripts and the generic procedure at `~/.claude/ralph/`. Nothing
+in this repo is required for `/ralph` beyond `scripts/verify.ps1` and the beads DB. The parallel
+`/drain` machinery (`ralph-config.ps1`, `ralph-dispatch.ps1`, `ralph-merge-queue.ps1`) reads a
+`.ralph.psd1` at the repo root; that file is **not tracked** as of 2026-09-10 (single-track
+`/ralph` is the preferred loop, and the parallel lanes spent their time on provisioning overhead),
+so `/drain` will refuse until one is written locally. The 2.5 project overlay is archived at
+`docs/old-docs/ralph-board-drain.md`; the 2.5 journal (`docs/ralph-state.jsonl`) was not carried
+onto `main`.
 
 ### Verification — `scripts/verify.ps1`
 
@@ -144,7 +146,7 @@ Do not apply one platform's axes to the other.
   **CyberNOC**, **SolarFlare**, **Monolith**, Daybreak, Voltage, Sorbet, and **Dynamic** (the user's
   own seed; never overwritten) — but a preset is data fed into the same generator any custom colour
   goes through, not a separate palette. **There is no finite set of themes left to check.** Verify per
-  `docs/UI-PALETTE-SWEEP.md` / `bd show RemEx-8q7de`: the default preset plus three adversarial seeds
+  `docs/old-docs/UI-PALETTE-SWEEP.md` / `bd show RemEx-8q7de`: the default preset plus three adversarial seeds
   (Chalk near-white, Ink near-black, Chroma max-chroma), each crossed with light/dark mode and
   contrast 0.0/1.0 — 13 cells, defined once as data in `scripts/ui-palette-sweep.ps1` (`-ListCells` to
   read them, `-DryRun` to print the plan without touching anything). Launch a specific view with the
@@ -152,7 +154,7 @@ Do not apply one platform's axes to the other.
   and capture eyes-on with `.claude/skills/ui-verify/SKILL.md` / `scripts/ui-snapshot.ps1` — **never**
   inject OS keystrokes, `Tab`, or focus changes from a script or agent to drive this; the `--view`
   argument and UIA `InvokePattern` on RemEx's own Buttons are the only levers. Also check the type and
-  button vocabularies (`docs/TYPOGRAPHY-VOCABULARY.md`, `docs/BUTTON-VOCABULARY.md`) and do not let
+  button vocabularies (`docs/old-docs/TYPOGRAPHY-VOCABULARY.md`, `docs/old-docs/BUTTON-VOCABULARY.md`) and do not let
   `TypographyVocabularyTests`'s inline-font-size baseline (73, with 40 of slack) drift upward.
 
   The ~50 legacy resource keys views bind to (`TextPrimaryBrush`, `AccentPrimaryBrush`,
@@ -319,7 +321,8 @@ Session 0. A Task Scheduler logon task (`scripts/autostart-remex.ps1`, task name
   `EmbeddedHostServiceLocator`.
 
 **Localization.** All user-facing strings in `remex.agent` (UI labels, tooltips, error messages,
-notifications) must go through `Localization/`. The app supports 8 languages with live switching —
+notifications) must go through `Localization/`. The app supports 9 languages with live switching
+(English plus 8 translations: es, fr, hi, id, pl, pt-BR, tr, uk; 9 locale files on each platform) —
 hardcoded English strings are a regression.
 
 - Add new strings to the appropriate `.resx` / localization file, never inline in code or XAML.
@@ -626,8 +629,9 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 <!-- AUTO-MANAGED: release-gate -->
 ## RemEx 2.0 Release Gate — MET (historical)
 
-2.0 shipped; the repo is now at 2.4.x. The full gate record (P0–P3 bead tables, design
-decisions, definition of done) is archived at `docs/OLD DOCS/AGENTS-2.0-archive.md`.
+2.0 shipped; the repo is now at 2.5.0. The full gate record (P0–P3 bead tables, design
+decisions, definition of done) is archived at `docs/old-docs/AGENTS-2.0-archive.md` (a gitignored
+local archive, like `docs/plans/` and `docs/superpowers/`; not present in a fresh clone).
 Two decisions from it still bind:
 - **Port 8338 stays `IPAddress.Any` (authenticated-remote).** Android connects from a separate device — loopback-binding breaks all remote access.
 - **`remex.desktop` stays.** RemEx-d8s closed WITHOUT deleting it; it is a live `<ProjectReference>` of `remex.agent`.

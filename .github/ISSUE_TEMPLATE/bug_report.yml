@@ -1,0 +1,67 @@
+name: Bug report
+description: Something is broken or not working as expected.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: side
+    attributes:
+      label: Which side is affected?
+      options:
+        - Android app
+        - Windows host
+        - Linux host
+        - Both / not sure
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Android - More tab > About. PC - the About page in the dashboard.
+      placeholder: e.g. 2.5.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install method
+      options:
+        - Google Play open testing
+        - Sideloaded APK
+        - GitHub installer
+        - Linux tarball
+    validations:
+      required: true
+  - type: input
+    id: phone-model
+    attributes:
+      label: Phone model and Android version
+      placeholder: e.g. Samsung Galaxy S26 Ultra, Android 16
+  - type: input
+    id: pc-os
+    attributes:
+      label: PC operating system
+      placeholder: e.g. Windows 11 24H2, CachyOS
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The PC app can export its logs from the Diagnostic Logs page (Export as). Attach that if you have it, or any log you have.

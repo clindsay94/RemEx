@@ -209,9 +209,8 @@ Input events (mouse move, click, scroll, keyboard) are sent from client → host
 - **Response:**
   ```json
   {
-    "service": "remex.agent",
-    "status": "running",
-    "version": "2.1.0"
+    "service": "Remex.Agent",
+    "status": "running"
   }
   ```
 
@@ -224,7 +223,7 @@ Input events (mouse move, click, scroll, keyboard) are sent from client → host
     "host": "string",
     "port": 5005,
     "hostId": "string",
-    "spkiHash": "string (base64)"
+    "spkiHashBase64": "string (base64)"
   }
   ```
 

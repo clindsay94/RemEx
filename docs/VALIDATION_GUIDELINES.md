@@ -73,7 +73,7 @@ Validates WebSocket URI format (ws:// or wss://)
 [ObservableProperty]
 [NotifyDataErrorInfo]
 [ValidWebSocketUri]
-private string _hostAddress = "ws://localhost:3000/remex";
+private string _hostAddress = "wss://localhost:5005/ws";
 ```
 
 #### [ValidMacAddress]
@@ -258,7 +258,7 @@ public partial class ConnectionViewModel : ObservableValidator
     [NotifyDataErrorInfo]
     [Required(ErrorMessage = "Host address is required")]
     [ValidWebSocketUri]
-    private string _hostAddress = "ws://localhost:3000/remex";
+    private string _hostAddress = "wss://localhost:5005/ws";
     
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()

@@ -59,8 +59,10 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-.
+reported to the community leaders responsible for enforcement
+at the contact address listed on the maintainer's GitHub profile
+(https://github.com/clindsay94), or through GitHub's private vulnerability
+reporting for anything security-related.
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the

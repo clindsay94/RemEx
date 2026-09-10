@@ -227,7 +227,7 @@ silently vanishes** — no error, no log line, no failing test; the stream keeps
 cursor simply stops moving.
 
 It is unreachable by construction today, and that is the only thing keeping it safe:
-`HostBootstrapper.cs:151` registers `LinuxInputSimulationService` as `IInputSimulationService`;
+`HostBootstrapper.cs:152` registers `LinuxInputSimulationService` as `IInputSimulationService`;
 `LinuxInputBackendRouter` — the only type that touches `LinuxEisInputService` — is never registered
 or constructed in production, and `SetRouter` has zero callers outside its own declaration, so
 `_router` stays null forever. Independently, `OpenEisSender` has zero callers, and `_available` only
@@ -410,8 +410,8 @@ bytes. The receiver then tears its sink down and finalizes a zero-byte transfer,
 
 **All three senders must drain first, and all three now do:**
 
-- C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1685`),
-  called at `TransferSessionManager.cs:1596` before the completion is sent.
+- C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1729`),
+  called at `TransferSessionManager.cs:1640` before the completion is sent.
 - Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:320`).
 - Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
   `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
@@ -574,7 +574,7 @@ bytes travel.
 
 ### An unset property is not a neutral property (INVARIANT)
 
-`remex.desktop/Views/ShellView.axaml:1136-1137` — `material:SideSheet#SettingsSideSheet` **must**
+`remex.desktop/Views/ShellView.axaml:1169-1171` — `material:SideSheet#SettingsSideSheet` **must**
 carry `Background="Transparent"`.
 
 The sheet spans the whole shell (`Grid.Row="0" Grid.RowSpan="3"`) and is declared *after* the app
@@ -621,8 +621,8 @@ crash so nobody re-tries the `RenderTransform` shortcut.
 
 ### Palette-transition suppression must carry an activator AND be declared after the crossfade
 
-`remex.desktop/App.axaml:199` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1163-
-1176` (the "chrome drag suppression … MUST STAY LAST" block) — RemEx-zgtn1.
+`remex.desktop/App.axaml:224` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1195`
+(the "chrome drag suppression … MUST STAY LAST" block, suppressor styles at :1217-1229) — RemEx-zgtn1.
 
 Avalonia's `StyleInstance.GetPriority` returns `StyleTrigger` for any style carrying a class activator
 and `Style` otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. A suppression selector with
@@ -652,7 +652,7 @@ satisfy the same pairing.
 
 ### Theme switch removes only the tracked base-theme dictionary, never the whole `Themes/` folder
 
-`remex.desktop/Services/ThemeService.cs:600-660` (`ThemeDictionaryPrefix`, `BaseThemeSources`, `SwapBaseTheme`) — RemEx-gcqw5.
+`remex.desktop/Services/ThemeService.cs` — `ThemeDictionaryPrefix` (:643), `BaseThemeSources` (:656), `SwapBaseTheme` (:704) — RemEx-gcqw5.
 
 A theme switch may remove exactly the base-theme file it is replacing (matched against the literal set
 of base-theme URIs), never anything else living under `Themes/` — that folder also holds
@@ -668,8 +668,8 @@ would not have caught.
 
 ### Profile writes to disk must be atomic, and a fallback profile must never be persisted
 
-`remex.desktop/Services/DashboardLayoutService.cs` — `LoadAsyncCore` (:297), `SaveAsync` (:424),
-`WriteProfileAtomicallyAsync` (:693); `DashboardLayoutClobberTests.cs` — RemEx-8y3qy.
+`remex.desktop/Services/DashboardLayoutService.cs` — `LoadAsyncCore` (:377), `SaveAsync` (:546),
+`WriteProfileAtomicallyAsync` (:832); `DashboardLayoutClobberTests.cs` — RemEx-8y3qy.
 
 A profile write goes to a temp sibling file, `Flush(true)`s it, then `File.Move`s it over the real
 path with retry, because `File.Move` onto a locked destination throws `UnauthorizedAccessException` on
@@ -708,7 +708,7 @@ state, so attaching then produces a visible snap back to the 0% frame before it 
 
 ### A posted focus move-in must re-check the overlay is still effectively visible before landing
 
-`remex.desktop/Views/ShellView.axaml.cs` — `OnOverlayToggled` (:482);
+`remex.desktop/Views/ShellView.axaml.cs` — `OnOverlayToggled` (:511);
 `remex.desktop.tests/Views/ShellOverlayFocusTests.cs` — RemEx-ddk6b.
 
 Focus restoration on an overlay closing is posted (`Dispatcher.UIThread.Post`), so by the time it runs

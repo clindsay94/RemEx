@@ -1,5 +1,7 @@
 # Android Development Setup
 
+This is the developer SDK setup. To install the app as a user, see [INSTALL-ANDROID.md](INSTALL-ANDROID.md) (Play open testing or APK sideload).
+
 This guide helps you configure the Android SDK for building the RemEx Android app.
 
 ## Prerequisites
@@ -63,10 +65,10 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
    yes | sdkmanager --licenses
    
    # Install required SDK components
-   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+   sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
    
    # Optional: Install additional components for emulator
-   # sdkmanager "emulator" "system-images;android-34;google_apis;x86_64"
+   # sdkmanager "emulator" "system-images;android-37;google_apis;x86_64"
    ```
 
 5. **Create `local.properties`:**
@@ -117,7 +119,7 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
    sdkmanager --licenses
    
    # Install required components
-   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+   sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
    ```
 
 5. **Create `local.properties`:**
@@ -179,7 +181,7 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
    yes | sdkmanager --licenses
    
    # Install components
-   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+   sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
    ```
 
 5. **Create `local.properties`:**
@@ -236,7 +238,7 @@ dotnet build
 
 ---
 
-##Troubleshooting
+## Troubleshooting
 
 ### Error: "Android SDK directory could not be found"
 
@@ -253,7 +255,7 @@ dotnet build
 
 **Solution:**
 ```bash
-sdkmanager "build-tools;34.0.0"
+sdkmanager "build-tools;37.0.0"
 ```
 
 ### Error: "License for package Android SDK Platform XX not accepted"
@@ -290,10 +292,10 @@ sdkmanager --licenses
 **Solution:**
 ```bash
 # Install the target Android platform
-sdkmanager "platforms;android-34"
+sdkmanager "platforms;android-37"
 
 # For emulator testing, also install:
-sdkmanager "emulator" "system-images;android-34;google_apis;x86_64"
+sdkmanager "emulator" "system-images;android-37;google_apis;x86_64"
 ```
 
 ---
@@ -316,7 +318,7 @@ This script handles:
 
 See [scripts/setup-android-sdk.sh](../scripts/setup-android-sdk.sh) for details.
 
-## 🛡️ Security & Credentials
+## Security & Credentials
 
 ### Encrypted Storage
 RemEx stores its **pinned host SPKI hashes** and **per-host reconnect secrets** in two separate Jetpack **DataStore** files (`remex_pinned_hosts` and `remex_reconnect_secrets`). Every value is encrypted with **Tink AES-256-GCM AEAD** before it is written, and the Tink keyset is itself sealed by an **Android Keystore**–backed key (`android-keystore://remex_pinned_host_key`) — so your paired-device list cannot be read off the device.
@@ -325,7 +327,7 @@ RemEx stores its **pinned host SPKI hashes** and **per-host reconnect secrets** 
 
 ---
 
-## 📈 Firebase & Crashlytics
+## Firebase & Crashlytics
 
 For production builds, Firebase Crashlytics is used for crash reporting and NDK symbol analysis.
 
@@ -344,7 +346,7 @@ The build system is configured to automatically upload unstripped native symbols
 - [Android Command Line Tools](https://developer.android.com/studio/command-line)
 - [Android SDK Manager](https://developer.android.com/tools/sdkmanager)
 - [Gradle Build Configuration](https://developer.android.com/build)
-- [RemEx Contributing Guide](../CONTRIBUTING.md)
+- [RemEx Contributing Guide](CONTRIBUTING.md)
 
 ---
 
@@ -359,7 +361,7 @@ The build system is configured to automatically upload unstripped native symbols
 | `sdkmanager --uninstall "package-name"` | Remove package |
 | `adb devices` | List connected devices |
 | `./gradlew tasks` | List available Gradle tasks |
-| `sdkmanager "platforms;android-35"` | Install target SDK 35 |
+| `sdkmanager "platforms;android-37"` | Install target SDK 37 |
 
 ---
 

@@ -63,23 +63,29 @@ function Write-Section([string]$Title) {
 }
 
 # ---------------------------------------------------------------------------
-# 1. What does the repo claim to own?
+# 1. What does the repo mandate?
+#    The server set is the one CLAUDE.md names. A project-scope .mcp.json is
+#    optional (decided 2026-09-10: it carried personal machine paths in a public
+#    repo, so the definitions live at user scope in ~/.claude.json instead). If
+#    one exists it is read; if not, the mandated list below is the contract and
+#    section 4 is what catches a wipe.
 # ---------------------------------------------------------------------------
-Write-Section 'Repo-owned server definitions (.mcp.json)'
+Write-Section 'Mandated servers'
 
 $McpJsonPath = Join-Path $RepoRoot '.mcp.json'
 if (-not (Test-Path $McpJsonPath)) {
-    Add-Problem ".mcp.json is missing from $RepoRoot. The server set is not version-controlled; a wipe will be silent again (RemEx-56fu.6)."
     $Mandated = @('gitnexus', 'token-savior')
+    if (-not $Hook) { Write-Host "  mandated (from CLAUDE.md, no .mcp.json): $($Mandated -join ', ')" }
 } else {
     $McpJson = Get-Content $McpJsonPath -Raw | ConvertFrom-Json
     $Mandated = @($McpJson.mcpServers.PSObject.Properties.Name)
-    if (-not $Hook) { Write-Host "  mandated: $($Mandated -join ', ')" }
+    if (-not $Hook) { Write-Host "  mandated (from .mcp.json): $($Mandated -join ', ')" }
 }
 
 # ---------------------------------------------------------------------------
 # 2. Does each mandated server's command resolve on THIS machine?
-#    .mcp.json defaults to Connor's Windows paths; Linux uses the overrides.
+#    Only meaningful when a .mcp.json is present; user-scope entries are
+#    checked for existence in section 4.
 # ---------------------------------------------------------------------------
 Write-Section 'Command resolution'
 
