@@ -25,7 +25,7 @@ val androidLocalProperties = Properties().apply {
 // ── Version management ──────────────────────────────────────────────────────
 // Source of truth: app/version.properties (tracked in git).
 // - remexFreshAssembleRelease  → builds with current version, no changes.
-// - remexPublishRelease        → bumps versionCode+1, minor+1 (patch→0),
+// - remexPublishRelease        → bumps versionCode+1, PATCH+1 (2.5.0 → 2.5.1),
 //                                writes back to version.properties, then builds.
 val versionPropsFile = file("version.properties")
 val versionProps = Properties().apply {
@@ -825,7 +825,7 @@ val remexFreshAssembleRelease by project.tasks.registering {
 val remexPublishRelease by project.tasks.registering {
     group = "remex"
     description =
-        "Bump version (versionCode+1, minor+1, patch→0), clean build release APK + AAB, and verify"
+        "Bump version (versionCode+1, patch+1), clean build release APK + AAB, and verify"
     dependsOn("clean")
     dependsOn("mergeReleaseAssets") // Force assets to be merged first
     dependsOn("assembleRelease")

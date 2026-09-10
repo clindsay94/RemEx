@@ -206,6 +206,26 @@ monitors can share dimensions. Raw output always uses `CaptureScaling.ScaledEven
 `scale = 1.0`, so an odd-sized monitor or crop can't desync the H.264 encoder's fixed rawvideo input
 size. (RemEx-lq6h)
 
+### The libei/EIS sender is a no-op stub — never let the router select it
+
+`remex.agent.native.linux/src/libei_sender.c` dlopens libei and returns `REMEX_OK` from **every**
+send function while discarding all arguments (its own comments say "In a complete implementation
+this would..."). If anything ever routes pointer/keyboard/scroll into it, **all remote input
+silently vanishes** — no error, no log line, no failing test; the stream keeps painting and the
+cursor simply stops moving.
+
+It is unreachable by construction today, and that is the only thing keeping it safe:
+`HostBootstrapper.cs:131` registers `LinuxInputSimulationService` as `IInputSimulationService`;
+`LinuxInputBackendRouter` — the only type that touches `LinuxEisInputService` — is never registered
+or constructed in production, and `SetRouter` has zero callers outside its own declaration, so
+`_router` stays null forever. Independently, `OpenEisSender` has zero callers, and `_available` only
+flips inside `TryOpen`, which only `OpenEisSender` calls.
+
+**Before switching the Linux RD input backend to libei/EIS**, either implement the sender for real
+with tests, or make `remex_eis_sender_create` return `REMEX_ERR_EIS_UNAVAILABLE` so the router can
+never select it. Do not wire the router up "just to see". (RemEx-whxz, reachability established in
+the RemEx-892l review 2026-07-25)
+
 ---
 
 ## Android — H.264 decoder
