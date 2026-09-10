@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
@@ -30,10 +31,12 @@ import androidx.compose.material3.Text
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -41,7 +44,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -93,7 +95,23 @@ fun RemoteMouseScreenContent(
 ) {
     val view = LocalView.current
     val focusRequester = remember { FocusRequester() }
-    var textValue by remember { mutableStateOf(TextFieldValue("")) }
+    val remoteKeyboardState = rememberTextFieldState()
+    val remoteKeyboardTransformation =
+            remember(onTextSent, onSendKeyPress) {
+                remoteKeyboardInputTransformation(
+                        onSendText = onTextSent,
+                        onSendKeyPress = onSendKeyPress
+                )
+            }
+
+    // The buffer-length cap lives here, not in the InputTransformation above: TextFieldBuffer
+    // cannot see the IME composition range, but TextFieldState.composition can, so the guard
+    // against trimming mid-composition (RemEx-d459) runs from this reactive, non-polling site
+    // instead - one check per text/composition change, never a loop.
+    LaunchedEffect(remoteKeyboardState) {
+        snapshotFlow { remoteKeyboardState.text.length to (remoteKeyboardState.composition == null) }
+                .collect { trimRemoteKeyboardBufferIfIdle(remoteKeyboardState) }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         RemexFlexibleTopBar(title = stringResource(R.string.screen_remote_mouse_title))
@@ -111,16 +129,8 @@ fun RemoteMouseScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 BasicTextField(
-                        value = textValue,
-                        onValueChange = { newValue ->
-                            textValue =
-                                    applyRemoteKeyboardEdit(
-                                            currentValue = textValue,
-                                            newValue = newValue,
-                                            onSendText = onTextSent,
-                                            onSendKeyPress = onSendKeyPress
-                                    )
-                        },
+                        state = remoteKeyboardState,
+                        inputTransformation = remoteKeyboardTransformation,
                         modifier =
                                 Modifier.size(1.dp)
                                         .graphicsLayer { alpha = 0f }
