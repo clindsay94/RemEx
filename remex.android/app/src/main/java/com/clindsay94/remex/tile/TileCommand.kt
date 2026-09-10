@@ -1,6 +1,10 @@
 package com.clindsay94.remex.tile
 
+import android.app.PendingIntent
+import android.content.Intent
+import android.service.quicksettings.TileService
 import android.util.Log
+import androidx.annotation.StringRes
 import com.clindsay94.remex.RemexCoreClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +75,31 @@ internal fun sendTileCommand(action: String, parameters: JSONObject = JSONObject
             Log.w(TAG, "Tile command $action did not succeed: $response")
         }
     }
+}
+
+/**
+ * Gates a destructive tile command behind an explicit tap-to-confirm (RemEx-sxfp: one tap on a
+ * Quick Settings tile ran Shutdown/Restart/Sleep/etc. with no confirmation, the same defect
+ * RemEx-sxfp names on the widget).
+ *
+ * `TileService.showDialog(Dialog)` was deprecated in API 34 (this app's `minSdk`) in favour of
+ * `startActivityAndCollapse(PendingIntent)`, which needs a real Activity — hence
+ * [TileConfirmActivity] rather than a dialog hosted in the (already-torn-down-by-the-time-anyone-
+ * taps-anything) TileService itself. Sending the command is [TileConfirmActivity]'s job, on an
+ * explicit Confirm tap; this function only gets the confirmation UI on screen.
+ */
+internal fun TileService.confirmTileCommand(action: String, @StringRes labelRes: Int) {
+    val intent =
+        TileConfirmActivity.intentFor(this, action, labelRes)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val pendingIntent =
+        PendingIntent.getActivity(
+            this,
+            action.hashCode(),
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+    startActivityAndCollapse(pendingIntent)
 }
 
 /**

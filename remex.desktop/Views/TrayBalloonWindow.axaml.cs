@@ -63,11 +63,14 @@ public partial class TrayBalloonWindow : Window
         _dismissTimer.Tick += OnDismissTick;
     }
 
-    // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
-    // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves AccentStripe,
-    // GlyphIcon, TitleText and MessageText null (RemEx-wdqx). This one was the least likely to be
-    // noticed: the fields are read when a balloon is SHOWN, not when the window is constructed, so
-    // the failure waits for the first tray notification rather than arriving at startup.
+    // No hand-written InitializeComponent: a parameterless one shadows the generated
+    // InitializeComponent(bool loadXaml = true) override, so AvaloniaXamlLoader.Load(this) never runs
+    // and every x:Name field — AccentStripe, GlyphIcon, TitleText and MessageText here — stays null.
+    // That exact NullReferenceException, in ConfirmationDialog's TitleText field, is what froze RemEx
+    // on every destructive action (RemEx-wdqx; ConfirmationDialog.axaml.cs itself is gone, deleted on
+    // this branch). This one was the least likely to be noticed: the fields are read when a balloon
+    // is SHOWN, not when the window is constructed, so the failure waits for the first tray
+    // notification rather than arriving at startup.
 
     /// <summary>
     /// Shows (or re-uses) the balloon for one event. Call on the UI thread.

@@ -56,10 +56,13 @@ public partial class AppLauncherView : UserControl
         AddHandler(DragDrop.DropEvent, OnFileDrop);
     }
 
-    // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
-    // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves LauncherGrid null.
-    // This file happened to survive it by reaching the control through FindControl<T> instead of the
-    // generated field, so it was latent rather than live (RemEx-wdqx). Both now work.
+    // No hand-written InitializeComponent: a parameterless one shadows the generated
+    // InitializeComponent(bool loadXaml = true) override, so AvaloniaXamlLoader.Load(this) never
+    // runs and every x:Name field — LauncherGrid here — stays null. That exact NullReferenceException,
+    // in ConfirmationDialog's TitleText field, is what froze RemEx on every destructive action
+    // (RemEx-wdqx; ConfirmationDialog.axaml.cs itself is gone, deleted on this branch). This file
+    // happened to survive it by reaching the control through FindControl<T> instead of the generated
+    // field, so it was latent rather than live here. Both now work.
 
     /// <summary>
     /// Arms this view's first-paint entrance (RemEx-alwfa.2), reusing the dashboard's once-per-

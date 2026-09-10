@@ -117,7 +117,6 @@
     <string name="rc_category_session">Sessão</string>
     <string name="rc_category_power">Energia</string>
     <string name="rc_category_energy">Economia</string>
-    <string name="rc_category_media">Mídia</string>
     <string name="rc_media_volume_down">Diminuir volume</string>
     <string name="rc_media_volume_up">Aumentar volume</string>
     <string name="rc_media_mute">Silenciar</string>
@@ -348,6 +347,8 @@
     <string name="tile_hibernate_label">Hibernar PC</string>
     <string name="tile_monitor_off_label">Desligar Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Confirmar ação</string>
+    <string name="tile_confirm_message">Enviar \"%1$s\" para o seu PC agora?</string>
     <string name="screen_file_transfer_title">Transferência de Arquivos</string>
     <string name="file_transfer_upload">Enviar ↑</string>
     <string name="file_transfer_download">Baixar ↓</string>
@@ -628,6 +629,7 @@
     <string name="widget_refresh">Atualizar</string>
     <string name="widget_toast_refreshing">Atualizando…</string>
     <string name="widget_toast_refreshed">Telemetria atualizada</string>
+    <string name="widget_toast_refresh_failed">Não foi possível atualizar a telemetria</string>
     <string name="widget_toast_connecting">Conectando ao PC…</string>
     <string name="widget_config_poll_interval_label">Atualizar a cada %1$d s</string>
     <string name="widget_config_poll_interval_hint">Com que frequência o widget consulta o PC para obter telemetria atualizada enquanto conectado.</string>

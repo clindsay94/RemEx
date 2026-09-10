@@ -37,30 +37,53 @@ private const val TAG = "RemoteDesktopVM"
 private const val ERROR_CODE_DELIMITER = '\u001F'
 
 /**
- * The host is discarding our input while the stream itself is fine (RemEx-iaxc).
+ * Wire error codes the host tags onto a remote-desktop `errorText` (RemEx-728, RemEx-nl0z).
  *
- * Named here rather than only inside the `when` that localizes codes, because this one is also
- * matched BEFORE that point to keep it off the fatal error path entirely.
+ * Mirrors `Remex.Core.Models.DesktopErrorCodes` VERBATIM. These travel inside the existing
+ * `errorText` field as `"code<delim>arg<delim>englishFallback"` ([ERROR_CODE_DELIMITER]) and are
+ * protocol tokens, not prose — duplicated here because the two sides do not share a build, the
+ * same reason `FileConflictCodes` (service/FileConflictPolicy.kt) duplicates its own host-side
+ * enum.
  */
-private const val DESKTOP_ERR_INPUT_UNAVAILABLE = "input_unavailable"
+private object DesktopErrorCodes {
+    const val CAPTURE_UNAVAILABLE = "capture_unavailable"
+    const val CAPTURE_STOPPED = "capture_stopped"
+    const val TARGET_UNAVAILABLE = "target_unavailable"
+    const val TARGET_SWITCH_UNSUPPORTED = "target_switch_unsupported"
+    const val RUNTIME_UNAVAILABLE = "runtime_unavailable"
+
+    /** Raised client-side (RemEx-nl0z), not sent by the host — see [isConnectFailure]. */
+    const val CONNECT_TIMEOUT = "connect_timeout"
+
+    /** Raised client-side (RemEx-nl0z), not sent by the host — see [isConnectFailure]. */
+    const val HANDSHAKE_TIMEOUT = "handshake_timeout"
+
+    /**
+     * The host is discarding our input while the stream itself is fine (RemEx-iaxc). Matched
+     * BEFORE the localizing `when` in `localizeDesktopError`, by [isInputUnavailableError], to
+     * keep it off the fatal error path entirely.
+     */
+    const val INPUT_UNAVAILABLE = "input_unavailable"
+}
 
 /**
  * True when a coded desktop error is the advisory "the PC is discarding your input" (RemEx-iaxc).
  *
- * **A TOP-LEVEL FUNCTION SO IT CAN BE TESTED WITHOUT AN ANDROID RUNTIME.** The literal it matches is
- * a cross-language contract with `DesktopErrorCodes.InputUnavailable` on the host, duplicated here
- * because the two do not share a build. If they ever drift, this returns false, the message falls
- * through to the fatal handler that clears `isStreaming` and reconnects, and a declined permission
- * prompt turns into a reconnect loop that blanks a healthy picture once per input event — worse than
- * the silent bug this fixes. Both sides are pinned by tests for that reason.
+ * **A TOP-LEVEL FUNCTION SO IT CAN BE TESTED WITHOUT AN ANDROID RUNTIME.** The code it matches,
+ * [DesktopErrorCodes.INPUT_UNAVAILABLE], is a cross-language contract with
+ * `DesktopErrorCodes.InputUnavailable` on the host, duplicated here because the two do not share a
+ * build. If they ever drift, this returns false, the message falls through to the fatal handler
+ * that clears `isStreaming` and reconnects, and a declined permission prompt turns into a reconnect
+ * loop that blanks a healthy picture once per input event — worse than the silent bug this fixes.
+ * Both sides are pinned by tests for that reason.
  */
 internal fun isInputUnavailableError(errorText: String?): Boolean =
-        errorText?.substringBefore(ERROR_CODE_DELIMITER) == DESKTOP_ERR_INPUT_UNAVAILABLE
+        errorText?.substringBefore(ERROR_CODE_DELIMITER) == DesktopErrorCodes.INPUT_UNAVAILABLE
 
 /**
  * Wire literal for the user-initiated "ask again" that re-arms the PC's input-permission prompt
  * (RemEx-5bwpv). Phone -> PC, no payload. A cross-language contract with the host the same way
- * [DESKTOP_ERR_INPUT_UNAVAILABLE] is: the two sides do not share a build, so a rename on either end
+ * [DesktopErrorCodes.INPUT_UNAVAILABLE] is: the two sides do not share a build, so a rename on either end
  * silently breaks the retry instead of failing to compile. Internal, like [isInputUnavailableError],
  * so the unit test can pin it directly.
  */
@@ -688,7 +711,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun isConnectFailure(raw: String?): Boolean {
         val code = raw.orEmpty().substringBefore('\u001F', missingDelimiterValue = "")
-        return code == "connect_timeout" || code == "handshake_timeout"
+        return code == DesktopErrorCodes.CONNECT_TIMEOUT || code == DesktopErrorCodes.HANDSHAKE_TIMEOUT
     }
 
     /**
@@ -705,24 +728,24 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         val fallback = parts.subList(2, parts.size).joinToString("\u001F")
         val app = getApplication<Application>()
         return when (code) {
-            "capture_unavailable" -> app.getString(R.string.rd_err_capture_unavailable)
-            "capture_stopped" ->
+            DesktopErrorCodes.CAPTURE_UNAVAILABLE -> app.getString(R.string.rd_err_capture_unavailable)
+            DesktopErrorCodes.CAPTURE_STOPPED ->
                     arg.toIntOrNull()?.let { app.getString(R.string.rd_err_capture_stopped, it) }
                             ?: fallback
-            "target_unavailable" -> app.getString(R.string.rd_err_target_unavailable)
-            "target_switch_unsupported" ->
+            DesktopErrorCodes.TARGET_UNAVAILABLE -> app.getString(R.string.rd_err_target_unavailable)
+            DesktopErrorCodes.TARGET_SWITCH_UNSUPPORTED ->
                     app.getString(R.string.rd_err_target_switch_unsupported)
-            "runtime_unavailable" -> app.getString(R.string.rd_err_runtime_unavailable)
-            DESKTOP_ERR_INPUT_UNAVAILABLE -> app.getString(R.string.rd_err_input_unavailable)
+            DesktopErrorCodes.RUNTIME_UNAVAILABLE -> app.getString(R.string.rd_err_runtime_unavailable)
+            DesktopErrorCodes.INPUT_UNAVAILABLE -> app.getString(R.string.rd_err_input_unavailable)
             // Raised client-side rather than by the host (RemEx-nl0z). Both take host:port as the
             // arg, and both are kept distinct because the next step differs: a connect timeout means
             // the PC was never reached, while a handshake timeout means it WAS reached and the
             // certificate matched, so telling the user to check the network would send them the
             // wrong way.
-            "connect_timeout" ->
+            DesktopErrorCodes.CONNECT_TIMEOUT ->
                     if (arg.isNotEmpty()) app.getString(R.string.rd_err_connect_timeout, arg)
                     else fallback.ifEmpty { raw }
-            "handshake_timeout" ->
+            DesktopErrorCodes.HANDSHAKE_TIMEOUT ->
                     if (arg.isNotEmpty()) app.getString(R.string.rd_err_handshake_timeout, arg)
                     else fallback.ifEmpty { raw }
             else -> fallback.ifEmpty { raw }

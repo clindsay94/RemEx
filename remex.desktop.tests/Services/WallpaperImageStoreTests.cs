@@ -90,8 +90,19 @@ public class WallpaperImageStoreTests : IDisposable
     [Fact]
     public void TheDirectoryIsAWallpapersFolderUnderThePerUserRoot()
     {
-        WallpaperImageStore.DirectoryFor(@"C:\Users\x\AppData\Local\RemEx")
-            .Should().Be(Path.Combine(@"C:\Users\x\AppData\Local\RemEx", "wallpapers"));
+        // No hardcoded Windows path, and the expectation is built from a plain separator + name
+        // concatenation rather than by calling the same Path.Combine(root, "wallpapers") the
+        // production code uses internally - otherwise this would just restate DirectoryFor's own
+        // implementation rather than pin an independent expectation of what it must produce.
+        var root = OperatingSystem.IsWindows()
+            ? @"C:\Users\x\AppData\Local\RemEx"
+            : "/home/x/.local/share/RemEx";
+
+        var result = WallpaperImageStore.DirectoryFor(root);
+
+        result.Should().Be(root + Path.DirectorySeparatorChar + "wallpapers");
+        result.Should().StartWith(root);
+        result.Should().EndWith("wallpapers");
     }
 
     [Fact]

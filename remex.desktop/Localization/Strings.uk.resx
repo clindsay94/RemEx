@@ -3415,4 +3415,55 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Картки й текст виглядатимуть так.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Ця назва вже використовується</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>«{0}» вже є в цій папці. Ви можете зберегти обидва файли, замінити той, що там є, або пропустити цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>«{0}» вже тут, але це інший тип елемента — папка там, де ви вставляєте файл, або навпаки. Збережіть обидва або пропустіть цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Нову назву для «{0}» зайняло щось інше саме перед створенням. Спробуйте «Зберегти обидва» ще раз, щоб вибрати вільну назву, або пропустіть цей елемент.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>Не вдається дати «{0}» нову назву тут, бо нова назва була б задовгою для цієї папки. Пропустіть цей елемент або зупиніть вставляння та спершу скоротіть назву.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>Не вдалося вставити «{0}» сюди, і цей ПК не розпізнає причину, яку назвав ваш пристрій. Пропустіть цей елемент або зупиніть вставляння.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Зберегти обидва</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Ваш пристрій вибере нову назву, тож нічого не буде перезаписано.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Замінити</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Перезаписує елемент, який уже там є. Цю дію не можна скасувати.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Пропустити</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Залишає цей елемент як є та продовжує з рештою.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Зупинити вставляння</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Зупиніться тут. Усе, що ще не вставлено, залишиться без змін.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Вставляння зупинено. Елементи, які не було вставлено, досі в буфері обміну.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Збережено як «{0}», тож елемент, який уже там був, залишився.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Після кількох спроб «{0}» покинуто. У цьому елементі нічого не змінено.</value>
+  </data>
 </root>

@@ -106,7 +106,6 @@
     <string name="rc_category_session">Sesja</string>
     <string name="rc_category_power">Zasilanie</string>
     <string name="rc_category_energy">Energia</string>
-    <string name="rc_category_media">Multimedia</string>
     <string name="rc_media_volume_down">Ciszej</string>
     <string name="rc_media_volume_up">Głośniej</string>
     <string name="rc_media_mute">Wycisz</string>
@@ -332,6 +331,8 @@
     <string name="tile_hibernate_label">Hibernuj PC</string>
     <string name="tile_monitor_off_label">Wyłącz monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Potwierdź działanie</string>
+    <string name="tile_confirm_message">Wysłać \"%1$s\" do komputera teraz?</string>
     <string name="screen_file_transfer_title">Transfer plików</string>
     <string name="file_transfer_upload">Wyślij ↑</string>
     <string name="file_transfer_download">Pobierz ↓</string>
@@ -621,6 +622,7 @@
     <string name="widget_refresh">Odśwież</string>
     <string name="widget_toast_refreshing">Odświeżanie…</string>
     <string name="widget_toast_refreshed">Telemetria odświeżona</string>
+    <string name="widget_toast_refresh_failed">Nie udało się odświeżyć telemetrii</string>
     <string name="widget_toast_connecting">Łączenie z komputerem…</string>
     <string name="widget_config_poll_interval_label">Odświeżaj co %1$d s</string>
     <string name="widget_config_poll_interval_hint">Jak często widżet pobiera z komputera świeże dane telemetryczne, gdy jest połączony.</string>

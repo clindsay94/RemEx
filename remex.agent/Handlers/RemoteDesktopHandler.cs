@@ -471,9 +471,15 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     consecutiveFailures = 0;
                     errorReported = false;
-                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
+                    // AFTER the delay, never before it. Reset() anchors the absolute timeline to
+                    // "now" (PrecisionPacer.Reset), so resetting first leaves _nextTickMs 500 ms in
+                    // the past by the time the pause ends — and WaitForNextTickAsync only steps
+                    // _nextTickMs forward by one interval, so it returns a zero wait ~60 times in a
+                    // row at 120 FPS. That is exactly the recovery burst the PrecisionPacer guard in
+                    // docs/REGRESSION-GUARDS.md says Reset() exists to prevent.
+                    pacer.Reset();
                     continue;
                 }
 
@@ -781,11 +787,15 @@ public sealed class RemoteDesktopHandler : IDisposable
                 // first successful frame, restoring the normal FPS cadence.
                 if (consecutiveFailures >= 5)
                 {
-                    // Reset the absolute timeline so the loop doesn't burst through a backlog
-                    // of "missed" ticks when capture recovers.
-                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
+                    // Re-anchor the absolute timeline so the loop doesn't burst through a backlog of
+                    // "missed" ticks when capture recovers. AFTER the delay, never before it:
+                    // Reset() anchors to "now", so resetting first would leave _nextTickMs 500 ms in
+                    // the past and WaitForNextTickAsync — which only steps forward by one interval —
+                    // would return a zero wait ~60 times in a row at 120 FPS. That backlog burst is
+                    // the thing this call exists to prevent.
+                    pacer.Reset();
                 }
                 else
                 {

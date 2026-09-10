@@ -5,7 +5,8 @@ import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
 
 class RemexRestartTileService : TileService() {
-    private fun executeCommand() = sendTileCommand("Restart")
+    private fun executeCommand() =
+        confirmTileCommand("Restart", com.clindsay94.remex.R.string.tile_restart_label)
 
     override fun onClick() {
         super.onClick()

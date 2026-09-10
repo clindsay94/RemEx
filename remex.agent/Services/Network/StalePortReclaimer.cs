@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Remex.Agent.Services.Network;
@@ -150,7 +151,9 @@ internal static class StalePortReclaimer
             }
 
             var pidMatch = Regex.Match(line, @"pid=(\d+)");
-            if (pidMatch.Success && int.TryParse(pidMatch.Groups[1].Value, out var pid))
+            // Invariant: this is `ss`/`netstat` output, which is C-locale regardless of the user's.
+            if (pidMatch.Success
+                && int.TryParse(pidMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
             {
                 pids.Add(pid);
             }
@@ -187,7 +190,7 @@ internal static class StalePortReclaimer
                 continue;
             }
 
-            if (int.TryParse(parts[^1], out var pid))
+            if (int.TryParse(parts[^1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
             {
                 pids.Add(pid);
             }
@@ -204,7 +207,7 @@ internal static class StalePortReclaimer
     {
         var colon = endpoint.LastIndexOf(':');
         return colon >= 0
-            && int.TryParse(endpoint.AsSpan(colon + 1), out var p)
+            && int.TryParse(endpoint.AsSpan(colon + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p)
             && p == port;
     }
 

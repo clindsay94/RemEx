@@ -117,7 +117,6 @@
     <string name="rc_category_session">सत्र</string>
     <string name="rc_category_power">पावर</string>
     <string name="rc_category_energy">ऊर्जा</string>
-    <string name="rc_category_media">मीडिया</string>
     <string name="rc_media_volume_down">आवाज़ कम करें</string>
     <string name="rc_media_volume_up">आवाज़ बढ़ाएँ</string>
     <string name="rc_media_mute">म्यूट करें</string>
@@ -348,6 +347,8 @@
     <string name="tile_hibernate_label">पीसी को हाइबरनेट करें</string>
     <string name="tile_monitor_off_label">मॉनिटर बंद करें</string>
     <string name="tile_wol_label">वेक ऑन लैन</string>
+    <string name="tile_confirm_title">कार्रवाई की पुष्टि करें</string>
+    <string name="tile_confirm_message">क्या अभी अपने पीसी पर \"%1$s\" भेजें?</string>
     <string name="screen_file_transfer_title">फ़ाइल ट्रांसफर</string>
     <string name="file_transfer_upload">अपलोड ↑</string>
     <string name="file_transfer_download">डाउनलोड ↓</string>
@@ -628,6 +629,7 @@
     <string name="widget_refresh">रिफ़्रेश करें</string>
     <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>
     <string name="widget_toast_refreshed">टेलीमेट्री रिफ़्रेश हो गई</string>
+    <string name="widget_toast_refresh_failed">टेलीमेट्री रिफ़्रेश नहीं हो सकी</string>
     <string name="widget_toast_connecting">पीसी से कनेक्ट हो रहा है…</string>
     <string name="widget_config_poll_interval_label">हर %1$d सेकंड में रिफ़्रेश करें</string>
     <string name="widget_config_poll_interval_hint">कनेक्ट रहते हुए विजेट कितनी बार पीसी से ताज़ा टेलीमेट्री मांगता है।</string>

@@ -6,7 +6,8 @@ import com.clindsay94.remex.RemexClientManager
 
 class RemexLockTileService : TileService() {
 
-    private fun executeCommand() = sendTileCommand("Lock")
+    private fun executeCommand() =
+        confirmTileCommand("Lock", com.clindsay94.remex.R.string.tile_lock_label)
 
     override fun onClick() {
         super.onClick()

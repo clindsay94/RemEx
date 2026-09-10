@@ -3415,4 +3415,55 @@ Możesz zmienić:
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Karty i tekst będą wyglądać tak.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Nazwa jest już używana</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>„{0}” już znajduje się w tym folderze. Możesz zachować oba pliki, zastąpić ten, który tam jest, albo pominąć ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>„{0}” już tu jest, ale to inny rodzaj elementu — folder tam, gdzie wklejasz plik, albo odwrotnie. Zachowaj oba albo pomiń ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Nowa nazwa dla „{0}” została zajęta przez coś innego tuż przed jej utworzeniem. Spróbuj ponownie „Zachowaj oba”, aby wybrać wolną nazwę, albo pomiń ten element.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>Nie można nadać tutaj nowej nazwy elementowi „{0}”, ponieważ nowa nazwa byłaby za długa dla tego folderu. Pomiń ten element albo zatrzymaj wklejanie i najpierw skróć nazwę.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>Nie udało się wkleić tutaj elementu „{0}”, a ten komputer nie rozpoznaje powodu podanego przez urządzenie. Pomiń ten element albo zatrzymaj wklejanie.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Zachowaj oba</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Twoje urządzenie wybierze nową nazwę, więc nic nie zostanie nadpisane.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Zastąp</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Nadpisuje element, który już tam jest. Tego nie da się cofnąć.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Pomiń</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Zostaw ten element bez zmian i przejdź do kolejnych.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Zatrzymaj wklejanie</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Zatrzymaj się tutaj. Wszystko, co nie zostało jeszcze wklejone, pozostaje bez zmian.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Wklejanie zatrzymane. Elementy, których nie wklejono, nadal są w schowku.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Zapisano jako „{0}”, więc element, który już tam był, został zachowany.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Zrezygnowano z elementu „{0}” po kilku próbach. Nic w nim nie zostało zmienione.</value>
+  </data>
 </root>

@@ -505,39 +505,62 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         };
         await MessageSerializer.SendAsync(ws, startMsg, CancellationToken.None);
 
-        // Read meta
-        var buffer = new byte[4096];
-        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-        // Read one binary frame
-        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        // Drain exactly what SendCurrentStreamBootstrapAsync sends before streaming starts. This
+        // test's DesktopConfig sets no ClientCapabilities, so SupportsCursorState is false and the
+        // bootstrap (RemoteDesktopHandler.cs ~1541-1600) sends meta, then descriptor, then goes
+        // straight to the first binary frame - no cursor_state message, unlike the sibling test at
+        // DesktopTargetSwitch_WithEnvelopeCapabilities_SendsNewStreamMetadata which opts into cursor
+        // state via ClientCapabilities.SupportsCursorState. Using the message-reassembling helpers
+        // rather than a single raw ReceiveAsync per message so a frame split across WebSocket
+        // fragments does not get misread as "the next message already arrived".
+        var meta = await ReceiveTextMessageAsync(ws, CancellationToken.None);
+        Assert.Equal(MessageTypes.DesktopMeta, meta.Type);
+        var descriptor = await ReceiveTextMessageAsync(ws, CancellationToken.None);
+        Assert.Equal(MessageTypes.DesktopStreamDescriptor, descriptor.Type);
+        await ReceiveBinaryMessageAsync(ws, CancellationToken.None);
 
         // Send stop
         var stopMsg = new RemexMessage { Type = MessageTypes.DesktopStop };
         await MessageSerializer.SendAsync(ws, stopMsg, CancellationToken.None);
 
-        // The server should close the connection gracefully or stop sending frames.
-        // Give it a moment then close.
+        // DesktopStop must actually stop streaming: the host cancels the send loop, drains it, and
+        // only then closes the socket (RemoteDesktopHandler.cs ~1178-1181, ~330-356) - so an observed
+        // Close IS proof the send loop terminated, not just a hope that it did. A host that kept
+        // streaming after Stop would still be producing frames when the close should have already
+        // happened; at 5 fps a non-stopping host would produce roughly 15 frames in this window, so
+        // tolerate at most one already-in-flight frame rather than asserting zero (which raced the
+        // server's own cancellation-to-close gap in the previous version of this test) while still
+        // failing hard on a host that never stopped at all.
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var sawClose = false;
+        var binariesAfterStop = 0;
         try
         {
-            // Read until close or timeout
             while (!cts.Token.IsCancellationRequested)
             {
-                var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                if (res.MessageType == WebSocketMessageType.Close) break;
+                var (messageType, _) = await ReceiveSocketMessageAsync(ws, cts.Token);
+                if (messageType == WebSocketMessageType.Close)
+                {
+                    sawClose = true;
+                    break;
+                }
+
+                if (messageType == WebSocketMessageType.Binary) binariesAfterStop++;
             }
         }
-        catch (OperationCanceledException) { /* timeout is acceptable */ }
-        catch (WebSocketException) { /* connection closed */ }
-        catch (System.IO.IOException) { /* server closed first */ }
-
-        // If still open, close cleanly
-        if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
+        catch (OperationCanceledException)
         {
-            try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { /* best-effort test cleanup, as above */ }
+            // Fall through - sawClose stays false and the assertion below fails the test. A timeout
+            // here is exactly the "never stops streaming" bug this test exists to catch.
         }
+
+        Assert.True(sawClose, "the host never closed the desktop stream after DesktopStop");
+        Assert.True(binariesAfterStop <= 1,
+            $"the host kept streaming after DesktopStop - {binariesAfterStop} more frame(s) arrived before close");
+        Assert.Equal(WebSocketState.CloseReceived, ws.State);
+
+        try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
+        catch { /* best-effort test cleanup */ }
     }
 
     [Fact]

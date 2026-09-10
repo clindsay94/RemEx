@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -300,6 +301,15 @@ public static class HostBootstrapper
                 sp.GetRequiredService<ClientSessionRegistry>(),
                 sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
         builder.Services.AddSingleton<TransferSessionManager>();
+        // RESOLVED BY TransferSessionManager, which is the only production writer of
+        // transfer_queue.json. Until that constructor parameter existed this registration had ZERO
+        // production resolution sites: nothing ever constructed the service, so the file was never
+        // written on a real machine and two beads (RemEx-kow1, RemEx-njzcx) had hardened a store only
+        // the tests instantiated. Do not "simplify" this back to an unresolved registration — the
+        // singleton is what makes the queue file survive a restart. It is constructed when
+        // TransferSessionManager is first resolved, which is the same moment TSM's own constructor
+        // already creates its staging directory under %ProgramData%: this adds no new startup ordering
+        // question, it joins one that was already answered.
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
 
@@ -474,7 +484,7 @@ public static class HostBootstrapper
         // detail is exposed here (VULN-6 review, RemEx-s032.6).
         app.MapGet("/pairing-qr", (ICertificateService certService, IConfiguration config) =>
         {
-            var port = int.Parse(config["Host:Port"] ?? "5005");
+            var port = int.Parse(config["Host:Port"] ?? "5005", NumberStyles.Integer, CultureInfo.InvariantCulture);
             return Results.Ok(new
             {
                 host = "0.0.0.0", // Client should substitute with actual host address
@@ -809,7 +819,10 @@ public static class HostBootstrapper
         // non-numeric or below the supported range is a clear-cut reject.
         if (!string.IsNullOrEmpty(protocolVersion))
         {
-            if (!int.TryParse(protocolVersion, out var parsedVersion)
+            // INVARIANT: protocolVersion arrives off the wire from a phone in an unknown locale, and
+            // is compared against a fixed supported range. Parsing it under the host's ambient
+            // culture makes the same query string mean different things on different PCs.
+            if (!int.TryParse(protocolVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedVersion)
                 || !Remex.Core.Messages.ProtocolVersionPolicy.IsSupported(parsedVersion))
             {
                 return (StatusCodes.Status400BadRequest,
@@ -876,7 +889,8 @@ public static class HostBootstrapper
         // not know it exists), so in practice only paired v3 clients ever reach here.
         if (!string.IsNullOrEmpty(protocolVersion))
         {
-            if (!int.TryParse(protocolVersion, out var parsedVersion)
+            // Invariant, for the same reason as the /ws/desktop pre-auth above.
+            if (!int.TryParse(protocolVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedVersion)
                 || !Remex.Core.Messages.ProtocolVersionPolicy.SupportsBinaryFileTransfer(parsedVersion))
             {
                 return (StatusCodes.Status400BadRequest,

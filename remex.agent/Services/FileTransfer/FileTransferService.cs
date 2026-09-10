@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -1344,7 +1345,11 @@ public sealed class FileTransferService : IFileTransferService
             return (0, null);
 
         var separator = cursor.IndexOf('|');
-        if (separator <= 0 || !long.TryParse(cursor.AsSpan(0, separator), out var emitted) || emitted < 0)
+        // Invariant: the cursor is a wire token this host formats and the peer echoes back, so the
+        // two ends must agree on it whatever locale either is running under.
+        if (separator <= 0
+            || !long.TryParse(cursor.AsSpan(0, separator), NumberStyles.Integer, CultureInfo.InvariantCulture, out var emitted)
+            || emitted < 0)
             return (0, null);
 
         var path = cursor[(separator + 1)..];

@@ -14,6 +14,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -402,6 +403,12 @@ object FileTransferChannelClient : FileFrameChannel {
         client.dispatcher.executorService.shutdown()
         return try {
             opened.await()
+        } catch (e: CancellationException) {
+            // Rethrow: a cancelled transfer or a caller leaving the screen must unwind the
+            // coroutine here, not read back as "the host did not accept the connection" to
+            // AndroidFileTransferHost / FileTransferEngine, which would report a connection
+            // failure for what was actually a user cancel.
+            throw e
         } catch (e: Exception) {
             false
         }

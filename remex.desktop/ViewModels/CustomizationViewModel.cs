@@ -1640,14 +1640,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         PushSeedToAccent();
     }
 
-    /// <summary>The old "Match Windows accent" button and the picker both land here.</summary>
-    [RelayCommand]
-    private void MatchWindowsAccent() => ColorSource = ColorSources.WindowsAccent;
-
-    /// <summary>The old "Seed from wallpaper" button and the picker both land here.</summary>
-    [RelayCommand]
-    private void SeedFromWallpaper() => ColorSource = ColorSources.Wallpaper;
-
     /// <summary>
     /// Whether a phone has synced a palette over the link (RemEx-sudp8). Read manually rather than
     /// via <c>[NotifyPropertyChangedFor]</c> because the underlying value lives in

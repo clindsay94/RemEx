@@ -5,7 +5,8 @@ import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
 
 class RemexShutdownTileService : TileService() {
-    private fun executeCommand() = sendTileCommand("Shutdown")
+    private fun executeCommand() =
+        confirmTileCommand("Shutdown", com.clindsay94.remex.R.string.tile_shutdown_label)
 
     override fun onClick() {
         super.onClick()

@@ -6,6 +6,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -219,6 +220,10 @@ object WidgetDataCache {
             manager.getGlanceIds(HardwareInfoWidget::class.java).forEach { glanceId ->
                 widget.update(appContext, glanceId)
             }
+        } catch (e: CancellationException) {
+            // Rethrow: widget.update() suspends, and a cancelled caller must unwind here rather
+            // than have the cancellation logged as an update failure.
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Failed to update hardware widgets", e)
         }

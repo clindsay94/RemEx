@@ -454,6 +454,7 @@ public class ThemeService : IDisposable
 
         SetResourceOverrideInternal("SystemWarning", palette.Warning);
         SetResourceOverrideInternal("SystemWarningBrush", new SolidColorBrush(palette.Warning));
+        SetResourceOverrideInternal("WarningForegroundBrush", new SolidColorBrush(palette.OnWarning));
         SetResourceOverrideInternal("SystemWarningBackgroundBrush", new SolidColorBrush(palette.Warning) { Opacity = 0.15 });
 
         // Text on an accent-filled surface, and text on a 15%/22% TINT. They are different

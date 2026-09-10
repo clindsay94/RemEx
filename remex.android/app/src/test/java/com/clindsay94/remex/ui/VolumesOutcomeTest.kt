@@ -41,7 +41,7 @@ class VolumesOutcomeTest {
             VolumesOutcome.PHONE_UNREACHABLE,
             FileManagerLogic.classifyVolumesResponse(
                 fullBrowseGranted = false,
-                denyReason = FileManagerLogic.DENY_REASON_CLIENT_UNREACHABLE,
+                denyReason = FileManagerLogic.FileConsentDenyReasons.CLIENT_UNREACHABLE,
                 errorMessage = null,
             ),
         )
@@ -57,7 +57,7 @@ class VolumesOutcomeTest {
             VolumesOutcome.HOST_PROMPT_TIMED_OUT,
             FileManagerLogic.classifyVolumesResponse(
                 fullBrowseGranted = false,
-                denyReason = FileManagerLogic.DENY_REASON_HOST_PROMPT_TIMED_OUT,
+                denyReason = FileManagerLogic.FileConsentDenyReasons.HOST_PROMPT_TIMED_OUT,
                 errorMessage = null,
             ),
         )
@@ -151,7 +151,7 @@ class VolumesOutcomeTest {
             VolumesOutcome.FAILED,
             FileManagerLogic.classifyVolumesResponse(
                 fullBrowseGranted = false,
-                denyReason = FileManagerLogic.DENY_REASON_CLIENT_UNREACHABLE,
+                denyReason = FileManagerLogic.FileConsentDenyReasons.CLIENT_UNREACHABLE,
                 errorMessage = "boom",
             ),
         )
@@ -166,7 +166,7 @@ class VolumesOutcomeTest {
             VolumesOutcome.GRANTED,
             FileManagerLogic.classifyVolumesResponse(
                 fullBrowseGranted = true,
-                denyReason = FileManagerLogic.DENY_REASON_CLIENT_UNREACHABLE,
+                denyReason = FileManagerLogic.FileConsentDenyReasons.CLIENT_UNREACHABLE,
                 errorMessage = null,
             ),
         )
@@ -183,7 +183,7 @@ class VolumesOutcomeTest {
             declaredDenyReasons()["ClientUnreachable"],
         )
         assertEquals(
-            FileManagerLogic.DENY_REASON_CLIENT_UNREACHABLE,
+            FileManagerLogic.FileConsentDenyReasons.CLIENT_UNREACHABLE,
             declaredDenyReasons()["ClientUnreachable"],
         )
         assertEquals(
@@ -192,7 +192,7 @@ class VolumesOutcomeTest {
             declaredDenyReasons()["HostPromptTimedOut"],
         )
         assertEquals(
-            FileManagerLogic.DENY_REASON_HOST_PROMPT_TIMED_OUT,
+            FileManagerLogic.FileConsentDenyReasons.HOST_PROMPT_TIMED_OUT,
             declaredDenyReasons()["HostPromptTimedOut"],
         )
     }

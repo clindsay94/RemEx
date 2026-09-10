@@ -261,15 +261,23 @@ public sealed class FileTransferClient : IDisposable
             new RemexMessage
             {
                 Type = MessageTypes.FileManageRequest,
-                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = FileManageOperations.Delete }
             },
             tcs,
             () => _manageWaiters.TryRemove(requestId, out _),
             TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
+        // THE SAME TYPED THROW THE OTHER NINE HOST-REFUSAL SITES USE (RemEx-mznc). This one raised a
+        // bare IOException carrying a hardcoded English prefix, so FileTransferViewModel's
+        // `catch (FileTransferHostException)` never saw it and the host's own advice — the copy that
+        // tells the user what to do next — was replaced by a generic sentence. Worse, a host that
+        // set ErrorMessage to the empty string produced the literal "Delete failed: " on screen,
+        // which is precisely the blank-reply case ForHostError exists to catch.
         if (response.FileManageResponse?.Success == false)
-            throw new IOException($"Delete failed: {response.FileManageResponse.ErrorMessage}");
+            throw FileTransferHostException.ForHostError(
+                response.FileManageResponse.ErrorMessage,
+                $"{FileManageOperations.Delete} failed without the host giving a reason.");
     }
 
     public async Task RenameRemoteAsync(string rootId, string relativePath, string newName, CancellationToken ct)
@@ -283,15 +291,18 @@ public sealed class FileTransferClient : IDisposable
             new RemexMessage
             {
                 Type = MessageTypes.FileManageRequest,
-                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = FileManageOperations.Rename, NewName = newName }
             },
             tcs,
             () => _manageWaiters.TryRemove(requestId, out _),
             TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
+        // Same conversion, same reason, as DeleteRemoteAsync above.
         if (response.FileManageResponse?.Success == false)
-            throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
+            throw FileTransferHostException.ForHostError(
+                response.FileManageResponse.ErrorMessage,
+                $"{FileManageOperations.Rename} failed without the host giving a reason.");
     }
 
     /// <summary>
@@ -359,19 +370,81 @@ public sealed class FileTransferClient : IDisposable
     // Callers must gate on Capabilities so these are never sent to a v2 host.
     // ──────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Copies <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
-    public Task CopyRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
-        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Copy, newName: null, destinationRelativePath, overwrite, ct);
+    /// <summary>
+    /// Copies <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within
+    /// the same root, returning what the host said about a filename collision.
+    /// </summary>
+    /// <param name="conflictResolution">
+    /// One of <see cref="FileConflictResolutions"/> when the user has already answered a collision
+    /// for this item, else null. NULL IS NOT A DEFAULT ANSWER — the host reads it as "nobody was
+    /// asked" and refuses rather than guessing, which is the behaviour every earlier build had.
+    /// </param>
+    /// <returns>
+    /// The outcome. A collision comes back as <see cref="FileManageOutcome.IsConflict"/> rather
+    /// than as a throw; every other refusal still throws <see cref="FileTransferHostException"/>,
+    /// so the existing catch sites are unaffected.
+    /// </returns>
+    public Task<FileManageOutcome> CopyRemoteAsync(
+        string rootId, string relativePath, string destinationRelativePath, bool overwrite, string? conflictResolution, CancellationToken ct)
+        => ManageOrThrowAsync(rootId, relativePath, FileManageOperations.Copy, newName: null, destinationRelativePath, overwrite, conflictResolution, ct);
 
-    /// <summary>Moves <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
-    public Task MoveRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
-        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Move, newName: null, destinationRelativePath, overwrite, ct);
+    /// <summary>
+    /// Moves <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within
+    /// the same root. Same conflict contract as <c>CopyRemoteAsync</c> above.
+    /// </summary>
+    public Task<FileManageOutcome> MoveRemoteAsync(
+        string rootId, string relativePath, string destinationRelativePath, bool overwrite, string? conflictResolution, CancellationToken ct)
+        => ManageOrThrowAsync(rootId, relativePath, FileManageOperations.Move, newName: null, destinationRelativePath, overwrite, conflictResolution, ct);
 
     /// <summary>Creates a new folder named <paramref name="folderName"/> under <paramref name="parentRelativePath"/> (wire: RelativePath=parent, NewName=folder).</summary>
-    public Task MakeDirectoryRemoteAsync(string rootId, string parentRelativePath, string folderName, CancellationToken ct)
-        => ManageAsync(rootId, parentRelativePath, Remex.Core.Models.FileManageOperations.Mkdir, newName: folderName, destinationPath: null, overwrite: false, ct);
+    /// <remarks>
+    /// REFUSAL-ONLY, AND STILL A THROW EVEN WHEN THE HOST SENDS A CODE. The host's
+    /// <c>CreateDirectoryAsync</c> accepts no <c>conflictResolution</c>, so a Replace or Keep-both
+    /// retry re-fails identically — offering either would be a prompt the user can never answer
+    /// their way out of. The code still earns its place on the wire by saying WHY the mkdir failed,
+    /// which is what <see cref="FileTransferHostException"/> then puts on screen.
+    /// </remarks>
+    public async Task MakeDirectoryRemoteAsync(string rootId, string parentRelativePath, string folderName, CancellationToken ct)
+    {
+        var outcome = await ManageAsync(
+            rootId, parentRelativePath, FileManageOperations.Mkdir, newName: folderName,
+            destinationPath: null, overwrite: false, conflictResolution: null, ct);
 
-    private async Task ManageAsync(string rootId, string relativePath, string operation, string? newName, string? destinationPath, bool overwrite, CancellationToken ct)
+        if (!outcome.Success)
+            throw FileTransferHostException.ForHostError(
+                outcome.ErrorMessage,
+                $"{FileManageOperations.Mkdir} failed without the host giving a reason.");
+    }
+
+    /// <summary>
+    /// Runs a manage operation and turns everything EXCEPT a collision into the usual throw.
+    /// </summary>
+    /// <remarks>
+    /// **THE SPLIT IS THE CONTRACT, so state it once here rather than at each call site.** A
+    /// collision is a QUESTION: the caller has answers to offer and a retry to issue with the one
+    /// the user picks. Every other refusal — read-only root, disk full, vanished source — is a
+    /// failure with nothing to ask about, and those must keep arriving as
+    /// <see cref="FileTransferHostException"/> so <c>FileTransferViewModel</c>'s existing catch
+    /// still shows the host's own advice verbatim.
+    /// </remarks>
+    private async Task<FileManageOutcome> ManageOrThrowAsync(
+        string rootId, string relativePath, string operation, string? newName, string? destinationPath,
+        bool overwrite, string? conflictResolution, CancellationToken ct)
+    {
+        var outcome = await ManageAsync(
+            rootId, relativePath, operation, newName, destinationPath, overwrite, conflictResolution, ct);
+
+        if (!outcome.Success && !outcome.IsConflict)
+            throw FileTransferHostException.ForHostError(
+                outcome.ErrorMessage,
+                $"{operation} failed without the host giving a reason.");
+
+        return outcome;
+    }
+
+    private async Task<FileManageOutcome> ManageAsync(
+        string rootId, string relativePath, string operation, string? newName, string? destinationPath,
+        bool overwrite, string? conflictResolution, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -399,6 +472,11 @@ public sealed class FileTransferClient : IDisposable
                     NewName = newName,
                     DestinationPath = destinationPath,
                     Overwrite = overwrite,
+
+                    // CARRIED ON THE RETRY RATHER THAN ANSWERED IN A SEPARATE ROUND TRIP, which is
+                    // the shape remex.core documents on this field: a two-step exchange could race
+                    // another client writing the same name between the question and the answer.
+                    ConflictResolution = conflictResolution,
                 }
             },
             tcs,
@@ -406,10 +484,10 @@ public sealed class FileTransferClient : IDisposable
             scalesWithFileSize ? null : TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
             ct);
 
-        if (response.FileManageResponse?.Success == false)
-            throw FileTransferHostException.ForHostError(
-                response.FileManageResponse.ErrorMessage,
-                $"{operation} failed without the host giving a reason.");
+        // THE REPLY IS READ WHOLE NOW. This used to test Success and discard the rest, so errorCode,
+        // conflictingName and resolvedName — everything the host says that a client can act on —
+        // were deserialized and dropped on the floor.
+        return FileManageOutcome.From(response.FileManageResponse);
     }
 
     /// <summary>Bounded recursive search under a root subtree. Returns hits plus whether results were capped.</summary>

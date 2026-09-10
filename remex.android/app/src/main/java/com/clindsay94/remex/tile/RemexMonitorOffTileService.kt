@@ -6,7 +6,8 @@ import com.clindsay94.remex.RemexClientManager
 
 class RemexMonitorOffTileService : TileService() {
 
-    private fun executeCommand() = sendTileCommand("MonitorOff")
+    private fun executeCommand() =
+        confirmTileCommand("MonitorOff", com.clindsay94.remex.R.string.tile_monitor_off_label)
 
     override fun onClick() {
         super.onClick()

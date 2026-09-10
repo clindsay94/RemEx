@@ -42,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
@@ -1132,7 +1133,20 @@ fun PersonalizationScreenContent(
                                 dismissOnClickOutside = false
                         )
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            // The splash content itself paints a fixed, theme-independent dark backdrop
+            // (SplashBrand docs: "rendered identically regardless of the active in-app theme"),
+            // but it fades to transparent during the tap-to-skip / finish transition, briefly
+            // exposing whatever is behind this preview dialog — which, unlike the splash canvas,
+            // DOES follow the current theme. Give the dialog the same seed-derived backdrop the
+            // real splash exit crossfades into (SplashPaletteResolver), and tint the dismiss
+            // control from that same resolved palette instead of a hardcoded white, so it stays
+            // readable in a light theme instead of vanishing white-on-near-white.
+            val previewPalette =
+                    SplashPaletteResolver.resolve(MaterialTheme.colorScheme)
+            Box(
+                    modifier =
+                            Modifier.fillMaxSize().background(previewPalette.backdrop)
+            ) {
                 SplashScreen(
                         splashStyle = splashStyle,
                         onFinished = { showSplashPreview = false }
@@ -1145,7 +1159,7 @@ fun PersonalizationScreenContent(
                             Icons.Default.Close,
                             contentDescription =
                                     stringResource(R.string.personalization_splash_preview_close),
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.contentColorFor(previewPalette.backdrop)
                     )
                 }
             }

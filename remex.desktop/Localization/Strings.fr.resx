@@ -3414,4 +3414,55 @@ Vous pouvez modifier :
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Les cartes et le texte ressembleront à ceci.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Nom déjà utilisé</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>« {0} » se trouve déjà dans ce dossier. Vous pouvez conserver les deux fichiers, remplacer celui qui s'y trouve ou ignorer cet élément.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>« {0} » est déjà ici, mais il s'agit d'un type d'élément différent : un dossier là où vous collez un fichier, ou l'inverse. Conservez les deux ou ignorez cet élément.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Le nouveau nom de « {0} » a été pris par autre chose juste avant sa création. Réessayez « Conserver les deux » pour choisir un nom libre, ou ignorez cet élément.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>Impossible de donner un nouveau nom à « {0} » ici, car ce nom serait trop long pour ce dossier. Ignorez cet élément ou arrêtez le collage et raccourcissez d'abord le nom.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>Impossible de coller « {0} » ici, et ce PC ne reconnaît pas la raison donnée par votre appareil. Ignorez cet élément ou arrêtez le collage.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Conserver les deux</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Votre appareil choisit un nouveau nom, donc rien n'est écrasé.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Remplacer</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Écrase l'élément déjà présent. Cette action est irréversible.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Ignorer</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Laisse cet élément tel quel et poursuit avec les autres.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Arrêter le collage</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Arrêtez ici. Tout ce qui n'est pas encore collé reste inchangé.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Collage arrêté. Les éléments non collés sont toujours dans le presse-papiers.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Enregistré sous « {0} », l'élément déjà présent a donc été conservé.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Abandon de « {0} » après plusieurs tentatives. Rien n'a été modifié pour cet élément.</value>
+  </data>
 </root>

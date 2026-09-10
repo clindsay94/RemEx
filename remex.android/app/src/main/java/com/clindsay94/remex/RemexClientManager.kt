@@ -16,6 +16,7 @@ import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
 import com.clindsay94.remex.ui.screens.PairingSurface
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -432,6 +433,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         } else {
                             Log.d("RemexManager", "Self-healing discovery found no hosts.")
                         }
+                    } catch (e: CancellationException) {
+                        // Rethrow: a cancelled heartbeat/connect job must unwind here, not get
+                        // logged as a discovery error and fall through to the connect attempt below.
+                        throw e
                     } catch (e: Exception) {
                         Log.e("RemexManager", "Self-healing mDNS error", e)
                     }

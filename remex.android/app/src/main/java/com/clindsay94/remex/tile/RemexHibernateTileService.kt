@@ -5,7 +5,8 @@ import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
 
 class RemexHibernateTileService : TileService() {
-    private fun executeCommand() = sendTileCommand("Hibernate")
+    private fun executeCommand() =
+        confirmTileCommand("Hibernate", com.clindsay94.remex.R.string.tile_hibernate_label)
 
     override fun onClick() {
         super.onClick()

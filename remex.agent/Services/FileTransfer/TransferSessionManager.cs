@@ -155,28 +155,69 @@ public sealed class TransferSessionManager : IDisposable
     private readonly SharedRootReadResolver _readResolver;
     private readonly string _stagingDir;
 
+    /// <summary>
+    /// The process-death-surviving queue (<c>%ProgramData%\Remex\transfer_queue.json</c>). This class is
+    /// the ONLY production writer of it: every transfer this host takes part in starts, changes state and
+    /// ends here, so the queue records the real lifecycle rather than a UI's idea of one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// WIRED HERE BECAUSE IT WAS WIRED NOWHERE. <c>TransferQueueService</c> was registered as a singleton
+    /// in <c>HostBootstrapper</c> with ZERO production resolution sites — two beads (RemEx-kow1,
+    /// RemEx-njzcx) hardened atomic writes and orphan sweeping for a store that only the tests ever
+    /// instantiated, so the file was never written on a real machine. This is the "stranded pure half"
+    /// AGENTS.md describes: the logic landed, the join did not.
+    /// </para>
+    /// <para>
+    /// NULLABLE, and every use goes through <c>?.</c>: the internal test constructor takes no queue so the
+    /// existing suites that build this manager directly keep working, and — more importantly — a transfer
+    /// must never fail because its bookkeeping could not be written. <c>TransferQueueService</c> already
+    /// swallows and logs its own I/O failures for the same reason.
+    /// </para>
+    /// <para>
+    /// STATE TRANSITIONS ONLY, never per chunk. Each write is an atomic stage-and-rename
+    /// (<c>RemexDataPaths.WriteAllTextAtomic</c>), so persisting progress per data frame would turn a
+    /// 256 KB frame into a file rename. Resume does not need it: the byte offset is re-derived from the
+    /// staging partial's own length in <see cref="BeginReceiveAsync"/>.
+    /// </para>
+    /// </remarks>
+    private readonly TransferQueueService? _queue;
+
     private readonly ConcurrentDictionary<string, ReceiveSession> _receiveSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, SendSession> _sendSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, FileChannel> _channels = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Production constructor. <paramref name="queue"/> is required here — DI resolves the same
+    /// singleton <c>HostBootstrapper</c> registers, and this is the join that makes
+    /// <c>transfer_queue.json</c> get written at all.
+    /// </summary>
     public TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
-        SharedRootReadResolver readResolver)
-        : this(logger, fileTransferService, readResolver, stagingDir: null)
+        SharedRootReadResolver readResolver,
+        TransferQueueService queue)
+        : this(logger, fileTransferService, readResolver, stagingDir: null, queue: Guard.NotNull(queue))
     {
     }
 
     /// <summary>Test seam: overrides the staging directory so resume/partial behaviour is exercised hermetically.</summary>
+    /// <param name="queue">
+    /// Optional and trailing on purpose. The existing suites construct this manager positionally with
+    /// four arguments and are owned elsewhere; a required parameter here would break them for
+    /// bookkeeping they do not assert on. Pass one to exercise the queue wiring.
+    /// </param>
     internal TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
         SharedRootReadResolver readResolver,
-        string? stagingDir)
+        string? stagingDir,
+        TransferQueueService? queue = null)
     {
         _logger = Guard.NotNull(logger);
         _fileTransferService = Guard.NotNull(fileTransferService);
         _readResolver = Guard.NotNull(readResolver);
+        _queue = queue;
 
         if (stagingDir is null)
         {
@@ -198,6 +239,127 @@ public sealed class TransferSessionManager : IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _logger.LogWarning(ex, "Could not prepare transfer staging directory {Dir}.", _stagingDir);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Persistent transfer queue bookkeeping (see the _queue field for why it lives here).
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Records that a transfer has started (or restarted) and is now
+    /// <see cref="TransferState.Active"/>.
+    /// </summary>
+    /// <remarks>
+    /// UPDATE FIRST, ENQUEUE ONLY IF ABSENT. <see cref="TransferQueueService.Enqueue"/> replaces by id
+    /// and re-stamps <c>CreatedUtc</c> when the incoming item does not carry one — so enqueueing
+    /// unconditionally would move a resumed transfer to the BACK of a FIFO ordered by creation time
+    /// every time its socket dropped and came back. A resume is the same transfer, not a new one.
+    /// </remarks>
+    private void RecordQueueStart(
+        string transferId,
+        string mode,
+        string? peerClientId,
+        string fileName,
+        long size,
+        string? destRoot,
+        string? destRelativePath,
+        string? sourcePath,
+        long bytesTransferred)
+    {
+        if (_queue is null || string.IsNullOrWhiteSpace(transferId))
+            return;
+
+        // CATCH-ALL, and it is load-bearing rather than defensive habit. TransferQueueService swallows
+        // IOException and UnauthorizedAccessException itself, but nothing else — and the two call sites
+        // are the worst places in the class for an escape. In BeginReceiveAsync this runs with the
+        // .remexpart FileStream already open and the session registered, so a throw leaks the handle and
+        // turns an accepted transfer into an error. In the download path it runs AFTER
+        // file_transfer_ready { accepted: true } has gone out, so a throw leaves the phone waiting for
+        // bytes that will never come. Bookkeeping must never be the thing that fails a transfer.
+        try
+        {
+            var updated = _queue.Update(transferId, existing => existing with
+            {
+                State = TransferState.Active,
+                BytesTransferred = bytesTransferred,
+                Error = null,
+            });
+
+            if (updated is not null)
+                return;
+
+            _queue.Enqueue(new TransferQueueItem
+            {
+                TransferId = transferId,
+                Mode = mode,
+                FileName = fileName,
+                Size = size,
+                PeerClientId = peerClientId,
+                DestRoot = destRoot,
+                DestRelativePath = destRelativePath,
+                SourcePath = sourcePath,
+                State = TransferState.Active,
+                BytesTransferred = bytesTransferred,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not record the start of transfer {TransferId} in the queue.", transferId);
+        }
+    }
+
+    /// <summary>Moves a queue entry to <paramref name="state"/>, optionally recording an error.</summary>
+    /// <remarks>
+    /// A no-op for an id the queue does not know, which is the normal case for anything that reached a
+    /// terminal state already: <see cref="ForgetQueued"/> removes those, and
+    /// <see cref="TransferQueueService.Update"/> returns null rather than resurrecting them.
+    /// </remarks>
+    private void RecordQueueState(string transferId, TransferState state, string? error = null, long? bytesTransferred = null)
+    {
+        if (_queue is null)
+            return;
+
+        // Catch-all for the reason given in RecordQueueStart: several of these run mid-teardown, inside
+        // a finally or after a result has already been decided, where a throw would replace a clean
+        // outcome with a broken one.
+        try
+        {
+            _queue.Update(transferId, existing => existing with
+            {
+                State = state,
+                Error = error ?? existing.Error,
+                BytesTransferred = bytesTransferred ?? existing.BytesTransferred,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not record transfer {TransferId} as {State} in the queue.", transferId, state);
+        }
+    }
+
+    /// <summary>
+    /// Drops a queue entry that has reached a terminal state nobody will act on again.
+    /// </summary>
+    /// <remarks>
+    /// DONE AND CANCELLED ONLY. A file that arrived needs no resume and a transfer the user cancelled
+    /// needs no record, so keeping either would grow <c>transfer_queue.json</c> without bound for the
+    /// life of the machine — the queue is a work list, not a history. FAILED entries are deliberately
+    /// KEPT: a failure is the one outcome the user may want to see after a restart, and it is replaced
+    /// in place (by transfer id) when the transfer is retried.
+    /// </remarks>
+    private void ForgetQueued(string transferId)
+    {
+        if (_queue is null)
+            return;
+
+        try
+        {
+            _queue.Remove(transferId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not clear transfer {TransferId} from the queue.", transferId);
         }
     }
 
@@ -350,6 +512,21 @@ public sealed class TransferSessionManager : IDisposable
             "Accepted inbound transfer {TransferId} from {ClientId} → root '{Root}' ('{Rel}'), startOffset={Offset}.",
             offer.TransferId, clientId, offer.DestRoot, hostRelativePath, startOffset);
 
+        // After the session is live, not before: everything above this line can still decline, and a
+        // queue entry for a transfer that was refused is a phantom the next startup would surface as
+        // Paused and offer to resume. offer.Mode is "upload" or "push" here — never "download", which
+        // HandleOfferAsync routes to the send path instead — so DirectionOf reads Inbound either way.
+        RecordQueueStart(
+            offer.TransferId,
+            offer.Mode,
+            clientId,
+            offer.FileName,
+            offer.Size,
+            offer.DestRoot,
+            offer.DestRelativePath,
+            offer.SourcePath,
+            startOffset);
+
         return new ReceiveAcceptance(true, startOffset, null);
     }
 
@@ -405,6 +582,12 @@ public sealed class TransferSessionManager : IDisposable
         {
             session.Completed = true;
 
+            // Verifying, per the documented Queued → … → Active → Verifying → Done|Failed ladder. One
+            // extra atomic write per transfer (not per chunk), and it is the state a crash during the
+            // hash-and-promote step should leave behind: LoadFromDisk normalizes Verifying to Paused so
+            // the entry reads as resumable rather than as a phantom Active.
+            RecordQueueState(transferId, TransferState.Verifying, bytesTransferred: session.BytesReceived);
+
             await session.PartialStream.FlushAsync(ct);
             await session.PartialStream.DisposeAsync();
 
@@ -420,6 +603,7 @@ public sealed class TransferSessionManager : IDisposable
                 DeleteStaging(transferId);
                 var reason = !complete ? "Transfer incomplete." : "SHA-256 mismatch — file corrupted in transit.";
                 _logger.LogWarning("Inbound transfer {TransferId} failed verification: {Reason}", transferId, reason);
+                RecordQueueState(transferId, TransferState.Failed, reason);
                 return new FileTransferResult
                 {
                     TransferId = transferId,
@@ -443,6 +627,7 @@ public sealed class TransferSessionManager : IDisposable
             {
                 DeleteStaging(transferId);
                 _logger.LogWarning(ex, "Inbound transfer {TransferId} verified but could not be saved to the destination.", transferId);
+                RecordQueueState(transferId, TransferState.Failed, $"Verified but could not be saved: {ex.Message}");
                 return new FileTransferResult
                 {
                     TransferId = transferId,
@@ -454,6 +639,7 @@ public sealed class TransferSessionManager : IDisposable
 
             DeleteStaging(transferId);
             _logger.LogInformation("Inbound transfer {TransferId} verified and saved ({Bytes} bytes).", transferId, session.BytesReceived);
+            ForgetQueued(transferId);
             return new FileTransferResult
             {
                 TransferId = transferId,
@@ -473,6 +659,12 @@ public sealed class TransferSessionManager : IDisposable
         if (_receiveSessions.TryRemove(transferId, out var session))
             session.DisposeStreamOnly();
         DeleteStaging(transferId);
+
+        // Unconditionally, like DeleteStaging above it and for the same reason: this is called by id
+        // whether or not a live session was found, and a cancel with no session is the ordinary case
+        // for a transfer whose socket dropped first. The partial is gone, so nothing can resume it —
+        // leaving a queue entry behind would offer the user a resume that cannot work.
+        ForgetQueued(transferId);
     }
 
     /// <summary>
@@ -482,7 +674,16 @@ public sealed class TransferSessionManager : IDisposable
     private void SuspendReceive(string transferId)
     {
         if (_receiveSessions.TryRemove(transferId, out var session))
+        {
             session.DisposeStreamOnly();
+
+            // Paused, not Failed: the partial and its manifest survive, so a fresh offer with
+            // resumeRequested picks this up where it stopped. Recorded eagerly rather than left to
+            // LoadFromDisk's Active→Paused normalization, which only runs if the process actually dies —
+            // a dropped mobile socket on a host that keeps running is the common case, and the entry
+            // would otherwise read as Active with nothing running.
+            RecordQueueState(transferId, TransferState.Paused, bytesTransferred: session.BytesReceived);
+        }
     }
 
     /// <summary>Sweeps orphaned staging files older than <paramref name="maxAge"/>. Internal for tests.</summary>
@@ -643,6 +844,12 @@ public sealed class TransferSessionManager : IDisposable
                 if (_sendSessions.TryRemove(control.TransferId, out var paused))
                     paused.Cancel();
                 _logger.LogInformation("Transfer {TransferId} paused by peer.", control.TransferId);
+                // This is the ONLY writer of Paused for a deliberate pause, and it does not race the
+                // sender it just cancelled: StreamSenderAsync's OperationCanceledException path
+                // deliberately records nothing, precisely so the more specific reason written here
+                // survives. Covers both directions — an inbound pause is a no-op on the wire but is
+                // still a pause.
+                RecordQueueState(control.TransferId, TransferState.Paused);
                 break;
 
             case FileTransferControlActions.Resume:
@@ -672,10 +879,19 @@ public sealed class TransferSessionManager : IDisposable
         if (_sendSessions.TryRemove(result.TransferId, out var send))
             send.Cancel();
 
+        // The peer's verdict is the terminal state of an OUTBOUND transfer — the host has no way to
+        // check what landed on the phone, so this message, not the end of StreamSenderAsync, is where a
+        // download or push finishes.
         if (result.Verified)
+        {
             _logger.LogInformation("Peer verified host-sent transfer {TransferId}.", result.TransferId);
+            ForgetQueued(result.TransferId);
+        }
         else
+        {
             _logger.LogWarning("Peer reported host-sent transfer {TransferId} failed: {Error}", result.TransferId, result.Error);
+            RecordQueueState(result.TransferId, TransferState.Failed, result.Error ?? "The peer reported the transfer failed.");
+        }
     }
 
     /// <summary>
@@ -902,6 +1118,23 @@ public sealed class TransferSessionManager : IDisposable
             var session = new SendSession(transferId, clientId ?? string.Empty);
             _sendSessions[transferId] = session;
 
+            // MODE "download", NOT "push", and the distinction is worth stating because the wire
+            // vocabulary points the other way. FileTransferModes.Push means the PHONE pushing a file to
+            // this host — TransferQueueService.DirectionOf maps it to Inbound. This method is the host
+            // pushing a file to the phone, so the bytes travel outbound, which is what the queue's
+            // "one active per direction" rule is about. From the peer's side it is a download, and
+            // Mode is a display hint rather than an authorization input (see FileTransferModes).
+            RecordQueueStart(
+                transferId,
+                FileTransferModes.Download,
+                clientId,
+                fileName,
+                offeredSize,
+                destRoot: null,
+                destRelativePath: null,
+                sourcePath: absolutePath,
+                bytesTransferred: 0);
+
             // Handed off: the streaming task owns the stream from here and disposes it in its finally.
             var streaming = source;
             source = null;
@@ -1097,7 +1330,15 @@ public sealed class TransferSessionManager : IDisposable
             foreach (var kvp in _sendSessions)
             {
                 if (string.Equals(kvp.Value.ClientId, key, StringComparison.Ordinal) && _sendSessions.TryRemove(kvp.Key, out var s))
+                {
                     s.Cancel();
+
+                    // Paused, matching what SuspendReceive records for the inbound half: the socket
+                    // went away, not the transfer. The peer re-offers to resume. Written here rather
+                    // than in StreamSenderAsync's cancellation path, which cannot tell a dropped socket
+                    // from a deliberate pause or cancel.
+                    RecordQueueState(kvp.Key, TransferState.Paused, bytesTransferred: s.CommittedOffset);
+                }
             }
         }
     }
@@ -1317,6 +1558,20 @@ public sealed class TransferSessionManager : IDisposable
         var sendSession = new SendSession(offer.TransferId, clientId);
         _sendSessions[offer.TransferId] = sendSession;
 
+        // offer.Mode is "download" on this path by construction (HandleOfferAsync routes here on it),
+        // so DirectionOf reads Outbound. Recorded after the ready has been accepted and the source
+        // opened, for the same reason as the inbound side: nothing above this line can still decline.
+        RecordQueueStart(
+            offer.TransferId,
+            FileTransferModes.Download,
+            clientId,
+            offer.FileName,
+            size,
+            offer.DestRoot,
+            hostRelativePath,
+            sourcePath: null,
+            bytesTransferred: 0);
+
         // Detach the streaming loop; it outlives the synchronous handling of this offer message.
         _ = Task.Run(() => StreamSenderAsync(channel, sendSession, source, size, controlWs, ct), ct);
     }
@@ -1405,6 +1660,11 @@ public sealed class TransferSessionManager : IDisposable
                         releaseEx, "Could not release stalled transfer {TransferId} at the peer.", session.TransferId);
                 }
 
+                RecordQueueState(
+                    session.TransferId,
+                    TransferState.Failed,
+                    "The peer stopped acknowledging data.",
+                    session.CommittedOffset);
                 return;
             }
 
@@ -1417,14 +1677,24 @@ public sealed class TransferSessionManager : IDisposable
             }, ct);
 
             _logger.LogInformation("Host-sent transfer {TransferId} streamed {Bytes} bytes, sha256={Sha}.", session.TransferId, sentOffset, sha256);
+
+            // VERIFYING, NOT DONE. Every byte is on the wire and acked, but the peer has yet to compare
+            // the hash — HandleResult is where this transfer reaches Done or Failed. Calling it Done
+            // here would report success for a file the phone is about to reject.
+            RecordQueueState(session.TransferId, TransferState.Verifying, bytesTransferred: sentOffset);
         }
         catch (OperationCanceledException)
         {
+            // Deliberately NOT recorded. A cancelled token here means someone else already decided
+            // what this transfer is — HandleControl wrote Paused or Cancelled, or the channel teardown
+            // wrote Paused — and every one of those is more specific than "cancelled". Overwriting them
+            // from here is how a pause would come back as a cancel.
             _logger.LogInformation("Host-sent transfer {TransferId} cancelled.", session.TransferId);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Host-sent transfer {TransferId} failed.", session.TransferId);
+            RecordQueueState(session.TransferId, TransferState.Failed, ex.Message, sentOffset);
         }
         finally
         {

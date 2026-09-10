@@ -187,7 +187,6 @@
     <string name="rc_category_session">Session</string>
     <string name="rc_category_power">Power</string>
     <string name="rc_category_energy">Energy</string>
-    <string name="rc_category_media">Media</string>
     <string name="rc_media_volume_down">Volume down</string>
     <string name="rc_media_volume_up">Volume up</string>
     <string name="rc_media_mute">Mute</string>
@@ -543,6 +542,8 @@
     <string name="tile_hibernate_label">Hibernate PC</string>
     <string name="tile_monitor_off_label">Monitor Off</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_confirm_title">Confirm action</string>
+    <string name="tile_confirm_message">Send \"%1$s\" to your PC now?</string>
 
     
     <string name="screen_file_transfer_title">File Transfer</string>
@@ -734,6 +735,7 @@
     <string name="widget_refresh">Refresh</string>
     <string name="widget_toast_refreshing">Refreshing…</string>
     <string name="widget_toast_refreshed">Telemetry refreshed</string>
+    <string name="widget_toast_refresh_failed">Couldn\'t refresh telemetry</string>
     <string name="widget_toast_connecting">Connecting to PC…</string>
     <string name="widget_config_poll_interval_label">Refresh every %1$d s</string>
     <string name="widget_config_poll_interval_hint">How often the widget polls the PC for fresh telemetry while connected.</string>

@@ -246,6 +246,9 @@
     "android/identical-to-english/uk/sort_ram",
     "android/identical-to-english/uk/task_manager_pid_label",
     "android/identical-to-english/uk/tile_wol_label",
+    "android/unreferenced/pairing_error_cert_mismatch",
+    "android/unreferenced/qr_error_invalid",
+    "android/unreferenced/qr_error_old_format",
     "resx/behind-english/es/FileTransfer_Subheader",
     "resx/behind-english/es/Logs_Service_Reading",
     "resx/behind-english/es/Palette_AboutWhatsNew",
@@ -650,6 +653,8 @@
     "resx/identical-to-english/uk/TaskMgr_MemLabel",
     "resx/identical-to-english/uk/TaskMgr_PidFormat",
     "resx/identical-to-english/uk/TaskMgr_SortCpu",
-    "resx/identical-to-english/uk/TaskMgr_SortRam"
+    "resx/identical-to-english/uk/TaskMgr_SortRam",
+    "resx/undefined/Splash_Style_",
+    "resx/unreferenced/Close"
   ]
 }

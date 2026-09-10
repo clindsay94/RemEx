@@ -148,6 +148,15 @@ internal sealed class PrecisionPacer : IDisposable
     /// Re-anchors the timeline to "now" so the next tick is a full interval away. Call after a
     /// backoff/pause to avoid bursting through missed ticks on recovery.
     /// </summary>
+    /// <remarks>
+    /// ORDERING IS THE WHOLE POINT: call this AFTER the backoff has finished awaiting, never before
+    /// it. "Now" is read at the moment of the call, so a <c>Reset()</c> that precedes a 500 ms
+    /// <c>Task.Delay</c> leaves <c>_nextTickMs</c> 500 ms in the past once the delay returns.
+    /// <see cref="WaitForNextTickAsync"/> only steps <c>_nextTickMs</c> forward by one interval and
+    /// never re-anchors, so recovery then returns a zero wait once per missed tick — ~60 of them at
+    /// 120 FPS — which is precisely the capture-and-encode burst this method exists to prevent.
+    /// Both backoff sites in <c>RemoteDesktopHandler</c> had that ordering inverted.
+    /// </remarks>
     public void Reset() => _nextTickMs = _timer.Elapsed.TotalMilliseconds;
 
     public void Dispose() => _waitableTimer?.Dispose();

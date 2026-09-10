@@ -259,22 +259,25 @@ object FileManagerLogic {
         }
 
     /**
-     * Machine-readable reason the host refused without anyone being asked. Mirrors
-     * `remex.core` `FileConsentDenyReasons.ClientUnreachable` (RemEx-l580).
+     * Machine-readable reasons the host sends when it refuses consent without anyone being asked.
      *
-     * ONE CODE FOR BOTH UNREACHABLE PATHS on the host — no live session when the prompt was routed,
-     * and a send that failed after it was routed. Both mean the same thing here, so this end does not
-     * need to tell them apart.
+     * Mirrors `Remex.Core.Models.FileConsentDenyReasons` VERBATIM (RemEx-l580, RemEx-c7v4n).
      */
-    const val DENY_REASON_CLIENT_UNREACHABLE = "client_unreachable"
+    object FileConsentDenyReasons {
+        /**
+         * ONE CODE FOR BOTH UNREACHABLE PATHS on the host — no live session when the prompt was
+         * routed, and a send that failed after it was routed. Both mean the same thing here, so
+         * this end does not need to tell them apart.
+         */
+        const val CLIENT_UNREACHABLE = "client_unreachable"
 
-    /**
-     * Mirrors `remex.core` `FileConsentDenyReasons.HostPromptTimedOut` (RemEx-c7v4n). The Desktop
-     * consent prompt was shown on the PC and nobody there answered before the host's auto-deny
-     * timeout — the PC user simply never touched the dialog, which is not the same fact as somebody
-     * having decided no.
-     */
-    const val DENY_REASON_HOST_PROMPT_TIMED_OUT = "host_prompt_timed_out"
+        /**
+         * The Desktop consent prompt was shown on the PC and nobody there answered before the
+         * host's auto-deny timeout — the PC user simply never touched the dialog, which is not
+         * the same fact as somebody having decided no.
+         */
+        const val HOST_PROMPT_TIMED_OUT = "host_prompt_timed_out"
+    }
 
     /**
      * What a `file_volumes_response` means for the person who tapped "browse everything".
@@ -326,8 +329,8 @@ object FileManagerLogic {
     ): VolumesOutcome = when {
         !errorMessage.isNullOrBlank() -> VolumesOutcome.FAILED
         fullBrowseGranted -> VolumesOutcome.GRANTED
-        denyReasonOf(denyReason) == DENY_REASON_CLIENT_UNREACHABLE -> VolumesOutcome.PHONE_UNREACHABLE
-        denyReasonOf(denyReason) == DENY_REASON_HOST_PROMPT_TIMED_OUT -> VolumesOutcome.HOST_PROMPT_TIMED_OUT
+        denyReasonOf(denyReason) == FileConsentDenyReasons.CLIENT_UNREACHABLE -> VolumesOutcome.PHONE_UNREACHABLE
+        denyReasonOf(denyReason) == FileConsentDenyReasons.HOST_PROMPT_TIMED_OUT -> VolumesOutcome.HOST_PROMPT_TIMED_OUT
         else -> VolumesOutcome.REFUSED
     }
 

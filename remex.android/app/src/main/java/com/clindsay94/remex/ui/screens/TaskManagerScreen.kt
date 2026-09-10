@@ -631,7 +631,8 @@ private fun ProcessCard(
                             },
                             colors =
                                     ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.error
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
                                     )
                     ) { Text(stringResource(R.string.button_kill)) }
                 },

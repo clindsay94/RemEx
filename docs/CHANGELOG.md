@@ -316,6 +316,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The phone's reconnect secrets are no longer included in a cloud backup or a device-to-device
+  transfer. The three other stores that hold pairing state were already excluded and this one was
+  not, so the encrypted secret could leave the phone with a backup. The values were encrypted and
+  the key that opens them never left the device, so nothing was readable off the phone, but the
+  secret had no business being in the backup at all. A test now checks every pairing store against
+  all three exclusion lists so one cannot be missed again.
+- Quick Settings tiles that shut down, restart, hibernate, sleep, lock or turn off the monitor now
+  ask before they act. A single mistaken tap used to be enough. Wake-on-LAN is unchanged, since
+  there is nothing to undo about waking a machine.
+- The hardware widget's refresh button no longer says "Refreshed" when the refresh failed. It kept
+  the previous numbers on screen and reported success, so a stale reading looked like a current one.
+- After the remote desktop stream recovers from a capture failure it no longer sends a burst of
+  frames all at once. The pacer's clock was being reset before the half-second backoff instead of
+  after it, so the first moment of recovery tried to catch up on time that had already passed.
+- On Linux, machine uptime is now read correctly when the system language uses a comma for the
+  decimal point. It was previously off by a factor of a hundred on those systems.
+- Cancelling a file transfer on the phone, or leaving the screen mid-transfer, no longer reports
+  that the PC refused the connection. The cancellation was being caught and relabelled as a
+  connection failure.
+- The "Kill" button in the phone's task manager keeps readable text under every colour style. Its
+  label was taking its colour from the wrong role, which was invisible under Monochrome and at the
+  highest contrast setting.
+- The close button on the PC's splash preview is visible in light themes. It was painted white on a
+  near-white backdrop, and the preview could only be dismissed with the back gesture.
+- Text on the PC's green confirmation buttons now takes its colour from the green fill rather than
+  the red one. The two are calculated separately and drift apart as you move the seed colour, so on
+  some palettes the label was harder to read than it should have been.
+- The connection banner on the PC no longer shows two buttons competing to be the primary action.
 - Tapping "Browse this PC" on the phone now tells you what it is waiting for. The consent prompt for
   full-device browsing opens on the PC, and until now the phone showed "Loading drives…" while it
   sat there — which looks the same as a request that quietly failed, so the natural response was to
@@ -525,6 +553,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Nothing changed on the PC side; it has always accepted them there. (RemEx-035d6)
 
 ### Added
+
+- **Pasting a file that already exists now offers you a way out on the PC.** Copying or moving into
+  a remote folder that already holds a file of that name used to end in the host's own words and
+  nothing to press. You now get Replace, Keep both, Skip and Cancel, and the choice is sent back so
+  the operation finishes. Keep both reports the name the host actually used. The phone has had this
+  since the conflict sheet landed; this is the PC catching up. Note that browsing the phone from the
+  PC is the one direction not covered yet, because the phone does not send the collision code that
+  drives the prompt.
+- The host records transfers in progress to disk, so the state survives a restart of the PC agent
+  rather than disappearing with it. Restarting no longer loses track of what was going on, though
+  picking a transfer back up where it stopped is still to come.
 
 - **Sensor alerts you can actually see and manage.** A sensor card with an alert set now shows a
   small bell next to its name. When the sensor crosses its threshold the bell turns into a red

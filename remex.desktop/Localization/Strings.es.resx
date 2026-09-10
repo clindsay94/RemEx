@@ -3428,4 +3428,55 @@ Puedes cambiar:
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Las tarjetas y el texto se verán así.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Nombre ya en uso</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>«{0}» ya está en esta carpeta. Puedes conservar ambos archivos, reemplazar el que ya está u omitir este elemento.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>«{0}» ya está aquí, pero es un tipo de elemento distinto: una carpeta donde estás pegando un archivo, o al revés. Conserva ambos u omite este elemento.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>El nuevo nombre de «{0}» lo ocupó otra cosa justo antes de poder crearlo. Vuelve a probar «Conservar ambos» para elegir un nombre libre u omite este elemento.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>No se puede dar un nombre nuevo a «{0}» aquí, porque el nombre nuevo sería demasiado largo para esta carpeta. Omite este elemento o detén el pegado y acorta el nombre primero.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>No se pudo pegar «{0}» aquí y este PC no reconoce el motivo que dio tu dispositivo. Omite este elemento o detén el pegado.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Conservar ambos</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Tu dispositivo elige un nombre nuevo, así que no se sobrescribe nada.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Reemplazar</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Sobrescribe el elemento que ya está ahí. Esto no se puede deshacer.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Omitir</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Deja este elemento como está y continúa con el resto.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Detener el pegado</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Deténte aquí. Lo que aún no se ha pegado se deja como está.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Pegado detenido. Los elementos que no se pegaron siguen en el portapapeles.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Guardado como «{0}», así que se conservó el elemento que ya estaba ahí.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Se abandonó «{0}» tras varios intentos. No se cambió nada de ese elemento.</value>
+  </data>
 </root>

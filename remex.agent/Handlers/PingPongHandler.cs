@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -1059,14 +1060,21 @@ public sealed class PingPongHandler(
                 }
                 case "KILLPROCESS":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
-                        && int.TryParse(pidStr, out var pid))
+                        && int.TryParse(pidStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
                     {
+                        // INVARIANT, like every other parse of a wire value in this area. The
+                        // command parameters are strings the phone formatted with its OWN locale
+                        // rules; reading them back under the HOST's is how the two ends disagree
+                        // about the same number. Six sibling parse sites nearby already pass
+                        // InvariantCulture — these four did not.
                         // ExpectedName is optional on the wire: a client older than RemEx-druh
                         // simply omits it and is killed unverified, exactly as before. Nothing
                         // breaks on an older phone; it just does not gain the protection.
                         message.CommandParameters.TryGetValue("ExpectedName", out var expectedName);
                         message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var startStr);
-                        var expectedStart = long.TryParse(startStr, out var parsedStart) ? parsedStart : (long?)null;
+                        var expectedStart = long.TryParse(startStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedStart)
+                            ? parsedStart
+                            : (long?)null;
                         var killResult = processMonitorService.KillProcess(pid, expectedName, expectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
@@ -1077,11 +1085,13 @@ public sealed class PingPongHandler(
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "KILLPROCESSELEVATED":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
-                        && int.TryParse(epidStr, out var epid))
+                        && int.TryParse(epidStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var epid))
                     {
                         message.CommandParameters.TryGetValue("ExpectedName", out var eExpectedName);
                         message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var eStartStr);
-                        var eExpectedStart = long.TryParse(eStartStr, out var eParsedStart) ? eParsedStart : (long?)null;
+                        var eExpectedStart = long.TryParse(eStartStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var eParsedStart)
+                            ? eParsedStart
+                            : (long?)null;
                         var killResult = processMonitorService.KillProcess(epid, eExpectedName, eExpectedStart);
                         return MakeCommandResponse(
                             killResult.Success,

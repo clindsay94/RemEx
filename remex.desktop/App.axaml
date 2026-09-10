@@ -495,12 +495,18 @@
         </Style>
         <Style Selector=":is(Button).primary.success">
             <Setter Property="Background" Value="{DynamicResource SystemSuccessBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SuccessForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
+        <!-- WarningForegroundBrush: measured text for the warning fill, same shape as
+             SuccessForegroundBrush/ErrorForegroundBrush above it. Its live, per-palette value is
+             palette.OnWarning (computed in DynamicColorGenerator.cs, pushed by ThemeService), so
+             it tracks the seed sweep; the entry in Themes/Shared/FallbackPalette.axaml is only the
+             pre-theme fallback. Do NOT substitute ErrorForegroundBrush here — that was the original
+             defect: OnError and OnWarning are computed independently and diverge across the sweep. -->
         <Style Selector=":is(Button).primary.warning">
             <Setter Property="Background" Value="{DynamicResource SystemWarningBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource ErrorForegroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource WarningForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
         </Style>
 

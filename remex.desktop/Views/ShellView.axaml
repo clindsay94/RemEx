@@ -726,7 +726,7 @@
                                              presence summary above, worse at 0.5 - 10-11px black-on-light text
                                              at roughly 3:1 on SolarFlare is exactly the reviewer's own worked
                                              example. -->
-                                        <Button Classes="tertiary compact" Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
+                                        <Button Classes="tertiary compact" Command="{Binding OpenCommandPaletteCommand}" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.85">
                                                 <mi:MaterialIcon Kind="Magnify" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" Width="11" Height="11" VerticalAlignment="Center"/>
                                                 <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource MaterialPrimaryMidForegroundBrush}" VerticalAlignment="Center"/>
@@ -909,7 +909,10 @@
                                      Background/BorderBrush here already paint the "secondary" look (card
                                      surface, card border, flat), so it gets that class rather than staying
                                      the guard's only non-WindowChrome exemption. -->
-                                <Button Name="ConnectionStatusButton" Classes="secondary" Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand" AutomationProperties.Name="{conv:Localize A11y_ConnectionStatusButton}" AutomationProperties.HelpText="{Binding Presence.PresenceAccessibleName}">
+                                <!-- Padding/CornerRadius stay inline: this is the collapsed drawer's full-width
+                                     status row, a deliberately different geometry from the CornerRadiusSmall
+                                     card buttons around it, not a copy-paste leftover (RemEx-cgrv3). -->
+                                <Button Name="ConnectionStatusButton" Classes="secondary" Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand" AutomationProperties.Name="{conv:Localize A11y_ConnectionStatusButton}" AutomationProperties.HelpText="{Binding Presence.PresenceAccessibleName}">
                                     <!-- THE COLLAPSED DRAWER'S ONLY INFORMATION CHANNEL (RemEx-44gc6). With the
                                          drawer closed, column [1] below is hidden and this tooltip is the whole
                                          picture — the reason host-down and no-phone have to read differently
@@ -979,11 +982,17 @@
                                                          it already exists on Settings/Home and a click-outside-dismisses
                                                          flyout is the wrong home for something you cannot undo without a
                                                          reconnect round-trip. -->
+                                                    <!-- CornerRadius=6 below is a deliberate flyout-scale exception to
+                                                         CornerRadiusSmall (8) for this compact action row, not drift
+                                                         (RemEx-cgrv3). The diagnostics button's Background/Foreground
+                                                         stay inline too — it intentionally reads as flyout chrome
+                                                         (matches the flyout's own GlassBaseDarkBrush) rather than the
+                                                         card-surface .secondary default. -->
                                                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                                                        <Button Classes="secondary" Content="{conv:Localize Shell_LogsDiagnostics}" Command="{Binding NavigateToDiagnosticLogsCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
-                                                        <Button Classes="primary success" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
-                                                        <Button Classes="primary" Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasNoPhone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
-                                                        <Button Classes="primary" Content="{conv:Localize Nav_Settings}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasPhone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Classes="secondary compact" Content="{conv:Localize Shell_LogsDiagnostics}" Command="{Binding NavigateToDiagnosticLogsCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Classes="primary success compact" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding Presence.IsHostDown}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Classes="primary compact" Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasNoPhone}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Classes="primary compact" Content="{conv:Localize Nav_Settings}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasPhone}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>
@@ -1008,9 +1017,13 @@
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <mi:MaterialIcon Grid.Column="0" Kind="AlertOutline" Foreground="{DynamicResource SystemWarningBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <Button Grid.Column="2" Classes="primary success" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
-                                <Button Grid.Column="3" Classes="secondary" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
-                                <Button Classes="tertiary icon-button compact" AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
+                                <!-- Grid.Column="3" is a SECONDARY action (open settings) beside the PRIMARY
+                                     Connect button in Grid.Column="2" — it was previously painted with
+                                     AccentPrimaryBrush/AccentForegroundBrush inline, a second visual primary in
+                                     the same banner. Removed so the secondary class governs (RemEx-cgrv3). -->
+                                <Button Grid.Column="2" Classes="primary success compact" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="3" Classes="secondary compact" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
+                                <Button Classes="tertiary icon-button compact" AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                                 </Button>
                             </Grid>
@@ -1026,7 +1039,7 @@
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <mi:MaterialIcon Grid.Column="0" Kind="AlertOutline" Foreground="{DynamicResource SystemWarningBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding LayoutLoadWarningMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <Button Classes="tertiary icon-button compact" AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="2" Command="{Binding DismissLayoutLoadWarningCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
+                                <Button Classes="tertiary icon-button compact" AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="2" Command="{Binding DismissLayoutLoadWarningCommand}" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                                 </Button>
                             </Grid>
@@ -1170,7 +1183,7 @@
                                 <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
                                 <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                             </StackPanel>
-                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Padding="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
                                 <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                             </Button>
                         </Grid>

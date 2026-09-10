@@ -3417,4 +3417,55 @@ Anda dapat mengubah:
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Kartu dan teks akan terlihat seperti ini.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Nama sudah dipakai</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>“{0}” sudah ada di folder ini. Anda bisa menyimpan kedua berkas, mengganti yang sudah ada, atau melewati item ini.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>“{0}” sudah ada di sini, tetapi jenisnya berbeda — sebuah folder di tempat Anda menempelkan berkas, atau sebaliknya. Simpan keduanya atau lewati item ini.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>Nama baru untuk “{0}” keburu dipakai hal lain sesaat sebelum dibuat. Coba lagi “Simpan keduanya” untuk memilih nama yang kosong, atau lewati item ini.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>“{0}” tidak bisa diberi nama baru di sini, karena nama barunya akan terlalu panjang untuk folder ini. Lewati item ini, atau hentikan penempelan dan perpendek namanya dulu.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>“{0}” tidak bisa ditempel di sini, dan PC ini tidak mengenali alasan yang diberikan perangkat Anda. Lewati item ini atau hentikan penempelan.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Simpan keduanya</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Perangkat Anda memilih nama baru, jadi tidak ada yang ditimpa.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Ganti</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Menimpa item yang sudah ada. Tindakan ini tidak bisa dibatalkan.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Lewati</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Biarkan item ini apa adanya dan lanjutkan dengan sisanya.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Hentikan penempelan</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Berhenti di sini. Apa pun yang belum ditempel dibiarkan apa adanya.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Penempelan dihentikan. Item yang belum ditempel masih ada di papan klip.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Disimpan sebagai “{0}” sehingga item yang sudah ada tetap dipertahankan.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Menyerah pada “{0}” setelah beberapa kali percobaan. Tidak ada yang berubah untuk item itu.</value>
+  </data>
 </root>

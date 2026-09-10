@@ -33,6 +33,24 @@ public class ButtonVocabularyTests
     /// <summary>Emphasis — exactly one per button.</summary>
     private static readonly string[] Emphasis = { "primary", "secondary", "tertiary" };
 
+    /// <summary>
+    /// The brushes that paint the .primary look (App.axaml ":is(Button).primary"). A button that
+    /// sets Background or Foreground to either one, on its own account, reads as a visual primary
+    /// no matter what its Classes attribute says — used by
+    /// <see cref="AtMostOnePrimaryButtonPerViewSurface"/> and
+    /// <see cref="NoButtonOverridesAClassOwnedPaintPropertyUnlessListed"/> (RemEx-cgrv3).
+    /// </summary>
+    private static readonly string[] AccentPaintValues =
+    {
+        "{DynamicResource AccentPrimaryBrush}",
+        "{DynamicResource AccentForegroundBrush}",
+    };
+
+    /// <summary>The four properties App.axaml's emphasis/tint/size classes own. An inline value on
+    /// any of these, on a button wearing an emphasis class, makes that class inert on the property
+    /// — see <see cref="NoButtonOverridesAClassOwnedPaintPropertyUnlessListed"/> (RemEx-cgrv3).</summary>
+    private static readonly string[] PaintOwningProperties = { "Background", "Foreground", "CornerRadius", "Padding" };
+
     /// <summary>Tints, modifiers and standalone roles. See docs/BUTTON-VOCABULARY.md.</summary>
     private static readonly string[] Vocabulary =
     {
@@ -285,7 +303,16 @@ public class ButtonVocabularyTests
                          text, @"<(?:Button|ToggleButton|RepeatButton|DropDownButton|SplitButton)\b[^>]*?\bClasses=""([^""]+)""[^>]*>"))
             {
                 var classes = match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (!classes.Contains("primary"))
+
+                // COUNTS PAINT, NOT JUST THE CLASS (RemEx-cgrv3). ShellView's Grid.Column="3"
+                // banner button wore Classes="secondary" and shipped for real: LocalValue
+                // Background/Foreground set to the exact primary-accent brushes, a second visual
+                // primary sitting beside a real .primary.success button, invisible to a check that
+                // only reads classes.Contains("primary"). A button that paints itself with either
+                // accent-primary brush counts here whether or not it says "primary".
+                var isPrimary = classes.Contains("primary") || AccentPaintValues.Any(v =>
+                    Regex.IsMatch(match.Value, $@"\b(?:Background|Foreground)=""{Regex.Escape(v)}"""));
+                if (!isPrimary)
                 {
                     continue;
                 }
@@ -349,6 +376,147 @@ public class ButtonVocabularyTests
         offenders.Should().BeEmpty(
             "emphasis is a single choice; two of them resolve by document order in App.axaml "
             + "rather than by intent");
+    }
+
+    [Fact]
+    public void NoButtonOverridesAClassOwnedPaintPropertyUnlessListed()
+    {
+        // THE GUARD THIS WHOLE SWEEP EXISTS FOR (RemEx-cgrv3, review of PR #55). Every other test
+        // in this file checks CLASSES. That is exactly why ShellView's Grid.Column="3" button
+        // shipped for real: it wore Classes="secondary" — correct, and every test above was happy
+        // — while LocalValue Background/Foreground painted it with the primary-accent brushes
+        // beside a real .primary.success button in the same banner. Avalonia LocalValue outranks
+        // Style and StyleTrigger regardless of declaration order, so an inline Background,
+        // Foreground, CornerRadius or Padding on a button wearing an emphasis class makes that
+        // class inert on the property it sets — whether or not the inline value happens to match
+        // what the class would have supplied. 86 buttons across 11 views had done this by the time
+        // PR #55 was reviewed. This test fails on the OVERRIDE, not on whether it currently paints
+        // something wrong, because "currently harmless" is exactly how the 86 accumulated: each one
+        // looked fine in isolation on the screen its author was looking at.
+        //
+        // A call site that genuinely needs to differ is listed below, by a substring unique enough
+        // to identify that one button, with the reason it differs — the same discipline as
+        // <see cref="Exceptions"/> and <see cref="IndividualEmphasisExceptions"/> above, just not
+        // wired to docs/BUTTON-VOCABULARY.md (that file is out of this bead's owned paths).
+        var inlinePaintOverrideExceptions = new Dictionary<string, string>
+        {
+            // ── Geometry tied to the control's own dimensions, not a copy of a class default ──
+            ["Command=\"{Binding ReplayCoachMarkCommand}\""] = "CanvasView coach-mark replay button — CornerRadius=17/Padding=0 make it a circle exactly matching its own Width/Height=34, not a CornerRadiusSmall copy",
+
+            // ── Non-interactive control abusing Button as a label / hand-rolled chrome ──
+            ["Classes=\"secondary\" IsHitTestVisible=\"False\""] = "CanvasView toolbar title — IsHitTestVisible=\"False\", not a real secondary surface",
+            ["Name=\"ConnectionStatusButton\""] = "ShellView collapsed-drawer status row — deliberately wider geometry than a card button, not drift",
+
+            // ── Deliberate off-default fill/text for context (flyout chrome, toolbar tone) ──
+            ["Command=\"{Binding NavigateToDiagnosticLogsCommand}\""] = "ShellView status flyout — reads as flyout chrome (matches the flyout's own GlassBaseDarkBrush), not a card surface",
+            ["Command=\"{Binding Connection.SendPingCommand}\""] = "CanvasView dashboard actions — lighter-than-resting-secondary tone against the canvas backdrop",
+            ["Command=\"{Binding PinSelectedCommand}\""] = "CanvasView selection toolbar — same lighter tone as the Ping button above it",
+            ["Command=\"{Binding ResetToDefaultCommand}\""] = "PersonalizationPanelView reset link — quieter than .tertiary's default TextSecondaryBrush on purpose",
+            ["Command=\"{Binding Connection.GenerateQrCodeCommand}\""] = "SettingsView pair-phone button — muted TextSecondaryBrush instead of the default TextPrimaryBrush",
+
+            // ── The compact flyout/banner action-row size (CornerRadius=6), documented once here
+            //    rather than per button — every one below is the same intentional exception ──
+            ["Command=\"{Binding Connection.ConnectCommand}\" IsVisible=\"{Binding Presence.IsHostDown}\""] = "ShellView flyout Connect — compact action-row CornerRadius=6 (RemEx-cgrv3)",
+            ["Command=\"{Binding NavigateToSettingsCommand}\" IsVisible=\"{Binding Presence.HasNoPhone}\""] = "ShellView flyout Pair — same compact action-row exception",
+            ["Command=\"{Binding NavigateToSettingsCommand}\" IsVisible=\"{Binding Presence.HasPhone}\""] = "ShellView flyout Settings — same compact action-row exception",
+            ["Grid.Column=\"2\" Classes=\"primary success compact\""] = "ShellView connection banner Connect — same compact action-row exception",
+            ["Grid.Column=\"3\" Classes=\"secondary compact\""] = "ShellView connection banner Settings — same compact action-row exception",
+            ["Command=\"{Binding DismissConnectionBannerCommand}\""] = "ShellView connection banner dismiss — icon-button.compact's zero Padding doesn't fit this text-free chip; CornerRadius=6 matches the row",
+            ["Command=\"{Binding DismissLayoutLoadWarningCommand}\""] = "ShellView layout-warning dismiss — same icon-button exception as the connection banner dismiss",
+            ["Command=\"{Binding ConfirmCustomAccentCommand}\""] = "PersonalizationPanelView Apply — same compact action-row CornerRadius=6 exception",
+            ["Command=\"{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}\""] = "SettingsView paired-device rename — same compact-row CornerRadius=6 exception, smaller row-level Padding",
+            ["Command=\"{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).UnpairDeviceCommand}\""] = "SettingsView paired-device unpair — same compact-row CornerRadius=6 exception",
+
+            // ── Close/dismiss buttons whose Padding intentionally isn't icon-button's zero ──
+            ["Name=\"SettingsSheetCloseButton\""] = "ShellView settings sheet close — Padding=8 gives the close icon room; icon-button's default is 0",
+            ["Command=\"{Binding CloseQrCodeCommand}\""] = "PairingQrPanelView close — same roomier-than-icon-button-default Padding",
+            ["Command=\"{Binding ClosePairingPinCommand}\""] = "PairingPinPanelView close — same roomier-than-icon-button-default Padding",
+
+            // ── Context-specific CTA/chip sizing that never matched a class default (each is its
+            //    own documented call, not a shared pattern) ──
+            ["Command=\"{Binding Shell.OpenCommandPaletteCommand}\""] = "HomeView command-palette launcher — wide search-bar-styled CTA",
+            ["Command=\"{Binding NavigateToCanvasCommand}\" Padding=\"16,8\""] = "HomeView open-workspace chip",
+            ["Command=\"{Binding NavigateToCanvasCommand}\" HorizontalAlignment=\"Center\" Padding=\"24,12\""] = "HomeView empty-state hero CTA",
+            ["Command=\"{Binding ClearActivityCommand}\""] = "HomeView clear-activity chip",
+            ["Command=\"{Binding Connection.ConnectCommand}\" IsVisible=\"{Binding !Connection.IsConnected}\""] = "HomeView initialize-link CTA",
+            ["Classes=\"secondary pill danger\""] = "HomeView terminate-link CTA — matches the InitializeLink CTA's Padding",
+            ["Command=\"{Binding StartStreamCommand}\""] = "RemoteDesktopView start-stream toolbar button",
+            ["Command=\"{Binding StopStreamCommand}\""] = "RemoteDesktopView stop-stream toolbar button",
+            ["Command=\"{Binding ApplySettingsCommand}\""] = "RemoteDesktopView apply-settings toolbar button",
+            ["Command=\"{Binding DiscoverHostsCommand}\""] = "ConnectionView discover-hosts button",
+            ["Command=\"{Binding ConnectCommand}\" IsVisible=\"{Binding !IsConnected}\""] = "ConnectionView connect CTA",
+            ["Command=\"{Binding DisconnectCommand}\" IsVisible=\"{Binding IsConnected}\""] = "ConnectionView disconnect CTA",
+            ["Command=\"{Binding GenerateQrCodeCommand}\" IsVisible=\"{Binding CanRevealPairingPin}\""] = "ConnectionView pair-phone button",
+            ["Command=\"{Binding GenerateQrCodeCommand}\" HorizontalAlignment=\"Center\""] = "PairingPinPanelView expired-PIN get-new button",
+            ["Click=\"OnCopySnapshot\""] = "CanvasView copy-snapshot toolbar button",
+            ["Command=\"{Binding SaveCommand}\""] = "SettingsView header Save CTA",
+            ["Command=\"{Binding DiscoverHostCommand}\""] = "SettingsView discover-host button",
+            ["Command=\"{Binding SaveAndReconnectCommand}\""] = "SettingsView save-and-reconnect button",
+            ["Content=\"{local:Localize Btn_Disconnect}\""] = "SettingsView connection-card disconnect button",
+            ["Command=\"{Binding ExitApplicationCommand}\""] = "SettingsView exit-app button",
+            ["Command=\"{Binding ExportSettingsCommand}\""] = "SettingsView export-settings button",
+            ["Command=\"{Binding ImportSettingsCommand}\""] = "SettingsView import-settings button",
+            ["Command=\"{Binding AddSharedFolderCommand}\""] = "SettingsView add-shared-folder button",
+            ["Command=\"{Binding RestoreDefaultSharedFoldersCommand}\""] = "SettingsView restore-default-folders button",
+            ["Command=\"{Binding RemoveCommand}\""] = "SettingsView shared-folder-row remove button",
+            ["Command=\"{Binding RefreshPairedDeviceListCommand}\""] = "SettingsView paired-devices refresh button",
+            ["Command=\"{Binding RefreshTrustedDevicesCommand}\""] = "SettingsView trusted-devices refresh button",
+            ["Command=\"{Binding RevokeCommand}\""] = "SettingsView trust-row revoke button",
+            ["Command=\"{Binding ReplayTutorialCommand}\""] = "SettingsView replay-tutorial button",
+            ["Command=\"{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}\""] = "AppLauncherView tile launch button — Padding=12 gives the per-app art room; the tile's own Card supplies the colour",
+        };
+
+        var offenders = new List<string>();
+        var exemptedSeen = new HashSet<string>();
+
+        foreach (var (file, text) in XamlFiles())
+        {
+            var fileName = Path.GetFileName(file);
+
+            foreach (Match match in Regex.Matches(
+                         text, @"<(?:Button|ToggleButton|RepeatButton|DropDownButton|SplitButton)\b[^>]*?\bClasses=""([^""]+)""[^>]*>"))
+            {
+                var classes = match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (!classes.Any(Emphasis.Contains))
+                {
+                    continue;
+                }
+
+                var overriddenProps = PaintOwningProperties
+                    .Where(p => Regex.IsMatch(match.Value, $@"\b{p}="""))
+                    .ToList();
+                if (overriddenProps.Count == 0)
+                {
+                    continue;
+                }
+
+                var exemption = inlinePaintOverrideExceptions.Keys.FirstOrDefault(
+                    key => match.Value.Contains(key, StringComparison.Ordinal));
+                if (exemption is not null)
+                {
+                    exemptedSeen.Add(exemption);
+                    continue;
+                }
+
+                offenders.Add($"{fileName}: {string.Join(",", overriddenProps)} inline on "
+                    + $"Classes=\"{match.Groups[1].Value}\"");
+            }
+        }
+
+        // ANTI-VACUITY: every listed exception has to match a real offending button, or the
+        // allow-list is stale and silently protecting nothing (same discipline as the exception
+        // lists above).
+        var unmatched = inlinePaintOverrideExceptions.Keys.Except(exemptedSeen).ToList();
+        unmatched.Should().BeEmpty(
+            "every NoButtonOverridesAClassOwnedPaintPropertyUnlessListed exception has to match a "
+            + "real button, or the allow-list is stale: " + string.Join(", ", unmatched));
+
+        offenders.Should().BeEmpty(
+            "Background/Foreground/CornerRadius/Padding are owned by the emphasis/tint/size "
+            + "classes once a button wears one; an inline value on any of them makes the class "
+            + "inert on that property regardless of whether the value matches, and unnoticed "
+            + "overrides are exactly how RemEx-cgrv3's 86-button sweep happened. A new one needs "
+            + "a class, or a listed, bead-owned reason.");
     }
 
     [Fact]

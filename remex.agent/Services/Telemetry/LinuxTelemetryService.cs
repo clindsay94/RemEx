@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
@@ -135,7 +136,13 @@ public class LinuxTelemetryService : ITelemetryService
                         try
                         {
                             var inputVal = (await File.ReadAllTextAsync(tempInput, ct)).Trim();
-                            if (double.TryParse(inputVal, out var milliCelsius))
+                            // INVARIANT, ALWAYS. sysfs and /proc emit C-locale numbers with a '.'
+                            // decimal separator regardless of the user's locale, so parsing them
+                            // under the ambient culture misreads every one of them on a de-DE or
+                            // fr-FR box — "1234.56" becomes 123456, a silent 100× error with no
+                            // exception to notice. InvariantGlobalization is set in no csproj and no
+                            // Directory.Build.props, so the ambient culture really is the user's.
+                            if (double.TryParse(inputVal, NumberStyles.Float, CultureInfo.InvariantCulture, out var milliCelsius))
                             {
                                 var labelPath = tempInput.Replace("_input", "_label");
                                 var rawLabel = File.Exists(labelPath)
@@ -174,7 +181,7 @@ public class LinuxTelemetryService : ITelemetryService
                         try
                         {
                             var inputVal = (await File.ReadAllTextAsync(fanInput, ct)).Trim();
-                            if (double.TryParse(inputVal, out var rpm) && rpm > 0)
+                            if (double.TryParse(inputVal, NumberStyles.Float, CultureInfo.InvariantCulture, out var rpm) && rpm > 0)
                             {
                                 var labelPath = fanInput.Replace("_input", "_label");
                                 var rawLabel = File.Exists(labelPath)
@@ -248,12 +255,12 @@ public class LinuxTelemetryService : ITelemetryService
 
         // Clean up generic labels like "temp1" → "Sensor 1"
         if (rawLabel.StartsWith("temp", StringComparison.OrdinalIgnoreCase) &&
-            int.TryParse(rawLabel.AsSpan(4), out var num))
+            int.TryParse(rawLabel.AsSpan(4), NumberStyles.Integer, CultureInfo.InvariantCulture, out var num))
             return $"Sensor {num}";
 
         // Clean up fan labels like "fan1" → "Fan 1"
         if (rawLabel.StartsWith("fan", StringComparison.OrdinalIgnoreCase) &&
-            int.TryParse(rawLabel.AsSpan(3), out var fanNum))
+            int.TryParse(rawLabel.AsSpan(3), NumberStyles.Integer, CultureInfo.InvariantCulture, out var fanNum))
             return $"Fan {fanNum}";
 
         // Return cleaned version
@@ -292,10 +299,11 @@ public class LinuxTelemetryService : ITelemetryService
             var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 5) return 0;
 
-            var user = double.Parse(parts[1]);
-            var nice = double.Parse(parts[2]);
-            var system = double.Parse(parts[3]);
-            var idle = double.Parse(parts[4]);
+            // /proc/stat is C-locale, so parse it as C — see the note at the temperature read above.
+            var user = double.Parse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture);
+            var nice = double.Parse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture);
+            var system = double.Parse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture);
+            var idle = double.Parse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture);
 
             var total = user + nice + system + idle;
             var idleDelta = idle - _lastIdleCpuTime;
@@ -342,7 +350,10 @@ public class LinuxTelemetryService : ITelemetryService
         try
         {
             var contents = await File.ReadAllTextAsync(_uptimeFile, ct);
-            var uptimeSeconds = double.Parse(contents.Split(' ')[0]);
+            // /proc/uptime is "SECONDS.FRACTION IDLE", always with a '.' whatever the user's locale.
+            // Under de-DE the ambient culture reads that '.' as a group separator, so 1234.56 parses
+            // as 123456 and the reported uptime is 100× too long — no exception, just a wrong number.
+            var uptimeSeconds = double.Parse(contents.Split(' ')[0], NumberStyles.Float, CultureInfo.InvariantCulture);
             var time = TimeSpan.FromSeconds(uptimeSeconds);
             return $"{(int)time.TotalDays}d {time.Hours}h {time.Minutes}m";
         }
@@ -357,7 +368,7 @@ public class LinuxTelemetryService : ITelemetryService
     {
         if (line == null) return 0;
         var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2 && double.TryParse(parts[1], out var kb))
+        if (parts.Length >= 2 && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var kb))
             return kb;
         return 0;
     }

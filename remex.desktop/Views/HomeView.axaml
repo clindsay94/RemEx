@@ -154,6 +154,11 @@
                     <TextBlock Classes="page-title" Text="{local:Localize Home_WelcomeTitle}" HorizontalAlignment="Center" TextAlignment="Center"/>
                     <TextBlock Text="{local:Localize Home_WelcomeIntro}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="640" TextWrapping="Wrap" LineHeight="21"/>
 
+                    <!-- The remaining inline Padding values on .pill buttons in this file (here and
+                         below) are each a deliberate, context-specific CTA size — a search-bar launcher,
+                         a hero CTA, a small chip — not copy-paste drift off CornerRadiusSmall/.compact.
+                         Three call sites that matched .pill.compact's Padding exactly (12,6) were folded
+                         into that class above; the rest are documented exceptions (RemEx-cgrv3). -->
                     <!-- Command palette launcher -->
                     <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="secondary pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
@@ -196,7 +201,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Classes="card-title"
                                    Text="{local:Localize SystemStatus_Title}" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Classes="secondary pill" Padding="12,6"
+                        <Button Grid.Column="1" Classes="secondary pill compact"
                                 Command="{Binding SystemStatus.RefreshCommand}"
                                 IsEnabled="{Binding !SystemStatus.IsChecking}"
                                 AutomationProperties.Name="{local:Localize SystemStatus_Recheck}"
@@ -249,7 +254,7 @@
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
                                                 VerticalAlignment="Top">
-                                        <Button Classes="secondary pill" Padding="12,6"
+                                        <Button Classes="secondary pill compact"
                                                 IsVisible="{Binding ShowsFix}"
                                                 IsEnabled="{Binding !$parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).IsChecking}"
                                                 Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).FixCommand}"
@@ -263,7 +268,7 @@
                                              explicit cast. Avalonia binding failures are silent, so
                                              getting this wrong gives a button that does nothing with
                                              no error anywhere. (RemEx-tb0a) -->
-                                        <Button Classes="secondary pill" Padding="12,6"
+                                        <Button Classes="secondary pill compact"
                                                 IsVisible="{Binding ShowsExplain}"
                                                 Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).ExplainCommand}"
                                                 CommandParameter="{Binding}"

@@ -31,21 +31,26 @@
                     <StackPanel Spacing="8">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" AutomationProperties.Name="{conv:Localize Conn_HostAddress}"/>
-                            <Button Grid.Column="1" Classes="secondary" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
+                            <Button Grid.Column="1" Classes="secondary" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Padding="14,10" Margin="8,0,0,0" Cursor="Hand"/>
                         </Grid>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Classes="primary" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Connect}">
+                        <Button Classes="primary" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Padding="18,10" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Connect}">
                             <TextBlock Text="{conv:Localize Btn_Connect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                         </Button>
-                        <Button Classes="secondary danger" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Disconnect}">
+                        <!-- Background/Foreground removed: they were reinstating the pre-vocabulary danger
+                             shape (Transparent fill + bare SystemErrorBrush text) that ErrorTintForegroundBrush
+                             + SystemErrorBackgroundBrush on .danger replaced app-wide (App.axaml ~465-471,
+                             RemEx-1elh). BorderBrush kept — .danger already supplies the same value, harmless
+                             duplicate rather than a paint bug (RemEx-cgrv3). -->
+                        <Button Classes="secondary danger" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" Cursor="Hand" AutomationProperties.Name="{conv:Localize Btn_Disconnect}">
                             <TextBlock Text="{conv:Localize Btn_Disconnect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                         </Button>
                         <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3). A QR and a PIN are two ways to
                              read the same pairing session, and offering them as a choice made the
                              user pick before they knew which their phone could use. -->
-                        <Button Classes="secondary" Command="{Binding GenerateQrCodeCommand}" IsVisible="{Binding CanRevealPairingPin}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{conv:Localize Home_PairPhoneTooltip}" AutomationProperties.Name="{conv:Localize Home_PairPhoneButton}">
+                        <Button Classes="secondary" Command="{Binding GenerateQrCodeCommand}" IsVisible="{Binding CanRevealPairingPin}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" Cursor="Hand" ToolTip.Tip="{conv:Localize Home_PairPhoneTooltip}" AutomationProperties.Name="{conv:Localize Home_PairPhoneButton}">
                             <TextBlock Text="{conv:Localize Home_PairPhoneButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
                         </Button>
                     </StackPanel>

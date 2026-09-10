@@ -92,6 +92,18 @@ absolute timeline, so a per-tick overrun shortens the *next* wait rather than ac
 Call `Reset()` after any pause or backoff so recovery doesn't burst through a backlog of missed
 ticks. No global `timeBeginPeriod`. Benefits Linux pacing too.
 
+**`Reset()` goes AFTER the backoff's `await`, never before it.** It anchors `_nextTickMs` to the
+clock at the moment it is called, and `WaitForNextTickAsync` only steps `_nextTickMs += interval` —
+it never re-anchors. So `Reset(); await Task.Delay(500, ct);` ends the pause anchored 500 ms in the
+past and then returns a **zero wait once per missed tick — roughly 60 of them at 120 FPS**, which is
+the capture-and-encode backlog burst this call exists to prevent, arriving by way of the call that
+prevents it. Both backoff sites in `RemoteDesktopHandler`'s capture loop (the display-powered-off
+pause and the `consecutiveFailures >= 5` capture backoff) had the ordering inverted, while the
+comment at the second one already claimed the burst was prevented. Pinned by
+`remex.agent.tests/PacerResetOrderingTests.cs`, which asserts the ordering, that a backoff still
+resets at all, and that each `Reset()` sits directly below an awaited delay — a behavioural test of
+the pacer alone cannot see this, because the pacer is correct either way.
+
 **NEVER replace with a bare `Task.Delay` in any stream or cursor loop — the regression is silent.**
 (`docs/REMOTE_DESKTOP_PERFORMANCE.md` was deleted as stale planning-doc housekeeping; this entry is
 the durable record. Do not go looking for that file.)
@@ -215,7 +227,7 @@ silently vanishes** — no error, no log line, no failing test; the stream keeps
 cursor simply stops moving.
 
 It is unreachable by construction today, and that is the only thing keeping it safe:
-`HostBootstrapper.cs:131` registers `LinuxInputSimulationService` as `IInputSimulationService`;
+`HostBootstrapper.cs:151` registers `LinuxInputSimulationService` as `IInputSimulationService`;
 `LinuxInputBackendRouter` — the only type that touches `LinuxEisInputService` — is never registered
 or constructed in production, and `SetRouter` has zero callers outside its own declaration, so
 `_router` stays null forever. Independently, `OpenEisSender` has zero callers, and `_available` only
@@ -398,8 +410,8 @@ bytes. The receiver then tears its sink down and finalizes a zero-byte transfer,
 
 **All three senders must drain first, and all three now do:**
 
-- C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1427`),
-  called at `TransferSessionManager.cs:1356` before the completion is sent.
+- C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1685`),
+  called at `TransferSessionManager.cs:1596` before the completion is sent.
 - Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:320`).
 - Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
   `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
@@ -415,9 +427,9 @@ two silent modes — a declared 0 made the wait a no-op and left the bug fully l
 length larger than the file waited forever, because there is deliberately no deadline.
 
 **A DECLARED SIZE OF ZERO MEANS "UNKNOWN", NOT "EMPTY". Do not reconcile against it.** This is a
-contract with the other end, written down there: `TransferSessionManager.cs:60` — *"a declared size of
+contract with the other end, written down there: `TransferSessionManager.cs:59` — *"a declared size of
 ZERO is legitimate — a phone reports it for a content URI whose length it cannot read"* — and the PC
-gates both its overshoot bound (`:345`) and its completion check (`:385`) on `ExpectedSize > 0`. So
+gates both its overshoot bound (`:509`) and its completion check (`:555`) on `ExpectedSize > 0`. So
 `beginHostSend` reconciles only a length that was actually reported:
 
 ```kotlin
@@ -431,7 +443,7 @@ Bounding the drain on `sent` is what makes the unknown-size case correct without
 length at all.
 
 **The `final` flag comes from a one-chunk read-ahead**, not from `size`, and the two halves depend on
-each other: the PC acks on `Final || interval` (`TransferSessionManager.cs:1149`), so on an
+each other: the PC acks on `Final || interval` (`TransferSessionManager.cs:1375`), so on an
 unknown-size transfer a wrongly-flagged last frame would strand a sub-interval tail even with the
 drain bounded correctly. The old `sent + read >= size` marked the *first* frame final on a provider
 reporting 0, and no frame final at all on a stale larger size.
@@ -508,8 +520,8 @@ green, suspect the fixture before concluding the code is covered.
 trip. On the Kotlin sender that cap is now an injectable constructor parameter defaulting to
 `FileTransferLimits.MAX_UNACKED_BYTES`, so the branch is reachable from a test (`RemEx-68wwl`); the
 C# sender's cap is now the same shape: an injectable init-only seam, `MaxUnackedBytes` at
-`TransferSessionManager.cs:90`, defaulting to `FileTransferLimits.MaxUnackedBytes` and compared
-against in `StreamSenderAsync` at `TransferSessionManager.cs:1337`. `HostSendBackpressureTests`
+`TransferSessionManager.cs:96`, defaulting to `FileTransferLimits.MaxUnackedBytes` and compared
+against in `StreamSenderAsync` at `TransferSessionManager.cs:1554`. `HostSendBackpressureTests`
 covers both halves — the sender stopping at the cap and resuming once an ack lowers outstanding
 bytes back under it (`RemEx-xefvb`). `FileTransferEngine.runUpload` on the upload path is now covered
 the same way: the loop is extracted into `UploadSendLoop`, an injectable collaborator (the object
@@ -522,7 +534,7 @@ survived because backpressure had already drained them, while every screenshot f
 353,985-byte screenshot push — both data frames dropped as *"No sink"* (RemEx-zd8ws; the phone had
 learned the same lesson as RemEx-y6x6 and the C# sender never got the fix).
 
-The wait is an **idle window**, not a deadline (`AckDrainIdleTimeout`, `TransferSessionManager.cs:110`):
+The wait is an **idle window**, not a deadline (`AckDrainIdleTimeout`, `TransferSessionManager.cs:139`):
 up to 8 MB may still be draining, so any total budget safe on a slow link is useless as a backstop.
 A dead socket does not depend on it — `RunChannelAsync`'s teardown cancels the send session.
 
@@ -530,6 +542,31 @@ Guarded by `HostSendDrainTests`. Its discriminating assertion is *negative* — 
 withheld, the sender must still be blocked. Asserting only on the final ordering does not catch a
 regression here, because once the ack is delivered a fixed and a broken sender emit identical
 control traffic.
+
+### `TransferSessionManager` is the only production writer of `transfer_queue.json`
+
+`TransferQueueService` is registered as a singleton in `HostBootstrapper.cs` and must stay resolved by
+`TransferSessionManager`'s public constructor. For two beads it was resolved by **nothing**:
+RemEx-kow1 gave it per-write staging names and RemEx-njzcx gave it an orphan sweep above the
+existence check, and both hardened a store that no running host ever constructed, so
+`%ProgramData%\Remex\transfer_queue.json` was never written on a real machine while
+`remex.desktop/ViewModels/FileTransferQueue.cs` documented cross-restart resume as the host's job.
+
+**The failure presents as a full green suite.** `TransferQueueServiceTests` and
+`HostStateAtomicWriteTests` both instantiate the service directly, so every property of the store was
+covered while the store itself was unreachable — the "stranded pure half" AGENTS.md warns about,
+with the defect at the join rather than in either half. A test that calls `Enqueue` itself cannot see
+this; `remex.agent.tests/TransferQueueWiringTests.cs` drives the real transfer path and then reads the
+FILE, and pins the constructor parameter by reflection so dropping the join fails even though every
+behavioural test still passes it in through the internal test seam.
+
+Bookkeeping is written on STATE TRANSITIONS only, never per data frame — each write is a
+stage-and-rename, and resume re-derives its offset from the staging partial's length, not from the
+queue. `Done` and `Cancelled` entries are removed (the queue is a work list, not a history); `Failed`
+is kept so a restart can still show it. A host push (`PushFileAsync`) is recorded as mode
+`download`, because `TransferQueueService.DirectionOf` maps `push` to **Inbound** — that token means
+the phone pushing to the host, and the queue's "one active per direction" rule is about which way the
+bytes travel.
 
 ---
 

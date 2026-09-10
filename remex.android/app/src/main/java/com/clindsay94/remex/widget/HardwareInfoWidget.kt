@@ -284,12 +284,22 @@ class RefreshTelemetryCallback : ActionCallback {
 
         if (RemexClientManager.isConnected.value) {
             widgetToast(context, context.getString(R.string.widget_toast_refreshing))
-            val snapshot = RemexCoreClient.GetTelemetry().getOrNull()
+            val result = RemexCoreClient.GetTelemetry()
+            val snapshot = result.getOrNull()
             if (!snapshot.isNullOrBlank()) {
                 WidgetDataCache.putTelemetryJson(context, snapshot)
+                WidgetDataCache.refreshHardwareWidgets(context)
+                widgetToast(context, context.getString(R.string.widget_toast_refreshed))
+            } else {
+                // Do NOT re-render or claim success: the cache is untouched, so re-rendering here
+                // would just repaint the same stale values while telling the user it worked.
+                Log.w(
+                    "HardwareInfoWidget",
+                    "Manual refresh got no telemetry snapshot",
+                    result.exceptionOrNull()
+                )
+                widgetToast(context, context.getString(R.string.widget_toast_refresh_failed))
             }
-            WidgetDataCache.refreshHardwareWidgets(context)
-            widgetToast(context, context.getString(R.string.widget_toast_refreshed))
         } else {
             widgetToast(context, context.getString(R.string.widget_toast_connecting))
             val appContext = context.applicationContext

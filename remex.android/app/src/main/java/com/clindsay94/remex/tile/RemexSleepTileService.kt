@@ -5,7 +5,8 @@ import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
 
 class RemexSleepTileService : TileService() {
-    private fun executeCommand() = sendTileCommand("Sleep")
+    private fun executeCommand() =
+        confirmTileCommand("Sleep", com.clindsay94.remex.R.string.tile_sleep_label)
 
     override fun onClick() {
         super.onClick()

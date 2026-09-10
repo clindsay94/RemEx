@@ -6,7 +6,8 @@ import com.clindsay94.remex.RemexClientManager
 
 class RemexRestartUefiTileService : TileService() {
 
-    private fun executeCommand() = sendTileCommand("RestartToUefi")
+    private fun executeCommand() =
+        confirmTileCommand("RestartToUefi", com.clindsay94.remex.R.string.tile_restart_uefi_label)
 
     override fun onClick() {
         super.onClick()

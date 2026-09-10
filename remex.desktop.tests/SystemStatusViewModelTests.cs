@@ -222,13 +222,47 @@ public class SystemStatusViewModelTests
     }
 
     [Fact]
-    public void DisposeUnsubscribesFromTheLanguageService()
+    public async Task DisposeUnsubscribesFromTheLanguageService()
     {
         // LocalizationService.Instance is a process-wide singleton, so a card that never unsubscribed
-        // would keep every view model it was ever built with alive for the life of the app.
-        var vm = new SystemStatusViewModel(() => null, Inline([]));
-        vm.Dispose();
-        vm.Dispose();
+        // would keep every view model it was ever built with alive for the life of the app. Asserting
+        // only that Dispose() doesn't throw would pass even if it were a no-op - and so would a naive
+        // "still equals the pre-dispose value" check, if the subscription never worked in the first
+        // place. So this proves the subscription was LIVE first, then proves Dispose cuts it off -
+        // sequenced so the view model's construction-time culture can never be mistaken for evidence
+        // of either.
+        var vm = new SystemStatusViewModel(
+            () => new FakeReadiness(Report(Check(ReadinessCheckId.Firewall, ReadinessState.Problem))),
+            Inline([]));
+        await vm.RefreshAsync();
+
+        var original = LocalizationService.Instance.CultureTag;
+        try
+        {
+            LocalizationService.Instance.SetCulture("fr");
+            var french = vm.Rows[0].Sentence;
+
+            // Proof the subscription is live BEFORE disposing: a different culture must produce a
+            // different sentence. Without this, a Dispose() that had unsubscribed from day one (or a
+            // constructor that never subscribed) would pass the rest of the test just as happily.
+            LocalizationService.Instance.SetCulture("es");
+            var spanish = vm.Rows[0].Sentence;
+            Assert.NotEqual(french, spanish);
+
+            // Double-dispose must also be safe - a second unsubscribe of an already-removed handler.
+            vm.Dispose();
+            vm.Dispose();
+
+            // Back to "fr", which the still-subscribed row already resolved once above - so a stale
+            // Dispose() that left the subscription in place cannot hide behind an unseen value.
+            LocalizationService.Instance.SetCulture("fr");
+
+            Assert.Equal(spanish, vm.Rows[0].Sentence);
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(original);
+        }
     }
 
     // ── The one repair the card offers ────────────────────────────────────────────────────────

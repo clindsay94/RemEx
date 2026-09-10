@@ -170,7 +170,43 @@
                     </Grid>
                 </Border>
 
-                <!-- Row 4/5: Content (file list / search results + properties pane) -->
+                <!-- Row 4: Filename collision prompt (RemEx-6vd8 protocol, PC half)
+
+                     ROW 4 WAS FREE, and that is why it is used rather than a third IsVisible on row
+                     3. Avalonia's compiled bindings have no `&&`, so hiding the action bar for a
+                     third mode would have meant a new computed property on the view model purely to
+                     express "not renaming AND not prompting". A row of its own says the same thing
+                     with no extra state to keep in step.
+
+                     EVERY SENTENCE HERE IS LOCALIZED AND NONE OF IT IS THE HOST'S. The host sends a
+                     code; PendingConflict.Message resolves it against Strings.resx. That is the
+                     whole reason FileTransferErrorCodes exists - see remex.core. -->
+                <Border Grid.Row="4" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}" IsVisible="{Binding HasConflictPrompt}">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="FileAlert" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize FileTransfer_ConflictTitle}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding PendingConflict.Message}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <WrapPanel Orientation="Horizontal">
+                            <!-- KEEP BOTH FIRST AND REPLACE SECOND, matching FileConflictPolicy's
+                                 render order and the phone's sheet. Position is a stronger
+                                 recommendation than emphasis: the first button is the one a hurried
+                                 user presses, and it must not be the one that destroys a file. Not
+                                 Classes="primary": row 3's Upload stays visible (and enabled - see
+                                 FileTransferViewModel.CanUpload) while this row is showing, so a
+                                 second .primary here would put two accent CTAs in the same Card at
+                                 once - exactly what AtMostOnePrimaryButtonPerViewSurface forbids
+                                 (RemEx-cgrv3). -->
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictKeepBothBtn}" Classes="secondary compact" Command="{Binding KeepBothOnConflictCommand}" IsVisible="{Binding PendingConflict.CanKeepBoth}" ToolTip.Tip="{local:Localize FileTransfer_ConflictKeepBothTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictReplaceBtn}" Classes="secondary danger compact" Command="{Binding ReplaceOnConflictCommand}" IsVisible="{Binding PendingConflict.CanReplace}" ToolTip.Tip="{local:Localize FileTransfer_ConflictReplaceTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictSkipBtn}" Classes="secondary compact" Command="{Binding SkipOnConflictCommand}" ToolTip.Tip="{local:Localize FileTransfer_ConflictSkipTooltip}"/>
+                            <Button Margin="0,0,8,0" Content="{local:Localize FileTransfer_ConflictCancelBtn}" Classes="tertiary compact" Command="{Binding CancelOnConflictCommand}" ToolTip.Tip="{local:Localize FileTransfer_ConflictCancelTooltip}"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Row 5: Content (file list / search results + properties pane) -->
                 <Grid Grid.Row="5" ColumnDefinitions="*,Auto">
 
                     <Grid Grid.Column="0">

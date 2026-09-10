@@ -150,6 +150,18 @@
             <TextBox PlaceholderText="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}" AutomationProperties.Name="{local:Localize AppLauncher_SearchWatermark}"/>
 
             <!-- ═══ Apps Grid ═══ -->
+            <!-- NOT VIRTUALIZED, DELIBERATELY DEFERRED (RemEx-cgrv3 review; tracked as RemEx-xvy7a).
+                 The repo's known 3-part fix (bd memories itemscontrol / RemEx-u3abk) is ScrollViewer
+                 + MaxHeight + an ItemsPanel of VirtualizingStackPanel. That panel is strictly
+                 single-column, so dropping it in here would collapse this WrapPanel tile grid into
+                 one vertical column and break the drag-to-rearrange grid this view exists for.
+                 Avalonia ships no stock virtualizing wrap/grid panel; a real fix needs either a
+                 custom one or a third-party dependency, both bigger and riskier than a same-day
+                 paint-sweep fix, and both need their own build+ui-verify pass this bead's "no
+                 build" constraint can't do. Wrapping in a plain bounded ScrollViewer without
+                 virtualization was considered and rejected: WrapPanel still realizes every item
+                 regardless of the ScrollViewer's clip, so it would add scroll-in-scroll UX risk on
+                 an already-tested drag surface for zero actual performance benefit. -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -185,7 +197,7 @@
                                 <!-- Main Launch Button (Top Area). tertiary: the click target is
                                      transparent chrome over the Card's own per-app colour, which is
                                      already the tile's whole look (RemEx-z7pnx.1). -->
-                                <Button Grid.Row="0" Classes="tertiary" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <Button Grid.Row="0" Classes="tertiary" Cursor="Hand" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
                                         <!-- 80px, up from 64 (RemEx-u4244). The source is now a 256px
                                              shell icon rather than a 32px one, so the art can carry

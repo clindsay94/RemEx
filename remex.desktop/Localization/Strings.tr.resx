@@ -3418,4 +3418,55 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Kartlar ve metin böyle görünecek.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Bu ad zaten kullanılıyor</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>“{0}” bu klasörde zaten var. İki dosyayı da tutabilir, oradakini değiştirebilir ya da bu öğeyi atlayabilirsiniz.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>“{0}” burada zaten var, ama farklı türde bir öğe — dosya yapıştırdığınız yerde bir klasör var ya da tam tersi. İkisini de tutun veya bu öğeyi atlayın.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>“{0}” için seçilen yeni adı, oluşturulmadan hemen önce başka bir şey aldı. Boş bir ad seçmek için “İkisini de tut” seçeneğini yeniden deneyin ya da bu öğeyi atlayın.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>“{0}” öğesine burada yeni bir ad verilemiyor, çünkü yeni ad bu klasör için fazla uzun olurdu. Bu öğeyi atlayın ya da yapıştırmayı durdurup önce adı kısaltın.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>“{0}” buraya yapıştırılamadı ve bu bilgisayar cihazınızın verdiği nedeni tanımıyor. Bu öğeyi atlayın ya da yapıştırmayı durdurun.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>İkisini de tut</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Cihazınız yeni bir ad seçer, böylece hiçbir şeyin üzerine yazılmaz.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Değiştir</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Orada zaten olan öğenin üzerine yazar. Bu geri alınamaz.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Atla</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Bu öğeyi olduğu gibi bırakır ve kalanlarla devam eder.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Yapıştırmayı durdur</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Burada durun. Henüz yapıştırılmamış olanlar olduğu gibi kalır.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Yapıştırma durduruldu. Yapıştırılmayan öğeler hâlâ panoda.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>“{0}” olarak kaydedildi, böylece orada zaten olan öğe korundu.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Birkaç denemeden sonra “{0}” bırakıldı. O öğede hiçbir şey değişmedi.</value>
+  </data>
 </root>

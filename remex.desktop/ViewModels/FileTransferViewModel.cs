@@ -71,11 +71,18 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         ConnectionViewModel connection,
         ILogger<FileTransferViewModel>? logger = null,
         ILogger<FileTransferQueue>? queueLogger = null,
-        FileTransferQueue? transferQueue = null)
+        FileTransferQueue? transferQueue = null,
+        FileTransferClient? client = null)
     {
         _connection = connection;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
-        _client = new FileTransferClient(connection);
+
+        // THE SEAM THAT LETS THE CONFLICT FLOW BE TESTED AT ALL, and it is the join this repo's own
+        // splitting rule insists on landing with the logic (AGENTS.md). FileTransferClient already
+        // takes IFileTransferConnection so a test can answer a paste with `destination_exists`; what
+        // was missing was any way to hand that client to this view model, which built its own from a
+        // ConnectionViewModel that no test can make speak. Production passes nothing and is unchanged.
+        _client = client ?? new FileTransferClient(connection);
 
         // SHARED WITH ShellViewModel WHEN SUPPLIED (RemEx-rjnbo.1). The Files-nav badge needs a live
         // transfer count before this view model has ever been built - it is lazily constructed on
@@ -476,7 +483,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     /// <summary>True when the current folder is genuinely empty, rather than still arriving.</summary>
     /// <remarks>
-    /// The <see cref="IsLoading"/> term is not defensive padding — without it this flashes "this
+    /// The <c>IsLoading</c> term is not defensive padding — without it this flashes "this
     /// folder is empty" on every navigation, in the gap before the listing arrives, which looks
     /// exactly like a bug to the user. (RemEx-n69m.)
     /// </remarks>
@@ -1259,6 +1266,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var rootId = SelectedRemoteRoot.RootId;
         var isMove = _clipboardIsMove;
         var items = _clipboard.ToList();
+        var cancelled = false;
+
+        // WHAT THE HOST RENAMED, AND WHAT NOBODY COULD PLACE, BOTH HAVE TO OUTLIVE THE LOOP. The
+        // status line is one line and the last write wins, so a "saved as report (2).pdf" set inside
+        // the loop is erased a moment later by "Copy complete" — the user is told the paste worked
+        // and never told under what name. Collected here and reported once, at the end.
+        var renamed = new List<string>();
+        var abandoned = new List<string>();
 
         try
         {
@@ -1274,17 +1289,21 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 if (string.Equals(source, destination, StringComparison.Ordinal))
                     continue; // no-op paste into the same folder
 
-                if (isMove)
-                    await _client.MoveRemoteAsync(rootId, source, destination, overwrite: false, CancellationToken.None);
-                else
-                    await _client.CopyRemoteAsync(rootId, source, destination, overwrite: false, CancellationToken.None);
+                var (outcome, resolvedName) = await PasteOneAsync(rootId, source, destination, isMove, entry.Name);
+
+                if (!string.IsNullOrWhiteSpace(resolvedName)) renamed.Add(resolvedName);
+                if (outcome is PasteItemOutcome.GaveUp) abandoned.Add(entry.Name);
+                if (outcome is PasteItemOutcome.Cancelled)
+                {
+                    cancelled = true;
+                    break;
+                }
             }
 
-            StatusText = isMove
-                ? LocalizationService.Instance["FileTransfer_MoveComplete"]
-                : LocalizationService.Instance["FileTransfer_CopyComplete"];
-
-            if (isMove)
+            // THE CLIPBOARD SURVIVES A CANCELLED CUT. Clearing it after the user stopped the paste
+            // half way would leave the un-moved items with nowhere to be pasted from, which is a
+            // worse outcome than the collision they were trying to avoid.
+            if (isMove && !cancelled)
             {
                 _clipboard.Clear();
                 OnPropertyChanged(nameof(HasClipboard));
@@ -1292,6 +1311,31 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             }
 
             await BrowseRemoteAsync();
+
+            // AFTER THE REFRESH, NOT BEFORE, and this was a real defect rather than a tidy-up.
+            // BrowseRemoteAsync opens with `StatusText = string.Empty`, so a result written before it
+            // is erased milliseconds later and nobody ever sees it — which is why "Copy complete" has
+            // never actually appeared on screen. It matters more now than it did: the name the host
+            // chose for a "keep both" is something the user CANNOT work out for themselves, and a
+            // blanked line is the difference between knowing they have report (2).pdf and believing
+            // they have report.pdf.
+            //
+            // MOST SURPRISING FIRST. Stopping is what the user just did, so it is what they expect to
+            // read; an item nobody could place is the thing they would otherwise never learn about;
+            // a rename they did ask for still has to name the file they now have. Plain completion
+            // is the only one of the four that tells them nothing they did not already know.
+            if (cancelled)
+                StatusText = LocalizationService.Instance["FileTransfer_ConflictCancelled"];
+            else if (abandoned.Count > 0)
+                StatusText = string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictGaveUpFormat"], string.Join(", ", abandoned));
+            else if (renamed.Count > 0)
+                StatusText = string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictSavedAsFormat"], string.Join(", ", renamed));
+            else
+                StatusText = isMove
+                    ? LocalizationService.Instance["FileTransfer_MoveComplete"]
+                    : LocalizationService.Instance["FileTransfer_CopyComplete"];
         }
         catch (FileTransferHostException ex)
         {
@@ -1306,16 +1350,205 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         finally
         {
+            EndConflictPrompt(FileConflictAction.Cancel);
             IsLoading = false;
         }
     }
+
+    /// <summary>How one item's paste ended, as far as the rest of the batch is concerned.</summary>
+    private enum PasteItemOutcome
+    {
+        /// <summary>The host did it, possibly under a name it chose.</summary>
+        Done,
+
+        /// <summary>The user declined this one. The batch carries on.</summary>
+        Skipped,
+
+        /// <summary>
+        /// The round cap ran out before the host would take it. The batch carries on, but the user
+        /// is told which item was left behind — SEPARATE FROM <c>Skipped</c> for exactly that
+        /// reason: a skip is something they chose and already know about.
+        /// </summary>
+        GaveUp,
+
+        /// <summary>The user stopped the whole paste. Nothing after this item is attempted.</summary>
+        Cancelled,
+    }
+
+    /// <summary>
+    /// How many requests one item may cost before the paste gives up on it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **A CAP RATHER THAN A LOOP, because one of the host's codes is genuinely retryable and could
+    /// therefore repeat forever.** <c>resolved_name_taken</c> means the host lost a race for the
+    /// name it invented, and the honest answer is "ask again" — which works, unless something is
+    /// creating names as fast as the host picks them. Without a bound the user is handed the same
+    /// prompt indefinitely with no way out but Cancel; with one, the item is reported as left behind
+    /// and the batch moves on. Three is enough for a real race and short enough that a pathological
+    /// one is over in a moment.
+    /// </para>
+    /// <para>
+    /// IT COUNTS REQUESTS, NOT PROMPTS, and that distinction is the whole reason the loop asks
+    /// before it decides whether a retry is left. Counting prompts would show the user a question on
+    /// the last round, take their answer, and then discard it unsent — the single worst way to end
+    /// this, because the user watched themselves choose and the choice did nothing.
+    /// </para>
+    /// </remarks>
+    private const int ConflictRoundCap = 3;
+
+    /// <summary>Copies or moves one item, asking the user about a collision and retrying with their answer.</summary>
+    /// <returns>
+    /// How it ended, and the name the host used when it differed from the one that was asked for.
+    /// The name is returned rather than written to the status line here: the caller writes that line
+    /// once, after the loop, or the last item silently erases what every earlier one reported.
+    /// </returns>
+    private async Task<(PasteItemOutcome Outcome, string? ResolvedName)> PasteOneAsync(
+        string rootId, string source, string destination, bool isMove, string entryName)
+    {
+        string? resolution = null;
+
+        for (var attempt = 0; attempt < ConflictRoundCap; attempt++)
+        {
+            // The resolution rides on the request itself; see FileManageRequest.ConflictResolution.
+            var outcome = isMove
+                ? await _client.MoveRemoteAsync(rootId, source, destination, overwrite: false, resolution, CancellationToken.None)
+                : await _client.CopyRemoteAsync(rootId, source, destination, overwrite: false, resolution, CancellationToken.None);
+
+            // THE HOST CHOSE THE NAME, SO THE HOST HAS TO SAY SO. A "keep both" that succeeded
+            // silently leaves the user believing they have report.pdf when the file on disk is
+            // report (2).pdf — and the PC cannot compute that name itself, because only the host
+            // knows what else is in the folder and whether its filesystem is case-sensitive.
+            if (outcome.Success)
+                return (PasteItemOutcome.Done, outcome.ResolvedName);
+
+            // NEVER ASK A QUESTION THERE IS NO REQUEST LEFT TO CARRY THE ANSWER. On the last attempt
+            // the loop is about to end, so putting the prompt up would collect a choice, close the
+            // prompt, and send nothing — the user watches themselves press Replace and watches it do
+            // nothing, which is worse than being told plainly that the item was left behind.
+            if (attempt == ConflictRoundCap - 1)
+                break;
+
+            // Anything that is not a collision already threw out of the client, so reaching here
+            // means the host asked a question. Non-conflict refusals are still FileTransferHostException.
+            var answer = await AskAboutConflictAsync(outcome, entryName);
+
+            if (answer is FileConflictAction.Cancel) return (PasteItemOutcome.Cancelled, null);
+            if (answer is FileConflictAction.Skip) return (PasteItemOutcome.Skipped, null);
+
+            resolution = FileConflictPolicy.ResolutionFor(answer);
+        }
+
+        _logger.LogWarning(
+            "Gave up on pasting {Entry} after {Attempts} attempts", entryName, ConflictRoundCap);
+        return (PasteItemOutcome.GaveUp, null);
+    }
+
+    // ─── Filename collisions (RemEx-6vd8 protocol, PC half) ─────────────────────
+
+    /// <summary>
+    /// The collision currently being put to the user, or null when there is none.
+    /// </summary>
+    /// <remarks>
+    /// **A TYPED STATE, NOT A SENTENCE.** Every earlier build wrote the host's own English into
+    /// <c>StatusText</c> and stopped there, so the one refusal the user can actually answer
+    /// looked exactly like the ones they cannot. What the host sends is a code
+    /// (<c>FileTransferErrorCodes</c>); what this holds is that code plus the name it is about, and
+    /// the view renders localized copy from both.
+    /// </remarks>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasConflictPrompt))]
+    [NotifyCanExecuteChangedFor(nameof(PasteCommand))]
+    private FileConflictPrompt? _pendingConflict;
+
+    /// <summary>Whether the collision prompt is on screen. Bound by the view.</summary>
+    public bool HasConflictPrompt => PendingConflict is not null;
+
+    /// <summary>
+    /// Completed by whichever button the user presses, so the paste loop can resume where it stopped.
+    /// </summary>
+    private TaskCompletionSource<FileConflictAction>? _conflictAnswer;
+
+    /// <summary>Puts one collision to the user and waits for their answer.</summary>
+    private async Task<FileConflictAction> AskAboutConflictAsync(FileManageOutcome outcome, string entryName)
+    {
+        // The host names the file that collided; an older host sends the code and nothing else, and
+        // a prompt that cannot say WHICH file is worse than the prose it replaced. The entry's own
+        // name is the right fallback because the destination was built from it.
+        var conflictingName = outcome.ConflictingName;
+        var prompt = new FileConflictPrompt(
+            outcome.ErrorCode,
+            string.IsNullOrWhiteSpace(conflictingName) ? entryName : conflictingName);
+
+        var answer = new TaskCompletionSource<FileConflictAction>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _conflictAnswer = answer;
+        PendingConflict = prompt;
+
+        // THE SPINNER COMES DOWN WHILE THE APP IS WAITING ON A PERSON. Nothing is on the wire, and a
+        // progress ring over a question the user is being asked reads as "working, do not touch" —
+        // which is the opposite of what has to happen next.
+        IsLoading = false;
+
+        try
+        {
+            return await answer.Task;
+        }
+        finally
+        {
+            PendingConflict = null;
+            _conflictAnswer = null;
+            IsLoading = true;
+        }
+    }
+
+    /// <summary>
+    /// Delivers <paramref name="action"/> to whatever paste is waiting, if any.
+    /// </summary>
+    /// <remarks>
+    /// THE OFFER LIST IS RE-CHECKED HERE, not merely used to draw buttons. A view that binds the
+    /// wrong visibility, or a keyboard route reaching a collapsed button, would otherwise deliver an
+    /// answer the policy withheld — and the answer withheld most often is the one that deletes a
+    /// directory tree to make room for a file. Cancel is exempt: stopping is always allowed.
+    /// </remarks>
+    private void AnswerConflict(FileConflictAction action)
+    {
+        if (_conflictAnswer is not { } pending) return;
+        if (action is not FileConflictAction.Cancel && PendingConflict is { } prompt && !prompt.Allows(action)) return;
+
+        pending.TrySetResult(action);
+    }
+
+    /// <summary>
+    /// Ends any open prompt with <paramref name="action"/>, for paths where nobody will answer it.
+    /// </summary>
+    /// <remarks>
+    /// Disposal and a dropped connection both land here. Without it the paste loop stays parked on a
+    /// <see cref="TaskCompletionSource{TResult}"/> nothing will ever complete, holding
+    /// <c>IsLoading</c> on and the page in a state no button can leave.
+    /// </remarks>
+    private void EndConflictPrompt(FileConflictAction action) => _conflictAnswer?.TrySetResult(action);
+
+    [RelayCommand]
+    private void ReplaceOnConflict() => AnswerConflict(FileConflictAction.Replace);
+
+    [RelayCommand]
+    private void KeepBothOnConflict() => AnswerConflict(FileConflictAction.KeepBoth);
+
+    [RelayCommand]
+    private void SkipOnConflict() => AnswerConflict(FileConflictAction.Skip);
+
+    [RelayCommand]
+    private void CancelOnConflict() => AnswerConflict(FileConflictAction.Cancel);
 
     private bool CanPaste() =>
         SupportsCopyMove
         && HasClipboard
         && SelectedRemoteRoot is { IsWritable: true }
         && !IsRenaming
-        && !IsCreatingFolder;
+        && !IsCreatingFolder
+        // A second paste started while the first is parked on a collision would answer the open
+        // prompt's question with the wrong batch's items.
+        && !HasConflictPrompt;
 
     // ─── Rename ──────────────────────────────────────────────────────────────────
 
@@ -1724,6 +1957,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         if (_ownsTransferQueue)
             TransferQueue.Dispose();
         _searchCts?.Cancel();
+
+        // A paste parked on an unanswered collision would never resume, so its continuation — and
+        // the IsLoading it restores — would be stranded for the life of the process.
+        EndConflictPrompt(FileConflictAction.Cancel);
         _client.Dispose();
     }
 
@@ -1741,6 +1978,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             VerifyHashCommand.NotifyCanExecuteChanged();
             SearchCommand.NotifyCanExecuteChanged();
             LoadVolumesCommand.NotifyCanExecuteChanged();
+
+            // NOBODY IS LEFT TO ANSWER A COLLISION ONCE THE PHONE IS GONE. The retry would fail on a
+            // dead socket anyway, and leaving the prompt up asks the user to choose between three
+            // buttons that can no longer do anything.
+            if (!_connection.IsConnected)
+                EndConflictPrompt(FileConflictAction.Cancel);
 
             if (_connection.IsConnected && RemoteRoots.Count == 0)
                 _ = LoadRemoteRootsAsync();

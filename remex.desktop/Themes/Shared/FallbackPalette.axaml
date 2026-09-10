@@ -107,6 +107,10 @@
     <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
+    <!-- Pre-theme fallback, same measured-dark shape as SuccessForegroundBrush/ErrorForegroundBrush
+         above. ThemeService overrides it from palette.OnWarning once a palette is applied, so the
+         live value tracks the seed sweep; this literal only covers the window before that. -->
+    <SolidColorBrush x:Key="WarningForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
     <!-- MEASURED, NOT CHOSEN, AND IT INVERTS THE ACCENT ANSWER. White on this palette's error fill

@@ -3420,4 +3420,55 @@ You can change:
   <data name="Custom_SampleCardBody" xml:space="preserve">
     <value>Cards and text will look like this.</value>
   </data>
+  <data name="FileTransfer_ConflictTitle" xml:space="preserve">
+    <value>Name already in use</value>
+  </data>
+  <data name="FileTransfer_ConflictExistsFormat" xml:space="preserve">
+    <value>“{0}” is already in this folder. You can keep both files, replace the one that is there, or skip this item.</value>
+  </data>
+  <data name="FileTransfer_ConflictDifferentKindFormat" xml:space="preserve">
+    <value>“{0}” is already here, but it is a different kind of item — a folder where you are pasting a file, or the other way round. Keep both, or skip this item.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameTakenFormat" xml:space="preserve">
+    <value>The new name for “{0}” was taken by something else just before it could be created. Try “Keep both” again to pick a free name, or skip this item.</value>
+  </data>
+  <data name="FileTransfer_ConflictNameUnusableFormat" xml:space="preserve">
+    <value>“{0}” cannot be given a new name here, because the new name would be too long for this folder. Skip this item, or stop pasting and shorten the name first.</value>
+  </data>
+  <data name="FileTransfer_ConflictUnknownFormat" xml:space="preserve">
+    <value>“{0}” could not be pasted here, and this PC does not recognise the reason your device gave. Skip this item, or stop pasting.</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothBtn" xml:space="preserve">
+    <value>Keep both</value>
+  </data>
+  <data name="FileTransfer_ConflictKeepBothTooltip" xml:space="preserve">
+    <value>Your device picks a new name, so nothing is overwritten.</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceBtn" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="FileTransfer_ConflictReplaceTooltip" xml:space="preserve">
+    <value>Overwrite the item that is already there. This cannot be undone.</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipBtn" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="FileTransfer_ConflictSkipTooltip" xml:space="preserve">
+    <value>Leave this item alone and carry on with the rest.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelBtn" xml:space="preserve">
+    <value>Stop pasting</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelTooltip" xml:space="preserve">
+    <value>Stop here. Anything not pasted yet is left alone.</value>
+  </data>
+  <data name="FileTransfer_ConflictCancelled" xml:space="preserve">
+    <value>Pasting stopped. The items that were not pasted are still on the clipboard.</value>
+  </data>
+  <data name="FileTransfer_ConflictSavedAsFormat" xml:space="preserve">
+    <value>Saved as “{0}”, so the item that was already there was kept.</value>
+  </data>
+  <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
+    <value>Gave up on “{0}” after several tries. Nothing was changed for that item.</value>
+  </data>
 </root>
