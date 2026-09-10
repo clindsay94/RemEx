@@ -103,12 +103,15 @@ public class DashboardLayoutClobberTests : IDisposable
         // legitimately rewrites CustomAccentColors/SavedPalettes (swatches become named palettes),
         // SchemeVariant (normalised to one of the seven Android names) and ColorSource (forced to
         // Custom) - those are excluded here for the same reason ThemeMode is: this test isolates
-        // "fields no arm claims", not "every field is byte-identical".
+        // "fields no arm claims", not "every field is byte-identical". Arm 6 (RemEx-bnz2x) also
+        // legitimately rewrites CardBorderThickness from the (nonsense, reflection-generated) ThemeId
+        // this fixture carries, for the same reason.
         AssertSameCustomization(onDisk, loaded.Customization,
             "the schema-1-to-3 migration only touches the fields its arms claim; every other field must carry forward",
             nameof(CustomizationSettings.ThemeMode), nameof(CustomizationSettings.SchemaVersion),
             nameof(CustomizationSettings.CustomAccentColors), nameof(CustomizationSettings.SavedPalettes),
-            nameof(CustomizationSettings.SchemeVariant), nameof(CustomizationSettings.ColorSource));
+            nameof(CustomizationSettings.SchemeVariant), nameof(CustomizationSettings.ColorSource),
+            nameof(CustomizationSettings.CardBorderThickness));
     }
 
     [Fact]

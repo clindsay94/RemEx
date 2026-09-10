@@ -632,6 +632,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _selectedPresetId = SeedPresetCatalog.Resolve(settings.ThemeId).Id;
         _cornerRadius = settings.CornerRadius;
         _remoteCardCornerRadius = settings.RemoteCardCornerRadius;
+        _cardBorderThickness = settings.CardBorderThickness;
         _glassOpacity = settings.GlassOpacity;
         _appWindowOpacity = settings.AppWindowOpacity;
         _glowStrength = settings.GlowStrength;
@@ -995,6 +996,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _remoteCardCornerRadius;
+
+    /// <summary>
+    /// Card border thickness, in pixels. NOT a slider — no personalization control writes this
+    /// directly. The only writer is <see cref="SelectTheme"/>, which copies the chosen preset's
+    /// <see cref="SeedPreset.CardBorderThickness"/> the same way it copies <see cref="CornerRadius"/>.
+    /// Persisted here so a per-preset theme dictionary no longer has to (RemEx-bnz2x).
+    /// </summary>
+    [ObservableProperty]
+    private double _cardBorderThickness;
 
     [ObservableProperty]
     private double _glassOpacity;
@@ -1377,6 +1387,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             ThemeMode = _themeModeChosenThisSession ? _themeMode : carried.ThemeMode,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
+            CardBorderThickness = CardBorderThickness,
             GlassOpacity = GlassOpacity,
             AppWindowOpacity = AppWindowOpacity,
             GlowStrength = GlowStrength,
@@ -1428,6 +1439,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         {
             CornerRadius = preset.CornerRadius;
             RemoteCardCornerRadius = preset.RemoteCardCornerRadius;
+            CardBorderThickness = preset.CardBorderThickness;
             GlowStrength = preset.GlowStrength;
             GlassOpacity = preset.GlassOpacity;
 

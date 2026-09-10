@@ -57,6 +57,7 @@ public sealed record SeedPreset(
     double RemoteCardCornerRadius,
     double GlowStrength,
     double GlassOpacity,
+    double CardBorderThickness = 1,
     string? SplashStyle = null);
 
 /// <summary>
@@ -85,19 +86,26 @@ public static class SeedPresetCatalog
         new("BaseDarkGlass", "Custom_PresetGlass", AppTheme.BaseDarkGlass,
             Seed: "#6C4CFF", SchemeVariant: "TonalSpot", IsLight: false, Contrast: 0.0,
             CornerRadius: 16, RemoteCardCornerRadius: 24, GlowStrength: 2, GlassOpacity: 0.1,
-            SplashStyle: "CosmicZoom"),
+            CardBorderThickness: 1, SplashStyle: "CosmicZoom"),
 
         new("CyberNOC", "Custom_PresetNeon", AppTheme.CyberNOC,
             Seed: "#00F3FF", SchemeVariant: "Vibrant", IsLight: false, Contrast: 0.0,
-            CornerRadius: 2, RemoteCardCornerRadius: 4, GlowStrength: 10, GlassOpacity: 0.05),
+            CornerRadius: 2, RemoteCardCornerRadius: 4, GlowStrength: 10, GlassOpacity: 0.05,
+            CardBorderThickness: 1),
 
         new("SolarFlare", "Custom_PresetEmber", AppTheme.SolarFlare,
             Seed: "#FFB800", SchemeVariant: "TonalSpot", IsLight: true, Contrast: 0.0,
-            CornerRadius: 24, RemoteCardCornerRadius: 48, GlowStrength: 2, GlassOpacity: 0.8),
+            CornerRadius: 24, RemoteCardCornerRadius: 48, GlowStrength: 2, GlassOpacity: 0.8,
+            CardBorderThickness: 1),
 
+        // MONOLITH IS THE ONLY PRESET THAT SETS THIS. The heavy 3px border is its whole identity -
+        // it is the only preset that is not glass, and the only one whose cards are drawn rather
+        // than floated. Every other preset takes the record default (1px), same as the retired
+        // Monolith.axaml declared before its geometry moved here (RemEx-bnz2x).
         new("Monolith", "Custom_PresetSlate", AppTheme.Monolith,
             Seed: "#0A84FF", SchemeVariant: "Neutral", IsLight: false, Contrast: 0.0,
-            CornerRadius: 8, RemoteCardCornerRadius: 12, GlowStrength: 0, GlassOpacity: 1.0),
+            CornerRadius: 8, RemoteCardCornerRadius: 12, GlowStrength: 0, GlassOpacity: 1.0,
+            CardBorderThickness: 3),
 
         // ── The ones only worth shipping now that generation is free ──────────────────────────
         // None of these could have existed as a hand-authored dictionary; each is one seed plus a

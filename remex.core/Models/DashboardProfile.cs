@@ -271,6 +271,16 @@ public record CustomizationSettings
     /// <summary>Corner radius in pixels for remote control buttons.</summary>
     public double RemoteCardCornerRadius { get; init; } = 24;
 
+    /// <summary>
+    /// Card border thickness in pixels. The one geometry value that used to survive a per-preset
+    /// theme dictionary (Monolith's 3px identity border versus 1px everywhere else) after every
+    /// other geometry key had already become fully seed/settings-derived. Written by
+    /// <c>CustomizationViewModel.SelectTheme</c> from the chosen preset, the same way
+    /// <see cref="CornerRadius"/> already is, and pushed into the "CardBorderThickness" resource by
+    /// <c>ThemeService.ApplyCustomizationCore</c> on every apply (RemEx-bnz2x).
+    /// </summary>
+    public double CardBorderThickness { get; init; } = 1;
+
     /// <summary>Opacity (0.0 to 1.0) of the canvas cards.</summary>
     public double GlassOpacity { get; init; } = 0.1;
 

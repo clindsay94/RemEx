@@ -31,12 +31,13 @@ public class CustomizationMigrationTests
     /// arm rather than adding a schema 5, because 4 never shipped between the two tasks. Schema 5
     /// (RemEx-ceu4x) could not do the same thing for the same reason arm 3 -&gt; 4 could not fold
     /// into arm 2 -&gt; 3: schema 4 had already shipped, so a real profile on disk at schema 4 needs
-    /// its own arm to reach. Move this number only with a new arm and a reason.
+    /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness.
+    /// Move this number only with a new arm and a reason.
     /// </summary>
     [Fact]
-    public void TheCurrentSchemaIsFiveUntilANewArmSaysOtherwise()
+    public void TheCurrentSchemaIsSixUntilANewArmSaysOtherwise()
     {
-        CustomizationMigration.CurrentSchemaVersion.Should().Be(5);
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(6);
     }
 
     /// <summary>
@@ -261,8 +262,16 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
+        // Arm 6 (RemEx-bnz2x) also runs here and resolves CardBorderThickness from the (nonsense,
+        // reflection-generated) ThemeId - the one field this "arm 3 only" test has to name
+        // explicitly now, the same way arm 4->5 already earns its own exclusion elsewhere.
         after.Should().BeEquivalentTo(
-            before with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion, ColorSource = ColorSources.Custom },
+            before with
+            {
+                SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+                ColorSource = ColorSources.Custom,
+                CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+            },
             "arm 3 rewrites only the fields the spec names");
     }
 
@@ -401,11 +410,52 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
+        // Arm 6 (RemEx-bnz2x) also runs here; see ArmThreeDropsNoField above for why
+        // CardBorderThickness has to be named explicitly rather than assumed unchanged.
         after.Should().BeEquivalentTo(before with
         {
             SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
             ThemeSeedChromaRequest = before.ThemeSeedChroma,
+            CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
         }, "arm 5 rewrites only ThemeSeedChromaRequest");
+    }
+
+    // ─── Arm 6: CardBorderThickness leaves the per-preset theme dictionary (RemEx-bnz2x) ────────
+
+    private static CustomizationSettings SchemaFive() => SchemaTwo() with { SchemaVersion = 5 };
+
+    [Fact]
+    public void ASchemaFiveProfileAdoptsItsPresetsBorderThickness()
+    {
+        // Schema 5 already shipped, so a real profile on disk at exactly schema 5 has no
+        // cardBorderThickness key at all - it deserialises to the record default (1) no matter which
+        // theme it names. A Monolith profile must not silently lose its 3px identity border on
+        // upgrade just because the field never existed to carry it.
+        var before = SchemaFive() with { ThemeId = "Monolith" };
+        before.CardBorderThickness.Should().Be(1, "anti-vacuity: the un-migrated record default, not a coincidence");
+
+        var migrated = CustomizationMigration.Migrate(before, out var warning);
+
+        warning.Should().BeNull("nothing here needed repairing, only seeding");
+        migrated.CardBorderThickness.Should().Be(3, "Monolith's preset entry is the only source of truth left for this value");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmSixDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same shape as ArmThreeDropsNoField/ArmFiveDropsNoField: one `with`
+        // expression, so every field it does not name survives verbatim. Built by reflection so a
+        // field added next year is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 5);
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+        }, "arm 6 rewrites only CardBorderThickness");
     }
 
     [Fact]

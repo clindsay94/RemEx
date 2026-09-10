@@ -16,17 +16,20 @@ namespace Remex.Desktop.Tests.Services;
 /// <remarks>
 /// <para>
 /// The four presets used to be four self-contained 100-line files, so a test could answer "does
-/// CyberNOC define AccentForegroundBrush?" with <c>File.ReadAllText</c>. Since RemEx-07jij they are
+/// CyberNOC define AccentForegroundBrush?" with <c>File.ReadAllText</c>. Since RemEx-07jij they were
 /// geometry plus a <c>ResourceInclude</c> of <c>Themes/Shared/FallbackPalette.axaml</c>, and a raw
-/// read of the preset file now sees four keys where the app sees fifty-three.
+/// read of the preset file saw four keys where the app saw fifty-three. Since RemEx-bnz2x the last
+/// of those four (<c>CardBorderThickness</c>) moved to <c>CustomizationSettings</c> too, so a raw
+/// read of a preset file now sees NOTHING of its own — it is a pure merge, and every key it
+/// resolves comes from <see cref="FallbackPalettePath"/>.
 /// </para>
 /// <para>
 /// <see cref="ResolvedText"/> throws when an include does not resolve on disk rather than returning
 /// what it managed to read. NOT because Avalonia would be quiet about it — measured, a mistyped
 /// <c>Source</c> is a hard build error, <c>AVLN2000 Unable to resolve XAML resource</c>, so the app
 /// cannot ship with one. It throws because these tests read the FILES, not the built assembly: a
-/// resolver that silently returned only the preset's four geometry keys would leave every "is this
-/// value readable" guard with no value to measure, and a guard with nothing to measure passes.
+/// resolver that silently returned nothing for a preset with a broken include would leave every "is
+/// this value readable" guard with no value to measure, and a guard with nothing to measure passes.
 /// </para>
 /// </remarks>
 internal static class ThemeDictionary

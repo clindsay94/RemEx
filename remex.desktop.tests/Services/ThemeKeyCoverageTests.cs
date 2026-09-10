@@ -30,13 +30,18 @@ namespace Remex.Desktop.Tests.Services;
 public class ThemeKeyCoverageTests
 {
     /// <summary>
-    /// The keys that are deliberately NOT seed-derived. All five are geometry, not palette: they
+    /// The keys that are deliberately NOT seed-derived. All four are geometry, not palette: they
     /// have their own sliders on the customization page and no colour meaning at all.
     /// </summary>
+    /// <remarks>
+    /// CardBorderThickness LEFT THIS LIST (RemEx-bnz2x). It used to be hand-authored per theme file
+    /// with no slider behind it; now it is a setting SelectTheme writes from the preset catalog, the
+    /// same shape as CardCornerRadius and the Elevation ramp, so it moved to the seed-derived list in
+    /// <see cref="TheGeometryKeysAreTheOnlyThingLeftHandAuthored"/> below instead.
+    /// </remarks>
     private static readonly string[] GeometryKeys =
     {
         "CornerRadiusSmall", "CornerRadiusMedium", "CornerRadiusLarge", "CornerRadiusExtraLarge",
-        "CardBorderThickness",
     };
 
     [Fact]
@@ -98,6 +103,10 @@ public class ThemeKeyCoverageTests
                 new[]
                 {
                     "CardCornerRadius", "RemoteCardCornerRadius",
+                    // CardBorderThickness (RemEx-bnz2x): the last per-preset geometry key, now
+                    // overridden from CustomizationSettings.CardBorderThickness the same as the two
+                    // corner radii above, rather than left hand-authored per theme file.
+                    "CardBorderThickness",
                     "Elevation1Shadow", "Elevation2Shadow", "Elevation3Shadow",
                     // AlertGlowShadow (RemEx-8wpvr.4): same class as the three Elevation shadows
                     // above — a BoxShadows resource pushed from palette.Error on every
@@ -105,6 +114,39 @@ public class ThemeKeyCoverageTests
                     "AlertGlowShadow",
                 },
                 "anything else left outside the seed pipeline needs a reason recorded here");
+    }
+
+    [Fact]
+    public void CardBorderThicknessIsDeclaredAndOverriddenLikeTheOtherSurvivingGeometryKey()
+    {
+        // NAMED EXPLICITLY (RemEx-bnz2x), on top of the sweeps above. CardBorderThickness was the
+        // one key a per-preset dictionary still justified itself with; this pins that it is now
+        // both declared (in the shared fallback, since no preset file declares it any more - see
+        // NoPresetDeclaresGeometryOfItsOwn) and pushed from settings on every apply, the same
+        // two-part guarantee PaletteTertiaryIsDeclaredAndPushedFromTheSeed gives its own key.
+        var allKeys = ThemeFiles().SelectMany(AllKeysIn).Distinct().ToArray();
+        allKeys.Should().Contain("CardBorderThickness",
+            "the shared fallback must still declare a pre-first-apply value for this key");
+
+        OverriddenKeys().Should().Contain("CardBorderThickness",
+            "ThemeService must push settings.CardBorderThickness on every ApplyCustomizationCore");
+
+        // The key name alone is not enough: it says the override EXISTS, not that it carries the
+        // right value. A copy-paste of the neighbouring line - new Thickness(settings.CornerRadius)
+        // - keeps the assertion above green while Monolith silently renders an 8px border. Pin the
+        // expression, the same way SelectTheme's side is pinned below.
+        var themeService = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Services", "ThemeService.cs"));
+        themeService.Should().MatchRegex(
+            @"""CardBorderThickness"",\s*new Thickness\(settings\.CardBorderThickness\)",
+            "the override must read settings.CardBorderThickness, not a neighbouring setting");
+
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
+        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
+        body.Success.Should().BeTrue("SelectTheme moved or changed shape - this guard cannot see it");
+        body.Value.Should().MatchRegex(@"CardBorderThickness\s*=\s*preset\.CardBorderThickness",
+            "SelectTheme must copy the chosen preset's border thickness, the same way it copies CornerRadius");
     }
 
     [Fact]
@@ -140,12 +182,20 @@ public class ThemeKeyCoverageTests
     }
 
     [Fact]
-    public void TheGeometryAPresetKeepsIsTheGeometryThatDiffers()
+    public void NoPresetDeclaresGeometryOfItsOwn()
     {
-        // SCOPE CONTROL FOR THE TEST ABOVE. "No colours in a preset" is also satisfied by a preset
-        // that has been hollowed out entirely, which would silently take every card in that theme to
-        // the fallback's shape. These four keys are the ones whose values genuinely differ between
-        // presets, and they are the reason a preset file still exists.
+        // WAS TheGeometryAPresetKeepsIsTheGeometryThatDiffers, and it pinned a claim that RemEx-bnz2x
+        // makes false on purpose. CardCornerRadius and the three Elevation shadows were ALREADY fully
+        // seed-derived when that test was written; CardBorderThickness (Monolith's 3px vs everyone
+        // else's 1px) was the one key that genuinely differed and the stated reason "a preset file
+        // still exists". Measured again: ThemeService overwrites it too now, from
+        // CustomizationSettings.CardBorderThickness, so there is no geometry left that a preset
+        // dictionary can claim credit for. One surviving key did not justify four dictionary files.
+        //
+        // SCOPE CONTROL SURVIVES UNCHANGED FROM THE OLD TEST. "No colours in a preset"
+        // (NoPresetDeclaresAColourOfItsOwn above) is also satisfied by a preset hollowed out
+        // entirely, so this still has to assert something positive about the shape - here, that
+        // ownKeys is provably empty rather than merely not-colours.
         foreach (var preset in ThemeFiles())
         {
             var ownKeys = Regex.Matches(
@@ -153,13 +203,10 @@ public class ThemeKeyCoverageTests
                     @"x:Key=""([^""]+)""")
                 .Select(m => m.Groups[1].Value);
 
-            ownKeys.Should().BeEquivalentTo(
-                new[]
-                {
-                    "CardCornerRadius", "CardBorderThickness",
-                    "Elevation1Shadow", "Elevation2Shadow", "Elevation3Shadow",
-                },
-                $"{preset}.axaml is geometry plus a merge; anything else belongs in the shared palette");
+            ownKeys.Should().BeEmpty(
+                $"{preset}.axaml is a pure merge now - every geometry key it used to carry is either "
+                + "seed-derived (CardCornerRadius, the Elevation ramp) or a setting SelectTheme writes "
+                + "(CardBorderThickness), so nothing preset-specific is left to declare");
         }
     }
 

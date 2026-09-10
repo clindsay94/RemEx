@@ -2,32 +2,21 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- ═══ MONOLITH THEME ═══
 
-         A preset is its GEOMETRY plus a seed. The colours come from Shared/FallbackPalette.axaml
+         A preset is a seed now, not a dictionary. The colours come from Shared/FallbackPalette.axaml
          until ThemeService.ApplyCustomization lands, and from the M3 generator after that; this
-         preset's seed (#0A84FF) lives in Models/SeedPreset.cs. (RemEx-2gjwn)
+         preset's seed (#0A84FF) lives in Models/SeedPreset.cs (RemEx-2gjwn).
+
+         THIS FILE IS A PURE MERGE NOW (RemEx-bnz2x). The heavy 3px border was the whole identity of
+         this preset - the only one that is not glass, the only one whose cards are drawn rather than
+         floated - and the ONE geometry key that survived ThemeService overwriting everything else.
+         It now lives as SeedPresetCatalog's Monolith entry (CardBorderThickness: 3), written into
+         CustomizationSettings.CardBorderThickness by SelectTheme the same way CornerRadius already
+         is. One surviving key did not justify four dictionary files, so nothing preset-specific is
+         declared here any more. The file still exists as the base-theme resource
+         AppTheme.Monolith resolves to (ThemeService.BaseThemeUri / SwapBaseTheme) - that selection
+         mechanism is unrelated to this bead and untouched by it.
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/FallbackPalette.axaml"/>
     </ResourceDictionary.MergedDictionaries>
-
-    <!-- The heavy 3px border is the whole identity of this preset - it is the only one that is not
-         glass, and the only one whose cards are drawn rather than floated. -->
-    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
-    <Thickness x:Key="CardBorderThickness">3</Thickness>
-    <!-- ELEVATION RAMP (RemEx-qbzl1). One shadow vocabulary for every raised surface, so a
-         Card, a dialog and an app bar say "level 2" rather than each inventing a BoxShadows.
-         Levels track Material's depth ramp in ORDER, not in absolute values: Material's
-         ShadowProvider is a fixed black drop shadow, while RemEx's is soft, accent-tinted and
-         scaled live by the GlowStrength slider. ThemeService overrides all four on every
-         ApplyCustomization; these literals are what a theme file alone renders with.
-           1 = resting surface (cards, list panels)
-           2 = raised resting (selected/pinned cards, the app bar)
-           3 = hover / interactive lift
-         A fourth level lands when Phase 5 raises dialogs and the tray flyout; adding it now
-         would be a key with no consumer.
-         Replaces CardShadow/CardHoverShadow, which named the same two steps after the ONE
-         control that used them and had no room for a third. -->
-    <BoxShadows x:Key="Elevation1Shadow">0 8 32 0 #40000000</BoxShadows>
-    <BoxShadows x:Key="Elevation2Shadow">0 10 40 0 #50000000</BoxShadows>
-    <BoxShadows x:Key="Elevation3Shadow">0 12 48 0 #60000000, 0 0 15 2 #400A84FF</BoxShadows>
 </ResourceDictionary>

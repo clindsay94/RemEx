@@ -101,12 +101,12 @@ public class SeedPresetCatalogTests
     /// reshaping every card on the next launch.
     /// </remarks>
     [Theory]
-    [InlineData("BaseDarkGlass", "#6C4CFF", 16.0, 24.0, false)]
-    [InlineData("CyberNOC", "#00F3FF", 2.0, 4.0, false)]
-    [InlineData("SolarFlare", "#FFB800", 24.0, 48.0, true)]
-    [InlineData("Monolith", "#0A84FF", 8.0, 12.0, false)]
+    [InlineData("BaseDarkGlass", "#6C4CFF", 16.0, 24.0, false, 1.0)]
+    [InlineData("CyberNOC", "#00F3FF", 2.0, 4.0, false, 1.0)]
+    [InlineData("SolarFlare", "#FFB800", 24.0, 48.0, true, 1.0)]
+    [InlineData("Monolith", "#0A84FF", 8.0, 12.0, false, 3.0)]
     public void TheFourHomagesKeepTheirRetiredThemesSeedAndGeometry(
-        string id, string seed, double corner, double remoteCorner, bool isLight)
+        string id, string seed, double corner, double remoteCorner, bool isLight, double borderThickness)
     {
         SeedPresetCatalog.TryGet(id, out var preset).Should().BeTrue($"{id} is a persisted ThemeId");
 
@@ -114,9 +114,14 @@ public class SeedPresetCatalogTests
         preset.CornerRadius.Should().Be(corner);
         preset.RemoteCardCornerRadius.Should().Be(remoteCorner);
         preset.IsLight.Should().Be(isLight);
+        preset.CardBorderThickness.Should().Be(borderThickness,
+            "Monolith's heavy 3px border is the one geometry value that used to live in a per-preset "
+            + "theme dictionary and now lives in the catalog instead (RemEx-bnz2x)");
 
-        // The structural theme file has to be the preset's own, not a shared one: the four .axaml
-        // files still carry per-theme geometry the seed cannot express.
+        // The structural theme file has to be the preset's own, not a shared one — NOT because the
+        // four .axaml files carry per-theme geometry any more (RemEx-bnz2x: they are pure merges
+        // now), but because AppTheme.<Id> is still the base-theme file ThemeService's
+        // BaseThemeUri/SwapBaseTheme swap in, which this bead left untouched.
         preset.BaseTheme.ToString().Should().Be(id);
     }
 

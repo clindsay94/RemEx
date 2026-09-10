@@ -38,8 +38,13 @@ public static class CustomizationMigration
     /// 5 = <c>ThemeSeedChromaRequest</c> added (RemEx-ceu4x). Schema 4 already shipped, so a
     ///     schema-4 profile on disk today has no such key and cannot be caught by extending an
     ///     earlier arm — the same reason 3 -&gt; 4 needed its own arm rather than folding into 2 -&gt; 3.
+    /// 6 = <c>CardBorderThickness</c> added (RemEx-bnz2x). It used to live in the four per-preset
+    ///     theme dictionaries (Monolith's 3px border vs everyone else's 1px) and was never a
+    ///     profile field, so a schema-5-or-earlier profile has no such key at all — it deserialises
+    ///     to the record default (1) regardless of which theme it names, which would silently
+    ///     shave Monolith's border on every upgrade without this arm.
     /// </remarks>
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -85,6 +90,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 3) migrated = FromSchemaTwo(migrated);
         if (migrated.SchemaVersion < 4) migrated = FromSchemaThree(migrated);
         if (migrated.SchemaVersion < 5) migrated = FromSchemaFour(migrated);
+        if (migrated.SchemaVersion < 6) migrated = FromSchemaFive(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -204,6 +210,22 @@ public static class CustomizationMigration
     /// </remarks>
     private static CustomizationSettings FromSchemaFour(CustomizationSettings settings) =>
         settings with { ThemeSeedChromaRequest = settings.ThemeSeedChroma };
+
+    /// <summary>
+    /// Schema 5 → 6: <c>CardBorderThickness</c> becomes a setting instead of a per-preset theme
+    /// dictionary key (RemEx-bnz2x). ONE <c>with</c> EXPRESSION, so a field this arm does not name
+    /// cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// UNAMBIGUOUS, UNLIKE THE SEED/VARIANT/CONTRAST FIELDS ARM 0 -&gt; 1 HAD TO GUESS AT. This field
+    /// never had a slider or any other user-facing control — before this bead only Monolith.axaml
+    /// declared 3 and the other three theme files declared 1, and nothing wrote the number into a
+    /// profile. So every profile below schema 6 is resolved straight from its <c>ThemeId</c>'s
+    /// preset, the same border it was already painting via the theme file, with no "did the user
+    /// choose this" question to weigh.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaFive(CustomizationSettings settings) =>
+        settings with { CardBorderThickness = SeedPresetCatalog.Resolve(settings.ThemeId).CardBorderThickness };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

@@ -10,8 +10,16 @@
          It used to be four copies. CyberNOC, Monolith, SolarFlare and BaseDarkGlass each carried
          the same 53 keys with different literals, and after RemEx-zg8ws made every one of them a
          generated value, three of those copies were paying maintenance for a surface nobody sees.
-         Four copies of a fallback drift; one cannot. The presets keep the geometry that is genuinely
-         theirs - corner radius, border thickness, shadows - and merge this file for the rest.
+         Four copies of a fallback drift; one cannot.
+
+         THE GEOMETRY LIVES HERE TOO NOW (RemEx-bnz2x). CardCornerRadius, CardBorderThickness and the
+         Elevation ramp used to be the reason a preset dictionary still existed - "the geometry that
+         is genuinely theirs". Measured against ThemeService, every one of them is overwritten on
+         every ApplyCustomization: CardCornerRadius and the three Elevation shadows already were:
+         only CardBorderThickness (Monolith's 3px vs everyone else's 1px) survived, and it now does
+         so as CustomizationSettings.CardBorderThickness, written by SelectTheme, not as a per-preset
+         XAML literal. One surviving key did not justify four dictionary files, so the four preset
+         files are pure merges of this one now - see Themes/BaseDarkGlass.axaml etc.
 
          The values are BaseDarkGlass's, because that is the default preset and the one App.axaml
          includes at startup.
@@ -148,4 +156,26 @@
     <!-- Also shared, and also overwritten: SeedPresetCatalog gives each preset its own value
          (CyberNOC 4, Monolith 12, BaseDarkGlass 24, SolarFlare 48) the moment it is applied. -->
     <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
+
+    <!-- FORMER PER-PRESET GEOMETRY (RemEx-bnz2x). All four values below are BaseDarkGlass's own,
+         because that is the default preset and the one App.axaml includes at startup - exactly the
+         same reasoning the colour keys above already follow. Every one of them is overwritten by
+         ThemeService.ApplyCustomizationCore on every apply: CardCornerRadius from
+         settings.CornerRadius, CardBorderThickness from the new settings.CardBorderThickness (see
+         SelectTheme), and the three Elevation levels from the live palette's accent. What is here is
+         only the pre-first-apply fallback, the same role every other key in this file plays. -->
+    <CornerRadius x:Key="CardCornerRadius">28, 8, 28, 8</CornerRadius>
+    <Thickness x:Key="CardBorderThickness">1</Thickness>
+    <!-- ELEVATION RAMP (RemEx-qbzl1). One shadow vocabulary for every raised surface, so a Card, a
+         dialog and an app bar say "level 2" rather than each inventing a BoxShadows. Levels track
+         Material's depth ramp in ORDER, not in absolute values - Material's ShadowProvider is a
+         fixed black drop shadow, while RemEx's is soft, accent-tinted and scaled live by the
+         GlowStrength slider. ThemeService overrides all three on every ApplyCustomization; these
+         literals are what the app renders with before the first apply lands.
+           1 = resting surface (cards, list panels)
+           2 = raised resting (selected/pinned cards, the app bar)
+           3 = hover / interactive lift -->
+    <BoxShadows x:Key="Elevation1Shadow">0 10 40 0 #50000000</BoxShadows>
+    <BoxShadows x:Key="Elevation2Shadow">0 14 48 0 #5C000000</BoxShadows>
+    <BoxShadows x:Key="Elevation3Shadow">0 20 60 0 #70000000, 0 0 20 3 #306C4CFF</BoxShadows>
 </ResourceDictionary>

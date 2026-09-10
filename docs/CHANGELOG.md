@@ -857,6 +857,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- The phone's file-send loop had a one-token buffer on its ack channel that nothing could test, and
+  it is the thing standing between a working transfer and one that freezes part-way through with no
+  error on either end. Removing it left all 51 tests green, because the test dispatcher runs an ack
+  inline and so never reproduces the case the buffer exists for. The wait is now a small function
+  a test can drive directly, and the buffer's capacity is a named constant two tests pin from
+  different directions: one proves a token survives arriving before anyone is waiting, the other
+  reads the source and fails if the channel is ever built from a literal instead of the constant.
+  The upload direction has the same buffer and is still guarded by a note rather than a test.
+  (RemEx-3uv7s)
+- The four PC theme files no longer carry geometry of their own. Every value in them except the
+  card border thickness was already being overwritten from your settings on each apply, so they had
+  quietly become fallback rather than definition. Border thickness is now a setting like corner
+  radius is, written when you pick a preset, and saved profiles migrate to schema 6 on load. Monolith
+  keeps its thicker border and the other three keep theirs; nothing renders differently.
+  (RemEx-bnz2x)
 - `scripts/verify.ps1` runs the .NET suite with `--blame-hang` and a 180 s per-test timeout, so a
   test that stops responding is killed and named in the receipt as "test run hung: <test>"
   instead of the run sitting silently for an hour with one idle test host, which is what two of

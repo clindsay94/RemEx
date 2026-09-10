@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
+using Remex.Desktop.Tests.Services;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
@@ -131,21 +132,26 @@ public class CardSurfaceTests
     }
 
     [Fact]
-    public void EveryThemePresetDeclaresTheWholeElevationRamp()
+    public void EveryThemePresetResolvesTheWholeElevationRamp()
     {
         // A ramp with a hole in it degrades to whatever the fallback resolves, which for a
-        // BoxShadows DynamicResource is nothing at all: the card renders flat. Per preset, because
-        // the four differ deliberately and a copy-paste that skips one is invisible until someone
-        // hovers a card in that one theme.
+        // BoxShadows DynamicResource is nothing at all: the card renders flat.
+        //
+        // RESOLVED TEXT, NOT OWN TEXT (RemEx-bnz2x). The ramp used to be declared once per preset
+        // file, deliberately different per theme, so a copy-paste that skipped one was invisible
+        // until someone hovered a card in that one theme. Since RemEx-bnz2x it is declared ONCE, in
+        // the shared fallback every preset merges — ThemeKeyCoverageTests.NoPresetDeclaresGeometryOfItsOwn
+        // pins that no preset file carries its own copy any more — so what this test protects now is
+        // that the merge chain itself still reaches the ramp for every preset, not that four authors
+        // kept four copies in sync.
         foreach (var preset in ThemePresets)
         {
-            var text = File.ReadAllText(
-                Path.Combine(RepoRoot(), "remex.desktop", "Themes", preset + ".axaml"));
+            var text = ThemeDictionary.ResolvedText(preset);
 
             foreach (var key in ElevationKeys)
             {
                 text.Should().Contain($"x:Key=\"{key}\"",
-                    $"{preset}.axaml has to declare {key} or cards render flat in that theme");
+                    $"{preset}.axaml must resolve {key} through its merge chain or cards render flat in that theme");
             }
         }
     }

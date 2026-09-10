@@ -292,6 +292,10 @@ public class ThemeService : IDisposable
 
         SetResourceOverrideInternal("CardCornerRadius", new CornerRadius(settings.CornerRadius));
         SetResourceOverrideInternal("RemoteCardCornerRadius", new CornerRadius(settings.RemoteCardCornerRadius));
+        // The last geometry key a preset dictionary used to carry (Monolith's 3px vs everyone
+        // else's 1px). Now a setting, written by SelectTheme, overridden here the same way
+        // CardCornerRadius already is (RemEx-bnz2x).
+        SetResourceOverrideInternal("CardBorderThickness", new Thickness(settings.CardBorderThickness));
         SetResourceOverrideInternal("GlassOpacity", settings.GlassOpacity);
         SetResourceOverrideInternal("AppWindowOpacity", settings.AppWindowOpacity);
         SetResourceOverrideInternal("GlowStrength", settings.GlowStrength);
@@ -685,6 +689,16 @@ public class ThemeService : IDisposable
     ///
     /// Insert at 0 rather than append, for that same reason: the theme is the floor everything else
     /// overrides.
+    ///
+    /// WORTH KNOWING BEFORE YOU EXTEND THIS (RemEx-bnz2x, 2026-09-09): the four preset dictionaries
+    /// this swaps between are now byte-for-byte equivalent — merge-only stubs. Every key that used
+    /// to differ per preset was either already overwritten from settings on each apply, or moved to
+    /// <c>Themes/Shared/FallbackPalette.axaml</c> when <c>CardBorderThickness</c> became a setting.
+    /// So the swap is currently a no-op in effect, and this whole <c>AppTheme</c>/<c>BaseThemeUri</c>
+    /// mechanism is a candidate for retirement. It was left in place deliberately rather than ripped
+    /// out in that bead: the stubs are what those two still key off, and collapsing the mechanism is
+    /// a bigger change than the one that made it redundant. Do not add per-preset keys back here to
+    /// give it something to do — the reason they left is that ThemeService overwrote them anyway.
     /// </remarks>
     internal static IResourceProvider SwapBaseTheme(
         IList<IResourceProvider> dictionaries,
