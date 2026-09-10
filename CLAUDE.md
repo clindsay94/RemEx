@@ -71,11 +71,14 @@ getting bitten by the same thing — two copies of a claim drift until one is ly
 the MCP matrix had already drifted into mandating eight tools that could not be called.
 **Do not copy the matrix back here.** One authoritative copy is the point.
 
-### The servers are version-controlled now
+### The servers are defined at user scope, and checked every session
 
-Definitions live in **[`.mcp.json`](.mcp.json)** at the repo root, not only in user-scope
-config that no other machine or worktree reproduces. Linux overrides are documented in
-that file.
+`gitnexus` and `token-savior` are defined in `~/.claude.json` (user scope), not in a
+repo-owned `.mcp.json`. A repo copy existed briefly on the `v2.5-board-drain` branch and was
+dropped on 2026-09-10: it hard-coded personal Windows paths into a public repo, and the
+health check below already catches a wipe without it. The mandated set is the two servers
+named here; `scripts/check-mcp-health.ps1` reads a `.mcp.json` if one is present but does
+not require one.
 
 Verify with **`pwsh scripts/check-mcp-health.ps1 -Full`**. It compares what the
 instructions MANDATE against what is actually CALLABLE, and a `-Hook -Quick` pass runs at
@@ -136,7 +139,8 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) �
 
 **Project-level coordination:**
 - `AGENTS.md` in this repo — cross-agent rules, distilled carry-forward regression guards, beads workflow. There are NO sub-project AGENTS.md files; do not go looking for them.
-- Archived 2.0-era history: `docs/OLD DOCS/AGENTS-2.0-archive.md`.
+- Archived 2.0-era history: `docs/old-docs/AGENTS-2.0-archive.md`. `docs/old-docs/`, `docs/plans/` and
+  `docs/superpowers/` are gitignored local archives: they exist on Connor's machine, not in the repo.
 <!-- agent-team:end -->
 
 <!-- gitnexus:start -->

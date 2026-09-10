@@ -1,0 +1,32 @@
+name: Device compatibility report
+description: Report how RemEx runs on your phone and PC, working or not.
+labels: ["compatibility"]
+body:
+  - type: input
+    id: phone-model
+    attributes:
+      label: Phone model and Android version
+    validations:
+      required: true
+  - type: input
+    id: host-os
+    attributes:
+      label: Host OS and GPU
+      placeholder: e.g. Windows 11 24H2, RTX 3060 / CachyOS, integrated AMD graphics
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked
+    validations:
+      required: true
+  - type: textarea
+    id: not-worked
+    attributes:
+      label: What did not work
+  - type: input
+    id: stream-quality
+    attributes:
+      label: Stream fps / quality observed
+      placeholder: e.g. steady 60fps at high quality, occasional stutter at low

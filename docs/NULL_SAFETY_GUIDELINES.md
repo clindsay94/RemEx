@@ -293,7 +293,7 @@ public async Task<string?> LoadDataAsync()
 
 ```csharp
 // Provide default value if null
-var hostAddress = profile.HostAddress ?? "ws://localhost:3000/remex";
+var hostAddress = profile.HostAddress ?? "wss://localhost:5005/ws";
 
 // Chain multiple null checks
 var displayName = user.DisplayName ?? user.UserName ?? "Guest";

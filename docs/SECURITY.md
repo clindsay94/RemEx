@@ -9,6 +9,7 @@ RemEx is a remote access and command execution tool. We take security seriously 
 | Version | Supported          |
 | ------- | ------------------ |
 | 2.5.x   | :white_check_mark: |
+| 2.0.x - 2.4.x | :x: (please update to 2.5.x) |
 | < 2.0.0   | :x:                |
 
 ## Reporting a Vulnerability
@@ -29,9 +30,9 @@ If you discover a security vulnerability in RemEx, please **do not** open a publ
 
 ### 2.0+ Security Model: TLS + ECDH Pairing
 
-RemEx 2.0+ uses **TLS 1.3 with certificate pinning** and **ECDH NIST P-256 key exchange** for secure device pairing:
+RemEx 2.0+ uses **TLS 1.3 (with TLS 1.2 accepted as fallback) with certificate pinning** and **ECDH NIST P-256 key exchange** for secure device pairing:
 
-- **Transport Encryption:** All WebSocket connections use `wss://` (TLS 1.3) with a self-signed **RSA-2048** certificate (SHA-256 signature, 5-year validity) generated on the host's first start
+- **Transport Encryption:** All WebSocket connections use `wss://` (TLS 1.3, TLS 1.2 accepted as fallback) with a self-signed **RSA-2048** certificate (SHA-256 signature, 5-year validity) generated on the host's first start
 - **Certificate Pinning:** Clients pin the SHA-256 hash of the host's certificate SPKI (SubjectPublicKeyInfo), preventing man-in-the-middle attacks
 - **Pairing Protocol:** First-time connection requires ECDH NIST P-256 key exchange with a 6-digit PIN displayed on the host (120-second TTL)
 - **Session Key Derivation:** HKDF-SHA256 derives a 32-byte session key from the shared secret, using the certificate SPKI hash as salt
@@ -41,7 +42,7 @@ RemEx 2.0+ uses **TLS 1.3 with certificate pinning** and **ECDH NIST P-256 key e
 
 **TCP Command Port (Port 8338):**
 
-The TCP command port is TLS 1.3 encrypted (server-only certificate) and **default-deny** (PROTO-1 / RemEx-htt). Because server-only TLS cannot identify the caller, authentication happens at the application layer: every `CommandRequest` must carry a `ClientId` that is registered in the host's paired-client registry (the same registry used by the `/ws` channel). A request with a missing or unknown `ClientId` is rejected with `Unauthorized` and the connection is closed before any power action runs. No first-party client uses 8338 (Android uses `/ws`; the dashboard UI runs in the *same process* as the host, so it needs no network channel at all); external automation scripts must pair first and include their paired `ClientId` on every command. See `docs/API_CONTRACTS.md` §4 for the payload.
+The TCP command port is TLS 1.3 encrypted (TLS 1.2 accepted as fallback; server-only certificate) and **default-deny** (PROTO-1 / RemEx-htt). Because server-only TLS cannot identify the caller, authentication happens at the application layer: every `CommandRequest` must carry a `ClientId` that is registered in the host's paired-client registry (the same registry used by the `/ws` channel). A request with a missing or unknown `ClientId` is rejected with `Unauthorized` and the connection is closed before any power action runs. No first-party client uses 8338 (Android uses `/ws`; the dashboard UI runs in the *same process* as the host, so it needs no network channel at all); external automation scripts must pair first and include their paired `ClientId` on every command. See `docs/API_CONTRACTS.md` §4 for the payload.
 
 ### 1.x Security Model (Legacy, End-of-Life)
 

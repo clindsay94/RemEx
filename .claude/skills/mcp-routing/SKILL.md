@@ -118,13 +118,14 @@ that is a broken harness, not a reason to guess.** Do this, in order:
 2. Fall back to `Read`/`Grep`/`Glob` for the immediate task, and **say out loud** that you are doing so. Silent degradation is how this lasted nine days.
 3. File a bead. Do not just work around it.
 
-Do not audit this by reading `~/.claude/settings.json`. Read `.mcp.json` in the
-repo root - that is the version-controlled definition - and confirm liveness with
+Do not audit this by reading `~/.claude/settings.json`. The live definitions are the
+`mcpServers` block of `~/.claude.json` (user scope; there is no repo-owned `.mcp.json`,
+dropped 2026-09-10 because it carried personal paths). Confirm liveness with
 `claude mcp list`.
 
 ## Related
 
-- `Z:\RemEx\.mcp.json` - the repo-owned server definitions, and the Linux overrides
+- `~/.claude.json` - the live server definitions (user scope)
 - `scripts/check-mcp-health.ps1` - mandated-vs-callable check, also wired as a SessionStart hook
 - `CLAUDE.md` - precedence section, which outranks the managed blocks below it
 - `docs/REGRESSION-GUARDS.md` - the guards `impact` is mandatory for

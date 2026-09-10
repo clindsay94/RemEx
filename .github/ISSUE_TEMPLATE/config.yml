@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security issue
+    url: https://github.com/clindsay94/RemEx/security/advisories/new
+    about: Please report security vulnerabilities privately instead of opening a public issue.
+  - name: Join the Google Play open test
+    url: https://play.google.com/store/apps/details?id=com.clindsay94.remex
+    about: Sign up for the Android open testing track.

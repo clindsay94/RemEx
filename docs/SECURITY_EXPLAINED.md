@@ -84,8 +84,9 @@ RemEx protects the *connection*. A few things are still up to you:
 ### Encrypted transport (TLS 1.3)
 
 Every connection — telemetry, power commands, pairing, file transfer, and the remote-desktop video
-stream — runs over **TLS 1.3** (secure WebSockets, `wss://`). Plain, unencrypted connections are
-**switched off** on the Android side entirely, so there is no accidental "fall back to cleartext."
+stream — runs over **TLS 1.3** (or TLS 1.2 if the client does not support 1.3), over secure
+WebSockets (`wss://`). Plain, unencrypted connections are **switched off** on the Android side
+entirely, so there is no accidental "fall back to cleartext."
 
 ### Certificate pinning, sealed by the PIN
 
@@ -173,7 +174,7 @@ lock it out of its own certificate and break every existing pairing, so it refus
 
 | Purpose | Primitive / parameters |
 |---|---|
-| Transport | TLS 1.3, secure WebSockets (`wss://`) on `/ws` and `/ws/desktop`; `SslStream` over TCP on `8338`; HTTPS on the REST surface |
+| Transport | TLS 1.3 or TLS 1.2 (server accepts both), secure WebSockets (`wss://`) on `/ws` and `/ws/desktop`; `SslStream` over TCP on `8338`; HTTPS on the REST surface |
 | Host identity | Self-signed **RSA-2048** X.509 certificate, **SHA-256** signature (PKCS#1 v1.5), **5-year** validity, generated on first host start |
 | Certificate pin | **SHA-256** over the certificate's `SubjectPublicKeyInfo` (SPKI), base64-encoded |
 | Key agreement | **ECDH** on **NIST P-256** (`nistP256`), ephemeral host key pair per pairing session |
@@ -232,12 +233,13 @@ will pin, so a session key derived against a different certificate cannot valida
   bytes, after base64-decoding the client value). Mismatches increment a bounded attempt counter and
   are logged.
 
-### Anti-brute-force (`PairingThrottle`)
+### Anti-brute-force
 
 - PIN TTL: **120 s** (`PairingService.PairingTimeoutSeconds`), then discarded/regenerated.
-- Per-remote-IP sliding **60-second** window with escalating back-off plus randomized jitter on the
-  `retryAfter` returned to repeat attempters; a bounded per-session HMAC-mismatch cap rejects the
-  session after too many failures.
+- A bounded per-session HMAC-mismatch cap of **5 attempts** (`PairingService.MaxFailedHmacAttempts`)
+  rejects the session after too many failures.
+- Per-remote-IP throttling on `/ws` is not implemented yet; it is tracked as future work
+  (RemEx-tr1s).
 
 ### Reconnect authentication (`PairedClientRegistry`)
 
@@ -322,7 +324,6 @@ will pin, so a session key derived against a different certificate cannot valida
 |---|---|
 | Certificate + SPKI + ACL + brick canary | `remex.agent/Services/Security/CertificateService.cs` |
 | Pairing (ECDH, HKDF, PIN HMAC, TTL) | `remex.agent/Services/Security/PairingService.cs`, `Handlers/PairingHandler.cs` |
-| Brute-force throttle | `remex.agent/Services/Security/PairingThrottle.cs` |
 | Paired registry + reconnect secrets + ACL | `remex.agent/Services/Security/PairedClientRegistry.cs` |
 | 8338 authentication | `remex.agent/Services/Network/PairedClientChannelAuthenticator.cs` |
 | Android at-rest storage | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` |
