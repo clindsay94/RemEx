@@ -318,6 +318,17 @@ object FileManagerLogic {
     }
 
     /**
+     * Whether the "Browse this PC" control should accept a tap right now (RemEx-c7v4n round 3): only
+     * when full-device browsing is actually on offer AND no answer to a previous request is still in
+     * flight. [canBrowseDevice] is the same host-capability fact [FileManagerQuickAccess] already gates
+     * the chip's visibility on — folded in here rather than inlining `!pending` at the call site, so
+     * this pins the real precondition ("possible AND not already waiting") instead of restating the
+     * `!` operator a bare `pending` flip would (review, round 3).
+     */
+    fun browseDeviceEnabled(canBrowseDevice: Boolean, pending: Boolean): Boolean =
+        canBrowseDevice && !pending
+
+    /**
      * Normalizes a deny reason off the wire: blank and whitespace-only become null, so a host that
      * spells "no reason" as `""` rather than by omitting the field cannot be mistaken for one that
      * sent a code. Case is NOT folded — these are fixed protocol tokens, not prose.

@@ -706,9 +706,10 @@
     <string name="file_manager_prop_readonly">Lecture seule</string>
     <string name="file_manager_prop_yes">Oui</string>
     <string name="file_manager_prop_no">Non</string>
-    <string name="file_manager_requesting_volumes">Chargement des disques…</string>
+    <string name="file_manager_full_browse_pending">En attente d’approbation sur votre PC…</string>
     <string name="file_manager_full_browse_unreachable">Votre PC n’a pas pu joindre ce téléphone pour vous poser la question. Reconnectez-le et réessayez.</string>
     <string name="file_manager_full_browse_refused">L’exploration de tout l’appareil a été refusée.</string>
+    <string name="file_manager_full_browse_timed_out">Votre PC n’a pas répondu à temps. Réessayez.</string>
     <string name="file_manager_queued_upload">Envoi en file : %1$s</string>
     <string name="file_manager_queued_download">Téléchargement en file : %1$s</string>
     <string name="file_manager_download_folder">Télécharger le dossier</string>

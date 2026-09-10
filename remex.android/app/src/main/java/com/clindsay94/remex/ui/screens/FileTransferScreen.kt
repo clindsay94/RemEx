@@ -87,6 +87,7 @@ fun FileTransferScreen(
     val displayedEntries by vm.displayedEntries.collectAsStateWithLifecycle()
     val remoteRoots by vm.remoteRoots.collectAsStateWithLifecycle()
     val volumes by vm.volumes.collectAsStateWithLifecycle()
+    val volumesPending by vm.volumesPending.collectAsStateWithLifecycle()
     val supportsFolderTransfer by vm.supportsFolderTransfer.collectAsStateWithLifecycle()
     val selectedRootId by vm.selectedRootId.collectAsStateWithLifecycle()
     val capabilities by vm.capabilities.collectAsStateWithLifecycle()
@@ -268,6 +269,7 @@ fun FileTransferScreen(
                         volumes = volumes,
                         selectedRootId = selectedRootId,
                         canBrowseDevice = capabilities?.fullBrowse == true,
+                        browseDevicePending = volumesPending,
                         onSelectRoot = vm::selectRoot,
                         onSelectVolume = vm::selectVolume,
                         onBrowseDevice = vm::loadVolumes,

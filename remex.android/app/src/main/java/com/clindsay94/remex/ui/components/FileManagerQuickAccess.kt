@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +38,13 @@ fun FileManagerQuickAccess(
     volumes: List<RemoteVolume>,
     selectedRootId: String?,
     canBrowseDevice: Boolean,
+    /**
+     * True while a `file_volumes_request` is awaiting the PC's consent answer (RemEx-c7v4n). Disables
+     * re-tap and swaps the leading icon for a spinner so the wait is visible on the control itself,
+     * rather than only in the status line above the list. Deliberately no countdown here — that is a
+     * separate, not-yet-approved option.
+     */
+    browseDevicePending: Boolean = false,
     onSelectRoot: (String) -> Unit,
     onSelectVolume: (RemoteVolume) -> Unit,
     onBrowseDevice: () -> Unit,
@@ -85,10 +94,19 @@ fun FileManagerQuickAccess(
 
         if (volumes.isEmpty() && canBrowseDevice) {
             // Full-device browse is opt-in and consent-gated on the PC; only request on an explicit tap.
+            // While pending, disable re-tap and swap the icon for a spinner so the wait shows on the
+            // control the user just pressed, not only in the status line (review, RemEx-c7v4n round 2).
             AssistChip(
                 onClick = onBrowseDevice,
+                enabled = FileManagerLogic.browseDeviceEnabled(canBrowseDevice, browseDevicePending),
                 label = { Text(stringResource(R.string.file_manager_browse_device)) },
-                leadingIcon = { Icon(Icons.Default.Computer, contentDescription = null) },
+                leadingIcon = {
+                    if (browseDevicePending) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Computer, contentDescription = null)
+                    }
+                },
             )
         }
 

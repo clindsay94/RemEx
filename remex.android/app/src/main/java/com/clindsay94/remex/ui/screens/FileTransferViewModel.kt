@@ -120,6 +120,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private val _fullBrowseGranted = MutableStateFlow(false)
     val fullBrowseGranted = _fullBrowseGranted.asStateFlow()
 
+    // Waits for the PC's answer to a `file_volumes_request` so the browse UI can render an honest,
+    // always-terminating pending state instead of silence (RemEx-c7v4n).
+    private val volumesTracker = VolumesWaitTracker()
+    val volumesPending: StateFlow<Boolean> = volumesTracker.pending
+
     private val _selectedRootId = MutableStateFlow<String?>(null)
     val selectedRootId = _selectedRootId.asStateFlow()
 
@@ -969,13 +974,31 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun loadVolumes() {
         if (caps()?.fullBrowse != true) return
+        // Idempotent re-tap: a pending request already covers it, and this also keeps awaitResponse()
+        // from being entered concurrently (VolumesWaitTracker is not reentrant).
+        if (volumesTracker.pending.value) return
         val requestId = newRequestId()
-        _statusText.value = app().getString(R.string.file_manager_requesting_volumes)
+        // Names the actual wait (RemEx-c7v4n round 3 review): a generic "Loading…" told the user
+        // something was happening but not that a human on their PC has to act — the fact that sends
+        // them to their desk instead of tapping again.
+        _statusText.value = app().getString(R.string.file_manager_full_browse_pending)
         sendV3(
             "file_volumes_request",
             "fileVolumesRequest",
             JSONObject().apply { put("requestId", requestId) },
         )
+        viewModelScope.launch {
+            // Every wait this starts must end: approved/refused/failed all arrive as ANSWERED (and are
+            // told apart by handleVolumesResponse's own classification), a dropped connection ends it
+            // as DISCONNECTED, and a host that never answers at all ends it as TIMED_OUT.
+            when (volumesTracker.awaitResponse(RemexClientManager.isConnected)) {
+                VolumesWaitTracker.VolumesWaitOutcome.TIMED_OUT ->
+                    replaceRequestingVolumesStatus(R.string.file_manager_full_browse_timed_out)
+                VolumesWaitTracker.VolumesWaitOutcome.DISCONNECTED ->
+                    replaceRequestingVolumesStatus(R.string.file_manager_full_browse_unreachable)
+                VolumesWaitTracker.VolumesWaitOutcome.ANSWERED -> Unit
+            }
+        }
     }
 
     // ── Properties sheet ──────────────────────────────────────────────────────
@@ -1707,7 +1730,17 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun handleVolumesResponse(obj: JSONObject) {
-        val response = obj.optJSONObject("fileVolumesResponse") ?: return
+        // Resolve the pending wait FIRST, unconditionally — a malformed response with no
+        // "fileVolumesResponse" body still means the host answered, and the wait must not be left
+        // hanging on a message this handler otherwise can't parse.
+        volumesTracker.onAnswered()
+        val response = obj.optJSONObject("fileVolumesResponse") ?: run {
+            // The wait is already resolved by onAnswered() above; without this the spinner (or
+            // whatever it already reads) is left stuck permanently, since nothing else will ever
+            // resolve it (review, RemEx-c7v4n round 2) — exactly the failure this bead exists to kill.
+            replaceRequestingVolumesStatus(R.string.file_transfer_browse_error)
+            return
+        }
         // Classified from the value just PARSED, not from the flow it was written to (review): the
         // outcome must describe the message in hand, not whatever shared state happens to hold when
         // the next line runs.
@@ -1756,11 +1789,20 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             )
         }
         _volumes.value = list
-        if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) _statusText.value = ""
+        when {
+            // A late GRANTED can arrive after this wait's own client-side timeout already replaced the
+            // spinner with "didn't answer in time" — e.g. approval right at the host's ~60s deadline
+            // plus a slow VolumeEnumerator.Enumerate() (review, RemEx-c7v4n round 2). GRANTED alone
+            // already proves that message wrong, whether or not the host happens to report any ready
+            // drives (round 3) — an empty list is not evidence the grant didn't happen.
+            outcome == FileManagerLogic.VolumesOutcome.GRANTED -> _statusText.value = ""
+            _statusText.value == app().getString(R.string.file_manager_full_browse_pending) -> _statusText.value = ""
+        }
     }
 
     /**
-     * Swaps the "Loading drives…" spinner for [messageRes], and leaves anything else alone.
+     * Swaps the "Waiting for approval on your PC…" message for [messageRes], and leaves anything else
+     * alone.
      *
      * The full-browse answer can arrive up to a minute after the tap, because the host holds it while
      * a consent prompt is open. By then the user may well have done something else on this screen, and
@@ -1769,7 +1811,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
      * applies when it clears the spinner on success.
      */
     private fun replaceRequestingVolumesStatus(messageRes: Int) {
-        if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) {
+        if (_statusText.value == app().getString(R.string.file_manager_full_browse_pending)) {
             _statusText.value = app().getString(messageRes)
         }
     }

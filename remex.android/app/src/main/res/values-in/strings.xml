@@ -699,9 +699,10 @@
     <string name="file_manager_prop_readonly">Hanya-baca</string>
     <string name="file_manager_prop_yes">Ya</string>
     <string name="file_manager_prop_no">Tidak</string>
-    <string name="file_manager_requesting_volumes">Memuat drive…</string>
+    <string name="file_manager_full_browse_pending">Menunggu persetujuan di PC Anda…</string>
     <string name="file_manager_full_browse_unreachable">PC Anda tidak dapat menghubungi ponsel ini untuk bertanya. Hubungkan kembali lalu coba lagi.</string>
     <string name="file_manager_full_browse_refused">Penjelajahan seluruh perangkat ditolak.</string>
+    <string name="file_manager_full_browse_timed_out">PC Anda tidak merespons tepat waktu. Coba lagi.</string>
     <string name="file_manager_queued_upload">Unggahan diantrekan: %1$s</string>
     <string name="file_manager_queued_download">Unduhan diantrekan: %1$s</string>
     <string name="file_manager_download_folder">Unduh folder</string>

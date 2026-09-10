@@ -699,9 +699,10 @@
     <string name="file_manager_prop_readonly">Tylko do odczytu</string>
     <string name="file_manager_prop_yes">Tak</string>
     <string name="file_manager_prop_no">Nie</string>
-    <string name="file_manager_requesting_volumes">Ładowanie dysków…</string>
+    <string name="file_manager_full_browse_pending">Oczekiwanie na zatwierdzenie na komputerze…</string>
     <string name="file_manager_full_browse_unreachable">Komputer nie mógł skontaktować się z tym telefonem, aby zapytać. Połącz ponownie i spróbuj jeszcze raz.</string>
     <string name="file_manager_full_browse_refused">Odmówiono przeglądania całego urządzenia.</string>
+    <string name="file_manager_full_browse_timed_out">Komputer nie odpowiedział na czas. Spróbuj ponownie.</string>
     <string name="file_manager_queued_upload">Wysyłanie w kolejce: %1$s</string>
     <string name="file_manager_queued_download">Pobieranie w kolejce: %1$s</string>
     <string name="file_manager_download_folder">Pobierz folder</string>
