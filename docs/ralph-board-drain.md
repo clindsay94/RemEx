@@ -183,6 +183,18 @@ reaps a branch whose bead is not closed.
    them are in HIGH-RISK WORK below, and the review gate is mandatory for them.
 
 7. Verify via `ctx_execute`:
+   - **THE VERIFY GATE NEEDS AN OTHERWISE-QUIET TREE. `-Scope` narrows the BUILD, not the
+     FINGERPRINT.** If any other agent or session edits any source file while `verify.ps1` is
+     running, it ends in `FAIL - source changed during the run` and the receipt records the
+     failure. This bites hardest when it looks safe: measured 2026-09-09, a `-Scope android` run
+     (gradle only, Kotlin-only diff) was failed by a concurrent agent editing `.cs` and `.axaml`
+     under `remex.desktop/`, because the fingerprint spans the tree even when the build does not.
+     The gate is right to do this — a receipt is a claim about the whole working copy — so the
+     rule is scheduling, not a workaround: **serialize verification against every other writer.**
+     Parallel implementers are fine; parallel implementer-plus-verify is not. Also note two
+     concurrent `dotnet build -t:Rebuild` runs share `artifacts/bin` and will clobber each other,
+     which is the same hazard one layer down and produces a *passing* wrong answer instead of a
+     loud one.
    - **One command does the whole thing: `./scripts/verify.ps1`.** It force-cleans, rebuilds, runs
      the suite, checks the edit guard and the translations, and writes a receipt to
      `.ralph/verify-receipt.json` fingerprinting the exact source it verified against.
@@ -264,14 +276,24 @@ reaps a branch whose bead is not closed.
      this working copy may be shared with another session — so it can throw away work that is not
      even yours. It has silently destroyed real fixes. Capture before, reverse after:
 
+     **`git diff` is the WRONG capture once you have your own uncommitted work in that file** —
+     which, by step 8, you always do. It diffs against HEAD, so it captures your legitimate change
+     *and* the injection together, and `git apply -R` then reverts your whole bead. That happened
+     on RemEx-3uv7s (2026-09-09): the agent noticed only because the file went completely clean,
+     and had to reapply three production edits from memory. Snapshot the file as it stands
+     immediately before injecting, and restore from that snapshot:
+
      ```
-     git diff -- <file> > .ralph/inject.patch     # BEFORE injecting anything
+     cp <file> .ralph/inject-backup            # BEFORE injecting anything: the pre-injection state,
+                                               # your own uncommitted work included
      # ... inject, dotnet build -t:Rebuild, dotnet test --no-build, read the result ...
-     git apply -R .ralph/inject.patch             # restores exactly what you changed, nothing else
+     cp .ralph/inject-backup <file>            # restores exactly the pre-injection state
      ```
 
-     Then confirm the restore landed (`git diff -- <file>` should match what you captured) before
-     believing anything downstream of it.
+     Then confirm the restore landed — `git diff -- <file>` should show **your bead's changes and
+     nothing else**, i.e. exactly what it showed before you injected. A file that has gone clean
+     means you just reverted your own work; a file still showing the mutation means the restore
+     did not happen. Check which, rather than assuming, before believing anything downstream.
    - **An injection that leaves the tests green has proved the test blind, not the code correct.**
      The whole point is that the test must FAIL while the defect is present. If it does not, you
      have learned something about your test, and reporting the fix as verified would be false.
