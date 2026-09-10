@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -97,14 +98,17 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
     public void NextAndPreviousStayInSyncAsTheIndexMoves()
     {
         // Walk the whole deck forward, then back, and check the two commands never agree that
-        // movement is possible off the end they are supposed to guard.
+        // movement is possible off the end they are supposed to guard. Bounded by TutorialPageCount
+        // (RemEx-qgql) rather than `while (CanExecute)` - a CanExecute predicate that never goes
+        // false (e.g. an IsTutorialLastPage that never reports true) would otherwise hang this test
+        // instead of failing it, which is worse than a wrong answer: a hang doesn't print a name.
         _shell.TutorialPageIndex = 0;
-        while (_shell.TutorialNextCommand.CanExecute(null))
+        for (var i = 0; i < _shell.TutorialPageCount && _shell.TutorialNextCommand.CanExecute(null); i++)
             _shell.TutorialNextCommand.Execute(null);
 
         _shell.TutorialPageIndex.Should().Be(_shell.TutorialPageCount - 1);
 
-        while (_shell.TutorialPreviousCommand.CanExecute(null))
+        for (var i = 0; i < _shell.TutorialPageCount && _shell.TutorialPreviousCommand.CanExecute(null); i++)
             _shell.TutorialPreviousCommand.Execute(null);
 
         _shell.TutorialPageIndex.Should().Be(0);
@@ -162,10 +166,17 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
             "page - a Linux user must never land on a Windows-only page");
     }
 
-    [Fact]
-    public void VisiblePageIndexRoundTripsThroughTheVisibleList()
+    [Theory]
+    [InlineData(PlatformFlags.Windows)]
+    [InlineData(PlatformFlags.Linux)]
+    [InlineData(PlatformFlags.Android)]
+    public void VisiblePageIndexRoundTripsThroughTheVisibleList(PlatformFlags platform)
     {
-        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+        // RemEx-qgql item 2 (clickable dots): the PipsPager's SelectedPageIndex is exactly
+        // TutorialVisiblePageIndex, so this IS the click path - the nth pip has to land on the
+        // nth entry of the platform-filtered list, on every platform, not just the one that
+        // happened to be under test when this was still a single [Fact].
+        _shell.TutorialPlatformOverride = platform;
         var visible = _shell.VisibleTutorialPageIndices;
 
         for (var i = 0; i < visible.Count; i++)
@@ -229,5 +240,95 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
         raised.Should().Contain(nameof(ShellViewModel.TutorialVisiblePageIndex),
             "the binding source that pushed 999 needs to be told the real value is still the last " +
             "visible page, even though the underlying TutorialPageIndex never moved and stayed silent");
+    }
+
+    // ─── RemEx-qgql: the Back/Next/Finish buttons used to key IsVisible off a raw hardcoded
+    // TutorialPageIndex ConverterParameter (0 / 16) instead of the platform-filtered position -
+    // latent, not live, only because page 0 and page 16 both happen to be PlatformFlags.All and
+    // the lowest/highest author index on every platform. IsTutorialFirstPage/IsTutorialLastPage
+    // replace that, and CanTutorialPrevious/CanTutorialNext now delegate to the same two
+    // properties so the command's enabled state and the button's visibility can never disagree.
+
+    [Theory]
+    [InlineData(PlatformFlags.Windows)]
+    [InlineData(PlatformFlags.Linux)]
+    [InlineData(PlatformFlags.Android)]
+    public void FirstAndLastPageFlagsAgreeWithCanExecuteAcrossTheWholeVisibleDeck(PlatformFlags platform)
+    {
+        _shell.TutorialPlatformOverride = platform;
+        _shell.TutorialPageIndex = 0;
+
+        _shell.IsTutorialFirstPage.Should().BeTrue("the deck was just reset to its first visible page");
+        _shell.IsTutorialLastPage.Should().BeFalse("a multi-page deck's first page is never also its last");
+        _shell.TutorialPreviousCommand.CanExecute(null).Should().Be(!_shell.IsTutorialFirstPage);
+        _shell.TutorialNextCommand.CanExecute(null).Should().Be(!_shell.IsTutorialLastPage);
+
+        // Bounded, not `while (CanExecute)`: an IsTutorialLastPage that never goes true (e.g. an
+        // off-by-one against TutorialVisiblePageCount) would otherwise never let CanTutorialNext
+        // go false, hanging the run instead of failing it. TutorialPageCount is a hard ceiling on
+        // how many Next presses a real deck can ever take.
+        for (var i = 0; i < _shell.TutorialPageCount && _shell.TutorialNextCommand.CanExecute(null); i++)
+        {
+            _shell.TutorialNextCommand.Execute(null);
+            _shell.TutorialPreviousCommand.CanExecute(null).Should().Be(!_shell.IsTutorialFirstPage);
+            _shell.TutorialNextCommand.CanExecute(null).Should().Be(!_shell.IsTutorialLastPage);
+        }
+
+        _shell.IsTutorialLastPage.Should().BeTrue(
+            "walking Next until it disables itself has to land on the page IsTutorialLastPage names");
+        _shell.IsTutorialFirstPage.Should().BeFalse("the platform-visible decks here all have more than one page");
+    }
+
+    [Fact]
+    public void IsTutorialFirstPageIsOnlyTrueAtVisiblePositionZero()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+
+        _shell.TutorialVisiblePageIndex = 0;
+        _shell.IsTutorialFirstPage.Should().BeTrue();
+
+        _shell.TutorialVisiblePageIndex = 1;
+        _shell.IsTutorialFirstPage.Should().BeFalse();
+    }
+
+    // ─── RemEx-qgql review round (MEDIUM): VisibleTutorialPageIndices now emits
+    // TutorialPage.PageIndex values, not list positions into _tutorialPages - the Carousel's 17
+    // slots stay declaration-ordered, so the two only agree because PageIndex == i holds for
+    // every entry today. Nothing enforces that. This pins both the numbering and the ordering
+    // using surface that already exists: with every page visible (PlatformFlags.All), the emitted
+    // list has to equal 0..TutorialPageCount-1 in order.
+
+    [Fact]
+    public void VisibleIndicesEqualDeclarationOrderWhenEveryPageIsVisible()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.All;
+
+        _shell.VisibleTutorialPageIndices.Should().Equal(Enumerable.Range(0, _shell.TutorialPageCount),
+            "with no platform filtering, VisibleTutorialPageIndices must be exactly the author's " +
+            "PageIndex sequence 0..TutorialPageCount-1 in order - a page inserted or renumbered out " +
+            "of that sequence would desync the Carousel's declaration-ordered slots from the pip a " +
+            "user clicked, silently, on whichever platform hides a page");
+    }
+
+    // ─── RemEx-qgql review round (LOW): TutorialPlatformOverride used to be a bare auto-property,
+    // so flipping it mid-test could leave TutorialPageIndex sitting on a slot the new platform
+    // hides while IsTutorialFirstPage/IsTutorialLastPage already answered for the new platform.
+    // Production never hits this (CurrentTutorialPlatform is OS-fixed for the process's lifetime),
+    // but it is a trap for the next test author, so the setter now re-snaps.
+
+    [Fact]
+    public void ChangingThePlatformOverrideResnapsAnIndexTheNewPlatformHides()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.All;
+        _shell.TutorialPageIndex = 2; // HWiNFO - Windows-only
+
+        _shell.TutorialPlatformOverride = PlatformFlags.Linux;
+
+        _shell.TutorialPageIndex.Should().Be(3,
+            "the override setter has to re-snap immediately - page 2 is hidden on Linux, and " +
+            "nothing else touches TutorialPageIndex just because the platform changed underneath it");
+        _shell.IsTutorialFirstPage.Should().BeFalse(
+            "the Carousel is sitting on the re-snapped page 3, which is not this platform's first " +
+            "visible page - Back has to stay visible, not disappear because the raw index used to be low");
     }
 }

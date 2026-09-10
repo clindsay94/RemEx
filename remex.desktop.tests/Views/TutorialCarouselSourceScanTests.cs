@@ -86,6 +86,27 @@ public class TutorialCarouselSourceScanTests
     }
 
     [Fact]
+    public void BackNextFinishVisibilityKeysOffTheFilteredFirstLastPageNotARawIndex()
+    {
+        // RemEx-qgql: Back/Next/Finish used to bind IsVisible to a raw TutorialPageIndex with a
+        // hardcoded ConverterParameter (0 for Back, 16 for Next/Finish) - correct today only
+        // because page 0 and page 16 are both PlatformFlags.All and the lowest/highest author
+        // index on every platform, not because anything enforces it. IsTutorialFirstPage/
+        // IsTutorialLastPage read the platform-filtered position instead.
+        var overlay = TutorialOverlaySource();
+
+        overlay.Should().NotMatchRegex(@"IsVisible=""\{Binding TutorialPageIndex,\s*Converter=\{x:Static conv:Int(Not)?EqualConverter\.Instance\},\s*ConverterParameter=\d+\}""",
+            "no Back/Next/Finish button may resurrect the hardcoded raw-index ConverterParameter check");
+
+        overlay.Should().MatchRegex(@"Content=""\{conv:Localize Tutorial_Back\}""[^>]*IsVisible=""\{Binding !IsTutorialFirstPage\}""",
+            "Back has to hide on the first platform-visible page, not merely raw index 0");
+        overlay.Should().MatchRegex(@"Content=""\{conv:Localize Tutorial_Next\}""[^>]*IsVisible=""\{Binding !IsTutorialLastPage\}""",
+            "Next has to hide on the last platform-visible page, not merely raw index 16");
+        overlay.Should().MatchRegex(@"Content=""\{conv:Localize Tutorial_Finish\}""[^>]*IsVisible=""\{Binding IsTutorialLastPage\}""",
+            "Finish has to show only on the last platform-visible page, not merely raw index 16");
+    }
+
+    [Fact]
     public void OverlayUsesNoLiteralColours()
     {
         var overlay = TutorialOverlaySource();

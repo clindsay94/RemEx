@@ -155,8 +155,8 @@ public class ButtonVocabularyTests
             ["Presence.IsHostDown"] = "ShellView - HostDown/HasNoPhone/HasPhone are mutually exclusive Presence states, never two visible together",
             ["Presence.HasNoPhone"] = "ShellView - see the Presence.IsHostDown entry",
             ["Presence.HasPhone"] = "ShellView - see the Presence.IsHostDown entry",
-            ["TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter"] = "ShellView - Tutorial_Next/Tutorial_Finish are mutually exclusive by TutorialPageIndex",
-            ["TutorialPageIndex, Converter={x:Static conv:IntEqualConverter"] = "ShellView - see the IntNotEqualConverter entry",
+            ["IsVisible=\"{Binding !IsTutorialLastPage}\""] = "ShellView - Tutorial_Next/Tutorial_Finish are mutually exclusive by IsTutorialLastPage. Was keyed off TutorialPageIndex + IntNotEqual/IntEqualConverter until RemEx-qgql; those compared a RAW page index against a hardcoded 16, which is the defect that bead fixed. Do not restore the converter keys - a raw index is not the filtered position, and they disagree exactly on the platforms that hide a page",
+            ["IsVisible=\"{Binding IsTutorialLastPage}\""] = "ShellView - see the !IsTutorialLastPage entry",
             ["x:Name=\"ActionButton\""] = "DialogContent - Classes=\"primary\" is only the XAML default; the constructor clears it and applies the caller's own classes, and Cancel is always \"secondary\" (RemEx-z7pnx.1)",
 
             ["Dashboard_Connect"] = "CanvasView Actions card - Connect/CancelConnect/Disconnect are mutually exclusive by connection state",

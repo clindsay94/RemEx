@@ -429,6 +429,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             if (changed)
             {
                 OnPropertyChanged(nameof(TutorialVisiblePageIndex));
+                OnPropertyChanged(nameof(IsTutorialFirstPage));
+                OnPropertyChanged(nameof(IsTutorialLastPage));
                 TutorialNextCommand.NotifyCanExecuteChanged();
                 TutorialPreviousCommand.NotifyCanExecuteChanged();
                 return;
@@ -455,6 +457,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// ascending, so a single forward pass finds either an exact match or the correct forward
     /// snap; falling off the end means backward is the only option left.
     /// </summary>
+    /// <remarks>
+    /// Not a duplicate of <see cref="TutorialNavigator.ClampPosition"/> (RemEx-qgql review): that
+    /// clamps a POSITION that already lives in the filtered space (0..count-1, no gaps) - a pure
+    /// numeric bound. This snaps a raw, possibly-hidden <see cref="TutorialPage.PageIndex"/> - a
+    /// space with gaps - forward to the nearest one the platform actually shows. Different domain,
+    /// different job; <c>TutorialNavigator</c> has no equivalent because a raw-index snap is not a
+    /// concept it needs (everything else there already operates on filtered positions).
+    /// </remarks>
     private int SnapToVisibleTutorialPage(int candidate)
     {
         var visible = VisibleTutorialPageIndices;
@@ -473,15 +483,26 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Indices into <see cref="_tutorialPages"/>, in page order, whose <c>SupportedPlatforms</c>
-    /// includes <see cref="CurrentTutorialPlatform"/> (RemEx-9iz00.1 fix round, HIGH). The
-    /// PipsPager and <see cref="TutorialVisiblePageIndex"/> key off this list rather than the raw
-    /// 17-slot Carousel so pagination never exposes a page the running platform does not have.
+    /// The <see cref="TutorialPage.PageIndex"/> author values of the pages whose
+    /// <c>SupportedPlatforms</c> includes <see cref="CurrentTutorialPlatform"/>
+    /// (RemEx-9iz00.1 fix round, HIGH), in ascending <c>PageIndex</c> order - NOT list positions
+    /// into <see cref="_tutorialPages"/>, though the two coincide today because every entry there
+    /// happens to satisfy <c>PageIndex == </c>(its position in the array). Nothing enforces that;
+    /// it holds only because <c>_tutorialPages</c> was authored in order and never had a page
+    /// inserted or renumbered out of sequence. The PipsPager and <see cref="TutorialVisiblePageIndex"/>
+    /// key off this list rather than the raw 17-slot Carousel so pagination never exposes a page
+    /// the running platform does not have; the Carousel's own slots stay declaration-ordered, so
+    /// that agreement is what the invariant test below guards (RemEx-qgql review, MEDIUM).
+    /// Delegates to <see cref="TutorialNavigator.VisiblePages"/> (RemEx-qgql) instead of
+    /// re-filtering by hand - this file used to have its own copy of exactly the rule
+    /// <see cref="TutorialNavigator"/> was already shipped and mutation-tested for, and two
+    /// implementations of "which pages does this platform show" drift, silently, on the platform
+    /// whose pages get hidden.
     /// </summary>
     public IReadOnlyList<int> VisibleTutorialPageIndices =>
-        Enumerable.Range(0, _tutorialPages.Count)
-                  .Where(i => (_tutorialPages[i].SupportedPlatforms & CurrentTutorialPlatform) != 0)
-                  .ToList();
+        TutorialNavigator.VisiblePages(_tutorialPages, CurrentTutorialPlatform)
+                          .Select(p => p.PageIndex)
+                          .ToList();
 
     /// <summary>Number of tutorial pages the running platform actually shows - what the PipsPager's
     /// <c>NumberOfPages</c> binds to, so its dot count never exceeds what a pip click can reach.</summary>
@@ -528,6 +549,25 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     /// <summary>Total number of tutorial pages, including ones the running platform hides.</summary>
     public int TutorialPageCount => _tutorialPages.Count;
+
+    /// <summary>
+    /// Whether the carousel is on the first platform-visible page (RemEx-qgql). The Back button's
+    /// <c>IsVisible</c> binds to this instead of a raw <c>TutorialPageIndex != 0</c> check, which
+    /// only worked because page 0 happens to be <see cref="PlatformFlags.All"/> and the lowest
+    /// author index on every platform - true today, not guaranteed by anything that would fail
+    /// loudly if it stopped being true.
+    /// </summary>
+    public bool IsTutorialFirstPage => TutorialVisiblePageIndex == 0;
+
+    /// <summary>
+    /// Whether the carousel is on the last platform-visible page (RemEx-qgql), via
+    /// <see cref="TutorialNavigator.IsLastPage"/> - the same shipped predicate
+    /// <see cref="CanTutorialNext"/> now delegates to. The Next/Finish buttons' <c>IsVisible</c>
+    /// bindings use this instead of the old hardcoded <c>ConverterParameter=16</c>, which only
+    /// worked because page 16 happens to be <see cref="PlatformFlags.All"/> and the highest author
+    /// index on every platform.
+    /// </summary>
+    public bool IsTutorialLastPage => TutorialNavigator.IsLastPage(TutorialVisiblePageIndex, TutorialVisiblePageCount);
 
     /// <summary>User preference to not show tutorial again.</summary>
     [ObservableProperty]
@@ -1074,13 +1114,32 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() => IsWelcomeSplashMounted = false);
     }
 
+    private PlatformFlags? _tutorialPlatformOverride;
+
     /// <summary>
     /// Test-only seam (visible to <c>Remex.Desktop.Tests</c> via <c>InternalsVisibleTo</c>)
     /// overriding <see cref="CurrentTutorialPlatform"/>. Null in production, where the running OS
     /// decides; a test sets this so the platform-filtered paging can be exercised for Windows,
     /// Linux and Android alike without three CI runners.
     /// </summary>
-    internal PlatformFlags? TutorialPlatformOverride { get; set; }
+    /// <remarks>
+    /// Re-snaps <see cref="TutorialPageIndex"/> on assignment (RemEx-qgql review, LOW): flipping
+    /// the platform can hide the page the carousel is currently sitting on (e.g. index 2 is
+    /// Windows-only; overriding to Linux mid-test leaves the Carousel showing that slot while
+    /// <see cref="IsTutorialFirstPage"/>/<see cref="IsTutorialLastPage"/> already answer for the
+    /// new platform). Production never hits this - <see cref="CurrentTutorialPlatform"/> is fixed
+    /// for the process's lifetime there - but a test author flipping the override mid-sequence
+    /// deserves the same guarantee a real platform switch would get.
+    /// </remarks>
+    internal PlatformFlags? TutorialPlatformOverride
+    {
+        get => _tutorialPlatformOverride;
+        set
+        {
+            _tutorialPlatformOverride = value;
+            TutorialPageIndex = _tutorialPageIndex;
+        }
+    }
 
     /// <summary>The running platform, as the flag <see cref="_tutorialPages"/> filters pages by.</summary>
     private PlatformFlags CurrentTutorialPlatform =>
@@ -1089,55 +1148,40 @@ public partial class ShellViewModel : ObservableObject, IDisposable
        : OperatingSystem.IsLinux() ? PlatformFlags.Linux
        : PlatformFlags.Android);
 
+    /// <summary>
+    /// Advances to the next platform-visible page via <see cref="TutorialNavigator.Next"/>
+    /// (RemEx-qgql) instead of hand-scanning <see cref="_tutorialPages"/> for the next raw index
+    /// this platform supports - the scan and <see cref="TutorialNavigator.Next"/> compute the same
+    /// answer, so there is no reason for this file to keep its own copy. A no-op on the last
+    /// visible page, same as before: <see cref="TutorialNavigator.ClampPosition"/> holds position
+    /// there rather than falling off the end.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanTutorialNext))]
-    public void TutorialNext()
-    {
-        var platform = CurrentTutorialPlatform;
+    public void TutorialNext() =>
+        TutorialVisiblePageIndex = TutorialNavigator.Next(TutorialVisiblePageIndex, TutorialVisiblePageCount);
 
-        int nextIndex = TutorialPageIndex + 1;
-        while (nextIndex < _tutorialPages.Count && (_tutorialPages[nextIndex].SupportedPlatforms & platform) == 0)
-            nextIndex++;
+    /// <summary>
+    /// False on the last platform-supported page - Finish/Done takes over there instead. Delegates
+    /// to <see cref="IsTutorialLastPage"/> (RemEx-qgql) so the command's enabled state and the Next
+    /// button's own <c>IsVisible</c> binding can never disagree about which page is last.
+    /// </summary>
+    private bool CanTutorialNext() => !IsTutorialLastPage;
 
-        if (nextIndex < _tutorialPages.Count)
-            TutorialPageIndex = nextIndex;
-    }
-
-    /// <summary>False on the last platform-supported page - Finish/Done takes over there instead.</summary>
-    private bool CanTutorialNext()
-    {
-        var platform = CurrentTutorialPlatform;
-        for (int i = TutorialPageIndex + 1; i < _tutorialPages.Count; i++)
-        {
-            if ((_tutorialPages[i].SupportedPlatforms & platform) != 0)
-                return true;
-        }
-        return false;
-    }
-
+    /// <summary>
+    /// Retreats to the previous platform-visible page via <see cref="TutorialNavigator.Previous"/>
+    /// (RemEx-qgql), for the same reason <see cref="TutorialNext"/> delegates to
+    /// <see cref="TutorialNavigator.Next"/>.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanTutorialPrevious))]
-    public void TutorialPrevious()
-    {
-        var platform = CurrentTutorialPlatform;
+    public void TutorialPrevious() =>
+        TutorialVisiblePageIndex = TutorialNavigator.Previous(TutorialVisiblePageIndex, TutorialVisiblePageCount);
 
-        int prevIndex = TutorialPageIndex - 1;
-        while (prevIndex >= 0 && (_tutorialPages[prevIndex].SupportedPlatforms & platform) == 0)
-            prevIndex--;
-
-        if (prevIndex >= 0)
-            TutorialPageIndex = prevIndex;
-    }
-
-    /// <summary>False on the first platform-supported page.</summary>
-    private bool CanTutorialPrevious()
-    {
-        var platform = CurrentTutorialPlatform;
-        for (int i = TutorialPageIndex - 1; i >= 0; i--)
-        {
-            if ((_tutorialPages[i].SupportedPlatforms & platform) != 0)
-                return true;
-        }
-        return false;
-    }
+    /// <summary>
+    /// False on the first platform-supported page. Delegates to <see cref="IsTutorialFirstPage"/>
+    /// (RemEx-qgql) for the same reason <see cref="CanTutorialNext"/> delegates to
+    /// <see cref="IsTutorialLastPage"/>.
+    /// </summary>
+    private bool CanTutorialPrevious() => !IsTutorialFirstPage;
 
     [RelayCommand]
     public void TutorialSkip() => CompleteTutorial();

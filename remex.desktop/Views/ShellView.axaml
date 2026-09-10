@@ -1491,11 +1491,26 @@
                             </Grid>
 
                             <!-- Tutorial pages (RemEx-9iz00.1): a real Carousel now owns the paging - the
-                                 SelectedIndex two-way binding is the single source of truth TutorialPageIndex,
-                                 the PipsPager below and the Back/Next/Finish buttons all read. PageTransition
-                                 is null under reduced motion, otherwise a short Material-eased horizontal
-                                 slide (BoolToPageTransitionConverter). Content, grouping and localization keys
-                                 are unchanged from the pre-Carousel per-page IsVisible toggles. -->
+                                 SelectedIndex two-way binding is the single source of truth TutorialPageIndex.
+                                 The PipsPager below reads the platform-filtered TutorialVisiblePageIndex/Count
+                                 instead; Back/Next/Finish read IsTutorialFirstPage/IsTutorialLastPage
+                                 (RemEx-qgql), not this raw index. PageTransition is null under reduced motion,
+                                 otherwise a short Material-eased horizontal slide (BoolToPageTransitionConverter).
+                                 Content, grouping and localization keys are unchanged from the pre-Carousel
+                                 per-page IsVisible toggles.
+
+                                 NOT bound to TutorialNavigator.VisiblePages (RemEx-qgql finding, deliberately
+                                 not attempted): the 17 slots below are heterogeneous hand-authored XAML - icon
+                                 + 1-3 bodies + an optional bordered "steps" block + an optional warning/muted
+                                 caption, each pulling its own real Localize key (Tutorial_P4_Steps,
+                                 Tutorial_P4_Warning, ...) - while TutorialPage carries only an unlocalized
+                                 Title/Description that nothing here displays. Binding this Carousel to
+                                 VisiblePages would need a content model that can express that shape per page
+                                 (a tagged/discriminated body: title key + N body keys + optional steps key +
+                                 optional warning key, resolved per page) with the real Localize keys moved onto
+                                 it - a content-model redesign, not a paging fix. Not filed as a bead; read this
+                                 before reaching for VisiblePages here again. -->
+
                             <Carousel Name="TutorialCarousel"
                                       SelectedIndex="{Binding TutorialPageIndex, Mode=TwoWay}"
                                       PageTransition="{Binding IsReducedMotion, Converter={x:Static conv:BoolToPageTransitionConverter.Instance}}">
@@ -1662,7 +1677,9 @@
                                  the pip count and a pip click's reachable range have to be the smaller,
                                  platform-filtered list or a pip could jump to a page this platform doesn't
                                  support. Its own prev/next buttons are hidden - Back/Next/Finish below are
-                                 the only navigation controls. -->
+                                 the only navigation controls, and their IsVisible bindings (IsTutorialFirstPage/
+                                 IsTutorialLastPage, RemEx-qgql) key off this same filtered list rather than a
+                                 hardcoded raw index, for the identical reason. -->
                             <PipsPager NumberOfPages="{Binding TutorialVisiblePageCount}"
                                        SelectedPageIndex="{Binding TutorialVisiblePageIndex, Mode=TwoWay}"
                                        IsPreviousButtonVisible="False" IsNextButtonVisible="False"
@@ -1676,9 +1693,9 @@
 
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Button Grid.Column="0" Classes="secondary pill" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}"/>
-                                <Button Grid.Column="2" Classes="primary pill" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}"/>
-                                <Button Grid.Column="2" Classes="primary pill success" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}"/>
+                                <Button Grid.Column="0" Classes="secondary pill" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding !IsTutorialFirstPage}"/>
+                                <Button Grid.Column="2" Classes="primary pill" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding !IsTutorialLastPage}"/>
+                                <Button Grid.Column="2" Classes="primary pill success" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding IsTutorialLastPage}"/>
                             </Grid>
                         </StackPanel>
                     </material:Card>
