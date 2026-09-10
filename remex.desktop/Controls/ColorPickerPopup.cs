@@ -1,9 +1,12 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Material.Icons;
+using Material.Icons.Avalonia;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Controls;
@@ -154,18 +157,29 @@ public class ColorPickerPopup : ContentControl
         // fixed deep blue. SolarFlare's accent is amber — white on it is about 1.9:1.
         var applyBackground = ThemeResources.Color("AccentPrimary", Color.Parse("#4A3AFF"));
 
+        var applyForeground = new SolidColorBrush(ThemeResources.ForegroundOn(applyBackground));
         var applyBtn = new Button
         {
-            Content = "✓",
-            FontSize = 14,
+            Content = new MaterialIcon
+            {
+                Kind = MaterialIconKind.Check,
+                Width = 16,
+                Height = 16,
+                Foreground = applyForeground,
+            },
             Width = 32,
             Height = 32,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
             Background = new SolidColorBrush(applyBackground),
-            Foreground = new SolidColorBrush(ThemeResources.ForegroundOn(applyBackground)),
+            Foreground = applyForeground,
             CornerRadius = new CornerRadius(4),
         };
+        // The button used to carry its accessible name implicitly through the checkmark text
+        // content; a MaterialIcon is not a label, so the name has to be set explicitly or a
+        // screen reader announces nothing here. Reuses Btn_Apply rather than adding a new
+        // localized string - "Apply" is exactly what this button does (RemEx-me22).
+        AutomationProperties.SetName(applyBtn, LocalizationService.Instance["Btn_Apply"]);
         applyBtn.Click += (_, _) => ColorConfirmed?.Invoke(this, SelectedColor);
         hexRow.Children.Add(applyBtn);
 

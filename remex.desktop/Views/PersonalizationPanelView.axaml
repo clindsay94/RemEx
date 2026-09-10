@@ -6,6 +6,7 @@
     xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
     xmlns:controls="using:Remex.Desktop.Controls"
     xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
     <StackPanel Spacing="20">
@@ -37,7 +38,7 @@
                 <!-- "Match my phone" (RemEx-sudp8): independent of which ColorSource is selected -
                      pressing it moves ColorSource to Custom itself - and hidden rather than
                      disabled when no phone has synced a palette over the link (RemEx-y06a0.1). -->
-                <Button Classes="compact" Content="{local:Localize Custom_MatchPhoneTheme}" Command="{Binding MatchPhoneThemeCommand}" IsVisible="{Binding HasPhoneTheme}" AutomationProperties.Name="{local:Localize Custom_MatchPhoneTheme}"/>
+                <Button Classes="secondary compact" Content="{local:Localize Custom_MatchPhoneTheme}" Command="{Binding MatchPhoneThemeCommand}" IsVisible="{Binding HasPhoneTheme}" AutomationProperties.Name="{local:Localize Custom_MatchPhoneTheme}"/>
 
                 <!-- Windows accent: the raw registry colour, as read. -->
                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsWindowsAccentSource}">
@@ -47,7 +48,7 @@
 
                 <!-- Wallpaper: the extracted candidates, best first. -->
                 <StackPanel Spacing="6" IsVisible="{Binding IsWallpaperSource}">
-                    <Button Classes="compact" Content="{local:Localize Custom_RefreshWallpaperSeeds}" Command="{Binding RefreshWallpaperSeedsCommand}" AutomationProperties.Name="{local:Localize Custom_RefreshWallpaperSeeds}"/>
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_RefreshWallpaperSeeds}" Command="{Binding RefreshWallpaperSeedsCommand}" AutomationProperties.Name="{local:Localize Custom_RefreshWallpaperSeeds}"/>
                     <ItemsControl ItemsSource="{Binding WallpaperSeedCandidates}" IsVisible="{Binding HasWallpaperSeedCandidates}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -369,7 +370,7 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </Grid>
-                    <Button Classes="compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_WallpaperBlur}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
@@ -474,7 +475,7 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Button Classes="compact" Content="{local:Localize Custom_Preview}" Command="{Binding PreviewSplashCommand}" AutomationProperties.Name="{local:Localize Custom_Preview}"/>
+                        <Button Classes="tertiary compact" Content="{local:Localize Custom_Preview}" Command="{Binding PreviewSplashCommand}" AutomationProperties.Name="{local:Localize Custom_Preview}"/>
                     </StackPanel>
                 </Grid>
 
@@ -574,10 +575,12 @@
                                                  AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"
                                                  Classes="outline" UseFloatingPlaceholder="True"
                                                  assists:TextFieldAssist.Label="{local:Localize Custom_PaletteNamePlaceholder}"/>
-                                        <Button Classes="compact" Content="✕" HorizontalAlignment="Center" Padding="6,0"
+                                        <Button Classes="tertiary danger icon-button compact" HorizontalAlignment="Center"
                                                 ToolTip.Tip="{local:Localize Custom_DeletePalette}" AutomationProperties.Name="{local:Localize Custom_DeletePalette}"
                                                 Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).DeleteSavedPaletteCommand}"
-                                                CommandParameter="{Binding}"/>
+                                                CommandParameter="{Binding}">
+                                            <mi:MaterialIcon Kind="Close" Width="16" Height="16"/>
+                                        </Button>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -585,7 +588,7 @@
                     </ItemsControl>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBox Text="{Binding NewPaletteName, Mode=TwoWay}" PlaceholderText="{local:Localize Custom_PaletteNamePlaceholder}" AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Custom_PaletteNamePlaceholder}"/>
-                        <Button Grid.Column="1" Classes="compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
+                        <Button Grid.Column="1" Classes="secondary compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
                     </Grid>
                 </StackPanel>
 
@@ -595,9 +598,9 @@
                      ~300px wide and three buttons do not fit one row. Copy as AXAML is a shipped
                      RemEx-a7uzb feature the spec does not retire; Import and Export are the spec's. -->
                 <WrapPanel ItemSpacing="8" LineSpacing="8">
-                    <Button Classes="compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
-                    <Button Classes="compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
-                    <Button Classes="compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
                 </WrapPanel>
             </StackPanel>
         </material:Card>

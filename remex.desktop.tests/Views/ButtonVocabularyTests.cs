@@ -63,6 +63,23 @@ public class ButtonVocabularyTests
             + "any icon-button in the app",
     };
 
+    /// <summary>
+    /// Buttons exempt from carrying an emphasis class because they hand-roll their own paint
+    /// inline, listed by name rather than by class since the exemption is that one button's inline
+    /// paint, not something reusable. Bound to docs/BUTTON-VOCABULARY.md the same way
+    /// <see cref="Exceptions"/> is, by <c>TheExceptionListMatchesTheDocumentation</c>.
+    /// </summary>
+    private static readonly Dictionary<string, string> IndividualEmphasisExceptions = new()
+    {
+        ["Name=\"DrawerToggle\""] = "RemEx-z7pnx.1 — ShellView's app-bar drawer-toggle hand-rolls "
+            + "its own paint (inline Background=\"Transparent\" BorderThickness=\"0\") alongside "
+            + "icon-button compact instead of an emphasis class; per the vocabulary, icon-button is "
+            + "meant to sit alongside tertiary, so the real fix is `tertiary icon-button compact` "
+            + "with the inline Background/BorderThickness dropped. Deferred: that restyles the "
+            + "app's most-visible chrome control, which is out of scope for the fix that added this "
+            + "exception",
+    };
+
     [Fact]
     public void EveryButtonClassInUseIsInTheVocabularyOrIsADocumentedException()
     {
@@ -139,6 +156,88 @@ public class ButtonVocabularyTests
             "every Button (and its WPF-style siblings) needs a Classes attribute or it renders "
             + "as Material's default raised primary by accident; WindowChrome.axaml's template "
             + "parts are the only exemption (RemEx-z7pnx.1)");
+    }
+
+    [Fact]
+    public void EveryButtonDeclaresAnEmphasisOrIsAListedException()
+    {
+        // THE LOWER BOUND. EveryButtonDeclaresAClass only checks that SOME Classes attribute is
+        // present; it never checks that the attribute carries an EMPHASIS. A Button wearing only
+        // geometry/modifier classes like "compact" still falls through to Material's default
+        // {x:Type Button} ControlTheme and renders raised and accent-filled - an accidental
+        // primary that "has a class" and still looks exactly like the bug EveryButtonDeclaresAClass
+        // exists to catch. PersonalizationPanelView had exactly this: nine buttons, every one
+        // Classes="compact", none of the three emphases - unnoticed because nothing asserted a
+        // *lower* bound the way AtMostOnePrimaryButtonPerViewSurface asserts an upper one.
+        //
+        // Three groups legitimately never reach the default ControlTheme, so they are exempt:
+        //   - THEMED: tile/card/swatch/nav-item are painted by something other than the default
+        //     ControlTheme (App.axaml styles, ShellView's listed .nav-item exception, or inline
+        //     per-usage for swatch) rather than by one bespoke ControlTheme shared across all four.
+        //   - INDIVIDUAL: a button that hand-rolls its own paint inline (listed by name, not class,
+        //     because the exemption is the inline paint, not something reusable).
+        //   - CHROME: WindowChrome.axaml's template parts, skipped the same way
+        //     EveryButtonDeclaresAClass skips them.
+        var themedExemptClasses = new[] { "tile", "card", "swatch", "nav-item" };
+        var individualExceptions = IndividualEmphasisExceptions;
+
+        var offenders = new List<string>();
+        var themedSeen = new HashSet<string>();
+        var individualSeen = new HashSet<string>();
+
+        foreach (var (file, text) in XamlFiles())
+        {
+            if (RepoRelativeViewPath(file) == "Themes/Chrome/WindowChrome.axaml")
+            {
+                continue;
+            }
+
+            foreach (Match match in Regex.Matches(
+                         text, @"<(?:Button|ToggleButton|RepeatButton|DropDownButton|SplitButton)\b[^>]*?\bClasses=""([^""]*)""[^>]*>"))
+            {
+                var classes = match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (classes.Any(Emphasis.Contains))
+                {
+                    continue;
+                }
+
+                var themedClass = themedExemptClasses.FirstOrDefault(classes.Contains);
+                if (themedClass is not null)
+                {
+                    themedSeen.Add(themedClass);
+                    continue;
+                }
+
+                var exemption = individualExceptions.Keys.FirstOrDefault(
+                    key => match.Value.Contains(key, StringComparison.Ordinal));
+                if (exemption is not null)
+                {
+                    individualSeen.Add(exemption);
+                    continue;
+                }
+
+                offenders.Add($"{Path.GetFileName(file)}: Classes=\"{match.Groups[1].Value}\"");
+            }
+        }
+
+        // ANTI-VACUITY: every listed exception - themed class or individual button - has to
+        // actually match a real no-emphasis button, or the allow-list is silently protecting
+        // nothing while looking exhaustive.
+        var unmatchedThemed = themedExemptClasses.Except(themedSeen).ToList();
+        unmatchedThemed.Should().BeEmpty(
+            "every themed exemption has to match a real button with no emphasis, or the allow-list "
+            + "is stale: " + string.Join(", ", unmatchedThemed));
+
+        var unmatchedIndividual = individualExceptions.Keys.Except(individualSeen).ToList();
+        unmatchedIndividual.Should().BeEmpty(
+            "every EveryButtonDeclaresAnEmphasisOrIsAListedException exception has to match a real "
+            + "button, or the allow-list is stale: " + string.Join(", ", unmatchedIndividual));
+
+        offenders.Should().BeEmpty(
+            "every button needs primary, secondary or tertiary - or a listed reason it never "
+            + "reaches Material's default ControlTheme - or it renders as an accidental raised "
+            + "primary; this is exactly how PersonalizationPanelView's nine compact-only buttons "
+            + "went unnoticed");
     }
 
     [Fact]
@@ -342,6 +441,20 @@ public class ButtonVocabularyTests
             bead.Should().NotBeEmpty($"the .{className} exception has to name the bead that owns it");
             doc.Should().Contain(bead,
                 $"the doc has to name {bead} as the owner of the .{className} exception");
+        }
+
+        // Same discipline for the individual (by-name) exceptions from
+        // EveryButtonDeclaresAnEmphasisOrIsAListedException: an unbound allow-list drifts from the
+        // doc exactly the way the class-keyed one used to.
+        foreach (var (buttonKey, reason) in IndividualEmphasisExceptions)
+        {
+            doc.Should().Contain(buttonKey,
+                $"docs/BUTTON-VOCABULARY.md has to list the {buttonKey} exception");
+
+            var bead = Regex.Match(reason, @"RemEx-[a-z0-9.]+").Value;
+            bead.Should().NotBeEmpty($"the {buttonKey} exception has to name the bead that owns it");
+            doc.Should().Contain(bead,
+                $"the doc has to name {bead} as the owner of the {buttonKey} exception");
         }
     }
 
