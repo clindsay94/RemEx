@@ -113,7 +113,8 @@ build/tmp-host-verify/
 *.xml~
 
 # Planning and review documents
-docs/assets/
+docs/assets/*
+!docs/assets/remex-logo.png
 docs/plans/
 docs/old-docs/
 docs/superpowers/
