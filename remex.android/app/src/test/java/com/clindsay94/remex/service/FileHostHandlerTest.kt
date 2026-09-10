@@ -2,11 +2,14 @@ package com.clindsay94.remex.service
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -816,15 +819,83 @@ class FileHostHandlerTest {
         assertEquals("the second frame goes out once there is room", 2, channel.dataFrames.size)
     }
 
-    // NO TEST FOR THE CONFLATED BUFFER, AND THAT IS A MEASURED CONCLUSION, NOT AN OMISSION.
-    // The capacity-1 buffer on HostSendSession.ackSignal is load-bearing (see its KDoc), and I wrote
-    // a test for it that did not discriminate: flipping CONFLATED to RENDEZVOUS left all 51 green.
-    // Under Dispatchers.Unconfined an ack resumes the coroutine INLINE, so the sender is always
-    // parked again before the next ack is delivered — the "token arrives with nobody waiting" case
-    // the buffer exists for cannot be reached this way. Delivering an ack re-entrantly from inside
-    // sendData does reach it, but on RENDEZVOUS that DEADLOCKS the test thread rather than failing,
-    // and a hang is a timeout rather than a message. Recorded on RemEx-3uv7s instead of shipping an
-    // assertion that proves nothing.
+    // THE CONFLATED-BUFFER GAP IS COVERED NOW (RemEx-3uv7s), NOT VIA THE FULL SEND PATH BELOW.
+    // That path stayed blind no matter what: under Dispatchers.Unconfined an ack resumes the
+    // coroutine INLINE, so the sender is always parked again before the next ack is delivered — the
+    // "token arrives with nobody waiting" case the buffer exists for cannot be reached this way.
+    // Delivering an ack re-entrantly from inside sendData does reach it, but on RENDEZVOUS that
+    // DEADLOCKS the test thread rather than failing, and a hang is a timeout rather than a message.
+    // That was the measured, deliberate absence this comment used to record.
+    //
+    // The fix was extracting the wait into `awaitAck(ackSignal, conditionMet)` — a free function
+    // taking the channel — so the race can be driven directly and synchronously instead: build a
+    // channel with ACK_SIGNAL_CAPACITY (the SAME constant production's ackSignal is built with, not
+    // a re-typed literal that could quietly drift from it), call trySend on it before anything is
+    // parked in receive() — that ordering IS "arrives with nobody waiting" — and confirm the token
+    // survives. See ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks below.
+
+    @Test
+    fun ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks() = runBlocking {
+        val ackSignal = Channel<Unit>(ACK_SIGNAL_CAPACITY)
+
+        // Simulate the race directly: the ack lands in the gap before the wait ever calls receive().
+        // A RENDEZVOUS channel drops a token nobody is parked to receive — this line IS the bug this
+        // bead exists to keep covered, and it fails right here, synchronously, rather than hanging.
+        val delivered = ackSignal.trySend(Unit).isSuccess
+        assertTrue(
+            "a trySend with nobody parked in receive() must not be dropped — ACK_SIGNAL_CAPACITY " +
+                "must stay Channel.CONFLATED",
+            delivered,
+        )
+
+        // Bounded rather than left to hang outright, in case awaitAck itself ever regresses.
+        var checks = 0
+        withTimeout(5_000) {
+            awaitAck(ackSignal) { checks++; checks > 1 }
+        }
+        assertEquals("the buffered token satisfied exactly one receive()", 2, checks)
+    }
+
+    // THE TEST ABOVE PINS ACK_SIGNAL_CAPACITY'S VALUE, NOT WHETHER ackSignal IS BUILT FROM IT.
+    // Typing `Channel<Unit>(Channel.RENDEZVOUS)` directly at the HostSendSession construction site
+    // bypasses the constant entirely — the whole suite, including the test above, stays green while
+    // a real transfer freezes mid-file with no error on either side. This scans the source for that
+    // one construction site and fails on anything but the constant. Idiom matches
+    // DeadSdkGuardTest.kt's repoRoot resolution and source-scanning.
+
+    @Test
+    fun ackSignal_isBuiltFromTheCapacityConstant_notALiteral() {
+        val repoRoot: File =
+            System.getProperty("remex.repoRoot")?.let(::File)
+                ?: File(".").absoluteFile.let { start ->
+                    generateSequence(start) { it.parentFile }
+                        .firstOrNull { File(it, "remex.android").isDirectory }
+                }
+                ?: error("could not locate the repository root")
+        val source =
+            File(
+                repoRoot,
+                "remex.android/app/src/main/java/com/clindsay94/remex/service/FileHostHandler.kt",
+            )
+        assertTrue("FileHostHandler.kt moved or was renamed", source.isFile)
+
+        // Anchored on `ackSignal = Channel<Unit>(...)` specifically, not any `Channel(` call in the
+        // file — there is exactly one such construction (HostSendSession's field) today, and this
+        // must not fire on unrelated channels (e.g. any the frame-reader or receive side build).
+        val match = Regex("""ackSignal\s*=\s*Channel<Unit>\(([^)]*)\)""").find(source.readText())
+        assertNotNull(
+            "no `ackSignal = Channel<Unit>(...)` construction found in FileHostHandler.kt — this " +
+                "test's own anchor moved and needs updating, not deleting",
+            match,
+        )
+        assertEquals(
+            "HostSendSession.ackSignal must be built from ACK_SIGNAL_CAPACITY, not a literal — a " +
+                "literal here bypasses the constant this suite pins and can flip production to " +
+                "RENDEZVOUS with every test still green",
+            "ACK_SIGNAL_CAPACITY",
+            match!!.groupValues[1].trim(),
+        )
+    }
 
     @Test
     fun downloadSend_underTheCap_neverBlocksOnBackpressure() = runBlocking {

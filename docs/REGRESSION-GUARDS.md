@@ -472,17 +472,31 @@ came back green against a defect that was really there:
 | Invert the backpressure comparison | 7 |
 | Re-inline `MAX_UNACKED_BYTES` over the seam | 1 |
 
-**One mutation in this function is known NOT to be caught, and it is recorded rather than hidden:**
-flipping `HostSendSession.ackSignal` from `CONFLATED` to `RENDEZVOUS` leaves every test green
-(`RemEx-3uv7s`). Under `Dispatchers.Unconfined` an ack resumes the sender inline, so it is always
-already parked when the next ack arrives — the "token arrives with nobody waiting" case the buffer
-exists for is unreachable, and reaching it re-entrantly deadlocks the test thread instead of failing.
-The buffer is load-bearing: without it an ack landing between the condition check and the park is
-dropped and the transfer freezes mid-file with no error either side. The same exception holds for the
-upload direction since `RemEx-yi7id`: `UploadSendLoopTest` runs under `Dispatchers.Unconfined` too, so
-flipping the `ackSignal` that `FileTransferEngine.runUpload` builds and hands to `UploadSendLoop` from
-`CONFLATED` to `RENDEZVOUS` also stays green. Treat both channels' capacity as guarded by this note,
-not by a test.
+**The `HostSendSession.ackSignal` half of this was an uncaught mutation; it no longer is (`RemEx-3uv7s`).**
+Flipping it from `CONFLATED` to `RENDEZVOUS` used to leave every test green: under
+`Dispatchers.Unconfined` an ack resumes the sender inline, so it is always already parked when the
+next ack arrives — the "token arrives with nobody waiting" case the buffer exists for was
+unreachable that way, and reaching it re-entrantly deadlocked the test thread instead of failing.
+The buffer is load-bearing regardless of any test: without it an ack landing between the condition
+check and the park is dropped and the transfer freezes mid-file with no error either side. It is now
+pinned two ways. The capacity is a named constant, `ACK_SIGNAL_CAPACITY` at `FileHostHandler.kt:124`,
+which `HostSendSession.ackSignal` (`FileHostHandler.kt:1555`) is built from rather than from a
+literal, and which the wait itself — extracted into the free function `awaitAck` at
+`FileHostHandler.kt:142` — takes as a parameter so the no-waiter race can be driven directly and
+synchronously: `FileHostHandlerTest.ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks`
+builds a channel from that same constant, delivers a token via `trySend` before anything is parked in
+`receive()`, and asserts it survives; it goes red under the `RENDEZVOUS` flip. Because that test pins
+the constant and not the call site, a second test,
+`FileHostHandlerTest.ackSignal_isBuiltFromTheCapacityConstant_notALiteral`, source-scans
+`FileHostHandler.kt` for the `ackSignal = Channel<Unit>(...)` construction and fails if anything but
+`ACK_SIGNAL_CAPACITY` appears there — this is what catches someone typing `Channel.RENDEZVOUS`
+directly at the call site, which the first test cannot.
+
+**The upload direction remains note-guarded only, and covering it is out of scope for RemEx-3uv7s.**
+`FileTransferEngine.kt:261` builds its own `ackSignal` as `Channel<Unit>(Channel.CONFLATED)` for
+`UploadSendLoop`, and since `RemEx-yi7id`, `UploadSendLoopTest` runs under `Dispatchers.Unconfined`
+too, so the same flip on that channel also stays green today. Treat that one channel's capacity as
+guarded by this note, not by a test, until it gets the same treatment.
 
 Two of those were green until the *tests* were fixed, not the code: bounding on `size` was
 unfalsifiable while the reconcile ran unconditionally, and the `final`-flag mutation passed against a

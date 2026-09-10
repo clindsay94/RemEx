@@ -106,6 +106,46 @@ interface RootMutator {
 }
 
 /**
+ * Capacity for [FileHostHandler.HostSendSession.ackSignal] (RemEx-3uv7s). **MUST STAY
+ * [Channel.CONFLATED]** — see that field's KDoc for why a rendezvous buffer silently drops an ack.
+ *
+ * Pulled out to one named constant, rather than left as a literal on the field, so [awaitAck]'s
+ * direct coverage test can build its probe channel against the SAME value production uses. A test
+ * that typed `Channel.CONFLATED` again itself would go on passing forever if this constant were
+ * ever flipped to [Channel.RENDEZVOUS] — the test's channel and production's would simply have
+ * quietly diverged.
+ *
+ * That coverage test pins the CONSTANT, not the call site — typing `Channel<Unit>(Channel.RENDEZVOUS)`
+ * directly where `HostSendSession.ackSignal` is built would bypass this constant entirely and leave
+ * the whole suite green while a real transfer freezes mid-file. `FileHostHandlerTest`'s
+ * `ackSignal_isBuiltFromTheCapacityConstant_notALiteral` source-scans for that construction site and
+ * fails on anything but this constant appearing there — see `docs/REGRESSION-GUARDS.md`.
+ */
+internal const val ACK_SIGNAL_CAPACITY = Channel.CONFLATED
+
+/**
+ * Parks until [conditionMet] holds, re-checking it after every token drained from [ackSignal].
+ * Identical in behaviour to the inlined `while (!conditionMet()) ackSignal.receive()` it replaces
+ * at both [FileHostHandler.HostSendSession] wait sites (backpressure and the completion drain) —
+ * this is a refactor for testability, not a change to the wait itself (RemEx-3uv7s).
+ *
+ * Extracted as a free function taking the channel, rather than left as a method on the session,
+ * specifically so the "ack arrives with nobody parked in receive()" race described on
+ * [FileHostHandler.HostSendSession.ackSignal] can be driven directly and synchronously in a test:
+ * build a channel with [ACK_SIGNAL_CAPACITY], call `trySend` on it BEFORE calling this function —
+ * that ordering IS the race, a token delivered before anyone is waiting — and confirm the token
+ * survives rather than being dropped. See
+ * `ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks` in FileHostHandlerTest.kt,
+ * which used to be a documented, measured gap (RemEx-68wwl) rather than an oversight; it is
+ * covered now.
+ */
+internal suspend fun awaitAck(ackSignal: Channel<Unit>, conditionMet: () -> Boolean) {
+    while (!conditionMet()) {
+        ackSignal.receive()
+    }
+}
+
+/**
  * Testable core of the Android host mirror (plan WP6). Handles every PC-initiated file op against the
  * served device's SAF roots — browse, roots, manage (delete/rename/copy/move/mkdir),
  * **file_root_manage_request** (previously unhandled — the parity gap), volumes, search, metadata,
@@ -1117,9 +1157,7 @@ class FileHostHandler(
                             val nextLen = it.read(next)
                             val isFinal = nextLen <= 0
                             // Backpressure: never exceed the unacked cap.
-                            while (sent - session.committedOffset > maxUnackedBytes) {
-                                session.ackSignal.receive()
-                            }
+                            awaitAck(session.ackSignal) { sent - session.committedOffset <= maxUnackedBytes }
                             if (!channel.sendData(transferId, sent, cur, curLen, isFinal)) {
                                 throw IllegalStateException("Binary channel closed.")
                             }
@@ -1188,9 +1226,7 @@ class FileHostHandler(
                     // here, so "forever" is exactly what it means. The reconcile above now rejects a
                     // mismatch before we ever get here; this bound is what makes the wait correct
                     // rather than merely usually-correct.
-                    while (session.committedOffset < sent) {
-                        session.ackSignal.receive()
-                    }
+                    awaitAck(session.ackSignal) { session.committedOffset >= sent }
 
                     // java.util.Base64, NOT android.util.Base64, and only on this path (RemEx-xrb2v).
                     // This class's own doc says it is "pure logic over injected seams so it can be
@@ -1491,27 +1527,32 @@ class FileHostHandler(
     private inner class HostSendSession(val transferId: String) : FileFrameSink {
         @Volatile var committedOffset: Long = 0L
         /**
-         * Wakes the send loop when an ack lands. **CONFLATED IS LOAD-BEARING — DO NOT MAKE THIS A
-         * RENDEZVOUS** (review of RemEx-68wwl).
+         * Wakes the send loop when an ack lands. **[ACK_SIGNAL_CAPACITY] IS LOAD-BEARING — DO NOT
+         * MAKE THIS A RENDEZVOUS** (review of RemEx-68wwl; extraction + coverage: RemEx-3uv7s).
          *
          * The capacity-1 buffer is what closes the gap between the sender evaluating its wait
-         * condition and actually parking in `receive()`. On a real device the ack arrives on the
-         * frame-reader thread; if it lands in that gap, `trySend` on a RENDEZVOUS channel finds no
-         * waiter, returns false, and the token is dropped. The sender then parks forever — and the
-         * peer, having nothing left to receive, never acks again. The transfer freezes mid-file with
-         * no error on either side, which is the failure mode both waits here exist to avoid.
+         * condition (in [awaitAck]) and actually parking in `receive()`. On a real device the ack
+         * arrives on the frame-reader thread; if it lands in that gap, `trySend` on a RENDEZVOUS
+         * channel finds no waiter, returns false, and the token is dropped. The sender then parks
+         * forever — and the peer, having nothing left to receive, never acks again. The transfer
+         * freezes mid-file with no error on either side, which is the failure mode both waits here
+         * exist to avoid.
          *
-         * Every unit test would stay green through that change: under `Dispatchers.Unconfined` the
-         * ack is always delivered while the coroutine is already suspended, and `trySend` to a
-         * waiting receiver succeeds on RENDEZVOUS too. `downloadSend_ackArrivingBeforeTheSenderParks_
-         * isNotLost` is the one that does not.
+         * Every unit test would stay green through that change if it exercised the full send path:
+         * under `Dispatchers.Unconfined` the ack is always delivered while the coroutine is already
+         * suspended, and `trySend` to a waiting receiver succeeds on RENDEZVOUS too — the "token
+         * arrives with nobody waiting" case is unreachable that way. [awaitAck] exists so that gap
+         * can be driven directly instead: see its KDoc and
+         * `ackSignalGap_conflatedDoesNotLoseATokenThatArrivesBeforeAnyoneParks` in
+         * FileHostHandlerTest.kt, which covers what used to be a recorded, deliberate absence
+         * (RemEx-68wwl) rather than an oversight.
          *
-         * Conflation itself is safe for both consumers: each is a `while (condition) receive()`
-         * re-check over a `@Volatile` field, so a stale token just re-tests and re-parks. And no
-         * wakeup can be lost the other way either, because `committedOffset` is written *before*
-         * `trySend` below.
+         * Conflation itself is safe for both consumers: each call into [awaitAck] is a
+         * `while (!conditionMet()) receive()` re-check over a `@Volatile` field, so a stale token
+         * just re-tests and re-parks. And no wakeup can be lost the other way either, because
+         * `committedOffset` is written *before* `trySend` below.
          */
-        val ackSignal = Channel<Unit>(Channel.CONFLATED)
+        val ackSignal = Channel<Unit>(ACK_SIGNAL_CAPACITY)
         var job: Job? = null
 
         override fun onFrame(envelope: FileFrameEnvelope, payload: ByteArray) {
