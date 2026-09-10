@@ -15,8 +15,8 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// <remarks>
 /// A SOURCE SCAN, deliberately, matching <see cref="PaletteTransitionSuppressionTests"/>'s
 /// treatment of the sibling <c>SuppressPaletteTransitions</c> flag. <c>ShellViewModel</c> takes a
-/// full DI graph (<c>DashboardLayoutService</c>, <c>ThemeService</c>, <c>HardwareThemeService</c>,
-/// <c>ConnectionViewModel</c>, <c>IServiceProvider</c>) that nothing in this test project
+/// full DI graph (<c>DashboardLayoutService</c>, <c>ThemeService</c>, <c>ConnectionViewModel</c>,
+/// <c>IServiceProvider</c>) that nothing in this test project
 /// constructs directly — there is no <c>new ShellViewModel(...)</c> anywhere in this suite to
 /// follow. Reading the wiring is what every other test touching this class already does instead.
 /// </remarks>

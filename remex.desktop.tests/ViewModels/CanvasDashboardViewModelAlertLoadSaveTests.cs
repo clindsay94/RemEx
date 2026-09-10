@@ -96,8 +96,9 @@ public sealed class CanvasDashboardViewModelAlertLoadSaveTests : IAsyncLifetime
     {
         // NOT await _vm.InitializeAsync() directly — it awaits Dispatcher.UIThread.InvokeAsync, and
         // this assembly has no Avalonia.Headless reference, so nothing ever drains a real Post.
-        // _shell's own HardwareThemeService already constructed a DispatcherTimer above, binding
-        // "the" UI thread to whichever pool thread was running the IAsyncLifetime.InitializeAsync
+        // Constructing _shell above already started PhonePresenceMonitor's polling DispatcherTimer
+        // — the ShellViewModel constructor subscribes to Presence, which forces that lazy singleton
+        // — binding "the" UI thread to whichever pool thread was running the IAsyncLifetime.InitializeAsync
         // setup; the awaited LoadAsync below almost certainly resumes on a different one, so
         // CheckAccess() reads false and the real callback strands in a queue nothing pumps — measured
         // directly: an earlier version of this test hung exactly that way. FinishInitialize is the

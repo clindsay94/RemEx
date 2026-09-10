@@ -59,8 +59,10 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// can still call the non-replacing <c>LoadAsync</c> from a pool thread even though neither raises
 /// this event any more. But this assembly has no <c>Avalonia.Headless</c> reference
 /// (<c>DispatcherPostedWorkTests</c>), so nothing ever drains a real <c>Post</c> — and
-/// <c>HardwareThemeService</c>'s <c>DispatcherTimer</c>, constructed a few lines above
-/// <see cref="ShellViewModel"/> here, can bind "the" UI thread to a different pool thread than the
+/// the polling <c>DispatcherTimer</c> that <c>PhonePresenceMonitor</c>'s lazy singleton starts the
+/// first time <see cref="ShellViewModel"/>'s constructor subscribes to <c>Presence</c> a few lines
+/// below (historically it was <c>HardwareThemeService</c>'s 5 s timer, deleted in RemEx-dbjfy) can
+/// bind "the" UI thread to a different pool thread than the
 /// one this test's own awaited <c>ReloadAsync</c> resumes on, making <c>CheckAccess()</c> read false
 /// and strand the real callback in a queue nothing pumps — measured directly, not assumed: an
 /// earlier version of this test hung exactly that way. Substituting the seam is the same fix
@@ -97,7 +99,8 @@ public sealed class ProfileReplacementInvalidatesCustomizationVmTests : IAsyncLi
 
         // Run the ProfileReplaced handler inline (see ProfileReplacedDispatch's own remarks): this
         // assembly has no Avalonia.Headless reference, so nothing drains a real Dispatcher.UIThread
-        // Post, and HardwareThemeService's DispatcherTimer above can bind "the" UI thread to a
+        // Post, and the polling DispatcherTimer PhonePresenceMonitor's singleton starts when the
+        // ShellViewModel above subscribes to Presence can bind "the" UI thread to a
         // different pool thread than the one a later awaited ReloadAsync resumes on.
         _shell.ProfileReplacedDispatch = run => run();
     }

@@ -16,9 +16,9 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// <remarks>
 /// A SOURCE SCAN, deliberately, matching <see cref="ShellPresencePulseTests"/>'s treatment of
 /// <c>ShellViewModel</c>. Its constructor takes a full DI graph (<c>DashboardLayoutService</c>,
-/// <c>ThemeService</c>, <c>HardwareThemeService</c>, <c>ConnectionViewModel</c>,
-/// <c>IServiceProvider</c>) and, transitively through <c>CanvasDashboardViewModel.InitializeAsync</c>,
-/// an <c>await Dispatcher.UIThread.InvokeAsync(...)</c> — this test assembly has no
+/// <c>ThemeService</c>, <c>ConnectionViewModel</c>, <c>IServiceProvider</c>) and, transitively
+/// through <c>CanvasDashboardViewModel.InitializeAsync</c>, an
+/// <c>await Dispatcher.UIThread.InvokeAsync(...)</c> — this test assembly has no
 /// Avalonia.Headless reference, so nothing ever pumps that dispatcher and the await never
 /// completes. A behavioral test built around <c>TaskCompletionSource</c> fakes for the decode
 /// (as the handoff for this fix asked for) would need to actually construct a <c>ShellViewModel</c>

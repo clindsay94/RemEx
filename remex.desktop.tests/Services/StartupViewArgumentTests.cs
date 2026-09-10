@@ -17,8 +17,8 @@ namespace Remex.Desktop.Tests.Services;
 /// <remarks>
 /// NO <c>new ShellViewModel(...)</c> HERE, DELIBERATELY — same reasoning as
 /// <c>ShellPresencePulseTests</c>' own remark: the constructor needs a full DI graph
-/// (<c>DashboardLayoutService</c>, <c>ThemeService</c>, <c>HardwareThemeService</c>,
-/// <c>ConnectionViewModel</c>, <c>IServiceProvider</c>, several lazily-<c>GetRequiredService</c>'d
+/// (<c>DashboardLayoutService</c>, <c>ThemeService</c>, <c>ConnectionViewModel</c>,
+/// <c>IServiceProvider</c>, several lazily-<c>GetRequiredService</c>'d
 /// view models) that nothing in this test project builds, and there is no
 /// <c>new ShellViewModel(...)</c> anywhere in the suite to follow. So instead of exercising the
 /// lambdas in <c>Navigators</c> against a real instance, <see cref="Navigators_BindsEachNameToItsDocumentedShellViewModelMethod"/>

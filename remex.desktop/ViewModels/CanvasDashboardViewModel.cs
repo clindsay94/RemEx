@@ -570,7 +570,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// <see cref="Dispatcher.UIThread"/> post; awaiting the real, dispatcher-wrapped
     /// <see cref="InitializeAsync"/> from a test hangs whenever "the" UI thread — bound to whichever
     /// thread anywhere in the process first touched <see cref="Dispatcher.UIThread"/> (a
-    /// <c>HardwareThemeService</c>'s <c>DispatcherTimer</c>, say) — differs from the thread this
+    /// <c>PhonePresenceMonitor</c>'s polling <c>DispatcherTimer</c>, say) — differs from the thread this
     /// call's own preceding <c>await _layoutService.LoadAsync()</c> happens to resume on. Measured
     /// directly, not assumed: two rewritten tests hung exactly that way before this split
     /// (<c>CanvasAlertStateTests</c>, <c>CanvasDashboardViewModelAlertLoadSaveTests</c>).

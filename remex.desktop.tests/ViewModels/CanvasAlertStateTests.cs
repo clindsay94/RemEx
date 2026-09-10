@@ -98,8 +98,10 @@ public sealed class CanvasAlertStateTests
             // Dispatcher.UIThread.InvokeAsync, and this assembly has no Avalonia.Headless reference
             // (see DispatcherPostedWorkTests / ProfileReplacementInvalidatesCustomizationVmTests), so
             // nothing ever drains a real Post. An earlier version of this test built a real
-            // ShellViewModel (with its HardwareThemeService's DispatcherTimer) and awaited
-            // vm.InitializeAsync() directly; that hung, measured directly, because "the" UI thread
+            // ShellViewModel — whose constructor subscribes to Presence, forcing the lazy
+            // PhonePresenceMonitor.Instance and its 3 s DispatcherTimer into existence (back then a
+            // HardwareThemeService 5 s timer, deleted in RemEx-dbjfy, did the same job first) — and
+            // awaited vm.InitializeAsync() directly; that hung, measured directly, because "the" UI thread
             // ends up bound to whichever thread anywhere in the process first touched
             // Dispatcher.UIThread, which is generally not the thread InitializeAsync's own internal
             // LoadAsync happens to resume on. Wiring the same private handler InitializeAsync would
