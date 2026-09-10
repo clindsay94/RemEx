@@ -44,9 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the number of paired devices currently online, updating live while the flyout is pinned. Alert
   counts on individual dashboard cards are deliberately left to the sensor-alerts work
   (RemEx-8wpvr). (RemEx-rjnbo.1)
-- Every button on the PC now declares its role in the button vocabulary, so at most one action
-  per screen renders as the raised primary; the buttons that carried no class fell through to
-  Material's raised default and made several screens shout. (RemEx-z7pnx.1)
+- Every button on the PC now declares a `Classes` attribute, closing the gap where a bare
+  `<Button>` fell through to Material's raised-primary default by accident; a class alone did not
+  yet guarantee an emphasis, though — buttons carrying only a geometry class like `compact` still
+  fell through the same way, and the Personalization panel alone had nine of them. (RemEx-z7pnx.1)
 - Text fields on the PC float their labels inside the field, Material style, and the separate
   caption that used to sit beside each one is gone; search and filter boxes keep a placeholder,
   and the alert threshold field keeps its caption because that control never paints a floating
@@ -304,7 +305,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the text and trimming underneath it would leave the keyboard pointing at positions that no
   longer exist. (RemEx-d459)
 
+- The Personalization panel is quieter. Nine of its buttons — Match Phone Theme, Refresh Wallpaper
+  Seeds, Choose Wallpaper Image, Preview, Save Palette, Copy, Export, Import and the small delete
+  on a saved palette — were rendering as raised, accent-filled buttons, because a button that names
+  no emphasis falls through to a default that draws it like the screen's main action. Nine main
+  actions on one screen is none. They now carry the emphasis they were always meant to have, so the
+  panel has a single raised button (Apply) and the rest sit flat. The two that still drew their
+  symbol as a typed character — the confirm tick and the delete cross — use real icons now, and the
+  tick announces itself to a screen reader, which it previously did not. (RemEx-me22, RemEx-z7pnx.1)
+
 ### Fixed
+
+- Tapping "Browse this PC" on the phone now tells you what it is waiting for. The consent prompt for
+  full-device browsing opens on the PC, and until now the phone showed "Loading drives…" while it
+  sat there — which looks the same as a request that quietly failed, so the natural response was to
+  tap again or give up. The chip now says approval is waiting on your PC, shows a spinner and stops
+  accepting taps until the answer comes back.
+
+  The wait also always ends now. Nothing on the phone put a limit on it, so a PC that never replied
+  left that message on screen indefinitely; there is now a client-side backstop sitting just behind
+  the PC's own one-minute prompt expiry, and disconnecting ends the wait immediately rather than
+  leaving it spinning. A late approval that lands after the backstop fires no longer leaves a
+  "didn't answer in time" message sitting above a list of drives that just loaded. (RemEx-c7v4n)
 
 - Declining the PC's input-permission prompt on Linux no longer costs you a restart. The banner on
   your phone now has an "Ask again" button that makes the PC show the prompt a second time, so being
