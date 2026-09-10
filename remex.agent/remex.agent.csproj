@@ -135,12 +135,51 @@
     registration in HostBootstrapper.cs. Mirrors the OS-conditioned CopyNativeLinuxBridge targets below.
     This project is intentionally NOT in Remex.sln; it is pulled in transitively here on Windows only.
   -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+  <!--
+    Conditioned on the resolved TFM rather than on IsOSPlatform('Windows') directly. The two agree on
+    every real build, because the TFM above is itself chosen by host OS. The difference is that a TFM
+    condition can be overridden on the command line, so the Linux compilation can be reproduced from a
+    Windows box: `dotnet restore remex.agent -p:TargetFramework=net10.0` then the same on build gives
+    exactly what a Linux build compiles. With an IsOSPlatform condition that override half-applies —
+    plain TFM, but this windows-TFM ProjectReference still attached — and errors before reaching any
+    real problem, which is why a Linux-only break in this project can survive a green Windows run.
+  -->
+  <ItemGroup Condition="$(TargetFramework.Contains('windows'))">
     <ProjectReference Include="..\remex.agent.windows\remex.agent.windows.csproj" />
   </ItemGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <DefineConstants>$(DefineConstants);WGC_CAPTURE</DefineConstants>
+  <PropertyGroup Condition="$(TargetFramework.Contains('windows'))">
+    <!--
+      WINDOWS_MEDIA is declared explicitly rather than leaning on the SDK's implicit WINDOWS constant.
+      That constant does not reach DefineConstants here (checked with -getProperty: this project sees
+      TRACE;WGC_CAPTURE;RELEASE and no WINDOWS), so an "#if WINDOWS" would be silently false on the
+      windows TFM as well — the SMTC reader would compile away on Windows too and media would just
+      stop working, with a green build and no diagnostic. An explicit constant fails loudly instead.
+    -->
+    <DefineConstants>$(DefineConstants);WGC_CAPTURE;WINDOWS_MEDIA</DefineConstants>
   </PropertyGroup>
+
+  <!--
+    The SMTC media reader and its app-icon resolver are the only files in this project that consume
+    WinRT projections (Windows.Media.Control, Windows.Storage.Streams, Windows.Management.Deployment).
+    Those namespaces exist only under the windows-versioned TFM selected above, so on Linux — where the
+    TFM is plain net10.0 — they do not compile at all. An OperatingSystem.IsWindows() guard cannot help:
+    that is a runtime check, and this fails at compile time.
+
+    So they leave the compilation entirely off Windows, and their single call site is gated on the
+    WINDOWS constant the windows TFM defines implicitly (HostBootstrapper.cs, media reader selection).
+    Same shape as the WGC_CAPTURE ProjectReference above. LinuxMediaSessionReader (MPRIS over D-Bus)
+    and UnsupportedMediaSessionReader cover the other platforms, so the DI registration still resolves.
+
+    Conditioned on the TFM, not on IsOSPlatform('Windows') like the block above it. The two agree in
+    practice — the TFM is picked by host OS — but the TFM is the thing that actually decides whether
+    the WinRT projections exist, and saying so is what makes the Linux path reproducible from a Windows
+    box: `dotnet build remex.agent -p:TargetFramework=net10.0` compiles exactly what Linux compiles.
+    An IsOSPlatform condition cannot be exercised that way, which is how this broke unnoticed.
+  -->
+  <ItemGroup Condition="!$(TargetFramework.Contains('windows'))">
+    <Compile Remove="Services\Media\WindowsMediaSessionReader.cs" />
+    <Compile Remove="Services\Media\WindowsAppIconResolver.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

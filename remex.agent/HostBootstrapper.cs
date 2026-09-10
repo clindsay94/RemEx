@@ -179,14 +179,29 @@ public static class HostBootstrapper
         // gets a real stub rather than a null registration, so the sampler, the capability provider
         // and the per-connection stream are all platform-agnostic. What a host cannot do is said once,
         // in HostCapabilities.SupportsMediaState, rather than re-derived at each call site.
+        // The #if is not belt-and-braces over the runtime check: WindowsMediaSessionReader consumes
+        // WinRT projections that exist only under the windows-versioned TFM, so off Windows the type
+        // is not compiled at all (see the Compile Remove in Remex.Agent.csproj) and naming it here
+        // would be a compile error, not a branch never taken. The OperatingSystem.IsWindows() call
+        // still earns its place inside: the windows TFM is chosen by the BUILD host, so a Windows
+        // build can still be published for a linux-x64 RID and must not construct an SMTC reader there.
         builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaSessionReader>(sp =>
-            OperatingSystem.IsWindows()
-                ? new Remex.Agent.Services.Media.WindowsMediaSessionReader(
-                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.WindowsMediaSessionReader>>())
-                : OperatingSystem.IsLinux()
-                    ? new Remex.Agent.Services.Media.LinuxMediaSessionReader(
-                        sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.LinuxMediaSessionReader>>())
-                    : new Remex.Agent.Services.Media.UnsupportedMediaSessionReader());
+        {
+#if WINDOWS_MEDIA
+            if (OperatingSystem.IsWindows())
+            {
+                return new Remex.Agent.Services.Media.WindowsMediaSessionReader(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.WindowsMediaSessionReader>>());
+            }
+#endif
+            if (OperatingSystem.IsLinux())
+            {
+                return new Remex.Agent.Services.Media.LinuxMediaSessionReader(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Media.LinuxMediaSessionReader>>());
+            }
+
+            return new Remex.Agent.Services.Media.UnsupportedMediaSessionReader();
+        });
 
         builder.Services.AddSingleton<Remex.Agent.Services.Media.IMediaArtworkStore, Remex.Agent.Services.Media.MediaArtworkStore>();
         // The platform readers opt into artwork resolution by implementing IMediaArtworkSource
