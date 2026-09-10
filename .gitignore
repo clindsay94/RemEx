@@ -82,6 +82,7 @@ hwinfo_reg.txt
 publish/
 remex.android/app/src/main/jniLibs/
 remex.android/conductor/
+.token-savior-cache.json
 
 # AI tool directories
 .gemini/
@@ -112,10 +113,9 @@ build/tmp-host-verify/
 *.xml~
 
 # Planning and review documents
-docs/android-ui-refactor-prd-notes.md
-docs/android-ui-refactor-tech.md
-docs/ui-evaluation-report.md
-docs/prd-*.md
+docs/assets/
+docs/plans/
+docs/old-docs/
 docs/superpowers/
 review-report.md
 
@@ -166,7 +166,7 @@ remex.android/app/google-services.json
 FINAL_AUDIT_OPUS.md
 FINAL_AUDIT_SONNET.md
 /.beads/
-/docs/OLD DOCS
+.agents/
 
 # Local ralph loop procedure. Untracked on purpose: it carries the device unlock PIN so the loop
 # can drive the physical phone, and that does not belong in a repo with a remote.
