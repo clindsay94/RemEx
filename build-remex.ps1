@@ -10,19 +10,34 @@
     installers into a single `build_output` folder.
 
     Every run shows the current version and offers a 5-second y/N chance to change it before
-    building. It defaults to NO, so an unattended build never bumps anything. Answer yes and it
-    prompts for the new MAJOR.MINOR.PATCH, increments versionCode, and writes both
+    building. It defaults to NO, so an unattended build never bumps anything. Answer yes and it asks
+    two separate questions — the new MAJOR.MINOR.PATCH, then the versionCode — and writes both
     remex.android/app/version.properties (Android) and Directory.Build.props (Windows/Linux .NET) —
     the pair remex.desktop.tests/Services/VersionSourceOfTruthTests.cs requires to agree.
-    Pass -Version to state the version up front and skip that prompt entirely.
+    Pass -Version and/or -VersionCode to state the answers up front and skip the prompts entirely.
+
+    The two are asked separately because versionCode is monotonic and independent of versionName.
+    Keeping the name and raising the code alone is the normal move when Play rejects an upload and
+    burns its code, and it was not expressible before: the code only ever moved as a silent +1 riding
+    along with a name change.
 
 .PARAMETER Version
     Build at this version (MAJOR.MINOR.PATCH), skipping the interactive version prompt.
 
     If it differs from what version.properties currently holds, the version files are rewritten and
-    versionCode is incremented — the same edit the prompt makes, just stated up front instead of
-    typed at a prompt. If it matches, nothing is written. Use it to script a release build, or to
-    say "yes, this version, don't ask me" on a normal one.
+    versionCode is incremented unless -VersionCode says otherwise. If it matches and no -VersionCode
+    is given, nothing is written. Use it to script a release build, or to say "yes, this version,
+    don't ask me" on a normal one.
+
+.PARAMETER VersionCode
+    The Android versionCode to write, instead of the automatic current+1.
+
+    Valid on its own, without -Version: that is a code-only bump, which is what a re-upload after a
+    Play rejection needs. Combined with -Version it simply replaces the automatic increment.
+
+    Play will not accept an upload whose versionCode is not strictly higher than the last one you
+    shipped, and a code can never be reused or lowered. A value below the current code is refused
+    here rather than at the Play console. Equal to the current code means "leave it alone".
 
 .PARAMETER Config
     Build configuration. Valid options are 'debug' and 'release'. Defaults to 'release'.
@@ -93,6 +108,11 @@ param(
     [Parameter(Mandatory=$false)]
     [Alias("v")]
     [string]$Version = "",
+
+    # 0 means "not supplied". A real versionCode is always >= 1, so there is no ambiguity, and it
+    # keeps the was-this-passed test a plain comparison instead of a nullable int.
+    [Parameter(Mandatory=$false)]
+    [int]$VersionCode = 0,
 
     [Parameter(Mandatory=$false)]
     [switch]$NonInteractive,
@@ -414,28 +434,40 @@ Write-Host "Current version: " -NoNewline -ForegroundColor DarkCyan
 Write-Host "$Version" -NoNewline -ForegroundColor Green
 Write-Host "  (versionCode $VersionCode)" -ForegroundColor DarkGray
 
-if (-not [string]::IsNullOrWhiteSpace($RequestedVersion)) {
-    # -Version was passed: the answer to "what version?" is already given, so don't ask anything.
-    $RequestedVersion = $RequestedVersion.Trim().TrimStart("v", "V")
-    if ($RequestedVersion -notmatch $versionPattern) {
-        Write-Error "-Version '$RequestedVersion' is not a valid version. Use MAJOR.MINOR.PATCH (e.g. 2.6.0)."
-        exit 1
+# Both routes into a version change — the parameters and the interactive prompt — resolve a target
+# versionName and a target versionCode here, and the single write below fires if EITHER moved. They
+# are separate answers: versionCode is monotonic and independent of versionName, so a re-upload after
+# Play rejects a build needs the code to move on its own, with the name standing still.
+$targetVersion = $Version
+$targetVersionCode = $VersionCode
+
+if (-not [string]::IsNullOrWhiteSpace($RequestedVersion) -or $RequestedVersionCode -gt 0) {
+    # -Version and/or -VersionCode were passed: the answers are already given, so don't ask anything.
+    if (-not [string]::IsNullOrWhiteSpace($RequestedVersion)) {
+        $RequestedVersion = $RequestedVersion.Trim().TrimStart("v", "V")
+        if ($RequestedVersion -notmatch $versionPattern) {
+            Write-Error "-Version '$RequestedVersion' is not a valid version. Use MAJOR.MINOR.PATCH (e.g. 2.6.0)."
+            exit 1
+        }
+        $targetVersion = $RequestedVersion
     }
 
-    if ($RequestedVersion -eq $Version) {
-        Write-Host "  -Version matches what's on disk; nothing to write." -ForegroundColor DarkGray
-    } else {
-        Write-Host "  -Version: $Version (code $VersionCode)  ->  $RequestedVersion (code $($VersionCode + 1))" -ForegroundColor Cyan
-        $VersionCode = $VersionCode + 1
-        Set-RemexVersion -VersionFilePath $VersionFile -BuildPropsPath $BuildPropsPath -NewVersion $RequestedVersion -NewVersionCode $VersionCode
-        $Version = $RequestedVersion
+    if ($RequestedVersionCode -gt 0) {
+        if ($RequestedVersionCode -lt $VersionCode) {
+            Write-Error "-VersionCode $RequestedVersionCode is below the current $VersionCode. Play can never reuse or lower a versionCode, so this would be rejected at upload. Pick a higher one."
+            exit 1
+        }
+        $targetVersionCode = $RequestedVersionCode
+    }
+    elseif ($targetVersion -ne $Version) {
+        # A versionName change with no code stated: the code has to move, so take the next one.
+        $targetVersionCode = $VersionCode + 1
     }
 }
-# Version change checkpoint. This runs on every build that didn't pass -Version, and always defaults
-# to "no": a bump is irreversible in the eyes of the Play Store (a versionCode can never be reused),
-# so it happens on a deliberate keypress, never by drifting through an unattended build.
+# Version change checkpoint. This runs on every build that passed neither parameter, and always
+# defaults to "no": a bump is irreversible in the eyes of the Play Store (a versionCode can never be
+# reused), so it happens on a deliberate keypress, never by drifting through an unattended build.
 elseif (Read-CountdownChoice -Prompt "Change the version number before building?" -Seconds 5 -DefaultOnTimeout $false) {
-    $newVersion = ""
     while ($true) {
         $entered = "$(Read-Host "  New version number (blank to keep $Version)")"
         if ([string]::IsNullOrWhiteSpace($entered)) { break }
@@ -448,22 +480,53 @@ elseif (Read-CountdownChoice -Prompt "Change the version number before building?
             Write-Host "  That's the current version; keeping it." -ForegroundColor DarkGray
             break
         }
-        $newVersion = $entered
+        $targetVersion = $entered
         break
     }
 
-    if (-not [string]::IsNullOrEmpty($newVersion)) {
-        Write-Host "  $Version (code $VersionCode)  ->  $newVersion (code $($VersionCode + 1))" -ForegroundColor Cyan
-        if (-not (Read-CountdownChoice -Prompt "Write this to version.properties and Directory.Build.props?" -Seconds 5 -DefaultOnTimeout $false)) {
-            Write-Host "  Version left at $Version." -ForegroundColor DarkGray
-        } else {
-            $VersionCode = $VersionCode + 1
-            Set-RemexVersion -VersionFilePath $VersionFile -BuildPropsPath $BuildPropsPath -NewVersion $newVersion -NewVersionCode $VersionCode
-            $Version = $newVersion
+    # versionCode is asked separately, and always — it is the number Play actually gates uploads on,
+    # and it was previously only ever reachable as a silent +1 riding along with a versionName change.
+    # The default is stated in the prompt and differs by case, so blank never surprises: a changed
+    # versionName forces the code up, while an unchanged one defaults to leaving the code alone.
+    $defaultCode = if ($targetVersion -ne $Version) { $VersionCode + 1 } else { $VersionCode }
+    while ($true) {
+        $enteredCode = "$(Read-Host "  versionCode (blank for $defaultCode, currently $VersionCode)")"
+        if ([string]::IsNullOrWhiteSpace($enteredCode)) { $targetVersionCode = $defaultCode; break }
+        $parsedCode = 0
+        if (-not [int]::TryParse($enteredCode.Trim(), [ref]$parsedCode)) {
+            Write-Host "  '$enteredCode' isn't a whole number." -ForegroundColor Yellow
+            continue
         }
+        if ($parsedCode -lt $VersionCode) {
+            Write-Host "  $parsedCode is below the current $VersionCode. Play can never reuse or lower a versionCode." -ForegroundColor Yellow
+            continue
+        }
+        $targetVersionCode = $parsedCode
+        break
     }
 } else {
-    Write-Host "  Keeping version $Version." -ForegroundColor DarkGray
+    Write-Host "  Keeping version $Version (versionCode $VersionCode)." -ForegroundColor DarkGray
+}
+
+if ($targetVersion -ne $Version -or $targetVersionCode -ne $VersionCode) {
+    Write-Host "  $Version (code $VersionCode)  ->  $targetVersion (code $targetVersionCode)" -ForegroundColor Cyan
+
+    # The parameters ARE the confirmation on the scripted route; only the interactive one asks again.
+    $writeIt = $true
+    if ([string]::IsNullOrWhiteSpace($RequestedVersion) -and $RequestedVersionCode -le 0) {
+        $writeIt = Read-CountdownChoice -Prompt "Write this to version.properties and Directory.Build.props?" -Seconds 5 -DefaultOnTimeout $false
+    }
+
+    if ($writeIt) {
+        Set-RemexVersion -VersionFilePath $VersionFile -BuildPropsPath $BuildPropsPath -NewVersion $targetVersion -NewVersionCode $targetVersionCode
+        $Version = $targetVersion
+        $VersionCode = $targetVersionCode
+    } else {
+        Write-Host "  Left at $Version (versionCode $VersionCode)." -ForegroundColor DarkGray
+    }
+}
+elseif (-not [string]::IsNullOrWhiteSpace($RequestedVersion) -or $RequestedVersionCode -gt 0) {
+    Write-Host "  Parameters match what's on disk; nothing to write." -ForegroundColor DarkGray
 }
 
 Write-Host ""
