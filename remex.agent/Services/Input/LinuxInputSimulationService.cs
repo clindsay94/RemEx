@@ -659,34 +659,120 @@ public class LinuxInputSimulationService : IInputSimulationService
         if (_portalInjector is null) return false;
         if (_portalInjector.IsActive) return true;
 
-        // Only one thread runs the start; others just observe IsActive afterwards.
-        if (Interlocked.CompareExchange(ref _portalStartAttempted, 1, 0) == 0)
+        // THE CAS IS INSIDE THE LOCK, NOT BEFORE IT (RemEx-5bwpv fix-round finding). Flipping
+        // _portalStartAttempted before acquiring _portalStartLock left a window where a concurrent
+        // TryArmPortalRetry's Monitor.TryEnter(_portalStartLock, 0) — meant to detect "a start is
+        // already in flight" — would succeed and reset the flag mid-attempt, queuing a second dialog
+        // behind the first: exactly the double-prompt the in-flight bail exists to prevent. Doing the
+        // CAS only once the lock is held closes that window; every caller now contends on the same
+        // lock, and the IsActive re-check below still makes every waiter after the first a no-op.
+        lock (_portalStartLock)
         {
-            lock (_portalStartLock)
-            {
-                if (!_portalInjector.IsActive)
-                {
-                    try
-                    {
-                        _portalInjector.EnsureStartedAsync().GetAwaiter().GetResult();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Portal input session start raised an exception.");
-                    }
+            if (_portalInjector.IsActive) return true;
 
-                    if (!_portalInjector.IsActive)
-                        NotePortalStartFailed();
+            if (Interlocked.CompareExchange(ref _portalStartAttempted, 1, 0) == 0)
+            {
+                try
+                {
+                    _portalInjector.EnsureStartedAsync().GetAwaiter().GetResult();
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Portal input session start raised an exception.");
+                }
+
+                if (!_portalInjector.IsActive)
+                    NotePortalStartFailed();
             }
-        }
-        else
-        {
-            // Another thread is starting; wait for it to publish IsActive (or give up).
-            lock (_portalStartLock) { }
         }
 
         return _portalInjector.IsActive;
+    }
+
+    /// <summary>
+    /// Bail-checked, synchronous half of a permission retry (RemEx-5bwpv): resets the one-shot start
+    /// guard and clears the silently-dropped reason, but does not itself start the portal.
+    /// </summary>
+    /// <remarks>
+    /// Split out of <see cref="RearmPortalPermissionAndRetry"/> so <see cref="RetryInputPermission"/>
+    /// can clear the reason on the calling thread — synchronously, before returning — while the
+    /// potentially two-minute dialog wait in <see cref="EnsurePortalStarted"/> still runs off-thread.
+    /// Doing the reset inside that background work instead would leave a window where the handler has
+    /// already reset its reported-once guard but the reason is still the stale value, and the frame
+    /// loop would re-send it (RemoteDesktopHandler.ReportInputSilentlyDroppedOnceAsync).
+    /// <para>
+    /// Bails (returns false) without touching any state when there is no portal injector, the portal
+    /// session is already active, or a start is already in flight. The in-flight case is load-bearing:
+    /// the portal dialog waits up to two minutes (see <see cref="Linux.LinuxPortalInputInjector"/>), and
+    /// during that wait <c>_portalStartAttempted == 1 &amp;&amp; !IsActive</c> is indistinguishable from
+    /// "already refused". A naive reset would queue a second dialog the moment the first resolves, so
+    /// <see cref="Monitor.TryEnter(object, int)"/> with a zero timeout detects the in-flight case
+    /// instead of assuming a set flag means a finished attempt.
+    /// </para>
+    /// </remarks>
+    /// <returns>True if the guard was reset and a start should be (re-)attempted.</returns>
+    private bool TryArmPortalRetry()
+    {
+        if (_portalInjector is null)
+        {
+            _logger.LogDebug("Input permission retry requested with no portal injector; nothing to do.");
+            return false;
+        }
+
+        if (_portalInjector.IsActive)
+        {
+            _logger.LogDebug("Input permission retry requested but the portal session is already active.");
+            return false;
+        }
+
+        if (!Monitor.TryEnter(_portalStartLock, 0))
+        {
+            _logger.LogDebug(
+                "Input permission retry requested while a portal start is already in flight; ignoring.");
+            return false;
+        }
+
+        try
+        {
+            Interlocked.Exchange(ref _portalStartAttempted, 0);
+            Volatile.Write(ref _inputSilentlyDroppedReason, null);
+        }
+        finally
+        {
+            Monitor.Exit(_portalStartLock);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// User-initiated re-arm after a declined portal permission dialog (RemEx-5bwpv), triggered by the
+    /// phone's "Ask again" action. Synchronous test surface: arms via <see cref="TryArmPortalRetry"/>
+    /// and, if armed, retries the portal start inline (eager — the dialog must appear on the tap, not
+    /// on the next touch) before returning.
+    /// </summary>
+    /// <returns>True if the portal session is active once this call returns.</returns>
+    internal bool RearmPortalPermissionAndRetry()
+    {
+        if (TryArmPortalRetry())
+        {
+            EnsurePortalStarted();
+        }
+
+        return _portalInjector?.IsActive == true;
+    }
+
+    /// <inheritdoc />
+    public void RetryInputPermission()
+    {
+        if (!TryArmPortalRetry())
+            return;
+
+        // The arm above already cleared the reason synchronously; only the dialog wait (up to two
+        // minutes) goes off-thread, so the message-receive loop that calls this is never blocked on it.
+        Task.Run(() => EnsurePortalStarted()).ContinueWith(
+            t => _logger.LogWarning(t.Exception, "Input permission retry raised an exception."),
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
     }
 
     /// <inheritdoc />
@@ -713,16 +799,17 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         // **CRITICAL RATHER THAN WARNING, BECAUSE NOTHING ELSE WILL EVER SAY SO.** From here every
         // click and keystroke is discarded and the host keeps advertising that input works.
-        // **THE REMEDY IS A RESTART, NOT A RECONNECT, AND SAYING OTHERWISE SENDS THE USER IN CIRCLES.**
-        // The service is a singleton and _portalStartAttempted is never reset, so the portal is asked
-        // exactly once per agent process: reconnecting builds a new handler but takes the
-        // already-attempted branch and never re-prompts. Only ydotool is suggested because this path
-        // is reachable only on Wayland, where xdotool is not the tool that would help (RemEx-iaxc).
+        // The service is a singleton and _portalStartAttempted is never reset by a reconnect —
+        // reconnecting builds a new handler but takes the already-attempted branch and never
+        // re-prompts on its own (RemEx-iaxc). That no longer leaves the user stuck: an explicit,
+        // user-initiated "Ask again" on the phone re-arms the guard and retries eagerly
+        // (RearmPortalPermissionAndRetry, RemEx-5bwpv). Only ydotool is suggested here because this
+        // path is reachable only on Wayland, where xdotool is not the tool that would help.
         _logger.LogCritical(
             "Remote input is being DISCARDED: the desktop portal session was refused or failed to " +
             "start, and there is no fallback input tool installed. If a permission dialog appeared, " +
-            "it was declined or dismissed. RemEx will not ask again until it is restarted on this " +
-            "PC — restart the agent and accept the prompt, or install ydotool.");
+            "it was declined or dismissed. Use \"Ask again\" on the phone to re-prompt, restart the " +
+            "agent and accept the prompt, or install ydotool.");
 
         Volatile.Write(
             ref _inputSilentlyDroppedReason,

@@ -57,6 +57,15 @@ private const val DESKTOP_ERR_INPUT_UNAVAILABLE = "input_unavailable"
 internal fun isInputUnavailableError(errorText: String?): Boolean =
         errorText?.substringBefore(ERROR_CODE_DELIMITER) == DESKTOP_ERR_INPUT_UNAVAILABLE
 
+/**
+ * Wire literal for the user-initiated "ask again" that re-arms the PC's input-permission prompt
+ * (RemEx-5bwpv). Phone -> PC, no payload. A cross-language contract with the host the same way
+ * [DESKTOP_ERR_INPUT_UNAVAILABLE] is: the two sides do not share a build, so a rename on either end
+ * silently breaks the retry instead of failing to compile. Internal, like [isInputUnavailableError],
+ * so the unit test can pin it directly.
+ */
+internal const val DESKTOP_INPUT_PERMISSION_RETRY = "desktop_input_permission_retry"
+
 /** Frame-arrival watchdog poll interval and stall threshold (RemEx-5t4). */
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
@@ -488,6 +497,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      */
     private val _inputUnavailable = MutableStateFlow<String?>(null)
     val inputUnavailable: StateFlow<String?> = _inputUnavailable.asStateFlow()
+
+    /**
+     * Confirmation that [retryInputPermission] fired, shown as a transient overlay the same way
+     * [screenshotStatus] is (RemEx-5bwpv). Separate from [inputUnavailable] because that one is
+     * persistent — it says input is still dead — while this is a brief "message sent" pill that
+     * auto-clears whether or not the user ends up accepting the prompt.
+     */
+    private val _inputRetryNotice = MutableStateFlow<String?>(null)
+    val inputRetryNotice: StateFlow<String?> = _inputRetryNotice.asStateFlow()
 
     private val _windowResults = MutableStateFlow<List<DesktopWindowModel>>(emptyList())
     val windowResults: StateFlow<List<DesktopWindowModel>> = _windowResults.asStateFlow()
@@ -1384,12 +1402,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun actuallyStartStreaming() {
-        // Cleared unconditionally, unlike the fatal error above (RemEx-iaxc). Note this is NOT because
-        // a new session re-asks for permission - it does not: the PC asks once per run, so a refusal
-        // usually outlives the reconnect. It is cleared because the new session re-reports from
-        // scratch (the host's once-per-session guard is per connection), so holding a stale banner
-        // would only race the fresh one, and on a PC where the user has since fixed it by restarting
-        // RemEx the banner would be a lie that never cleared.
+        // Cleared unconditionally, unlike the fatal error above (RemEx-iaxc). This is NOT because a
+        // new session re-asks for permission on its own - it does not, which is exactly why
+        // retryInputPermission() exists (RemEx-5bwpv): a refusal usually outlives the reconnect, and
+        // Connor decided 2026-08-20 that re-arming the PC's prompt must stay user-initiated rather
+        // than firing automatically here or from attemptReconnect. It is cleared because the new
+        // session re-reports from scratch (the host's once-per-session guard is per connection), so
+        // holding a stale banner would only race the fresh one, and on a PC where the user has since
+        // fixed it by restarting RemEx the banner would be a lie that never cleared.
         _inputUnavailable.value = null
 
         catalogTimeoutJob?.cancel()
@@ -2147,6 +2167,54 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     JSONObject().apply { put("type", "desktop_keyframe_request") }
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
+    }
+
+    /** How long the "asked your PC again" confirmation stays on screen before clearing itself. */
+    private val inputRetryNoticeVisibleMs = 4_000L
+
+    private var inputRetryNoticeJob: Job? = null
+
+    /**
+     * User-initiated re-ask of the desktop input-permission prompt (RemEx-5bwpv). Sends
+     * [DESKTOP_INPUT_PERMISSION_RETRY] so a Linux host re-shows the portal's input-permission dialog,
+     * for when the user declined it or was not at the PC when it appeared.
+     *
+     * **DELIBERATELY NOT AUTOMATIC.** Connor decided 2026-08-20 this stays user-initiated only: no
+     * retry on session start, session end, or reconnect. `attemptReconnect()` already fires on every
+     * stream error, and an automatic re-arm riding along with it would put a permission dialog back
+     * in front of the user on every reconnect - worse than the restart this replaces.
+     *
+     * Mirrors [requestKeyframe]'s guard and message shape exactly: same dispatcher, same
+     * library-loaded + streaming check, same bare `type`-only message.
+     *
+     * **DELIBERATELY DOES NOT CLEAR [inputUnavailable].** The first version of this cleared the
+     * banner the moment the retry message was handed to [sendDispatcher] — not gated on the send
+     * succeeding, let alone on the host re-arming. Nothing ever tells the phone the host succeeded:
+     * `DesktopErrorCodes.InputUnavailable` is reported at most once per session on the host
+     * (`Interlocked.Exchange` in `ReportInputSilentlyDroppedOnceAsync`). So an old host that does
+     * not understand the retry message, or a send that never left the phone, would leave the banner
+     * gone and the "asked your PC again" pill asserting something false, with nothing indicating for
+     * the rest of the session that input was still dead. A visible-stale banner beats a silently
+     * missing one, and there is no success signal to gate a clear on instead. If one is ever added,
+     * clear on THAT, never on the tap.
+     */
+    fun retryInputPermission() {
+        viewModelScope.launch(sendDispatcher) {
+            if (!RemexCoreClient.isLibraryLoaded || !_isStreaming.value) {
+                return@launch
+            }
+            val message =
+                    JSONObject().apply { put("type", DESKTOP_INPUT_PERMISSION_RETRY) }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+        inputRetryNoticeJob?.cancel()
+        inputRetryNoticeJob =
+                viewModelScope.launch {
+                    _inputRetryNotice.value =
+                            getApplication<Application>().getString(R.string.rd_input_retry_sent)
+                    delay(inputRetryNoticeVisibleMs)
+                    _inputRetryNotice.value = null
+                }
     }
 
     private fun sendWindowAction(

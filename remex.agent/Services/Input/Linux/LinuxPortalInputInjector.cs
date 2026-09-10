@@ -107,6 +107,14 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
         var sessionHandle = sessionVariant.GetString();
         _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
 
+        // Assigned here, not only on the full-success path below, so that a SelectDevices or Start
+        // failure further down can actually find it: CloseSessionInternalAsync closes via
+        // _sessionHandle and no-ops when it is null. Before this the two failure returns below called
+        // CloseSessionInternalAsync while the field was still null, so CreateSession's handle was
+        // never closed - a leak that a retry (RemEx-5bwpv) makes repeatable once per declined tap
+        // instead of a one-time curiosity.
+        _sessionHandle = sessionHandle;
+
         // Step 2: SelectDevices (Keyboard | Pointer = 3).
         var selectResults = await PortalDbusHelper.CallPortalAsync(
             _conn!,

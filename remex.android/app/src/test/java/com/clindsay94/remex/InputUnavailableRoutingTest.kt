@@ -1,6 +1,8 @@
 package com.clindsay94.remex
 
+import com.clindsay94.remex.ui.screens.DESKTOP_INPUT_PERMISSION_RETRY
 import com.clindsay94.remex.ui.screens.isInputUnavailableError
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -62,5 +64,15 @@ class InputUnavailableRoutingTest {
         // substringBefore, not startsWith: a future `input_unavailable_pending` must not be routed
         // away from the fatal path by a prefix match on this one.
         assertFalse(isInputUnavailableError(coded("input_unavailable_pending")))
+    }
+
+    /**
+     * The "ask again" retry (RemEx-5bwpv) is a cross-language contract the same way the code above
+     * is: phone and host do not share a build, so a rename on either side breaks the retry silently
+     * instead of failing to compile. Pinned here so a drift fails a test by name instead.
+     */
+    @Test
+    fun `the input-permission retry message type is pinned`() {
+        assertEquals("desktop_input_permission_retry", DESKTOP_INPUT_PERMISSION_RETRY)
     }
 }

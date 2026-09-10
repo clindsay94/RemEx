@@ -54,4 +54,11 @@ public interface IInputSimulationService
     /// implementation.
     /// </remarks>
     string? InputSilentlyDroppedReason => null;
+
+    /// <summary>
+    /// User-initiated re-arm after a declined runtime permission (e.g. a Linux desktop-portal input
+    /// dialog), triggered by the phone's "Ask again" action. Backends that cannot fail this way (no
+    /// runtime permission prompt to decline) keep this default no-op.
+    /// </summary>
+    void RetryInputPermission() { }
 }

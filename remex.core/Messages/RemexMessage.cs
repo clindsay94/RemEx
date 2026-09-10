@@ -456,6 +456,13 @@ public static class MessageTypes
     public const string DesktopWindowResult = "desktop_window_result";
     /// <summary>Client-to-host request for an on-demand keyframe (IDR) after decoder desync (RD-2).</summary>
     public const string DesktopKeyframeRequest = "desktop_keyframe_request";
+    /// <summary>
+    /// Client → host: user-initiated request to re-arm and retry the desktop input permission after a
+    /// declined portal prompt (RemEx-5bwpv). No payload. Additive and backward-compatible: the
+    /// streaming switch that dispatches these has no default case, so an old host silently ignores an
+    /// unrecognized type, and an old phone never sends this one. No <c>protocolVersion</c> bump.
+    /// </summary>
+    public const string DesktopInputPermissionRetry = "desktop_input_permission_retry";
 
     // ── 2.0 Pairing ──
     public const string PairingRequest = "pairing_request";

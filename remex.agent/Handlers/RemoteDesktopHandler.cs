@@ -951,9 +951,12 @@ public sealed class RemoteDesktopHandler : IDisposable
     /// stream does and closes both gaps.
     /// </para>
     /// <para>
-    /// Once per session because the condition does not clear: the portal is asked once and, on
-    /// refusal, every later event fails the same way. Repeating it per event would put a dialog on the
-    /// phone for every pixel of mouse travel.
+    /// Once per session because the condition does not clear on its own: the portal is asked once and,
+    /// on refusal, every later event fails the same way. Repeating it per event would put a dialog on
+    /// the phone for every pixel of mouse travel. It DOES clear on a user-initiated re-arm
+    /// (<see cref="MessageTypes.DesktopInputPermissionRetry"/>, RemEx-5bwpv): that handler resets the
+    /// reported-once guard alongside the input service's reason, so a second refusal (or a fresh
+    /// success) is reported afresh instead of staying silent forever.
     /// </para>
     /// </remarks>
     private async Task ReportInputSilentlyDroppedOnceAsync(
@@ -965,8 +968,20 @@ public sealed class RemoteDesktopHandler : IDisposable
         if (Interlocked.Exchange(ref _inputSilentlyDroppedReported, 1) != 0)
             return;
 
-        _logger.LogWarning("Telling the client its input is being discarded: {Reason}", reason);
-        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.InputUnavailable, reason, sendLock, ct);
+        // RE-READ AFTER WINNING THE EXCHANGE (RemEx-5bwpv fix-round finding). The reason above can go
+        // stale between that read and this line: a concurrent RetryInputPermission() clears the reason
+        // synchronously but only after this method has already read it, so without this check a frame
+        // tick landing in that window would report the old refusal, latch the guard, and the retry's
+        // GENUINE second refusal (if any) would then find the guard already set and never be told. If
+        // the reason cleared in that window, un-latch and say nothing rather than report stale state.
+        if (_inputSimulation.InputSilentlyDroppedReason is not { } current)
+        {
+            Interlocked.Exchange(ref _inputSilentlyDroppedReported, 0);
+            return;
+        }
+
+        _logger.LogWarning("Telling the client its input is being discarded: {Reason}", current);
+        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.InputUnavailable, current, sendLock, ct);
     }
 
     private async Task SendDesktopError(WebSocket webSocket, string text, SemaphoreSlim sendLock, CancellationToken ct)
@@ -1170,6 +1185,19 @@ public sealed class RemoteDesktopHandler : IDisposable
                     // constant so host and client agree on the wire string. (RemEx-bqc / RemEx-kjq)
                     case MessageTypes.DesktopKeyframeRequest:
                         _activeH264Encoder?.RequestKeyframe();
+                        break;
+
+                    // User-initiated re-arm from the phone's "Ask again" action after a declined
+                    // desktop input permission (RemEx-5bwpv). No payload; additive and
+                    // backward-compatible (this switch has no default case, so an old host just
+                    // ignores it). ORDER MATTERS: RetryInputPermission clears the silently-dropped
+                    // reason synchronously; only after that do we reset the reported-once guard.
+                    // Reversed, the frame loop's ReportInputSilentlyDroppedOnceAsync call (below) could
+                    // re-send the stale reason on the very next frame before the retry has cleared it.
+                    case MessageTypes.DesktopInputPermissionRetry:
+                        _logger.LogInformation("Client requested a desktop input permission retry.");
+                        _inputSimulation.RetryInputPermission();
+                        Interlocked.Exchange(ref _inputSilentlyDroppedReported, 0);
                         break;
 
                     case MessageTypes.DesktopPointerBatch when message.DesktopPointerBatch is not null:

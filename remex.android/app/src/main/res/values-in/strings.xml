@@ -610,7 +610,9 @@
     <string name="rd_err_target_unavailable">Layar yang dipilih tidak lagi tersedia. Pilih layar lain dan mulai streaming lagi.</string>
     <string name="rd_err_target_switch_unsupported">Sesi ini tidak dapat berpindah layar saat streaming. Hentikan streaming, lalu mulai lagi di layar yang Anda inginkan.</string>
     <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di PC Anda saat ini. Biasanya ini berarti RemEx di PC perlu diperbarui, atau berjalan tanpa komponen yang dibutuhkan.</string>
-    <string name="rd_err_input_unavailable">PC Anda tidak menerima masukan keyboard atau mouse. Permintaan izin di PC mungkin telah ditolak — mulai ulang RemEx di sana agar ditanya lagi. Anda masih dapat melihat layarnya.</string>
+    <string name="rd_err_input_unavailable">PC Anda tidak menerima masukan keyboard atau mouse. Permintaan izin di PC mungkin telah ditolak — ketuk Tanya lagi agar ditampilkan kembali di sana. Anda masih dapat melihat layarnya.</string>
+    <string name="rd_input_retry_button">Tanya lagi</string>
+    <string name="rd_input_retry_sent">PC Anda sudah ditanya lagi — terima permintaan izin di sana.</string>
     <string name="rd_err_connect_timeout">PC Anda di %1$s tidak menjawab. Pastikan PC menyala dan terhubung ke jaringan Wi‑Fi yang sama dengan ponsel ini, lalu coba lagi.</string>
     <string name="rd_err_handshake_timeout">PC Anda di %1$s menjawab, tetapi berhenti merespons saat memeriksa perangkat ini. Mungkin PC tertidur. Coba hubungkan lagi.</string>
     <string name="cd_clear_search">Hapus pencarian</string>

@@ -115,6 +115,14 @@ private val PcKeysLaneClearance = 72.dp
  */
 private val InputWarningTopClearance = 64.dp
 
+/**
+ * Extra lift for the "asked your PC again" pill, above the screenshot confirmation it shares a
+ * BottomCenter anchor with (RemEx-5bwpv). The two are independent, user-triggered, and both
+ * transient (~4-5s), so nothing stops a screenshot tap and a retry tap landing in the same window —
+ * stacking them deterministically beats letting their text overlap.
+ */
+private val InputRetryNoticeBottomClearance = 56.dp
+
 // Gesture timing thresholds (ms)
 private const val TAP_MAX_DURATION_MS = 250L
 private const val LONG_PRESS_THRESHOLD_MS = 500L
@@ -323,6 +331,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val hasShownUnlimitedWarning by viewModel.hasShownUnlimitedWarning.collectAsStateWithLifecycle()
         val screenshotStatus by viewModel.screenshotStatus.collectAsStateWithLifecycle()
         val inputUnavailable by viewModel.inputUnavailable.collectAsStateWithLifecycle()
+        val inputRetryNotice by viewModel.inputRetryNotice.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -412,7 +421,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
                 screenshotStatus = screenshotStatus,
                 inputUnavailable = inputUnavailable,
+                inputRetryNotice = inputRetryNotice,
                 onTakeScreenshot = { viewModel.takeScreenshot() },
+                onRetryInputPermission = { viewModel.retryInputPermission() },
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
@@ -483,7 +494,11 @@ fun RemoteDesktopScreenContent(
         screenshotStatus: String? = null,
         /** Non-null while the PC is discarding our input but still streaming video (RemEx-iaxc). */
         inputUnavailable: String? = null,
+        /** Transient "asked your PC again" confirmation after [onRetryInputPermission] (RemEx-5bwpv). */
+        inputRetryNotice: String? = null,
         onTakeScreenshot: () -> Unit = {},
+        /** User-initiated re-ask of the PC's input-permission prompt (RemEx-5bwpv). */
+        onRetryInputPermission: () -> Unit = {},
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
@@ -504,6 +519,14 @@ fun RemoteDesktopScreenContent(
         var lastScreenshotStatus by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(screenshotStatus) {
                 if (screenshotStatus != null) lastScreenshotStatus = screenshotStatus
+        }
+
+        // Same pattern, same reason, for the "asked your PC again" pill (RemEx-5bwpv): binding the
+        // Text to [inputRetryNotice] directly would blank it the instant the ViewModel clears the
+        // flow, and the fade would play on an empty pill.
+        var lastInputRetryNotice by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(inputRetryNotice) {
+                if (inputRetryNotice != null) lastInputRetryNotice = inputRetryNotice
         }
 
         var showSettings by remember { mutableStateOf(false) }
@@ -2913,14 +2936,95 @@ fun RemoteDesktopScreenContent(
                                                                                 LiveRegionMode.Polite
                                                                 }
                                         ) {
+                                                Column(
+                                                        // Kept from the text-only version this
+                                                        // replaces (RemEx-5bwpv): the coverage math in
+                                                        // the big comment above this block depends on
+                                                        // the pill's width, not on it being one Text.
+                                                        modifier = Modifier.widthIn(max = 340.dp),
+                                                        horizontalAlignment =
+                                                                Alignment.CenterHorizontally
+                                                ) {
+                                                        Text(
+                                                                text = inputUnavailable.orEmpty(),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .labelLarge,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onErrorContainer,
+                                                                modifier =
+                                                                        Modifier.padding(
+                                                                                start = 14.dp,
+                                                                                end = 14.dp,
+                                                                                top = 10.dp
+                                                                        )
+                                                        )
+                                                        TextButton(
+                                                                onClick = onRetryInputPermission,
+                                                                // Colors, not just the label's text
+                                                                // color: without this the ripple and
+                                                                // state layer stay `primary` drawn
+                                                                // over `errorContainer` in every
+                                                                // themeStyle (RemEx-5bwpv).
+                                                                colors =
+                                                                        ButtonDefaults
+                                                                                .textButtonColors(
+                                                                                        contentColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onErrorContainer
+                                                                                )
+                                                        ) {
+                                                                Text(
+                                                                        text =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .rd_input_retry_button
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                PlainAnimatedVisibility(
+                                        visible = inputRetryNotice != null,
+                                        modifier =
+                                                Modifier.align(Alignment.BottomCenter)
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
+                                                        .padding(16.dp)
+                                                        .padding(
+                                                                bottom =
+                                                                        (if (pcKeysBarVisible ||
+                                                                                        isRemoteKeyboardOpen
+                                                                        )
+                                                                                PcKeysLaneClearance
+                                                                        else 0.dp) +
+                                                                                InputRetryNoticeBottomClearance
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .inverseSurface.copy(
+                                                                                alpha = 0.88f
+                                                                        )
+                                                                )
+                                        ) {
                                                 Text(
-                                                        text = inputUnavailable.orEmpty(),
+                                                        // Held across the exit fade, same reason as
+                                                        // lastScreenshotStatus below.
+                                                        text = lastInputRetryNotice.orEmpty(),
                                                         style = MaterialTheme.typography.labelLarge,
                                                         color =
                                                                 MaterialTheme.colorScheme
-                                                                        .onErrorContainer,
+                                                                        .inverseOnSurface,
                                                         modifier =
-                                                                Modifier.widthIn(max = 340.dp)
+                                                                Modifier.widthIn(max = 320.dp)
                                                                         .padding(
                                                                                 horizontal = 14.dp,
                                                                                 vertical = 10.dp

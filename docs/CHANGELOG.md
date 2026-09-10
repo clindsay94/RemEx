@@ -288,6 +288,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Declining the PC's input-permission prompt on Linux no longer costs you a restart. The banner on
+  your phone now has an "Ask again" button that makes the PC show the prompt a second time, so being
+  away from the desk when it appeared, or dismissing it by reflex, is recoverable from where you are.
+  It only ever asks because you asked: nothing re-prompts on reconnecting or on starting a session,
+  because reconnects happen on their own after a hiccup and a permission dialog that reappears by
+  itself is worse than the problem it solves. Tapping while a prompt is already open on the PC does
+  nothing, rather than queueing a second one. The banner deliberately stays up after you tap — the PC
+  never sends an "input is working now" message, so hiding it would mean asserting something RemEx
+  cannot know. If your PC is running an older RemEx that does not understand the request, the banner
+  stays and nothing happens. (RemEx-5bwpv)
 - Enter now confirms the PC's dialogs, and a screen reader announces which dialog has opened. Four
   dialogs had no Enter at all, so the keyboard could dismiss them but not accept them. Two others
   carried an accessible name that was never actually read out, because it sat on a layout panel
@@ -1428,10 +1438,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Your phone is now told, and shows a message over the video explaining that the PC is not accepting
   input. The picture keeps streaming, because a screen you can watch but not control is still worth
-  seeing. RemEx asks the system for permission only once per run, so getting the prompt back means
-  restarting RemEx on the PC — the message on your phone says exactly that, rather than leaving you to
-  guess or suggesting a reconnect that would quietly fail the same way. The PC's log now names the
-  refused prompt as the cause too, instead of pointing at a missing tool that would not have helped.
+  seeing. The message tells you what actually happened rather than leaving you to guess or suggesting
+  a reconnect that would quietly fail the same way, and the PC's log now names the refused prompt as
+  the cause too, instead of pointing at a missing tool that would not have helped. (When this
+  shipped, the only way to get the prompt back was to restart RemEx on the PC; the message said so.
+  RemEx-5bwpv below replaced that with an "Ask again" button.)
   (RemEx-iaxc)
 
 - **And they still ran slow when your PC was slow to read its own sensors.** The RemEx-uj7s change
