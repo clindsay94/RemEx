@@ -286,6 +286,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snap — every part of this, including the background layers, is switched off by that setting
   rather than merely shortened. (RemEx-zgtn1)
 
+- Developer-facing: the PC tutorial's Back, Next and Finish buttons now decide whether they are on
+  the first or last page from the platform-filtered page list rather than from hardcoded raw page
+  numbers. Nothing changed on screen — the defect was latent because the first and last authored
+  pages happen to apply to every platform — but a Windows-only or Android-only page at either end
+  would have hidden Back or Next on the platform that hides a page, which is the half of the
+  audience the author is not sitting in front of. The paging rules the buttons and the pips read
+  now come from one place, `TutorialNavigator`, instead of a second hand-written copy of the same
+  logic that had been added without knowing the first existed. (RemEx-qgql)
+
+- Developer-facing: the phone's remote-keyboard field moved to Compose's newer text-field state
+  API, consuming edit deltas through an `InputTransformation` instead of diffing whole values.
+  Typing behaviour is unchanged and is pinned by 23 tests covering swipe commits, autocorrect,
+  multi-line sends and the buffer cap. One internal detail did change: the cap that trims a
+  long-running field is now applied just after an edit rather than inside it, and it stays
+  suppressed while an IME composition is open, because the composition is a pair of offsets into
+  the text and trimming underneath it would leave the keyboard pointing at positions that no
+  longer exist. (RemEx-d459)
+
 ### Fixed
 
 - Declining the PC's input-permission prompt on Linux no longer costs you a restart. The banner on
