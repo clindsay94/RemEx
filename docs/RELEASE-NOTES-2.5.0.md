@@ -4,7 +4,7 @@ What landed in PR [#55 "V2.5 board drain"](https://github.com/clindsay94/RemEx/p
 of `v2.5-board-drain` since 2.4.0.
 
 This is the readable summary. The authoritative, bullet-by-bullet record with bead IDs is the
-`[Unreleased]` section of [`docs/CHANGELOG.md`](CHANGELOG.md) — 770 entries, and every claim below
+`[Unreleased]` section of [`docs/CHANGELOG.md`](CHANGELOG.md): 770 entries, and every claim below
 traces back to one of them.
 
 ## At a glance
@@ -13,7 +13,7 @@ traces back to one of them.
 |---|---|
 | Commits | 1,129 (`b528ff1..2f8eaa8`) |
 | Files changed | 1,030 (+181,832 / -8,770) |
-| Changelog entries | 770 — 373 Fixed, 196 Changed, 111 Added, 44 Internal, 26 Removed, 20 Security |
+| Changelog entries | 770 total: 373 Fixed, 196 Changed, 111 Added, 44 Internal, 26 Removed, 20 Security |
 | Version | `Directory.Build.props` 2.5.0, Android `versionName` 2.5.0 |
 | Previous release | [2.4.0 "Dashboard 2.0"](https://github.com/clindsay94/RemEx/releases/tag/v2.4.0), 2026-07-19 |
 
@@ -47,7 +47,7 @@ BaseDarkGlass each carried their own 53 hand-written colour values (RemEx-07jij)
 store your theme as a *name* and look up a list of colours under it, which is why upgrading could
 change the colour of your app (RemEx-dbkzy). The PC now derives its whole palette the way the phone
 does: a seed colour, a style, light or dark, and a contrast level. The four old themes survive as
-presets under shorter names — Neon, Slate, Ember and Glass — and still look the way they did
+presets under shorter names (Neon, Slate, Ember and Glass) and still look the way they did
 (RemEx-2gjwn).
 
 **Palette Studio.** Personalize gained a colour wheel that repaints the app live as you drag
@@ -57,8 +57,8 @@ previews instead of a dropdown of seven words (RemEx-lrxyo). Light/dark became a
 with System (RemEx-zk5bc). The preset row is a gallery of eight cards, each painted in the theme it
 gives you (RemEx-2gjwn).
 
-**Match my phone.** The phone now sends the PC its theme — seed, style, light or dark, contrast,
-and whether it is running on wallpaper colour — after connecting and whenever it changes, and the
+**Match my phone.** The phone now sends the PC its theme (seed, style, light or dark, contrast,
+and whether it is running on wallpaper colour) after connecting and whenever it changes, and the
 PC's Personalize sheet offers a "Match my phone" action once it knows one (RemEx-y06a0.1,
 RemEx-sudp8).
 
@@ -68,7 +68,7 @@ RemEx amber fallback palette was unreachable on API 31+ (RemEx-2xsy, RemEx-9429)
 
 Other work in this theme:
 
-- Two palette styles that were implemented but unreachable — Neutral and Monochrome — are now
+- Two palette styles that were implemented but unreachable, Neutral and Monochrome, are now
   offered, and the personalization pickers stopped showing English to everyone (RemEx-6byw).
 - The code-built parts of the PC UI follow the theme instead of hex literals compiled into the
   control: the minimap, the colour picker, the window background, the sparkline "running hot"
@@ -88,8 +88,8 @@ Other work in this theme:
   those defaults over your real settings (RemEx-8y3qy).
 - Importing a savefile no longer gets undone by the Personalize sheet writing back the values it
   read at startup (RemEx-waqb4).
-- Opening a layout on a PC that cannot offer its background material — an Acrylic layout opened on
-  Linux — no longer overwrites the saved choice (RemEx-k7891).
+- Opening a layout on a PC that cannot offer its background material, such as an Acrylic layout
+  opened on Linux, no longer overwrites the saved choice (RemEx-k7891).
 - UI verification stopped meaning "check all four themes". `scripts/ui-palette-sweep.ps1` drives the
   real profile through a default plus three adversarial seeds, light and dark, two contrast levels,
   and captures every screen per cell (RemEx-8q7de).
@@ -128,7 +128,7 @@ Twenty security entries, including a numbered audit series (RemEx-s032) that clo
 | | Finding | Fix |
 |---|---|---|
 | VULN-1 | `GET /debug/logs` served up to 3,000 buffered log lines to any network-reachable caller on `0.0.0.0:5005` with no auth, and those lines retained the live 6-digit pairing PIN and paired `clientId`s in cleartext | Endpoint removed (RemEx-s032.1) |
-| VULN-2 | `/ws/desktop` and `/ws/files` — live screen capture with input injection into the elevated desktop, and bulk filesystem read/write — gated only on `IsClientPaired(clientId)`, a presence check on an unguessable but not secret identifier | Cryptographic proof-of-possession required (RemEx-ng5z, RemEx-s032.2) |
+| VULN-2 | `/ws/desktop` and `/ws/files`, carrying live screen capture with input injection into the elevated desktop and bulk filesystem read/write, were gated only on `IsClientPaired(clientId)`, a presence check on an unguessable but not secret identifier | Cryptographic proof-of-possession required (RemEx-ng5z, RemEx-s032.2) |
 | VULN-3 | `LAUNCHAPP` passed a client-supplied `TargetPath` to `ProcessStartInfo` after only a full-path and existence check, so a paired client could launch `\\attacker\share\evil.exe` as the elevated host | Allowlist enforced, network paths rejected (RemEx-s032.3) |
 | VULN-4 | `AddRootFromPathAsync` pinned every new root fully writable, so a client could browse a read-only root, pick a subfolder and re-pin it as writable and deletable | New roots inherit the parent's permissions (RemEx-s032.4) |
 | VULN-5 | The SPKI-pinning callback was installed only when a pin was non-empty; with an empty pin `SslStream` fell through to the OS trust manager, which the JNI trust-manager overrides force to accept any certificate | Fails closed with no pin (RemEx-s032.5) |
@@ -169,7 +169,7 @@ aside 10 MB of memory before proving who it was (RemEx-ga503).
   picking a unit, says "finishing" under a second, gives up past 23 hours, and is re-read once a
   second so a stalled transfer goes blank instead of freezing on a stale number (RemEx-4lcq,
   RemEx-8c3v, RemEx-qmiv, RemEx-oiah). The PC transfer queue had been discarding byte counts at the
-  boundary — `FileTransferClient` reported `bytes / total`, so a percentage was the only thing that
+  boundary. `FileTransferClient` reported `bytes / total`, so a percentage was the only thing that
   crossed, and neither speed nor ETA can be derived from a fraction (RemEx-4lcq, RemEx-oiah).
 - **Whole-folder transfer.** Picking a folder used to mean opening it, selecting everything inside,
   and repeating for every subfolder, and an empty folder had no way through at all (RemEx-q3twg).
@@ -250,8 +250,8 @@ Writing tests for the Linux argument vectors found live bugs rather than confirm
   status dot bound `Connection.IsConnected`, the UI's own WebSocket to its embedded host, so a user
   with zero phones paired saw a green "Connected" and the one fact the PC UI exists to convey was
   displayed nowhere (RemEx-0z7w, RemEx-porg).
-- **Settings lists the phones paired with this PC** — name, first paired, last connected, and a
-  light for connected right now — and you can rename or unpair from there, without the rename being
+- **Settings lists the phones paired with this PC**, showing name, first paired, last connected, and
+  a light for connected right now. You can rename or unpair from there, without the rename being
   able to reach the thing that authenticates them (RemEx-nrsv, RemEx-0z7w, RemEx-9see).
 - **The PC keeps track of which phones are actually connected.** Before, a connection was known only
   to the code handling it and forgotten the moment that code moved on. The PC also now remembers
