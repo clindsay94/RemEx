@@ -276,6 +276,13 @@
                                  ItemsControl realizes every row). MaxHeight bounds the card height
                                  once the alert list grows past a handful of rows. -->
                             <ListBox ItemsSource="{Binding Rows}" MaxHeight="320" IsVisible="{Binding !IsEmpty}" Background="Transparent" BorderThickness="0">
+                                <!-- Without this the ListBoxItem announces the view-model's type name
+                                     to UI Automation (RemEx-8wpvr.11): name the row after its sensor. -->
+                                <ListBox.Styles>
+                                    <Style Selector="ListBoxItem" x:DataType="vm:SensorAlertRowViewModel">
+                                        <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}"/>
+                                    </Style>
+                                </ListBox.Styles>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SensorAlertRowViewModel">
                                         <Grid ColumnDefinitions="*,Auto" Margin="0,6">

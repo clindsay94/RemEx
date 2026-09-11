@@ -1868,7 +1868,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Belum ada peringatan yang dikonfigurasi. Klik kanan kartu sensor di kanvas untuk mengaturnya.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
-    <value>Edit</value>
+    <value>Sunting</value>
   </data>
   <data name="Settings_Alerts_CopyTo" xml:space="preserve">
     <value>Salin ke…</value>

@@ -39,8 +39,12 @@
         <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
             <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" Theme="{StaticResource CaptionTextBlock}"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <!-- Range is wide on purpose: MB-scale sensors pass 99999 on any box with more than
+                 ~100 GB of RAM (Physical Memory Total = 131072 MB), and a NumericUpDown silently
+                 reverts out-of-range text on focus loss, so a tight cap read as "Set Alert ignored
+                 me" (RemEx-8wpvr.9). -->
             <NumericUpDown Value="{Binding Threshold}" Increment="1"
-                           Minimum="-99999" Maximum="99999"
+                           Minimum="-1000000000" Maximum="1000000000"
                            FormatString="F1"
                            AutomationProperties.Name="{local:Localize SetAlert_ThresholdValue}"
                            Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>

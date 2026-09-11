@@ -16,8 +16,10 @@ public partial class CopyAlertDialog : Window
         var viewModel = new CopyAlertDialogViewModel(source, catalog, store);
         viewModel.RequestClose += () => Close();
 
+        // Title stays the short "Copy to…" the markup sets. Overwriting it with viewModel.Header
+        // put the whole alert description in the OS title bar, where it ran under the close button
+        // (RemEx-8wpvr.10); the body's first TextBlock already shows that header in full.
         DataContext = viewModel;
-        Title = viewModel.Header;
     }
 
     // No hand-written InitializeComponent: a parameterless one shadows the generated

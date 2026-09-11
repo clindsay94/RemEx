@@ -6,7 +6,7 @@
         xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
         x:Class="Remex.Desktop.Views.CopyAlertDialog"
         x:DataType="vm:CopyAlertDialogViewModel"
-        Title="{local:Localize CopyAlert_Title}"
+        Title="{local:Localize Settings_Alerts_CopyTo}"
         Width="380"
         Height="520"
         CanResize="False"
