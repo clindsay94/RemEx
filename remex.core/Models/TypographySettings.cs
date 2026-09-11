@@ -11,9 +11,12 @@ namespace Remex.Core.Models;
 /// A plain record of primitives so it stays NativeAOT-safe (Remex.Core is also the Android JNI
 /// library) and serializes only through <c>RemexJsonSerializerContext</c>. Ranges are enforced by
 /// <see cref="Normalize"/> at every READ site (view-model load, the desktop resolver), never by
-/// rewriting the profile: an out-of-range value on disk is clamped for display and only replaced
-/// once the user touches the section — the same contract <see cref="CustomizationSettings.UiScale"/>
-/// has. Palette presets never read or write this record; a palette is colours.
+/// rewriting the profile on load: an out-of-range - or, for a pre-jt6w5 profile, entirely absent and
+/// therefore <c>null</c> - value on disk is clamped for display, and a normalized copy is written
+/// back to disk only when the user next applies a change from the Personalize sheet
+/// (<c>CustomizationViewModel.BuildCurrentSettings</c>) — the same contract
+/// <see cref="CustomizationSettings.UiScale"/> has. Palette presets never read or write this record;
+/// a palette is colours.
 /// </remarks>
 public record TypographySettings
 {
@@ -73,7 +76,11 @@ public record TypographySettings
     public static double ClampScale(double scale) =>
         double.IsFinite(scale) && scale > 0 ? Math.Clamp(scale, MinScale, MaxScale) : 1.0;
 
-    /// <summary>A copy with every ranged field clamped; <c>null</c> (an explicit JSON null) → <see cref="Default"/>.</summary>
+    /// <summary>
+    /// A copy with every ranged field clamped; <c>null</c> → <see cref="Default"/>. The common source
+    /// of <c>null</c> is a pre-jt6w5 profile, where the key is absent from the payload rather than an
+    /// explicit JSON <c>null</c> - both take this same path.
+    /// </summary>
     public static TypographySettings Normalize(TypographySettings? value)
     {
         if (value is null) return Default;

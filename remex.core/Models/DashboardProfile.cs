@@ -409,8 +409,10 @@ public record CustomizationSettings
 
     /// <summary>
     /// Personalize → Text (RemEx-jt6w5): per-section size/bold, the legibility halo and the
-    /// sensor-title backdrop. Absent on older profiles → defaults; read sites clamp through
-    /// <see cref="TypographySettings.Normalize"/>. Palette presets never read or write it.
+    /// sensor-title backdrop. <c>null</c> after loading any pre-jt6w5 profile - the source-generated
+    /// deserializer skips property initializers for a key absent from the payload, so every read
+    /// must go through <see cref="TypographySettings.Normalize"/> rather than touching this member
+    /// directly. Palette presets never read or write it.
     /// </summary>
     [JsonPropertyName("typography")]
     public TypographySettings Typography { get; init; } = new();
