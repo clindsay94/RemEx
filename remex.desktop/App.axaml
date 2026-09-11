@@ -143,6 +143,10 @@
              keeps this from being a two-palette app (RemEx surfaces seeded, Material controls
              stuck on a brand colour). -->
         <themes:MaterialTheme BaseTheme="Inherit" PrimaryColor="Purple" SecondaryColor="Lime" />
+        <!-- Personalize → Text (RemEx-jt6w5): the type-scale ControlThemes re-declared with
+             DynamicResource setters. MUST stay after MaterialTheme — see the header comment in
+             the file, and TypographyStylesTests pins the order. -->
+        <StyleInclude Source="avares://Remex.Desktop/Styles/Typography.axaml"/>
         <!-- Icon glyphs for mi:MaterialIcon — a separate package from Material.Avalonia's control
              themes, loaded on its own before those went in and unchanged by them. -->
         <mi:MaterialIconStyles />
@@ -958,15 +962,19 @@
              documenting it. -->
         <Style Selector="TextBlock.page-title">
             <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
-            <Setter Property="FontSize" Value="30"/>
-            <Setter Property="FontWeight" Value="Black"/>
+            <!-- Size/weight/halo are Personalize → Text "Headers" (RemEx-jt6w5); base 30/Black is TypographyResolver.Members. -->
+            <Setter Property="FontSize" Value="{DynamicResource Typo.PageTitle.FontSize}"/>
+            <Setter Property="FontWeight" Value="{DynamicResource Typo.PageTitle.FontWeight}"/>
+            <Setter Property="Effect" Value="{DynamicResource Typo.Headers.Effect}"/>
             <Setter Property="LetterSpacing" Value="2"/>
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
         <Style Selector="TextBlock.page-subtitle">
             <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <!-- Personalize → Text "Body" (RemEx-jt6w5); base 12/Medium is TypographyResolver.Members. -->
+            <Setter Property="FontSize" Value="{DynamicResource Typo.PageSubtitle.FontSize}"/>
+            <Setter Property="FontWeight" Value="{DynamicResource Typo.PageSubtitle.FontWeight}"/>
+            <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
             <Setter Property="LetterSpacing" Value="4"/>
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         </Style>
@@ -976,10 +984,13 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="MaxWidth" Value="1200"/>
         </Style>
-        <!-- Card / section header. FontFamily is themed live via the font picker (Phase 2). -->
+        <!-- Card / section header. FontFamily is themed live via the font picker (Phase 2).
+             Size/weight/halo are Personalize → Text "Headers" (RemEx-jt6w5); base 18/Black is
+             TypographyResolver.Members. -->
         <Style Selector="TextBlock.card-title">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="Black"/>
+            <Setter Property="FontSize" Value="{DynamicResource Typo.CardTitle.FontSize}"/>
+            <Setter Property="FontWeight" Value="{DynamicResource Typo.CardTitle.FontWeight}"/>
+            <Setter Property="Effect" Value="{DynamicResource Typo.Headers.Effect}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
 

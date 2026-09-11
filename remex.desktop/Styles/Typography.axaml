@@ -1,0 +1,90 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ═══ Personalize → Text (RemEx-jt6w5) ═══
+
+         Every type-scale member RemEx uses is re-declared here with the SAME KEY as Material's,
+         BasedOn Material's empty base theme (MaterialTextBlock), with FontSize/FontWeight/Effect
+         bound to Typo.* DynamicResources that TypographyService publishes. Use sites keep
+         Theme="{StaticResource CaptionTextBlock}" — nothing at the hundreds of sites changes, and
+         the vocabulary TypographyVocabularyTests enforces does not grow.
+
+         Material 3.19.0's members are each MaterialTextBlock + one FontSize + one FontWeight
+         setter (Material.Styles/Resources/Themes/TextBlock.axaml), so restating both here loses
+         nothing. If a later Material version adds setters to a member, add them here too.
+
+         WHY THIS IS A StyleInclude AFTER MaterialTheme, NOT A ResourceInclude: App.axaml parses
+         Application.Resources before Application.Styles, and a ResourceInclude loads when merged,
+         so its StaticResources would run before Material existed. Later Styles are searched first
+         by Styles.TryGetResource, which is what lets these keys shadow Material's.
+
+         NO DEFAULT VALUES HERE. TypographyService populates every Typo.* key in its constructor
+         and ThemeService merges that dictionary before any window exists; a copy of the table in
+         XAML would be the second copy that drifts. No inline FontSize="N" either — the ratchet
+         in TypographyVocabularyTests only goes down. -->
+    <Styles.Resources>
+        <ResourceDictionary>
+
+            <!-- Untagged text: EFFECT ONLY. A FontSize or FontWeight setter on the default theme
+                 outranks inheritance and would force 14/Regular onto the TextBlock every
+                 ContentPresenter creates inside a Button, stripping the Medium Material gives
+                 button labels — at defaults. Untagged SIZE follows Body through the
+                 MaterialDesignFontSize own key (App.axaml); untagged BOLD is a runtime Style
+                 TypographyService attaches only while Body bold is on. -->
+            <ControlTheme x:Key="{x:Type TextBlock}" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
+            </ControlTheme>
+
+            <!-- ── Headers ─────────────────────────────────────────────────────────────────── -->
+            <ControlTheme x:Key="Headline5TextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Headline5.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Headline5.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Headers.Effect}"/>
+            </ControlTheme>
+            <ControlTheme x:Key="Headline6TextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Headline6.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Headline6.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Headers.Effect}"/>
+            </ControlTheme>
+            <ControlTheme x:Key="Subtitle1TextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Subtitle1.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Subtitle1.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Headers.Effect}"/>
+            </ControlTheme>
+
+            <!-- ── Body ────────────────────────────────────────────────────────────────────── -->
+            <ControlTheme x:Key="Body2TextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Body2.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Body2.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
+            </ControlTheme>
+
+            <!-- ── Small text ──────────────────────────────────────────────────────────────── -->
+            <ControlTheme x:Key="CaptionTextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Caption.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Caption.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Small.Effect}"/>
+            </ControlTheme>
+            <ControlTheme x:Key="OverlineTextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.Overline.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.Overline.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Small.Effect}"/>
+            </ControlTheme>
+
+            <!-- ── Sensor text ─────────────────────────────────────────────────────────────
+                 Applied by the sensor-card templates (CanvasView, HomeView pinned tiles, the tray
+                 flyout strip) to the card TITLE and the dual-metric METRIC NAMES. Never the value
+                 plate: that keeps Headline6TextBlock / Body1TextBlock and is out of scope. -->
+            <ControlTheme x:Key="SensorTitleTextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.SensorTitle.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.SensorTitle.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Sensor.Effect}"/>
+            </ControlTheme>
+            <ControlTheme x:Key="SensorMetricNameTextBlock" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
+                <Setter Property="FontSize" Value="{DynamicResource Typo.SensorMetricName.FontSize}"/>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.SensorMetricName.FontWeight}"/>
+                <Setter Property="Effect" Value="{DynamicResource Typo.Sensor.Effect}"/>
+            </ControlTheme>
+
+        </ResourceDictionary>
+    </Styles.Resources>
+</Styles>
