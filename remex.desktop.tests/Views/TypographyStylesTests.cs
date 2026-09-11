@@ -99,7 +99,7 @@ public class TypographyStylesTests
     [Fact]
     public void EveryTypoKeyTheXamlBinds_IsOneTheServicePublishes()
     {
-        var bound = Regex.Matches(TypographyMarkup() + AppMarkup(), @"\{DynamicResource (Typo\.[A-Za-z0-9]+\.[A-Za-z]+)\}")
+        var bound = Regex.Matches(AllAxamlMarkup(), @"\{DynamicResource (Typo\.[A-Za-z0-9]+\.[A-Za-z]+)\}")
             .Select(m => m.Groups[1].Value)
             .Distinct()
             .ToArray();
@@ -112,6 +112,13 @@ public class TypographyStylesTests
 
     private static string TypographyMarkup() => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Styles", "Typography.axaml"));
     private static string AppMarkup() => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml"));
+
+    private static string AllAxamlMarkup()
+    {
+        var desktop = Path.Combine(RepoRoot(), "remex.desktop");
+        return string.Concat(Directory.EnumerateFiles(desktop, "*.axaml", SearchOption.AllDirectories)
+            .Select(File.ReadAllText));
+    }
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

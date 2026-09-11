@@ -146,8 +146,11 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <!-- Sensor name in the strip: Personalize → Text "Sensor text" sizes it (RemEx-jt6w5).
+                                     SensorMetricNameTextBlock (base 10) so the strip stays as compact as it is at
+                                     defaults; the Black weight and tracking are the strip's own and stay inline. -->
                                 <TextBlock Text="{Binding Name}"
-                                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Black" LetterSpacing="1"
+                                           Theme="{StaticResource SensorMetricNameTextBlock}" FontWeight="Black" LetterSpacing="1"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"

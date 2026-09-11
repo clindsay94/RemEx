@@ -392,7 +392,17 @@
                                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="8,5,8,2" VerticalAlignment="Top">
                                                 <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="4">
                                                     <mi:MaterialIcon Grid.Column="0" Kind="Pin" Width="10" Height="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    <!-- Title (Personalize → Text "Sensor text", RemEx-jt6w5): SensorTitleTextBlock carries the
+                                                         size, the weight (Bold by default, so no inline FontWeight — a local value would outrank
+                                                         the Bold switch) and the halo. The Border is the value plate's own treatment drawn BEHIND
+                                                         the title when "Backdrop behind titles" is on: a SIBLING in a Panel, never a wrapper
+                                                         (hiding a wrapper hides the title), with a negative margin so the plate breathes past the
+                                                         glyph box without moving the text. The Panel is Left-aligned in the star column so the
+                                                         title still trims. -->
+                                                    <Panel Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                        <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
+                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    </Panel>
                                                 </Grid>
                                                 <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own
                                                      PointerPressed handling (it marks the event Handled) stops DraggableCard's
@@ -452,18 +462,20 @@
                                                 <!-- Dual Metric legend: colour key mapping each line to its sensor. The plate is the
                                                      per-sensor theme's CardBackground (dark by default), so its text follows the
                                                      sensor theme too, same as the value badges above — a palette text brush can be
-                                                     dark-on-dark on a light seed (RemEx-1ufoa.2). -->
+                                                     dark-on-dark on a light seed (RemEx-1ufoa.2). The names take SensorMetricNameTextBlock
+                                                     (Personalize → Text "Sensor text", RemEx-jt6w5); this plate already is the backdrop
+                                                     treatment, so the backdrop switch adds nothing here. -->
                                                 <Border IsVisible="{Binding Sensor.IsDualMetric}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
                                                         CornerRadius="5" Padding="6,4"
                                                         Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}">
                                                     <StackPanel Spacing="3">
                                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding Sensor.HasSecondary}">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource OverlineTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>

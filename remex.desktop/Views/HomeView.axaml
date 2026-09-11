@@ -379,7 +379,13 @@
 
                                         <StackPanel Spacing="16">
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Text="{Binding Name}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <!-- Pinned-sensor tile title (Personalize → Text "Sensor text", RemEx-jt6w5): same theme and
+                                                     the same backdrop plate as the canvas card title, minus the inline Black weight so the
+                                                     Bold switch reaches it (JetBrains Mono has no Black face, so it rendered ExtraBold anyway). -->
+                                                <Panel HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
+                                                    <TextBlock Text="{Binding Name}" Theme="{StaticResource SensorTitleTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </Panel>
                                                 <mi:MaterialIcon Grid.Column="1" Kind="Flash" Foreground="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Opacity="0.8"/>
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,8,0,0">
