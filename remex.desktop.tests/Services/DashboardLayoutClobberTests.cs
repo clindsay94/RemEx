@@ -588,6 +588,12 @@ public class DashboardLayoutClobberTests : IDisposable
                 {
                     new() { Name = "nondefault", ColorSource = ColorSources.Wallpaper, Seed = "#778899", Vibrancy = 33.0, Contrast = 0.5, Strategy = "Rainbow" },
                 },
+                var t when t == typeof(TypographySettings) => new TypographySettings
+                {
+                    HeadersScale = 1.4, BodyScale = 0.85, SmallScale = 1.15, SensorScale = 1.5,
+                    HeadersBold = true, BodyBold = true, SmallBold = true, SensorBold = true,
+                    SensorTitleBackdrop = true, ShadowEnabled = false, ShadowStrength = 90,
+                },
                 _ => throw new NotSupportedException(
                     $"CustomizationSettings.{prop.Name} has an unhandled type {prop.PropertyType} - "
                     + "extend this builder rather than skipping the field silently."),

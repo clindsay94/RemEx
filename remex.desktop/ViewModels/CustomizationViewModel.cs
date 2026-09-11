@@ -1414,6 +1414,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperImagePath = _wallpaperImagePath,
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
+            // Carried until the Text section gets its own controls (RemEx-jt6w5.5): the reflection
+            // guard in CustomizationSettingsRoundTripTests fails the moment a field is left out here.
+            Typography = TypographySettings.Normalize(carried.Typography),
         };
     }
 

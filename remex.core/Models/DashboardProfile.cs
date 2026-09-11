@@ -407,6 +407,14 @@ public record CustomizationSettings
     [JsonPropertyName("uiScale")]
     public double UiScale { get; init; } = 1.0;
 
+    /// <summary>
+    /// Personalize → Text (RemEx-jt6w5): per-section size/bold, the legibility halo and the
+    /// sensor-title backdrop. Absent on older profiles → defaults; read sites clamp through
+    /// <see cref="TypographySettings.Normalize"/>. Palette presets never read or write it.
+    /// </summary>
+    [JsonPropertyName("typography")]
+    public TypographySettings Typography { get; init; } = new();
+
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]
     public string BaseTheme
