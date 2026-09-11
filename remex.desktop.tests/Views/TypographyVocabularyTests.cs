@@ -74,7 +74,9 @@ public class TypographyVocabularyTests
     // slack finally landing below the ratchet).
     // Re-pinned by RemEx-72s7l (review round 2): 74 -> 73 (the tutorial "don't show again"
     // checkbox label moved off inline FontSize="12" onto CaptionTextBlock).
-    private const int InlineFontSizeBaseline = 73;
+    // Re-pinned by RemEx-jt6w5.3: 73 -> 63 (3 sites removed here; the other 7 of the slack predate
+    // this task).
+    private const int InlineFontSizeBaseline = 63;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be
