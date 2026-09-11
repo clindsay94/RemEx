@@ -3468,4 +3468,70 @@ Anda dapat mengubah:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Menyerah pada “{0}” setelah beberapa kali percobaan. Tidak ada yang berubah untuk item itu.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>TEKS</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Judul</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Judul halaman, judul bagian, dan judul kartu.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Isi</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Paragraf, deskripsi, dan sebagian besar label.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Teks kecil</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Keterangan, petunjuk, dan label kecil huruf kapital.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Teks sensor</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Judul kartu sensor dan nama metrik pada kartu dua metrik. Tampilan nilai tidak berubah.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Tebal</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Judul tebal</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Isi tebal</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Teks kecil tebal</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Teks sensor tebal</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Latar di belakang judul</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Menggambar pelat gelap yang sama seperti tampilan nilai di belakang judul kartu sensor.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Bayangan teks</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>Halo lembut berwarna latar di belakang semua teks agar tetap terbaca di atas wallpaper. Tak terlihat pada permukaan polos.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Kekuatan</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Ukuran bawaan → ukuran saat ini, dalam poin.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Setel ulang teks ke bawaan</value>
+  </data>
 </root>

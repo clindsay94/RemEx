@@ -16,18 +16,18 @@ public class PersonalizationSheetLayoutTests
 {
     private static readonly string[] HeadersInOrder =
     {
-        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook",
+        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionText",
         "Custom_AdvancedTuning", "Custom_SectionBehaviour", "Custom_SectionSavedPalettes",
     };
 
     [Fact]
-    public void TheSixSectionHeadersAppearInSpecOrder()
+    public void TheSevenSectionHeadersAppearInSpecOrder()
     {
         var markup = PanelMarkup();
         var positions = HeadersInOrder.Select(k => markup.IndexOf($"Localize {k}}}", System.StringComparison.Ordinal)).ToArray();
 
         positions.Should().OnlyContain(p => p >= 0, "every section header is on the sheet");
-        positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Fine-tuning, Behaviour, Saved palettes");
+        positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Text, Fine-tuning, Behaviour, Saved palettes");
     }
 
     [Fact]

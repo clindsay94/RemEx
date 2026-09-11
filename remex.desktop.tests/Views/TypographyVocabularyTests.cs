@@ -76,7 +76,9 @@ public class TypographyVocabularyTests
     // checkbox label moved off inline FontSize="12" onto CaptionTextBlock).
     // Re-pinned by RemEx-jt6w5.3: 73 -> 63 (3 sites removed here; the other 7 of the slack predate
     // this task).
-    private const int InlineFontSizeBaseline = 63;
+    // Re-pinned by RemEx-jt6w5.5: 63 -> 64 (one section header matching its five siblings in
+    // PersonalizationPanelView).
+    private const int InlineFontSizeBaseline = 64;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

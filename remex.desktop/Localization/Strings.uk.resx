@@ -3466,4 +3466,70 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Після кількох спроб «{0}» покинуто. У цьому елементі нічого не змінено.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>ТЕКСТ</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Заголовки</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Назви сторінок, заголовки розділів і назви карток.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Основний текст</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Абзаци, описи та більшість підписів.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Дрібний текст</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Підписи, підказки та дрібні написи великими літерами.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Текст сенсорів</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Назви карток сенсорів і назви метрик на картках із двома метриками. Показ значення не змінюється.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Жирний</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Жирні заголовки</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Жирний основний текст</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Жирний дрібний текст</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Жирний текст сенсорів</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Підкладка за назвами</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Малює за назвами карток сенсорів ту саму темну підкладку, що й у показника значення.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Тінь тексту</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>М'яке сяйво кольору тла за всім текстом, щоб він лишався читабельним на шпалерах. Непомітне на однотонній поверхні.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Сила</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Розмір за замовчуванням → поточний розмір, у пунктах.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Скинути текст до типових</value>
+  </data>
 </root>

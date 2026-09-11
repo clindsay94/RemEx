@@ -3465,4 +3465,70 @@ Vous pouvez modifier :
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Abandon de « {0} » après plusieurs tentatives. Rien n'a été modifié pour cet élément.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>TEXTE</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Titres</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Titres de page, en-têtes de section et titres de cartes.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Corps de texte</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Paragraphes, descriptions et la plupart des libellés.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Petit texte</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Légendes, indications et petits libellés en capitales.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Texte des capteurs</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Titres des cartes de capteurs et noms des métriques sur les cartes à deux métriques. L'affichage de la valeur ne change pas.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Gras</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Titres en gras</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Corps de texte en gras</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Petit texte en gras</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Texte des capteurs en gras</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Fond derrière les titres</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Dessine derrière les titres des cartes de capteurs la même plaque sombre que celle de la valeur.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Ombre du texte</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>Un halo doux de la couleur de fond derrière tout le texte, pour qu'il reste lisible sur un fond d'écran. Invisible sur une surface unie.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Intensité</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Taille par défaut → taille actuelle, en points.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Réinitialiser le texte</value>
+  </data>
 </root>

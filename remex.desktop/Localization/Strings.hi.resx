@@ -3465,4 +3465,70 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>कई कोशिशों के बाद “{0}” छोड़ दिया गया। उस आइटम में कुछ नहीं बदला।</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>शीर्षक</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>पेज शीर्षक, अनुभाग शीर्षक और कार्ड शीर्षक।</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>मुख्य टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>पैराग्राफ, विवरण और अधिकांश लेबल।</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>छोटा टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>कैप्शन, संकेत और छोटे बड़े-अक्षर वाले लेबल।</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>सेंसर टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>सेंसर कार्ड के शीर्षक और दोहरी-मीट्रिक कार्ड पर मीट्रिक नाम। मान का प्रदर्शन नहीं बदलता।</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>बोल्ड</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>बोल्ड शीर्षक</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>बोल्ड मुख्य टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>बोल्ड छोटा टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>बोल्ड सेंसर टेक्स्ट</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>शीर्षकों के पीछे पृष्ठभूमि</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>सेंसर कार्ड शीर्षकों के पीछे वही गहरी प्लेट बनाता है जो मान के लिए उपयोग होती है।</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>टेक्स्ट छाया</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>सभी टेक्स्ट के पीछे पृष्ठभूमि रंग का हल्का आभामंडल, ताकि वॉलपेपर पर भी पढ़ने योग्य रहे। सादी सतह पर अदृश्य।</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>तीव्रता</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>डिफ़ॉल्ट आकार → वर्तमान आकार, पॉइंट में।</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>टेक्स्ट को डिफ़ॉल्ट पर रीसेट करें</value>
+  </data>
 </root>

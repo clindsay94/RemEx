@@ -682,6 +682,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                             ?? AvailableFonts.FirstOrDefault();
         _uiScale = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
 
+        // Personalize → Text (RemEx-jt6w5): clamped on read, never rewritten on disk until touched.
+        var typography = TypographySettings.Normalize(settings.Typography);
+        _headersScale = typography.HeadersScale;
+        _bodyScale = typography.BodyScale;
+        _smallScale = typography.SmallScale;
+        _sensorScale = typography.SensorScale;
+        _headersBold = typography.HeadersBold;
+        _bodyBold = typography.BodyBold;
+        _smallBold = typography.SmallBold;
+        _sensorBold = typography.SensorBold;
+        _sensorTitleBackdrop = typography.SensorTitleBackdrop;
+        _textShadowEnabled = typography.ShadowEnabled;
+        _textShadowStrength = typography.ShadowStrength;
+
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
         var colors = profile.Customization.CustomAccentColors ?? Array.Empty<string>();
@@ -1146,6 +1160,146 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnUiScaleChanged(double value) => ApplyAndSave();
 
+    // ─── Personalize → Text (RemEx-jt6w5) ─────────────────────────────────────────────────────────
+    // Each generated setter applies live through ApplyAndSave, exactly like UiScale above; the values
+    // reach ThemeService.ApplyCustomizationCore → TypographyService with the rest of the record. The
+    // reset command raises _isResettingTypography so its eleven assignments produce ONE apply-and-save.
+
+    /// <summary>Headers size multiplier (0.80–1.60): Headline5/6, Subtitle1, page-title, card-title.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeadersSizeLabel))]
+    private double _headersScale = 1.0;
+
+    partial void OnHeadersScaleChanged(double value) => ApplyTypographyChange();
+
+    /// <summary>Body size multiplier: Body2, page-subtitle and untagged text.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BodySizeLabel))]
+    private double _bodyScale = 1.0;
+
+    partial void OnBodyScaleChanged(double value) => ApplyTypographyChange();
+
+    /// <summary>Small text size multiplier: Caption and Overline.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SmallSizeLabel))]
+    private double _smallScale = 1.0;
+
+    partial void OnSmallScaleChanged(double value) => ApplyTypographyChange();
+
+    /// <summary>Sensor text size multiplier: card titles and dual-metric names.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SensorSizeLabel))]
+    private double _sensorScale = 1.0;
+
+    partial void OnSensorScaleChanged(double value) => ApplyTypographyChange();
+
+    [ObservableProperty]
+    private bool _headersBold;
+
+    partial void OnHeadersBoldChanged(bool value) => ApplyTypographyChange();
+
+    [ObservableProperty]
+    private bool _bodyBold;
+
+    partial void OnBodyBoldChanged(bool value) => ApplyTypographyChange();
+
+    [ObservableProperty]
+    private bool _smallBold;
+
+    partial void OnSmallBoldChanged(bool value) => ApplyTypographyChange();
+
+    [ObservableProperty]
+    private bool _sensorBold;
+
+    partial void OnSensorBoldChanged(bool value) => ApplyTypographyChange();
+
+    /// <summary>The value-pill treatment behind sensor-card titles.</summary>
+    [ObservableProperty]
+    private bool _sensorTitleBackdrop;
+
+    partial void OnSensorTitleBackdropChanged(bool value) => ApplyTypographyChange();
+
+    /// <summary>The legibility halo switch; governs every section.</summary>
+    [ObservableProperty]
+    private bool _textShadowEnabled = true;
+
+    partial void OnTextShadowEnabledChanged(bool value) => ApplyTypographyChange();
+
+    /// <summary>Halo strength 0–100. A double because Slider.Value is one; rounded to an int on save.</summary>
+    [ObservableProperty]
+    private double _textShadowStrength = 40;
+
+    partial void OnTextShadowStrengthChanged(double value) => ApplyTypographyChange();
+
+    /// <summary>"default → effective" for the section's reference member (Headline6 = 20 pt).</summary>
+    public string HeadersSizeLabel => SizeLabel(TypographySection.Headers, HeadersScale);
+
+    /// <summary>Reference member Body2 = 14 pt.</summary>
+    public string BodySizeLabel => SizeLabel(TypographySection.Body, BodyScale);
+
+    /// <summary>Reference member Caption = 12 pt.</summary>
+    public string SmallSizeLabel => SizeLabel(TypographySection.Small, SmallScale);
+
+    /// <summary>Reference member SensorTitle = 12 pt.</summary>
+    public string SensorSizeLabel => SizeLabel(TypographySection.Sensor, SensorScale);
+
+    private static string SizeLabel(TypographySection section, double scale) =>
+        string.Format(
+            LocalizationService.Instance["Custom_TextSizeLabelFormat"],
+            TypographyResolver.ReferencePoints(section),
+            TypographyResolver.EffectivePoints(section, scale));
+
+    private bool _isResettingTypography;
+
+    private void ApplyTypographyChange()
+    {
+        if (!_isResettingTypography) ApplyAndSave();
+    }
+
+    /// <summary>The Text section as the sheet currently shows it, for <see cref="BuildCurrentSettings"/>.</summary>
+    private TypographySettings BuildTypographySettings() => TypographySettings.Normalize(new TypographySettings
+    {
+        HeadersScale = HeadersScale,
+        BodyScale = BodyScale,
+        SmallScale = SmallScale,
+        SensorScale = SensorScale,
+        HeadersBold = HeadersBold,
+        BodyBold = BodyBold,
+        SmallBold = SmallBold,
+        SensorBold = SensorBold,
+        SensorTitleBackdrop = SensorTitleBackdrop,
+        ShadowEnabled = TextShadowEnabled,
+        ShadowStrength = (int)Math.Round(TextShadowStrength, MidpointRounding.AwayFromZero),
+    });
+
+    /// <summary>One click, no confirmation: every field of the Text section back to the spec table, one save.</summary>
+    [RelayCommand]
+    private void ResetTextToDefaults()
+    {
+        var defaults = TypographySettings.Default;
+        _isResettingTypography = true;
+        try
+        {
+            HeadersScale = defaults.HeadersScale;
+            BodyScale = defaults.BodyScale;
+            SmallScale = defaults.SmallScale;
+            SensorScale = defaults.SensorScale;
+            HeadersBold = defaults.HeadersBold;
+            BodyBold = defaults.BodyBold;
+            SmallBold = defaults.SmallBold;
+            SensorBold = defaults.SensorBold;
+            SensorTitleBackdrop = defaults.SensorTitleBackdrop;
+            TextShadowEnabled = defaults.ShadowEnabled;
+            TextShadowStrength = defaults.ShadowStrength;
+        }
+        finally
+        {
+            _isResettingTypography = false;
+        }
+
+        ApplyAndSave();
+    }
+
     /// <summary>Flags any selected font that won't materialize, so the user gets a plain-English heads-up.</summary>
     private void ValidateFonts()
     {
@@ -1414,9 +1568,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperImagePath = _wallpaperImagePath,
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
-            // Carried until the Text section gets its own controls (RemEx-jt6w5.5): the reflection
-            // guard in CustomizationSettingsRoundTripTests fails the moment a field is left out here.
-            Typography = TypographySettings.Normalize(carried.Typography),
+            Typography = BuildTypographySettings(),
         };
     }
 

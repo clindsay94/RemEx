@@ -3469,4 +3469,70 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Birkaç denemeden sonra “{0}” bırakıldı. O öğede hiçbir şey değişmedi.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>METİN</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Başlıklar</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Sayfa başlıkları, bölüm başlıkları ve kart başlıkları.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Gövde</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Paragraflar, açıklamalar ve çoğu etiket.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Küçük metin</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Alt yazılar, ipuçları ve küçük büyük harfli etiketler.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Sensör metni</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Sensör kartı başlıkları ve çift metrikli kartlardaki metrik adları. Değer gösterimi değişmez.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Kalın</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Kalın başlıklar</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Kalın gövde metni</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Kalın küçük metin</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Kalın sensör metni</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Başlıkların arkasında zemin</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Sensör kartı başlıklarının arkasına, değer gösteriminin kullandığı koyu zemini çizer.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Metin gölgesi</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>Tüm metnin arkasında arka plan renginde yumuşak bir hale; duvar kağıtları üzerinde okunabilir kalır. Düz yüzeyde görünmez.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Güç</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Varsayılan boyut → geçerli boyut, punto olarak.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Metni varsayılana sıfırla</value>
+  </data>
 </root>

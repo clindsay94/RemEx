@@ -3466,4 +3466,70 @@ Możesz zmienić:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Zrezygnowano z elementu „{0}” po kilku próbach. Nic w nim nie zostało zmienione.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>TEKST</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Nagłówki</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Tytuły stron, nagłówki sekcji i tytuły kart.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Tekst główny</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Akapity, opisy i większość etykiet.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Mały tekst</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Podpisy, wskazówki i małe etykiety wielkimi literami.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Tekst czujników</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Tytuły kart czujników i nazwy metryk na kartach z dwiema metrykami. Odczyt wartości się nie zmienia.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Pogrubienie</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Pogrubione nagłówki</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Pogrubiony tekst główny</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Pogrubiony mały tekst</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Pogrubiony tekst czujników</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Tło za tytułami</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Rysuje za tytułami kart czujników tę samą ciemną płytkę, której używa odczyt wartości.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Cień tekstu</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>Miękka poświata w kolorze tła za całym tekstem, aby pozostał czytelny na tapecie. Niewidoczna na jednolitej powierzchni.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Siła</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Rozmiar domyślny → bieżący rozmiar, w punktach.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Przywróć domyślny tekst</value>
+  </data>
 </root>

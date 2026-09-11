@@ -3471,4 +3471,70 @@ You can change:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Gave up on “{0}” after several tries. Nothing was changed for that item.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>TEXT</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Headers</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Page titles, section headings and card titles.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Paragraphs, descriptions and most labels.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Small text</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Captions, hints and the small all-caps labels.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Sensor text</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Sensor card titles and the metric names on dual-metric cards. The value readout is unchanged.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Bold headers</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Bold body text</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Bold small text</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Bold sensor text</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Backdrop behind titles</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Draws the same dark plate the value readout uses behind sensor card titles.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Text shadow</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>A soft halo in the background colour behind all text, so it stays readable over wallpapers. Invisible on a plain surface.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Strength</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Default size → current size, in points.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Reset text to defaults</value>
+  </data>
 </root>

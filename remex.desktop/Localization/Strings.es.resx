@@ -3479,4 +3479,70 @@ Puedes cambiar:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Se abandonó «{0}» tras varios intentos. No se cambió nada de ese elemento.</value>
   </data>
+  <data name="Custom_SectionText" xml:space="preserve">
+    <value>TEXTO</value>
+  </data>
+  <data name="Custom_TextHeaders" xml:space="preserve">
+    <value>Encabezados</value>
+  </data>
+  <data name="Custom_TextHeadersTip" xml:space="preserve">
+    <value>Títulos de página, encabezados de sección y títulos de tarjetas.</value>
+  </data>
+  <data name="Custom_TextBody" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Custom_TextBodyTip" xml:space="preserve">
+    <value>Párrafos, descripciones y la mayoría de las etiquetas.</value>
+  </data>
+  <data name="Custom_TextSmall" xml:space="preserve">
+    <value>Texto pequeño</value>
+  </data>
+  <data name="Custom_TextSmallTip" xml:space="preserve">
+    <value>Leyendas, sugerencias y las pequeñas etiquetas en mayúsculas.</value>
+  </data>
+  <data name="Custom_TextSensor" xml:space="preserve">
+    <value>Texto de sensores</value>
+  </data>
+  <data name="Custom_TextSensorTip" xml:space="preserve">
+    <value>Títulos de las tarjetas de sensores y nombres de métricas en tarjetas de doble métrica. El valor mostrado no cambia.</value>
+  </data>
+  <data name="Custom_TextBold" xml:space="preserve">
+    <value>Negrita</value>
+  </data>
+  <data name="Custom_TextHeadersBold" xml:space="preserve">
+    <value>Encabezados en negrita</value>
+  </data>
+  <data name="Custom_TextBodyBold" xml:space="preserve">
+    <value>Texto en negrita</value>
+  </data>
+  <data name="Custom_TextSmallBold" xml:space="preserve">
+    <value>Texto pequeño en negrita</value>
+  </data>
+  <data name="Custom_TextSensorBold" xml:space="preserve">
+    <value>Texto de sensores en negrita</value>
+  </data>
+  <data name="Custom_TextSensorBackdrop" xml:space="preserve">
+    <value>Fondo detrás de los títulos</value>
+  </data>
+  <data name="Custom_TextSensorBackdropTip" xml:space="preserve">
+    <value>Dibuja detrás de los títulos de las tarjetas de sensores la misma placa oscura que usa el valor.</value>
+  </data>
+  <data name="Custom_TextShadow" xml:space="preserve">
+    <value>Sombra del texto</value>
+  </data>
+  <data name="Custom_TextShadowTip" xml:space="preserve">
+    <value>Un halo suave del color de fondo detrás de todo el texto, para que siga siendo legible sobre fondos de pantalla. Invisible sobre una superficie lisa.</value>
+  </data>
+  <data name="Custom_TextShadowStrength" xml:space="preserve">
+    <value>Intensidad</value>
+  </data>
+  <data name="Custom_TextSizeLabelFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Custom_TextSizeLabelTip" xml:space="preserve">
+    <value>Tamaño predeterminado → tamaño actual, en puntos.</value>
+  </data>
+  <data name="Custom_TextReset" xml:space="preserve">
+    <value>Restablecer el texto</value>
+  </data>
 </root>
