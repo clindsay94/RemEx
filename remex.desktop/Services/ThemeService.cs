@@ -16,6 +16,13 @@ public class ThemeService : IDisposable
     private readonly ResourceDictionary _overrideResources = new();
 
     /// <summary>
+    /// Personalize → Text (RemEx-jt6w5). Owned here rather than DI-registered so the ~20 tests that
+    /// construct <c>new ThemeService()</c> keep working, and so the apply moment is exactly
+    /// <see cref="ApplyCustomizationCore"/>'s — profile load and every settings change.
+    /// </summary>
+    public TypographyService Typography { get; } = new();
+
+    /// <summary>
     /// The base-theme <see cref="ResourceInclude"/> this service last merged into
     /// <c>Application.Resources</c>, so the next switch can remove EXACTLY that one.
     /// </summary>
@@ -65,6 +72,18 @@ public class ThemeService : IDisposable
             if (Application.Current != null)
             {
                 Application.Current.Resources.MergedDictionaries.Add(_overrideResources);
+                // Typography's defaults are already populated (its constructor applies them), so
+                // every Typo.* DynamicResource resolves from the first paint (RemEx-jt6w5). Guarded
+                // with Contains: if Application.Current was already live when the TypographyService
+                // field initializer ran (a headless render test's Application starts before `new
+                // ThemeService()`), TypographyService's own constructor already merged its
+                // dictionary synchronously, and this deferred post would otherwise re-add it and
+                // throw "The ResourceDictionary already has a parent".
+                var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
+                if (!mergedDictionaries.Contains(Typography.Overrides))
+                {
+                    mergedDictionaries.Add(Typography.Overrides);
+                }
             }
         });
     }
@@ -601,6 +620,11 @@ public class ThemeService : IDisposable
             // illegibility or blown up past the window. Consumed by the shell's layout transform.
             app.Resources["UiScale"] = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
         }
+
+        // Personalize → Text (RemEx-jt6w5): sizes, weights, the legibility halo and the sensor-title
+        // backdrop, resolved from the SAME settings and the SAME surface colour as the palette above,
+        // so the halo contrasts with the text by construction: near-black in Dark, near-white in Light.
+        Typography.Apply(TypographySettings.Normalize(settings.Typography), palette.Surface);
 
         // Reattach the override dictionary — fires one ResourcesChanged for all updates.
         merged?.Add(_overrideResources);
