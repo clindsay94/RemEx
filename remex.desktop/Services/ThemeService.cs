@@ -72,13 +72,9 @@ public class ThemeService : IDisposable
             if (Application.Current != null)
             {
                 Application.Current.Resources.MergedDictionaries.Add(_overrideResources);
-                // Typography's defaults are already populated (its constructor applies them), so
-                // every Typo.* DynamicResource resolves from the first paint (RemEx-jt6w5). Guarded
-                // with Contains: if Application.Current was already live when the TypographyService
-                // field initializer ran (a headless render test's Application starts before `new
-                // ThemeService()`), TypographyService's own constructor already merged its
-                // dictionary synchronously, and this deferred post would otherwise re-add it and
-                // throw "The ResourceDictionary already has a parent".
+                // Contains-guarded: TypographyService's own constructor may already have merged
+                // Overrides (see the Contains guard inside TypographyService.Apply for why either
+                // side can run first, and why both must guard).
                 var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
                 if (!mergedDictionaries.Contains(Typography.Overrides))
                 {

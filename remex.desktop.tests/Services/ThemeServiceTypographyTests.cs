@@ -68,6 +68,16 @@ public class ThemeServiceTypographyTests
     {
         var theme = NewTheme();
 
+        // Apply a customised scale first so the constructor's own defaults can't make this test
+        // pass vacuously — if ApplyCustomizationCore skipped Typography.Apply on null, Headline6
+        // would still read 30 from this call, not 20, and the assertion below would catch it.
+        theme.ApplyCustomizationCore(new CustomizationSettings
+        {
+            ThemeMode = "Dark",
+            Typography = new TypographySettings { HeadersScale = 1.5 },
+        });
+        theme.Typography.LastApplied!.FontSizes["Typo.Headline6.FontSize"].Should().Be(30);
+
         var act = () => theme.ApplyCustomizationCore(new CustomizationSettings
         {
             ThemeMode = "Dark",
@@ -77,7 +87,7 @@ public class ThemeServiceTypographyTests
         act.Should().NotThrow();
         var applied = theme.Typography.LastApplied;
         applied.Should().NotBeNull();
-        applied!.FontSizes["Typo.Headline6.FontSize"].Should().Be(TypographySettings.Default.HeadersScale * 20);
+        applied!.FontSizes["Typo.Headline6.FontSize"].Should().Be(20, "a null Typography must fall back to defaults, not keep the previous customisation");
         applied.DefaultFontSize.Should().Be(14);
     }
 }

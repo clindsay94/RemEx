@@ -25,9 +25,15 @@ namespace Remex.Desktop.Services;
 /// <see cref="Overrides"/> directly — this assembly's tests have no Avalonia.Headless.
 /// </para>
 /// <para>
-/// THE CONSTRUCTOR APPLIES THE DEFAULTS. The dictionary is merged by ThemeService's constructor post
-/// before any window exists, so every <c>Typo.*</c> key resolves from the first paint; there is no
-/// XAML copy of the defaults to drift (one table: <see cref="TypographyResolver.Members"/>).
+/// THE CONSTRUCTOR APPLIES THE DEFAULTS AND MERGES THEM. In production
+/// (<c>App.axaml.cs</c>'s <c>ApplyThemeBeforeWindowShown</c>, called from
+/// <c>OnFrameworkInitializationCompleted</c>) <c>Application.Current</c> is already live when
+/// <see cref="ThemeService"/> is constructed, so this constructor's own <see cref="Apply"/> call
+/// merges <see cref="Overrides"/> immediately — before any window exists, so every <c>Typo.*</c>
+/// key resolves from the first paint. There is no XAML copy of the defaults to drift (one table:
+/// <see cref="TypographyResolver.Members"/>). See the <c>Contains</c> guard inside <see cref="Apply"/>
+/// for why that merge and <see cref="ThemeService"/>'s own constructor-post merge don't collide
+/// regardless of which one happens to run first.
 /// </para>
 /// <para>
 /// TWO KEYS ARE NOT IN THE DICTIONARY. Untagged text's size is the OWN key
@@ -83,14 +89,18 @@ public sealed class TypographyService
 
         var app = Application.Current;
         var merged = app?.Resources.MergedDictionaries;
-        // Contains-guarded: ThemeService owns the FIRST merge (deferred onto Dispatcher.UIThread
-        // from its own constructor, so it lands after every constructor on the stack has returned).
-        // This constructor's own Apply(...) call can run with Application.Current already live (a
-        // render test's headless Application starts before `new ThemeService()` executes), so an
-        // unconditional Add here would race ThemeService's deferred one and throw "The
-        // ResourceDictionary already has a parent" the same way _overrideResources's own history
-        // shows (ShellRenderFixture's remarks). Idempotent either way: unit tests never merge at
-        // all (no Application.Current), and every later re-apply detaches its own prior attach.
+        // Contains-guarded because either this constructor's own Apply(...) or ThemeService's
+        // constructor-post Add can be the FIRST merge, depending on construction order —
+        // production (App.axaml.cs's ApplyThemeBeforeWindowShown, called from
+        // OnFrameworkInitializationCompleted) constructs ThemeService with Application.Current
+        // already live, so THIS Apply call (run from the TypographyService field initializer,
+        // before ThemeService's own constructor body executes) merges the dictionary first; a
+        // unit test with no Application.Current merges neither; only in an ordering where
+        // ThemeService's deferred post runs before this method ever executes would that post go
+        // first. Whichever runs first, an unconditional Add on the second would find the
+        // dictionary already parented and throw "The ResourceDictionary already has a parent"
+        // (measured via remex.desktop.render.tests) — so both sides guard with Contains
+        // (ThemeService.cs's own merge, next to `Typography.Overrides`, does the same).
         if (merged is { } m1 && m1.Contains(_overrideResources)) m1.Remove(_overrideResources);
         _overrideResources.Clear();
 
