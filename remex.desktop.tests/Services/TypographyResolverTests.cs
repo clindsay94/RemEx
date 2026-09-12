@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Avalonia.Media;
 using FluentAssertions;
@@ -74,10 +75,35 @@ public class TypographyResolverTests
         var r = TypographyResolver.Resolve(new TypographySettings { HeadersBold = true, BodyBold = true }, Dark);
 
         foreach (var m in TypographyResolver.Members.Where(m => m.Section is TypographySection.Headers or TypographySection.Body))
-            r.FontWeights[m.FontWeightKey].Should().Be(FontWeight.Bold, m.Key);
+            r.FontWeights[m.FontWeightKey].Should().Be((FontWeight)Math.Max((int)FontWeight.Bold, (int)m.BaseWeight), m.Key);
         foreach (var m in TypographyResolver.Members.Where(m => m.Section is TypographySection.Small or TypographySection.Sensor))
             r.FontWeights[m.FontWeightKey].Should().Be(m.BaseWeight, m.Key);
         r.UntaggedBold.Should().BeTrue();
+    }
+
+    [Fact]
+    public void BoldOn_NeverThinsABaseWeightHeavierThanBold_PageTitleAndCardTitleStayBlack()
+    {
+        var r = TypographyResolver.Resolve(new TypographySettings { HeadersBold = true }, Dark);
+
+        r.FontWeights["Typo.PageTitle.FontWeight"].Should().Be(FontWeight.Black);
+        r.FontWeights["Typo.CardTitle.FontWeight"].Should().Be(FontWeight.Black);
+    }
+
+    [Fact]
+    public void BoldOn_RaisesALighterBaseWeightToBold_Headline6MediumToBold()
+    {
+        var r = TypographyResolver.Resolve(new TypographySettings { HeadersBold = true }, Dark);
+
+        r.FontWeights["Typo.Headline6.FontWeight"].Should().Be(FontWeight.Bold);
+    }
+
+    [Fact]
+    public void BoldOn_RaisesRegularBaseWeightToBold_CaptionRegularToBold()
+    {
+        var r = TypographyResolver.Resolve(new TypographySettings { SmallBold = true }, Dark);
+
+        r.FontWeights["Typo.Caption.FontWeight"].Should().Be(FontWeight.Bold);
     }
 
     [Theory]

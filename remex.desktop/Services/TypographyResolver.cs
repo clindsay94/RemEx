@@ -117,8 +117,16 @@ public static class TypographyResolver
     public static double FontSize(TypographyMember member, TypographySettings settings) =>
         member.BaseSize * TypographySettings.ClampScale(ScaleFor(settings, member.Section));
 
+    /// <summary>
+    /// Bold never thins text: a section's Bold switch raises members to at least
+    /// <see cref="FontWeight.Bold"/> (700), but a member whose own <see cref="TypographyMember.BaseWeight"/>
+    /// is already heavier (e.g. PageTitle/CardTitle at Black, 900) stays at that heavier weight.
+    /// Off returns to <see cref="TypographyMember.BaseWeight"/> unchanged.
+    /// </summary>
     public static FontWeight FontWeightFor(TypographyMember member, TypographySettings settings) =>
-        BoldFor(settings, member.Section) ? FontWeight.Bold : member.BaseWeight;
+        BoldFor(settings, member.Section)
+            ? (FontWeight)Math.Max((int)FontWeight.Bold, (int)member.BaseWeight)
+            : member.BaseWeight;
 
     public static int ReferencePoints(TypographySection section) =>
         (int)Member(ReferenceMember[section]).BaseSize;
