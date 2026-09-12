@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Remex.Core.Models;
 
 namespace Remex.Desktop.Services;
@@ -36,13 +35,17 @@ namespace Remex.Desktop.Services;
 /// regardless of which one happens to run first.
 /// </para>
 /// <para>
-/// TWO KEYS ARE NOT IN THE DICTIONARY. Untagged text's size is the OWN key
+/// ONE KEY IS NOT IN THE DICTIONARY. Untagged text's size is the OWN key
 /// <c>MaterialDesignFontSize</c> (App.axaml:47), written in place like ThemeService writes
 /// <c>UiScale</c> (ThemeService.cs:576-603) — an own key shadows every merged dictionary. Untagged
-/// text's bold is a runtime <see cref="Style"/> attached only while Body bold is on: a
-/// <c>{x:Type TextBlock}</c> ControlTheme setter would also fire when OFF, forcing Regular onto
-/// text that inherits Medium from a Material button — "off" must mean "inherit", which no resource
-/// value can express.
+/// text's bold USED to be a runtime <see cref="Avalonia.Styling.Style"/> attached/detached on
+/// <c>Application.Styles</c> only while Body bold was on; that mutation of the live Styles
+/// collection broke UI Automation's <c>FindAll</c> on the shell root until restart
+/// (RemEx-jt6w5.11). It is now <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/>, a
+/// resource key like every other <c>Typo.*</c> value: present (Bold) only while Body bold is on,
+/// absent (never "set to Regular") when off, so the default <c>{x:Type TextBlock}</c> ControlTheme's
+/// <c>DynamicResource</c> setter (<c>Styles/Typography.axaml</c>) resolves to Unset and "off" means
+/// "inherit" — Material buttons keep the Medium their content TextBlock inherits.
 /// </para>
 /// </remarks>
 public sealed class TypographyService
@@ -54,17 +57,6 @@ public sealed class TypographyService
     public static readonly Color DefaultSurface = Color.FromRgb(0x12, 0x12, 0x12);
 
     private readonly ResourceDictionary _overrideResources = new();
-
-    // Untagged TextBlocks only: Theme == null excludes every Material type-scale member (they carry
-    // their own Typo.<Member>.FontWeight); the two class exclusions are Headers members that live
-    // as App.axaml Styles rather than ControlThemes, so a later Style would otherwise outrank them.
-    private readonly Style _untaggedBold = new(x => x.OfType<TextBlock>()
-            .PropertyEquals(StyledElement.ThemeProperty, null)
-            .Not(y => y.Class("page-title"))
-            .Not(y => y.Class("card-title")))
-    {
-        Setters = { new Setter(TextBlock.FontWeightProperty, FontWeight.Bold) },
-    };
 
     public TypographyService()
     {
@@ -133,9 +125,5 @@ public sealed class TypographyService
         if (app is null) return;
 
         app.Resources[DefaultFontSizeKey] = resolved.DefaultFontSize;
-
-        var attached = app.Styles.Contains(_untaggedBold);
-        if (resolved.UntaggedBold && !attached) app.Styles.Add(_untaggedBold);
-        else if (!resolved.UntaggedBold && attached) app.Styles.Remove(_untaggedBold);
     }
 }

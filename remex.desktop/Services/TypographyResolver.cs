@@ -58,6 +58,18 @@ public static class TypographyResolver
     /// <summary>Bound by the sensor-card templates' backdrop Border (<c>IsVisible</c>).</summary>
     public const string SensorTitleBackdropKey = "Typo.Sensor.TitleBackdrop";
 
+    /// <summary>
+    /// Untagged text's Bold: a <c>DynamicResource</c> the default <c>{x:Type TextBlock}</c>
+    /// ControlTheme (<c>Styles/Typography.axaml</c>) reads for its <c>FontWeight</c> setter.
+    /// RESOURCE-ONLY, deliberately not a runtime <c>Application.Styles</c> mutation (RemEx-jt6w5.11):
+    /// attaching/detaching a live <see cref="Avalonia.Styling.Style"/> on <c>Application.Styles</c>
+    /// broke UI Automation's <c>FindAll</c> on the shell root until restart. Present in the resolved
+    /// dictionary only when Body bold is on; absent (never "set to Regular") when off, so the
+    /// DynamicResource resolves to Unset and the setter contributes nothing — the same "no key = no
+    /// override" trick <see cref="TypographyResolution.SectionShadows"/> uses for the halo Effect.
+    /// </summary>
+    public const string UntaggedBoldFontWeightKey = "Typo.UntaggedBold.FontWeight";
+
     public static readonly IReadOnlyList<TypographyMember> Members = new[]
     {
         new TypographyMember("Headline5", TypographySection.Headers, 24, FontWeight.Regular),
@@ -157,6 +169,7 @@ public static class TypographyResolver
             sizes[member.FontSizeKey] = FontSize(member, s);
             weights[member.FontWeightKey] = FontWeightFor(member, s);
         }
+        if (s.BodyBold) weights[UntaggedBoldFontWeightKey] = FontWeight.Bold;
 
         var shadow = s.ShadowEnabled
             ? new TextShadow(ShadowColor(surface), ShadowBlurRadius(s.ShadowStrength), ShadowOpacity(s.ShadowStrength))

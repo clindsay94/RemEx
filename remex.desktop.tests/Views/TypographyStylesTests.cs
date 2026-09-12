@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using Remex.Core.Models;
 using Remex.Desktop.Services;
 using Xunit;
 
@@ -45,19 +46,25 @@ public class TypographyStylesTests
     }
 
     [Fact]
-    public void TheDefaultTextBlockTheme_CarriesTheEffectOnly()
+    public void TheDefaultTextBlockTheme_CarriesNoInlineFontSize_AndABoldSetterScopedToUntaggedText()
     {
-        // A FontSize or FontWeight setter here would outrank INHERITANCE and force 14/Regular onto the
-        // TextBlock every ContentPresenter creates inside a Button — stripping the Medium Material
-        // gives button labels at defaults. Untagged size goes through MaterialDesignFontSize and
-        // untagged bold through TypographyService's runtime style (see its remarks).
+        // A FontSize setter here would outrank INHERITANCE and force 14 onto the TextBlock every
+        // ContentPresenter creates inside a Button — stripping the size Material gives button labels
+        // at defaults. Untagged size goes through MaterialDesignFontSize. FontWeight IS present, but
+        // as a DynamicResource that TypographyResolver only ever populates while Body bold is on
+        // (RemEx-jt6w5.11: resource-only, not the runtime Application.Styles mutation that broke UI
+        // Automation) — off means the key is absent, so the setter resolves to Unset and Buttons keep
+        // their inherited Medium. Nested Style excludes page-title/card-title defensively.
         var theme = Regex.Match(TypographyMarkup(),
             @"<ControlTheme x:Key=""\{x:Type TextBlock\}"" TargetType=""TextBlock"" BasedOn=""\{StaticResource MaterialTextBlock\}"">(?<body>.*?)</ControlTheme>",
             RegexOptions.Singleline);
 
         theme.Success.Should().BeTrue();
-        theme.Groups["body"].Value.Should().Contain(@"<Setter Property=""Effect"" Value=""{DynamicResource Typo.Body.Effect}""/>");
-        theme.Groups["body"].Value.Should().NotContain(@"Property=""FontSize""").And.NotContain(@"Property=""FontWeight""");
+        var body = theme.Groups["body"].Value;
+        body.Should().Contain(@"<Setter Property=""Effect"" Value=""{DynamicResource Typo.Body.Effect}""/>");
+        body.Should().NotContain(@"Property=""FontSize""");
+        body.Should().Contain(@"Selector=""^:not(.page-title):not(.card-title)""");
+        body.Should().Contain(@"<Setter Property=""FontWeight"" Value=""{DynamicResource Typo.UntaggedBold.FontWeight}""/>");
     }
 
     [Fact]
@@ -103,7 +110,13 @@ public class TypographyStylesTests
             .Select(m => m.Groups[1].Value)
             .Distinct()
             .ToArray();
-        var published = new TypographyService().Overrides.Keys.OfType<string>().ToHashSet();
+        // Typo.UntaggedBold.FontWeight is published ONLY while Body bold is on (RemEx-jt6w5.11: "no
+        // key = no override" for untagged text, the same trick SectionShadows uses for the halo) —
+        // so the reachability scan must check both states, not just the service's constructor defaults.
+        var service = new TypographyService();
+        var published = service.Overrides.Keys.OfType<string>().ToHashSet();
+        service.Apply(new TypographySettings { BodyBold = true }, TypographyService.DefaultSurface);
+        published.UnionWith(service.Overrides.Keys.OfType<string>());
 
         bound.Length.Should().BeGreaterThan(20, "if the scan finds nothing this test asserts nothing");
         bound.Where(k => !published.Contains(k)).Should().BeEmpty(

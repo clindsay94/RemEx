@@ -24,14 +24,26 @@
     <Styles.Resources>
         <ResourceDictionary>
 
-            <!-- Untagged text: EFFECT ONLY. A FontSize or FontWeight setter on the default theme
-                 outranks inheritance and would force 14/Regular onto the TextBlock every
-                 ContentPresenter creates inside a Button, stripping the Medium Material gives
-                 button labels — at defaults. Untagged SIZE follows Body through the
-                 MaterialDesignFontSize own key (App.axaml); untagged BOLD is a runtime Style
-                 TypographyService attaches only while Body bold is on. -->
+            <!-- Untagged text: EFFECT + BOLD ONLY, both resource-driven so "off" means "inherit".
+                 A FontSize setter here would force 14 onto every ContentPresenter TextBlock inside a
+                 Button, stripping the Medium Material gives button labels at defaults — untagged
+                 SIZE follows Body through the MaterialDesignFontSize own key (App.axaml) instead.
+                 FontWeight is safe as a DynamicResource setter because TypographyResolver only ever
+                 puts a key at Typo.UntaggedBold.FontWeight while Body bold is ON; when it's off the
+                 key is absent, the DynamicResource resolves to Unset, and the setter contributes
+                 nothing — so a Button's inherited Medium survives untouched. This used to be a
+                 runtime Style TypographyService attached/detached on Application.Styles; that live
+                 mutation of the Styles collection broke UI Automation's FindAll on the shell root
+                 until restart (RemEx-jt6w5.11) — a resource key, like every other Typo.* value,
+                 does not. The nested Style excludes page-title/card-title defensively (they set
+                 their own Typo.PageTitle/CardTitle.FontWeight via App.axaml class Styles, which
+                 outrank a ControlTheme setter regardless, but the exclusion documents the intent
+                 the old runtime Style's .Not() guards captured). -->
             <ControlTheme x:Key="{x:Type TextBlock}" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
                 <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
+                <Style Selector="^:not(.page-title):not(.card-title)">
+                    <Setter Property="FontWeight" Value="{DynamicResource Typo.UntaggedBold.FontWeight}"/>
+                </Style>
             </ControlTheme>
 
             <!-- ── Headers ─────────────────────────────────────────────────────────────────── -->

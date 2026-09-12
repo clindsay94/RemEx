@@ -43,13 +43,15 @@ internal sealed class ShellRenderFixture : IDisposable
     public ShellViewModel ViewModel { get; }
     public ShellView View { get; }
     public Window Window { get; }
+    public ThemeService Theme { get; }
 
-    private ShellRenderFixture(string tempDir, ShellViewModel viewModel, ShellView view, Window window)
+    private ShellRenderFixture(string tempDir, ShellViewModel viewModel, ShellView view, Window window, ThemeService theme)
     {
         _tempDir = tempDir;
         ViewModel = viewModel;
         View = view;
         Window = window;
+        Theme = theme;
     }
 
     public static async Task<ShellRenderFixture> CreateAsync()
@@ -106,7 +108,7 @@ internal sealed class ShellRenderFixture : IDisposable
         var view = new ShellView { DataContext = viewModel };
         var window = new Window { Width = 1280, Height = 800, Content = view };
 
-        return new ShellRenderFixture(tempDir, viewModel, view, window);
+        return new ShellRenderFixture(tempDir, viewModel, view, window, theme);
     }
 
     /// <summary>
