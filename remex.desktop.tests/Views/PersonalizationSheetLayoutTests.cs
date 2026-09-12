@@ -8,7 +8,7 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// The Personalization sheet's shape (spec section 3): six cards in a pinned order, one path to a
+/// The Personalization sheet's shape (spec section 3): seven cards in a pinned order, one path to a
 /// colour, no Tone slider, no seed setter reachable from the Saved palettes card. Source-text,
 /// because remex.desktop.tests has no headless render.
 /// </summary>
