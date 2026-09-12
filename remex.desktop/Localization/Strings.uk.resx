@@ -3532,4 +3532,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_TextReset" xml:space="preserve">
     <value>Скинути текст до типових</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>Точність</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Вміст</value>
+  </data>
 </root>

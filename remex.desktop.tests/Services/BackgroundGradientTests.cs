@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Avalonia.Media;
-using MaterialColorUtilities.ColorAppearance;
+using Remex.Core.Theming.Mcu;
 using FluentAssertions;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;

@@ -3531,4 +3531,10 @@ Vous pouvez modifier :
   <data name="Custom_TextReset" xml:space="preserve">
     <value>Réinitialiser le texte</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>Fidélité</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Contenu</value>
+  </data>
 </root>

@@ -3531,4 +3531,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_TextReset" xml:space="preserve">
     <value>टेक्स्ट को डिफ़ॉल्ट पर रीसेट करें</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>फ़िडेलिटी</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>कंटेंट</value>
+  </data>
 </root>

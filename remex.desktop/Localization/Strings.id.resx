@@ -3534,4 +3534,10 @@ Anda dapat mengubah:
   <data name="Custom_TextReset" xml:space="preserve">
     <value>Setel ulang teks ke bawaan</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>Fidelitas</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Konten</value>
+  </data>
 </root>

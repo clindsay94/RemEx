@@ -15,6 +15,13 @@ namespace Remex.Desktop.Tests.Controls;
 /// collapses the same way is covered without a new special case.
 /// </summary>
 /// <remarks>
+/// DARK MODE ONLY, since the MCU port (RemEx-4kv0g.12): Google's real <c>SchemeMonochrome</c>
+/// (<c>MaterialDynamicColors.java</c>) places Primary and Tertiary at tone 100/90 in dark mode —
+/// close enough to read as indistinguishable — but at tone 0/25 in LIGHT mode, which is black next
+/// to a visibly lighter grey. The old albi005 approximation collapsed both modes identically; the
+/// exact port does not, and light mode not collapsing is Google's own behaviour, not a bug here.
+/// </remarks>
+/// <remarks>
 /// Driven by <see cref="DynamicColorGenerator.Generate"/>'s real output, not hand-written hex - a
 /// prior review (this bead) found four tests here that fed arbitrary hex and never exercised what
 /// the palette actually produces. The seed sweep is the same three cells
@@ -38,8 +45,15 @@ public class SparklineDualMetricDimmingTests
             yield return new object[] { name, hex, isDark, contrast };
     }
 
+    public static IEnumerable<object[]> DarkSeedContrastCombinations()
+    {
+        foreach (var (name, hex) in SweepSeeds)
+        foreach (var contrast in new[] { 0.0, 1.0 })
+            yield return new object[] { name, hex, true, contrast };
+    }
+
     [Theory]
-    [MemberData(nameof(SeedModeContrastCombinations))]
+    [MemberData(nameof(DarkSeedContrastCombinations))]
     public void MonochromePrimaryAndTertiaryAreIndistinguishable(string name, string hex, bool isDark, double contrast)
     {
         var seed = Color.Parse(hex);

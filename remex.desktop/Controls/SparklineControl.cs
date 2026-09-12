@@ -119,8 +119,8 @@ public class SparklineControl : Control
     private const double IndistinguishableSecondaryOpacityAtContrast0 = 0.55;
 
     /// <summary>
-    /// The dim floor at contrast = 1.0. <c>DynamicColorGenerator.Contrasted</c> already walks every
-    /// "on" pair to WCAG AAA at this setting, so a flat 0.55 multiplier on top of that spends half
+    /// The dim floor at contrast = 1.0. MCU's <c>ContrastCurve</c>s already re-tone every "on" pair
+    /// toward their curve's target at this setting, so a flat 0.55 multiplier on top of that spends half
     /// of the ratio the palette just spent budget reaching - a 1px collapsed line goes from AAA back
     /// to under AA. 0.75 keeps a visible dim while giving up much less of that budget; the two
     /// floors are interpolated by <see cref="ContrastLevel"/> in <c>RenderDualMetric</c>.

@@ -3535,4 +3535,10 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_TextReset" xml:space="preserve">
     <value>Metni varsayılana sıfırla</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>Aslına uygun</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>İçerik</value>
+  </data>
 </root>

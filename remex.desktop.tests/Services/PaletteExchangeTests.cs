@@ -67,7 +67,7 @@ public class PaletteExchangeTests
 
     [Theory]
     [InlineData("Spritz", "Neutral")]
-    [InlineData("Content", "TonalSpot")]
+    [InlineData("Content", "Content")]     // a real variant since RemEx-4kv0g.12; it used to fall to TonalSpot
     [InlineData("Bogus", "TonalSpot")]
     public void TryParseJson_NormalisesRetiredAndUnknownVariants(string stored, string expected)
     {

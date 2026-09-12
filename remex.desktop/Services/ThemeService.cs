@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Material.Styles.Themes;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
+using Remex.Core.Theming.Mcu;
 using System.Diagnostics;
 
 namespace Remex.Desktop.Services;
@@ -396,6 +397,108 @@ public class ThemeService : IDisposable
         // (RemEx-qljv).
         SetResourceOverrideInternal("PaletteTertiary", palette.Tertiary);
         SetResourceOverrideInternal("PaletteTertiaryBrush", new SolidColorBrush(palette.Tertiary));
+
+        // EVERY COMPOSE-EXPOSED M3 ROLE, UNDER ITS OWN NAME (RemEx-4kv0g.12, spec § 2). The ~50 legacy keys above are the
+        // role contract views bind to today; these are the vocabulary spec B binds to. Literal keys on purpose:
+        // ThemeKeyCoverageTests and MaterialRoleKeysTests read this file with a regex, and a loop would hide them.
+        var roles = palette.Roles;
+        SetResourceOverrideInternal("PalettePrimary", ToColor(roles.Primary));
+        SetResourceOverrideInternal("PalettePrimaryBrush", new SolidColorBrush(ToColor(roles.Primary)));
+        SetResourceOverrideInternal("PaletteOnPrimary", ToColor(roles.OnPrimary));
+        SetResourceOverrideInternal("PaletteOnPrimaryBrush", new SolidColorBrush(ToColor(roles.OnPrimary)));
+        SetResourceOverrideInternal("PalettePrimaryContainer", ToColor(roles.PrimaryContainer));
+        SetResourceOverrideInternal("PalettePrimaryContainerBrush", new SolidColorBrush(ToColor(roles.PrimaryContainer)));
+        SetResourceOverrideInternal("PaletteOnPrimaryContainer", ToColor(roles.OnPrimaryContainer));
+        SetResourceOverrideInternal("PaletteOnPrimaryContainerBrush", new SolidColorBrush(ToColor(roles.OnPrimaryContainer)));
+        SetResourceOverrideInternal("PaletteInversePrimary", ToColor(roles.InversePrimary));
+        SetResourceOverrideInternal("PaletteInversePrimaryBrush", new SolidColorBrush(ToColor(roles.InversePrimary)));
+        SetResourceOverrideInternal("PaletteSecondary", ToColor(roles.Secondary));
+        SetResourceOverrideInternal("PaletteSecondaryBrush", new SolidColorBrush(ToColor(roles.Secondary)));
+        SetResourceOverrideInternal("PaletteOnSecondary", ToColor(roles.OnSecondary));
+        SetResourceOverrideInternal("PaletteOnSecondaryBrush", new SolidColorBrush(ToColor(roles.OnSecondary)));
+        SetResourceOverrideInternal("PaletteSecondaryContainer", ToColor(roles.SecondaryContainer));
+        SetResourceOverrideInternal("PaletteSecondaryContainerBrush", new SolidColorBrush(ToColor(roles.SecondaryContainer)));
+        SetResourceOverrideInternal("PaletteOnSecondaryContainer", ToColor(roles.OnSecondaryContainer));
+        SetResourceOverrideInternal("PaletteOnSecondaryContainerBrush", new SolidColorBrush(ToColor(roles.OnSecondaryContainer)));
+        SetResourceOverrideInternal("PaletteTertiary", ToColor(roles.Tertiary));
+        SetResourceOverrideInternal("PaletteTertiaryBrush", new SolidColorBrush(ToColor(roles.Tertiary)));
+        SetResourceOverrideInternal("PaletteOnTertiary", ToColor(roles.OnTertiary));
+        SetResourceOverrideInternal("PaletteOnTertiaryBrush", new SolidColorBrush(ToColor(roles.OnTertiary)));
+        SetResourceOverrideInternal("PaletteTertiaryContainer", ToColor(roles.TertiaryContainer));
+        SetResourceOverrideInternal("PaletteTertiaryContainerBrush", new SolidColorBrush(ToColor(roles.TertiaryContainer)));
+        SetResourceOverrideInternal("PaletteOnTertiaryContainer", ToColor(roles.OnTertiaryContainer));
+        SetResourceOverrideInternal("PaletteOnTertiaryContainerBrush", new SolidColorBrush(ToColor(roles.OnTertiaryContainer)));
+        SetResourceOverrideInternal("PaletteBackground", ToColor(roles.Background));
+        SetResourceOverrideInternal("PaletteBackgroundBrush", new SolidColorBrush(ToColor(roles.Background)));
+        SetResourceOverrideInternal("PaletteOnBackground", ToColor(roles.OnBackground));
+        SetResourceOverrideInternal("PaletteOnBackgroundBrush", new SolidColorBrush(ToColor(roles.OnBackground)));
+        SetResourceOverrideInternal("PaletteSurface", ToColor(roles.Surface));
+        SetResourceOverrideInternal("PaletteSurfaceBrush", new SolidColorBrush(ToColor(roles.Surface)));
+        SetResourceOverrideInternal("PaletteOnSurface", ToColor(roles.OnSurface));
+        SetResourceOverrideInternal("PaletteOnSurfaceBrush", new SolidColorBrush(ToColor(roles.OnSurface)));
+        SetResourceOverrideInternal("PaletteSurfaceVariant", ToColor(roles.SurfaceVariant));
+        SetResourceOverrideInternal("PaletteSurfaceVariantBrush", new SolidColorBrush(ToColor(roles.SurfaceVariant)));
+        SetResourceOverrideInternal("PaletteOnSurfaceVariant", ToColor(roles.OnSurfaceVariant));
+        SetResourceOverrideInternal("PaletteOnSurfaceVariantBrush", new SolidColorBrush(ToColor(roles.OnSurfaceVariant)));
+        SetResourceOverrideInternal("PaletteSurfaceTint", ToColor(roles.SurfaceTint));
+        SetResourceOverrideInternal("PaletteSurfaceTintBrush", new SolidColorBrush(ToColor(roles.SurfaceTint)));
+        SetResourceOverrideInternal("PaletteInverseSurface", ToColor(roles.InverseSurface));
+        SetResourceOverrideInternal("PaletteInverseSurfaceBrush", new SolidColorBrush(ToColor(roles.InverseSurface)));
+        SetResourceOverrideInternal("PaletteInverseOnSurface", ToColor(roles.InverseOnSurface));
+        SetResourceOverrideInternal("PaletteInverseOnSurfaceBrush", new SolidColorBrush(ToColor(roles.InverseOnSurface)));
+        SetResourceOverrideInternal("PaletteError", ToColor(roles.Error));
+        SetResourceOverrideInternal("PaletteErrorBrush", new SolidColorBrush(ToColor(roles.Error)));
+        SetResourceOverrideInternal("PaletteOnError", ToColor(roles.OnError));
+        SetResourceOverrideInternal("PaletteOnErrorBrush", new SolidColorBrush(ToColor(roles.OnError)));
+        SetResourceOverrideInternal("PaletteErrorContainer", ToColor(roles.ErrorContainer));
+        SetResourceOverrideInternal("PaletteErrorContainerBrush", new SolidColorBrush(ToColor(roles.ErrorContainer)));
+        SetResourceOverrideInternal("PaletteOnErrorContainer", ToColor(roles.OnErrorContainer));
+        SetResourceOverrideInternal("PaletteOnErrorContainerBrush", new SolidColorBrush(ToColor(roles.OnErrorContainer)));
+        SetResourceOverrideInternal("PaletteOutline", ToColor(roles.Outline));
+        SetResourceOverrideInternal("PaletteOutlineBrush", new SolidColorBrush(ToColor(roles.Outline)));
+        SetResourceOverrideInternal("PaletteOutlineVariant", ToColor(roles.OutlineVariant));
+        SetResourceOverrideInternal("PaletteOutlineVariantBrush", new SolidColorBrush(ToColor(roles.OutlineVariant)));
+        SetResourceOverrideInternal("PaletteScrim", ToColor(roles.Scrim));
+        SetResourceOverrideInternal("PaletteScrimBrush", new SolidColorBrush(ToColor(roles.Scrim)));
+        SetResourceOverrideInternal("PaletteSurfaceBright", ToColor(roles.SurfaceBright));
+        SetResourceOverrideInternal("PaletteSurfaceBrightBrush", new SolidColorBrush(ToColor(roles.SurfaceBright)));
+        SetResourceOverrideInternal("PaletteSurfaceDim", ToColor(roles.SurfaceDim));
+        SetResourceOverrideInternal("PaletteSurfaceDimBrush", new SolidColorBrush(ToColor(roles.SurfaceDim)));
+        SetResourceOverrideInternal("PaletteSurfaceContainer", ToColor(roles.SurfaceContainer));
+        SetResourceOverrideInternal("PaletteSurfaceContainerBrush", new SolidColorBrush(ToColor(roles.SurfaceContainer)));
+        SetResourceOverrideInternal("PaletteSurfaceContainerHigh", ToColor(roles.SurfaceContainerHigh));
+        SetResourceOverrideInternal("PaletteSurfaceContainerHighBrush", new SolidColorBrush(ToColor(roles.SurfaceContainerHigh)));
+        SetResourceOverrideInternal("PaletteSurfaceContainerHighest", ToColor(roles.SurfaceContainerHighest));
+        SetResourceOverrideInternal("PaletteSurfaceContainerHighestBrush", new SolidColorBrush(ToColor(roles.SurfaceContainerHighest)));
+        SetResourceOverrideInternal("PaletteSurfaceContainerLow", ToColor(roles.SurfaceContainerLow));
+        SetResourceOverrideInternal("PaletteSurfaceContainerLowBrush", new SolidColorBrush(ToColor(roles.SurfaceContainerLow)));
+        SetResourceOverrideInternal("PaletteSurfaceContainerLowest", ToColor(roles.SurfaceContainerLowest));
+        SetResourceOverrideInternal("PaletteSurfaceContainerLowestBrush", new SolidColorBrush(ToColor(roles.SurfaceContainerLowest)));
+        SetResourceOverrideInternal("PalettePrimaryFixed", ToColor(roles.PrimaryFixed));
+        SetResourceOverrideInternal("PalettePrimaryFixedBrush", new SolidColorBrush(ToColor(roles.PrimaryFixed)));
+        SetResourceOverrideInternal("PalettePrimaryFixedDim", ToColor(roles.PrimaryFixedDim));
+        SetResourceOverrideInternal("PalettePrimaryFixedDimBrush", new SolidColorBrush(ToColor(roles.PrimaryFixedDim)));
+        SetResourceOverrideInternal("PaletteOnPrimaryFixed", ToColor(roles.OnPrimaryFixed));
+        SetResourceOverrideInternal("PaletteOnPrimaryFixedBrush", new SolidColorBrush(ToColor(roles.OnPrimaryFixed)));
+        SetResourceOverrideInternal("PaletteOnPrimaryFixedVariant", ToColor(roles.OnPrimaryFixedVariant));
+        SetResourceOverrideInternal("PaletteOnPrimaryFixedVariantBrush", new SolidColorBrush(ToColor(roles.OnPrimaryFixedVariant)));
+        SetResourceOverrideInternal("PaletteSecondaryFixed", ToColor(roles.SecondaryFixed));
+        SetResourceOverrideInternal("PaletteSecondaryFixedBrush", new SolidColorBrush(ToColor(roles.SecondaryFixed)));
+        SetResourceOverrideInternal("PaletteSecondaryFixedDim", ToColor(roles.SecondaryFixedDim));
+        SetResourceOverrideInternal("PaletteSecondaryFixedDimBrush", new SolidColorBrush(ToColor(roles.SecondaryFixedDim)));
+        SetResourceOverrideInternal("PaletteOnSecondaryFixed", ToColor(roles.OnSecondaryFixed));
+        SetResourceOverrideInternal("PaletteOnSecondaryFixedBrush", new SolidColorBrush(ToColor(roles.OnSecondaryFixed)));
+        SetResourceOverrideInternal("PaletteOnSecondaryFixedVariant", ToColor(roles.OnSecondaryFixedVariant));
+        SetResourceOverrideInternal("PaletteOnSecondaryFixedVariantBrush", new SolidColorBrush(ToColor(roles.OnSecondaryFixedVariant)));
+        SetResourceOverrideInternal("PaletteTertiaryFixed", ToColor(roles.TertiaryFixed));
+        SetResourceOverrideInternal("PaletteTertiaryFixedBrush", new SolidColorBrush(ToColor(roles.TertiaryFixed)));
+        SetResourceOverrideInternal("PaletteTertiaryFixedDim", ToColor(roles.TertiaryFixedDim));
+        SetResourceOverrideInternal("PaletteTertiaryFixedDimBrush", new SolidColorBrush(ToColor(roles.TertiaryFixedDim)));
+        SetResourceOverrideInternal("PaletteOnTertiaryFixed", ToColor(roles.OnTertiaryFixed));
+        SetResourceOverrideInternal("PaletteOnTertiaryFixedBrush", new SolidColorBrush(ToColor(roles.OnTertiaryFixed)));
+        SetResourceOverrideInternal("PaletteOnTertiaryFixedVariant", ToColor(roles.OnTertiaryFixedVariant));
+        SetResourceOverrideInternal("PaletteOnTertiaryFixedVariantBrush", new SolidColorBrush(ToColor(roles.OnTertiaryFixedVariant)));
+
         // Published so SparklineControl's dim-on-collapse step (RemEx-n2kv0) can scale its opacity
         // floor by the same contrast the picker sets, rather than guessing a single fixed dim for
         // every contrast level. Raw [-1, 1] level, not a derived colour - same shape as the other
@@ -750,6 +853,8 @@ public class ThemeService : IDisposable
     {
         _overrideResources[key] = value;
     }
+
+    private static Color ToColor(uint argb) => Color.FromUInt32(argb);
 
     /// <summary>
     /// Injects a colour from physical hardware (RGB peripherals, via a hardware-sync source) as the

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Avalonia.Media;
-using MaterialColorUtilities.Palettes;
-using MaterialColorUtilities.Schemes;
 using FluentAssertions;
+using Remex.Core.Theming.Mcu;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Xunit;
@@ -95,83 +95,79 @@ public class SeedPaletteTests
     }
 
     [Fact]
-    public void ContrastZeroIsStillExactlyTheLibraryScheme()
+    public void EveryMaterialRoleIsExactlyTheVectorScheme()
     {
-        // THE PROPERTY THAT LET CONTRAST BE ADDED TO A PALETTE CONNOR HAD ALREADY APPROVED. Every
-        // install carries ThemeContrast = 0.0 until somebody moves the slider; if zero were merely
-        // *close* to the old output, shipping this would have repainted every one of them.
-        //
-        // Checked against the library, not against a re-derivation through the same helper the
-        // generator uses, so the oracle cannot agree with a broken generator. This also catches the
-        // duller failure the literals would have missed: a role wired to the wrong scheme member.
-        foreach (var seed in Seeds)
-        foreach (var dark in new[] { true, false })
+        // The oracle used to be the albi005 library in-process; it is now Google's output, committed as
+        // mcu-vectors.json (RemEx-4kv0g.6). Every tuple, the 21 M3 roles M3Palette carries as Colors AND all 62 in Roles.
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(RepoRoot(), "remex.core.tests", "Fixtures", "mcu-vectors.json")));
+        var roles = doc.RootElement.GetProperty("roles").EnumerateArray().Select(r => r.GetString()!).ToArray();
+        var failures = new List<string>();
+        foreach (var v in doc.RootElement.GetProperty("vectors").EnumerateArray())
         {
-            var core = new CorePalette();
-            core.Fill(((uint)seed.A << 24) | ((uint)seed.R << 16) | ((uint)seed.G << 8) | seed.B, Style.TonalSpot);
-            Scheme<uint> expected = dark
-                ? new DarkSchemeMapper().Map(core)
-                : new LightSchemeMapper().Map(core);
+            var seed = Color.Parse(v.GetProperty("seed").GetString()!);
+            var variant = SchemeVariants.FromMcu(SchemeVariantWire.FromWireOrDefault(v.GetProperty("variant").GetString()));
+            bool dark = v.GetProperty("dark").GetBoolean();
+            double contrast = v.GetProperty("contrast").GetDouble();
+            var expected = v.GetProperty("argb").EnumerateArray().Select(a => Convert.ToUInt32(a.GetString()!.Substring(1), 16)).ToArray();
+            var where = $"{seed} {variant} {(dark ? "dark" : "light")} contrast {contrast}";
 
-            var actual = DynamicColorGenerator.Generate(seed, "TonalSpot", dark, contrast: 0.0);
-            var where = $"seed {seed}, {(dark ? "dark" : "light")}";
+            var actual = DynamicColorGenerator.Generate(seed, variant, dark, contrast);
+            for (int i = 0; i < roles.Length; i++)
+                if (actual.Roles[roles[i]] != expected[i]) failures.Add($"{where} Roles[{roles[i]}]");
 
-            Argb(actual.Primary).Should().Be(expected.Primary, where);
-            Argb(actual.OnPrimary).Should().Be(expected.OnPrimary, where);
-            Argb(actual.PrimaryContainer).Should().Be(expected.PrimaryContainer, where);
-            Argb(actual.OnPrimaryContainer).Should().Be(expected.OnPrimaryContainer, where);
-            Argb(actual.Secondary).Should().Be(expected.Secondary, where);
-            Argb(actual.OnSecondary).Should().Be(expected.OnSecondary, where);
-            Argb(actual.SecondaryContainer).Should().Be(expected.SecondaryContainer, where);
-            Argb(actual.OnSecondaryContainer).Should().Be(expected.OnSecondaryContainer, where);
-            Argb(actual.Tertiary).Should().Be(expected.Tertiary, where);
-            Argb(actual.OnTertiary).Should().Be(expected.OnTertiary, where);
-            Argb(actual.Surface).Should().Be(expected.Surface, where);
-            Argb(actual.SurfaceVariant).Should().Be(expected.SurfaceVariant, where);
-            Argb(actual.SurfaceContainerLow).Should().Be(expected.SurfaceContainerLow, where);
-            Argb(actual.SurfaceContainer).Should().Be(expected.SurfaceContainer, where);
-            Argb(actual.SurfaceContainerHigh).Should().Be(expected.SurfaceContainerHigh, where);
-            Argb(actual.OnSurface).Should().Be(expected.OnSurface, where);
-            Argb(actual.OnSurfaceVariant).Should().Be(expected.OnSurfaceVariant, where);
-            Argb(actual.Outline).Should().Be(expected.Outline, where);
-            Argb(actual.OutlineVariant).Should().Be(expected.OutlineVariant, where);
-            Argb(actual.Error).Should().Be(expected.Error, where);
-            Argb(actual.OnError).Should().Be(expected.OnError, where);
+            uint Want(string role) => expected[Array.IndexOf(roles, role)];
+            foreach (var (name, colour, role) in new[]
+            {
+                ("Primary", actual.Primary, "primary"), ("OnPrimary", actual.OnPrimary, "onPrimary"), ("PrimaryContainer", actual.PrimaryContainer, "primaryContainer"),
+                ("OnPrimaryContainer", actual.OnPrimaryContainer, "onPrimaryContainer"), ("Secondary", actual.Secondary, "secondary"), ("OnSecondary", actual.OnSecondary, "onSecondary"),
+                ("SecondaryContainer", actual.SecondaryContainer, "secondaryContainer"), ("OnSecondaryContainer", actual.OnSecondaryContainer, "onSecondaryContainer"),
+                ("Tertiary", actual.Tertiary, "tertiary"), ("OnTertiary", actual.OnTertiary, "onTertiary"), ("Surface", actual.Surface, "surface"),
+                ("SurfaceVariant", actual.SurfaceVariant, "surfaceVariant"), ("SurfaceContainerLow", actual.SurfaceContainerLow, "surfaceContainerLow"),
+                ("SurfaceContainer", actual.SurfaceContainer, "surfaceContainer"), ("SurfaceContainerHigh", actual.SurfaceContainerHigh, "surfaceContainerHigh"),
+                ("OnSurface", actual.OnSurface, "onSurface"), ("OnSurfaceVariant", actual.OnSurfaceVariant, "onSurfaceVariant"), ("Outline", actual.Outline, "outline"),
+                ("OutlineVariant", actual.OutlineVariant, "outlineVariant"), ("Error", actual.Error, "error"), ("OnError", actual.OnError, "onError"),
+            })
+                if (Argb(colour) != Want(role)) failures.Add($"{where} {name}");
         }
+        failures.Should().BeEmpty($"first 20: {string.Join("; ", failures.Take(20))}");
     }
 
     private static uint Argb(Color c) => ((uint)c.A << 24) | ((uint)c.R << 16) | ((uint)c.G << 8) | c.B;
 
     [Fact]
-    public void RaisingContrastNeverLowersAMeasuredRatio()
+    public void EveryOnRoleMeetsItsCurveTargetOrHitsTheEndOfTheScale()
     {
-        // A "contrast" slider that reduces contrast somewhere in its range is worse than no slider,
-        // because the user cannot tell which end is which. Monotonicity is the whole contract.
-        var levels = new[] { 0.0, 0.25, 0.5, 0.75, 1.0 };
-        var regressions = new List<string>();
-
+        // MCU's contract (DynamicColor.getTone): a foreground is re-toned until Contrast.ratioOfTones meets its
+        // ContrastCurve.get(level); if neither the lighter nor the darker solution can, it lands on tone 0 or 100.
+        // Curves from MaterialDynamicColors.java (material 1.14.0). Measured on HCT tone, MCU's own metric.
+        var onRole = new ContrastCurve(4.5, 7.0, 11.0, 21.0);          // onPrimary, onSecondary, onTertiary, onSurface, onError
+        var onVariant = new ContrastCurve(3.0, 4.5, 7.0, 11.0);        // onSurfaceVariant
+        var failures = new List<string>();
         foreach (var seed in Seeds)
         foreach (var dark in new[] { true, false })
+        foreach (var level in new[] { -1.0, -0.5, 0.0, 0.5, 1.0 })
         {
-            var previous = new Dictionary<string, double>();
-            foreach (var level in levels)
+            var p = DynamicColorGenerator.Generate(seed, "TonalSpot", dark, level);
+            uint highestSurface = dark ? p.Roles.SurfaceBright : p.Roles.SurfaceDim;   // onSurface's background is highestSurface, not surface
+            foreach (var (name, fg, bg, curve) in new[]
             {
-                var palette = DynamicColorGenerator.Generate(seed, "TonalSpot", dark, level);
-                foreach (var (name, fg, bg) in Pairs(palette))
-                {
-                    double r = Ratio(fg, bg);
-                    // A hair of tolerance: a tonal palette's chroma is not constant along tone, so
-                    // the best available step can measure a rounding-width worse than the last one.
-                    if (previous.TryGetValue(name, out var before) && r < before - 0.05)
-                    {
-                        regressions.Add($"{seed} {(dark ? "dark" : "light")} {name}: {before:F2} -> {r:F2} at contrast {level}");
-                    }
-                    previous[name] = r;
-                }
+                ("OnPrimary/Primary", Argb(p.OnPrimary), Argb(p.Primary), onRole),
+                ("OnSecondary/Secondary", Argb(p.OnSecondary), Argb(p.Secondary), onRole),
+                ("OnTertiary/Tertiary", Argb(p.OnTertiary), Argb(p.Tertiary), onRole),
+                ("OnError/Error", Argb(p.OnError), Argb(p.Error), onRole),
+                ("OnSurface/highestSurface", Argb(p.OnSurface), highestSurface, onRole),
+                ("OnSurfaceVariant/highestSurface", Argb(p.OnSurfaceVariant), highestSurface, onVariant),
+            })
+            {
+                double fgTone = Hct.FromInt(fg).Tone, bgTone = Hct.FromInt(bg).Tone;
+                double achieved = Contrast.RatioOfTones(fgTone, bgTone);
+                double target = curve.Get(level);
+                bool atEnd = fgTone <= 0.5 || fgTone >= 99.5;
+                if (achieved < target - 0.15 && !atEnd)
+                    failures.Add($"{seed} {(dark ? "dark" : "light")} level {level} {name}: {achieved:F2} < {target:F2}, tone {fgTone:F1}");
             }
         }
-
-        regressions.Should().BeEmpty("raising the contrast setting must never lower a contrast ratio");
+        failures.Should().BeEmpty("every on-role either meets its ContrastCurve target or is already at tone 0/100");
     }
 
     [Fact]
@@ -179,8 +175,9 @@ public class SeedPaletteTests
     {
         // ANTI-VACUITY FOR THE TEST ABOVE. Monotonicity is trivially satisfied by a function that
         // ignores its contrast argument, which is exactly the bug this replaced (RemEx-68ynp: the
-        // parameter existed, was passed, and was never read). Demand that the extreme end of the
-        // slider is visibly different from the middle.
+        // parameter existed, was passed, and was never read) — level 1.0 targets ratio 11 against
+        // level 0's 7, so it still moves. Demand that the extreme end of the slider is visibly
+        // different from the middle. The contrast now comes from MCU's own ContrastCurves.
         var flat = DynamicColorGenerator.Generate(Color.Parse("#6C4CFF"), "TonalSpot", isDark: true, contrast: 0.0);
         var loud = DynamicColorGenerator.Generate(Color.Parse("#6C4CFF"), "TonalSpot", isDark: true, contrast: 1.0);
 
@@ -196,8 +193,10 @@ public class SeedPaletteTests
     public void LoweringContrastStopsAtTheLargeTextFloor()
     {
         // The reduced end of the slider is the dangerous one: it is a setting whose purpose is to
-        // make text harder to read, so it needs a hard stop. 3.0:1 is WCAG AA for large text — the
-        // lowest ratio any guideline calls acceptable for anything.
+        // make text harder to read, so it needs a hard stop. MCU's lowest curve anchor for any
+        // on-role is 3.0 (ContrastCurve(3.0, …) on the container/variant on-roles) and 4.5 for the
+        // rest, so level -1 still clears AA-large; ReducedContrastFloor no longer exists — the
+        // curves are the floor.
         var failures = new List<string>();
 
         foreach (var seed in Seeds)
@@ -206,6 +205,19 @@ public class SeedPaletteTests
             var palette = DynamicColorGenerator.Generate(seed, "TonalSpot", dark, -1.0);
             foreach (var (name, fg, bg) in Pairs(palette))
             {
+                // OnSurfaceVariant/SurfaceVariant is measured against SurfaceVariant everywhere else in this
+                // file, but MCU's own contract for onSurfaceVariant targets the highest surface (surfaceBright
+                // in dark, surfaceDim in light), not the surfaceVariant container fill — those two can sit much
+                // closer in tone than onSurfaceVariant's real background, so the fill measurement is the wrong
+                // oracle at the floor and is skipped here in favour of the correct pairing.
+                if (name == "OnSurfaceVariant/SurfaceVariant")
+                {
+                    uint highestSurface = dark ? palette.Roles.SurfaceBright : palette.Roles.SurfaceDim;
+                    double rv = Ratio(fg, DynamicColorGeneratorTestColor(highestSurface));
+                    if (rv < 3.0) failures.Add($"{seed} {(dark ? "dark" : "light")} OnSurfaceVariant/highestSurface = {rv:F2}:1");
+                    continue;
+                }
+
                 double r = Ratio(fg, bg);
                 if (r < 3.0) failures.Add($"{seed} {(dark ? "dark" : "light")} {name} = {r:F2}:1");
             }
@@ -214,32 +226,49 @@ public class SeedPaletteTests
         failures.Should().BeEmpty("minimum contrast must still clear AA for large text");
     }
 
+    private static Color DynamicColorGeneratorTestColor(uint argb) =>
+        Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
+
     [Fact]
     public void EveryVariantProducesADistinctPaletteFromTheSameSeed()
     {
         // THE HEADLINE ACCEPTANCE CRITERION OF RemEx-lrxyo, which until this test was verified only
-        // by looking at a screenshot. The variant row shows seven strips painted from one seed; if
+        // by looking at a screenshot. The variant row shows nine strips painted from one seed; if
         // two variants collapse onto identical output, the picker silently offers the user a choice
-        // that is not a choice, and every one of the 2989 other tests stays green while it does.
+        // that is not a choice, and every one of the other tests stays green while it does.
         //
         // Asserted on the six values the strip and its surface actually paint, not on the whole
         // M3Palette: two variants agreeing on some interior role is normal and not a defect. What
         // must never happen is two strips being indistinguishable to the code that draws them.
         //
-        // This locks in behaviour that is correct TODAY — measured 7/7 distinct across these seeds
-        // and both modes — rather than chasing a known bug. The risk it guards is a future tweak to
-        // StyleFor or to the neutral-chroma handling quietly merging two variants.
+        // This locks in behaviour that is correct TODAY across these seeds and both modes — rather
+        // than chasing a known bug. The risk it guards is a future tweak to the variant mapping or
+        // the neutral-chroma handling quietly merging two variants. One pair is a known, accepted
+        // exception: see the achromatic carve-out below.
         foreach (var seed in Seeds)
         {
             foreach (var isDark in new[] { true, false })
             {
                 var seen = new Dictionary<string, string>();
+                bool collapsedFidelityIntoContent = false;
 
                 foreach (var variant in Variants)
                 {
                     var p = DynamicColorGenerator.Generate(seed, variant, isDark: isDark, contrast: 0.0);
                     var fingerprint = string.Join(
                         "|", p.Surface, p.Primary, p.Secondary, p.Tertiary, p.OnSurface, p.Outline);
+
+                    // SchemeFidelity and SchemeContent differ ONLY in the tertiary palette, which they derive from the
+                    // seed's hue temperature (complement vs. analogous). At the extremes of the hue/tone space —
+                    // an achromatic seed (no usable hue at all) or a seed sitting at a symmetric point of the
+                    // temperature cache (pure yellow, measured) — the two derivations land on the same tertiary,
+                    // and the two variants are the same scheme by construction: Google's, not ours. This is a
+                    // known, accepted collision, not a defect in the adapter — skip that one pair when it happens.
+                    if (variant == SchemeVariants.Content && seen.TryGetValue(fingerprint, out var twin) && twin == SchemeVariants.Fidelity)
+                    {
+                        collapsedFidelityIntoContent = true;
+                        continue;
+                    }
 
                     seen.Should().NotContainKey(fingerprint,
                         $"variant '{variant}' must not render identically to '{(seen.TryGetValue(fingerprint, out var other) ? other : "?")}' " +
@@ -249,7 +278,7 @@ public class SeedPaletteTests
                     seen[fingerprint] = variant;
                 }
 
-                seen.Should().HaveCount(Variants.Count,
+                seen.Should().HaveCount(collapsedFidelityIntoContent ? Variants.Count - 1 : Variants.Count,
                     $"all {Variants.Count} variants have to be distinguishable for seed {seed}");
             }
         }

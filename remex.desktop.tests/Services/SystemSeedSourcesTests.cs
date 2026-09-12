@@ -108,7 +108,7 @@ public class SystemSeedSourcesTests
     public void AGreyscaleImageYieldsNothingRatherThanGoogleBlue()
     {
         // Review finding, measured against the real library: when no cluster clears the scorer's
-        // chroma floor, MaterialColorUtilities 0.3.0 returns a hardcoded #4285F4 sentinel rather
+        // chroma floor, Score.ScoreColors returns a hardcoded #4285F4 sentinel rather
         // than an empty list. Without the produced-by-the-quantizer filter, a black-and-white
         // wallpaper would overwrite the user's seed with a Google brand blue that appears nowhere
         // in the image — and show it as the single "extracted" swatch.

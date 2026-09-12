@@ -2,16 +2,18 @@ using Avalonia.Media;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MaterialColorUtilities.ColorAppearance;
-using MaterialColorUtilities.Palettes;
-using MaterialColorUtilities.Schemes;
+using Remex.Core.Theming.Mcu;
 using Remex.Desktop.Models;
 
 namespace Remex.Desktop.Services;
 
 /// <summary>
-/// Generates a full Material 3 tonal scheme from a single seed color using
-/// the MaterialColorUtilities library (albi005 port).
+/// Generates a full Material 3 tonal scheme from a single seed color using the ported MCU engine
+/// (<see cref="McuScheme"/>, <c>Remex.Core.Theming.Mcu</c>) — Android's own
+/// <c>DynamicScheme</c>/<c>MaterialDynamicColors</c> reproduced bit-exact, not an approximation of
+/// it. <c>mcu-vectors.json</c> (RemEx-4kv0g.6) is the proof: the phone's 62 role colours, byte-exact,
+/// for every (seed, variant, mode, contrast) tuple <c>EveryMaterialRoleIsExactlyTheVectorScheme</c>
+/// in <c>SeedPaletteTests</c> walks.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -42,15 +44,6 @@ public static class DynamicColorGenerator
     /// </summary>
     private const uint WarningSeed = 0xFFF59E0B;
 
-    /// <summary>WCAG AAA for normal text. What contrast = 1.0 aims every foreground/background pair at.</summary>
-    private const double WcagAaa = 7.0;
-
-    /// <summary>
-    /// The floor for reduced contrast: WCAG AA for LARGE text. A "lower contrast" slider that can
-    /// produce unreadable text is a bug with a settings entry, so the reduction stops here.
-    /// </summary>
-    private const double ReducedContrastFloor = 3.0;
-
     public record M3Palette(
         Color Primary,
         Color OnPrimary,
@@ -79,99 +72,61 @@ public static class DynamicColorGenerator
         Color OnWarning,
         Color BackgroundStart,
         Color BackgroundMid,
-        Color BackgroundEnd);
+        Color BackgroundEnd,
+        MaterialRoles Roles);
 
     public static M3Palette Generate(Color seed, string variant = "TonalSpot", bool isDark = true, double contrast = 0.0)
     {
-        var style = StyleFor(variant);
-        var core = SeedCoreFor(ToArgb(seed), variant);
-        var scheme = MapScheme(core, isDark);
+        contrast = Math.Clamp(contrast, -1.0, 1.0);
+        var scheme = McuScheme.Create(ToArgb(seed), SchemeVariants.ToMcu(variant), isDark, contrast);
+        var roles = MaterialRoles.From(scheme);
 
-        // Success and warning are separate schemes, not roles carved out of the user's seed: a
-        // semantic colour that drifts with the accent stops being semantic. Same mode and contrast
-        // as the rest of the palette — but the STYLE is always TonalSpot, matching Android
-        // (Theme.kt:110-111), regardless of the user's chosen SchemeVariant (RemEx-gw3ad, gate
-        // decision 2026-09-07). A seed means the same thing on both ends of the link, so "connected
-        // green" and "warning amber" must not change meaning with the decorative variant — under
-        // Neutral the old chroma-~12 green and Vibrant's chroma-~94 green disagreed with each other
-        // and with the phone's chroma-~36 green. This repaints success/warning for every existing
-        // non-TonalSpot user; the changelog records it as a deliberate look change, not a fix.
-        var semanticStyle = Style.TonalSpot;
-        var successCore = CoreFor(SuccessSeed, semanticStyle);
-        var successScheme = MapScheme(successCore, isDark);
-        var warningCore = CoreFor(WarningSeed, semanticStyle);
-        var warningScheme = MapScheme(warningCore, isDark);
+        // Success and warning are separate schemes, not roles carved out of the user's seed: a semantic colour
+        // that drifts with the accent stops being semantic. Same mode and contrast as the rest of the palette —
+        // but the VARIANT is always TonalSpot, matching Android (Theme.kt:109-118), regardless of the user's
+        // chosen SchemeVariant (RemEx-gw3ad, gate decision 2026-09-07). Contrast now reaches these roles through
+        // MCU's ContrastCurves, exactly as customColorsForScheme passes it on the phone.
+        var success = McuScheme.Build(SuccessSeed, SchemeVariant.TonalSpot, isDark, contrast);
+        var warning = McuScheme.Build(WarningSeed, SchemeVariant.TonalSpot, isDark, contrast);
 
-        var primary = ToColor(scheme.Primary);
-        var secondary = ToColor(scheme.Secondary);
-        var tertiary = ToColor(scheme.Tertiary);
-        var primaryContainer = ToColor(scheme.PrimaryContainer);
-        var secondaryContainer = ToColor(scheme.SecondaryContainer);
-        var surface = ToColor(scheme.Surface);
-        var surfaceVariant = ToColor(scheme.SurfaceVariant);
-        var error = ToColor(scheme.Error);
-        var success = ToColor(successScheme.Primary);
-        var warning = ToColor(warningScheme.Primary);
-
-        // CONTRAST IS APPLIED TO THE PAIRS, NOT THE ROLES. A foreground only has a contrast ratio
-        // relative to something; raising "contrast" by darkening everything moves both halves of
-        // every pair and changes nothing. Each foreground is walked along its own tonal palette
-        // until it meets a target derived from what it measures TODAY, which is why contrast = 0
-        // returns this scheme untouched rather than approximately untouched.
         return new M3Palette(
-            Primary:              primary,
-            OnPrimary:            Contrasted(core.Primary,        ToColor(scheme.OnPrimary),            primary,            contrast),
-            PrimaryContainer:     primaryContainer,
-            OnPrimaryContainer:   Contrasted(core.Primary,        ToColor(scheme.OnPrimaryContainer),   primaryContainer,   contrast),
-            Secondary:            secondary,
-            OnSecondary:          Contrasted(core.Secondary,      ToColor(scheme.OnSecondary),          secondary,          contrast),
-            SecondaryContainer:   secondaryContainer,
-            OnSecondaryContainer: Contrasted(core.Secondary,      ToColor(scheme.OnSecondaryContainer), secondaryContainer, contrast),
-            Tertiary:             tertiary,
-            OnTertiary:           Contrasted(core.Tertiary,       ToColor(scheme.OnTertiary),           tertiary,           contrast),
-            Surface:              surface,
-            SurfaceVariant:       surfaceVariant,
-            SurfaceContainerLow:  ToColor(scheme.SurfaceContainerLow),
-            SurfaceContainer:     ToColor(scheme.SurfaceContainer),
-            SurfaceContainerHigh: ToColor(scheme.SurfaceContainerHigh),
-            OnSurface:            Contrasted(core.Neutral,        ToColor(scheme.OnSurface),            surface,            contrast),
-            OnSurfaceVariant:     Contrasted(core.NeutralVariant, ToColor(scheme.OnSurfaceVariant),     surfaceVariant,     contrast),
-            Outline:              ToColor(scheme.Outline),
-            OutlineVariant:       ToColor(scheme.OutlineVariant),
-            Error:                error,
-            OnError:              Contrasted(core.Error,          ToColor(scheme.OnError),              error,              contrast),
-            Success:              success,
-            OnSuccess:            Contrasted(successCore.Primary, ToColor(successScheme.OnPrimary),     success,            contrast),
-            Warning:              warning,
-            OnWarning:            Contrasted(warningCore.Primary, ToColor(warningScheme.OnPrimary),     warning,            contrast),
-            // The shell's background wash. Taken as raw tones rather than named roles because no M3
-            // role is "the third stop of a diagonal gradient".
-            //
-            // A GRADIENT NEEDS TWO AXES TO SEPARATE, AND THIS ONE HAD NEITHER (RemEx-bv9bu). The
-            // first pass took Primary[10] / Neutral[8] / Neutral[0]: two tone steps between the
-            // first two stops, and the last two both near-zero-chroma neutrals, so the whole
-            // backdrop read as flat black with one faintly tinted corner. Restated in the terms of
-            // the hand-authored backdrop it replaced (#1A0A2E → #0D1B2A → #000000), the mistake was
-            // reading that as a tone sweep — it is not, all three sit near tone 8 — it is a HUE
-            // sweep, violet to navy to black, and hue was the one thing dropped.
-            //
-            // So both axes are put back. MID MOVES OFF THE NEUTRAL PALETTE ONTO TERTIARY, which is
-            // the tonal palette furthest from Primary in hue by construction, giving the sweep a
-            // second colour instead of a second grey; and the tones are spaced far enough apart
-            // (~10 in dark, ~9 in light) that the sweep survives the two-layer compositing in
-            // DashboardBackgroundControl — a 0.8-opacity base with a 0.7–0.9 pulse over it.
-            // END STAYS NEUTRAL on purpose: ThemeService takes the dark scrim from BackgroundEnd,
-            // and a scrim's job is to darken what is behind it, not to tint it.
-            //
-            // Styles whose palettes carry no chroma at all (Neutral, Monochrome) lose the hue axis
-            // and are carried by tone alone, which is why the spacing has to stand on its own.
-            BackgroundStart:      ToColor(core.Primary [isDark ? 20u : 82u]),
-            BackgroundMid:        ToColor(core.Tertiary[isDark ? 10u : 91u]),
-            BackgroundEnd:        ToColor(core.Neutral [isDark ?  0u : 100u]));
+            Primary:              ToColor(roles.Primary),
+            OnPrimary:            ToColor(roles.OnPrimary),
+            PrimaryContainer:     ToColor(roles.PrimaryContainer),
+            OnPrimaryContainer:   ToColor(roles.OnPrimaryContainer),
+            Secondary:            ToColor(roles.Secondary),
+            OnSecondary:          ToColor(roles.OnSecondary),
+            SecondaryContainer:   ToColor(roles.SecondaryContainer),
+            OnSecondaryContainer: ToColor(roles.OnSecondaryContainer),
+            Tertiary:             ToColor(roles.Tertiary),
+            OnTertiary:           ToColor(roles.OnTertiary),
+            Surface:              ToColor(roles.Surface),
+            SurfaceVariant:       ToColor(roles.SurfaceVariant),
+            SurfaceContainerLow:  ToColor(roles.SurfaceContainerLow),
+            SurfaceContainer:     ToColor(roles.SurfaceContainer),
+            SurfaceContainerHigh: ToColor(roles.SurfaceContainerHigh),
+            OnSurface:            ToColor(roles.OnSurface),
+            OnSurfaceVariant:     ToColor(roles.OnSurfaceVariant),
+            Outline:              ToColor(roles.Outline),
+            OutlineVariant:       ToColor(roles.OutlineVariant),
+            Error:                ToColor(roles.Error),
+            OnError:              ToColor(roles.OnError),
+            Success:              ToColor(success.Primary),
+            OnSuccess:            ToColor(success.OnPrimary),
+            Warning:              ToColor(warning.Primary),
+            OnWarning:            ToColor(warning.OnPrimary),
+            // The shell's background wash — raw tones off the scheme's own palettes (RemEx-bv9bu: a hue sweep,
+            // Primary → Tertiary → Neutral, not a tone sweep; see the original RemEx-bv9bu comment in history for
+            // the fuller rationale). END stays neutral on purpose: ThemeService takes the dark scrim from
+            // BackgroundEnd, and a scrim's job is to darken what is behind it, not to tint it.
+            BackgroundStart:      ToColor(scheme.PrimaryPalette.Tone(isDark ? 20 : 82)),
+            BackgroundMid:        ToColor(scheme.TertiaryPalette.Tone(isDark ? 10 : 91)),
+            BackgroundEnd:        ToColor(scheme.NeutralPalette.Tone(isDark ? 0 : 100)),
+            Roles:                roles);
     }
 
     /// <summary>The eleven tones the Material tonal scale is conventionally sampled at.</summary>
-    private static readonly uint[] RampTones = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+    private static readonly int[] RampTones = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
 
     /// <summary>
     /// A palette's tonal palette rendered at <see cref="RampTones"/>, for a UI that wants to show the
@@ -190,17 +145,17 @@ public static class DynamicColorGenerator
     /// </summary>
     public static TonalRampSet GenerateTonalRamps(Color seed, string variant = "TonalSpot")
     {
-        var core = SeedCoreFor(ToArgb(seed), variant);
-
+        // Mode and contrast do not change what tones exist on a palette, so any scheme of this seed + variant will do.
+        var scheme = McuScheme.Create(ToArgb(seed), SchemeVariants.ToMcu(variant), isDark: true, contrastLevel: 0.0);
         return new TonalRampSet(
-            Primary:   RampFor(core.Primary),
-            Secondary: RampFor(core.Secondary),
-            Tertiary:  RampFor(core.Tertiary),
-            Neutral:   RampFor(core.Neutral));
+            Primary:   RampFor(scheme.PrimaryPalette),
+            Secondary: RampFor(scheme.SecondaryPalette),
+            Tertiary:  RampFor(scheme.TertiaryPalette),
+            Neutral:   RampFor(scheme.NeutralPalette));
     }
 
     private static IReadOnlyList<(int Tone, Color Color)> RampFor(TonalPalette palette) =>
-        RampTones.Select(tone => ((int)tone, ToColor(palette[tone]))).ToList();
+        RampTones.Select(tone => (tone, ToColor(palette.Tone(tone)))).ToList();
 
     /// <summary>The three blob colours the Aurora background mesh paints with.</summary>
     public record AuroraSet(Color Primary, Color Secondary, Color Tertiary);
@@ -219,128 +174,6 @@ public static class DynamicColorGenerator
             Primary:   ramps.Primary.First(t => t.Tone == tone).Color,
             Secondary: ramps.Secondary.First(t => t.Tone == tone).Color,
             Tertiary:  ramps.Tertiary.First(t => t.Tone == tone).Color);
-    }
-
-    /// <summary>The library style behind a strategy name. Neutral AND Monochrome both start from
-    /// Spritz; Monochrome then has its chroma removed in <see cref="SeedCoreFor"/>.</summary>
-    private static Style StyleFor(string variant) => variant switch
-    {
-        SchemeVariants.Vibrant    => Style.Vibrant,
-        SchemeVariants.Expressive => Style.Expressive,
-        SchemeVariants.Rainbow    => Style.Rainbow,
-        SchemeVariants.FruitSalad => Style.FruitSalad,
-        SchemeVariants.Neutral    => Style.Spritz,
-        SchemeVariants.Monochrome => Style.Spritz,
-        _                         => Style.TonalSpot,
-    };
-
-    /// <summary>A core palette for a SEMANTIC seed (success, warning): the library style only.</summary>
-    private static CorePalette CoreFor(uint argb, Style style)
-    {
-        var core = new CorePalette();
-        core.Fill(argb, style);
-        return core;
-    }
-
-    /// <summary>
-    /// A core palette for the USER'S seed. Monochrome is not a library style in 0.3.0, so it is
-    /// built here: every tonal palette except Error is re-created at chroma 0 on the seed's hue,
-    /// which is exactly what Android's <c>SchemeMonochrome</c> produces. Error stays red — a grey
-    /// error is not an error.
-    /// </summary>
-    private static CorePalette SeedCoreFor(uint argb, string variant)
-    {
-        var core = CoreFor(argb, StyleFor(variant));
-        if (!string.Equals(variant, SchemeVariants.Monochrome, StringComparison.Ordinal)) return core;
-
-        var hue = Hct.FromInt(argb).Hue;
-        core.Primary = TonalPalette.FromHueAndChroma(hue, 0);
-        core.Secondary = TonalPalette.FromHueAndChroma(hue, 0);
-        core.Tertiary = TonalPalette.FromHueAndChroma(hue, 0);
-        core.Neutral = TonalPalette.FromHueAndChroma(hue, 0);
-        core.NeutralVariant = TonalPalette.FromHueAndChroma(hue, 0);
-        return core;
-    }
-
-    private static Scheme<uint> MapScheme(CorePalette core, bool isDark) => isDark
-        ? new DarkSchemeMapper().Map(core)
-        : new LightSchemeMapper().Map(core);
-
-    /// <summary>
-    /// Walks <paramref name="foreground"/> along its own tonal palette until it meets a contrast
-    /// target derived from <paramref name="contrast"/>, keeping the hue and chroma the scheme chose.
-    /// </summary>
-    /// <remarks>
-    /// The target is anchored on what the pair measures TODAY, so the function is continuous through
-    /// zero and returns its input unchanged at zero — the property that lets contrast be added to a
-    /// shipped, visually-verified palette without moving it for users who never touch the slider.
-    /// Positive contrast pulls toward AAA and never lowers the ratio; negative pushes back toward
-    /// <see cref="ReducedContrastFloor"/> and never below it.
-    /// </remarks>
-    private static Color Contrasted(TonalPalette palette, Color foreground, Color background, double contrast)
-    {
-        contrast = Math.Clamp(contrast, -1.0, 1.0);
-        if (Math.Abs(contrast) < 0.001) return foreground;
-
-        double current = ContrastRatio(foreground, background);
-        double fgTone = Math.Round(Hct.FromInt(ToArgb(foreground)).Tone);
-        double bgTone = Hct.FromInt(ToArgb(background)).Tone;
-
-        // Which way is "more contrast". A tie means foreground and background sit at the same tone,
-        // i.e. the pair is already unreadable; break toward whichever end of the scale is further.
-        int away = fgTone > bgTone ? 1 : fgTone < bgTone ? -1 : (bgTone < 50 ? 1 : -1);
-        int step = contrast > 0 ? away : -away;
-
-        // Collect the reachable tones in the direction of travel, nearest first.
-        var reachable = new List<(Color Color, double Ratio)>();
-        for (double tone = fgTone + step; tone >= 0 && tone <= 100; tone += step)
-        {
-            var candidate = ToColor(palette[(uint)tone]);
-            reachable.Add((candidate, ContrastRatio(candidate, background)));
-        }
-
-        if (reachable.Count == 0) return foreground;
-
-        // THE FAR END OF THE SLIDER IS THE BEST THIS PAIR CAN DO, NOT A FIXED RATIO. Anchoring
-        // maximum contrast on AAA looked reasonable and was nearly a no-op in practice: M3's "on"
-        // roles already clear 7:1 almost everywhere, so the slider would have moved one pair in ten
-        // and read as broken. Interpolating toward what is actually achievable makes every position
-        // on the slider do something, and still leaves contrast = 0 exactly where it was.
-        double extreme = contrast > 0 ? reachable.Max(c => c.Ratio) : ReducedContrastFloor;
-        double target = current + Math.Abs(contrast) * (extreme - current) * (contrast > 0 ? 1 : -1);
-
-        if (contrast > 0)
-        {
-            if (target <= current) return foreground;
-
-            (Color Color, double Ratio) best = (foreground, current);
-            foreach (var candidate in reachable)
-            {
-                // Monotone in principle, not in practice: a tonal palette's chroma varies with tone,
-                // so a step "away" can measure very slightly worse. Keep the best seen rather than
-                // trusting the direction, and stop as soon as the target is met.
-                if (candidate.Ratio > best.Ratio) best = candidate;
-                if (candidate.Ratio >= target) return candidate.Color;
-            }
-
-            return best.Color;
-        }
-
-        // Reducing contrast is the dangerous direction — its whole purpose is to make text harder
-        // to read — so the floor is enforced on the RESULT, not just on the target. Taking the first
-        // tone at or under the target would sail straight past it; the last tone still above the
-        // floor is the answer.
-        if (current <= ReducedContrastFloor) return foreground;
-
-        var softest = foreground;
-        foreach (var candidate in reachable)
-        {
-            if (candidate.Ratio < ReducedContrastFloor) break;
-            softest = candidate.Color;
-            if (candidate.Ratio <= target) break;
-        }
-
-        return softest;
     }
 
     /// <summary>WCAG 2.x relative-luminance contrast ratio. Alpha is ignored; every role is opaque.</summary>

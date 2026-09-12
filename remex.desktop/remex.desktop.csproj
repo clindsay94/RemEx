@@ -32,7 +32,6 @@
     <PackageReference Include="Material.Avalonia.Dialogs" />
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="MaterialColorUtilities" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />

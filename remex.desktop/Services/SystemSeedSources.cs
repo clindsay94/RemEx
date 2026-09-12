@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using MaterialColorUtilities.Quantize;
-using MaterialColorUtilities.Score;
+using Remex.Core.Theming.Mcu;
 using SkiaSharp;
 
 namespace Remex.Desktop.Services;
@@ -119,11 +118,11 @@ public static class SystemSeedSources
             // suitability as a SEED (chroma and population, not just frequency) — raw frequency
             // alone hands back the sky or a wall.
             var clusters = QuantizerCelebi.Quantize(pixels, 128);
-            var ranked = Scorer.Score(clusters);
+            var ranked = Score.ScoreColors(clusters);
 
             return ranked
                 // ONLY COLOURS THE QUANTIZER ACTUALLY PRODUCED (review, measured): when no cluster
-                // clears its chroma floor, Scorer.Score does not return empty — it returns a
+                // clears its chroma floor, Score.ScoreColors does not return empty — it returns a
                 // hardcoded Google-blue sentinel (#4285F4) that appears nowhere in the image. A
                 // greyscale wallpaper must yield NOTHING, not silently overwrite the user's seed
                 // with a brand colour; membership in the cluster set is what separates an

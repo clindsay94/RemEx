@@ -3545,4 +3545,10 @@ Puedes cambiar:
   <data name="Custom_TextReset" xml:space="preserve">
     <value>Restablecer el texto</value>
   </data>
+  <data name="Custom_Scheme_Fidelity" xml:space="preserve">
+    <value>Fidelidad</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Contenido</value>
+  </data>
 </root>

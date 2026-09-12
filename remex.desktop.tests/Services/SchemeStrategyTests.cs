@@ -1,6 +1,7 @@
 using System.Linq;
 using Avalonia.Media;
 using FluentAssertions;
+using Remex.Core.Theming.Mcu;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Xunit;
@@ -8,32 +9,40 @@ using Xunit;
 namespace Remex.Desktop.Tests.Services;
 
 /// <summary>
-/// The seven strategies the sheet offers are Android's seven, in Android's order, and the two
-/// that have no MaterialColorUtilities 0.3.0 style — Neutral and Monochrome — render as the spec
-/// says: Neutral is the library's low-chroma Spritz, Monochrome zeroes every tonal palette.
+/// The nine strategies the sheet offers are Android's nine, in Android's order, all now real MCU
+/// variants (RemEx-4kv0g.12) — Content and Fidelity used to fall to TonalSpot, they no longer do.
 /// </summary>
 public class SchemeStrategyTests
 {
     private static readonly Color Seed = Color.Parse("#6C4CFF");
 
     [Fact]
-    public void TheSevenStrategiesAreAndroidsInAndroidsOrder()
+    public void TheNineStrategiesAreAndroidsInAndroidsOrder()
     {
-        SchemeVariants.All.Should().Equal(
-            "TonalSpot", "Expressive", "FruitSalad", "Rainbow", "Vibrant", "Neutral", "Monochrome");
+        // PersonalizationScreen.kt's chip order, then the two material 1.14 adds (RemEx-4kv0g.12).
+        SchemeVariants.All.Should().Equal("TonalSpot", "Expressive", "FruitSalad", "Rainbow", "Vibrant", "Neutral", "Monochrome", "Fidelity", "Content");
     }
 
     [Theory]
     [InlineData("Spritz", "Neutral")]
-    [InlineData("Content", "TonalSpot")]
-    [InlineData("Fidelity", "TonalSpot")]
+    [InlineData("Content", "Content")]     // a real variant since RemEx-4kv0g.12; it used to fall to TonalSpot
+    [InlineData("Fidelity", "Fidelity")]   // likewise
     [InlineData(null, "TonalSpot")]
     [InlineData("", "TonalSpot")]
     [InlineData("tonalspot", "TonalSpot")]
     [InlineData("Monochrome", "Monochrome")]
-    public void NormalizeMapsRetiredAndUnknownNamesOntoTheSeven(string? stored, string expected)
+    public void NormalizeMapsRetiredAndUnknownNamesOntoTheNine(string? persisted, string expected)
+        => SchemeVariants.Normalize(persisted).Should().Be(expected);
+
+    [Theory]
+    [InlineData("TonalSpot", SchemeVariant.TonalSpot)] [InlineData("Expressive", SchemeVariant.Expressive)] [InlineData("FruitSalad", SchemeVariant.FruitSalad)]
+    [InlineData("Rainbow", SchemeVariant.Rainbow)] [InlineData("Vibrant", SchemeVariant.Vibrant)] [InlineData("Neutral", SchemeVariant.Neutral)]
+    [InlineData("Monochrome", SchemeVariant.Monochrome)] [InlineData("Fidelity", SchemeVariant.Fidelity)] [InlineData("Content", SchemeVariant.Content)]
+    [InlineData("Spritz", SchemeVariant.Neutral)] [InlineData("nonsense", SchemeVariant.TonalSpot)]
+    public void ToMcuFollowsNormalize(string persisted, SchemeVariant expected)
     {
-        SchemeVariants.Normalize(stored).Should().Be(expected);
+        SchemeVariants.ToMcu(persisted).Should().Be(expected);
+        SchemeVariants.FromMcu(expected).Should().Be(SchemeVariants.Normalize(persisted));
     }
 
     [Fact]
@@ -78,13 +87,16 @@ public class SchemeStrategyTests
     }
 
     [Fact]
-    public void AnythingOutsideTheSevenRendersAsTonalSpot()
+    public void UnknownNamesRenderAsTonalSpot()
     {
-        DynamicColorGenerator.Generate(Seed, "Fidelity", isDark: true)
-            .Should().Be(DynamicColorGenerator.Generate(Seed, "TonalSpot", isDark: true));
-        DynamicColorGenerator.Generate(Seed, "Content", isDark: false)
-            .Should().Be(DynamicColorGenerator.Generate(Seed, "TonalSpot", isDark: false),
-                "Content is no longer a user-facing strategy");
+        // Content and Fidelity are real variants now (RemEx-4kv0g.12) — only a name that is not on
+        // SchemeVariants.All still falls to TonalSpot, which ToMcuFollowsNormalize already covers
+        // for "nonsense". This checks the same fallback survives a full Generate call.
+        // BeEquivalentTo, not Be: M3Palette is a record but its Roles member (MaterialRoles) is a plain
+        // class with no value equality, so two structurally-identical palettes from separate Generate
+        // calls are never reference-equal and record equality would always fail here.
+        DynamicColorGenerator.Generate(Seed, "nonsense", isDark: true)
+            .Should().BeEquivalentTo(DynamicColorGenerator.Generate(Seed, "TonalSpot", isDark: true));
     }
 
     [Theory]

@@ -17,7 +17,9 @@ public class RetiredPersonalizationStringsTests
 {
     private static readonly string[] Retired =
     {
-        "Custom_SeedTone", "Custom_Scheme_Content", "Custom_Scheme_Spritz", "Custom_BgType_Mica",
+        // Custom_Scheme_Content was retired when Content fell back to TonalSpot; RemEx-4kv0g.12 made
+        // Content a real MCU variant again, so the sheet needs the key back and it is no longer here.
+        "Custom_SeedTone", "Custom_Scheme_Spritz", "Custom_BgType_Mica",
         "Custom_BasePresets", "Custom_PaletteStudio", "Custom_Atmosphere", "Custom_Typography",
         "Custom_SeedChroma", "Custom_SchemeVariant", "Custom_TonalRamp", "Custom_AccentColor",
         "Custom_SelectColorPaletteTooltip", "Custom_SelectNeonVioletTooltip",

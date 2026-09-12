@@ -180,12 +180,12 @@ public class CustomizationMigrationTests
 
     [Theory]
     [InlineData("Spritz", "Neutral")]
-    [InlineData("Content", "TonalSpot")]
-    [InlineData("Fidelity", "TonalSpot")]
+    [InlineData("Content", "Content")]     // a real variant since RemEx-4kv0g.12; it used to fall to TonalSpot
+    [InlineData("Fidelity", "Fidelity")]   // likewise
     [InlineData("", "TonalSpot")]
     [InlineData("Vibrant", "Vibrant")]
     [InlineData("FruitSalad", "FruitSalad")]
-    public void RetiredAndUnknownVariantsNormaliseToTheSevenAndroidNames(string stored, string expected)
+    public void RetiredAndUnknownVariantsNormaliseToTheNineAndroidNames(string stored, string expected)
     {
         CustomizationMigration.Migrate(SchemaTwo() with { SchemeVariant = stored }, out _)
             .SchemeVariant.Should().Be(expected);

@@ -97,7 +97,6 @@
 
     <!-- Other Libraries -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageVersion Include="MaterialColorUtilities" Version="0.3.0" />
     <PackageVersion Include="QRCoder" Version="1.6.0" />
     <!-- Also forced by Avalonia 12 (RemEx-jcma3): Avalonia.FreeDesktop 12.1.1 requires >= 0.94.1,
          so the old 0.21.3 fails restore. Consumed directly by the Linux portal input and
