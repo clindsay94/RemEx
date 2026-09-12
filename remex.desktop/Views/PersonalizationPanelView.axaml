@@ -403,45 +403,40 @@
             <StackPanel Spacing="16">
                 <TextBlock Text="{local:Localize Custom_SectionText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextHeadersTip}">
-                    <TextBlock Text="{local:Localize Custom_TextHeaders}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding HeadersScale}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextHeaders}"/>
-                        <TextBlock Text="{Binding HeadersSizeLabel}" VerticalAlignment="Center" MinWidth="56" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
-                        <ToggleSwitch IsChecked="{Binding HeadersBold}" OnContent="{local:Localize Custom_TextBold}" OffContent="{local:Localize Custom_TextBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextHeadersBold}"/>
-                    </StackPanel>
+                <!-- ColumnDefinitions="Auto,*,Auto,Auto": label, slider (fills remaining width), value
+                     label, Bold switch (no On/Off content — the sheet is too narrow for it; the
+                     accessible name below carries the label a sighted user gets from the content). -->
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextHeadersTip}">
+                    <TextBlock Text="{local:Localize Custom_TextHeaders}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding HeadersScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextHeaders}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding HeadersSizeLabel}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="48" Margin="12,0" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
+                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding HeadersBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextHeadersBold}"/>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextBodyTip}">
-                    <TextBlock Text="{local:Localize Custom_TextBody}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding BodyScale}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextBody}"/>
-                        <TextBlock Text="{Binding BodySizeLabel}" VerticalAlignment="Center" MinWidth="56" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
-                        <ToggleSwitch IsChecked="{Binding BodyBold}" OnContent="{local:Localize Custom_TextBold}" OffContent="{local:Localize Custom_TextBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextBodyBold}"/>
-                    </StackPanel>
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextBodyTip}">
+                    <TextBlock Text="{local:Localize Custom_TextBody}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding BodyScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextBody}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding BodySizeLabel}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="48" Margin="12,0" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
+                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding BodyBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextBodyBold}"/>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextSmallTip}">
-                    <TextBlock Text="{local:Localize Custom_TextSmall}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SmallScale}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSmall}"/>
-                        <TextBlock Text="{Binding SmallSizeLabel}" VerticalAlignment="Center" MinWidth="56" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
-                        <ToggleSwitch IsChecked="{Binding SmallBold}" OnContent="{local:Localize Custom_TextBold}" OffContent="{local:Localize Custom_TextBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSmallBold}"/>
-                    </StackPanel>
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextSmallTip}">
+                    <TextBlock Text="{local:Localize Custom_TextSmall}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding SmallScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSmall}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding SmallSizeLabel}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="48" Margin="12,0" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
+                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding SmallBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSmallBold}"/>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextSensorTip}">
-                    <TextBlock Text="{local:Localize Custom_TextSensor}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SensorScale}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSensor}"/>
-                        <TextBlock Text="{Binding SensorSizeLabel}" VerticalAlignment="Center" MinWidth="56" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
-                        <ToggleSwitch IsChecked="{Binding SensorBold}" OnContent="{local:Localize Custom_TextBold}" OffContent="{local:Localize Custom_TextBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSensorBold}"/>
-                    </StackPanel>
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextSensorTip}">
+                    <TextBlock Text="{local:Localize Custom_TextSensor}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding SensorScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSensor}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding SensorSizeLabel}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="48" Margin="12,0" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
+                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding SensorBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSensorBold}"/>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextSensorBackdropTip}">
-                    <TextBlock Text="{local:Localize Custom_TextSensorBackdrop}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SensorTitleBackdrop}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left" AutomationProperties.Name="{local:Localize Custom_TextSensorBackdrop}"/>
+                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Custom_TextSensorBackdropTip}">
+                    <TextBlock Text="{local:Localize Custom_TextSensorBackdrop}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SensorTitleBackdrop}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Right" AutomationProperties.Name="{local:Localize Custom_TextSensorBackdrop}"/>
                 </Grid>
 
                 <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
