@@ -254,7 +254,7 @@ android {
                         (project.findProperty("remex.generateMcuVectors") ?: "false").toString()
                 )
                 // McuVectorsFixtureTest compares the PC copy of the oracle byte for byte; same
-                // reasoning as the PairingErrorCodes input above — an edit to only that file must
+                // reasoning as the PairingErrorCodes input below — an edit to only that file must
                 // not leave the guard skipped as up-to-date.
                 it.inputs
                         .file(File(repoRoot, "remex.core.tests/Fixtures/mcu-vectors.json"))

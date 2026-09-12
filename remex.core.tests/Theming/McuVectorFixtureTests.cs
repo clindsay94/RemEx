@@ -4,7 +4,13 @@ using System.Text.Json;
 
 namespace Remex.Core.Tests.Theming;
 
-/// <summary>RemEx-4kv0g.6: the committed oracle is complete and is the same bytes the phone's tests read.</summary>
+/// <summary>
+/// RemEx-4kv0g.6: the committed oracle is complete and the PC copy stays byte-identical to the
+/// Android one. This is a SYNC check, not a correctness check against Google's classes — that
+/// proof (the fixture equals what MaterialDynamicColors produces now) lives only on the Android
+/// side, in McuVectorsFixtureTest's "the committed file is exactly what Google's classes produce
+/// now", which -Scope all runs.
+/// </summary>
 public class McuVectorFixtureTests
 {
     internal static readonly string[] RoleNames =

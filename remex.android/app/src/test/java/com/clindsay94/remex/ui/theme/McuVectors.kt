@@ -31,7 +31,7 @@ object McuVectors {
     )
 
     /**
-     * MaterialDynamicColors' 63 roles, in its declaration order. The PC's MaterialRoles.RoleNames mirrors this list.
+     * MaterialDynamicColors' 62 roles, in its declaration order. The PC's MaterialRoles.RoleNames mirrors this list.
      * Every role's rendered ARGB is always FF alpha EXCEPT `controlHighlight`, a fixed-opacity ripple/overlay token
      * by Google's own definition (#1F000000 light, #33FFFFFF dark) — kept in the grid with its real alpha, not FF.
      */
