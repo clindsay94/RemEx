@@ -153,7 +153,7 @@ public static class HctSolver
     internal static double ChromaticAdaptation(double component)
     {
         double af = Math.Pow(Math.Abs(component), 0.42);
-        return MathUtils.SignumDouble(component) * 400.0 * af / (af + 27.13);
+        return MathUtils.Signum(component) * 400.0 * af / (af + 27.13);
     }
 
     /// <summary>Returns the hue of a linear RGB color in CAM16.</summary>
@@ -399,7 +399,7 @@ public static class HctSolver
     {
         double adaptedAbs = Math.Abs(adapted);
         double baseValue = Math.Max(0, 27.13 * adaptedAbs / (400.0 - adaptedAbs));
-        return MathUtils.SignumDouble(adapted) * Math.Pow(baseValue, 1.0 / 0.42);
+        return MathUtils.Signum(adapted) * Math.Pow(baseValue, 1.0 / 0.42);
     }
 
     /// <summary>Finds a color with the given hue, chroma, and Y.</summary>

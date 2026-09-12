@@ -219,12 +219,12 @@ public sealed class Cam16
 
         // hue
         double atan2 = Math.Atan2(b, a);
-        double atanDegrees = double.RadiansToDegrees(atan2);
+        double atanDegrees = MathUtils.ToDegrees(atan2);
         double hue =
             atanDegrees < 0
                 ? atanDegrees + 360.0
                 : atanDegrees >= 360 ? atanDegrees - 360.0 : atanDegrees;
-        double hueRadians = double.DegreesToRadians(hue);
+        double hueRadians = MathUtils.ToRadians(hue);
 
         // achromatic response to color
         double ac = p2 * viewingConditions.Nbb;
@@ -244,7 +244,7 @@ public sealed class Cam16
 
         // CAM16 chroma, colorfulness, and saturation.
         double huePrime = (hue < 20.14) ? hue + 360 : hue;
-        double eHue = 0.25 * (Math.Cos(double.DegreesToRadians(huePrime) + 2.0) + 3.8);
+        double eHue = 0.25 * (Math.Cos(MathUtils.ToRadians(huePrime) + 2.0) + 3.8);
         double p1 = 50000.0 / 13.0 * eHue * viewingConditions.Nc * viewingConditions.Ncb;
         double t = p1 * double.Hypot(a, b) / (u + 0.305);
         double alpha =
@@ -257,7 +257,7 @@ public sealed class Cam16
 
         // CAM16-UCS components
         double jstar = (1.0 + 100.0 * 0.007) * j / (1.0 + 0.007 * j);
-        double mstar = 1.0 / 0.0228 * double.LogP1(0.0228 * m);
+        double mstar = 1.0 / 0.0228 * MathUtils.Log1p(0.0228 * m);
         double astar = mstar * Math.Cos(hueRadians);
         double bstar = mstar * Math.Sin(hueRadians);
 
@@ -290,9 +290,9 @@ public sealed class Cam16
         double s =
             50.0 * Math.Sqrt((alpha * viewingConditions.C) / (viewingConditions.Aw + 4.0));
 
-        double hueRadians = double.DegreesToRadians(h);
+        double hueRadians = MathUtils.ToRadians(h);
         double jstar = (1.0 + 100.0 * 0.007) * j / (1.0 + 0.007 * j);
-        double mstar = 1.0 / 0.0228 * double.LogP1(0.0228 * m);
+        double mstar = 1.0 / 0.0228 * MathUtils.Log1p(0.0228 * m);
         double astar = mstar * Math.Cos(hueRadians);
         double bstar = mstar * Math.Sin(hueRadians);
         return new Cam16(h, c, j, q, m, s, jstar, astar, bstar);
@@ -316,7 +316,7 @@ public sealed class Cam16
         double jstar, double astar, double bstar, ViewingConditions viewingConditions)
     {
         double m = double.Hypot(astar, bstar);
-        double m2 = double.ExpM1(m * 0.0228) / 0.0228;
+        double m2 = MathUtils.Expm1(m * 0.0228) / 0.0228;
         double c = m2 / viewingConditions.FlRoot;
         double h = Math.Atan2(bstar, astar) * (180.0 / Math.PI);
         if (h < 0.0)
@@ -353,7 +353,7 @@ public sealed class Cam16
         double t =
             Math.Pow(
                 alpha / Math.Pow(1.64 - Math.Pow(0.29, viewingConditions.N), 0.73), 1.0 / 0.9);
-        double hRad = double.DegreesToRadians(Hue);
+        double hRad = MathUtils.ToRadians(Hue);
 
         double eHue = 0.25 * (Math.Cos(hRad + 2.0) + 3.8);
         double ac =
