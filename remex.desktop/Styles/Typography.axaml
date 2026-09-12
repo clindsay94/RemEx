@@ -24,28 +24,29 @@
     <Styles.Resources>
         <ResourceDictionary>
 
-            <!-- Untagged text: EFFECT + BOLD ONLY, both resource-driven so "off" means "inherit".
-                 A FontSize setter here would force 14 onto every ContentPresenter TextBlock inside a
-                 Button, stripping the Medium Material gives button labels at defaults — untagged
-                 SIZE follows Body through the MaterialDesignFontSize own key (App.axaml) instead.
-                 FontWeight is safe as a DynamicResource setter because TypographyResolver only ever
-                 puts a key at Typo.UntaggedBold.FontWeight while Body bold is ON; when it's off the
-                 key is absent, the DynamicResource resolves to Unset, and the setter contributes
-                 nothing — so a Button's inherited Medium survives untouched. This used to be a
-                 runtime Style TypographyService attached/detached on Application.Styles; that live
-                 mutation of the Styles collection broke UI Automation's FindAll on the shell root
-                 until restart (RemEx-jt6w5.11) — a resource key, like every other Typo.* value,
-                 does not. THE SETTER IS A DIRECT ControlTheme Setter, NOT NESTED IN A "^" Style:
-                 measured (remex.desktop.render.tests's ShellTypographyBoldAutomationTests) that a
-                 DynamicResource inside a nested `<Style Selector="^:...">` block does not re-run
-                 when the key transitions from absent to present later — it resolves once at initial
-                 template application and does not observe the merge that adds the key afterwards.
-                 A top-level Setter on the ControlTheme itself does. page-title/card-title need no
-                 exclusion: they set their own Typo.PageTitle/CardTitle.FontWeight via App.axaml
-                 class Styles, which always outrank a ControlTheme setter regardless of this one. -->
+            <!-- Untagged text: EFFECT ONLY. A FontSize or FontWeight setter here would outrank
+                 INHERITANCE and force a fixed value onto every ContentPresenter TextBlock inside a
+                 Button, stripping the Medium/SemiBold Material and RemEx's own button classes give
+                 button labels — untagged SIZE follows Body through the MaterialDesignFontSize own
+                 key (App.axaml); untagged BOLD is NOT a resource key at all (RemEx-jt6w5.11 round 2):
+                 measured that a ControlTheme Setter bound to a resource key whose value is
+                 AvaloniaProperty.UnsetValue does NOT make the setter a no-op the way an absent
+                 DynamicResource key does elsewhere in this file — it registers a real Style-priority
+                 value frame on FontWeightProperty that resolves to the property's own default
+                 (Regular), and that frame outranks a Button's OWN "SemiBold"/"Medium" Style-priority
+                 setter for its content TextBlock. `ShellTypographyBoldAutomationTests` caught this:
+                 ConnectionStatusButton's StatusText measured Value=Normal, Priority=Style at
+                 BASELINE (Body bold OFF) — the exact forced-Regular regression the bead exists to
+                 forbid. TypographyService now sets/clears TextBlock.FontWeightProperty directly on
+                 each open Window's root as a plain INHERITED value instead: "off" clears it (nothing
+                 to inherit, real Buttons keep their own Style-priority weight since it is nearer in
+                 the tree than the Window), "on" sets Bold, which only reaches text with no nearer
+                 ancestor supplying the property — untagged text, exactly the case this section is
+                 named for. No resource key, no ControlTheme setter, no Application.Styles mutation
+                 (the round-1 mechanism, which broke UI Automation's FindAll on the shell root until
+                 restart) either. -->
             <ControlTheme x:Key="{x:Type TextBlock}" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
                 <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
-                <Setter Property="FontWeight" Value="{DynamicResource Typo.UntaggedBold.FontWeight}"/>
             </ControlTheme>
 
             <!-- ── Headers ─────────────────────────────────────────────────────────────────── -->

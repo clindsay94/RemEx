@@ -36,13 +36,11 @@ public sealed record TextShadow(Color Color, double BlurRadius, double Opacity);
 /// <param name="SectionShadows">Per section; <c>null</c> means "no Effect resource" for that section.</param>
 /// <param name="DefaultFontSize">What untagged text inherits: the <c>MaterialDesignFontSize</c> own key.</param>
 /// <param name="UntaggedBold">
-/// The single source of truth for whether untagged text should be Bold (Body bold on). Not a member
-/// of <see cref="FontWeights"/>: <see cref="TypographyService"/> writes it to
-/// <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/> as either <c>FontWeight.Bold</c> or
-/// <c>AvaloniaProperty.UnsetValue</c> (RemEx-jt6w5.11 review) — the key is always PRESENT in the
-/// merged dictionary so a DynamicResource setter re-evaluates on every toggle; measured that a key
-/// which only sometimes EXISTS does not re-trigger an already-materialized element's DynamicResource
-/// binding the first time it appears, only when its value later changes.
+/// Whether untagged text should be Bold (Body bold on). NOT a resource key at all (RemEx-jt6w5.11
+/// round 2): <see cref="TypographyService"/> reads this flag directly and sets or clears an
+/// INHERITED <c>TextBlock.FontWeightProperty</c> local value on each open window's root — see its
+/// remarks for why a resource-key mechanism (both a runtime <c>Application.Styles</c> Style and a
+/// <c>DynamicResource</c> ControlTheme setter were tried and measured broken first) was abandoned.
 /// </param>
 /// <param name="SensorTitleBackdrop">The <c>Typo.Sensor.TitleBackdrop</c> flag.</param>
 public sealed record TypographyResolution(
@@ -65,23 +63,6 @@ public static class TypographyResolver
 
     /// <summary>Bound by the sensor-card templates' backdrop Border (<c>IsVisible</c>).</summary>
     public const string SensorTitleBackdropKey = "Typo.Sensor.TitleBackdrop";
-
-    /// <summary>
-    /// Untagged text's Bold: a <c>DynamicResource</c> the default <c>{x:Type TextBlock}</c>
-    /// ControlTheme (<c>Styles/Typography.axaml</c>) reads for its <c>FontWeight</c> setter.
-    /// RESOURCE-ONLY, deliberately not a runtime <c>Application.Styles</c> mutation (RemEx-jt6w5.11):
-    /// attaching/detaching a live <see cref="Avalonia.Styling.Style"/> on <c>Application.Styles</c>
-    /// broke UI Automation's <c>FindAll</c> on the shell root until restart. <see cref="TypographyService"/>
-    /// keeps this key ALWAYS PRESENT and toggles its VALUE between <c>FontWeight.Bold</c> and
-    /// <c>AvaloniaProperty.UnsetValue</c> (never "set to Regular") — an Unset value makes the
-    /// ControlTheme setter contribute nothing, so a Button's inherited Medium survives untouched.
-    /// This is deliberately NOT the "key absent = Unset" trick <see cref="TypographyResolution.SectionShadows"/>
-    /// uses for the halo Effect: measured (remex.desktop.render.tests's
-    /// ShellTypographyBoldAutomationTests) that a DynamicResource setter on an already-materialized
-    /// element does not re-evaluate the first time an absent key starts existing — only when a
-    /// present key's value changes. Presence must never flip; only the value may.
-    /// </summary>
-    public const string UntaggedBoldFontWeightKey = "Typo.UntaggedBold.FontWeight";
 
     public static readonly IReadOnlyList<TypographyMember> Members = new[]
     {

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using Remex.Core.Models;
 
@@ -35,17 +36,40 @@ namespace Remex.Desktop.Services;
 /// regardless of which one happens to run first.
 /// </para>
 /// <para>
-/// ONE KEY IS NOT IN THE DICTIONARY. Untagged text's size is the OWN key
+/// UNTAGGED BOLD IS NOT IN THE DICTIONARY, AND NOT A RESOURCE AT ALL — <see cref="ApplyUntaggedBold"/>
+/// sets or clears a plain INHERITED <c>TextBlock.FontWeightProperty</c> local value directly on
+/// every open top-level window's root. Two other mechanisms were tried and MEASURED broken before
+/// this one (RemEx-jt6w5.11, two review rounds):
+/// </para>
+/// <para>
+/// ROUND 0 (shipped, then reverted): a runtime <see cref="Avalonia.Styling.Style"/>
+/// attached/detached on <c>Application.Styles</c> only while Body bold was on. That mutation of the
+/// live Styles collection broke UI Automation's <c>FindAll</c> on the shell root until restart —
+/// confirmed against the real Windows UIA stack.
+/// </para>
+/// <para>
+/// ROUND 1 (never shipped, caught by a headless test before it could): a resource key
+/// (<c>Typo.UntaggedBold.FontWeight</c>) the default <c>{x:Type TextBlock}</c> ControlTheme read via
+/// <c>DynamicResource</c>, toggling between <c>FontWeight.Bold</c> and
+/// <c>AvaloniaProperty.UnsetValue</c>. Measured (<c>ShellTypographyBoldAutomationTests</c>,
+/// <c>GetDiagnostic</c>) that the Unset value does NOT make the ControlTheme setter a no-op the way
+/// an absent <c>DynamicResource</c> key does for every other <c>Typo.*</c> setter in this file — it
+/// registers a real Style-priority value frame that resolves to the property's own default
+/// (Regular), and that frame outranks a Button's OWN Style-priority FontWeight setter for its
+/// content TextBlock. Baseline reading on <c>ConnectionStatusButton</c>'s StatusText (declared
+/// SemiBold via its own <c>.secondary</c> class): <c>Value=Normal, Priority=Style</c> — Body bold OFF
+/// was silently forcing Regular onto text that should have kept its own weight, the exact regression
+/// this bead exists to forbid.
+/// </para>
+/// <para>
+/// ROUND 2 (current): plain property inheritance, no resource, no Style mutation. "Off" clears the
+/// value (nothing to inherit; a real Button's own nearer Style-priority setter is unaffected since
+/// inheritance only ever supplies a value where none exists closer to the element). "On" sets Bold
+/// on the window root; only text with no nearer ancestor supplying <c>FontWeightProperty</c> —
+/// genuinely untagged text — inherits it. Untagged text's size is still the OWN key
 /// <c>MaterialDesignFontSize</c> (App.axaml:47), written in place like ThemeService writes
-/// <c>UiScale</c> (ThemeService.cs:576-603) — an own key shadows every merged dictionary. Untagged
-/// text's bold USED to be a runtime <see cref="Avalonia.Styling.Style"/> attached/detached on
-/// <c>Application.Styles</c> only while Body bold was on; that mutation of the live Styles
-/// collection broke UI Automation's <c>FindAll</c> on the shell root until restart
-/// (RemEx-jt6w5.11). It is now <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/>, a
-/// resource key like every other <c>Typo.*</c> value: present (Bold) only while Body bold is on,
-/// absent (never "set to Regular") when off, so the default <c>{x:Type TextBlock}</c> ControlTheme's
-/// <c>DynamicResource</c> setter (<c>Styles/Typography.axaml</c>) resolves to Unset and "off" means
-/// "inherit" — Material buttons keep the Medium their content TextBlock inherits.
+/// <c>UiScale</c> (ThemeService.cs:576-603) — an own key shadows every merged dictionary; that part
+/// was never broken and is unchanged.
 /// </para>
 /// </remarks>
 public sealed class TypographyService
@@ -99,14 +123,6 @@ public sealed class TypographyService
         foreach (var (key, size) in resolved.FontSizes) _overrideResources[key] = size;
         foreach (var (key, weight) in resolved.FontWeights) _overrideResources[key] = weight;
 
-        // ALWAYS present (never absent) — see TypographyResolver.UntaggedBoldFontWeightKey's remarks
-        // for why: an already-materialized TextBlock's DynamicResource binding does not re-evaluate
-        // the first time an absent key starts existing, only when a present key's value changes.
-        // AvaloniaProperty.UnsetValue is the sentinel that makes the ControlTheme's FontWeight setter
-        // contribute nothing, same effect as "no key" without ever removing the key.
-        _overrideResources[TypographyResolver.UntaggedBoldFontWeightKey] =
-            resolved.UntaggedBold ? FontWeight.Bold : AvaloniaProperty.UnsetValue;
-
         // One DropShadowEffect per apply, shared by every shadowed section (an effect can be
         // referenced by any number of visuals). A section with no halo gets NO key: the
         // DynamicResource setter then resolves to Unset and the TextBlock keeps Effect = null,
@@ -133,5 +149,28 @@ public sealed class TypographyService
         if (app is null) return;
 
         app.Resources[DefaultFontSizeKey] = resolved.DefaultFontSize;
+
+        ApplyUntaggedBold(app, resolved.UntaggedBold);
+    }
+
+    /// <summary>
+    /// See the class remarks (ROUND 2) for why this is a plain inherited local value on each open
+    /// window's root rather than a resource or a Styles-collection mutation. Windows opened AFTER
+    /// this call pick up the current state the next time <see cref="Apply"/> runs (the same settings
+    /// change that would show a newly-opened window a stale Body-bold state today, before this
+    /// method existed, for every other Typo.* value too) — there is no window-opened hook in this
+    /// codebase to extend (checked: <c>ThemeService</c> does not maintain one either; it relies
+    /// entirely on Application-wide resources/styles, which is exactly the mechanism ROUND 2 could
+    /// not use here).
+    /// </summary>
+    private static void ApplyUntaggedBold(Application app, bool untaggedBold)
+    {
+        if (app.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+
+        foreach (var window in desktop.Windows)
+        {
+            if (untaggedBold) window.SetValue(TextBlock.FontWeightProperty, FontWeight.Bold);
+            else window.ClearValue(TextBlock.FontWeightProperty);
+        }
     }
 }

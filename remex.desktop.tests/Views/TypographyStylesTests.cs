@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using FluentAssertions;
-using Remex.Core.Models;
 using Remex.Desktop.Services;
 using Xunit;
 
@@ -46,19 +45,20 @@ public class TypographyStylesTests
     }
 
     [Fact]
-    public void TheDefaultTextBlockTheme_CarriesNoInlineFontSize_AndABoldSetterScopedToUntaggedText()
+    public void TheDefaultTextBlockTheme_CarriesTheEffectOnly()
     {
-        // A FontSize setter here would outrank INHERITANCE and force 14 onto the TextBlock every
-        // ContentPresenter creates inside a Button — stripping the size Material gives button labels
-        // at defaults. Untagged size goes through MaterialDesignFontSize. FontWeight IS present, but
-        // as a DIRECT ControlTheme Setter (not nested in a "^" Style — measured in
-        // ShellTypographyBoldAutomationTests that a nested Style's DynamicResource setter does not
-        // re-run when the key later transitions from absent to present) bound to a DynamicResource
-        // that TypographyResolver only ever populates while Body bold is on (RemEx-jt6w5.11:
-        // resource-only, not the runtime Application.Styles mutation that broke UI Automation) — off
-        // means the key is absent, so the setter resolves to Unset and Buttons keep their inherited
-        // Medium. page-title/card-title need no exclusion: App.axaml's class Styles for them always
-        // outrank a ControlTheme setter.
+        // A FontSize or FontWeight setter here would outrank INHERITANCE and force a fixed value onto
+        // the TextBlock every ContentPresenter creates inside a Button — stripping the Medium/SemiBold
+        // Material and RemEx's own button classes give button labels at defaults. Untagged size goes
+        // through MaterialDesignFontSize. Untagged BOLD is NOT a resource key at all (RemEx-jt6w5.11
+        // round 2): TypographyService sets/clears TextBlock.FontWeightProperty directly on each open
+        // window's root as a plain inherited value instead, after measuring that a ControlTheme
+        // FontWeight setter here — even one bound to a DynamicResource that resolves to
+        // AvaloniaProperty.UnsetValue when "off" — registers a real Style-priority value frame that
+        // resolves to the property's own default (Regular) and outranks a Button's own Style-priority
+        // FontWeight setter for its content TextBlock (ShellTypographyBoldAutomationTests,
+        // GetDiagnostic: ConnectionStatusButton's StatusText read Value=Normal, Priority=Style at
+        // BASELINE with that mechanism — the exact forced-Regular regression this bead forbids).
         var theme = Regex.Match(TypographyMarkup(),
             @"<ControlTheme x:Key=""\{x:Type TextBlock\}"" TargetType=""TextBlock"" BasedOn=""\{StaticResource MaterialTextBlock\}"">(?<body>.*?)</ControlTheme>",
             RegexOptions.Singleline);
@@ -66,8 +66,7 @@ public class TypographyStylesTests
         theme.Success.Should().BeTrue();
         var body = theme.Groups["body"].Value;
         body.Should().Contain(@"<Setter Property=""Effect"" Value=""{DynamicResource Typo.Body.Effect}""/>");
-        body.Should().NotContain(@"Property=""FontSize""");
-        body.Should().Contain(@"<Setter Property=""FontWeight"" Value=""{DynamicResource Typo.UntaggedBold.FontWeight}""/>");
+        body.Should().NotContain(@"Property=""FontSize""").And.NotContain(@"Property=""FontWeight""");
     }
 
     [Fact]
@@ -113,13 +112,7 @@ public class TypographyStylesTests
             .Select(m => m.Groups[1].Value)
             .Distinct()
             .ToArray();
-        // Typo.UntaggedBold.FontWeight is published ONLY while Body bold is on (RemEx-jt6w5.11: "no
-        // key = no override" for untagged text, the same trick SectionShadows uses for the halo) —
-        // so the reachability scan must check both states, not just the service's constructor defaults.
-        var service = new TypographyService();
-        var published = service.Overrides.Keys.OfType<string>().ToHashSet();
-        service.Apply(new TypographySettings { BodyBold = true }, TypographyService.DefaultSurface);
-        published.UnionWith(service.Overrides.Keys.OfType<string>());
+        var published = new TypographyService().Overrides.Keys.OfType<string>().ToHashSet();
 
         bound.Length.Should().BeGreaterThan(20, "if the scan finds nothing this test asserts nothing");
         bound.Where(k => !published.Contains(k)).Should().BeEmpty(
