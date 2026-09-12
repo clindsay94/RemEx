@@ -36,11 +36,11 @@ public sealed record TextShadow(Color Color, double BlurRadius, double Opacity);
 /// <param name="SectionShadows">Per section; <c>null</c> means "no Effect resource" for that section.</param>
 /// <param name="DefaultFontSize">What untagged text inherits: the <c>MaterialDesignFontSize</c> own key.</param>
 /// <param name="UntaggedBold">
-/// Whether untagged text should be Bold (Body bold on). NOT a resource key at all (RemEx-jt6w5.11
-/// round 2): <see cref="TypographyService"/> reads this flag directly and sets or clears an
-/// INHERITED <c>TextBlock.FontWeightProperty</c> local value on each open window's root — see its
-/// remarks for why a resource-key mechanism (both a runtime <c>Application.Styles</c> Style and a
-/// <c>DynamicResource</c> ControlTheme setter were tried and measured broken first) was abandoned.
+/// Whether untagged text should be Bold (Body bold on) — the same source
+/// <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/>'s entry in <see cref="FontWeights"/>
+/// is computed from in the same <see cref="TypographyResolver.Resolve"/> call; kept here too as the
+/// readable flag tests and callers reach for. See <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/>'s
+/// remarks for the mechanism (RemEx-jt6w5.11) this key is part of.
 /// </param>
 /// <param name="SensorTitleBackdrop">The <c>Typo.Sensor.TitleBackdrop</c> flag.</param>
 public sealed record TypographyResolution(
@@ -63,6 +63,49 @@ public static class TypographyResolver
 
     /// <summary>Bound by the sensor-card templates' backdrop Border (<c>IsVisible</c>).</summary>
     public const string SensorTitleBackdropKey = "Typo.Sensor.TitleBackdrop";
+
+    /// <summary>
+    /// Untagged text's Bold (RemEx-jt6w5.11). THE MECHANISM, after two abandoned attempts:
+    /// <para>
+    /// THE ORIGINAL MECHANISM (shipped, then reverted): a runtime <see cref="Avalonia.Styling.Style"/>
+    /// attached/detached on <c>Application.Styles</c> only while Body bold was on. That mutation of
+    /// the live Styles collection broke UI Automation's <c>FindAll</c> on the shell root until
+    /// restart — confirmed against the real Windows UIA stack.
+    /// </para>
+    /// <para>
+    /// ATTEMPT 1 (never shipped): a <c>FontWeight</c> Setter on the default
+    /// <c>{x:Type TextBlock}</c> ControlTheme, bound to this key, toggling its value between
+    /// <c>FontWeight.Bold</c> and <c>AvaloniaProperty.UnsetValue</c>. Measured
+    /// (<c>ShellTypographyBoldAutomationTests</c>, <c>GetDiagnostic</c>) that the Unset value does
+    /// NOT make a ControlTheme setter a no-op: it registers a real Style-priority value frame that
+    /// resolves to the property's own default (Regular), outranking a Button's own Style-priority
+    /// FontWeight setter for its content TextBlock — a forced-Regular regression.
+    /// </para>
+    /// <para>
+    /// ATTEMPT 2 (never shipped): <see cref="TypographyService"/> pushed the inherited weight
+    /// directly onto each already-open top-level window's root at Apply time. Measured broken for a
+    /// different reason: both startup Apply calls run before <c>MainWindow</c> exists, so a
+    /// persisted Body-bold-on opened the shell Regular at cold start until the next settings change
+    /// — and the same gap applied to every on-demand window (<c>TrayFlyoutWindow</c>,
+    /// <c>PairingDialog</c>, <c>CommandPaletteWindow</c>, etc.) created after the last Apply.
+    /// </para>
+    /// <para>
+    /// THE MECHANISM: this key is ALWAYS PRESENT — <c>FontWeight.Bold</c> when Body bold is on,
+    /// <c>FontWeight.Normal</c> (an explicit, ordinary value, never <c>AvaloniaProperty.UnsetValue</c>)
+    /// when off — read by a STATIC <c>Style Selector="Window"</c> in <c>Styles/Typography.axaml</c>
+    /// that sets the INHERITED attached property <c>TextElement.FontWeight</c> on every Window. That
+    /// Style exists from the moment the stylesheet loads, so every window — cold start's
+    /// <c>MainWindow</c> included, and every on-demand window — gets the current value from
+    /// construction; no per-window push, no runtime Styles-collection mutation. Explicit Normal when
+    /// off is exactly what a descendant would inherit if nothing were set at all, so it is harmless
+    /// and sidesteps Attempt 1's UnsetValue trap. Children still behave correctly: untagged text
+    /// with no nearer ancestor inherits this value from the Window; Material buttons and RemEx's own
+    /// button classes set FontWeight on themselves at Style priority (nearer than the Window), so
+    /// their labels are unaffected; themed members and <c>.page-title</c>/<c>.card-title</c> carry
+    /// their own setters.
+    /// </para>
+    /// </summary>
+    public const string UntaggedBoldFontWeightKey = "Typo.UntaggedBold.FontWeight";
 
     public static readonly IReadOnlyList<TypographyMember> Members = new[]
     {
@@ -157,12 +200,15 @@ public static class TypographyResolver
         var s = TypographySettings.Normalize(settings);
 
         var sizes = new Dictionary<string, double>(Members.Count);
-        var weights = new Dictionary<string, FontWeight>(Members.Count);
+        var weights = new Dictionary<string, FontWeight>(Members.Count + 1);
         foreach (var member in Members)
         {
             sizes[member.FontSizeKey] = FontSize(member, s);
             weights[member.FontWeightKey] = FontWeightFor(member, s);
         }
+        // ALWAYS present — see UntaggedBoldFontWeightKey's remarks for why an always-present key
+        // with an explicit Normal/Bold value, not an absent-or-Unset one, is the mechanism.
+        weights[UntaggedBoldFontWeightKey] = s.BodyBold ? FontWeight.Bold : FontWeight.Normal;
 
         var shadow = s.ShadowEnabled
             ? new TextShadow(ShadowColor(surface), ShadowBlurRadius(s.ShadowStrength), ShadowOpacity(s.ShadowStrength))

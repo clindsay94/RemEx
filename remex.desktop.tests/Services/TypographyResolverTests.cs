@@ -67,6 +67,8 @@ public class TypographyResolverTests
         r.FontWeights["Typo.SensorTitle.FontWeight"].Should().Be(FontWeight.Bold);
         r.FontWeights["Typo.Body2.FontWeight"].Should().Be(FontWeight.Regular);
         r.UntaggedBold.Should().BeFalse();
+        r.FontWeights[TypographyResolver.UntaggedBoldFontWeightKey].Should().Be(FontWeight.Normal,
+            "always present -- Normal when off, never absent, never a sentinel");
     }
 
     [Fact]
@@ -79,6 +81,8 @@ public class TypographyResolverTests
         foreach (var m in TypographyResolver.Members.Where(m => m.Section is TypographySection.Small or TypographySection.Sensor))
             r.FontWeights[m.FontWeightKey].Should().Be(m.BaseWeight, m.Key);
         r.UntaggedBold.Should().BeTrue();
+        r.FontWeights[TypographyResolver.UntaggedBoldFontWeightKey].Should().Be(FontWeight.Bold,
+            "always present -- Bold when on");
     }
 
     [Fact]

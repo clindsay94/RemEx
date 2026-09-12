@@ -22,6 +22,8 @@ public class TypographyServiceTests
         service.Overrides["Typo.Headline6.FontWeight"].Should().Be(FontWeight.Medium);
         service.Overrides["Typo.SensorMetricName.FontSize"].Should().Be(10.0);
         service.Overrides[TypographyResolver.SensorTitleBackdropKey].Should().Be(false);
+        service.Overrides[TypographyResolver.UntaggedBoldFontWeightKey].Should().Be(FontWeight.Normal,
+            "THE MECHANISM (RemEx-jt6w5.11): always present, Normal at defaults -- the Window style in Styles/Typography.axaml reads this key directly, never Unset or absent");
 
         foreach (var member in TypographyResolver.Members)
         {
@@ -55,8 +57,10 @@ public class TypographyServiceTests
         var service = new TypographyService();
         var surface = Color.FromRgb(0xFA, 0xFA, 0xFA);
 
-        service.Apply(new TypographySettings { SensorBold = true, SensorScale = 1.5, SensorTitleBackdrop = true, ShadowStrength = 100 }, surface);
+        service.Apply(new TypographySettings { SensorBold = true, SensorScale = 1.5, SensorTitleBackdrop = true, ShadowStrength = 100, BodyBold = true }, surface);
 
+        service.Overrides[TypographyResolver.UntaggedBoldFontWeightKey].Should().Be(FontWeight.Bold,
+            "always present -- Bold once Body bold is on");
         service.Overrides["Typo.SensorTitle.FontSize"].Should().Be(18.0);
         service.Overrides["Typo.SensorTitle.FontWeight"].Should().Be(FontWeight.Bold);
         service.Overrides["Typo.SensorMetricName.FontWeight"].Should().Be(FontWeight.Bold);

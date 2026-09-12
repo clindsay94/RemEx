@@ -1,16 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Diagnostics;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Render.Tests;
 
@@ -18,41 +19,59 @@ namespace Remex.Desktop.Render.Tests;
 /// RemEx-jt6w5.11 background: flipping Body bold used to attach a runtime
 /// <see cref="Avalonia.Styling.Style"/> to <c>Application.Styles</c>, and a real UI Automation
 /// client's <c>FindAll</c> on the shell root then threw "Unexpected HRESULT has been returned from
-/// a call to a COM component" until the process restarted. The fix (round 2, after a round-1
-/// mechanism was measured and found broken) is <see cref="Remex.Desktop.Services.TypographyService"/>
-/// setting/clearing an INHERITED <c>TextBlock.FontWeight</c> local value on each top-level window's
-/// root when Body bold flips — no <c>Application.Styles</c> mutation, and no resource key at all:
-/// nearest-ancestor wins, so a Material button's own FontWeight (Medium/SemiBold, set closer to its
-/// label than the window root) is never disturbed, while genuinely untagged text with no
-/// weight-setting ancestor inherits Bold.
+/// a call to a COM component" until the process restarted — THE ORIGINAL MECHANISM, reverted.
 /// </summary>
 /// <remarks>
-/// WHAT THIS TEST DOES NOT PROVE: it cannot reproduce the original COM fault. Verified by running
-/// a peer-walk-only version of this test in a worktree at 659d9660 (the commit the fault was
-/// measured against, before any RemEx-jt6w5.11 fix): it PASSED there too. Avalonia's headless
-/// <see cref="AutomationPeer.GetChildren"/> walk never crosses into the Win32
-/// <c>System.Windows.Automation</c> / <c>AutomationNode</c> COM layer where "Unexpected HRESULT"
-/// actually originated, so a throw here was never going to correlate with that fault either way.
-/// WHAT THIS TEST DOES PROVE, which is the closest an automated, non-Windows-UIA test can get:
-/// (1) the shell's own <see cref="AutomationPeer"/> tree is walkable, with a floor on peers visited
-/// so the walk can't pass vacuously on an empty tree, in all three states — before touching Bold
-/// body, with it on, and with it off again; and (2) TWO real targets, pinned by exact weight AND
-/// <c>GetDiagnostic</c> priority in all three states. The shell's own <c>ConnectionStatusButton</c>
-/// status text (Inherited-priority SemiBold, from the Button's own <c>.secondary</c> class, which
-/// holds it at Style priority) stays SemiBold throughout, because the Button itself is a nearer
-/// ancestor than the window root and already supplies a value — proving Bold body never disturbs a
-/// button that sets its own weight. MEASURED ALONG THE WAY: even an unclassed default
-/// <see cref="Button"/> is NOT a valid "genuinely untagged" test target, because Material's own
-/// <c>MaterialButtonBase</c> sets <c>FontWeight</c> at STYLE priority directly on the Button control
-/// itself (Material.Avalonia 3.19, Button.axaml:22,135-162) — every Button, not just RemEx's own
-/// classed ones, already blocks inheritance from reaching its label. So the second target is a bare
-/// <see cref="TextBlock"/> with no Button ancestor at all: Unset/Regular at baseline (nothing
-/// anywhere sets this property for it), Inherited/Bold while Bold body is ON, and back to
-/// Unset/Regular — not forced Regular by a leftover setter, genuinely nothing set — once it is OFF
-/// again. The actual "does UI Automation still work" claim is verified manually against the real
-/// Windows UIA stack; see the task report for that probe's before/after output. The task report also
-/// carries this test's own six <c>GetDiagnostic</c> readings, plus the four earlier readings taken
-/// against the ABANDONED round-1 mechanism that caught its bug.
+/// <para>
+/// ATTEMPT 1 (never shipped, caught by this test's ancestor before it could): a
+/// <c>FontWeight</c> Setter on the default <c>{x:Type TextBlock}</c> ControlTheme bound to a
+/// <c>DynamicResource</c> that toggled between <c>FontWeight.Bold</c> and
+/// <c>AvaloniaProperty.UnsetValue</c>. Measured (<c>GetDiagnostic</c>) that the Unset value
+/// registers a real Style-priority frame resolving to the property's own default (Regular),
+/// outranking a Button's own Style-priority FontWeight setter — a forced-Regular regression.
+/// </para>
+/// <para>
+/// ATTEMPT 2 (never shipped): <c>TypographyService</c> pushed the inherited weight directly onto
+/// each already-open top-level window's root (<c>IClassicDesktopStyleApplicationLifetime.Windows</c>)
+/// at Apply time. Measured broken for a different reason: both startup Apply calls run before
+/// <c>MainWindow</c> exists, so a persisted Body-bold-on opened the shell Regular at cold start
+/// until the next settings change, and the same gap applied to every on-demand window
+/// (<c>TrayFlyoutWindow</c>, <c>PairingDialog</c>, <c>CommandPaletteWindow</c>, etc.) created after
+/// the last Apply — this test's own first version hid that bug by injecting its probe window
+/// AFTER calling Apply, the opposite of the real gap.
+/// </para>
+/// <para>
+/// THE MECHANISM (current): a STATIC <c>Style Selector="Window"</c> in
+/// <c>Styles/Typography.axaml</c>, present from the moment that stylesheet loads (before any window
+/// exists), sets the INHERITED attached property <c>TextElement.FontWeight</c> on every Window from
+/// a <c>DynamicResource</c> (<c>Typo.UntaggedBold.FontWeight</c>) that <c>TypographyService</c> keeps
+/// ALWAYS PRESENT — <c>FontWeight.Bold</c> when Body bold is on, <c>FontWeight.Normal</c> when off,
+/// never absent, never <c>AvaloniaProperty.UnsetValue</c>. Because the Style exists before any
+/// window does, every window — cold start's <c>MainWindow</c> included, and every on-demand window —
+/// gets the CURRENT value from construction; no per-window push, no runtime Styles-collection
+/// mutation, no resource key that is ever absent. Nearest-ancestor wins for children: a Material
+/// button (even an unclassed one — its own template sets FontWeight at Style priority directly on
+/// the Button control, not merely on its content TextBlock, measured below) and RemEx's own button
+/// classes are nearer ancestors than the window root, so their labels are unaffected; themed members
+/// and <c>.page-title</c>/<c>.card-title</c> carry their own setters.
+/// </para>
+/// <para>
+/// This suite proves three things: (1) <see cref="TogglingBodyBold_DoesNotBreakAutomationPeerWalk"/>
+/// — the shell's automation peer tree stays walkable (with a floor on peers visited so the walk
+/// can't pass vacuously) across all three Body-bold states, and two real targets keep their exact
+/// declared weight through the toggle, pinned by both <c>FontWeight</c> value and
+/// <c>GetDiagnostic</c> priority: <c>ConnectionStatusButton</c>'s StatusText (Inherited-priority
+/// SemiBold from its own <c>.secondary</c> class the whole time — a nearer ancestor already supplies
+/// a value) and a bare untagged <see cref="TextBlock"/> with no Button ancestor at all
+/// (Inherited-priority Regular at baseline and once restored, Inherited-priority Bold while on —
+/// genuinely inheriting the toggle each time, from an always-present Window-style value that is
+/// never absent and never <c>AvaloniaProperty.UnsetValue</c>). (2)
+/// <see cref="ColdStart_BodyBoldSetBeforeAnyWindowExists_TheFirstWindowIsAlreadyCorrect"/> — the
+/// exact shape Attempt 2 got wrong: <c>Apply</c> runs BEFORE any window is created, then a window is
+/// created and shown, and it already carries the right weight from its very first frame, no second
+/// Apply needed. The actual "does UI Automation still work" claim is verified manually against the
+/// real Windows UIA stack; the task report carries this suite's <c>GetDiagnostic</c> readings.
+/// </para>
 /// </remarks>
 public sealed class ShellTypographyBoldAutomationTests
 {
@@ -61,36 +80,6 @@ public sealed class ShellTypographyBoldAutomationTests
     {
         using var fixture = await ShellRenderFixture.CreateAsync();
         fixture.CaptureFrame();
-
-        // This headless harness never calls StartWithClassicDesktopLifetime (RenderTestApp only
-        // arms App.SkipProductionStartup), so Application.Current.ApplicationLifetime is null here
-        // unlike production -- TypographyService.ApplyUntaggedBold reaches windows through
-        // IClassicDesktopStyleApplicationLifetime.Windows exactly like App.axaml.cs does, so without
-        // this the round-2 mechanism would silently no-op in this test for a reason that has nothing
-        // to do with the mechanism itself. Wiring up the real lifetime type exercises the real code
-        // path instead of asserting against a hand-rolled substitute.
-        var lifetime = new Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime
-        {
-            MainWindow = fixture.Window,
-        };
-        // Application.ApplicationLifetime's public setter throws "not possible to change... after
-        // Application was initialized" -- true in production (set once, from Program.cs), but this
-        // per-test headless Application instance (PerTest isolation, RenderTestApp.cs) never had one
-        // set at all, so there is nothing to protect here. Reflection is test-only scaffolding to
-        // reach the same field App.axaml.cs's production Main sets through the public setter.
-        typeof(Avalonia.Application)
-            .GetField("_applicationLifetime", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-            .SetValue(Avalonia.Application.Current, lifetime);
-        // ClassicDesktopStyleApplicationLifetime's public Windows list is populated by the AppBuilder
-        // wiring StartWithClassicDesktopLifetime installs (a Window.Show() hook), which this manually
-        // constructed instance never got -- measured: MainWindow alone does not add it to Windows,
-        // and Window.Show() again after installing the lifetime doesn't either. Reach the backing
-        // AvaloniaList directly so this test exercises the same Windows collection
-        // TypographyService.ApplyUntaggedBold enumerates in production.
-        var windowsField = typeof(Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime)
-            .GetField("_windows", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        ((Avalonia.Collections.AvaloniaList<Window>)windowsField.GetValue(lifetime)!).Add(fixture.Window);
-        LogLine($"lifetime.Windows.Count = {lifetime.Windows.Count}");
 
         // (a) ConnectionStatusButton's StatusText (ShellView.axaml:915,943): Classes="secondary" ->
         // App.axaml's `:is(Button).secondary` sets FontWeight=SemiBold on the Button; StatusText
@@ -101,15 +90,13 @@ public sealed class ShellTypographyBoldAutomationTests
             .First(tb => tb.Theme is null && tb.FontSize == 10);
 
         // (b) A throwaway plain, untagged TextBlock with NO Button ancestor, added into the REAL
-        // shell window's visual tree (not a standalone Window — measured in round 1 that a bare
-        // `new Window` does not reliably resolve the app's implicit ControlThemes the same way) so
-        // it shares the exact same styling context as everything else in this test. This, not a
-        // Button's own label, is the genuinely untagged case: measured (see below) that Material's
-        // MaterialButtonBase itself sets FontWeight=Medium/SemiBold at STYLE priority on the Button
-        // control (Material.Avalonia 3.19, Button.axaml:22,135-162) -- not merely inherited by its
-        // content TextBlock from further up -- so ANY Button, even an unclassed one, already blocks
-        // inheritance from reaching its own label; a bare TextBlock with no such ancestor is the
-        // only way to exercise the "genuinely untagged text inherits the toggle" half of the claim.
+        // shell window's visual tree so it shares the exact same styling context as everything else
+        // in this test. This, not a Button's own label, is the genuinely untagged case: measured
+        // that Material's own MaterialButtonBase sets FontWeight at STYLE priority directly on the
+        // Button control (Material.Avalonia 3.19, Button.axaml:22,135-162) -- not merely inherited
+        // by its content TextBlock from further up -- so ANY Button, even an unclassed one, already
+        // blocks inheritance from reaching its own label; a bare TextBlock with no such ancestor is
+        // the only way to exercise the "genuinely untagged text inherits the toggle" half of the claim.
         var probeText = new TextBlock { Text = "Probe" };
         var wrapper = new Grid();
         var originalContent = (Control)fixture.Window.Content!;
@@ -125,70 +112,80 @@ public sealed class ShellTypographyBoldAutomationTests
         WalkAutomationTree(fixture.Window, out var baselineSeen);
         baselineSeen.Should().BeGreaterThan(20,
             "a near-empty peer tree would let this test pass vacuously even if walking real content threw");
-        LogDiagnostic("baseline", "ConnectionStatusButton/StatusText", statusText);
-        LogDiagnostic("baseline", "bare untagged probe TextBlock", probeText);
         statusText.FontWeight.Should().Be(FontWeight.SemiBold,
             "ConnectionStatusButton's own .secondary class sets SemiBold; Bold body OFF must not disturb it");
         statusText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Inherited,
             "StatusText itself has no local/style value; it inherits SemiBold from its own Button ancestor (which holds it at Style priority)");
         probeText.FontWeight.Should().Be(FontWeight.Normal,
-            "with no ancestor supplying FontWeight and nothing set yet, this is the property's own registered default");
-        probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Unset,
-            "nothing anywhere in the chain has ever set this property for this bare probe at baseline");
+            "the Window style's resource is Normal at defaults -- an explicit value, always present, not an absent/Unset one");
+        probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Inherited,
+            "inherited from the Window's own Style-priority value, which is always present under this mechanism -- never Unset");
 
         // Flip Body bold ON — the path RemEx-jt6w5.11 repro'd against.
         fixture.Theme.Typography.Apply(
-            new TypographySettings { BodyBold = true }, Remex.Desktop.Services.TypographyService.DefaultSurface);
+            new TypographySettings { BodyBold = true }, TypographyService.DefaultSurface);
         Dispatcher.UIThread.RunJobs();
 
         WalkAutomationTree(fixture.Window, out var boldSeen);
         boldSeen.Should().BeGreaterThan(20);
-        LogDiagnostic("Bold body ON", "ConnectionStatusButton/StatusText", statusText);
-        LogDiagnostic("Bold body ON", "bare untagged probe TextBlock", probeText);
         statusText.FontWeight.Should().Be(FontWeight.SemiBold,
-            "ConnectionStatusButton itself is the nearer ancestor for inheritance purposes and already supplies a value (Style-priority SemiBold), so the window-root Bold set by Bold body ON never reaches this TextBlock — this is the whole point of the inheritance-only mechanism");
+            "ConnectionStatusButton itself is the nearer ancestor for inheritance purposes and already supplies a value (Style-priority SemiBold), so the Window style's Bold never reaches this TextBlock — this is the whole point of the inheritance-based mechanism");
         probeText.FontWeight.Should().Be(FontWeight.Bold,
-            "the bare probe has no nearer ancestor supplying FontWeight at all, so it inherits Bold from the window root");
+            "the bare probe has no nearer ancestor supplying FontWeight at all, so it inherits Bold from the Window style");
         probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Inherited,
-            "now inherited from the window root's local value, where at baseline nothing supplied a value at all");
+            "now inherited from the Window's own Style-priority value, where at baseline nothing supplied a value at all");
 
         // And back off — the repro said turning it off did NOT recover a broken tree; here nothing
         // should ever have broken.
-        fixture.Theme.Typography.Apply(TypographySettings.Default, Remex.Desktop.Services.TypographyService.DefaultSurface);
+        fixture.Theme.Typography.Apply(TypographySettings.Default, TypographyService.DefaultSurface);
         Dispatcher.UIThread.RunJobs();
 
         WalkAutomationTree(fixture.Window, out var restoredSeen);
         restoredSeen.Should().BeGreaterThan(20);
-        LogDiagnostic("Bold body OFF (restored)", "ConnectionStatusButton/StatusText", statusText);
-        LogDiagnostic("Bold body OFF (restored)", "bare untagged probe TextBlock", probeText);
         statusText.FontWeight.Should().Be(FontWeight.SemiBold,
             "unaffected throughout; still the .secondary class's own SemiBold");
         probeText.FontWeight.Should().Be(FontWeight.Normal,
-            "Bold body OFF clears the window root's local value entirely (ClearValue), restoring exactly the baseline Unset/default state -- not forced to Regular by a leftover setter, just genuinely nothing set");
-        probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Unset,
-            "back to exactly the baseline state: nothing set anywhere in the chain");
+            "Bold body OFF sets the Window style's resource back to an explicit Normal -- restoring exactly the baseline value, not a leftover Bold");
+        probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Inherited,
+            "still inherited from the Window's Style-priority value, now Normal again");
     }
 
     /// <summary>
-    /// Prints the exact <c>Value</c> and <c>Priority</c> <c>GetDiagnostic</c>
-    /// reports for <see cref="TextBlock.FontWeightProperty"/> — captured verbatim into the task
-    /// report while diagnosing the round-1 mechanism (a DynamicResource-based ControlTheme setter),
-    /// kept here so a future regression shows the same evidence trail without re-instrumenting.
+    /// The exact shape Attempt 2 got wrong: <c>Apply(BodyBold = true)</c> runs FIRST, before any
+    /// window exists, then a window is created and shown — proving the static Window style reaches
+    /// it from its very first frame with no second Apply required, unlike a per-window push which
+    /// can only ever reach windows that already exist at Apply time.
     /// </summary>
-    private static void LogDiagnostic(string state, string label, TextBlock target)
+    [AvaloniaFact]
+    public void ColdStart_BodyBoldSetBeforeAnyWindowExists_TheFirstWindowIsAlreadyCorrect()
     {
-        var diag = target.GetDiagnostic(TextBlock.FontWeightProperty);
-        LogLine($"{state} | {label} | Value={diag.Value} Priority={diag.Priority}");
-    }
+        var typography = new TypographyService();
+        typography.Apply(new TypographySettings { BodyBold = true }, TypographyService.DefaultSurface);
 
-    // Console.WriteLine is not reliably captured by the xunit v3 VSTest adapter in this harness
-    // (measured); a plain file sidesteps that so the readings always reach the task report.
-    private static void LogLine(string message)
-    {
-        var line = $"[jt6w5.11 diagnostic] {message}";
-        Console.WriteLine(line);
-        System.IO.File.AppendAllText(
-            System.IO.Path.Combine(System.IO.Path.GetTempPath(), "jt6w5-diagnostics.log"), line + Environment.NewLine);
+        // Only now does a window get created -- this is the cold-start / on-demand-window shape.
+        var probeText = new TextBlock { Text = "Probe" };
+        var secondaryButton = new Button { Classes = { "secondary" }, Content = "Status" };
+        var window = new Window { Content = new StackPanel { Children = { probeText, secondaryButton } } };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.CaptureRenderedFrame();
+        Dispatcher.UIThread.RunJobs();
+
+        var buttonLabel = secondaryButton.GetVisualDescendants().OfType<TextBlock>().First(tb => tb.Theme is null);
+
+        probeText.FontWeight.Should().Be(FontWeight.Bold,
+            "the window was created AFTER BodyBold=true was applied -- the static Window style must already carry Bold on its very first frame, with no second Apply needed");
+        probeText.GetDiagnostic(TextBlock.FontWeightProperty).Priority.Should().Be(Avalonia.Data.BindingPriority.Inherited);
+        buttonLabel.FontWeight.Should().Be(FontWeight.SemiBold,
+            "the .secondary class's own Style-priority setter on the Button is a nearer ancestor and is unaffected");
+
+        typography.Apply(TypographySettings.Default, TypographyService.DefaultSurface);
+        Dispatcher.UIThread.RunJobs();
+
+        probeText.FontWeight.Should().Be(FontWeight.Normal, "off restores the explicit Normal");
+        buttonLabel.FontWeight.Should().Be(FontWeight.SemiBold, "unaffected throughout");
+
+        window.Close();
     }
 
     private static void WalkAutomationTree(Window window, out int peerCount)

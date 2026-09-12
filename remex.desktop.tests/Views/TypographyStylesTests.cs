@@ -50,15 +50,16 @@ public class TypographyStylesTests
         // A FontSize or FontWeight setter here would outrank INHERITANCE and force a fixed value onto
         // the TextBlock every ContentPresenter creates inside a Button — stripping the Medium/SemiBold
         // Material and RemEx's own button classes give button labels at defaults. Untagged size goes
-        // through MaterialDesignFontSize. Untagged BOLD is NOT a resource key at all (RemEx-jt6w5.11
-        // round 2): TypographyService sets/clears TextBlock.FontWeightProperty directly on each open
-        // window's root as a plain inherited value instead, after measuring that a ControlTheme
-        // FontWeight setter here — even one bound to a DynamicResource that resolves to
-        // AvaloniaProperty.UnsetValue when "off" — registers a real Style-priority value frame that
-        // resolves to the property's own default (Regular) and outranks a Button's own Style-priority
-        // FontWeight setter for its content TextBlock (ShellTypographyBoldAutomationTests,
-        // GetDiagnostic: ConnectionStatusButton's StatusText read Value=Normal, Priority=Style at
-        // BASELINE with that mechanism — the exact forced-Regular regression this bead forbids).
+        // through MaterialDesignFontSize. Untagged BOLD's mechanism is the Window style pinned by
+        // TypographyAxaml_HasAWindowStyle_SettingTextBlockFontWeight below, not this ControlTheme, after
+        // two abandoned attempts (RemEx-jt6w5.11) — the original runtime Application.Styles mutation,
+        // and Attempt 1: a FontWeight setter right here, bound to a DynamicResource that resolves to
+        // AvaloniaProperty.UnsetValue when "off". Measured (ShellTypographyBoldAutomationTests,
+        // GetDiagnostic) that the Unset value does NOT make a ControlTheme setter a no-op: it registers
+        // a real Style-priority value frame that resolves to the property's own default (Regular) and
+        // outranks a Button's own Style-priority FontWeight setter for its content TextBlock —
+        // ConnectionStatusButton's StatusText read Value=Normal, Priority=Style at BASELINE under that
+        // mechanism, the exact forced-Regular regression this bead forbids.
         var theme = Regex.Match(TypographyMarkup(),
             @"<ControlTheme x:Key=""\{x:Type TextBlock\}"" TargetType=""TextBlock"" BasedOn=""\{StaticResource MaterialTextBlock\}"">(?<body>.*?)</ControlTheme>",
             RegexOptions.Singleline);
@@ -67,6 +68,28 @@ public class TypographyStylesTests
         var body = theme.Groups["body"].Value;
         body.Should().Contain(@"<Setter Property=""Effect"" Value=""{DynamicResource Typo.Body.Effect}""/>");
         body.Should().NotContain(@"Property=""FontSize""").And.NotContain(@"Property=""FontWeight""");
+    }
+
+    [Fact]
+    public void TypographyAxaml_HasAWindowStyle_SettingTextBlockFontWeight()
+    {
+        // THE MECHANISM (RemEx-jt6w5.11, after the original runtime Application.Styles mutation and
+        // two more abandoned attempts): a STATIC Style selecting every Window, present from the
+        // moment this stylesheet loads — so cold start's MainWindow and every on-demand window
+        // (TrayFlyoutWindow, PairingDialog, CommandPaletteWindow, etc.) get the current value from
+        // construction, no per-window push required (Attempt 2, measured broken: pushing the value
+        // onto already-open windows at Apply time missed both startup Apply calls, which run before
+        // MainWindow exists, and every window opened after the last Apply). Sets the INHERITED
+        // attached property TextElement.FontWeight (exposed here as "TextBlock.FontWeight") to
+        // Typo.UntaggedBold.FontWeight, a key TypographyService keeps ALWAYS PRESENT (Bold/Normal,
+        // never absent, never Unset — Attempt 1's UnsetValue trap doesn't apply because there is
+        // nothing here for Unset to ever resolve to).
+        var style = Regex.Match(TypographyMarkup(),
+            @"<Style Selector=""Window"">(?<body>.*?)</Style>", RegexOptions.Singleline);
+
+        style.Success.Should().BeTrue("the Window style is THE mechanism for untagged Bold body");
+        style.Groups["body"].Value.Should().Contain(
+            @"<Setter Property=""TextBlock.FontWeight"" Value=""{DynamicResource Typo.UntaggedBold.FontWeight}""/>");
     }
 
     [Fact]
