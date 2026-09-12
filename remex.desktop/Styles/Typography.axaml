@@ -35,15 +35,17 @@
                  runtime Style TypographyService attached/detached on Application.Styles; that live
                  mutation of the Styles collection broke UI Automation's FindAll on the shell root
                  until restart (RemEx-jt6w5.11) — a resource key, like every other Typo.* value,
-                 does not. The nested Style excludes page-title/card-title defensively (they set
-                 their own Typo.PageTitle/CardTitle.FontWeight via App.axaml class Styles, which
-                 outrank a ControlTheme setter regardless, but the exclusion documents the intent
-                 the old runtime Style's .Not() guards captured). -->
+                 does not. THE SETTER IS A DIRECT ControlTheme Setter, NOT NESTED IN A "^" Style:
+                 measured (remex.desktop.render.tests's ShellTypographyBoldAutomationTests) that a
+                 DynamicResource inside a nested `<Style Selector="^:...">` block does not re-run
+                 when the key transitions from absent to present later — it resolves once at initial
+                 template application and does not observe the merge that adds the key afterwards.
+                 A top-level Setter on the ControlTheme itself does. page-title/card-title need no
+                 exclusion: they set their own Typo.PageTitle/CardTitle.FontWeight via App.axaml
+                 class Styles, which always outrank a ControlTheme setter regardless of this one. -->
             <ControlTheme x:Key="{x:Type TextBlock}" TargetType="TextBlock" BasedOn="{StaticResource MaterialTextBlock}">
                 <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
-                <Style Selector="^:not(.page-title):not(.card-title)">
-                    <Setter Property="FontWeight" Value="{DynamicResource Typo.UntaggedBold.FontWeight}"/>
-                </Style>
+                <Setter Property="FontWeight" Value="{DynamicResource Typo.UntaggedBold.FontWeight}"/>
             </ControlTheme>
 
             <!-- ── Headers ─────────────────────────────────────────────────────────────────── -->

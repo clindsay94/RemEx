@@ -99,6 +99,14 @@ public sealed class TypographyService
         foreach (var (key, size) in resolved.FontSizes) _overrideResources[key] = size;
         foreach (var (key, weight) in resolved.FontWeights) _overrideResources[key] = weight;
 
+        // ALWAYS present (never absent) — see TypographyResolver.UntaggedBoldFontWeightKey's remarks
+        // for why: an already-materialized TextBlock's DynamicResource binding does not re-evaluate
+        // the first time an absent key starts existing, only when a present key's value changes.
+        // AvaloniaProperty.UnsetValue is the sentinel that makes the ControlTheme's FontWeight setter
+        // contribute nothing, same effect as "no key" without ever removing the key.
+        _overrideResources[TypographyResolver.UntaggedBoldFontWeightKey] =
+            resolved.UntaggedBold ? FontWeight.Bold : AvaloniaProperty.UnsetValue;
+
         // One DropShadowEffect per apply, shared by every shadowed section (an effect can be
         // referenced by any number of visuals). A section with no halo gets NO key: the
         // DynamicResource setter then resolves to Unset and the TextBlock keeps Effect = null,

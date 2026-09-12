@@ -51,10 +51,14 @@ public class TypographyStylesTests
         // A FontSize setter here would outrank INHERITANCE and force 14 onto the TextBlock every
         // ContentPresenter creates inside a Button — stripping the size Material gives button labels
         // at defaults. Untagged size goes through MaterialDesignFontSize. FontWeight IS present, but
-        // as a DynamicResource that TypographyResolver only ever populates while Body bold is on
-        // (RemEx-jt6w5.11: resource-only, not the runtime Application.Styles mutation that broke UI
-        // Automation) — off means the key is absent, so the setter resolves to Unset and Buttons keep
-        // their inherited Medium. Nested Style excludes page-title/card-title defensively.
+        // as a DIRECT ControlTheme Setter (not nested in a "^" Style — measured in
+        // ShellTypographyBoldAutomationTests that a nested Style's DynamicResource setter does not
+        // re-run when the key later transitions from absent to present) bound to a DynamicResource
+        // that TypographyResolver only ever populates while Body bold is on (RemEx-jt6w5.11:
+        // resource-only, not the runtime Application.Styles mutation that broke UI Automation) — off
+        // means the key is absent, so the setter resolves to Unset and Buttons keep their inherited
+        // Medium. page-title/card-title need no exclusion: App.axaml's class Styles for them always
+        // outrank a ControlTheme setter.
         var theme = Regex.Match(TypographyMarkup(),
             @"<ControlTheme x:Key=""\{x:Type TextBlock\}"" TargetType=""TextBlock"" BasedOn=""\{StaticResource MaterialTextBlock\}"">(?<body>.*?)</ControlTheme>",
             RegexOptions.Singleline);
@@ -63,7 +67,6 @@ public class TypographyStylesTests
         var body = theme.Groups["body"].Value;
         body.Should().Contain(@"<Setter Property=""Effect"" Value=""{DynamicResource Typo.Body.Effect}""/>");
         body.Should().NotContain(@"Property=""FontSize""");
-        body.Should().Contain(@"Selector=""^:not(.page-title):not(.card-title)""");
         body.Should().Contain(@"<Setter Property=""FontWeight"" Value=""{DynamicResource Typo.UntaggedBold.FontWeight}""/>");
     }
 

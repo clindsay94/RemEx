@@ -35,7 +35,15 @@ public sealed record TextShadow(Color Color, double BlurRadius, double Opacity);
 /// <param name="FontWeights"><c>Typo.&lt;Member&gt;.FontWeight</c> → weight.</param>
 /// <param name="SectionShadows">Per section; <c>null</c> means "no Effect resource" for that section.</param>
 /// <param name="DefaultFontSize">What untagged text inherits: the <c>MaterialDesignFontSize</c> own key.</param>
-/// <param name="UntaggedBold">Whether the runtime untagged-bold style is attached.</param>
+/// <param name="UntaggedBold">
+/// The single source of truth for whether untagged text should be Bold (Body bold on). Not a member
+/// of <see cref="FontWeights"/>: <see cref="TypographyService"/> writes it to
+/// <see cref="TypographyResolver.UntaggedBoldFontWeightKey"/> as either <c>FontWeight.Bold</c> or
+/// <c>AvaloniaProperty.UnsetValue</c> (RemEx-jt6w5.11 review) — the key is always PRESENT in the
+/// merged dictionary so a DynamicResource setter re-evaluates on every toggle; measured that a key
+/// which only sometimes EXISTS does not re-trigger an already-materialized element's DynamicResource
+/// binding the first time it appears, only when its value later changes.
+/// </param>
 /// <param name="SensorTitleBackdrop">The <c>Typo.Sensor.TitleBackdrop</c> flag.</param>
 public sealed record TypographyResolution(
     IReadOnlyDictionary<string, double> FontSizes,
@@ -63,10 +71,15 @@ public static class TypographyResolver
     /// ControlTheme (<c>Styles/Typography.axaml</c>) reads for its <c>FontWeight</c> setter.
     /// RESOURCE-ONLY, deliberately not a runtime <c>Application.Styles</c> mutation (RemEx-jt6w5.11):
     /// attaching/detaching a live <see cref="Avalonia.Styling.Style"/> on <c>Application.Styles</c>
-    /// broke UI Automation's <c>FindAll</c> on the shell root until restart. Present in the resolved
-    /// dictionary only when Body bold is on; absent (never "set to Regular") when off, so the
-    /// DynamicResource resolves to Unset and the setter contributes nothing — the same "no key = no
-    /// override" trick <see cref="TypographyResolution.SectionShadows"/> uses for the halo Effect.
+    /// broke UI Automation's <c>FindAll</c> on the shell root until restart. <see cref="TypographyService"/>
+    /// keeps this key ALWAYS PRESENT and toggles its VALUE between <c>FontWeight.Bold</c> and
+    /// <c>AvaloniaProperty.UnsetValue</c> (never "set to Regular") — an Unset value makes the
+    /// ControlTheme setter contribute nothing, so a Button's inherited Medium survives untouched.
+    /// This is deliberately NOT the "key absent = Unset" trick <see cref="TypographyResolution.SectionShadows"/>
+    /// uses for the halo Effect: measured (remex.desktop.render.tests's
+    /// ShellTypographyBoldAutomationTests) that a DynamicResource setter on an already-materialized
+    /// element does not re-evaluate the first time an absent key starts existing — only when a
+    /// present key's value changes. Presence must never flip; only the value may.
     /// </summary>
     public const string UntaggedBoldFontWeightKey = "Typo.UntaggedBold.FontWeight";
 
@@ -169,7 +182,6 @@ public static class TypographyResolver
             sizes[member.FontSizeKey] = FontSize(member, s);
             weights[member.FontWeightKey] = FontWeightFor(member, s);
         }
-        if (s.BodyBold) weights[UntaggedBoldFontWeightKey] = FontWeight.Bold;
 
         var shadow = s.ShadowEnabled
             ? new TextShadow(ShadowColor(surface), ShadowBlurRadius(s.ShadowStrength), ShadowOpacity(s.ShadowStrength))
