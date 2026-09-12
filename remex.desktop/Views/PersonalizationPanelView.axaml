@@ -453,7 +453,7 @@
                 <Grid ColumnDefinitions="*,2*" IsEnabled="{Binding TextShadowEnabled}">
                     <TextBlock Text="{local:Localize Custom_TextShadowStrength}" VerticalAlignment="Center" Margin="16,0,0,0"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding TextShadowStrength}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextShadowStrength}"/>
+                        <Slider Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="10" Value="{Binding TextShadowStrength}" Width="160" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextShadowStrength}"/>
                         <TextBlock Text="{Binding TextShadowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </Grid>
