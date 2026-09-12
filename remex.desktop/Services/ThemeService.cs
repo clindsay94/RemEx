@@ -392,11 +392,12 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("AccentHoverBrush", new SolidColorBrush(palette.Secondary));
         SetResourceOverrideInternal("AccentPressed", palette.Tertiary);
         SetResourceOverrideInternal("AccentPressedBrush", new SolidColorBrush(palette.Tertiary));
-        // Same source as AccentPressed above (palette.Tertiary), published under its own name so a
-        // chart series can bind to "the tertiary role" without coupling to a button's pressed state
-        // (RemEx-qljv).
-        SetResourceOverrideInternal("PaletteTertiary", palette.Tertiary);
-        SetResourceOverrideInternal("PaletteTertiaryBrush", new SolidColorBrush(palette.Tertiary));
+        // PaletteTertiary/PaletteTertiaryBrush (RemEx-qljv: a chart series binding to "the tertiary role"
+        // without coupling to a button's pressed state) used to be published here from palette.Tertiary.
+        // They are now published once, below, from roles.Tertiary — the same value, since
+        // palette.Tertiary is derived from roles.Tertiary in DynamicColorGenerator.Generate — as part of
+        // the full 48-role block (RemEx-4kv0g.12), so the standalone pair was removed rather than kept
+        // as a second, redundant write of the same key.
 
         // EVERY COMPOSE-EXPOSED M3 ROLE, UNDER ITS OWN NAME (RemEx-4kv0g.12, spec § 2). The ~50 legacy keys above are the
         // role contract views bind to today; these are the vocabulary spec B binds to. Literal keys on purpose:

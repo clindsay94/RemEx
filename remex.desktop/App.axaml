@@ -165,8 +165,8 @@
              answer can actually land: AccentColor takes the theme's own accent (the same move that
              settled AccentForegroundBrush in RemEx-tq2e), and SecondaryAccentColor takes the M3
              Tertiary role, which is a distinct hue from Primary in every scheme variant EXCEPT
-             Monochrome — DynamicColorGenerator.SeedCoreFor strips chroma from every tonal palette
-             under that variant (MonochromeHasNoChromaOnAnyTonalPalette), so Primary and Tertiary
+             Monochrome — MCU's SchemeMonochrome (Remex.Core.Theming.Mcu) strips chroma from every
+             tonal palette under that variant (MonochromeHasNoChromaOnAnyTonalPalette), so Primary and Tertiary
              both render the same grey there and the two series lose their separation. Not fixed
              here: what should distinguish a sparkline's two series under Monochrome is an open
              design call, left for the gate to file as its own bead.

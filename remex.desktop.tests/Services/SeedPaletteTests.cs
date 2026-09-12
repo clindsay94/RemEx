@@ -244,13 +244,18 @@ public class SeedPaletteTests
         // This locks in behaviour that is correct TODAY across these seeds and both modes — rather
         // than chasing a known bug. The risk it guards is a future tweak to the variant mapping or
         // the neutral-chroma handling quietly merging two variants. One pair is a known, accepted
-        // exception: see the achromatic carve-out below.
+        // exception: see the carve-out below — bounded to the two explainable causes, not to "the
+        // fingerprints happened to match", so a real bug (e.g. ToMcu mapping both names to one
+        // enum) cannot hide behind it (review finding, RemEx-4kv0g.12).
+        bool everFidelityDistinctFromContent = false;
+
         foreach (var seed in Seeds)
         {
             foreach (var isDark in new[] { true, false })
             {
                 var seen = new Dictionary<string, string>();
                 bool collapsedFidelityIntoContent = false;
+                string? fidelityFingerprint = null;
 
                 foreach (var variant in Variants)
                 {
@@ -258,13 +263,34 @@ public class SeedPaletteTests
                     var fingerprint = string.Join(
                         "|", p.Surface, p.Primary, p.Secondary, p.Tertiary, p.OnSurface, p.Outline);
 
-                    // SchemeFidelity and SchemeContent differ ONLY in the tertiary palette, which they derive from the
-                    // seed's hue temperature (complement vs. analogous). At the extremes of the hue/tone space —
-                    // an achromatic seed (no usable hue at all) or a seed sitting at a symmetric point of the
-                    // temperature cache (pure yellow, measured) — the two derivations land on the same tertiary,
-                    // and the two variants are the same scheme by construction: Google's, not ours. This is a
-                    // known, accepted collision, not a defect in the adapter — skip that one pair when it happens.
-                    if (variant == SchemeVariants.Content && seen.TryGetValue(fingerprint, out var twin) && twin == SchemeVariants.Fidelity)
+                    if (variant == SchemeVariants.Fidelity) fidelityFingerprint = fingerprint;
+
+                    if (variant == SchemeVariants.Content)
+                    {
+                        everFidelityDistinctFromContent |= fidelityFingerprint != fingerprint;
+                    }
+
+                    // SchemeFidelity and SchemeContent differ ONLY in the tertiary palette, which they derive
+                    // from the seed's hue temperature (complement vs. analogous) — EXCEPT when that difference
+                    // never reaches the rendered colour. Two explainable causes, both Google's own construction:
+                    //
+                    //  1. TONE SATURATION VIA ToneDeltaPair. tertiaryContainer's ToneDeltaPair(tertiaryContainer,
+                    //     tertiary, 10, NEARER) pushes tertiary toward the container by a fixed 10-tone gap; for a
+                    //     seed near the top of the tone axis in dark mode (pure yellow, tone ~97, measured) that
+                    //     second round saturates tertiary at tone 100 — pure white, #FFFFFFFF — for BOTH variants
+                    //     regardless of which hue (complement vs. analogous) fed it. Detected on the actual
+                    //     rendered ARGB (0xFFFFFFFF or 0xFF000000 at the other tone extreme), not inferred.
+                    //  2. ACHROMATIC SEED. Chroma < 5 leaves no usable hue at all, so complement and analogous
+                    //     derive the same (near-)zero-chroma tertiary by construction.
+                    //
+                    // Anything outside these two causes is a real collision and must fail below, not be skipped —
+                    // that is what keeps this carve-out from going vacuous (a ToMcu bug mapping both names onto
+                    // one enum would otherwise pass silently for every seed).
+                    uint tertiaryArgb = Argb(p.Tertiary);
+                    bool toneSaturated = tertiaryArgb == 0xFFFFFFFFu || tertiaryArgb == 0xFF000000u;
+                    bool achromatic = Hct.FromInt(Argb(seed)).Chroma < 5.0;
+                    if (variant == SchemeVariants.Content && (toneSaturated || achromatic)
+                        && seen.TryGetValue(fingerprint, out var twin) && twin == SchemeVariants.Fidelity)
                     {
                         collapsedFidelityIntoContent = true;
                         continue;
@@ -282,6 +308,12 @@ public class SeedPaletteTests
                     $"all {Variants.Count} variants have to be distinguishable for seed {seed}");
             }
         }
+
+        // ANTI-VACUITY: the carve-out above must never be the reason EVERY (seed, mode) agrees Fidelity
+        // and Content are the same. If this fires, the carve-out (or a real ToMcu bug) is swallowing the
+        // very distinction this test exists to protect.
+        everFidelityDistinctFromContent.Should().BeTrue(
+            "Fidelity and Content must actually differ for at least one seed/mode in the sweep");
     }
 
     [Fact]
