@@ -247,6 +247,21 @@ android {
                 val repoRoot = rootProject.projectDir.parentFile
                 it.systemProperty("remex.repoRoot", repoRoot.absolutePath)
 
+                // The vector generator (GenerateMcuVectorsTest) writes into both repos; it only
+                // runs when asked for by name, and this is how the ask reaches the test JVM.
+                it.systemProperty(
+                        "remex.generateMcuVectors",
+                        (project.findProperty("remex.generateMcuVectors") ?: "false").toString()
+                )
+                // McuVectorsFixtureTest compares the PC copy of the oracle byte for byte; same
+                // reasoning as the PairingErrorCodes input above — an edit to only that file must
+                // not leave the guard skipped as up-to-date.
+                it.inputs
+                        .file(File(repoRoot, "remex.core.tests/Fixtures/mcu-vectors.json"))
+                        .withPropertyName("mcuVectorsPcCopy")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
                 // And declare that C# file as a task INPUT. Without this, Gradle's up-to-date
                 // check has no idea the test depends on it, so editing ONLY that file leaves the
                 // test skipped as up-to-date — the guard would go quiet in exactly the situation

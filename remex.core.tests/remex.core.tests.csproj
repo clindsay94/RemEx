@@ -34,6 +34,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The MCU parity oracle (RemEx-4kv0g.6). Byte-identical to remex.android/app/src/test/resources/mcu-vectors.json;
+         McuVectorFixtureTests proves it, McuVectorsFixtureTest proves the reverse. Regenerate on the Android side only. -->
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\remex.core\remex.core.csproj" />
   </ItemGroup>
 
