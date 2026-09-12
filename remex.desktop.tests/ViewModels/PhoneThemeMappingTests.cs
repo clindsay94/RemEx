@@ -38,7 +38,8 @@ public class PhoneThemeMappingTests
     [InlineData("monochrome", SchemeVariants.Monochrome)]
     [InlineData("TONAL_SPOT", SchemeVariants.TonalSpot)] // case-insensitive
     [InlineData("FruitSalad", SchemeVariants.FruitSalad)] // already-PascalCase also matches
-    [InlineData("content", SchemeVariants.TonalSpot)] // Android-internal, not user-facing -> fallback
+    [InlineData("content", SchemeVariants.Content)] // material 1.14's SchemeContent — a real variant on both ends since RemEx-4kv0g.13
+    [InlineData("fidelity", SchemeVariants.Fidelity)]
     [InlineData("spritz", SchemeVariants.TonalSpot)] // Android-internal, not user-facing -> fallback
     [InlineData("something-else-entirely", SchemeVariants.TonalSpot)] // unknown -> fallback
     [InlineData("", SchemeVariants.TonalSpot)]
@@ -80,15 +81,17 @@ public class PhoneThemeMappingTests
         seedHex.Should().Be(expectedSeed);
     }
 
-    // ── Contrast: Android's M3 range is -1.0..1.0 (signed); the PC's is 0.0..1.0. Clamped, not ──
-    // rejected - RemEx-sudp8 contract update. ──
+    // ── Contrast: Android's M3 range is -1.0..1.0 (signed) and so is the PC's (ContrastCurve on both ends since ──
+    // RemEx-4kv0g). Only the range is guarded; a negative value is a genuine reduced-contrast scheme, not a 0. ──
     [Theory]
-    [InlineData(-0.5, 0.0)]
+    [InlineData(-1.0, -1.0)]
+    [InlineData(-0.5, -0.5)]
+    [InlineData(0.0, 0.0)]
     [InlineData(0.7, 0.7)]
-    [InlineData(1.2, 1.0)]
-    [InlineData(-1.0, 0.0)]
     [InlineData(1.0, 1.0)]
-    public void ContrastIsClampedIntoThePcsZeroToOneRange(double phoneContrast, double expectedContrast)
+    [InlineData(1.2, 1.0)]
+    [InlineData(-1.7, -1.0)]
+    public void ContrastTravelsSignedAndIsOnlyRangeGuarded(double phoneContrast, double expectedContrast)
     {
         var (_, _, _, contrast) = CustomizationViewModel.TryMapPhoneTheme(Snapshot(contrast: phoneContrast));
         contrast.Should().Be(expectedContrast);

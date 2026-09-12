@@ -1839,11 +1839,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         CommitSeedToRecents();
     }
 
-    /// <summary>The seven Android style names, exactly as <c>SettingsManager</c> stores them.</summary>
+    /// <summary>The nine Android style names, exactly as <c>SettingsManager</c> stores them.</summary>
     private static readonly string[] KnownPhoneStyles =
     [
         SchemeVariants.TonalSpot, SchemeVariants.Vibrant, SchemeVariants.Expressive,
         SchemeVariants.Rainbow, SchemeVariants.FruitSalad, SchemeVariants.Neutral, SchemeVariants.Monochrome,
+        SchemeVariants.Fidelity, SchemeVariants.Content,
     ];
 
     /// <summary>
@@ -1856,8 +1857,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// STYLE NEVER RETURNS NULL. Android's style name arrives snake_case
     /// (<c>tonal_spot</c>) against the PC's PascalCase constants (<c>TonalSpot</c>), so the
     /// comparison strips underscores and ignores case rather than requiring an exact match; anything
-    /// that still doesn't land on one of the seven — including Android's own <c>content</c> and
-    /// <c>spritz</c> internal names, which are not user-facing style choices — maps to
+    /// that still doesn't land on one of the nine — <c>spritz</c> is still Android-internal, not a
+    /// user-facing style choice — maps to
     /// <see cref="SchemeVariants.TonalSpot"/>, per the wire contract. This is a DIFFERENT rule from
     /// <see cref="SchemeVariants.Normalize"/>, which maps a legacy PERSISTED PC string's own
     /// "Spritz" to <see cref="SchemeVariants.Neutral"/> — that rule is about this app's old on-disk
@@ -1865,9 +1866,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// <c>neutral</c> down the same path as its very different <c>spritz</c> edge case.
     /// </para>
     /// <para>
-    /// CONTRAST IS CLAMPED, NOT REJECTED. The phone's contrast is signed (-1.0..1.0, Android's M3
-    /// range); the PC's has no room below zero, so anything negative floors to 0 and anything above
-    /// 1 ceilings to 1 rather than the axis being left alone.
+    /// CONTRAST IS RANGE-GUARDED, NOT FLOORED. Both ends run MCU's ContrastCurves over -1.0..1.0
+    /// (RemEx-4kv0g), so the phone's signed value is applied as-is; only values outside the range are
+    /// clamped to it, matching the load-time clamp at line 652.
     /// </para>
     /// <para>
     /// SEED AND MODE CAN BOTH BE NULL: an unparseable hex leaves <see cref="AccentColor"/> untouched
@@ -1904,7 +1905,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             _ => null,
         };
 
-        double? contrast = double.IsNaN(snapshot.Contrast) ? null : Math.Clamp(snapshot.Contrast, 0.0, 1.0);
+        double? contrast = double.IsNaN(snapshot.Contrast) ? null : Math.Clamp(snapshot.Contrast, -1.0, 1.0);
 
         return (seedHex, schemeVariant, mode, contrast);
     }
