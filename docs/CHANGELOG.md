@@ -11,6 +11,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ## [Unreleased]
 
+### Added
+
+- Personalize → Text (PC). Four sliders — Headers, Body, Small text, Sensor text — scale each
+  type-scale member from 80% to 160% of its own size, each with a Bold switch that returns to the
+  member's own weight when off; the label reads `default → current` in points. A Text shadow switch
+  with a Strength slider draws a legibility halo in the theme's surface colour behind text — dark in
+  Dark, light in Light, invisible on a flat surface — and Backdrop behind titles puts the value
+  plate's treatment behind sensor-card titles. Everything applies live, resets with one click,
+  persists as `CustomizationSettings.Typography`, and round-trips through Export / Import Settings;
+  older profiles load the defaults. The UI size slider is unchanged and stacks on top. (RemEx-jt6w5)
+
 ### Changed
 
 - Repo docs refreshed for 2.5.0. The README was rewritten in the owner's voice: live badges that
