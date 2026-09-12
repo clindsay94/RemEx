@@ -20,10 +20,11 @@ public class McuPaletteTests
     }
 
     [Theory]
-    // BlendTest.harmonize_*
+    // BlendTest.harmonize_* (all 12 pairs)
     [InlineData(Red, Blue, 0xFFFB0057u)] [InlineData(Red, Green, 0xFFD85600u)] [InlineData(Red, Yellow, 0xFFD85600u)]
     [InlineData(Blue, Green, 0xFF0047A3u)] [InlineData(Blue, Red, 0xFF5700DCu)] [InlineData(Blue, Yellow, 0xFF0047A3u)]
-    [InlineData(Green, Blue, 0xFF00FC94u)] [InlineData(Green, Red, 0xFFB1F000u)]
+    [InlineData(Green, Blue, 0xFF00FC94u)] [InlineData(Green, Red, 0xFFB1F000u)] [InlineData(Green, Yellow, 0xFFB1F000u)]
+    [InlineData(Yellow, Blue, 0xFFEBFFBAu)] [InlineData(Yellow, Green, 0xFFEBFFBAu)] [InlineData(Yellow, Red, 0xFFFFF6E3u)]
     public void Blend_Harmonize(uint design, uint source, uint expected) => Assert.Equal(expected, Blend.Harmonize(design, source));
 
     [Fact]
@@ -72,6 +73,27 @@ public class McuPaletteTests
         Assert.Equal(5, new TemperatureCache(input).GetAnalogousColors().Count);
     }
 
+    [Fact]
+    public void TemperatureCache_Analogous_ExactOracles()
+    {
+        // TemperatureCacheTest.testAnalogous — exercises the wrap/step logic of GetAnalogousColors(), not just its shape.
+        AssertAnalogous(Blue, 0xff00590Cu, 0xff00564Eu, 0xff0000ffu, 0xff6700CCu, 0xff81009Fu);
+        AssertAnalogous(Red, 0xffF60082u, 0xffFC004Cu, 0xffff0000u, 0xffD95500u, 0xffAF7200u);
+        AssertAnalogous(Green, 0xffCEE900u, 0xff92F500u, 0xff00ff00u, 0xff00FD6Fu, 0xff00FAB3u);
+        AssertAnalogous(Black, 0xff000000u, 0xff000000u, 0xff000000u, 0xff000000u, 0xff000000u);
+        AssertAnalogous(White, 0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu);
+
+        static void AssertAnalogous(uint argb, uint c0, uint c1, uint c2, uint c3, uint c4)
+        {
+            var analogous = new TemperatureCache(Hct.FromInt(argb)).GetAnalogousColors();
+            Assert.Equal(c0, analogous[0].ToInt());
+            Assert.Equal(c1, analogous[1].ToInt());
+            Assert.Equal(c2, analogous[2].ToInt());
+            Assert.Equal(c3, analogous[3].ToInt());
+            Assert.Equal(c4, analogous[4].ToInt());
+        }
+    }
+
     public static TheoryData<uint> MonkSkinTones() => new()
     {
         0xFFF6EDE4u, 0xFFF3E7DBu, 0xFFF7EAD0u, 0xFFEADABAu, 0xFFD7BD96u, 0xFFA07E56u, 0xFF825C43u, 0xFF604134u, 0xFF3A312Au, 0xFF292420u,
@@ -96,5 +118,50 @@ public class McuPaletteTests
         var hct = Hct.From(100.0, 50.0, 67.0);
         Assert.False(DislikeAnalyzer.IsDisliked(hct));
         Assert.Equal(hct.ToInt(), DislikeAnalyzer.FixIfDisliked(hct).ToInt());
+    }
+
+    [Fact]
+    public void KeyColor_ExactChromaAvailable()
+    {
+        // PalettesTest.keyColor_exactChromaAvailable: requested chroma is exactly achievable at a certain tone.
+        var palette = TonalPalette.FromHueAndChroma(50.0, 60.0);
+        var result = palette.KeyColor;
+
+        Assert.Equal(50.0, result.Hue, 10.0);
+        Assert.Equal(60.0, result.Chroma, 0.5);
+        // Tone might vary, but should be within the range from 0 to 100.
+        Assert.True(result.Tone > 0.0);
+        Assert.True(result.Tone < 100.0);
+    }
+
+    [Fact]
+    public void KeyColor_UnusuallyHighChroma()
+    {
+        // PalettesTest.keyColor_unusuallyHighChroma: requested chroma is above what is achievable. For
+        // Hue 149, chroma peak is 89.6 at Tone 87.9. The result key color's chroma should be close to
+        // the chroma peak.
+        var palette = TonalPalette.FromHueAndChroma(149.0, 200.0);
+        var result = palette.KeyColor;
+
+        Assert.Equal(149.0, result.Hue, 10.0);
+        Assert.True(result.Chroma > 89.0);
+        // Tone might vary, but should be within the range from 0 to 100.
+        Assert.True(result.Tone > 0.0);
+        Assert.True(result.Tone < 100.0);
+    }
+
+    [Fact]
+    public void KeyColor_UnusuallyLowChroma()
+    {
+        // PalettesTest.keyColor_unusuallyLowChroma: by definition, the key color should be the first
+        // tone, starting from Tone 50, matching the given hue and chroma. When requesting a very low
+        // chroma, the result should be close to Tone 50, since most tones can produce a low chroma.
+        var palette = TonalPalette.FromHueAndChroma(50.0, 3.0);
+        var result = palette.KeyColor;
+
+        // Higher error tolerance for hue when the requested chroma is unusually low.
+        Assert.Equal(50.0, result.Hue, 10.0);
+        Assert.Equal(3.0, result.Chroma, 0.5);
+        Assert.Equal(50.0, result.Tone, 0.5);
     }
 }

@@ -276,6 +276,10 @@ public sealed class TemperatureCache
             Hct colorAtHue = Hct.From(hue, input.Chroma, input.Tone);
             hcts.Add(colorAtHue);
         }
+        // Java wraps this in Collections.unmodifiableList; not reproduced here — every caller only
+        // reads from the list (indexing, iterating, and copying it into new lists), none of them
+        // mutate it, so the wrapper has no observable effect and the public API below only ever
+        // hands out fresh lists (GetAnalogousColors, GetComplement's Hct answer) anyway.
         precomputedHctsByHue = hcts;
         return precomputedHctsByHue;
     }

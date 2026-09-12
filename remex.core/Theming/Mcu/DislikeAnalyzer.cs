@@ -34,9 +34,9 @@ public static class DislikeAnalyzer
     /// </summary>
     public static bool IsDisliked(Hct hct)
     {
-        bool huePasses = Math.Floor(hct.Hue + 0.5) >= 90.0 && Math.Floor(hct.Hue + 0.5) <= 111.0;
-        bool chromaPasses = Math.Floor(hct.Chroma + 0.5) > 16.0;
-        bool tonePasses = Math.Floor(hct.Tone + 0.5) < 65.0;
+        bool huePasses = (long)Math.Floor(hct.Hue + 0.5) >= 90.0 && (long)Math.Floor(hct.Hue + 0.5) <= 111.0;
+        bool chromaPasses = (long)Math.Floor(hct.Chroma + 0.5) > 16.0;
+        bool tonePasses = (long)Math.Floor(hct.Tone + 0.5) < 65.0;
 
         return huePasses && chromaPasses && tonePasses;
     }
