@@ -3,7 +3,7 @@ agp = "9.2.1"
 junit = "4.13.2"
 activityCompose = "1.13.0"
 kotlin = "2.3.21"
-# Stable material 1.14 supports color.utilities APIs (Variant.FRUIT_SALAD, Variant.RAINBOW) used in DynamicSchemes.kt
+# Stable material 1.14 ships all nine DynamicScheme subclasses Theme.kt instantiates (SchemeFidelity/SchemeContent/SchemeRainbow/SchemeFruitSalad included)
 material = "1.14.0"
 androidxComposeUiTextGoogleFonts = "1.11.0"
 mlkitBarcode = "17.3.0"

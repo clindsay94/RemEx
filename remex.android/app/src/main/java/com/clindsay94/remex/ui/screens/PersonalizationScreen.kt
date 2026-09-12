@@ -466,7 +466,11 @@ fun PersonalizationScreenContent(
                                             // colorSchemeFromSeed and were simply never offered
                                             // here, so they were unreachable (RemEx-6byw).
                                             "neutral",
-                                            "monochrome"
+                                            "monochrome",
+                                            // material 1.14's SchemeFidelity / SchemeContent, wired
+                                            // in colorSchemeFromSeed (RemEx-4kv0g.7).
+                                            "fidelity",
+                                            "content"
                                      ),
                             selected = themeStyle,
                             onSelected = { themeStyle = it },
@@ -1247,6 +1251,8 @@ private fun paletteStyleLabel(option: String): String = when (option) {
     "vibrant" -> stringResource(R.string.personalization_style_vibrant)
     "neutral" -> stringResource(R.string.personalization_style_neutral)
     "monochrome" -> stringResource(R.string.personalization_style_monochrome)
+    "fidelity" -> stringResource(R.string.personalization_style_fidelity)
+    "content" -> stringResource(R.string.personalization_style_content)
     else -> option.replace("_", " ").replaceFirstChar { it.uppercase() }
 }
 

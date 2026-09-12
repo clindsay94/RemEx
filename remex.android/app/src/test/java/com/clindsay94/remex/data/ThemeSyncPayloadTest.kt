@@ -65,6 +65,14 @@ class ThemeSyncPayloadTest {
         }
 
         @Test
+        fun `all nine styles travel verbatim`() {
+                for (style in listOf("tonal_spot", "expressive", "fruit_salad", "rainbow", "vibrant", "neutral", "monochrome", "fidelity", "content")) {
+                        val payload = JSONObject(ThemeSync.buildEnvelope(snapshot(themeStyle = style), "#AABBCC", 42L)).getJSONObject("themeSync")
+                        assertEquals(style, payload.getString("style"))
+                }
+        }
+
+        @Test
         fun `seed is the resolved hex handed in, unmodified`() {
                 val payload =
                         JSONObject(ThemeSync.buildEnvelope(snapshot(), "#123ABC", 0L)).getJSONObject("themeSync")

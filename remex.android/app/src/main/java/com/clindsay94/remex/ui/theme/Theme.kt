@@ -51,9 +51,13 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
+import com.google.android.material.color.utilities.SchemeContent
 import com.google.android.material.color.utilities.SchemeExpressive
+import com.google.android.material.color.utilities.SchemeFidelity
+import com.google.android.material.color.utilities.SchemeFruitSalad
 import com.google.android.material.color.utilities.SchemeMonochrome
 import com.google.android.material.color.utilities.SchemeNeutral
+import com.google.android.material.color.utilities.SchemeRainbow
 import com.google.android.material.color.utilities.SchemeTonalSpot
 import com.google.android.material.color.utilities.SchemeVibrant
 
@@ -332,6 +336,8 @@ fun colorSchemeFromSeed(
         "monochrome" -> SchemeMonochrome(hct, darkTheme, contrast)
         "fruit_salad" -> SchemeFruitSalad(hct, darkTheme, contrast)
         "rainbow" -> SchemeRainbow(hct, darkTheme, contrast)
+        "fidelity" -> SchemeFidelity(hct, darkTheme, contrast)
+        "content" -> SchemeContent(hct, darkTheme, contrast)
         else -> SchemeTonalSpot(hct, darkTheme, contrast)
     }
     val m3 = MaterialDynamicColorsInstance
@@ -367,12 +373,27 @@ fun colorSchemeFromSeed(
             surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
             surfaceBright = Color(m3.surfaceBright().getArgb(scheme)),
             surfaceDim = Color(m3.surfaceDim().getArgb(scheme)),
+            surfaceTint = Color(m3.surfaceTint().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),
             inverseSurface = Color(m3.inverseSurface().getArgb(scheme)),
             inverseOnSurface = Color(m3.inverseOnSurface().getArgb(scheme)),
-            inversePrimary = Color(m3.inversePrimary().getArgb(scheme))
+            inversePrimary = Color(m3.inversePrimary().getArgb(scheme)),
+            // The fixed roles were never mapped, so Compose filled them with its baseline purple
+            // — the one place the phone did not paint from the seed (RemEx-4kv0g.7, spec § Goal).
+            primaryFixed = Color(m3.primaryFixed().getArgb(scheme)),
+            primaryFixedDim = Color(m3.primaryFixedDim().getArgb(scheme)),
+            onPrimaryFixed = Color(m3.onPrimaryFixed().getArgb(scheme)),
+            onPrimaryFixedVariant = Color(m3.onPrimaryFixedVariant().getArgb(scheme)),
+            secondaryFixed = Color(m3.secondaryFixed().getArgb(scheme)),
+            secondaryFixedDim = Color(m3.secondaryFixedDim().getArgb(scheme)),
+            onSecondaryFixed = Color(m3.onSecondaryFixed().getArgb(scheme)),
+            onSecondaryFixedVariant = Color(m3.onSecondaryFixedVariant().getArgb(scheme)),
+            tertiaryFixed = Color(m3.tertiaryFixed().getArgb(scheme)),
+            tertiaryFixedDim = Color(m3.tertiaryFixedDim().getArgb(scheme)),
+            onTertiaryFixed = Color(m3.onTertiaryFixed().getArgb(scheme)),
+            onTertiaryFixedVariant = Color(m3.onTertiaryFixedVariant().getArgb(scheme))
         )
     } else {
         lightColorScheme(
@@ -405,12 +426,27 @@ fun colorSchemeFromSeed(
             surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
             surfaceBright = Color(m3.surfaceBright().getArgb(scheme)),
             surfaceDim = Color(m3.surfaceDim().getArgb(scheme)),
+            surfaceTint = Color(m3.surfaceTint().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),
             inverseSurface = Color(m3.inverseSurface().getArgb(scheme)),
             inverseOnSurface = Color(m3.inverseOnSurface().getArgb(scheme)),
-            inversePrimary = Color(m3.inversePrimary().getArgb(scheme))
+            inversePrimary = Color(m3.inversePrimary().getArgb(scheme)),
+            // The fixed roles were never mapped, so Compose filled them with its baseline purple
+            // — the one place the phone did not paint from the seed (RemEx-4kv0g.7, spec § Goal).
+            primaryFixed = Color(m3.primaryFixed().getArgb(scheme)),
+            primaryFixedDim = Color(m3.primaryFixedDim().getArgb(scheme)),
+            onPrimaryFixed = Color(m3.onPrimaryFixed().getArgb(scheme)),
+            onPrimaryFixedVariant = Color(m3.onPrimaryFixedVariant().getArgb(scheme)),
+            secondaryFixed = Color(m3.secondaryFixed().getArgb(scheme)),
+            secondaryFixedDim = Color(m3.secondaryFixedDim().getArgb(scheme)),
+            onSecondaryFixed = Color(m3.onSecondaryFixed().getArgb(scheme)),
+            onSecondaryFixedVariant = Color(m3.onSecondaryFixedVariant().getArgb(scheme)),
+            tertiaryFixed = Color(m3.tertiaryFixed().getArgb(scheme)),
+            tertiaryFixedDim = Color(m3.tertiaryFixedDim().getArgb(scheme)),
+            onTertiaryFixed = Color(m3.onTertiaryFixed().getArgb(scheme)),
+            onTertiaryFixedVariant = Color(m3.onTertiaryFixedVariant().getArgb(scheme))
         )
     }
 }
