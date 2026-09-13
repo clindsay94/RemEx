@@ -39,7 +39,7 @@ Grid: `#6750A4` Tonal Spot and `#0061A4` Expressive × Light/Dark × Card Opacit
 | | VDDCR_SOC (T) | `#919191` | `#000000` | — |
 | | Samsung 980 (Sunset) | `#1F1F1F` | `#BF360C` | — |
 
-Every opacity-1 body, ink and swatch above equals the port's role value exactly (16 bodies, 16 inks, 10 swatches, 0 mismatches). At opacity 0 the body sample is the wallpaper in every cell (e.g. A: `#A7C082`, B: wallpaper greens) and at 0.5 a blend (A RAM Used `#CACEC5`, CPU Die `#D0CAC1`), while the inks, plates and legend swatches read the same exact values as at 1 — the slider moves the glass only, as specified. The Sunset card's body is `CardBackgroundBrush` in every cell and its title `#BF360C` in every cell.
+Every opacity-1 body, ink and swatch above equals the port's role value exactly (20 bodies, 20 inks, 10 swatches, 0 mismatches). At opacity 0 the body sample is the wallpaper in every cell (e.g. A: `#A7C082`, B: wallpaper greens) and at 0.5 a blend (A RAM Used `#CACEC5`, CPU Die `#D0CAC1`), while the inks, plates and legend swatches read the same exact values as at 1 — the slider moves the glass only, as specified. The Sunset card's body is `CardBackgroundBrush` in every cell and its title `#BF360C` in every cell.
 
 **Home pinned tiles** (Tonal Spot Dark, opacity 1): the *Average Effective Clock* and *VDDCR_SOC* tiles (both Tertiary) sample `#633B48` = tertiaryContainer, the same family the *Average Effective Clock* dual card shows on the canvas; the preset-overridden tiles (Total CPU Utility, Vcore/VTT/DRAM, the temperatures) sample `#211F24` = surfaceContainer with their preset inks, unchanged.
 

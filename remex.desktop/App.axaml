@@ -147,8 +147,6 @@
              DynamicResource setters. MUST stay after MaterialTheme — see the header comment in
              the file, and TypographyStylesTests pins the order. -->
         <StyleInclude Source="avares://Remex.Desktop/Styles/Typography.axaml"/>
-        <!-- Spec B (RemEx-4kv0g.3): sensor card family classes — canvas, Home tiles, tray strip. -->
-        <StyleInclude Source="avares://Remex.Desktop/Styles/SensorCardFamilies.axaml"/>
         <!-- Icon glyphs for mi:MaterialIcon — a separate package from Material.Avalonia's control
              themes, loaded on its own before those went in and unchanged by them. -->
         <mi:MaterialIconStyles />
@@ -303,6 +301,19 @@
         <Style Selector="material|Card.interactive:pointerover /template/ Border#PART_BackgroundBorder">
             <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
         </Style>
+
+        <!-- Spec B (RemEx-4kv0g.3): sensor card family classes — canvas, Home tiles, tray strip.
+             MUST STAY AFTER the two Card :pointerover hover blocks above (whole-branch review). A
+             selector carrying a class or pseudo-class resolves at BindingPriority.StyleTrigger; a
+             type-only selector resolves at the lower Style priority. The two hover rules above are
+             both StyleTrigger tier (Class + :pointerover), so this file's plain
+             "material|Card.family-{F}" Background setter — Style tier, no pseudo-class — could never
+             outrank them regardless of where this include sits: tier beats declaration order, always.
+             SensorCardFamilies.axaml answers that with its OWN ":pointerover" rules (also StyleTrigger
+             tier, see the four "family-{F}.interactive:pointerover" rules near the top of that file),
+             and WITHIN a tier, order decides — which is the one case this include's position actually
+             controls, and why it has to be registered after both blocks above, not before them. -->
+        <StyleInclude Source="avares://Remex.Desktop/Styles/SensorCardFamilies.axaml"/>
 
         <!-- Surface variant (RemEx-zm6gp): for cards that HOST a list rather than act as a
              clickable unit. The hover lift is designed for finite cards; on a container as tall as

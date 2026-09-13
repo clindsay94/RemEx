@@ -1461,13 +1461,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         if (!string.IsNullOrWhiteSpace(state.CustomTitle))
             sensor.CustomTitle = state.CustomTitle;
         sensor.ShowValueOverlay = state.ShowValueOverlay;
-        // Spec B §4 (RemEx-4kv0g.3.2): null already leaves the sensor on its Presets[0] ("Default")
-        // construction default, which is the follow-theme state (SensorViewModel.IsThemed). A stored
-        // override literally named "Default" - an old layout saved before this spec, or the retired
-        // navy preset - gets the SAME treatment as null rather than being applied verbatim, so it
-        // resumes following the theme instead of freezing on whatever Name="Default" used to mean.
-        if (state.CardTheme is not null && state.CardTheme.Name != SensorCardTheme.Presets[0].Name)
-            sensor.Theme = state.CardTheme;
+        // Spec B §4 (RemEx-4kv0g.3.2), fixed in the whole-branch review: MUST ALWAYS ASSIGN. A
+        // SensorViewModel is shared per sensor name across cards, so on import or a layout sync onto
+        // a live session this runs against a VM that may already carry a Sunset (or any other)
+        // override from before the sync/import landed. The earlier "skip when null or Default" shape
+        // left that live override in place instead of resetting it, which is a regression from
+        // pre-branch behaviour (an import used to always win). null AND a stored "Default" (an old
+        // layout, or the retired navy preset) both resolve to Presets[0] - the follow-theme state -
+        // and non-null/non-"Default" applies verbatim, but either way the assignment always happens.
+        sensor.Theme = state.CardTheme is { } theme && theme.Name != SensorCardTheme.Presets[0].Name
+            ? theme
+            : SensorCardTheme.Presets[0];
     }
 
     /// <summary>

@@ -12,11 +12,25 @@
          card-value, card-value-2, card-unit, card-pill, card-plate, card-legend-plate, card-spark,
          card-legend-1, card-legend-2, card-legend-name, card-icon.
 
-         "sensor-title", NOT "card-title" (fix round 1, RemEx-4kv0g.3.2 review). App.axaml:992
-         already declares a GLOBAL "TextBlock.card-title" (page/section headers), registered AFTER
-         this file's StyleInclude — Avalonia resolves a property conflict by registration order,
-         not CSS-style specificity, so the global rule was winning over every selector below and
-         over the SensorTitleTextBlock theme. Never reuse a part class name here without checking
+         THE ACTUAL AVALONIA PRECEDENCE RULE (whole-branch review — the earlier comment here said
+         "registration order", which is only half of it). A selector that carries a class or a
+         pseudo-class (".family-primary", ":pointerover") resolves at BindingPriority.StyleTrigger;
+         a selector with only element/type parts (plain "TextBlock") resolves at the lower
+         BindingPriority.Style. The higher tier ALWAYS wins, regardless of where either style is
+         registered — declaration/include order only decides a tie WITHIN the same tier. Two
+         concrete cases this file has hit:
+           - "sensor-title", NOT "card-title" (fix round 1). App.axaml:992's global
+             "TextBlock.card-title" and this file's ".family-primary TextBlock.card-title" were
+             BOTH Style-tier (no pseudo-class on either side), so that collision really was decided
+             by registration order — App.axaml's rule happened to register later and won. Renamed
+             to sidestep the collision entirely rather than relying on include order to fix it.
+           - The Home tile hover rules below exist BECAUSE tier beats order: App.axaml's
+             "material|Card.interactive:pointerover" is StyleTrigger tier (a pseudo-class), so this
+             file's plain "material|Card.family-{F}" Background setter — Style tier — could never
+             outrank it on hover no matter where the StyleInclude sat. The fix has to be a
+             StyleTrigger-tier rule of its own (see below), and ONLY THEN does registration order
+             (this file's StyleInclude sits after App.axaml's hover blocks) decide the tie.
+         Never reuse a part class name here without checking
          `git grep -n "\.card-" remex.desktop/App.axaml remex.desktop/Styles remex.desktop/Themes`
          first — a collision is silent, not a compile error or a binding warning.
 
@@ -55,6 +69,11 @@
     <Style Selector="material|Card.family-primary">
         <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
     </Style>
+    <!-- Home tile hover (whole-branch review): StyleTrigger tier, to outrank App.axaml's
+         "material|Card.interactive:pointerover" — see the header comment above. -->
+    <Style Selector="material|Card.family-primary.interactive:pointerover">
+        <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
+    </Style>
     <Style Selector=".family-primary TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkPrimaryBrush}"/>
     </Style>
@@ -89,6 +108,9 @@
         <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
     </Style>
     <Style Selector="material|Card.family-secondary">
+        <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-secondary.interactive:pointerover">
         <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
     </Style>
     <Style Selector=".family-secondary TextBlock.sensor-title">
@@ -127,6 +149,9 @@
     <Style Selector="material|Card.family-tertiary">
         <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
     </Style>
+    <Style Selector="material|Card.family-tertiary.interactive:pointerover">
+        <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
+    </Style>
     <Style Selector=".family-tertiary TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkTertiaryBrush}"/>
     </Style>
@@ -161,6 +186,9 @@
         <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
     </Style>
     <Style Selector="material|Card.family-neutral">
+        <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-neutral.interactive:pointerover">
         <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
     </Style>
     <Style Selector=".family-neutral TextBlock.sensor-title">

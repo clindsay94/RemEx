@@ -46,17 +46,49 @@ public class CardThemePersistenceTests
         restored.IsThemed.Should().BeFalse();
     }
 
-    [Fact]
-    public void AStoredExplicitDefaultOverride_LoadsAsThemed()
-    {
-        ApplyPersistedSensorState.Should().NotBeNull("ApplyPersistedSensorState moved or was renamed — this guard cannot see it");
+    // ═══ Non-vacuous load-side coverage (whole-branch review). A SensorViewModel is shared per
+    // sensor name across cards, so ApplyPersistedSensorState runs, on an import or a layout sync
+    // onto a live session, against a VM that may ALREADY carry an override from before the sync/
+    // import landed — not always a fresh Presets[0] VM, which is why every fixture below starts on
+    // Sunset first. A test that starts from Presets[0] and asserts IsThemed afterward would pass
+    // whether or not the assignment ran at all - it was already true. ═══
 
-        var state = new CardState { CardTheme = SensorCardTheme.Presets[0] }; // explicit "Default"
-        var sensor = new SensorViewModel();
+    [Fact]
+    public void ALiveSunsetSensor_ResetsToThemed_WhenTheIncomingStateHasNoOverride()
+    {
+        var sensor = new SensorViewModel { Theme = SensorCardTheme.Presets[4] }; // Sunset, live
+        var state = new CardState { CardTheme = null };
 
         ApplyPersistedSensorState.Invoke(null, new object[] { sensor, state });
 
-        sensor.IsThemed.Should().BeTrue("a stored override named \"Default\" must resume following the theme, not freeze on it");
+        sensor.IsThemed.Should().BeTrue(
+            "an import/sync with no override must reset a sensor that was already overridden, " +
+            "not leave the live Sunset theme in place — this is the regression a skip-when-null shape reintroduces");
         sensor.Theme.Name.Should().Be("Default");
+    }
+
+    [Fact]
+    public void ALiveSunsetSensor_ResetsToThemed_WhenTheIncomingStateIsExplicitDefault()
+    {
+        var sensor = new SensorViewModel { Theme = SensorCardTheme.Presets[4] }; // Sunset, live
+        var state = new CardState { CardTheme = SensorCardTheme.Presets[0] }; // explicit "Default"
+
+        ApplyPersistedSensorState.Invoke(null, new object[] { sensor, state });
+
+        sensor.IsThemed.Should().BeTrue(
+            "a stored override named \"Default\" must reset a live Sunset sensor back to themed, not freeze it on Sunset");
+        sensor.Theme.Name.Should().Be("Default");
+    }
+
+    [Fact]
+    public void ALiveSunsetSensor_StaysSunset_WhenTheIncomingStateRepeatsSunset()
+    {
+        var sensor = new SensorViewModel { Theme = SensorCardTheme.Presets[4] }; // Sunset, live
+        var state = new CardState { CardTheme = SensorCardTheme.Presets[4] }; // Sunset again
+
+        ApplyPersistedSensorState.Invoke(null, new object[] { sensor, state });
+
+        sensor.IsThemed.Should().BeFalse("an incoming Sunset override must still apply, not be skipped because one was already live");
+        sensor.Theme.Name.Should().Be("Sunset");
     }
 }

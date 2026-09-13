@@ -16,7 +16,16 @@ namespace Remex.Desktop.Tests.Views;
 public class SensorCardBindingsTests
 {
     private static readonly string[] BannedPatterns =
-        { "Sensor.Theme.", "Theme.AccentColor", "Theme.CardBackground", "SecondaryAccentHex" };
+    {
+        "Sensor.Theme.", "Theme.AccentColor", "Theme.CardBackground", "SecondaryAccentHex",
+        // Home/tray bind SensorViewModel directly (unprefixed) — "Binding Theme." catches an
+        // inline "{Binding Theme.X}" leaking back into HomeView.axaml/TrayFlyoutWindow.axaml the
+        // same way "Sensor.Theme." catches the canvas card's prefixed form (whole-branch review).
+        // Deliberately "Binding Theme." not bare "Theme.": CanvasView.axaml's XAML namespace/type
+        // names never collide with this, and the SensorCardFamilies.axaml exemption below still
+        // applies since these tests never scan that file.
+        "Binding Theme.",
+    };
 
     private static readonly string[] Views = { "CanvasView.axaml", "HomeView.axaml", "TrayFlyoutWindow.axaml" };
 

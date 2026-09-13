@@ -78,13 +78,22 @@ public static class SensorFamilies
         return "onSurface";
     }
 
+    // Candidate order for SeriesTwoRole, one field per family (whole-branch review: SeriesTwoRole
+    // runs per card per ApplyCustomizationCore, so a `new[]` per call on every family was a small,
+    // needless per-tick allocation for a table that never changes). Behaviour is unchanged from the
+    // switch expression these replace — same order, same values.
+    private static readonly string[] PrimaryCandidates = { "secondary", "tertiary", "outline" };
+    private static readonly string[] SecondaryCandidates = { "tertiary", "primary", "outline" };
+    private static readonly string[] TertiaryCandidates = { "primary", "secondary", "outline" };
+    private static readonly string[] NeutralCandidates = { "primary", "secondary", "tertiary", "outline" };
+
     /// <summary>Candidate order for <see cref="SeriesTwoRole"/>: the other colour families first, "outline" last.</summary>
     private static string[] Candidates(SensorFamily family) => family switch
     {
-        SensorFamily.Primary => new[] { "secondary", "tertiary", "outline" },
-        SensorFamily.Secondary => new[] { "tertiary", "primary", "outline" },
-        SensorFamily.Tertiary => new[] { "primary", "secondary", "outline" },
-        _ => new[] { "primary", "secondary", "tertiary", "outline" },
+        SensorFamily.Primary => PrimaryCandidates,
+        SensorFamily.Secondary => SecondaryCandidates,
+        SensorFamily.Tertiary => TertiaryCandidates,
+        _ => NeutralCandidates,
     };
 
     /// <summary>

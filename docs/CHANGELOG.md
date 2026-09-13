@@ -30,7 +30,8 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   glass painted in that family's Container colour, the title and value in its ink, and the graph
   in its main role; the Card Opacity slider now runs from fully clear (0) to a solid theme-coloured
   card. On dual-metric cards the second line is always a visibly different colour (the next family,
-  or a neutral when the palette makes them alike — Monochrome, Fidelity and Content included). Home
+  or the one after it, or a neutral when the palette makes them alike — Fidelity, Content and
+  achromatic seeds included). Home
   pinned tiles and the tray strip's sparkline follow the same family. Cards recoloured from the
   right-click menu keep their preset exactly; the menu's first entry is now "Follow theme".
   `docs/MEASURE-sensor-cards.md` records the eyes pass. (RemEx-4kv0g.3)
