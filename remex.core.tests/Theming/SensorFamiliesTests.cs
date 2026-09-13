@@ -121,26 +121,42 @@ public class SensorFamiliesTests
     }
 
     /// <summary>
-    /// Verified against the real MCU port, not assumed: under TonalSpot, "#6750A4"'s primary and
-    /// secondary share the source hue at the same tone (only chroma differs), so the plain
-    /// candidate ("secondary" for Primary) is NOT distinct and falls through to "outline" (tone
-    /// 50 vs primary's tone 40 clears the 8-point threshold). Neutral's candidate ("primary") IS
-    /// already distinct from "outline" (its own series 1), so it needs no fallback.
+    /// Verified against the real MCU port, not assumed (fix round 2): under TonalSpot, "#6750A4"'s
+    /// primary (hue 299.2°, chroma 36.2, tone 40.0) and secondary (hue 299.6°, chroma 16.3, tone
+    /// 40.0) share the source hue at the same tone — the first candidate is NOT distinct — so the
+    /// search moves to the second candidate, tertiary (hue 359.3°, chroma 24.1, tone 40.1): ~60°
+    /// apart from primary at chroma ≥ 12 on both sides, which clears the 25° threshold and wins.
+    /// Tonal Spot's dual cards now get an actual colour instead of falling through to grey.
+    /// Neutral's first candidate ("primary") is already distinct from "outline" (its own series
+    /// 1), so it needs no fallback.
     /// </summary>
     [Fact]
-    public void SeriesTwoRoleFallsThroughWhenThePlainCandidateIsNotDistinct()
+    public void SeriesTwoRoleTriesTheSecondColourFamilyBeforeGreyFallbacks()
     {
         var roles = McuScheme.Build(0xFF6750A4, SchemeVariant.TonalSpot, isDark: false, contrastLevel: 0.0);
-        Assert.Equal("outline", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles));
+        Assert.Equal("tertiary", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles));
         Assert.Equal("primary", SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, roles));
+    }
+
+    /// <summary>
+    /// Verified against the real MCU port: under Expressive, "#0061A4"'s primary and secondary are
+    /// already distinct (hue 134.0° vs 344.2°, ~150° apart at chroma ≥ 12 both sides), so the
+    /// first candidate wins without needing the second.
+    /// </summary>
+    [Fact]
+    public void SeriesTwoRoleReturnsTheFirstCandidateWhenItIsAlreadyDistinct()
+    {
+        var roles = McuScheme.Build(0xFF0061A4, SchemeVariant.Expressive, isDark: false, contrastLevel: 0.0);
+        Assert.Equal("secondary", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles));
     }
 
     /// <summary>
     /// Verified against the real MCU port, not assumed: MaterialDynamicColors forces Monochrome's
     /// Primary role to tone 0 in light mode (pure black) regardless of seed, while Secondary sits
     /// around tone 40 — a ~40-point tone gap, which clears the distinctness threshold on its own.
-    /// So the plain candidate ("secondary") is already distinct; Monochrome needs no special case
-    /// any more; distinctness is a property of the resolved colours, not the variant name.
+    /// So the first candidate ("secondary") is already distinct; Monochrome needs no special case
+    /// any more (unchanged by fix round 2 — the first candidate is still tried first and still
+    /// wins here); distinctness is a property of the resolved colours, not the variant name.
     /// </summary>
     [Theory]
     [InlineData(0xFF6750A4)]
@@ -151,10 +167,41 @@ public class SensorFamiliesTests
     [InlineData(0xFFFFFFFF)]
     [InlineData(0xFF000000)]
     [InlineData(0xFF808080)]
-    public void MonochromeResolvesToThePlainCandidateBecauseItsPrimaryIsForcedToToneZero(uint seed)
+    public void MonochromeResolvesToTheFirstCandidateBecauseItsPrimaryIsForcedToToneZero(uint seed)
     {
         var roles = McuScheme.Build(seed, SchemeVariant.Monochrome, isDark: false, contrastLevel: 0.0);
         Assert.Equal("secondary", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles));
+    }
+
+    /// <summary>
+    /// The candidate ORDER itself, isolated from any real palette: a hand-built <see cref="MaterialRoles"/>
+    /// where the first colour candidate collides but the second doesn't must pick the second, not
+    /// jump straight to "outline"; only when both colour candidates collide does "outline" win.
+    /// </summary>
+    [Fact]
+    public void SeriesTwoRoleHonoursTheCandidateOrder()
+    {
+        var primary = Hct.From(0, 40, 40).ToInt();
+        var distinctTertiary = Hct.From(0, 40, 50).ToInt();   // tone diff 10 from primary: distinct
+        var distinctOutline = Hct.From(0, 0, 60).ToInt();     // tone diff 20 from primary: distinct
+
+        var secondCandidateWins = new MaterialRoles
+        {
+            Primary = primary,
+            Secondary = primary,           // collides: same ARGB as primary
+            Tertiary = distinctTertiary,   // distinct: should be picked
+            Outline = distinctOutline,
+        };
+        Assert.Equal("tertiary", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, secondCandidateWins));
+
+        var bothColourCandidatesCollide = new MaterialRoles
+        {
+            Primary = primary,
+            Secondary = primary,   // collides
+            Tertiary = primary,    // collides too
+            Outline = distinctOutline,
+        };
+        Assert.Equal("outline", SensorFamilies.SeriesTwoRole(SensorFamily.Primary, bothColourCandidatesCollide));
     }
 
     [Fact]

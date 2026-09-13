@@ -55,22 +55,37 @@ public static class SensorFamilies
     };
 
     /// <summary>
-    /// The role a card's second series uses so it never shares a colour with series 1. The
-    /// candidate is the next family's main role (Neutral: "primary", since its own series 1 is
-    /// already "outline"); it is used only if <see cref="IsDistinct"/> from series 1 in HCT,
-    /// else "outline", else "onSurface" (terminal — always distinct enough by construction).
+    /// The role a card's second series uses so it never shares a colour with series 1. Tries, in
+    /// order, the two other colour families before falling back to grey (fix round 2 — the first
+    /// version tried only the immediate next family, so a variant like Tonal Spot where that
+    /// family collides fell straight through to "outline" even though the *other* colour family
+    /// was perfectly distinct): Primary → [secondary, tertiary]; Secondary → [tertiary, primary];
+    /// Tertiary → [primary, secondary]; Neutral → [primary, secondary, tertiary] (its own series 1
+    /// is already "outline", so there is no "next family" to skip). "outline" is tried after every
+    /// colour candidate, "onSurface" is the terminal fallback (always distinct enough by
+    /// construction). Each candidate is used only if <see cref="IsDistinct"/> from series 1 in HCT.
     /// Takes the resolved <see cref="MaterialRoles"/> rather than a <c>SchemeVariant</c>:
-    /// distinctness is a property of the resolved colours, not the variant name (a variant other
-    /// than Monochrome can still collapse two families' tones for an edge-case seed).
+    /// distinctness is a property of the resolved colours, not the variant name.
     /// </summary>
     public static string SeriesTwoRole(SensorFamily family, MaterialRoles roles)
     {
-        var candidate = family == SensorFamily.Neutral ? "primary" : MainRole(Next(family));
         var mainArgb = roles[MainRole(family)];
-        if (IsDistinct(mainArgb, roles[candidate])) return candidate;
-        if (IsDistinct(mainArgb, roles["outline"])) return "outline";
+        foreach (var candidate in Candidates(family))
+        {
+            if (IsDistinct(mainArgb, roles[candidate])) return candidate;
+        }
+
         return "onSurface";
     }
+
+    /// <summary>Candidate order for <see cref="SeriesTwoRole"/>: the other colour families first, "outline" last.</summary>
+    private static string[] Candidates(SensorFamily family) => family switch
+    {
+        SensorFamily.Primary => new[] { "secondary", "tertiary", "outline" },
+        SensorFamily.Secondary => new[] { "tertiary", "primary", "outline" },
+        SensorFamily.Tertiary => new[] { "primary", "secondary", "outline" },
+        _ => new[] { "primary", "secondary", "tertiary", "outline" },
+    };
 
     /// <summary>
     /// Whether two ARGB colours are visibly distinct in HCT: equal ARGB is never distinct;
