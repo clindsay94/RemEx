@@ -733,6 +733,34 @@ and settle, so the click still visibly registers before the window goes away.
 
 ---
 
+## Dashboard layout — card colour presets
+
+### `ApplyPersistedSensorState` — a null `CardTheme` keeps the live theme (INVARIANT)
+
+`remex.desktop/ViewModels/CanvasDashboardViewModel.cs:1457` (`ApplyPersistedSensorState`). A
+`CardState.CardTheme` of `null` means *this source carries no colour information* and the loader
+must leave `SensorViewModel.Theme` alone. Only an explicit theme changes it: the `"Default"` preset
+(`SensorCardTheme.Presets[0]`, the follow-theme state) resets a card to the palette, any other preset
+applies verbatim.
+
+**The failure (2026-09-13).** Spec B's whole-branch review misread the pre-branch loader
+(`if (state.CardTheme is not null) sensor.Theme = state.CardTheme;`) as "always reset", and the
+fix round made it reset to follow-theme on null. The layout the phone syncs back after every launch
+carries `CardTheme = null` for every card. On the first sync after that build was installed every
+one of Connor's 44 cards silently reset to follow-theme, the writer persisted the loss, and the five
+rotating autosaves were all taken after the wipe. No exception, no log line — the canvas just looked
+"themed". Presets were rebuilt by hand from screenshots and a two-day-old export.
+
+**The other half.** `remex.desktop/ViewModels/CanvasCardViewModel.cs:293` (`ToCardState`) writes a
+themed card as the explicit `"Default"` preset, **never as null** — null would make "themed"
+indistinguishable from "unknown" on the way back in. Pinned by
+`remex.desktop.tests/ViewModels/CardThemePersistenceTests.cs`
+(`ALiveSunsetSensor_KeepsSunset_WhenTheIncomingStateCarriesNoColourInformation`,
+`AThemedSensor_WritesCardThemeAsTheExplicitDefaultPreset_NeverNull`). If a future change needs null
+to mean something else, it must first make the phone-sync path carry themes. (RemEx-4kv0g.3)
+
+---
+
 ## Security
 
 > **These surfaces are tightly coupled between `remex.agent` and `remex.android`. Changes here need

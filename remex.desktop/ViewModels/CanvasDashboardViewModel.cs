@@ -1461,17 +1461,20 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         if (!string.IsNullOrWhiteSpace(state.CustomTitle))
             sensor.CustomTitle = state.CustomTitle;
         sensor.ShowValueOverlay = state.ShowValueOverlay;
-        // Spec B §4 (RemEx-4kv0g.3.2), fixed in the whole-branch review: MUST ALWAYS ASSIGN. A
-        // SensorViewModel is shared per sensor name across cards, so on import or a layout sync onto
-        // a live session this runs against a VM that may already carry a Sunset (or any other)
-        // override from before the sync/import landed. The earlier "skip when null or Default" shape
-        // left that live override in place instead of resetting it, which is a regression from
-        // pre-branch behaviour (an import used to always win). null AND a stored "Default" (an old
-        // layout, or the retired navy preset) both resolve to Presets[0] - the follow-theme state -
-        // and non-null/non-"Default" applies verbatim, but either way the assignment always happens.
-        sensor.Theme = state.CardTheme is { } theme && theme.Name != SensorCardTheme.Presets[0].Name
-            ? theme
-            : SensorCardTheme.Presets[0];
+        // Spec B §4 (RemEx-4kv0g.3.2), corrected 2026-09-13 after it erased every preset on this
+        // machine. null means the source carries NO colour information and MUST keep the live theme:
+        // the layout the phone syncs back has no card themes, so with "null resets to follow-theme"
+        // the first sync after launch reset all 44 cards and the writer then persisted the loss.
+        // That "always assign" shape was introduced by a whole-branch review that misread the
+        // pre-branch code; pre-branch was `if (state.CardTheme is not null) sensor.Theme = ...`,
+        // i.e. null kept the live theme, and that is restored here. What DOES reset a live override
+        // is an explicit theme: the "Default" preset (Presets[0], which the writer now emits for a
+        // themed card, and which old layouts carry for the retired navy preset) resolves to the
+        // follow-theme state, and any other preset applies verbatim. REGRESSION-GUARDS.md pins this.
+        if (state.CardTheme is { } theme)
+        {
+            sensor.Theme = theme.Name == SensorCardTheme.Presets[0].Name ? SensorCardTheme.Presets[0] : theme;
+        }
     }
 
     /// <summary>

@@ -282,10 +282,15 @@ public partial class CanvasCardViewModel : ObservableObject
         SecondarySensorId = Sensor?.SecondarySensorId,
         CustomTitle = Sensor?.CustomTitle,
         ShowValueOverlay = Sensor?.ShowValueOverlay ?? true,
-        // Spec B (RemEx-4kv0g.3.2): a themed (follow-theme) card persists as null, not the "Default"
-        // preset it happens to hold, so it keeps following the theme after a restart instead of
-        // freezing on whatever the theme resolved to at save time.
-        CardTheme = Sensor is { IsThemed: false } ? Sensor.Theme : null,
+        // Spec B (RemEx-4kv0g.3.2), amended after the 2026-09-13 preset wipe: a themed card persists
+        // as the "Default" preset EXPLICITLY, never as null. null in a CardState means "this source
+        // carries no colour information" - which is exactly what a layout synced from the phone
+        // says, since the phone's copy of the layout has no card themes - and the loader keeps the
+        // live theme for it. Writing null here made a themed card indistinguishable from "unknown",
+        // and a loader that reset on null then erased every preset on the first phone sync.
+        // "Default" is the follow-theme sentinel (Presets[0]) on both ends, so it round-trips as
+        // "themed" through export/import and older builds simply render their Default preset.
+        CardTheme = Sensor?.Theme ?? SensorCardTheme.Presets[0],
     };
 
     /// <summary>
