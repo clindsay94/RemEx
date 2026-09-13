@@ -8,9 +8,10 @@ namespace Remex.Desktop.Controls;
 /// <summary>
 /// The sensor card's visual (RemEx-4kv0g.18.1, spec D1 §1), extracted out of CanvasView.axaml so
 /// the canvas and the tray flyout (.18.2) host the same markup. See SensorCardContent.axaml's
-/// header comment for why <see cref="Sensor"/> is a styled property assigned to the root Grid's
-/// DataContext rather than this control's own DataContext — that indirection lets a host bind
-/// <see cref="Sensor"/> alongside the five canvas-only properties below off the same element.
+/// header comment for why <see cref="Sensor"/> is a styled property bound to the root Grid's
+/// DataContext (in XAML, fix round 1 — not assigned here in code-behind) rather than this
+/// control's own DataContext — that indirection lets a host bind <see cref="Sensor"/> alongside
+/// the five canvas-only properties below off the same element.
 /// </summary>
 public partial class SensorCardContent : UserControl
 {
@@ -71,19 +72,5 @@ public partial class SensorCardContent : UserControl
     public SensorCardContent()
     {
         InitializeComponent();
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        // RootGrid, not this control, carries the sensor as its DataContext (see the .axaml header
-        // comment) — everything inside the moved markup binds against it directly, with no
-        // "Sensor." prefix, while the five properties above stay reachable off this element via
-        // RelativeSource even after RootGrid's DataContext flips.
-        if (change.Property == SensorProperty && RootGrid is not null)
-        {
-            RootGrid.DataContext = Sensor;
-        }
     }
 }

@@ -407,9 +407,18 @@
                                              Stayed here rather than moving into SensorCardContent (RemEx-4kv0g.18.1): CommitRename
                                              below pattern-matches the sender's DataContext against CanvasCardViewModel, which is
                                              this element's DataContext, not the sensor's — SensorCardContent's content no longer
-                                             has that VM in scope. Grid.Row/RowSpan are vestigial (this outer Grid has no
-                                             RowDefinitions, so there's one implicit row/column already) but kept as they were. -->
-                                        <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" AutomationProperties.Name="{local:Localize Canvas_Rename}" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                                             has that VM in scope.
+                                             Fix round 1 (Opus review, HIGH): this TextBox used to live inside the sensor Grid,
+                                             gated by the same IsSensor check the Panel below now carries. On its own, its
+                                             IsVisible bound only Sensor.IsEditingTitle — but Sensor is null on the
+                                             Connection/Actions/Latency cards, a null intermediate makes that binding produce no
+                                             value, and IsVisible falls back to its own default (true): an empty bold TextBox
+                                             sat on top of all three of those card types, eating clicks meant for their buttons.
+                                             The Panel's IsVisible is the SAME binding the SensorCardContent host above uses, so
+                                             a false here collapses the TextBox regardless of what its own binding resolves to. -->
+                                        <Panel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
+                                            <TextBox Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" AutomationProperties.Name="{local:Localize Canvas_Rename}" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                                        </Panel>
                                     </Grid>
                                 </ctrl:DraggableCard>
                             </DataTemplate>

@@ -11,8 +11,9 @@
          old :393-495 "SENSOR" Grid) so the canvas and the tray flyout (.18.2) can host the exact
          same markup instead of two copies drifting apart. DataContext for everything below is a
          SensorViewModel directly - not set on THIS UserControl (which keeps whatever ambient
-         DataContext its host gives it, e.g. CanvasCardViewModel), but on RootGrid, assigned from
-         the Sensor styled property below. That indirection exists so the host can bind Sensor AND
+         DataContext its host gives it, e.g. CanvasCardViewModel), but on RootGrid, bound to the
+         Sensor styled property below (fix round 1: a plain XAML binding, not code-behind — see
+         RootGrid's DataContext attribute). That indirection exists so the host can bind Sensor AND
          the five canvas-only properties (IsPinnedToHome, HasAlert, IsAlertTripped,
          AcknowledgeAlertCommand, AlertTooltip - all of them live on CanvasCardViewModel, not on the
          sensor) off the SAME element without the second group's bindings resolving against the
@@ -27,7 +28,8 @@
          CanvasView.axaml (see its comment) - CommitRename pattern-matches the sender's DataContext
          against CanvasCardViewModel, which this control's content no longer has. -->
 
-    <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*"
+          DataContext="{Binding Sensor, RelativeSource={RelativeSource AncestorType=ctrl:SensorCardContent}}">
         <!-- Row 0: title band on top, above the sparkline (readable without a plate). A Grid,
              not a StackPanel (gate finding, RemEx-8wpvr.4): a horizontal StackPanel gives its
              children infinite width along the stack axis, so the title's TextTrimming never

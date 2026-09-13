@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
 
@@ -78,6 +81,72 @@ public class SensorCardContentTests
         var content = Read("Controls", "SensorCardContent.axaml");
         content.Should().NotContain("FontSize=",
             "every text part in SensorCardContent.axaml should be on a type-scale Theme, not an inline size");
+    }
+
+    /// <summary>
+    /// Fix round 1 (Opus review, MEDIUM 2): pins the host's six bindings so a future edit can't
+    /// silently reintroduce the "Sensor." prefix (which would break every one of them, since the
+    /// card VM has no such property) or a DataContext="{Binding Sensor}" attribute on the element
+    /// (the exact trap the brief named — it would flip the OTHER five bindings on this same
+    /// element to resolve against the sensor instead of the card VM).
+    /// </summary>
+    [Fact]
+    public void CanvasView_SensorCardContentElement_BindsAllSixHostPropertiesWithNoPrefixAndNoDataContext()
+    {
+        var doc = XDocument.Parse(Read("Views", "CanvasView.axaml"));
+        const string ctrlNs = "using:Remex.Desktop.Controls";
+        var element = doc.Descendants(XName.Get("SensorCardContent", ctrlNs)).SingleOrDefault();
+
+        element.Should().NotBeNull("CanvasView.axaml must host the sensor card via exactly one ctrl:SensorCardContent element");
+
+        var expectedBindings = new Dictionary<string, string>
+        {
+            ["Sensor"] = "{Binding Sensor}",
+            ["IsPinnedToHome"] = "{Binding IsPinnedToHome}",
+            ["HasAlert"] = "{Binding HasAlert}",
+            ["IsAlertTripped"] = "{Binding IsAlertTripped}",
+            ["AcknowledgeAlertCommand"] = "{Binding AcknowledgeAlertCommand}",
+            ["AlertTooltip"] = "{Binding AlertTooltip}",
+        };
+
+        foreach (var (attribute, expectedValue) in expectedBindings)
+        {
+            ((string?)element!.Attribute(attribute)).Should().Be(expectedValue,
+                $"the host must bind {attribute} against the card VM directly — no \"Sensor.\" prefix, " +
+                "since the card VM (not the sensor) is this element's DataContext");
+        }
+
+        element!.Attribute("DataContext").Should().BeNull(
+            "a DataContext=\"{Binding Sensor}\" attribute here would flip the five properties above to " +
+            "resolve against the sensor instead of the card VM — Sensor is a styled property specifically " +
+            "so the host never needs to set DataContext on this element at all");
+    }
+
+    /// <summary>
+    /// Fix round 1 (Opus review, HIGH): the rename TextBox's own IsVisible only gates on
+    /// Sensor.IsEditingTitle, which is null (not false) for the Connection/Actions/Latency cards —
+    /// IsVisible then falls back to its default (true). It must ALSO sit inside a container gated
+    /// on CardType being a sensor, so a null Sensor never leaves a stray, click-eating TextBox over
+    /// the other three card types.
+    /// </summary>
+    [Fact]
+    public void CanvasView_RenameTextBox_SitsUnderTheIsSensorGatedContainer()
+    {
+        var doc = XDocument.Parse(Read("Views", "CanvasView.axaml"));
+        var ns = doc.Root!.GetDefaultNamespace();
+
+        var renameBox = doc.Descendants(ns + "TextBox")
+            .SingleOrDefault(tb => (string?)tb.Attribute("Loaded") == "OnRenameBoxLoaded");
+
+        renameBox.Should().NotBeNull("the inline rename editor must still exist in CanvasView.axaml");
+
+        var gatedAncestor = renameBox!.Ancestors()
+            .FirstOrDefault(a => ((string?)a.Attribute("IsVisible"))?.Contains("StringMatchConverter.IsSensor") == true);
+
+        gatedAncestor.Should().NotBeNull(
+            "the rename TextBox must sit inside a container whose IsVisible is gated on CardType being a " +
+            "sensor (the same binding the SensorCardContent host uses) — its own Sensor.IsEditingTitle " +
+            "binding alone defaults to visible when Sensor is null, on the other three card types");
     }
 
     private static string Read(string folder, string file) => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", folder, file));
