@@ -145,7 +145,13 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                        Classes="tray-sensor"
+                                        Classes.family-primary="{Binding IsPrimaryFamily}"
+                                        Classes.family-secondary="{Binding IsSecondaryFamily}"
+                                        Classes.family-tertiary="{Binding IsTertiaryFamily}"
+                                        Classes.family-neutral="{Binding IsNeutralFamily}"
+                                        Classes.family-custom="{Binding IsCustomTheme}">
                                 <!-- Sensor name in the strip: Personalize → Text "Sensor text" sizes it (RemEx-jt6w5).
                                      SensorMetricNameTextBlock (base 10) so the strip stays as compact as it is at
                                      defaults; the Black weight and tracking are the strip's own and stay inline. -->
@@ -166,10 +172,9 @@
                                 </TextBlock>
                                 <ctrl:SparklineControl History="{Binding History}"
                                                        GraphType="{Binding ResolvedGraphType}"
-                                                       AccentColor="{Binding Theme.AccentColor,
-                                                                     Converter={x:Static conv:HexToColorConverter.Instance}}"
                                                        Width="44" Height="16"
-                                                       Opacity="0.7" VerticalAlignment="Center"/>
+                                                       Opacity="0.7" VerticalAlignment="Center"
+                                                       Classes="card-spark"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

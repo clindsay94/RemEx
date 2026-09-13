@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Theming;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
@@ -72,6 +73,30 @@ public partial class SensorViewModel : ObservableObject
 
     [ObservableProperty]
     private SensorCardTheme _theme = SensorCardTheme.Presets[0];
+
+    // Spec B (RemEx-4kv0g.3): which palette family this card follows, and whether it follows one at
+    // all. Presets[0] ("Default") is the follow-theme state — it is what a never-recoloured card
+    // carries, and what "Follow theme" in the context menu restores.
+    public SensorFamily Family => SensorFamilies.For(RawReading?.Kind ?? MetricKind.Unknown);
+    public bool IsThemed => Theme.Name == SensorCardTheme.Presets[0].Name;
+    public bool IsCustomTheme => !IsThemed;
+    public bool IsPrimaryFamily => IsThemed && Family == SensorFamily.Primary;
+    public bool IsSecondaryFamily => IsThemed && Family == SensorFamily.Secondary;
+    public bool IsTertiaryFamily => IsThemed && Family == SensorFamily.Tertiary;
+    public bool IsNeutralFamily => IsThemed && Family == SensorFamily.Neutral;
+
+    partial void OnThemeChanged(SensorCardTheme value) => RaiseFamilyProjections();
+
+    private void RaiseFamilyProjections()
+    {
+        OnPropertyChanged(nameof(Family));
+        OnPropertyChanged(nameof(IsThemed));
+        OnPropertyChanged(nameof(IsCustomTheme));
+        OnPropertyChanged(nameof(IsPrimaryFamily));
+        OnPropertyChanged(nameof(IsSecondaryFamily));
+        OnPropertyChanged(nameof(IsTertiaryFamily));
+        OnPropertyChanged(nameof(IsNeutralFamily));
+    }
 
     // ═══════════════ Alert ═══════════════
 
@@ -356,6 +381,7 @@ public partial class SensorViewModel : ObservableObject
         Unit = string.IsNullOrWhiteSpace(reading.Unit) ? "" : reading.Unit;
         Category = string.IsNullOrWhiteSpace(reading.Category) ? "Other" : reading.Category;
         RawReading = reading;
+        RaiseFamilyProjections();
 
         // Track local min/max to normalize the sparkline 0–24px
         if (reading.Value < _minSeen) _minSeen = reading.Value;

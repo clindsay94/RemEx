@@ -282,7 +282,10 @@ public partial class CanvasCardViewModel : ObservableObject
         SecondarySensorId = Sensor?.SecondarySensorId,
         CustomTitle = Sensor?.CustomTitle,
         ShowValueOverlay = Sensor?.ShowValueOverlay ?? true,
-        CardTheme = Sensor?.Theme,
+        // Spec B (RemEx-4kv0g.3.2): a themed (follow-theme) card persists as null, not the "Default"
+        // preset it happens to hold, so it keeps following the theme after a restart instead of
+        // freezing on whatever the theme resolved to at save time.
+        CardTheme = Sensor is { IsThemed: false } ? Sensor.Theme : null,
     };
 
     /// <summary>

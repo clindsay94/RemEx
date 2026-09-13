@@ -40,19 +40,27 @@ public class SensorTextThemeTests
     [Fact]
     public void TheValuePlates_AreUntouched()
     {
+        // Spec B (RemEx-4kv0g.3.2) moved the value plates' colour off these elements and onto
+        // "card-value"/"card-unit" style classes (Styles/SensorCardFamilies.axaml), so the pinned
+        // shape here is the STRUCTURE — theme, text bindings, layout — not the colour attribute,
+        // which SensorCardBindingsTests now guards from the other direction (must NOT be inline).
         var canvas = View("CanvasView.axaml");
 
         canvas.Should().Contain(@"IsVisible=""{Binding Sensor.ShowValueOverlay}""");
-        canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Headline6TextBlock}"" FontWeight=""Black"" Foreground=""{Binding Sensor.Theme.ValueColor");
-        canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.Unit}"" Theme=""{StaticResource CaptionTextBlock}""");
+        canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Headline6TextBlock}"" FontWeight=""Black"" Classes=""card-value"">");
+        canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.Unit}"" Theme=""{StaticResource CaptionTextBlock}"" Classes=""card-unit""");
         canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Body1TextBlock}"" FontWeight=""Black"" Foreground=""{Binding Sensor.SecondaryAccentHex");
-        canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.SecondarySensor.Unit}"" Theme=""{StaticResource OverlineTextBlock}""");
+        canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.SecondarySensor.Unit}"" Theme=""{StaticResource OverlineTextBlock}"" Classes=""card-unit""");
     }
 
     [Fact]
     public void TheBackdrop_IsASiblingBorderBehindTheTitle_OnCanvasAndHome()
     {
-        foreach (var (file, brushPath) in new[] { ("CanvasView.axaml", "Sensor.Theme.CardBackground"), ("HomeView.axaml", "Theme.CardBackground") })
+        // The backdrop's colour moved to the "card-pill" style class (Spec B, RemEx-4kv0g.3.2) —
+        // same "family-{F} Border.card-pill" rule the value plate's own Background used to be
+        // (CardPlate{F}Brush at 85%), so this still pins the structural claim the test is named
+        // for: a SIBLING Border behind the title, never a wrapper.
+        foreach (var file in new[] { "CanvasView.axaml", "HomeView.axaml" })
         {
             var markup = View(file);
             var panel = Regex.Match(markup,
@@ -61,8 +69,8 @@ public class SensorTextThemeTests
 
             panel.Success.Should().BeTrue($"{file}: the backdrop is a SIBLING drawn behind the title, never a wrapper that would hide the title with it");
             panel.Groups["border"].Value.Should().Contain(@"CornerRadius=""6""")
-                .And.Contain($"{{Binding {brushPath}, Converter={{x:Static conv:HexToTranslucentBrushConverter.Instance}}, ConverterParameter=0.8}}",
-                    "the backdrop is the value plate's own treatment (CanvasView.axaml value plate), not a new look");
+                .And.Contain(@"Classes=""card-pill""",
+                    "the backdrop still carries the value plate's own treatment, now via the card-pill style class instead of an inline binding");
         }
     }
 

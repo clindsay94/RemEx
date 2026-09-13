@@ -544,9 +544,11 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardBodyPrimaryBrush", new SolidColorBrush(WithAlpha(primaryContainer, cardBodyAlpha)));
         SetResourceOverrideInternal("CardPlatePrimaryBrush", new SolidColorBrush(WithAlpha(primaryContainer, 217)));   // 0.85
         SetResourceOverrideInternal("CardInkPrimaryBrush", new SolidColorBrush(onPrimaryContainer));
-        SetResourceOverrideInternal("CardInkDimPrimaryBrush", new SolidColorBrush(WithAlpha(onPrimaryContainer, 179))); // 0.70
+        SetResourceOverrideInternal("CardInkDimPrimaryBrush", new SolidColorBrush(WithAlpha(onPrimaryContainer, 179))); // 0.70 (178.5 rounded up)
         SetResourceOverrideInternal("CardSeriesPrimary", ToColor(roles["primary"]));
+        SetResourceOverrideInternal("CardSeriesPrimaryBrush", new SolidColorBrush(ToColor(roles["primary"])));
         SetResourceOverrideInternal("CardSeriesTwoPrimary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles)]));
+        SetResourceOverrideInternal("CardSeriesTwoPrimaryBrush", new SolidColorBrush(ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles)])));
 
         var secondaryContainer = ToColor(roles.SecondaryContainer);
         var onSecondaryContainer = ToColor(roles.OnSecondaryContainer);
@@ -555,7 +557,9 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkSecondaryBrush", new SolidColorBrush(onSecondaryContainer));
         SetResourceOverrideInternal("CardInkDimSecondaryBrush", new SolidColorBrush(WithAlpha(onSecondaryContainer, 179)));
         SetResourceOverrideInternal("CardSeriesSecondary", ToColor(roles["secondary"]));
+        SetResourceOverrideInternal("CardSeriesSecondaryBrush", new SolidColorBrush(ToColor(roles["secondary"])));
         SetResourceOverrideInternal("CardSeriesTwoSecondary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Secondary, roles)]));
+        SetResourceOverrideInternal("CardSeriesTwoSecondaryBrush", new SolidColorBrush(ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Secondary, roles)])));
 
         var tertiaryContainer = ToColor(roles.TertiaryContainer);
         var onTertiaryContainer = ToColor(roles.OnTertiaryContainer);
@@ -564,7 +568,9 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkTertiaryBrush", new SolidColorBrush(onTertiaryContainer));
         SetResourceOverrideInternal("CardInkDimTertiaryBrush", new SolidColorBrush(WithAlpha(onTertiaryContainer, 179)));
         SetResourceOverrideInternal("CardSeriesTertiary", ToColor(roles["tertiary"]));
+        SetResourceOverrideInternal("CardSeriesTertiaryBrush", new SolidColorBrush(ToColor(roles["tertiary"])));
         SetResourceOverrideInternal("CardSeriesTwoTertiary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Tertiary, roles)]));
+        SetResourceOverrideInternal("CardSeriesTwoTertiaryBrush", new SolidColorBrush(ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Tertiary, roles)])));
 
         var surfaceContainerHigh = ToColor(roles.SurfaceContainerHigh);
         var onSurface = ToColor(roles.OnSurface);
@@ -573,7 +579,9 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkNeutralBrush", new SolidColorBrush(onSurface));
         SetResourceOverrideInternal("CardInkDimNeutralBrush", new SolidColorBrush(WithAlpha(onSurface, 179)));
         SetResourceOverrideInternal("CardSeriesNeutral", ToColor(roles["outline"]));
+        SetResourceOverrideInternal("CardSeriesNeutralBrush", new SolidColorBrush(ToColor(roles["outline"])));
         SetResourceOverrideInternal("CardSeriesTwoNeutral", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, roles)]));
+        SetResourceOverrideInternal("CardSeriesTwoNeutralBrush", new SolidColorBrush(ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, roles)])));
 
         // Popup surfaces (RemEx-mmrgc's neighbour, no bead — Connor reported this live).
         // Material.Avalonia's ComboBox.axaml wraps its dropdown in an un-Themed controls:Card,

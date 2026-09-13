@@ -1,0 +1,221 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="using:Remex.Desktop.Controls"
+        xmlns:conv="using:Remex.Desktop.Converters"
+        xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        xmlns:vm="using:Remex.Desktop.ViewModels">
+    <!-- ═══ Spec B (RemEx-4kv0g.3): sensor cards paint from their palette family ═══
+
+         Host classes (bound from the VM): family-primary / family-secondary / family-tertiary /
+         family-neutral / family-custom. Part classes on the elements inside a card: card-title,
+         card-value, card-unit, card-pill, card-plate, card-spark, card-legend-1, card-legend-2,
+         card-legend-name, card-icon.
+
+         ONE DICTIONARY SERVES THREE HOSTS. Selectors below are class-only ancestors
+         (".family-primary TextBlock.card-title"), which match any host type per Avalonia's
+         selector rules — so the same rule paints the canvas ctrl:DraggableCard, the Home
+         material:Card tile and the tray strip's StackPanel alike. Every setter is a
+         DynamicResource, so a palette or GlassOpacity change repaints every card with no
+         per-card subscriptions (see ThemeService.ApplyCustomizationCore).
+
+         WHY A VALUE SET DIRECTLY ON AN ELEMENT WOULD BREAK THIS. A local attribute
+         (Foreground="{Binding …}") always beats a Style setter regardless of selector
+         specificity, so every part that must repaint per family lost its inline colour
+         attribute in CanvasView.axaml / HomeView.axaml / TrayFlyoutWindow.axaml and gained a
+         part class instead — that move is the whole trick this file depends on.
+
+         family-custom IS THE EXCEPTION, ON PURPOSE. An overridden card keeps today's hex
+         bindings (Sensor.Theme.* / Theme.*) inside these Style setters — a Binding inside a
+         Setter resolves against the TARGET element's DataContext, which is why the same part
+         class needs two different binding paths across hosts: the canvas card's DataContext is
+         CanvasCardViewModel (bindings go through ".Sensor"), while the Home tile and tray strip
+         bind SensorViewModel directly (no prefix). family-custom sets no card Background —
+         an overridden card keeps CardBackgroundBrush, exactly as before this spec. -->
+
+    <!-- ─── Primary ─── -->
+    <Style Selector="ctrl|DraggableCard.family-primary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-primary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary TextBlock.card-title">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary TextBlock.card-value">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary TextBlock.card-unit, .family-primary TextBlock.card-legend-name">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkDimPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary Border.card-pill, .family-primary Border.card-plate">
+        <Setter Property="Background" Value="{DynamicResource CardPlatePrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary ctrl|SparklineControl.card-spark">
+        <Setter Property="AccentColor" Value="{DynamicResource CardSeriesPrimary}"/>
+        <Setter Property="SecondaryAccentColor" Value="{DynamicResource CardSeriesTwoPrimary}"/>
+    </Style>
+    <Style Selector=".family-primary Border.card-legend-1">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary Border.card-legend-2">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesTwoPrimaryBrush}"/>
+    </Style>
+    <Style Selector=".family-primary mi|MaterialIcon.card-icon">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesPrimaryBrush}"/>
+    </Style>
+
+    <!-- ─── Secondary ─── -->
+    <Style Selector="ctrl|DraggableCard.family-secondary">
+        <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-secondary">
+        <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary TextBlock.card-title">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary TextBlock.card-value">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary TextBlock.card-unit, .family-secondary TextBlock.card-legend-name">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkDimSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary Border.card-pill, .family-secondary Border.card-plate">
+        <Setter Property="Background" Value="{DynamicResource CardPlateSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary ctrl|SparklineControl.card-spark">
+        <Setter Property="AccentColor" Value="{DynamicResource CardSeriesSecondary}"/>
+        <Setter Property="SecondaryAccentColor" Value="{DynamicResource CardSeriesTwoSecondary}"/>
+    </Style>
+    <Style Selector=".family-secondary Border.card-legend-1">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary Border.card-legend-2">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesTwoSecondaryBrush}"/>
+    </Style>
+    <Style Selector=".family-secondary mi|MaterialIcon.card-icon">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesSecondaryBrush}"/>
+    </Style>
+
+    <!-- ─── Tertiary ─── -->
+    <Style Selector="ctrl|DraggableCard.family-tertiary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-tertiary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary TextBlock.card-title">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary TextBlock.card-value">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary TextBlock.card-unit, .family-tertiary TextBlock.card-legend-name">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkDimTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary Border.card-pill, .family-tertiary Border.card-plate">
+        <Setter Property="Background" Value="{DynamicResource CardPlateTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary ctrl|SparklineControl.card-spark">
+        <Setter Property="AccentColor" Value="{DynamicResource CardSeriesTertiary}"/>
+        <Setter Property="SecondaryAccentColor" Value="{DynamicResource CardSeriesTwoTertiary}"/>
+    </Style>
+    <Style Selector=".family-tertiary Border.card-legend-1">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary Border.card-legend-2">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesTwoTertiaryBrush}"/>
+    </Style>
+    <Style Selector=".family-tertiary mi|MaterialIcon.card-icon">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesTertiaryBrush}"/>
+    </Style>
+
+    <!-- ─── Neutral ─── -->
+    <Style Selector="ctrl|DraggableCard.family-neutral">
+        <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-neutral">
+        <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral TextBlock.card-title">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral TextBlock.card-value">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral TextBlock.card-unit, .family-neutral TextBlock.card-legend-name">
+        <Setter Property="Foreground" Value="{DynamicResource CardInkDimNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral Border.card-pill, .family-neutral Border.card-plate">
+        <Setter Property="Background" Value="{DynamicResource CardPlateNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral ctrl|SparklineControl.card-spark">
+        <Setter Property="AccentColor" Value="{DynamicResource CardSeriesNeutral}"/>
+        <Setter Property="SecondaryAccentColor" Value="{DynamicResource CardSeriesTwoNeutral}"/>
+    </Style>
+    <Style Selector=".family-neutral Border.card-legend-1">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral Border.card-legend-2">
+        <Setter Property="Background" Value="{DynamicResource CardSeriesTwoNeutralBrush}"/>
+    </Style>
+    <Style Selector=".family-neutral mi|MaterialIcon.card-icon">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesNeutralBrush}"/>
+    </Style>
+
+    <!-- ═══ family-custom: canvas host (DataContext = CanvasCardViewModel, bindings go through
+         ".Sensor") ═══ -->
+    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-title" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Foreground" Value="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-value" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Foreground" Value="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-unit, ctrl|DraggableCard.family-custom TextBlock.card-legend-name" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom Border.card-pill" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom Border.card-plate" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="AccentColor" Value="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+        <Setter Property="SecondaryAccentColor" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-1" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Background" Value="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-2" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Background" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <!-- The alert bell's resting icon colour (CanvasView.axaml's Button.alert-bell mi|MaterialIcon)
+         moved here rather than staying inline, so CanvasView.axaml carries no per-theme colour
+         binding at all — the family case is covered by ".family-{F} mi|MaterialIcon.card-icon"
+         above via the icon's own "card-icon" class. -->
+    <Style Selector="ctrl|DraggableCard.family-custom Button.alert-bell mi|MaterialIcon" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+
+    <!-- ═══ family-custom: Home pinned tile (DataContext = SensorViewModel directly, no prefix) ═══ -->
+    <Style Selector="material|Card.family-custom TextBlock.card-title" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="material|Card.family-custom Border.card-pill" x:DataType="vm:SensorViewModel">
+        <Setter Property="Background" Value="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
+    </Style>
+    <Style Selector="material|Card.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
+        <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    </Style>
+    <Style Selector="material|Card.family-custom mi|MaterialIcon.card-icon" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    </Style>
+
+    <!-- ═══ family-custom: tray flyout strip (DataContext = SensorViewModel directly) ═══ -->
+    <Style Selector="StackPanel.tray-sensor.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
+        <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    </Style>
+</Styles>

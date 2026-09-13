@@ -2828,8 +2828,8 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Editor: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Predeterminado</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Seguir el tema</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta y cian</value>

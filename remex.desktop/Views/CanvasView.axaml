@@ -32,8 +32,12 @@
              though MaterialIcon does not template-bind Foreground from an ancestor Setter. -->
         <Style Selector="Button.alert-bell mi|MaterialIcon" x:DataType="vm:CanvasCardViewModel">
             <Setter Property="Kind" Value="BellOutline"/>
-            <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
         </Style>
+        <!-- Spec B (RemEx-4kv0g.3.2): the bell's resting colour now follows the card's family via the
+             "card-icon" class on the glyph below; the family AND family-custom rules for it both live
+             in SensorCardFamilies.axaml (".family-{F} mi|MaterialIcon.card-icon" /
+             ".family-custom Button.alert-bell mi|MaterialIcon"), not here — every per-theme colour
+             binding in this view moved there. -->
         <Style Selector="Button.alert-bell.tripped mi|MaterialIcon" x:DataType="vm:CanvasCardViewModel">
             <Setter Property="Kind" Value="BellRing"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
@@ -216,7 +220,12 @@
 
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:CanvasCardViewModel">
-                                <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}">
+                                <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}"
+                                    Classes.family-primary="{Binding Sensor.IsPrimaryFamily}"
+                                    Classes.family-secondary="{Binding Sensor.IsSecondaryFamily}"
+                                    Classes.family-tertiary="{Binding Sensor.IsTertiaryFamily}"
+                                    Classes.family-neutral="{Binding Sensor.IsNeutralFamily}"
+                                    Classes.family-custom="{Binding Sensor.IsCustomTheme}">
                                     <ctrl:DraggableCard.ContextMenu>
                                         <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
                                             <MenuItem Header="{local:Localize Canvas_GraphType}">
@@ -273,7 +282,7 @@
                                                 <MenuItem.Icon>
                                                     <mi:MaterialIcon Kind="PaletteOutline" Width="16" Height="16"/>
                                                 </MenuItem.Icon>
-                                                <MenuItem Header="{local:Localize Canvas_Preset_Default}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_FollowTheme}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_MagentaCyan}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_SmokeGold}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
                                                 <MenuItem Header="{local:Localize Canvas_Preset_EmeraldNight}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Emerald Night"/>
@@ -400,8 +409,8 @@
                                                          glyph box without moving the text. The Panel is Left-aligned in the star column so the
                                                          title still trims. -->
                                                     <Panel Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                        <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
-                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                        <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
+                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="card-title" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                                     </Panel>
                                                 </Grid>
                                                 <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own
@@ -413,21 +422,21 @@
                                                      Setter regardless of pseudo-class, so it was also outranking the
                                                      ":focus-visible /template/ ContentPresenter" ring setter and hiding it. -->
                                                 <Button Grid.Column="1" Classes="tertiary icon-button alert-bell" Classes.tripped="{Binding IsAlertTripped}" Width="20" Height="20" Margin="4,0,0,0" VerticalAlignment="Center" IsVisible="{Binding HasAlert}" Command="{Binding AcknowledgeAlertCommand}" ToolTip.Tip="{Binding AlertTooltip}" AutomationProperties.Name="{Binding AlertTooltip}">
-                                                    <mi:MaterialIcon Width="14" Height="14"/>
+                                                    <mi:MaterialIcon Width="14" Height="14" Classes="card-icon"/>
                                                 </Button>
                                             </Grid>
 
                                             <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
                                             <Grid Grid.Row="1">
-                                                <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" SecondaryHistory="{Binding Sensor.SecondaryHistory}" SecondaryAccentColor="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToColorConverter.Instance}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6"/>
+                                                <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" SecondaryHistory="{Binding Sensor.SecondaryHistory}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6" Classes="card-spark"/>
 
                                                 <!-- Value plate: its OWN Viewbox (title excluded) so every card's number renders at a
                                                      consistent size; DownOnly means short values don't balloon. Layered above the
                                                      sparkline on a semi-opaque plate so it stays crisp over the prominent line. -->
                                                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="34" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding Sensor.ShowValueOverlay}">
-                                                    <Border CornerRadius="6" Padding="7,3" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
+                                                    <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                            <TextBlock Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Classes="card-value">
                                                                 <TextBlock.Text>
                                                                     <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                                         <Binding Path="Sensor.Value"/>
@@ -435,7 +444,7 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.Unit}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.Unit}" Theme="{StaticResource CaptionTextBlock}" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Viewbox>
@@ -444,7 +453,7 @@
                                                      secondary accent so it maps to the amber line (the primary value stays bottom-left). -->
                                                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="30" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6"
                                                          IsVisible="{Binding Sensor.HasSecondary}">
-                                                    <Border CornerRadius="6" Padding="7,3" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
+                                                    <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                                             <TextBlock Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                                 <TextBlock.Text>
@@ -454,7 +463,7 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Viewbox>
@@ -467,15 +476,15 @@
                                                      treatment, so the backdrop switch adds nothing here. -->
                                                 <Border IsVisible="{Binding Sensor.IsDualMetric}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
                                                         CornerRadius="5" Padding="6,4"
-                                                        Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}">
+                                                        Classes="card-plate">
                                                     <StackPanel Spacing="3">
                                                         <StackPanel Orientation="Horizontal" Spacing="5">
-                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Classes="card-legend-1"/>
+                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Classes="card-legend-name"/>
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding Sensor.HasSecondary}">
-                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Classes="card-legend-2"/>
+                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Classes="card-legend-name"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>

@@ -147,6 +147,49 @@
     <!-- Deep overlay for modal/tutorial backdrops -->
     <SolidColorBrush x:Key="OverlayBackdropBrush" Color="#E6141720"/>
 
+    <!-- SENSOR CARD FAMILIES (Spec B, RemEx-4kv0g.3.1/.3.2). Same rule as every other key in this
+         file: pre-first-apply fallback only. ThemeService.ApplyCustomization overwrites all 32 of
+         these on every apply from the live M3 palette's <F>Container / on<F>Container / <F> roles
+         (SensorFamilies.For / SeriesTwoRole) the moment a palette lands - see SensorCardKeysTests.
+         Literals below are BaseDarkGlass's own accent, tinted per family so the first frame is not
+         one flat colour. -->
+    <Color x:Key="CardSeriesPrimary">#6C4CFF</Color>
+    <Color x:Key="CardSeriesTwoPrimary">#543BD9</Color>
+    <Color x:Key="CardSeriesSecondary">#826AFF</Color>
+    <Color x:Key="CardSeriesTwoSecondary">#6C4CFF</Color>
+    <Color x:Key="CardSeriesTertiary">#543BD9</Color>
+    <Color x:Key="CardSeriesTwoTertiary">#826AFF</Color>
+    <Color x:Key="CardSeriesNeutral">#94A3B8</Color>
+    <Color x:Key="CardSeriesTwoNeutral">#64748B</Color>
+
+    <SolidColorBrush x:Key="CardBodyPrimaryBrush" Color="#1A6C4CFF"/>
+    <SolidColorBrush x:Key="CardPlatePrimaryBrush" Color="#D96C4CFF"/>
+    <SolidColorBrush x:Key="CardInkPrimaryBrush" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="CardInkDimPrimaryBrush" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="CardSeriesPrimaryBrush" Color="{DynamicResource CardSeriesPrimary}"/>
+    <SolidColorBrush x:Key="CardSeriesTwoPrimaryBrush" Color="{DynamicResource CardSeriesTwoPrimary}"/>
+
+    <SolidColorBrush x:Key="CardBodySecondaryBrush" Color="#1A826AFF"/>
+    <SolidColorBrush x:Key="CardPlateSecondaryBrush" Color="#D9826AFF"/>
+    <SolidColorBrush x:Key="CardInkSecondaryBrush" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="CardInkDimSecondaryBrush" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="CardSeriesSecondaryBrush" Color="{DynamicResource CardSeriesSecondary}"/>
+    <SolidColorBrush x:Key="CardSeriesTwoSecondaryBrush" Color="{DynamicResource CardSeriesTwoSecondary}"/>
+
+    <SolidColorBrush x:Key="CardBodyTertiaryBrush" Color="#1A543BD9"/>
+    <SolidColorBrush x:Key="CardPlateTertiaryBrush" Color="#D9543BD9"/>
+    <SolidColorBrush x:Key="CardInkTertiaryBrush" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="CardInkDimTertiaryBrush" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="CardSeriesTertiaryBrush" Color="{DynamicResource CardSeriesTertiary}"/>
+    <SolidColorBrush x:Key="CardSeriesTwoTertiaryBrush" Color="{DynamicResource CardSeriesTwoTertiary}"/>
+
+    <SolidColorBrush x:Key="CardBodyNeutralBrush" Color="#1AFFFFFF"/>
+    <SolidColorBrush x:Key="CardPlateNeutralBrush" Color="#D9FFFFFF"/>
+    <SolidColorBrush x:Key="CardInkNeutralBrush" Color="#FFF8FAFC"/>
+    <SolidColorBrush x:Key="CardInkDimNeutralBrush" Color="#B3F8FAFC"/>
+    <SolidColorBrush x:Key="CardSeriesNeutralBrush" Color="{DynamicResource CardSeriesNeutral}"/>
+    <SolidColorBrush x:Key="CardSeriesTwoNeutralBrush" Color="{DynamicResource CardSeriesTwoNeutral}"/>
+
     <!-- Compatibility aliases for WinUI-style resource names -->
     <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
 

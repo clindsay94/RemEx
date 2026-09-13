@@ -147,6 +147,8 @@
              DynamicResource setters. MUST stay after MaterialTheme — see the header comment in
              the file, and TypographyStylesTests pins the order. -->
         <StyleInclude Source="avares://Remex.Desktop/Styles/Typography.axaml"/>
+        <!-- Spec B (RemEx-4kv0g.3): sensor card family classes — canvas, Home tiles, tray strip. -->
+        <StyleInclude Source="avares://Remex.Desktop/Styles/SensorCardFamilies.axaml"/>
         <!-- Icon glyphs for mi:MaterialIcon — a separate package from Material.Avalonia's control
              themes, loaded on its own before those went in and unchanged by them. -->
         <mi:MaterialIconStyles />

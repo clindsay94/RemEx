@@ -2815,8 +2815,8 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Wydawca: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Domyślny</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Podążaj za motywem</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta i cyjan</value>

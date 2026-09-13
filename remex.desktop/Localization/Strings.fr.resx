@@ -2814,8 +2814,8 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Éditeur : {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Par défaut</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Suivre le thème</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta et cyan</value>

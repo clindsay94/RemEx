@@ -2817,8 +2817,8 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Penerbit: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Bawaan</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Ikuti tema</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta dan Sian</value>

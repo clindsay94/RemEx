@@ -373,9 +373,14 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:SensorViewModel">
                                 <!-- Margin moved onto the ListBoxItem so the focus ring hugs this card. -->
-                                <material:Card Classes="interactive" Padding="24" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
+                                <material:Card Classes="interactive" Padding="24" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0"
+                                    Classes.family-primary="{Binding IsPrimaryFamily}"
+                                    Classes.family-secondary="{Binding IsSecondaryFamily}"
+                                    Classes.family-tertiary="{Binding IsTertiaryFamily}"
+                                    Classes.family-neutral="{Binding IsNeutralFamily}"
+                                    Classes.family-custom="{Binding IsCustomTheme}">
                                     <Panel>
-                                        <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="80" Margin="-24,0,-24,-24"/>
+                                        <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" Opacity="0.2" VerticalAlignment="Bottom" Height="80" Margin="-24,0,-24,-24" Classes="card-spark"/>
 
                                         <StackPanel Spacing="16">
                                             <Grid ColumnDefinitions="*,Auto">
@@ -383,10 +388,10 @@
                                                      the same backdrop plate as the canvas card title, minus the inline Black weight so the
                                                      Bold switch reaches it (JetBrains Mono has no Black face, so it rendered ExtraBold anyway). -->
                                                 <Panel HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
-                                                    <TextBlock Text="{Binding Name}" Theme="{StaticResource SensorTitleTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
+                                                    <TextBlock Text="{Binding Name}" Theme="{StaticResource SensorTitleTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Classes="card-title" TextTrimming="CharacterEllipsis"/>
                                                 </Panel>
-                                                <mi:MaterialIcon Grid.Column="1" Kind="Flash" Foreground="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Opacity="0.8"/>
+                                                <mi:MaterialIcon Grid.Column="1" Kind="Flash" Width="14" Height="14" Opacity="0.8" Classes="card-icon"/>
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,8,0,0">
                                                 <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" Theme="{StaticResource Headline3TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>

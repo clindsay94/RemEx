@@ -1461,7 +1461,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         if (!string.IsNullOrWhiteSpace(state.CustomTitle))
             sensor.CustomTitle = state.CustomTitle;
         sensor.ShowValueOverlay = state.ShowValueOverlay;
-        if (state.CardTheme is not null)
+        // Spec B §4 (RemEx-4kv0g.3.2): null already leaves the sensor on its Presets[0] ("Default")
+        // construction default, which is the follow-theme state (SensorViewModel.IsThemed). A stored
+        // override literally named "Default" - an old layout saved before this spec, or the retired
+        // navy preset - gets the SAME treatment as null rather than being applied verbatim, so it
+        // resumes following the theme instead of freezing on whatever Name="Default" used to mean.
+        if (state.CardTheme is not null && state.CardTheme.Name != SensorCardTheme.Presets[0].Name)
             sensor.Theme = state.CardTheme;
     }
 

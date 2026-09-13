@@ -2815,8 +2815,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Видавець: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Стандартний</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Слідувати темі</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Пурпуровий і блакитний</value>

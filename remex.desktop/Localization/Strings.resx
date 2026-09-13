@@ -2820,8 +2820,8 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Publisher: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Default</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>Follow theme</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta &amp; Cyan</value>

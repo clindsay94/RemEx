@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -29,7 +30,7 @@ public class SensorCardOpacityTests
         var cardAlphaMatch = Regex.Match(source,
             @"byte cardAlpha = \(byte\)Math\.Round\(Math\.Clamp\(settings\.GlassOpacity,\s*([\d.]+),\s*([\d.]+)\)\s*\*\s*255\)");
         cardAlphaMatch.Success.Should().BeTrue("CardBackgroundBrush's alpha computation must still exist");
-        double.Parse(cardAlphaMatch.Groups[1].Value).Should().Be(0.05,
+        double.Parse(cardAlphaMatch.Groups[1].Value, CultureInfo.InvariantCulture).Should().Be(0.05,
             "the popup/card-background floor (spec B §3) is untouched by this change");
 
         var cardBackgroundAlphaAtZero = (byte)Math.Round(Math.Clamp(0.0, 0.05, 1.0) * 255);
@@ -39,7 +40,7 @@ public class SensorCardOpacityTests
         var cardBodyAlphaMatch = Regex.Match(source,
             @"var cardBodyAlpha = \(byte\)Math\.Round\(Math\.Clamp\(settings\.GlassOpacity,\s*([\d.]+),\s*([\d.]+)\)\s*\*\s*255\)");
         cardBodyAlphaMatch.Success.Should().BeTrue("the sensor-card body alpha computation must exist");
-        double.Parse(cardBodyAlphaMatch.Groups[1].Value).Should().Be(0.0,
+        double.Parse(cardBodyAlphaMatch.Groups[1].Value, CultureInfo.InvariantCulture).Should().Be(0.0,
             "sensor-card bodies must be able to reach fully clear (spec B §3)");
 
         var cardBodyAlphaAtZero = (byte)Math.Round(Math.Clamp(0.0, 0.0, 1.0) * 255);

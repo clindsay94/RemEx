@@ -2814,8 +2814,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>प्रकाशक: {0}</value>
   </data>
-  <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>डिफ़ॉल्ट</value>
+  <data name="Canvas_Preset_FollowTheme" xml:space="preserve">
+    <value>थीम का पालन करें</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>मैजेंटा और सियान</value>
