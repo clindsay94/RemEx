@@ -87,8 +87,17 @@ public partial class SensorViewModel : ObservableObject
 
     partial void OnThemeChanged(SensorCardTheme value) => RaiseFamilyProjections();
 
+    // Fix round 1 (RemEx-4kv0g.3.2 review): Update() runs once a second PER SENSOR — 454 sensors on
+    // Connor's machine — and unconditionally raising all seven of these from it means 3178 binding
+    // invalidations a second for classes that, tick over tick, are already on screen (RawReading.Kind
+    // never changes for a sensor once it has reported once). _lastRaisedFamily lets Update() skip the
+    // announcement entirely when Family did not move; the Theme path (OnThemeChanged, a user action,
+    // not a per-tick one) keeps raising unconditionally.
+    private SensorFamily? _lastRaisedFamily;
+
     private void RaiseFamilyProjections()
     {
+        _lastRaisedFamily = Family;
         OnPropertyChanged(nameof(Family));
         OnPropertyChanged(nameof(IsThemed));
         OnPropertyChanged(nameof(IsCustomTheme));
@@ -96,6 +105,13 @@ public partial class SensorViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSecondaryFamily));
         OnPropertyChanged(nameof(IsTertiaryFamily));
         OnPropertyChanged(nameof(IsNeutralFamily));
+    }
+
+    private void RaiseFamilyProjectionsIfFamilyChanged()
+    {
+        if (_lastRaisedFamily == Family)
+            return;
+        RaiseFamilyProjections();
     }
 
     // ═══════════════ Alert ═══════════════
@@ -381,7 +397,7 @@ public partial class SensorViewModel : ObservableObject
         Unit = string.IsNullOrWhiteSpace(reading.Unit) ? "" : reading.Unit;
         Category = string.IsNullOrWhiteSpace(reading.Category) ? "Other" : reading.Category;
         RawReading = reading;
-        RaiseFamilyProjections();
+        RaiseFamilyProjectionsIfFamilyChanged();
 
         // Track local min/max to normalize the sparkline 0–24px
         if (reading.Value < _minSeen) _minSeen = reading.Value;

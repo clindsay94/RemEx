@@ -410,7 +410,7 @@
                                                          title still trims. -->
                                                     <Panel Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center">
                                                         <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
-                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="card-title" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="sensor-title" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                                     </Panel>
                                                 </Grid>
                                                 <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own
@@ -455,7 +455,7 @@
                                                          IsVisible="{Binding Sensor.HasSecondary}">
                                                     <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                            <TextBlock Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Classes="card-value-2">
                                                                 <TextBlock.Text>
                                                                     <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                                         <Binding Path="Sensor.SecondarySensor.Value"/>
@@ -476,7 +476,7 @@
                                                      treatment, so the backdrop switch adds nothing here. -->
                                                 <Border IsVisible="{Binding Sensor.IsDualMetric}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
                                                         CornerRadius="5" Padding="6,4"
-                                                        Classes="card-plate">
+                                                        Classes="card-legend-plate">
                                                     <StackPanel Spacing="3">
                                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                                             <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Classes="card-legend-1"/>

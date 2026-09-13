@@ -8,12 +8,27 @@
     <!-- ═══ Spec B (RemEx-4kv0g.3): sensor cards paint from their palette family ═══
 
          Host classes (bound from the VM): family-primary / family-secondary / family-tertiary /
-         family-neutral / family-custom. Part classes on the elements inside a card: card-title,
-         card-value, card-unit, card-pill, card-plate, card-spark, card-legend-1, card-legend-2,
-         card-legend-name, card-icon.
+         family-neutral / family-custom. Part classes on the elements inside a card: sensor-title,
+         card-value, card-value-2, card-unit, card-pill, card-plate, card-legend-plate, card-spark,
+         card-legend-1, card-legend-2, card-legend-name, card-icon.
+
+         "sensor-title", NOT "card-title" (fix round 1, RemEx-4kv0g.3.2 review). App.axaml:992
+         already declares a GLOBAL "TextBlock.card-title" (page/section headers), registered AFTER
+         this file's StyleInclude — Avalonia resolves a property conflict by registration order,
+         not CSS-style specificity, so the global rule was winning over every selector below and
+         over the SensorTitleTextBlock theme. Never reuse a part class name here without checking
+         `git grep -n "\.card-" remex.desktop/App.axaml remex.desktop/Styles remex.desktop/Themes`
+         first — a collision is silent, not a compile error or a binding warning.
+
+         "card-plate" (value plates) and "card-legend-plate" (the dual-metric legend plate) are
+         split for the same reason .3.2's first pass got the family-custom alpha wrong: the two
+         were never the same opacity. Family (non-custom) styles paint both from the identical
+         CardPlate{F}Brush, but family-custom is still hand-authored hex, and the value plates were
+         always 0.8 while the legend plate was always 0.78 — collapsing them to one class collapsed
+         the alpha too and broke Acceptance 4 (an overridden card must be pixel-identical to today).
 
          ONE DICTIONARY SERVES THREE HOSTS. Selectors below are class-only ancestors
-         (".family-primary TextBlock.card-title"), which match any host type per Avalonia's
+         (".family-primary TextBlock.sensor-title"), which match any host type per Avalonia's
          selector rules — so the same rule paints the canvas ctrl:DraggableCard, the Home
          material:Card tile and the tray strip's StackPanel alike. Every setter is a
          DynamicResource, so a palette or GlassOpacity change repaints every card with no
@@ -40,16 +55,19 @@
     <Style Selector="material|Card.family-primary">
         <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
     </Style>
-    <Style Selector=".family-primary TextBlock.card-title">
+    <Style Selector=".family-primary TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkPrimaryBrush}"/>
     </Style>
     <Style Selector=".family-primary TextBlock.card-value">
         <Setter Property="Foreground" Value="{DynamicResource CardInkPrimaryBrush}"/>
     </Style>
+    <Style Selector=".family-primary TextBlock.card-value-2">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesTwoPrimaryBrush}"/>
+    </Style>
     <Style Selector=".family-primary TextBlock.card-unit, .family-primary TextBlock.card-legend-name">
         <Setter Property="Foreground" Value="{DynamicResource CardInkDimPrimaryBrush}"/>
     </Style>
-    <Style Selector=".family-primary Border.card-pill, .family-primary Border.card-plate">
+    <Style Selector=".family-primary Border.card-pill, .family-primary Border.card-plate, .family-primary Border.card-legend-plate">
         <Setter Property="Background" Value="{DynamicResource CardPlatePrimaryBrush}"/>
     </Style>
     <Style Selector=".family-primary ctrl|SparklineControl.card-spark">
@@ -73,16 +91,19 @@
     <Style Selector="material|Card.family-secondary">
         <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
     </Style>
-    <Style Selector=".family-secondary TextBlock.card-title">
+    <Style Selector=".family-secondary TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkSecondaryBrush}"/>
     </Style>
     <Style Selector=".family-secondary TextBlock.card-value">
         <Setter Property="Foreground" Value="{DynamicResource CardInkSecondaryBrush}"/>
     </Style>
+    <Style Selector=".family-secondary TextBlock.card-value-2">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesTwoSecondaryBrush}"/>
+    </Style>
     <Style Selector=".family-secondary TextBlock.card-unit, .family-secondary TextBlock.card-legend-name">
         <Setter Property="Foreground" Value="{DynamicResource CardInkDimSecondaryBrush}"/>
     </Style>
-    <Style Selector=".family-secondary Border.card-pill, .family-secondary Border.card-plate">
+    <Style Selector=".family-secondary Border.card-pill, .family-secondary Border.card-plate, .family-secondary Border.card-legend-plate">
         <Setter Property="Background" Value="{DynamicResource CardPlateSecondaryBrush}"/>
     </Style>
     <Style Selector=".family-secondary ctrl|SparklineControl.card-spark">
@@ -106,16 +127,19 @@
     <Style Selector="material|Card.family-tertiary">
         <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
     </Style>
-    <Style Selector=".family-tertiary TextBlock.card-title">
+    <Style Selector=".family-tertiary TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkTertiaryBrush}"/>
     </Style>
     <Style Selector=".family-tertiary TextBlock.card-value">
         <Setter Property="Foreground" Value="{DynamicResource CardInkTertiaryBrush}"/>
     </Style>
+    <Style Selector=".family-tertiary TextBlock.card-value-2">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesTwoTertiaryBrush}"/>
+    </Style>
     <Style Selector=".family-tertiary TextBlock.card-unit, .family-tertiary TextBlock.card-legend-name">
         <Setter Property="Foreground" Value="{DynamicResource CardInkDimTertiaryBrush}"/>
     </Style>
-    <Style Selector=".family-tertiary Border.card-pill, .family-tertiary Border.card-plate">
+    <Style Selector=".family-tertiary Border.card-pill, .family-tertiary Border.card-plate, .family-tertiary Border.card-legend-plate">
         <Setter Property="Background" Value="{DynamicResource CardPlateTertiaryBrush}"/>
     </Style>
     <Style Selector=".family-tertiary ctrl|SparklineControl.card-spark">
@@ -139,16 +163,19 @@
     <Style Selector="material|Card.family-neutral">
         <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
     </Style>
-    <Style Selector=".family-neutral TextBlock.card-title">
+    <Style Selector=".family-neutral TextBlock.sensor-title">
         <Setter Property="Foreground" Value="{DynamicResource CardInkNeutralBrush}"/>
     </Style>
     <Style Selector=".family-neutral TextBlock.card-value">
         <Setter Property="Foreground" Value="{DynamicResource CardInkNeutralBrush}"/>
     </Style>
+    <Style Selector=".family-neutral TextBlock.card-value-2">
+        <Setter Property="Foreground" Value="{DynamicResource CardSeriesTwoNeutralBrush}"/>
+    </Style>
     <Style Selector=".family-neutral TextBlock.card-unit, .family-neutral TextBlock.card-legend-name">
         <Setter Property="Foreground" Value="{DynamicResource CardInkDimNeutralBrush}"/>
     </Style>
-    <Style Selector=".family-neutral Border.card-pill, .family-neutral Border.card-plate">
+    <Style Selector=".family-neutral Border.card-pill, .family-neutral Border.card-plate, .family-neutral Border.card-legend-plate">
         <Setter Property="Background" Value="{DynamicResource CardPlateNeutralBrush}"/>
     </Style>
     <Style Selector=".family-neutral ctrl|SparklineControl.card-spark">
@@ -167,11 +194,14 @@
 
     <!-- ═══ family-custom: canvas host (DataContext = CanvasCardViewModel, bindings go through
          ".Sensor") ═══ -->
-    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-title" x:DataType="vm:CanvasCardViewModel">
+    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.sensor-title" x:DataType="vm:CanvasCardViewModel">
         <Setter Property="Foreground" Value="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
     <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-value" x:DataType="vm:CanvasCardViewModel">
         <Setter Property="Foreground" Value="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-value-2" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Foreground" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
     <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-unit, ctrl|DraggableCard.family-custom TextBlock.card-legend-name" x:DataType="vm:CanvasCardViewModel">
         <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
@@ -179,7 +209,13 @@
     <Style Selector="ctrl|DraggableCard.family-custom Border.card-pill" x:DataType="vm:CanvasCardViewModel">
         <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
     </Style>
+    <!-- Value plates were always 0.8; the legend plate below was always 0.78 — restored as two
+         classes after fix round 1 found the earlier single "card-plate" class had collapsed the
+         two alphas into one and silently changed the value plate's look on an overridden card. -->
     <Style Selector="ctrl|DraggableCard.family-custom Border.card-plate" x:DataType="vm:CanvasCardViewModel">
+        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
+    </Style>
+    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-plate" x:DataType="vm:CanvasCardViewModel">
         <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}"/>
     </Style>
     <Style Selector="ctrl|DraggableCard.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:CanvasCardViewModel">
@@ -201,8 +237,16 @@
     </Style>
 
     <!-- ═══ family-custom: Home pinned tile (DataContext = SensorViewModel directly, no prefix) ═══ -->
-    <Style Selector="material|Card.family-custom TextBlock.card-title" x:DataType="vm:SensorViewModel">
+    <Style Selector="material|Card.family-custom TextBlock.sensor-title" x:DataType="vm:SensorViewModel">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <!-- Spec B §5 (RemEx-4kv0g.3.2 review): the tile's value/unit follow on<F>Container too — an
+         overridden tile keeps its own hex, same as the canvas card's card-value/card-unit. -->
+    <Style Selector="material|Card.family-custom TextBlock.card-value" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector="material|Card.family-custom TextBlock.card-unit" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
     <Style Selector="material|Card.family-custom Border.card-pill" x:DataType="vm:SensorViewModel">
         <Setter Property="Background" Value="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>

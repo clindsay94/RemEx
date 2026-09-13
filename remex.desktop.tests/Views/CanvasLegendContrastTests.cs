@@ -1,73 +1,154 @@
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Guards the fix for RemEx-1ufoa.2, carried forward into Spec B's family styling
-/// (RemEx-4kv0g.3.2). The dual-metric legend plate on the Sensors canvas card is, for an
-/// overridden card, the per-sensor <c>Sensor.Theme.CardBackground</c> (dark by default) at
-/// translucent alpha — so an overridden card's legend/value/title text must still bind through
-/// <c>Sensor.Theme.*</c>, not a generic palette brush that could be dark-on-dark on a light seed.
+/// Guards RemEx-1ufoa.2, carried into Spec B's family styling (RemEx-4kv0g.3.2). The dual-metric
+/// legend plate on the Sensors canvas card is, for an overridden card, the per-sensor
+/// <c>Sensor.Theme.CardBackground</c> (dark by default) at translucent alpha — so an overridden
+/// card's legend/value/title text must still bind through its OWN <c>Sensor.Theme.*</c>, never a
+/// generic palette brush that could be dark-on-dark on a light seed. Each family's themed text must
+/// use that family's own paired ink token, never a different family's or a hardcoded literal.
 /// </summary>
 /// <remarks>
-/// <para>
-/// THE BINDINGS THIS USED TO SCAN MOVED. Before Spec B every sensor card was hex-themed and these
-/// bindings lived inline on CanvasView.axaml TextBlocks; RemEx-4kv0g.3.2 moved every per-theme
-/// colour off that file entirely (see <c>SensorCardBindingsTests</c>, which now guards the
-/// opposite direction — that CanvasView.axaml carries NONE of them) and into
-/// <c>Styles/SensorCardFamilies.axaml</c>'s ".family-custom" rules, scoped by host
-/// (canvas bindings go through "Sensor.", Home/tray bind the sensor directly). So this file scans
-/// SensorCardFamilies.axaml instead.
-/// </para>
-/// <para>
-/// A THEMED (family-following) CARD IS NOT THE SAME RISK. Its plate is now
-/// <c>CardPlate{F}Brush</c> and its text <c>CardInkDim{F}Brush</c> — both DynamicResources, but
-/// Material's "on&lt;F&gt;Container" role is paired for contrast with "&lt;F&gt;Container" BY
-/// CONSTRUCTION, which is exactly the guarantee RemEx-1ufoa.2's own hex-based fix had to build by
-/// hand. So this file only re-asserts the override (family-custom) path, which is still hex-based
-/// and still needs the original guard.
-/// </para>
+/// FIX ROUND 1 RESTORES THE RIGOUR an earlier pass replaced with <c>string.Contain()</c> over the
+/// whole style file — a substring check passes whether a setter sits under the right selector or
+/// the wrong one, and whether a TextBlock in CanvasView.axaml still carries its class or lost it.
+/// This parses <c>Styles/SensorCardFamilies.axaml</c> as XML and resolves each assertion against
+/// the specific Style element the Selector attribute names (exact selector-part matching, not
+/// substring — "TextBlock.card-value" is itself a substring of "TextBlock.card-value-2", which is
+/// exactly the kind of false-positive substring matching invites), and parses CanvasView.axaml to
+/// confirm the legend TextBlocks still carry the class the style rules depend on.
 /// </remarks>
 public class CanvasLegendContrastTests
 {
-    [Fact]
-    public void OverriddenCardLegendNames_BindForegroundFromSensorThemeUnitColor()
-    {
-        var styles = ReadSensorCardFamilies();
+    private static readonly string[] Families = { "primary", "secondary", "tertiary", "neutral" };
 
-        styles.Should().Contain(
-            @"Property=""Foreground"" Value=""{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}""",
-            "an overridden card's legend names (and unit text) must bind Foreground through " +
-            "Sensor.Theme.UnitColor + HexToBrushConverter, not a palette DynamicResource text brush");
+    [Theory]
+    [MemberData(nameof(FamilyNames))]
+    public void EachFamilysUnitAndLegendNameStyle_SetsThatFamilysInkDimBrush(string family)
+    {
+        var doc = LoadStyles();
+        var capitalized = char.ToUpperInvariant(family[0]) + family[1..];
+
+        var style = FindStyleByExactSelectors(doc,
+            $".family-{family} TextBlock.card-unit",
+            $".family-{family} TextBlock.card-legend-name");
+
+        SetterValue(style, "Foreground").Should().Be($"{{DynamicResource CardInkDim{capitalized}Brush}}",
+            $"family-{family}'s unit and legend-name text must both come from the SAME setter using " +
+            $"CardInkDim{capitalized}Brush — a setter under the wrong family selector would still " +
+            "satisfy a substring Contain() check but fail this exact-selector lookup");
     }
 
     [Fact]
-    public void OverriddenCardTitleAndValueText_BindFromSensorThemeNotThePalette()
+    public void OverriddenCanvasCard_UnitAndLegendNameStyle_BindsSensorThemeUnitColor()
     {
-        var styles = ReadSensorCardFamilies();
+        var doc = LoadStyles();
 
-        styles.Should().Contain(
-            @"Property=""Foreground"" Value=""{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}""",
-            "an overridden card's title must bind Foreground through Sensor.Theme.LabelColor, never a palette brush");
-        styles.Should().Contain(
-            @"Property=""Foreground"" Value=""{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}""",
-            "an overridden card's value text must bind Foreground through Sensor.Theme.ValueColor, never a palette brush");
+        var style = FindStyleByExactSelectors(doc,
+            "ctrl|DraggableCard.family-custom TextBlock.card-unit",
+            "ctrl|DraggableCard.family-custom TextBlock.card-legend-name");
+
+        SetterValue(style, "Foreground").Should().Be(
+            "{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+            "an overridden card's legend names and unit text must bind Sensor.Theme.UnitColor, never a palette brush");
     }
 
     [Fact]
-    public void OverriddenCardLegendPlate_StaysOnSensorThemeCardBackground()
+    public void OverriddenCanvasCard_TitleAndValueStyles_EachBindTheirOwnSensorThemeField()
     {
-        var styles = ReadSensorCardFamilies();
+        var doc = LoadStyles();
 
-        styles.Should().Contain("Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78",
-            "the legend/value plate on an overridden card is still the per-sensor CardBackground hex at translucent alpha");
+        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.sensor-title"), "Foreground")
+            .Should().Be("{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+                "the title must bind LabelColor specifically, not a neighbouring field");
+
+        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.card-value"), "Foreground")
+            .Should().Be("{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+                "the primary value must bind ValueColor, not the LabelColor a substring check could not tell apart");
+
+        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.card-value-2"), "Foreground")
+            .Should().Be("{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+                "the secondary (dual-metric) value must follow the sibling sensor's accent, not the primary ValueColor");
+    }
+
+    [Fact]
+    public void CanvasView_BothLegendNameTextBlocks_CarryTheLegendNameClass()
+    {
+        var doc = XDocument.Parse(ReadCanvasView());
+        var ns = doc.Root!.GetDefaultNamespace();
+
+        var legendBorder = doc.Descendants(ns + "Border")
+            .SingleOrDefault(b => (string?)b.Attribute("IsVisible") == "{Binding Sensor.IsDualMetric}");
+
+        legendBorder.Should().NotBeNull("exactly one dual-metric legend Border should exist on the Sensors card");
+
+        var legendNameTextBlocks = legendBorder!.Descendants(ns + "TextBlock")
+            .Where(tb => (string?)tb.Attribute("Classes") == "card-legend-name")
+            .ToArray();
+
+        legendNameTextBlocks.Should().HaveCount(2,
+            "both the primary and secondary metric name labels must carry Classes=\"card-legend-name\" — " +
+            "losing the class on either one silently leaves that label unthemed, which no style-file " +
+            "assertion alone can catch");
+    }
+
+    private static XDocument LoadStyles() => XDocument.Parse(ReadSensorCardFamilies());
+
+    /// <summary>
+    /// Finds the Style element whose comma-split Selector parts are EXACTLY the given set (same
+    /// count, same members) — not a substring match, which would conflate "TextBlock.card-value"
+    /// with "TextBlock.card-value-2". Fails loudly (not silently returns null) when zero or more
+    /// than one Style matches, since either means the file no longer has the shape this test needs.
+    /// </summary>
+    private static XElement FindStyleByExactSelectors(XDocument doc, params string[] exactSelectorParts)
+    {
+        var ns = doc.Root!.GetDefaultNamespace();
+        var matches = doc.Root!.Elements(ns + "Style")
+            .Where(s =>
+            {
+                var parts = ((string?)s.Attribute("Selector") ?? string.Empty)
+                    .Split(',').Select(p => p.Trim()).ToArray();
+                return parts.Length == exactSelectorParts.Length && exactSelectorParts.All(parts.Contains);
+            })
+            .ToArray();
+
+        matches.Should().HaveCount(1,
+            $"expected exactly one Style with selector parts [{string.Join(" | ", exactSelectorParts)}] " +
+            "in SensorCardFamilies.axaml");
+        return matches[0];
+    }
+
+    private static string SetterValue(XElement style, string property)
+    {
+        var ns = style.GetDefaultNamespace();
+        var setter = style.Elements(ns + "Setter")
+            .SingleOrDefault(s => (string?)s.Attribute("Property") == property);
+
+        setter.Should().NotBeNull(
+            $"Style '{(string?)style.Attribute("Selector")}' must carry a Setter for {property}");
+        return (string)setter!.Attribute("Value")!;
+    }
+
+    public static TheoryData<string> FamilyNames()
+    {
+        var data = new TheoryData<string>();
+        foreach (var family in Families)
+            data.Add(family);
+        return data;
     }
 
     private static string ReadSensorCardFamilies()
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Styles", "SensorCardFamilies.axaml"));
+
+    private static string ReadCanvasView()
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CanvasView.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

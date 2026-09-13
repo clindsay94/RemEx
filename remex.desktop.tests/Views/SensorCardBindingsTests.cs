@@ -15,7 +15,8 @@ namespace Remex.Desktop.Tests.Views;
 /// </summary>
 public class SensorCardBindingsTests
 {
-    private static readonly string[] BannedPatterns = { "Sensor.Theme.", "Theme.AccentColor", "Theme.CardBackground" };
+    private static readonly string[] BannedPatterns =
+        { "Sensor.Theme.", "Theme.AccentColor", "Theme.CardBackground", "SecondaryAccentHex" };
 
     private static readonly string[] Views = { "CanvasView.axaml", "HomeView.axaml", "TrayFlyoutWindow.axaml" };
 

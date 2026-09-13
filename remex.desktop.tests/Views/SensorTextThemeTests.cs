@@ -49,7 +49,8 @@ public class SensorTextThemeTests
         canvas.Should().Contain(@"IsVisible=""{Binding Sensor.ShowValueOverlay}""");
         canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Headline6TextBlock}"" FontWeight=""Black"" Classes=""card-value"">");
         canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.Unit}"" Theme=""{StaticResource CaptionTextBlock}"" Classes=""card-unit""");
-        canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Body1TextBlock}"" FontWeight=""Black"" Foreground=""{Binding Sensor.SecondaryAccentHex");
+        canvas.Should().Contain(@"<TextBlock Theme=""{StaticResource Body1TextBlock}"" FontWeight=""Black"" Classes=""card-value-2"">",
+            "the secondary value's colour moved to the card-value-2 style class (fix round 1, RemEx-4kv0g.3.2) — Sensor.SecondaryAccentHex is now bound only inside SensorCardFamilies.axaml");
         canvas.Should().Contain(@"<TextBlock Text=""{Binding Sensor.SecondarySensor.Unit}"" Theme=""{StaticResource OverlineTextBlock}"" Classes=""card-unit""");
     }
 

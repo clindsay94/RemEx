@@ -389,13 +389,13 @@
                                                      Bold switch reaches it (JetBrains Mono has no Black face, so it rendered ExtraBold anyway). -->
                                                 <Panel HorizontalAlignment="Left" VerticalAlignment="Center">
                                                     <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
-                                                    <TextBlock Text="{Binding Name}" Theme="{StaticResource SensorTitleTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Classes="card-title" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Name}" Theme="{StaticResource SensorTitleTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Classes="sensor-title" TextTrimming="CharacterEllipsis"/>
                                                 </Panel>
                                                 <mi:MaterialIcon Grid.Column="1" Kind="Flash" Width="14" Height="14" Opacity="0.8" Classes="card-icon"/>
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,8,0,0">
-                                                <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" Theme="{StaticResource Headline3TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding Unit}" Theme="{StaticResource Body1TextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
+                                                <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" Theme="{StaticResource Headline3TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Classes="card-value"/>
+                                                <TextBlock Text="{Binding Unit}" Theme="{StaticResource Body1TextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,10"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Panel>
