@@ -92,6 +92,23 @@ public class PersonalizationFlyoutSectionTests
             "only the section header, like its siblings — every other size on this card comes from a Theme");
     }
 
+    [Fact]
+    public void ConfigureViewModel_ReloadsTheAppsChecklistOnAttach()
+    {
+        // Fix round 1 (RemEx-4kv0g.18.6 review, HIGH 2): ShellViewModel caches CustomizationViewModel
+        // with ??=, and the constructor's own RefreshFlyoutApps runs exactly once - without a call
+        // here too, an app added to the launcher after the sheet first opened never appears.
+        var code = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml.cs"));
+
+        var method = Regex.Match(code,
+            @"private void ConfigureViewModel\(\)\s*\{(?<body>.*?)\n    \}",
+            RegexOptions.Singleline);
+
+        method.Success.Should().BeTrue("ConfigureViewModel moved or was reshaped - re-point this test rather than deleting it");
+        method.Groups["body"].Value.Should().Contain("vm.RefreshFlyoutApps()",
+            "the Apps checklist must reload every time the sheet attaches, not only the first time it is constructed");
+    }
+
     /// <summary>Markup from the Flyout header's card open tag to that card's closing tag.</summary>
     private static string FlyoutCard()
     {

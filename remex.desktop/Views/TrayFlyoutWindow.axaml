@@ -191,11 +191,15 @@
                  docs/REGRESSION-GUARDS.md) - the same rule CardsScrollViewer's own MaxHeight above
                  follows, for the same reason: a WrapPanel has no bound of its own, so enough app
                  shortcuts would otherwise grow this row (and the transient popup around it) past
-                 the screen with nothing to stop it. TrayFlyoutGeometry.ToolbarMaxHeight caps it at
-                 two rows; a third row's worth of shortcuts is clipped, not scrollable - there is no
-                 scroll affordance on this row the way the cards row above has one. -->
+                 the screen with nothing to stop it. TrayFlyoutGeometry.ToolbarContentMaxHeight, NOT
+                 ToolbarMaxHeight (fix round 1, RemEx-4kv0g.18.6 review) - MaxHeight bounds this
+                 control's own content box, not its Margin, so the outer-budget constant (which
+                 includes the row's top margin) left 16px of slack inside the cap that let a third
+                 row start rendering and clip mid-button. ToolbarContentMaxHeight is the two-row
+                 CONTENT-ONLY budget (80), so a third row is clipped at its very first pixel instead;
+                 there is no scroll affordance on this row the way the cards row above has one. -->
             <ItemsControl Grid.Row="2" ItemsSource="{Binding ToolbarItems}" Margin="0,16,0,0"
-                          MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarMaxHeight}"
+                          MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarContentMaxHeight}"
                           ClipToBounds="True">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

@@ -735,12 +735,15 @@ and settle, so the click still visibly registers before the window goes away.
 
 `remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer`, named `CardsScrollViewer`
 (:137-142, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"` as its XAML/transient default),
-and the toolbar row's `ItemsControl` (:187-189, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarMaxHeight}"`,
+and the toolbar row's `ItemsControl` (:187-189, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarContentMaxHeight}"`,
 `ClipToBounds="True"`, Flyout D2 .2, RemEx-4kv0g.18.6);
 `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` — `ApplyMode` sets `CardsScrollViewer.MaxHeight` at
 runtime, per mode (the toolbar row's cap is NOT relaxed by `ApplyMode` — it applies in both pinned and
 transient mode, since the toolbar row is fixed-height either way, unlike the cards row);
-`remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`, `ToolbarMaxHeight`, `DefaultWidth`,
+`remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`, `ToolbarMaxHeight` (the OUTER-budget
+constant, margin included — used only in `CardsMaxHeight`/`MinHeight`'s own arithmetic, never in XAML),
+`ToolbarContentMaxHeight` (the XAML `MaxHeight` value itself — content only, no margin; see that
+constant's own doc for why the two must not be the same number), `ToolbarTopMargin`, `DefaultWidth`,
 `HeaderHeight`, `CardRowHeight`, `FixedMargins`, `ChromeSideInset`/`ScrollBarAllowance`/`CardPitch`/`CardsPanelInset`;
 `remex.desktop.tests/Views/TrayFlyoutSurfaceTests.cs`, `remex.desktop.tests/TrayFlyoutGeometryTests.cs` —
 RemEx-4kv0g.18.2, extended RemEx-4kv0g.18.6.
@@ -756,11 +759,23 @@ whole number of 200×150 card rows) so it can be re-derived if the window's chro
 **The toolbar `ItemsControl`'s `WrapPanel` has the identical problem, for the identical reason
 (RemEx-4kv0g.18.6).** Unlike the cards row, there is no scroll affordance on this row at all — enough
 ticked launcher apps push the toolbar to a third wrapped line, and without a `MaxHeight` that third line
-just grows the popup, silently, exactly the way an unbounded cards list used to. `ToolbarMaxHeight` (96,
-two rows) caps it; a third row's shortcuts are clipped by `ClipToBounds="True"`, not scrollable — this is
-a deliberate difference from the cards row, not an oversight: a toolbar row is meant to stay a single
-glance, and Personalize's own Apps checklist (Flyout D2 .2) is where a user manages which apps are ticked
-if the row is crowded, not a scrollbar on the popup itself.
+just grows the popup, silently, exactly the way an unbounded cards list used to. `ToolbarContentMaxHeight`
+(80, two content rows) is what actually caps it in XAML; a third row's shortcuts are clipped by
+`ClipToBounds="True"`, not scrollable — this is a deliberate difference from the cards row, not an
+oversight: a toolbar row is meant to stay a single glance, and Personalize's own Apps checklist (Flyout
+D2 .2) is where a user manages which apps are ticked if the row is crowded, not a scrollbar on the popup
+itself.
+
+**`ToolbarMaxHeight` (96) MUST NEVER BE THE XAML `MaxHeight` VALUE (fix round 1, RemEx-4kv0g.18.6
+review, MEDIUM).** Avalonia's `MaxHeight` bounds an element's own content box — it does not include the
+element's externally-applied `Margin`. `ToolbarMaxHeight` folds the toolbar row's `Margin="0,16,0,0"`
+into its number (16 margin + two 40px rows = 96) because the *surrounding* budget arithmetic
+(`CardsMaxHeight`, `MinHeight`) needs the row's whole occupied footprint, margin included. Wiring that
+same 96 into the `ItemsControl`'s own `MaxHeight` attribute left 16px of slack inside the cap — the
+control's two real rows (80px) fit under a 96px content-box limit with room to spare, so a third row
+started rendering and got clipped 16px into itself instead of not rendering at all. `ToolbarContentMaxHeight`
+(`ToolbarMaxHeight` minus `ToolbarTopMargin`, = 80) is the content-only number XAML actually needs.
+Pinned by `TrayFlyoutGeometryTests.ToolbarContentMaxHeightIsExactlyTwoContentRows`.
 
 **`CardsMaxHeight` applies ONLY while transient — never while pinned (fix round 2).** The first cut of
 this guard left it capping the pinned case too, via the cards row's own `RowDefinition` switching to

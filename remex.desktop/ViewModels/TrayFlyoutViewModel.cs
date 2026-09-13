@@ -474,7 +474,9 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 
             // Logged as the set-difference, not per-miss inside the loop above - orderedEntries no
             // longer walks appIds in ticked order, so there is no single loop iteration left to log
-            // a miss from.
+            // a miss from. Debug.WriteLine, not an ILogger (fix round 1, RemEx-4kv0g.18.6 review,
+            // LOW) - this view model has no ILogger field (see the other Debug.WriteLine at :367,
+            // same reasoning); adding one is out of this fix's scope.
             var missingIds = appIdSet.Except(orderedEntries.Select(e => e.Id));
             foreach (var missingId in missingIds)
                 System.Diagnostics.Debug.WriteLine($"[TrayFlyout] FlyoutAppIds contains {missingId}, no matching launcher entry - skipped.");

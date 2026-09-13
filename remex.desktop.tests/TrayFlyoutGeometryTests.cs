@@ -194,4 +194,26 @@ public class TrayFlyoutGeometryTests
             TrayFlyoutGeometryValidator.MaxWidth - TrayFlyoutGeometry.ChromeSideInset - TrayFlyoutGeometry.ScrollBarAllowance
                 >= 4 * TrayFlyoutGeometry.CardPitch + TrayFlyoutGeometry.CardsPanelInset);
     }
+
+    // Fix round 1 (RemEx-4kv0g.18.6 review, MEDIUM): Avalonia's MaxHeight bounds an element's own
+    // content box, not its externally-applied Margin. Wiring ToolbarMaxHeight (96 - the row's
+    // 16px top margin plus two 40px content rows) straight into the toolbar ItemsControl's
+    // MaxHeight left 16px of slack inside the cap, so a third row's first 16px rendered and
+    // clipped mid-button instead of not rendering at all. ToolbarContentMaxHeight is the
+    // content-only budget the XAML attribute actually needs: exactly two 40px rows, no margin.
+    private const double ToolbarItemContentFootprint = 40; // Classes="tertiary icon-button" 32px default + Margin="4" each side
+
+    [Fact]
+    public void ToolbarContentMaxHeightIsExactlyTwoContentRows()
+    {
+        Assert.Equal(2 * ToolbarItemContentFootprint, TrayFlyoutGeometry.ToolbarContentMaxHeight);
+    }
+
+    [Fact]
+    public void ToolbarContentMaxHeightExcludesTheRowsOwnTopMargin()
+    {
+        Assert.Equal(
+            TrayFlyoutGeometry.ToolbarMaxHeight - TrayFlyoutGeometry.ToolbarTopMargin,
+            TrayFlyoutGeometry.ToolbarContentMaxHeight);
+    }
 }

@@ -73,15 +73,21 @@ public sealed record TrayFlyoutGeometry
     public const double ToolbarRowHeight = 56;
 
     /// <summary>
-    /// Cap on the toolbar row's <c>ItemsControl</c> (Flyout D2 .2, RemEx-4kv0g.18.6) — TWO ROWS,
-    /// retiring the RemEx-4kv0g.18.2-era <c>TilesMaxHeight</c> (164, sized for the old 66px tile
-    /// grid the toolbar row replaced in .18.5). REQUIRED IN XAML, not a nicety
-    /// (docs/REGRESSION-GUARDS.md): the toolbar's <c>WrapPanel</c> has no bound of its own, so once
-    /// app shortcuts push a third row the popup would just keep growing — capping the
-    /// <c>ItemsControl</c> at this constant clips a third row instead (shortcuts beyond that overflow
-    /// silently; there is no scroll affordance on this row, unlike the cards row above it).
+    /// The toolbar row's OUTER footprint (Flyout D2 .2, RemEx-4kv0g.18.6) — its own
+    /// <c>Margin="0,16,0,0"</c> plus two rows of content — for use in the surrounding BUDGET
+    /// ARITHMETIC (<see cref="CardsMaxHeight"/>, <see cref="TrayFlyoutGeometryValidator.MinHeight"/>),
+    /// which has to account for the space the row actually occupies, margin included.
     /// </summary>
     /// <remarks>
+    /// NOT THE XAML <c>MaxHeight</c> VALUE (fix round 1, RemEx-4kv0g.18.6 review) — see
+    /// <see cref="ToolbarContentMaxHeight"/> for that. Avalonia's <c>MaxHeight</c> bounds an
+    /// element's own content box; it does not include the element's externally-applied
+    /// <c>Margin</c>. Wiring this constant (96) straight into the toolbar <c>ItemsControl</c>'s
+    /// <c>MaxHeight</c> therefore capped content+margin together at 96 only in the surrounding
+    /// layout's budget, not in what Avalonia actually clips: the control's own two rows (80px) fit
+    /// comfortably under a content-box cap of 96, leaving 16px of slack that let a third row start
+    /// rendering and clip mid-button instead of not rendering at all.
+    /// <para>
     /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c>'s toolbar
     /// <c>ItemsControl</c> (<c>Margin="0,16,0,0"</c>) and its <c>TrayTile</c>/<c>TrayShortcut</c>
     /// templates (<c>Classes="tertiary icon-button"</c>, App.axaml's 32px default, each with its own
@@ -96,8 +102,29 @@ public sealed record TrayFlyoutGeometry
     /// </code>
     /// See <see cref="ToolbarRowHeight"/> (56 = the top margin + one row) for the single-row building
     /// block this doubles.
+    /// </para>
     /// </remarks>
     public const double ToolbarMaxHeight = 96;
+
+    /// <summary>
+    /// The toolbar <c>ItemsControl</c>'s own top <c>Margin</c> (<c>Margin="0,16,0,0"</c>) — pulled
+    /// out of <see cref="ToolbarMaxHeight"/>'s derivation so <see cref="ToolbarContentMaxHeight"/> can
+    /// subtract exactly it, rather than repeating the literal 16 with no named source.
+    /// </summary>
+    public const double ToolbarTopMargin = 16;
+
+    /// <summary>
+    /// THE ACTUAL XAML <c>MaxHeight</c> VALUE for the toolbar <c>ItemsControl</c> (fix round 1,
+    /// RemEx-4kv0g.18.6 review) — two full rows of content ONLY, <see cref="ToolbarMaxHeight"/>
+    /// (96) minus the row's own external <see cref="ToolbarTopMargin"/> (16) = 80. Wiring
+    /// <see cref="ToolbarMaxHeight"/> itself into <c>MaxHeight</c> left 16px of slack inside the cap
+    /// (Avalonia's <c>MaxHeight</c> bounds only the content box, not the element's <c>Margin</c>), so
+    /// a third row's first 16px rendered and clipped mid-button instead of not rendering at all — see
+    /// <see cref="ToolbarMaxHeight"/>'s own remarks. Two rows of <c>Classes="tertiary icon-button"</c>
+    /// content (32px icon-button + <c>Margin="4"</c> top/bottom = 40 each) is exactly 2 × 40 = 80,
+    /// pinned by <c>TrayFlyoutGeometryTests.ToolbarContentMaxHeightIsExactlyTwoContentRows</c>.
+    /// </summary>
+    public const double ToolbarContentMaxHeight = ToolbarMaxHeight - ToolbarTopMargin;
 
     /// <summary>
     /// Height budget for one row of the pinned-sensor cards (Flyout D2 .2, RemEx-4kv0g.18.6) — one

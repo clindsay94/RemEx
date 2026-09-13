@@ -99,6 +99,31 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// </summary>
     private readonly ILauncherStorageService? _launcherStorage;
 
+    /// <summary>
+    /// The Flyout section's persisted state (Flyout D2 .2, RemEx-4kv0g.18.6 fix round 1, HIGH) — the
+    /// SOURCE OF TRUTH <see cref="BuildCurrentSettings"/> writes from. <see cref="FlyoutCards"/>,
+    /// <see cref="FlyoutTiles"/> and <see cref="FlyoutApps"/> are a VIEW onto these three lists, not
+    /// the other way around: none of the three is guaranteed to be fully populated at the moment of
+    /// an unrelated save (<see cref="_home"/>/<see cref="_launcherStorage"/> are optional, and
+    /// <see cref="RefreshFlyoutAppsAsync"/> is async), so deriving a save FROM the checklist is the
+    /// preset-wipe shape — a slider nudge silently writing an empty or partial list over the user's
+    /// real one. Loaded once in the constructor; a checkbox toggle mutates exactly one id
+    /// (<see cref="OnFlyoutCardShownChanged"/>/<see cref="OnFlyoutTileShownChanged"/>/
+    /// <see cref="OnFlyoutAppShownChanged"/>); a hidden sensor id is pruned only when the user
+    /// actually unpins that sensor (see the <c>PinnedSensors.CollectionChanged</c> handler in the
+    /// constructor), never wholesale on a rebuild or a save.
+    /// </summary>
+    private readonly List<string> _flyoutHiddenSensorIds;
+
+    /// <summary>See <see cref="_flyoutHiddenSensorIds"/>. Never pruned — a hidden tile id always
+    /// resolves (the six tiles are fixed), so there is no "no longer exists" case to prune for.</summary>
+    private readonly List<string> _flyoutHiddenTileIds;
+
+    /// <summary>See <see cref="_flyoutHiddenSensorIds"/>. A shown-list, not a hidden-list: an id the
+    /// launcher does not currently resolve stays here untouched (the entry "may come back" — deleting
+    /// an app and re-adding an identically-configured one is not this VM's problem to guess at).</summary>
+    private readonly List<Guid> _flyoutAppIds;
+
     // The old _useLightPalette mirror is gone with the switch it fed (RemEx-zk5bc): the null-mode
     // fallback reads settings.UseLightPalette inline at load, and the save path carries the stored
     // value verbatim - a private copy of a superseded field is exactly the two-values-that-can-
@@ -662,6 +687,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _glassOpacity = settings.GlassOpacity;
         _appWindowOpacity = settings.AppWindowOpacity;
         _flyoutOpacity = Math.Clamp(settings.FlyoutOpacity, 0.0, 1.0);
+        // AUTHORITATIVE, NOT DERIVED FROM A CHECKLIST (fix round 1, RemEx-4kv0g.18.6 review, HIGH).
+        // FlyoutCards/FlyoutTiles/FlyoutApps are a VIEW onto these three lists, built from
+        // HomeViewModel.PinnedSensors / the six fixed tile ids / the launcher store - none of which
+        // is guaranteed to be populated (or populated with everything the record has ever recorded)
+        // at the moment of a save. Deriving the persisted lists FROM the checklists is the
+        // preset-wipe shape: a slider nudge before RefreshFlyoutAppsAsync finishes, or with _home /
+        // _launcherStorage null (both optional), silently wrote an empty or partial list over the
+        // user's real one. These three copies are what BuildCurrentSettings actually persists; a
+        // checkbox toggle mutates the matching field by exactly one id (OnFlyoutCardShownChanged /
+        // OnFlyoutTileShownChanged / OnFlyoutAppShownChanged) and nothing else touches them except
+        // the one-id prune below when a sensor is actually unpinned.
+        _flyoutHiddenSensorIds = new List<string>(settings.FlyoutHiddenSensorIds ?? []);
+        _flyoutHiddenTileIds = new List<string>(settings.FlyoutHiddenTileIds ?? []);
+        _flyoutAppIds = new List<Guid>(settings.FlyoutAppIds ?? []);
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
         _schemeVariant = SchemeVariants.Normalize(settings.SchemeVariant);
@@ -860,7 +899,25 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         RebuildFlyoutCards();
         if (_home is not null)
         {
-            _onPinnedSensorsChanged = (_, _) => RebuildFlyoutCards();
+            // PRUNE ON REMOVE ONLY, AND ONLY THE ID THAT WAS ACTUALLY UNPINNED (fix round 1,
+            // RemEx-4kv0g.18.6 review, HIGH). _flyoutHiddenSensorIds is deliberately never
+            // resynced wholesale against the live pin set - a sensor that is hidden but not
+            // currently pinned (offline this session, or just not staged on the canvas yet) has to
+            // keep its hidden id for when it comes back. The one legitimate way an id stops meaning
+            // anything is the user unpinning that exact sensor, so that is the one case this handler
+            // acts on; every other change (Add, Reset) only rebuilds the view.
+            _onPinnedSensorsChanged = (_, e) =>
+            {
+                if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems is not null)
+                {
+                    var pruned = false;
+                    foreach (SensorViewModel removed in e.OldItems)
+                        pruned |= _flyoutHiddenSensorIds.RemoveAll(
+                            id => string.Equals(id, removed.Name, StringComparison.OrdinalIgnoreCase)) > 0;
+                    if (pruned) ApplyAndSave();
+                }
+                RebuildFlyoutCards();
+            };
             _home.PinnedSensors.CollectionChanged += _onPinnedSensorsChanged;
         }
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
@@ -882,33 +939,76 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => RebuildFlyoutTiles();
 
-    /// <summary>Every toggle in the three Flyout checklists funnels here — the same "flip a flag,
-    /// persist the whole record" shape every other control on this sheet uses.</summary>
-    private void OnFlyoutChoiceShownChanged(object? sender, bool value) => ApplyAndSave();
+    /// <summary>
+    /// A card checkbox toggled — mutates <see cref="_flyoutHiddenSensorIds"/> by exactly the one id
+    /// the sender carries and saves. NEVER rebuilds <see cref="FlyoutCards"/> from here (fix round 1,
+    /// RemEx-4kv0g.18.6 review, HIGH): the field is authoritative and the checklist item's own
+    /// <c>IsShown</c> already reflects what the user just clicked, so a rebuild would be redundant at
+    /// best and, if it read from anywhere other than this same field, a second source of truth.
+    /// </summary>
+    private void OnFlyoutCardShownChanged(object? sender, bool value)
+    {
+        if (sender is not FlyoutCardChoice choice) return;
+
+        if (value)
+            _flyoutHiddenSensorIds.RemoveAll(id => string.Equals(id, choice.SensorId, StringComparison.OrdinalIgnoreCase));
+        else if (!_flyoutHiddenSensorIds.Contains(choice.SensorId, StringComparer.OrdinalIgnoreCase))
+            _flyoutHiddenSensorIds.Add(choice.SensorId);
+
+        ApplyAndSave();
+    }
+
+    /// <summary>A tile checkbox toggled. See <see cref="OnFlyoutCardShownChanged"/>'s remarks — same
+    /// shape, against <see cref="_flyoutHiddenTileIds"/>.</summary>
+    private void OnFlyoutTileShownChanged(object? sender, bool value)
+    {
+        if (sender is not FlyoutTileChoice choice) return;
+
+        if (value)
+            _flyoutHiddenTileIds.RemoveAll(id => string.Equals(id, choice.Id, StringComparison.OrdinalIgnoreCase));
+        else if (!_flyoutHiddenTileIds.Contains(choice.Id, StringComparer.OrdinalIgnoreCase))
+            _flyoutHiddenTileIds.Add(choice.Id);
+
+        ApplyAndSave();
+    }
+
+    /// <summary>An app checkbox toggled. See <see cref="OnFlyoutCardShownChanged"/>'s remarks — same
+    /// shape, against <see cref="_flyoutAppIds"/>, SHOWN-list polarity inverted (ticking ADDS the id
+    /// rather than removing it).</summary>
+    private void OnFlyoutAppShownChanged(object? sender, bool value)
+    {
+        if (sender is not FlyoutAppChoice choice) return;
+
+        if (value)
+        {
+            if (!_flyoutAppIds.Contains(choice.Id)) _flyoutAppIds.Add(choice.Id);
+        }
+        else
+        {
+            _flyoutAppIds.Remove(choice.Id);
+        }
+
+        ApplyAndSave();
+    }
 
     /// <summary>
     /// The six tray toolbar buttons, stable id + localized label, in <c>TrayFlyoutViewModel
-    /// .RebuildToolbar</c>'s own order. A prior choice's <see cref="FlyoutTileChoice.IsShown"/>
-    /// survives the rebuild (a locale switch must not clobber an in-flight, not-yet-persisted
-    /// toggle); only a tile seen for the first time falls back to
-    /// <c>CustomizationSettings.FlyoutHiddenTileIds</c>.
+    /// .RebuildToolbar</c>'s own order. <c>IsShown</c> is read straight from
+    /// <see cref="_flyoutHiddenTileIds"/> every time (fix round 1, RemEx-4kv0g.18.6 review, HIGH) —
+    /// that field is the only source of truth, so there is nothing left in the old checklist worth
+    /// preserving across a rebuild.
     /// </summary>
     private void RebuildFlyoutTiles()
     {
-        var existing = FlyoutTiles.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
-        var hidden = _layoutService.CurrentProfile.Customization.FlyoutHiddenTileIds ?? [];
-
-        foreach (var tile in FlyoutTiles) tile.ShownChanged -= OnFlyoutChoiceShownChanged;
+        foreach (var tile in FlyoutTiles) tile.ShownChanged -= OnFlyoutTileShownChanged;
         FlyoutTiles.Clear();
 
         foreach (var (id, labelKey) in FlyoutTileDefinitions)
         {
-            var isShown = existing.TryGetValue(id, out var prior)
-                ? prior.IsShown
-                : !hidden.Contains(id, StringComparer.OrdinalIgnoreCase);
+            var isShown = !_flyoutHiddenTileIds.Contains(id, StringComparer.OrdinalIgnoreCase);
 
             var choice = new FlyoutTileChoice(id, LocalizationService.Instance[labelKey], isShown);
-            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            choice.ShownChanged += OnFlyoutTileShownChanged;
             FlyoutTiles.Add(choice);
         }
     }
@@ -927,37 +1027,34 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// One entry per <see cref="HomeViewModel.PinnedSensors"/> entry, checked = shown in the tray
-    /// flyout. A no-op when <see cref="_home"/> is null (no collaborator in this test/host). A pin
-    /// already in the list keeps its live <see cref="FlyoutCardChoice.IsShown"/>; a newly pinned
-    /// sensor falls back to <c>CustomizationSettings.FlyoutHiddenSensorIds</c> — shown unless it is
-    /// on that hidden list, matching <c>TrayFlyoutViewModel.RebuildFlyoutSensors</c>'s own default.
+    /// flyout. A no-op when <see cref="_home"/> is null (no collaborator in this test/host).
+    /// <c>IsShown</c> is read straight from <see cref="_flyoutHiddenSensorIds"/> every time (fix
+    /// round 1, RemEx-4kv0g.18.6 review, HIGH) — see <see cref="RebuildFlyoutTiles"/>'s remarks for
+    /// why there is nothing in the old checklist worth preserving separately.
     /// </summary>
     private void RebuildFlyoutCards()
     {
         if (_home is null) return;
 
-        var existing = FlyoutCards.ToDictionary(c => c.SensorId, StringComparer.OrdinalIgnoreCase);
-        var hidden = _layoutService.CurrentProfile.Customization.FlyoutHiddenSensorIds ?? [];
-
-        foreach (var card in FlyoutCards) card.ShownChanged -= OnFlyoutChoiceShownChanged;
+        foreach (var card in FlyoutCards) card.ShownChanged -= OnFlyoutCardShownChanged;
         FlyoutCards.Clear();
 
         foreach (var sensor in _home.PinnedSensors)
         {
-            var isShown = existing.TryGetValue(sensor.Name, out var prior)
-                ? prior.IsShown
-                : !hidden.Contains(sensor.Name, StringComparer.OrdinalIgnoreCase);
+            var isShown = !_flyoutHiddenSensorIds.Contains(sensor.Name, StringComparer.OrdinalIgnoreCase);
 
             var choice = new FlyoutCardChoice(sensor.Name, sensor.DisplayName, isShown);
-            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            choice.ShownChanged += OnFlyoutCardShownChanged;
             FlyoutCards.Add(choice);
         }
     }
 
     /// <summary>Reloads <see cref="FlyoutApps"/> from the launcher store — the view calls this on
-    /// attach (<c>PersonalizationPanelView.ConfigureViewModel</c>) so a launcher entry added or
-    /// removed elsewhere shows up the next time this sheet opens, the same "reload on open" contract
-    /// <c>TrayFlyoutViewModel.Refresh</c> gives its own copy of the launcher list.</summary>
+    /// attach (<c>PersonalizationPanelView.ConfigureViewModel</c>, fix round 1 RemEx-4kv0g.18.6
+    /// review HIGH 2 — the call was missing; this comment used to claim it happened and did not) so a
+    /// launcher entry added or removed elsewhere shows up the next time this sheet opens, the same
+    /// "reload on open" contract <c>TrayFlyoutViewModel.Refresh</c> gives its own copy of the
+    /// launcher list.</summary>
     public void RefreshFlyoutApps() => _ = RefreshFlyoutAppsAsync();
 
     private async Task RefreshFlyoutAppsAsync()
@@ -975,20 +1072,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             entries = [];
         }
 
-        var existing = FlyoutApps.ToDictionary(a => a.Id);
-        var shown = _layoutService.CurrentProfile.Customization.FlyoutAppIds ?? [];
-
-        foreach (var app in FlyoutApps) app.ShownChanged -= OnFlyoutChoiceShownChanged;
+        foreach (var app in FlyoutApps) app.ShownChanged -= OnFlyoutAppShownChanged;
         FlyoutApps.Clear();
 
+        // isShown reads _flyoutAppIds (fix round 1, RemEx-4kv0g.18.6 review, HIGH) - an entry the
+        // launcher failed to return this call (a transient LoadEntriesAsync failure, or one just not
+        // loaded yet) never shows a row here, but its id is untouched in _flyoutAppIds and survives
+        // any save made in the meantime; it reappears, correctly ticked, the next time this succeeds.
         foreach (var entry in entries.OrderBy(e => e.Order))
         {
-            var isShown = existing.TryGetValue(entry.Id, out var prior)
-                ? prior.IsShown
-                : shown.Contains(entry.Id);
+            var isShown = _flyoutAppIds.Contains(entry.Id);
 
             var choice = new FlyoutAppChoice(entry.Id, entry.DisplayName, entry.IconBase64, isShown);
-            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            choice.ShownChanged += OnFlyoutAppShownChanged;
             FlyoutApps.Add(choice);
         }
     }
@@ -1547,7 +1643,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     }
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
     partial void OnAppWindowOpacityChanged(double value) => ApplyAndSave();
-    partial void OnFlyoutOpacityChanged(double value) => ApplyAndSave();
+    /// <summary>Clamped on set (fix round 1, RemEx-4kv0g.18.6 review, LOW), not only on load/save -
+    /// re-assigns through the generated setter with the clamped value when out of range, which
+    /// re-enters this same handler once (now in range) and saves exactly once.</summary>
+    partial void OnFlyoutOpacityChanged(double value)
+    {
+        var clamped = Math.Clamp(value, 0.0, 1.0);
+        if (clamped != value)
+        {
+            FlyoutOpacity = clamped;
+            return;
+        }
+
+        ApplyAndSave();
+    }
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();
     partial void OnAccentColorChanged(string value)
     {
@@ -1757,13 +1866,16 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
             Typography = BuildTypographySettings(),
-            // Flyout D2 .2 (RemEx-4kv0g.18.6): the Flyout section's own controls, not carried
-            // forward - FlyoutCards/FlyoutTiles/FlyoutApps are this sheet's live state now, the same
-            // way CornerRadius etc. above are theirs.
+            // Flyout D2 .2 (RemEx-4kv0g.18.6). WRITTEN FROM THE FIELDS, NEVER FROM THE CHECKLISTS
+            // (fix round 1, review HIGH) - FlyoutCards/FlyoutTiles/FlyoutApps are a VIEW that may be
+            // empty or partial at the moment of an unrelated save (_home/_launcherStorage are
+            // optional, RefreshFlyoutAppsAsync is async); deriving a save from them is the
+            // preset-wipe shape. _flyoutHiddenSensorIds/_flyoutHiddenTileIds/_flyoutAppIds are the
+            // authoritative copies - see their own doc comments.
             FlyoutOpacity = Math.Clamp(FlyoutOpacity, 0.0, 1.0),
-            FlyoutHiddenSensorIds = FlyoutCards.Where(c => !c.IsShown).Select(c => c.SensorId).ToList(),
-            FlyoutHiddenTileIds = FlyoutTiles.Where(t => !t.IsShown).Select(t => t.Id).ToList(),
-            FlyoutAppIds = FlyoutApps.Where(a => a.IsShown).Select(a => a.Id).ToList(),
+            FlyoutHiddenSensorIds = new List<string>(_flyoutHiddenSensorIds),
+            FlyoutHiddenTileIds = new List<string>(_flyoutHiddenTileIds),
+            FlyoutAppIds = new List<Guid>(_flyoutAppIds),
         };
     }
 
