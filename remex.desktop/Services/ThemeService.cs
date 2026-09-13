@@ -538,7 +538,6 @@ public class ThemeService : IDisposable
         // Spec B (RemEx-4kv0g.3): per-family card resources. The body follows GlassOpacity down to
         // fully clear (0); ink, plates and series keep their own alpha so a clear card stays legible.
         var cardBodyAlpha = (byte)Math.Round(Math.Clamp(settings.GlassOpacity, 0.0, 1.0) * 255);
-        var variant = SchemeVariants.ToMcu(settings.SchemeVariant);
 
         var primaryContainer = ToColor(roles.PrimaryContainer);
         var onPrimaryContainer = ToColor(roles.OnPrimaryContainer);
@@ -547,7 +546,7 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkPrimaryBrush", new SolidColorBrush(onPrimaryContainer));
         SetResourceOverrideInternal("CardInkDimPrimaryBrush", new SolidColorBrush(WithAlpha(onPrimaryContainer, 179))); // 0.70
         SetResourceOverrideInternal("CardSeriesPrimary", ToColor(roles["primary"]));
-        SetResourceOverrideInternal("CardSeriesTwoPrimary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Primary, variant)]));
+        SetResourceOverrideInternal("CardSeriesTwoPrimary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Primary, roles)]));
 
         var secondaryContainer = ToColor(roles.SecondaryContainer);
         var onSecondaryContainer = ToColor(roles.OnSecondaryContainer);
@@ -556,7 +555,7 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkSecondaryBrush", new SolidColorBrush(onSecondaryContainer));
         SetResourceOverrideInternal("CardInkDimSecondaryBrush", new SolidColorBrush(WithAlpha(onSecondaryContainer, 179)));
         SetResourceOverrideInternal("CardSeriesSecondary", ToColor(roles["secondary"]));
-        SetResourceOverrideInternal("CardSeriesTwoSecondary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Secondary, variant)]));
+        SetResourceOverrideInternal("CardSeriesTwoSecondary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Secondary, roles)]));
 
         var tertiaryContainer = ToColor(roles.TertiaryContainer);
         var onTertiaryContainer = ToColor(roles.OnTertiaryContainer);
@@ -565,7 +564,7 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkTertiaryBrush", new SolidColorBrush(onTertiaryContainer));
         SetResourceOverrideInternal("CardInkDimTertiaryBrush", new SolidColorBrush(WithAlpha(onTertiaryContainer, 179)));
         SetResourceOverrideInternal("CardSeriesTertiary", ToColor(roles["tertiary"]));
-        SetResourceOverrideInternal("CardSeriesTwoTertiary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Tertiary, variant)]));
+        SetResourceOverrideInternal("CardSeriesTwoTertiary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Tertiary, roles)]));
 
         var surfaceContainerHigh = ToColor(roles.SurfaceContainerHigh);
         var onSurface = ToColor(roles.OnSurface);
@@ -574,7 +573,7 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardInkNeutralBrush", new SolidColorBrush(onSurface));
         SetResourceOverrideInternal("CardInkDimNeutralBrush", new SolidColorBrush(WithAlpha(onSurface, 179)));
         SetResourceOverrideInternal("CardSeriesNeutral", ToColor(roles["outline"]));
-        SetResourceOverrideInternal("CardSeriesTwoNeutral", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, variant)]));
+        SetResourceOverrideInternal("CardSeriesTwoNeutral", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, roles)]));
 
         // Popup surfaces (RemEx-mmrgc's neighbour, no bead — Connor reported this live).
         // Material.Avalonia's ComboBox.axaml wraps its dropdown in an un-Themed controls:Card,

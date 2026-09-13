@@ -55,14 +55,44 @@ public static class SensorFamilies
     };
 
     /// <summary>
-    /// The role a card's second series uses so it never shares a hue with series 1: the next
-    /// family's main role, collapsed to "outline" under Monochrome (all three colour families are
-    /// one grey there) and to "primary" for Neutral (series 1 is already "outline").
+    /// The role a card's second series uses so it never shares a colour with series 1. The
+    /// candidate is the next family's main role (Neutral: "primary", since its own series 1 is
+    /// already "outline"); it is used only if <see cref="IsDistinct"/> from series 1 in HCT,
+    /// else "outline", else "onSurface" (terminal — always distinct enough by construction).
+    /// Takes the resolved <see cref="MaterialRoles"/> rather than a <c>SchemeVariant</c>:
+    /// distinctness is a property of the resolved colours, not the variant name (a variant other
+    /// than Monochrome can still collapse two families' tones for an edge-case seed).
     /// </summary>
-    public static string SeriesTwoRole(SensorFamily family, SchemeVariant variant)
+    public static string SeriesTwoRole(SensorFamily family, MaterialRoles roles)
     {
-        if (family == SensorFamily.Neutral) return "primary";
-        if (variant == SchemeVariant.Monochrome) return "outline";
-        return MainRole(Next(family));
+        var candidate = family == SensorFamily.Neutral ? "primary" : MainRole(Next(family));
+        var mainArgb = roles[MainRole(family)];
+        if (IsDistinct(mainArgb, roles[candidate])) return candidate;
+        if (IsDistinct(mainArgb, roles["outline"])) return "outline";
+        return "onSurface";
+    }
+
+    /// <summary>
+    /// Whether two ARGB colours are visibly distinct in HCT: equal ARGB is never distinct;
+    /// otherwise distinct if their tones differ by at least 8, or both have chroma at least 12
+    /// and their hues are at least 25° apart (circular distance, 0–180°).
+    /// </summary>
+    public static bool IsDistinct(uint argbA, uint argbB)
+    {
+        if (argbA == argbB) return false;
+
+        var a = Hct.FromInt(argbA);
+        var b = Hct.FromInt(argbB);
+
+        if (Math.Abs(a.Tone - b.Tone) >= 8) return true;
+
+        if (a.Chroma >= 12 && b.Chroma >= 12)
+        {
+            var hueDiff = Math.Abs(a.Hue - b.Hue) % 360.0;
+            var circularHueDiff = hueDiff > 180.0 ? 360.0 - hueDiff : hueDiff;
+            if (circularHueDiff >= 25.0) return true;
+        }
+
+        return false;
     }
 }
