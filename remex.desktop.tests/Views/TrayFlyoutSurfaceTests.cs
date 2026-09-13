@@ -84,6 +84,38 @@ public class TrayFlyoutSurfaceTests
     }
 
     [Fact]
+    public void PinnedSensorsAreCanvasCardsInAScrollingWrapPanel()
+    {
+        var text = File.ReadAllText(ViewPath);
+
+        text.Should().Contain("ctrl:SensorCardContent",
+            "the flyout should render pinned sensors with the shared card control, not its own markup");
+        text.Should().Contain("<WrapPanel",
+            "cards should lay out in a wrapping grid, not a horizontal strip");
+
+        var scrollViewer = Regex.Match(text, @"<ScrollViewer\b[^>]*>", RegexOptions.Singleline);
+        scrollViewer.Success.Should().BeTrue("the cards should sit inside a ScrollViewer");
+        var normalizedScrollViewer = Regex.Replace(scrollViewer.Value, @"\s+", " ");
+        normalizedScrollViewer.Should().Contain("HorizontalScrollBarVisibility=\"Disabled\"");
+        normalizedScrollViewer.Should().MatchRegex(
+            @"MaxHeight=""\{x:Static svc:TrayFlyoutGeometry\.CardsMaxHeight\}""");
+
+        var card = Regex.Match(text, @"<Border Classes=""flyout-card""[^>]*>", RegexOptions.Singleline);
+        card.Success.Should().BeTrue("the card host should be a Border.flyout-card");
+        var normalizedCard = Regex.Replace(card.Value, @"\s+", " ");
+        normalizedCard.Should().Contain("Width=\"200\"");
+        normalizedCard.Should().Contain("Height=\"150\"");
+        normalizedCard.Should().Contain("Classes.family-primary=\"{Binding IsPrimaryFamily}\"");
+        normalizedCard.Should().Contain("Classes.family-secondary=\"{Binding IsSecondaryFamily}\"");
+        normalizedCard.Should().Contain("Classes.family-tertiary=\"{Binding IsTertiaryFamily}\"");
+        normalizedCard.Should().Contain("Classes.family-neutral=\"{Binding IsNeutralFamily}\"");
+        normalizedCard.Should().Contain("Classes.family-custom=\"{Binding IsCustomTheme}\"");
+
+        text.Should().NotContain("Classes=\"tray-sensor\"", "the old strip's host class should be gone");
+        text.Should().NotContain("Width=\"44\" Height=\"16\"", "the old strip's 44x16 sparkline should be gone");
+    }
+
+    [Fact]
     public void BehaviouralAnchorsAreUntouched()
     {
         var text = File.ReadAllText(ViewPath);

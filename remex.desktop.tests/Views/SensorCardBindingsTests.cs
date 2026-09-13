@@ -72,6 +72,26 @@ public class SensorCardBindingsTests
             "content is a SensorViewModel — no host still needs the canvas's old \"Sensor.\" prefix");
     }
 
+    /// <summary>
+    /// RemEx-4kv0g.18.2: the flyout's own card host (<c>Border.flyout-card</c>) gets the same
+    /// per-family treatment <c>ctrl|DraggableCard</c> already has, and the old strip host class
+    /// (<c>tray-sensor</c>) is gone along with the strip it painted.
+    /// </summary>
+    [Fact]
+    public void SensorCardFamiliesHasAFlyoutCardRuleForEveryFamilyAndNoTraySensorRule()
+    {
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Styles", "SensorCardFamilies.axaml"));
+
+        foreach (var family in new[] { "primary", "secondary", "tertiary", "neutral" })
+        {
+            text.Should().Contain($"Border.flyout-card.family-{family}",
+                $"the flyout card host should paint from the same {family} family brush as the canvas card");
+        }
+
+        text.Should().NotContain("tray-sensor",
+            "the old tray strip's host class should be gone entirely now that the flyout renders cards");
+    }
+
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

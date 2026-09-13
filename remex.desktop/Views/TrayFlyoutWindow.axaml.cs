@@ -125,6 +125,20 @@ public partial class TrayFlyoutWindow : Window
         CanResize = isPinned;
         SizeToContent = isPinned ? SizeToContent.Manual : SizeToContent.Height;
 
+        // The cards row (ContentGrid.RowDefinitions[1]) is Auto in transient mode, so
+        // SizeToContent.Height measures it like any other content and the ScrollViewer's own
+        // MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}" caps how tall that
+        // measurement can grow (RemEx-4kv0g.18.2). Pinned, it becomes star-sized so the row takes
+        // whatever height the user's resize leaves free above the fixed-height tiles row, instead
+        // of the tiles row stretching. RowDefinition is not part of the visual tree, so it cannot
+        // pick this mode up from a XAML binding to the window's DataContext — ApplyMode already
+        // owns the other half of this same mode switch (Focusable/CanResize/SizeToContent above).
+        if (ContentGrid.RowDefinitions.Count > 1)
+        {
+            ContentGrid.RowDefinitions[1].Height =
+                isPinned ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
+        }
+
         if (ViewModel is { } vm)
             vm.IsPinned = isPinned;
     }

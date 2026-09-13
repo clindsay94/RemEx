@@ -91,12 +91,12 @@ public class SensorTextThemeTests
             @"<TextBlock Text=""{Binding Name}"" Theme=""{StaticResource SensorTitleTextBlock}"" FontFamily=""{StaticResource JetBrainsMono}""");
     }
 
-    [Fact]
-    public void TrayStripName_TakesTheMetricNameTheme_KeepingItsStripStyling()
-    {
-        View("TrayFlyoutWindow.axaml").Should().Contain(
-            @"Theme=""{StaticResource SensorMetricNameTextBlock}"" FontWeight=""Black"" LetterSpacing=""1""");
-    }
+    // TrayStripName_TakesTheMetricNameTheme_KeepingItsStripStyling removed (RemEx-4kv0g.18.2): the
+    // strip it pinned (name/value/44x16 sparkline, Black weight + LetterSpacing="1") is gone from
+    // TrayFlyoutWindow.axaml entirely, replaced by ctrl:SensorCardContent in a scrolling WrapPanel
+    // — see TrayFlyoutSurfaceTests.PinnedSensorsAreCanvasCardsInAScrollingWrapPanel. The flyout's
+    // sensor name now takes SensorTitleTextBlock inside SensorCardContent.axaml, already covered by
+    // SensorCardTitle_TakesTheSensorTitleTheme_WithNoInlineWeight above.
 
     [Fact]
     public void TheBackdrop_AppearsOnExactlyTheTwoCardSurfaces_AndNowhereElse()

@@ -63,16 +63,38 @@
          Setter resolves against the TARGET element's DataContext. Before RemEx-4kv0g.18.1 that
          needed two rule sets, because the canvas card's DataContext was CanvasCardViewModel
          (bindings went through ".Sensor") while the Home tile and tray strip bound SensorViewModel
-         directly. Since 18.1 extracted the card content into Controls/SensorCardContent.axaml, its
-         DataContext is SensorViewModel on every host — canvas, Home tile and tray strip alike — so
-         one host-agnostic set below (class-only ancestor, no host-type qualifier) now covers all
-         three; only the tray strip's sparkline keeps a second, host-qualified rule (below, on
-         StackPanel.tray-sensor) because .18.2 still owns deleting that strip. family-custom sets
-         no card Background — an overridden card keeps CardBackgroundBrush, exactly as before this
-         spec. -->
+         directly. Since 18.1 extracted the card content into Controls/SensorCardContent.axaml, and
+         18.2 replaced the tray flyout's own name/value/sparkline strip with that same
+         SensorCardContent, its DataContext is SensorViewModel on every host — canvas, Home tile
+         and the flyout's card grid alike — so one host-agnostic set below (class-only ancestor, no
+         host-type qualifier) now covers all three hosts with nothing left host-qualified.
+         family-custom sets no card Background — an overridden card keeps CardBackgroundBrush,
+         exactly as before this spec.
+
+         Border.flyout-card (RemEx-4kv0g.18.2): the tray flyout's own card host, styled the same
+         way ctrl|DraggableCard is below it — CardCornerRadius, Elevation1Shadow,
+         CardBackgroundBrush by default and CardBody{F}Brush under .family-{F}. A class selector is
+         StyleTrigger tier regardless of how many classes it carries, so the base
+         "Border.flyout-card" rule and each "Border.flyout-card.family-{F}" rule are the same tier
+         — the family rule's Background setter wins the same-tier tie only because it is declared
+         LATER in this file than the base rule (declaration order, per the precedence note above),
+         not because it carries an extra class. -->
+
+    <!-- Base: an overridden (family-custom) flyout card keeps this Background, same as the canvas
+         and Home tile. Declared before every "Border.flyout-card.family-{F}" rule below so those
+         win the same-tier Background tie (see the header comment above). -->
+    <Style Selector="Border.flyout-card">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource Elevation1Shadow}"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
 
     <!-- ─── Primary ─── -->
     <Style Selector="ctrl|DraggableCard.family-primary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Border.flyout-card.family-primary">
         <Setter Property="Background" Value="{DynamicResource CardBodyPrimaryBrush}"/>
     </Style>
     <Style Selector="material|Card.family-primary">
@@ -116,6 +138,9 @@
     <Style Selector="ctrl|DraggableCard.family-secondary">
         <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
     </Style>
+    <Style Selector="Border.flyout-card.family-secondary">
+        <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
+    </Style>
     <Style Selector="material|Card.family-secondary">
         <Setter Property="Background" Value="{DynamicResource CardBodySecondaryBrush}"/>
     </Style>
@@ -155,6 +180,9 @@
     <Style Selector="ctrl|DraggableCard.family-tertiary">
         <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
     </Style>
+    <Style Selector="Border.flyout-card.family-tertiary">
+        <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
+    </Style>
     <Style Selector="material|Card.family-tertiary">
         <Setter Property="Background" Value="{DynamicResource CardBodyTertiaryBrush}"/>
     </Style>
@@ -192,6 +220,9 @@
 
     <!-- ─── Neutral ─── -->
     <Style Selector="ctrl|DraggableCard.family-neutral">
+        <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
+    </Style>
+    <Style Selector="Border.flyout-card.family-neutral">
         <Setter Property="Background" Value="{DynamicResource CardBodyNeutralBrush}"/>
     </Style>
     <Style Selector="material|Card.family-neutral">
@@ -293,10 +324,4 @@
         <Setter Property="Foreground" Value="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
 
-    <!-- ═══ family-custom: tray flyout strip only (DataContext = SensorViewModel directly) ═══
-         Still host-qualified and still duplicates AccentColor from the rule above — .18.2 deletes
-         this strip and this rule together, so it is left alone here rather than folded in. -->
-    <Style Selector="StackPanel.tray-sensor.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
-        <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
-    </Style>
 </Styles>

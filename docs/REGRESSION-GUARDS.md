@@ -731,6 +731,31 @@ never appears — the interaction reads as unresponsive even though the click it
 `PressSettleDuration` (180ms) delays the window's hide until after the ripple has had a chance to draw
 and settle, so the click still visibly registers before the window goes away.
 
+### The tray flyout's cards `ScrollViewer` must keep an explicit `MaxHeight` (INVARIANT)
+
+`remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer` (:126-182 area,
+`MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"`);
+`remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`;
+`remex.desktop.tests/Views/TrayFlyoutSurfaceTests.cs`, `remex.desktop.tests/TrayFlyoutGeometryTests.cs` —
+RemEx-4kv0g.18.2.
+
+The transient popup uses `SizeToContent.Height` (`TrayFlyoutWindow.axaml.cs`'s `ApplyMode`), which gives
+the window no natural bound of its own — it just grows to whatever its content measures. A `ScrollViewer`
+with no `MaxHeight` has no bound either, so without one a long pinned-sensor list grows the popup past the
+screen with many pins and nothing throws: no exception, no log line, just a window taller than the
+monitor. `CardsMaxHeight` is that cap; its XML doc on `TrayFlyoutGeometry` carries the full arithmetic
+(header + tiles + margins subtracted from `TrayFlyoutGeometryValidator.MaxHeight`, rounded down to a
+whole number of 200×150 card rows) so it can be re-derived if the window's chrome changes. When the window
+is pinned, the cards row's own `RowDefinition` switches to star-sized in `ApplyMode` so it takes whatever
+height the user's resize leaves above the fixed-height tiles row — `MaxHeight` still applies there too, as
+a floor-level safety net, but does not normally engage since the window's own ceiling
+(`TrayFlyoutGeometryValidator.MaxHeight = 800`) is reached first.
+
+This is also why the geometry limits are duplicated in XAML and `TrayFlyoutGeometry`/
+`TrayFlyoutGeometryValidator` on purpose (see the comment at `TrayFlyoutWindow.axaml:16-19`): Avalonia
+needs literal `Width`/`Height`/`MinWidth`/`MinHeight`/`MaxWidth`/`MaxHeight` values in XAML, so those and
+the C# constants have to be changed together — the duplication is intentional, not drift to be cleaned up.
+
 ---
 
 ## Dashboard layout — card colour presets

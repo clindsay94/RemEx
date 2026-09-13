@@ -111,4 +111,20 @@ public class TrayFlyoutGeometryTests
         Assert.NotNull(result);
         Assert.Equal(TrayFlyoutGeometryValidator.MinWidth, result!.Width);
     }
+
+    // Named independently of TrayFlyoutGeometry.CardsMaxHeight's own derivation comment, so the
+    // test below is a real check against the window's fixed-height chrome rather than a tautology
+    // repeating the production constant's literals back at itself (RemEx-4kv0g.18.2). Header is a
+    // conservative (generous) estimate — see CardsMaxHeight's XML doc for the full derivation;
+    // tiles is exact, since it comes from fixed Button/margin values in TrayFlyoutWindow.axaml.
+    private const double HeaderHeight = 56;
+    private const double TilesMaxHeight = 164;
+
+    [Fact]
+    public void CardsMaxHeightLeavesRoomForHeaderAndTilesInsideMaxHeight()
+    {
+        Assert.True(
+            TrayFlyoutGeometry.CardsMaxHeight + HeaderHeight + TilesMaxHeight
+                <= TrayFlyoutGeometryValidator.MaxHeight);
+    }
 }

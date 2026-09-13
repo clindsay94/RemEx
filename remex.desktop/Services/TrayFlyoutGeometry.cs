@@ -10,6 +10,43 @@ public sealed record TrayFlyoutGeometry
     public double Y { get; init; }
     public double Width { get; init; }
     public double Height { get; init; }
+
+    /// <summary>
+    /// Cap on the pinned-sensor cards <c>ScrollViewer</c>'s height (<c>TrayFlyoutWindow.axaml</c>,
+    /// the cards row) while the window is transient (<c>SizeToContent.Height</c>, no user resize).
+    /// </summary>
+    /// <remarks>
+    /// REQUIRED, NOT A NICETY (docs/REGRESSION-GUARDS.md). A height-sized window has no natural
+    /// bound on an inner ScrollViewer, so without this constant a long pin list grows the popup
+    /// past the screen and nothing throws.
+    /// <para>
+    /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c> as of RemEx-4kv0g.18.2, at
+    /// the transient window's fixed default <c>Width="420"</c> (transient is not user-resizable,
+    /// so 420 is the only width this has to hold for):
+    /// <code>
+    ///   TrayFlyoutGeometryValidator.MaxHeight ................................ 800
+    /// − outer Border margin (Margin="12" around the card, 12 top + 12 bottom) ... 24
+    /// − content Grid margin (Margin="16", 16 top + 16 bottom) .................. 32
+    /// − header row (badge/status text/icon buttons; conservative estimate that
+    ///   leaves headroom for a larger Personalize → Text scale) .................. 56
+    /// − cards row's own top margin (ScrollViewer Margin="0,12,0,0") .............. 12
+    /// − tiles row at its tallest: 6 tiles at width 420 lay out 3 columns via
+    ///   TrayTileColumnsConverter.ColumnsFor(420), i.e. 2 rows of Button
+    ///   Height="66" Margin="4" (66 + 4+4 = 74 per row, ×2 = 148), plus the
+    ///   ItemsControl's own top margin (Margin="0,16,0,0") .................... 164
+    ///                                                                        ------
+    ///                                                          fixed chrome total = 288
+    ///   800 − 288 = 512, rounded DOWN to a whole number of card rows (200×150 cards,
+    ///   Margin="6" each side ⇒ 150 + 6+6 = 162 px per row): floor(512 / 162) = 3 rows.
+    ///   3 × 162 = 486.
+    /// </code>
+    /// The header-row estimate is the only soft number above — it depends on the user's
+    /// Personalize → Text scale via <c>Typo.*</c> resources — and is deliberately generous so the
+    /// derived cap stays a floor rather than a value that could clip. Re-derive by hand if the
+    /// header row, the tile button height/margin, or the card size (200×150, Margin="6") change.
+    /// </para>
+    /// </remarks>
+    public const double CardsMaxHeight = 486;
 }
 
 /// <summary>
