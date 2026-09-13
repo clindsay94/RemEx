@@ -49,6 +49,12 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
+        // The phone pushes its layout here with LayoutUpdate and its copy carries no card themes
+        // (RemEx-4kv0g.3, the 2026-09-13 preset wipe): a themeless card keeps the theme the stored
+        // copy already has for it, so a phone-side reorder cannot strip the PC's presets and hand
+        // the stripped layout back on the next LayoutSync. A card that arrives WITH a theme wins.
+        var existing = await LoadProfileAsync();
+        profile = profile with { Cards = CardThemeMerge.PreserveThemes(profile.Cards, existing.Cards) };
         var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
         // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
         await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);

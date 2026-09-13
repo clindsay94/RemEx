@@ -1856,9 +1856,20 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // moment a sync arrived, which is how an explicit Light/seed theme reverted to whatever the
         // host's profile happened to carry (RemEx-hmigd).
         var localBase = _layoutService.CurrentProfile ?? _profile;
+        // The host's cards carry no colour information when the phone last saved the layout
+        // (RemEx-4kv0g.3, the 2026-09-13 preset wipe): writing them verbatim replaced every preset in
+        // this file with null, and a restart then loaded the loss. Carry each card's theme forward
+        // from the live sensor (which ApplyPersistedSensorState just left intact for a null) and,
+        // for a sensor not yet materialised, from what this file already holds for that card.
+        var liveThemes = Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null)
+            .Select(c => new CardState { CardId = c.CardId, SensorId = c.Sensor!.Name, CardTheme = c.Sensor.Theme })
+            .ToList();
+        var carried = CardThemeMerge.PreserveThemes(profile.Cards, liveThemes);
+        carried = CardThemeMerge.PreserveThemes(carried, localBase.Cards);
         _layoutService.RequestSave(localBase with
         {
-            Cards = profile.Cards ?? new(),
+            Cards = carried,
             PinnedSensorIds = profile.PinnedSensorIds ?? new(),
             IsSnapToGridEnabled = profile.IsSnapToGridEnabled,
             GridSize = profile.GridSize,

@@ -759,6 +759,25 @@ indistinguishable from "unknown" on the way back in. Pinned by
 `AThemedSensor_WritesCardThemeAsTheExplicitDefaultPreset_NeverNull`). If a future change needs null
 to mean something else, it must first make the phone-sync path carry themes. (RemEx-4kv0g.3)
 
+### Theme-less layouts are merged, never written over a themed one (INVARIANT)
+
+Where the wipe actually lived. The host keeps its own layout copy
+(`C:\ProgramData\RemEx\host_dashboard_layout.json`, `remex.core/Services/DashboardProfileStorageService.cs`)
+and both the PC and the phone push into it with `LayoutUpdate` (`remex.agent/Handlers/PingPongHandler.cs`,
+`case MessageTypes.LayoutUpdate`); the phone's copy has no card themes, so one phone-side reorder
+stripped every preset from the host's copy. On the PC's next connect `LayoutSync` → `ApplyProfile`
+(`remex.desktop/ViewModels/CanvasDashboardViewModel.cs:1858`) wrote the host's cards verbatim into
+the per-user file. Pre-spec-B that was survivable only because the ViewModels still held the presets
+and the next `TriggerSave` pushed them back — a latent hazard the loader change turned into a wipe.
+
+Both writes now go through `CardThemeMerge.PreserveThemes` (`remex.core/Models/CardThemeMerge.cs`):
+a card arriving with `CardTheme == null` takes the theme the destination already holds for it (by
+`CardId`, then `SensorId`); a card arriving with a theme wins. `SaveProfileAsync` merges against the
+stored host copy; `ApplyProfile` merges against the live sensors first, then the per-user file.
+Pinned by `remex.core.tests/CardThemeMergeTests.cs`
+(`TheWholeWipeScenario_APhoneLayoutOverAThemedHostCopy_KeepsEveryPreset`). Do not "simplify" either
+call site back to a verbatim `profile.Cards`. (RemEx-4kv0g.3)
+
 ---
 
 ## Security
