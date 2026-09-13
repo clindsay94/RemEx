@@ -166,7 +166,14 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
+                            <!-- Padding reproduces DraggableCard's content inset (Themes/Shared/DraggableCard.axaml:57
+                                 - same converter, same expression shape) so the flyout card's title/sparkline/plates
+                                 sit inset from the rounded corners the way the canvas card's ContentPresenter Margin
+                                 does, instead of edge-to-edge (fix round 3, whole-branch review). DraggableCard binds
+                                 against its TemplatedParent because CornerRadius lives on the templated control; this
+                                 Border isn't templated, so $self reaches the same property directly. -->
                             <Border Classes="flyout-card" Width="200" Height="150" Margin="6"
+                                    Padding="{Binding $self.CornerRadius, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"
                                     Classes.family-primary="{Binding IsPrimaryFamily}"
                                     Classes.family-secondary="{Binding IsSecondaryFamily}"
                                     Classes.family-tertiary="{Binding IsTertiaryFamily}"

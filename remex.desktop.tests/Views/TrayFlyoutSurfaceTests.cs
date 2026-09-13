@@ -2,7 +2,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using FluentAssertions;
+using Remex.Desktop.Services;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Views;
@@ -116,6 +118,92 @@ public class TrayFlyoutSurfaceTests
 
         text.Should().NotContain("Classes=\"tray-sensor\"", "the old strip's host class should be gone");
         text.Should().NotContain("Width=\"44\" Height=\"16\"", "the old strip's 44x16 sparkline should be gone");
+
+        // Structural nesting (fix round 3, whole-branch review): a flat regex scan cannot tell
+        // apart "these elements all exist somewhere in the file" from "they nest the way the spec
+        // describes" — ScrollViewer > ItemsControl > ItemsPanel WrapPanel, ItemTemplate >
+        // Border.flyout-card > ctrl:SensorCardContent. Parsed once so dropping or misplacing the
+        // Sensor binding (the one thing that actually puts a sensor's data on the card) fails this
+        // test instead of surviving a substring check.
+        var doc = XDocument.Parse(text);
+        XNamespace av = "https://github.com/avaloniaui";
+        XNamespace xNs = "http://schemas.microsoft.com/winfx/2006/xaml";
+        XNamespace ctrlNs = "using:Remex.Desktop.Controls";
+
+        var namedScrollViewer = doc.Descendants(av + "ScrollViewer")
+            .SingleOrDefault(sv => (string?)sv.Attribute(xNs + "Name") == "CardsScrollViewer");
+        namedScrollViewer.Should().NotBeNull("the cards ScrollViewer must carry x:Name=\"CardsScrollViewer\"");
+
+        var scrollViewerItemsControl = namedScrollViewer!.Elements(av + "ItemsControl").SingleOrDefault();
+        scrollViewerItemsControl.Should().NotBeNull(
+            "CardsScrollViewer's content must be exactly one ItemsControl, not some other wrapper");
+
+        var itemsPanelProperty = scrollViewerItemsControl!.Element(av + "ItemsControl.ItemsPanel");
+        itemsPanelProperty.Should().NotBeNull();
+        itemsPanelProperty!.Descendants(av + "WrapPanel").Should().ContainSingle(
+            "the ItemsControl's ItemsPanel must be a WrapPanel, not the old horizontal StackPanel");
+
+        var itemTemplateProperty = scrollViewerItemsControl.Element(av + "ItemsControl.ItemTemplate");
+        itemTemplateProperty.Should().NotBeNull();
+        var dataTemplate = itemTemplateProperty!.Element(av + "DataTemplate");
+        dataTemplate.Should().NotBeNull("the item template must be a DataTemplate");
+
+        var itemBorder = dataTemplate!.Element(av + "Border");
+        itemBorder.Should().NotBeNull("the item template's root must be the flyout-card Border directly");
+        ((string?)itemBorder!.Attribute("Classes")).Should().Be("flyout-card");
+
+        var cardContentElement = itemBorder.Element(ctrlNs + "SensorCardContent");
+        cardContentElement.Should().NotBeNull(
+            "the Border's content must be exactly one ctrl:SensorCardContent - the shared card control");
+        ((string?)cardContentElement!.Attribute("Sensor")).Should().Be("{Binding}",
+            "every flyout card must bind Sensor to the item - drop this and every card renders empty");
+
+        // Padding (fix round 3): reproduces DraggableCard's own content inset
+        // (Themes/Shared/DraggableCard.axaml:57) so the card's title/sparkline/plates sit inset
+        // from the rounded corners instead of edge-to-edge.
+        ((string?)itemBorder.Attribute("Padding")).Should().Be(
+            "{Binding $self.CornerRadius, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}",
+            "the flyout card needs the same corner-radius content inset DraggableCard gives the canvas card");
+    }
+
+    /// <summary>
+    /// Fix round 3 (whole-branch review): <see cref="TrayFlyoutGeometry.ChromeSideInset"/> and
+    /// <see cref="TrayFlyoutGeometry.CardsPanelInset"/> are hand-derived from four XAML margins.
+    /// This reads those four literals back out of the file and checks the arithmetic against the
+    /// constants, so a margin changed in the XAML without updating the constant (or vice versa)
+    /// fails here instead of silently making the column-fit promise (DefaultWidth/MaxWidth) wrong.
+    /// </summary>
+    [Fact]
+    public void ChromeInsetConstantsMatchTheXamlMarginsTheyMirror()
+    {
+        var text = File.ReadAllText(ViewPath);
+
+        // Outer Border (the transparent-window shadow-and-rounding frame around the card).
+        var outerBorderMargin = double.Parse(Regex.Match(text,
+                @"<Border Background=""\{DynamicResource GlassBaseDarkBrush\}""[^>]*Margin=""(?<v>[\d.]+)""")
+            .Groups["v"].Value);
+
+        // ContentGrid (the named Grid the header/cards/tiles rows live in).
+        var contentGridMargin = double.Parse(Regex.Match(text,
+                @"<Grid x:Name=""ContentGrid""[^>]*Margin=""(?<v>[\d.]+)""")
+            .Groups["v"].Value);
+
+        // The cards ItemsControl's own Margin="H,V" - only the horizontal half feeds CardsPanelInset.
+        var itemsControlHorizontalMargin = double.Parse(Regex.Match(text,
+                @"<ItemsControl ItemsSource=""\{Binding PinnedSensors\}"" Margin=""(?<h>[\d.]+),[\d.]+""")
+            .Groups["h"].Value);
+
+        // The flyout-card Border's own Margin (all four sides equal - single-value shorthand).
+        var cardMargin = double.Parse(Regex.Match(text,
+                @"<Border Classes=""flyout-card""[^>]*Margin=""(?<v>[\d.]+)""")
+            .Groups["v"].Value);
+
+        TrayFlyoutGeometry.ChromeSideInset.Should().Be(2 * outerBorderMargin + 2 * contentGridMargin,
+            "ChromeSideInset is the outer Border's Margin plus the content Grid's Margin, each side");
+        TrayFlyoutGeometry.CardsPanelInset.Should().Be(2 * itemsControlHorizontalMargin,
+            "CardsPanelInset is the cards ItemsControl's own horizontal Margin, both sides");
+        TrayFlyoutGeometry.CardPitch.Should().Be(200 + 2 * cardMargin,
+            "CardPitch is the flyout-card's own Width (200, asserted elsewhere) plus its Margin, both sides");
     }
 
     [Fact]

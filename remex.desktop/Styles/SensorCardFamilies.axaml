@@ -48,15 +48,17 @@
          ONE DICTIONARY SERVES THREE HOSTS. Selectors below are class-only ancestors
          (".family-primary TextBlock.sensor-title"), which match any host type per Avalonia's
          selector rules — so the same rule paints the canvas ctrl:DraggableCard, the Home
-         material:Card tile and the tray strip's StackPanel alike. Every setter is a
+         material:Card tile and the tray flyout's Border.flyout-card host alike. Every setter is a
          DynamicResource, so a palette or GlassOpacity change repaints every card with no
          per-card subscriptions (see ThemeService.ApplyCustomizationCore).
 
          WHY A VALUE SET DIRECTLY ON AN ELEMENT WOULD BREAK THIS. A local attribute
          (Foreground="{Binding …}") always beats a Style setter regardless of selector
          specificity, so every part that must repaint per family lost its inline colour
-         attribute in CanvasView.axaml / HomeView.axaml / TrayFlyoutWindow.axaml and gained a
-         part class instead — that move is the whole trick this file depends on.
+         attribute — pre-extraction that meant CanvasView.axaml, now (RemEx-4kv0g.18.1/.2) it
+         means Controls/SensorCardContent.axaml, the one control CanvasView.axaml and
+         TrayFlyoutWindow.axaml both host, plus HomeView.axaml's own Home-tile template — and
+         gained a part class instead — that move is the whole trick this file depends on.
 
          family-custom IS THE EXCEPTION, ON PURPOSE. An overridden card keeps today's hex
          bindings (Theme.* / SecondaryAccentHex) inside these Style setters — a Binding inside a
@@ -72,13 +74,24 @@
          exactly as before this spec.
 
          Border.flyout-card (RemEx-4kv0g.18.2): the tray flyout's own card host, styled the same
-         way ctrl|DraggableCard is below it — CardCornerRadius, Elevation1Shadow,
-         CardBackgroundBrush by default and CardBody{F}Brush under .family-{F}. A class selector is
-         StyleTrigger tier regardless of how many classes it carries, so the base
-         "Border.flyout-card" rule and each "Border.flyout-card.family-{F}" rule are the same tier
-         — the family rule's Background setter wins the same-tier tie only because it is declared
-         LATER in this file than the base rule (declaration order, per the precedence note above),
-         not because it carries an extra class. -->
+         way ctrl|DraggableCard is below it — CardCornerRadius, CardBorderBrush, 1px
+         BorderThickness, Elevation1Shadow, CardBackgroundBrush by default and CardBody{F}Brush
+         under .family-{F}. A class selector is StyleTrigger tier regardless of how many classes
+         it carries, so the base "Border.flyout-card" rule and each "Border.flyout-card.family-{F}"
+         rule are the same tier — the family rule's Background setter wins the same-tier tie only
+         because it is declared LATER in this file than the base rule (declaration order, per the
+         precedence note above), not because it carries an extra class.
+
+         NO ClipToBounds HERE (fix round 3, whole-branch review): ctrl|DraggableCard's own
+         ControlTheme sets ClipToBounds="False" (Themes/Shared/DraggableCard.axaml), and this rule
+         used to set True, which clipped Elevation1Shadow (a dead setter under the clip) and
+         squared the sparkline's corners against the Border's straight edges instead of letting it
+         round with CornerRadius. The content inset that makes the flyout card look like the canvas
+         card at all — matching DraggableCard.axaml:57's ContentPresenter Margin, since this Border
+         has no separate content presenter to margin — is the Padding binding on the Border element
+         itself in TrayFlyoutWindow.axaml, not a style setter here (Padding needs the element's own
+         CornerRadius at binding time, which a Setter in this shared dictionary cannot reach without
+         duplicating the $self binding on every family rule for no reason). -->
 
     <!-- Base: an overridden (family-custom) flyout card keeps this Background, same as the canvas
          and Home tile. Declared before every "Border.flyout-card.family-{F}" rule below so those
@@ -86,8 +99,9 @@
     <Style Selector="Border.flyout-card">
         <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
         <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BoxShadow" Value="{DynamicResource Elevation1Shadow}"/>
-        <Setter Property="ClipToBounds" Value="True"/>
     </Style>
 
     <!-- ─── Primary ─── -->
@@ -261,8 +275,8 @@
     </Style>
 
     <!-- ═══ family-custom (RemEx-4kv0g.18.1): one host-agnostic rule set. SensorCardContent's
-         DataContext is SensorViewModel on every host — canvas, Home tile, tray strip — so a
-         class-only ancestor selector, the same shape the family-{F} rules above use, now covers
+         DataContext is SensorViewModel on every host — canvas, Home tile, the tray flyout's card
+         grid — so a class-only ancestor selector, the same shape the family-{F} rules above use, now covers
          all three; no more "ctrl|DraggableCard.family-custom" / "material|Card.family-custom"
          duplication, and no more canvas-only "Sensor."-prefixed binding path. ═══ -->
     <Style Selector=".family-custom TextBlock.sensor-title" x:DataType="vm:SensorViewModel">
