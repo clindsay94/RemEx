@@ -16,8 +16,11 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 {
     private readonly string _filePath;
     // SaveProfileAsync is a read-merge-write; two LayoutUpdates in flight must not interleave or the
-    // second merges against a base the first is still replacing.
-    private readonly SemaphoreSlim _saveLock = new(1, 1);
+    // second merges against a base the first is still replacing. Static, not per-instance: the store
+    // is not always a registered singleton (App.axaml.cs falls back to `new`, and RemexSavefileService
+    // writes through its own instance on import), so a per-instance lock would not serialise an import
+    // racing a LayoutUpdate. One process, one host file, one lock.
+    private static readonly SemaphoreSlim SaveLock = new(1, 1);
 
     /// <summary>Test seam: a store rooted at an explicit file, never the machine-wide one (RemEx-4u29).</summary>
     internal DashboardProfileStorageService(string filePath)
@@ -64,7 +67,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
         // that theme-less copy is still unidentified - see REGRESSION-GUARDS.md). A card that arrives
         // with a theme wins; a card with none keeps the stored one. Serialised so two updates cannot
         // interleave their read-merge-write.
-        await _saveLock.WaitAsync();
+        await SaveLock.WaitAsync();
         try
         {
             var existing = await LoadProfileAsync();
@@ -75,7 +78,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
         }
         finally
         {
-            _saveLock.Release();
+            SaveLock.Release();
         }
     }
 }
