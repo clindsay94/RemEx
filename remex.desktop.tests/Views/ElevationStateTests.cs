@@ -119,7 +119,8 @@ public class ElevationStateTests
         // blur+OffsetY exceeds the card's Margin gets clipped by the window bounds into a hard band
         // instead of fading out. Elevation2Shadow is blur 34 / OffsetY 9 (ThemeService.cs:528) -
         // needs >=43px of margin. Elevation3Shadow (48/12, needs >=60px) is deliberately not used
-        // here; that much margin would eat too much of the 320x240 MinWidth/MinHeight floor.
+        // here; that much margin would eat too much of the 320x382 MinWidth/MinHeight floor
+        // (382, not the old 240 - Flyout D2 .2, RemEx-4kv0g.18.6).
         var text = ReadView("TrayFlyoutWindow.axaml");
 
         text.Should().Contain("BoxShadow=\"{DynamicResource Elevation2Shadow}\"",

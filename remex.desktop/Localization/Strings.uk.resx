@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Непрозорість вікна</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>СПЛИВАЮЧЕ ВІКНО</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Непрозорість спливаючого вікна</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Наскільки прозоре саме спливаюче вікно трея. Картки зберігають власну Непрозорість картки.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Картки</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Закріпіть датчик на полотні, щоб показати його тут.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Кнопки</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Застосунки</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Додайте застосунки в Засобі запуску застосунків, щоб вибрати ярлики.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Сила свічення</value>
   </data>

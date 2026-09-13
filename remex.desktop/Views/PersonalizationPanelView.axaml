@@ -392,6 +392,94 @@
             </StackPanel>
         </material:Card>
 
+        <!-- ═══ Card 3.5: Flyout (Flyout D2 .2, RemEx-4kv0g.18.6) ═══ The tray popup's own opacity
+             (independent of Card Opacity above - the cards keep the app's own opacity regardless of
+             this slider), and which pinned cards / toolbar buttons / launcher apps the popup shows.
+             TrayFlyoutViewModel rebuilds ToolbarItems/FlyoutSensors from the same
+             CustomizationSettings fields this section writes (FlyoutOpacity/FlyoutHiddenSensorIds/
+             FlyoutHiddenTileIds/FlyoutAppIds). No inline FontSize below except the section header,
+             matching its six siblings (TypographyVocabularyTests) - the small end-of-slider labels
+             and item labels use Theme="{StaticResource CaptionTextBlock}" instead of an inline size
+             the way the older sections on this page do. -->
+        <material:Card Padding="20">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Custom_SectionFlyout}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_FlyoutOpacityTooltip}">
+                    <TextBlock Text="{local:Localize Custom_FlyoutOpacity}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.1" Value="{Binding FlyoutOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_FlyoutOpacityTooltip}" AutomationProperties.Name="{local:Localize Custom_FlyoutOpacity}"/>
+                            <TextBlock Text="{Binding FlyoutOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <Grid ColumnDefinitions="*,*">
+                            <TextBlock Text="{local:Localize Custom_Clear}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Custom_FlyoutCards}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding FlyoutCards}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="16" LineSpacing="4"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FlyoutCardChoice">
+                                <CheckBox IsChecked="{Binding IsShown}" AutomationProperties.Name="{Binding DisplayName}" ToolTip.Tip="{Binding DisplayName}">
+                                    <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{local:Localize Custom_FlyoutCards_NoPins}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !FlyoutCards.Count}"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Custom_FlyoutButtons}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding FlyoutTiles}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="16" LineSpacing="4"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FlyoutTileChoice">
+                                <CheckBox IsChecked="{Binding IsShown}" AutomationProperties.Name="{Binding Label}" ToolTip.Tip="{Binding Label}">
+                                    <TextBlock Text="{Binding Label}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Custom_FlyoutApps}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding FlyoutApps}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="16" LineSpacing="4"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FlyoutAppChoice">
+                                <CheckBox IsChecked="{Binding IsShown}" AutomationProperties.Name="{Binding DisplayName}" ToolTip.Tip="{Binding DisplayName}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Image Width="24" Height="24" Source="{Binding IconBase64, Converter={x:Static local:Base64ToImageConverter.Instance}}" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                        <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{local:Localize Custom_FlyoutApps_None}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !FlyoutApps.Count}"/>
+                </StackPanel>
+            </StackPanel>
+        </material:Card>
+
         <!-- ═══ Card 4: Text (RemEx-jt6w5) ═══ Readability first: per-section size and bold, the
              legibility halo, and the sensor-title backdrop. Sits ABOVE Advanced fine-tuning on
              purpose — this is the control a person reaches for when text is hard to read, not an

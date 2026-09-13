@@ -2266,6 +2266,30 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Krycie okna</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>POPUP</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Krycie popupu</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Jak bardzo przezroczysty jest sam popup zasobnika systemowego. Karty zachowują własne krycie kart.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Karty</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Przypnij czujnik na płótnie, aby wyświetlić go tutaj.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Przyciski</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Aplikacje</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Dodaj aplikacje w Launcherze aplikacji, aby wybrać skróty.</value>
+  </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
     <value>Dynamiczny</value>
   </data>

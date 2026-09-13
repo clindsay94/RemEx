@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Pencere Opaklığı</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>AÇILIR PENCERE</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Açılır Pencere Opaklığı</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Tepsi açılır penceresinin kendisi ne kadar saydam. Kartlar kendi Kart Opaklığını korur.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Kartlar</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Burada göstermek için tuvale bir sensör sabitleyin.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Düğmeler</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Uygulamalar</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Kısayol seçmek için Uygulama Başlatıcı'ya uygulama ekleyin.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Parlaklık Gücü</value>
   </data>

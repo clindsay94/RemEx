@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opasitas Jendela</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>SEMBULAN</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Opasitas Popup</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Seberapa tembus pandang popup baki itu sendiri. Kartu tetap menggunakan Opasitas Kartu miliknya sendiri.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Kartu</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Sematkan sensor di kanvas untuk menampilkannya di sini.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Tombol</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Aplikasi</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Tambahkan aplikasi di Peluncur Aplikasi untuk memilih pintasan.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Kekuatan Cahaya</value>
   </data>

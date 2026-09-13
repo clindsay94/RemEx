@@ -731,23 +731,36 @@ never appears — the interaction reads as unresponsive even though the click it
 `PressSettleDuration` (180ms) delays the window's hide until after the ripple has had a chance to draw
 and settle, so the click still visibly registers before the window goes away.
 
-### The tray flyout's cards `ScrollViewer` must keep an explicit `MaxHeight` IN TRANSIENT MODE (INVARIANT)
+### The tray flyout's cards `ScrollViewer` AND toolbar `ItemsControl` must keep an explicit `MaxHeight` IN TRANSIENT MODE (INVARIANT)
 
 `remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer`, named `CardsScrollViewer`
-(:155-180, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"` as its XAML/transient default);
+(:137-142, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"` as its XAML/transient default),
+and the toolbar row's `ItemsControl` (:187-189, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarMaxHeight}"`,
+`ClipToBounds="True"`, Flyout D2 .2, RemEx-4kv0g.18.6);
 `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` — `ApplyMode` sets `CardsScrollViewer.MaxHeight` at
-runtime, per mode; `remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`, `DefaultWidth`,
-`ChromeSideInset`/`ScrollBarAllowance`/`CardPitch`/`CardsPanelInset`;
+runtime, per mode (the toolbar row's cap is NOT relaxed by `ApplyMode` — it applies in both pinned and
+transient mode, since the toolbar row is fixed-height either way, unlike the cards row);
+`remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`, `ToolbarMaxHeight`, `DefaultWidth`,
+`HeaderHeight`, `CardRowHeight`, `FixedMargins`, `ChromeSideInset`/`ScrollBarAllowance`/`CardPitch`/`CardsPanelInset`;
 `remex.desktop.tests/Views/TrayFlyoutSurfaceTests.cs`, `remex.desktop.tests/TrayFlyoutGeometryTests.cs` —
-RemEx-4kv0g.18.2.
+RemEx-4kv0g.18.2, extended RemEx-4kv0g.18.6.
 
 The transient popup uses `SizeToContent.Height` (`TrayFlyoutWindow.axaml.cs`'s `ApplyMode`), which gives
 the window no natural bound of its own — it just grows to whatever its content measures. A `ScrollViewer`
 with no `MaxHeight` has no bound either, so without one a long pinned-sensor list grows the popup past the
 screen with many pins and nothing throws: no exception, no log line, just a window taller than the
 monitor. `CardsMaxHeight` is that cap; its XML doc on `TrayFlyoutGeometry` carries the full arithmetic
-(header + tiles + margins subtracted from `TrayFlyoutGeometryValidator.MaxHeight`, rounded down to a
+(header + toolbar + margins subtracted from `TrayFlyoutGeometryValidator.MaxHeight`, rounded down to a
 whole number of 200×150 card rows) so it can be re-derived if the window's chrome changes.
+
+**The toolbar `ItemsControl`'s `WrapPanel` has the identical problem, for the identical reason
+(RemEx-4kv0g.18.6).** Unlike the cards row, there is no scroll affordance on this row at all — enough
+ticked launcher apps push the toolbar to a third wrapped line, and without a `MaxHeight` that third line
+just grows the popup, silently, exactly the way an unbounded cards list used to. `ToolbarMaxHeight` (96,
+two rows) caps it; a third row's shortcuts are clipped by `ClipToBounds="True"`, not scrollable — this is
+a deliberate difference from the cards row, not an oversight: a toolbar row is meant to stay a single
+glance, and Personalize's own Apps checklist (Flyout D2 .2) is where a user manages which apps are ticked
+if the row is crowded, not a scrollbar on the popup itself.
 
 **`CardsMaxHeight` applies ONLY while transient — never while pinned (fix round 2).** The first cut of
 this guard left it capping the pinned case too, via the cards row's own `RowDefinition` switching to
@@ -764,6 +777,17 @@ enough for two and four 212px card columns respectively — see `TrayFlyoutGeome
 `TrayFlyoutGeometryTests.DefaultWidthFitsTwoCardColumns`/`MaxWidthFitsFourCardColumns`. The flyout's
 geometry (position, size, pin state) persists to `C:\ProgramData\RemEx\tray_flyout_layout.json` —
 machine-wide, not per-user (`RemexDataPaths.ResolveDirectory` relocates Windows stores there).
+
+**`MinHeight` must fit at least a header, a toolbar row and one full card row (fix round 3, closes
+RemEx-4kv0g.18.4, Flyout D2 .2, RemEx-4kv0g.18.6).** It was 240 from the flyout's very first cut — small
+enough that a pinned, resized-down popup showed the header and the toolbar row with NO card row beneath
+them at all, even with sensors pinned. A popup whose entire reason to exist (the cards) can be resized
+away completely is not a floor, it is a hole. `TrayFlyoutGeometryValidator.MinHeight` is now a compile-time
+constant expression built from `TrayFlyoutGeometry.HeaderHeight + TrayFlyoutGeometry.CardRowHeight +
+TrayFlyoutGeometry.ToolbarMaxHeight + TrayFlyoutGeometry.FixedMargins` (= 382, not a bare literal that
+could drift from the pieces it is built from) — see that constant's own derivation comment.
+`TrayFlyoutWindow.axaml`'s `MinHeight="382"` duplicates it, for the same reason `DefaultWidth`/`MaxWidth`
+are duplicated below. Pinned by `TrayFlyoutGeometryTests.MinHeightShowsOneCardRow`.
 
 This is also why the geometry limits are duplicated in XAML and `TrayFlyoutGeometry`/
 `TrayFlyoutGeometryValidator` on purpose (see the comment at `TrayFlyoutWindow.axaml:17-22`): Avalonia

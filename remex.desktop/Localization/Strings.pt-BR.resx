@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opacidade da Janela</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>POPUP</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Opacidade do Popup</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>O quão transparente é o próprio popup da bandeja. Os cartões mantêm sua própria Opacidade de Cartão.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Cartões</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Fixe um sensor na tela para mostrá-lo aqui.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Botões</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Aplicativos</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Adicione aplicativos no Launcher de Aplicativos para escolher atalhos.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidade do Brilho</value>
   </data>

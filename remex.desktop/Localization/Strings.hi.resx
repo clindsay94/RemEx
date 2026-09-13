@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>विंडो अपारदर्शिता</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>फ्लाईआउट</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>पॉपअप अपारदर्शिता</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>ट्रे पॉपअप कितना पारदर्शी है। कार्ड अपनी खुद की कार्ड अपारदर्शिता बनाए रखते हैं।</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>कार्ड</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>इसे यहां दिखाने के लिए कैनवास पर एक सेंसर पिन करें।</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>बटन</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>ऐप्स</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>शॉर्टकट चुनने के लिए ऐप लॉन्चर में ऐप्स जोड़ें।</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>ग्लो शक्ति</value>
   </data>

@@ -52,25 +52,76 @@ public sealed record TrayFlyoutGeometry
     /// footprint each with their own <c>Margin="4"</c>) fit one <c>WrapPanel</c> row at this width
     /// with room to spare for a divider and shortcuts before it needs a second row.
     /// <see cref="CardsMaxHeight"/>'s own tile-row budget (<c>TilesMaxHeight</c>, 164, sized for the
-    /// old 66px 2-row grid) is NOT re-derived by this change — RemEx-4kv0g.18.5 deliberately left it
-    /// as-is, since the new toolbar's actual height is smaller, not larger, so the existing budget
-    /// stays a safe (now overly generous) upper bound. The full re-derivation is RemEx-4kv0g.18.6.
+    /// old 66px 2-row grid) was NOT re-derived by RemEx-4kv0g.18.5, since the new toolbar's actual
+    /// height was smaller, not larger, so the existing budget stayed a safe (overly generous) upper
+    /// bound at the time. The full re-derivation landed in RemEx-4kv0g.18.6 — see
+    /// <see cref="ToolbarMaxHeight"/> and <see cref="CardsMaxHeight"/>.
     /// </para>
     /// </remarks>
     public const double DefaultWidth = 528;
 
     /// <summary>
-    /// Height budget for one row of the toolbar row's icon buttons (Flyout D2 .1, RemEx-4kv0g.18.5)
-    /// — introduced now so <c>CardsMaxHeight</c>'s full re-derivation (RemEx-4kv0g.18.6) has a named
-    /// constant to build on, rather than a bare literal appearing in that task's diff with no
-    /// history. Derivation: <c>Classes="tertiary icon-button"</c>'s App.axaml default (32px) + its
-    /// own <c>Margin="4"</c> top and bottom (32 + 4 + 4 = 40), plus the toolbar
-    /// <c>ItemsControl</c>'s own top margin (<c>Margin="0,16,0,0"</c>, 16) = 56. NOT YET WIRED INTO
-    /// <see cref="CardsMaxHeight"/>'s own arithmetic — <c>CardsMaxHeight</c> keeps its
-    /// RemEx-4kv0g.18.2 value unchanged this task (see <see cref="DefaultWidth"/>'s remarks for why
-    /// that is still safe).
+    /// Height budget for one row of the toolbar row's icon buttons (Flyout D2 .1, RemEx-4kv0g.18.5).
+    /// Derivation: <c>Classes="tertiary icon-button"</c>'s App.axaml default (32px) + its own
+    /// <c>Margin="4"</c> top and bottom (32 + 4 + 4 = 40), plus the toolbar <c>ItemsControl</c>'s own
+    /// top margin (<c>Margin="0,16,0,0"</c>, 16) = 56. The single-row building block
+    /// <see cref="ToolbarMaxHeight"/> (Flyout D2 .2, RemEx-4kv0g.18.6) doubles into the two-row cap
+    /// actually wired into <c>TrayFlyoutWindow.axaml</c>'s toolbar <c>ItemsControl.MaxHeight</c> and,
+    /// through that, into <see cref="CardsMaxHeight"/>'s and
+    /// <see cref="TrayFlyoutGeometryValidator.MinHeight"/>'s own arithmetic.
     /// </summary>
     public const double ToolbarRowHeight = 56;
+
+    /// <summary>
+    /// Cap on the toolbar row's <c>ItemsControl</c> (Flyout D2 .2, RemEx-4kv0g.18.6) — TWO ROWS,
+    /// retiring the RemEx-4kv0g.18.2-era <c>TilesMaxHeight</c> (164, sized for the old 66px tile
+    /// grid the toolbar row replaced in .18.5). REQUIRED IN XAML, not a nicety
+    /// (docs/REGRESSION-GUARDS.md): the toolbar's <c>WrapPanel</c> has no bound of its own, so once
+    /// app shortcuts push a third row the popup would just keep growing — capping the
+    /// <c>ItemsControl</c> at this constant clips a third row instead (shortcuts beyond that overflow
+    /// silently; there is no scroll affordance on this row, unlike the cards row above it).
+    /// </summary>
+    /// <remarks>
+    /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c>'s toolbar
+    /// <c>ItemsControl</c> (<c>Margin="0,16,0,0"</c>) and its <c>TrayTile</c>/<c>TrayShortcut</c>
+    /// templates (<c>Classes="tertiary icon-button"</c>, App.axaml's 32px default, each with its own
+    /// <c>Margin="4"</c>):
+    /// <code>
+    ///   ItemsControl's own top margin (Margin="0,16,0,0", counted once — a WrapPanel's
+    ///   second line adds no further gap of its own) ............................. 16
+    ///   Row 1: 32px icon-button + Margin="4" top + bottom (32 + 4 + 4) ........... 40
+    ///   Row 2: the same footprint again, wrapped .................................. 40
+    ///                                                                            ------
+    ///                                                                  total = 96
+    /// </code>
+    /// See <see cref="ToolbarRowHeight"/> (56 = the top margin + one row) for the single-row building
+    /// block this doubles.
+    /// </remarks>
+    public const double ToolbarMaxHeight = 96;
+
+    /// <summary>
+    /// Height budget for one row of the pinned-sensor cards (Flyout D2 .2, RemEx-4kv0g.18.6) — one
+    /// <c>flyout-card</c> Border (<c>Width="200" Height="150" Margin="6"</c>): 150 + 6 + 6 = 162.
+    /// Named so <see cref="CardsMaxHeight"/>'s and <see cref="TrayFlyoutGeometryValidator.MinHeight"/>'s
+    /// own derivations do not each repeat the 150/12 arithmetic separately.
+    /// </summary>
+    public const double CardRowHeight = 162;
+
+    /// <summary>
+    /// Header row estimate (Flyout D2 .2, RemEx-4kv0g.18.6) — badge/status text/icon buttons,
+    /// deliberately conservative so it leaves headroom for a larger Personalize → Text scale. The one
+    /// soft number in <see cref="CardsMaxHeight"/>'s and <see cref="TrayFlyoutGeometryValidator.MinHeight"/>'s
+    /// derivations; re-derive by hand if the header row grows.
+    /// </summary>
+    public const double HeaderHeight = 56;
+
+    /// <summary>
+    /// The window/content chrome that is neither the header, the toolbar, nor a card row (Flyout D2
+    /// .2, RemEx-4kv0g.18.6): outer <c>Border Margin="12"</c> (12 top + 12 bottom = 24) + content
+    /// <c>Grid Margin="16"</c> (16 top + 16 bottom = 32) + the cards <c>ScrollViewer</c>'s own top
+    /// margin (<c>Margin="0,12,0,0"</c> = 12). 24 + 32 + 12 = 68.
+    /// </summary>
+    public const double FixedMargins = 68;
 
     /// <summary>
     /// Cap on the pinned-sensor cards <c>ScrollViewer</c>'s height (<c>TrayFlyoutWindow.axaml</c>,
@@ -84,37 +135,31 @@ public sealed record TrayFlyoutGeometry
     /// PINNED MODE DOES NOT USE THIS CONSTANT (fix round 2). <c>ApplyMode</c> sets the cards
     /// ScrollViewer's <c>MaxHeight</c> to <c>double.PositiveInfinity</c> when pinned, so the
     /// star-sized cards row can take all the free height the user's resize leaves above the
-    /// fixed-height tiles row — the earlier build still capped at 486 while pinned, leaving ~50px
+    /// fixed-height toolbar row — the earlier build still capped at 486 while pinned, leaving ~50px
     /// empty below the tiles on an 894×787 popup with rows hidden behind a needless scrollbar. The
     /// XAML <c>MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"</c> attribute is only
     /// the TRANSIENT starting value; <c>ApplyMode</c> overrides it every mode switch.
     /// </para>
     /// <para>
-    /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c> as of RemEx-4kv0g.18.2, at
-    /// <see cref="DefaultWidth"/> (528) — ENFORCED for the transient window by
-    /// <c>TrayFlyoutWindow.ApplyMode(isPinned: false)</c>, not merely assumed, so 528 really is the
-    /// only width this budget has to hold for:
+    /// RE-DERIVED FOR THE TOOLBAR ROW (Flyout D2 .2, RemEx-4kv0g.18.6) — the RemEx-4kv0g.18.2
+    /// arithmetic below subtracted the old 164px tile grid (<c>TilesMaxHeight</c>); this subtracts
+    /// <see cref="ToolbarMaxHeight"/> (96) instead, using <see cref="HeaderHeight"/>,
+    /// <see cref="FixedMargins"/> and <see cref="CardRowHeight"/> above:
     /// <code>
     ///   TrayFlyoutGeometryValidator.MaxHeight ................................ 800
-    /// − outer Border margin (Margin="12" around the card, 12 top + 12 bottom) ... 24
-    /// − content Grid margin (Margin="16", 16 top + 16 bottom) .................. 32
-    /// − header row (badge/status text/icon buttons; conservative estimate that
-    ///   leaves headroom for a larger Personalize → Text scale) .................. 56
-    /// − cards row's own top margin (ScrollViewer Margin="0,12,0,0") .............. 12
-    /// − tiles row at its tallest: 6 tiles at width 528 lay out 4 columns via
-    ///   TrayTileColumnsConverter.ColumnsFor(528), i.e. still 2 rows (⌈6/4⌉ = 2) of Button
-    ///   Height="66" Margin="4" (66 + 4+4 = 74 per row, ×2 = 148), plus the
-    ///   ItemsControl's own top margin (Margin="0,16,0,0") .................... 164
+    /// − HeaderHeight ......................................................... 56
+    /// − ToolbarMaxHeight ..................................................... 96
+    /// − FixedMargins ......................................................... 68
     ///                                                                        ------
-    ///                                                          fixed chrome total = 288
-    ///   800 − 288 = 512, rounded DOWN to a whole number of card rows (200×150 cards,
-    ///   Margin="6" each side ⇒ 150 + 6+6 = 162 px per row): floor(512 / 162) = 3 rows.
-    ///   3 × 162 = 486.
+    ///                                                          fixed chrome total = 220
+    ///   800 − 220 = 580, rounded DOWN to a whole number of CardRowHeight (162) rows:
+    ///   floor(580 / 162) = 3 rows. 3 × 162 = 486.
     /// </code>
-    /// The header-row estimate is the only soft number above — it depends on the user's
-    /// Personalize → Text scale via <c>Typo.*</c> resources — and is deliberately generous so the
-    /// derived cap stays a floor rather than a value that could clip. Re-derive by hand if the
-    /// header row, the tile button height/margin, or the card size (200×150, Margin="6") change.
+    /// THE VALUE DID NOT CHANGE. The toolbar row is 68px shorter than the old tile grid (164 → 96),
+    /// which grows the raw budget from 512 to 580 — but both floor to the same 3 card rows, so the
+    /// extra 68px is headroom the transient popup was not using before either. Re-derive by hand if
+    /// <see cref="HeaderHeight"/>, <see cref="ToolbarMaxHeight"/>, <see cref="FixedMargins"/> or
+    /// <see cref="CardRowHeight"/> change.
     /// </para>
     /// <para>
     /// The flyout's geometry (position/size/pin state) persists to
@@ -155,7 +200,25 @@ public static class TrayFlyoutGeometryValidator
     // widest pinned size only ever showed three columns. 944's content width (872) clears it with
     // room; pinned by TrayFlyoutGeometryTests.MaxWidthFitsFourCardColumns.
     public const double MaxWidth = 944;
-    public const double MinHeight = 240;
+
+    // 382, not the old 240 (fix round 3, closes RemEx-4kv0g.18.4 — Flyout D2 .2, RemEx-4kv0g.18.6).
+    // At 240 a resize-down showed a header and a toolbar row with NO card row at all beneath them
+    // even with sensors pinned - the popup's whole reason to exist (the cards) could be resized away
+    // entirely while pinned. Derivation, all logical px, using TrayFlyoutGeometry's own named
+    // constants so this stays in lockstep with CardsMaxHeight's arithmetic above it:
+    //   TrayFlyoutGeometry.HeaderHeight ......................................... 56
+    // + TrayFlyoutGeometry.CardRowHeight (one full card row) ................... 162
+    // + TrayFlyoutGeometry.ToolbarMaxHeight ...................................... 96
+    // + TrayFlyoutGeometry.FixedMargins (outer Border + content Grid + the cards
+    //   ScrollViewer's own top margin) ............................................ 68
+    //                                                                            ------
+    //                                                                     total = 382
+    // A genuine compile-time constant expression, not a literal that could drift from the pieces it
+    // is built from - see TrayFlyoutGeometryTests.MinHeightShowsOneCardRow for the independent check.
+    public const double MinHeight =
+        TrayFlyoutGeometry.HeaderHeight + TrayFlyoutGeometry.CardRowHeight
+        + TrayFlyoutGeometry.ToolbarMaxHeight + TrayFlyoutGeometry.FixedMargins;
+
     public const double MaxHeight = 800;
 
     /// <summary>How much of the window must remain on some screen, in logical pixels, each axis.</summary>

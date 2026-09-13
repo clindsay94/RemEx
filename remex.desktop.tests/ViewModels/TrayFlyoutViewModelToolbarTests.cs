@@ -107,6 +107,28 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
     }
 
     [Fact]
+    public void TickedAppsRenderInLauncherOrderNotTickedOrder()
+    {
+        // .18.5 review carry-forward: FlyoutAppIds used to be walked in ticked order. Order=1/0/2
+        // here, ticked in the reverse of launcher order (third, first, second) - the row must still
+        // come out first/third/second by Order, not third/first/second by tick order.
+        var first = new AppEntry(Guid.NewGuid(), "Notepad", @"C:\Windows\notepad.exe", "#000000", null, Order: 0);
+        var second = new AppEntry(Guid.NewGuid(), "Calculator", @"C:\Windows\System32\calc.exe", "#000000", null, Order: 1);
+        var third = new AppEntry(Guid.NewGuid(), "Paint", @"C:\Windows\System32\mspaint.exe", "#000000", null, Order: 2);
+        _launcherStorage.Entries = [first, second, third];
+
+        _shell.Customization = new CustomizationSettings
+        {
+            FlyoutAppIds = new List<Guid> { third.Id, first.Id, second.Id },
+        };
+        _tray.Refresh();
+
+        var shortcuts = _tray.ToolbarItems.OfType<TrayShortcut>().Select(s => s.EntryId).ToArray();
+        shortcuts.Should().Equal(new[] { first.Id, second.Id, third.Id },
+            "spec §2: shortcut order follows the launcher, not the order ids were ticked in Personalize");
+    }
+
+    [Fact]
     public void AppIdNotInTheLauncherIsSkippedWithNoDividerOrShortcut()
     {
         _launcherStorage.Entries = [];

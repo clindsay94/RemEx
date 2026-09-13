@@ -8,7 +8,7 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// The Personalization sheet's shape (spec section 3): seven cards in a pinned order, one path to a
+/// The Personalization sheet's shape (spec section 3): eight cards in a pinned order, one path to a
 /// colour, no Tone slider, no seed setter reachable from the Saved palettes card. Source-text,
 /// because remex.desktop.tests has no headless render.
 /// </summary>
@@ -16,18 +16,18 @@ public class PersonalizationSheetLayoutTests
 {
     private static readonly string[] HeadersInOrder =
     {
-        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionText",
-        "Custom_AdvancedTuning", "Custom_SectionBehaviour", "Custom_SectionSavedPalettes",
+        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionFlyout",
+        "Custom_SectionText", "Custom_AdvancedTuning", "Custom_SectionBehaviour", "Custom_SectionSavedPalettes",
     };
 
     [Fact]
-    public void TheSevenSectionHeadersAppearInSpecOrder()
+    public void TheEightSectionHeadersAppearInSpecOrder()
     {
         var markup = PanelMarkup();
         var positions = HeadersInOrder.Select(k => markup.IndexOf($"Localize {k}}}", System.StringComparison.Ordinal)).ToArray();
 
         positions.Should().OnlyContain(p => p >= 0, "every section header is on the sheet");
-        positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Text, Fine-tuning, Behaviour, Saved palettes");
+        positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Flyout, Text, Fine-tuning, Behaviour, Saved palettes");
     }
 
     [Fact]

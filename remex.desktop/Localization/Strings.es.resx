@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opacidad de la Ventana</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>FLOTANTE</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Opacidad de la Ventana Flotante</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Qué tan transparente es la ventana flotante de la bandeja. Las tarjetas mantienen su propia Opacidad de Tarjeta.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Tarjetas</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Fija un sensor en el lienzo para mostrarlo aquí.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Botones</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Aplicaciones</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Agrega aplicaciones en el Selector de Aplicaciones para elegir accesos directos.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidad del Brillo</value>
   </data>

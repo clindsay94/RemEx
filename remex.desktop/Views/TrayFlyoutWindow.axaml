@@ -11,7 +11,7 @@
     x:DataType="vm:TrayFlyoutViewModel"
     Title="{local:Localize TrayFlyout_Title}"
     Width="528" Height="400"
-    MinWidth="320" MinHeight="240"
+    MinWidth="320" MinHeight="382"
     MaxWidth="944" MaxHeight="800">
 
     <!-- SizeToContent, CanResize, Focusable and ShowInTaskbar are deliberately absent: the
@@ -40,7 +40,9 @@
          is transparent with no decorations, so the shadow extent has to fit inside Margin below or
          it gets clipped by the window bounds into a hard band (RemEx-la0rk round 3). Margin 44 clears
          blur+OffsetY=43. Elevation3's 48/12 would need Margin ~=60, which eats too much of the
-         320x240 MinWidth/MinHeight floor from TrayFlyoutGeometryValidator for the tile grid below. -->
+         320x382 MinWidth/MinHeight floor from TrayFlyoutGeometryValidator (382, not the old 240 -
+         Flyout D2 .2, RemEx-4kv0g.18.6, closes RemEx-4kv0g.18.4 - see that constant's derivation
+         comment) for the toolbar row below. -->
     <Border Background="{DynamicResource FlyoutGlassBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="{DynamicResource Elevation2Shadow}">
         <!-- Row 1 (the cards ScrollViewer) starts Auto and the tiles row (2) is always Auto — the
              cards row is the only one whose Height changes, flipped to "*" by ApplyMode in the
@@ -183,8 +185,18 @@
                  up (Cog/Pin/Close) already wear this exact combination, just with ".compact" for
                  their smaller 28px size - this row omits ".compact" for the 32px default instead,
                  no bespoke class or inline Width/Height/CornerRadius/Padding needed. Width/Height
-                 are NOT set inline for the same reason: the class already owns them. -->
-            <ItemsControl Grid.Row="2" ItemsSource="{Binding ToolbarItems}" Margin="0,16,0,0">
+                 are NOT set inline for the same reason: the class already owns them.
+
+                 MaxHeight IS A HARD REQUIREMENT, NOT A NICETY (Flyout D2 .2, RemEx-4kv0g.18.6,
+                 docs/REGRESSION-GUARDS.md) - the same rule CardsScrollViewer's own MaxHeight above
+                 follows, for the same reason: a WrapPanel has no bound of its own, so enough app
+                 shortcuts would otherwise grow this row (and the transient popup around it) past
+                 the screen with nothing to stop it. TrayFlyoutGeometry.ToolbarMaxHeight caps it at
+                 two rows; a third row's worth of shortcuts is clipped, not scrollable - there is no
+                 scroll affordance on this row the way the cards row above has one. -->
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding ToolbarItems}" Margin="0,16,0,0"
+                          MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarMaxHeight}"
+                          ClipToBounds="True">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"/>

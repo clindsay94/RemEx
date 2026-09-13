@@ -423,6 +423,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Window Opacity</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>FLYOUT</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Popup opacity</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>How see-through the tray popup itself is. Cards keep their own Card Opacity.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Cards</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Pin a sensor on the canvas to show it here.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Buttons</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Apps</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Add apps in the App Launcher to pick shortcuts.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Glow Strength</value>
   </data>

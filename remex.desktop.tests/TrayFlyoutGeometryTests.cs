@@ -14,7 +14,10 @@ public class TrayFlyoutGeometryTests
     private static readonly IReadOnlyList<PixelRect> DualScreen =
         [new PixelRect(0, 0, 1920, 1080), new PixelRect(-1920, 0, 1920, 1080)];
 
-    private static TrayFlyoutGeometry Geometry(double x, double y, double w = 460, double h = 380) =>
+    // 400, not the old 380 (Flyout D2 .2, RemEx-4kv0g.18.6): MinHeight rose from 240 to 382, and a
+    // "fully visible, returned unchanged" fixture below MinHeight would get clamped UP by Validate,
+    // silently changing what these tests actually assert.
+    private static TrayFlyoutGeometry Geometry(double x, double y, double w = 460, double h = 400) =>
         new() { IsPinned = true, X = x, Y = y, Width = w, Height = h };
 
     [Fact]
@@ -112,25 +115,45 @@ public class TrayFlyoutGeometryTests
         Assert.Equal(TrayFlyoutGeometryValidator.MinWidth, result!.Width);
     }
 
-    // Named independently of TrayFlyoutGeometry.CardsMaxHeight's own derivation comment, so the
-    // test below is a real check against the window's fixed-height chrome rather than a tautology
-    // repeating the production constant's literals back at itself (RemEx-4kv0g.18.2). Header is a
-    // conservative (generous) estimate — see CardsMaxHeight's XML doc for the full derivation;
-    // tiles is exact, since it comes from fixed Button/margin values in TrayFlyoutWindow.axaml.
+    // HeaderHeight and FixedMargins stay independent of TrayFlyoutGeometry's own derivation comment,
+    // so the test below is a real check against the window's fixed-height chrome rather than a
+    // tautology repeating the production constant's literals back at itself (RemEx-4kv0g.18.2).
+    // Header is a conservative (generous) estimate — see CardsMaxHeight's XML doc for the full
+    // derivation.
     private const double HeaderHeight = 56;
-    private const double TilesMaxHeight = 164;
 
     // Fix round 1: the budget test omitted the 68px of window/Grid/cards-row margins the
     // derivation comment counts (24 outer Border + 32 content Grid + 12 cards row's own top
-    // margin). Named so the full budget — not just header+tiles — has to fit under MaxHeight.
+    // margin). Named so the full budget — not just header+toolbar — has to fit under MaxHeight.
     private const double FixedMargins = 68;
 
+    // One flyout-card row's footprint (Border Width="200" Height="150" Margin="6"): 150 + 6 + 6.
+    // Independent of TrayFlyoutGeometry.CardRowHeight for the same anti-tautology reason as
+    // HeaderHeight/FixedMargins above.
+    private const double CardRowHeight = 162;
+
     [Fact]
-    public void CardsMaxHeightLeavesRoomForHeaderAndTilesInsideMaxHeight()
+    public void CardsMaxHeightLeavesRoomForHeaderAndToolbarInsideMaxHeight()
+    {
+        // RemEx-4kv0g.18.6: the old tile grid's TilesMaxHeight (164, a local literal — no production
+        // constant existed for it) is retired in favour of TrayFlyoutGeometry.ToolbarMaxHeight, which
+        // DOES have a real, exact production constant now (the toolbar's height is two fixed-size
+        // WrapPanel rows, not a variable-column grid) — so this budget test references it directly
+        // rather than re-declaring the same number as a second local literal.
+        Assert.True(
+            TrayFlyoutGeometry.CardsMaxHeight + HeaderHeight + TrayFlyoutGeometry.ToolbarMaxHeight + FixedMargins
+                <= TrayFlyoutGeometryValidator.MaxHeight);
+    }
+
+    // RemEx-4kv0g.18.6, closes RemEx-4kv0g.18.4: MinHeight must fit a header, a toolbar row (up to
+    // two lines) and at least one full card row — the popup's entire reason to exist is the cards,
+    // so a MinHeight that lets a resize hide every card row is a hole, not a floor.
+    [Fact]
+    public void MinHeightShowsOneCardRow()
     {
         Assert.True(
-            TrayFlyoutGeometry.CardsMaxHeight + HeaderHeight + TilesMaxHeight + FixedMargins
-                <= TrayFlyoutGeometryValidator.MaxHeight);
+            TrayFlyoutGeometryValidator.MinHeight
+                >= HeaderHeight + CardRowHeight + TrayFlyoutGeometry.ToolbarMaxHeight + FixedMargins);
     }
 
     // RemEx-4kv0g.18.5: the tile grid (UniformGrid + TrayTileColumnsConverter) is gone, replaced by

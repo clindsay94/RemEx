@@ -445,37 +445,39 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         var items = new List<TrayToolbarItem>(visibleTiles);
 
         // App shortcuts, after a divider, only when at least one selected id still resolves to a
-        // launcher entry (Flyout D2 .1, RemEx-4kv0g.18.5 §2). An id that no longer exists in the
-        // launcher is skipped rather than shown broken, and a settings.FlyoutAppIds that resolves to
-        // nothing at all must not leave a dangling divider with no shortcuts after it.
+        // launcher entry (Flyout D2 .1, RemEx-4kv0g.18.5 §2). LAUNCHER ORDER, NOT TICKED ORDER
+        // (.18.5 review carry-forward, RemEx-4kv0g.18.6) - spec §2 says "order = launcher order", so
+        // the row has to match the App Launcher page regardless of the order ids were ticked in
+        // Personalize. An id that no longer exists in the launcher is skipped rather than shown
+        // broken, and a settings.FlyoutAppIds that resolves to nothing at all must not leave a
+        // dangling divider with no shortcuts after it.
         var appIds = settings.FlyoutAppIds ?? [];
         if (appIds.Count > 0)
         {
-            List<TrayShortcut>? shortcuts = null;
+            var appIdSet = appIds.ToHashSet();
+            var orderedEntries = _launcherEntries
+                .OrderBy(e => e.Order)
+                .Where(e => appIdSet.Contains(e.Id))
+                .ToList();
 
-            foreach (var appId in appIds)
+            if (orderedEntries.Count > 0)
             {
-                var entry = _launcherEntries.FirstOrDefault(e => e.Id == appId);
-                if (entry is null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[TrayFlyout] FlyoutAppIds contains {appId}, no matching launcher entry - skipped.");
-                    continue;
-                }
-
-                (shortcuts ??= []).Add(new TrayShortcut
+                items.Add(new TrayToolbarDivider());
+                items.AddRange(orderedEntries.Select(entry => new TrayShortcut
                 {
                     EntryId = entry.Id,
                     DisplayName = entry.DisplayName,
                     IconBase64 = entry.IconBase64,
                     LaunchCommand = new AsyncRelayCommand(() => LaunchShortcutAsync(entry)),
-                });
+                }));
             }
 
-            if (shortcuts is { Count: > 0 })
-            {
-                items.Add(new TrayToolbarDivider());
-                items.AddRange(shortcuts);
-            }
+            // Logged as the set-difference, not per-miss inside the loop above - orderedEntries no
+            // longer walks appIds in ticked order, so there is no single loop iteration left to log
+            // a miss from.
+            var missingIds = appIdSet.Except(orderedEntries.Select(e => e.Id));
+            foreach (var missingId in missingIds)
+                System.Diagnostics.Debug.WriteLine($"[TrayFlyout] FlyoutAppIds contains {missingId}, no matching launcher entry - skipped.");
         }
 
         ToolbarItems = items;

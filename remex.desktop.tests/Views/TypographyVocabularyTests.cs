@@ -78,7 +78,10 @@ public class TypographyVocabularyTests
     // this task).
     // Re-pinned by RemEx-jt6w5.5: 63 -> 64 (one section header matching its five siblings in
     // PersonalizationPanelView).
-    private const int InlineFontSizeBaseline = 64;
+    // Re-pinned by RemEx-4kv0g.18.6: 64 -> 65 (the new Flyout section's header, matching its six
+    // siblings in PersonalizationPanelView - every other new string in that section uses
+    // Theme="{StaticResource CaptionTextBlock}" instead of an inline size).
+    private const int InlineFontSizeBaseline = 65;
 
     /// <summary>
     /// How far below the baseline the count may drift before the test asks for the baseline to be

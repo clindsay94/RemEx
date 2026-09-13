@@ -14,6 +14,7 @@ using Remex.Desktop.Services.FileTransfer;
 using Remex.Core.Guards;
 using Remex.Core.Logging;
 using Remex.Core.Models;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -1523,8 +1524,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private void EnsureCustomizationVm()
     {
+        // home/launcherStorage feed the Flyout section's Cards/Apps checklists (Flyout D2 .2,
+        // RemEx-4kv0g.18.6) - both are registered AddSingleton in App.axaml.cs, the same DI surface
+        // TrayFlyoutViewModel's own constructor injection already resolves them through. GetService,
+        // NOT GetRequiredService: several existing tests build a ShellViewModel over a minimal
+        // ServiceCollection that registers neither (ProfileReplacementInvalidatesCustomizationVmTests
+        // among them) - CustomizationViewModel already treats both as optional, the same tolerant
+        // shape _phoneThemeStore uses, so a missing registration here should mean "no Flyout
+        // collaborator", not a crash opening Personalize.
         _customizationViewModel ??= new CustomizationViewModel(
             this, _layoutService, _themeService,
+            _services.GetService<HomeViewModel>(),
+            _services.GetService<ILauncherStorageService>(),
             _services.GetRequiredService<ILogger<CustomizationViewModel>>());
     }
 

@@ -8,6 +8,8 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Core.Services.Theme;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -77,6 +79,25 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     /// <summary>Held so <see cref="Dispose"/> can detach it — the store outlives this VM.</summary>
     private Action<PhoneThemeSnapshot?>? _onPhoneThemeChanged;
+
+    /// <summary>
+    /// The Home pins this sheet's Flyout section's Cards checklist is a subset of (Flyout D2 .2,
+    /// RemEx-4kv0g.18.6). Optional and try/catch-free-checked like <see cref="_phoneThemeStore"/>
+    /// above — every test that constructs this view model without a real <c>ShellViewModel</c> also
+    /// has no reason to stand up a <c>HomeViewModel</c>, so a null here just means
+    /// <see cref="FlyoutCards"/> stays empty rather than the sheet failing to open.
+    /// </summary>
+    private readonly HomeViewModel? _home;
+
+    /// <summary>Held so <see cref="Dispose"/> can detach it — <see cref="_home"/> outlives this VM.</summary>
+    private NotifyCollectionChangedEventHandler? _onPinnedSensorsChanged;
+
+    /// <summary>
+    /// Source for the Flyout section's Apps checklist (Flyout D2 .2, RemEx-4kv0g.18.6) — the same
+    /// launcher store <c>AppLauncherViewModel</c> and <c>TrayFlyoutViewModel</c> read. Optional for
+    /// the same reason <see cref="_home"/> is.
+    /// </summary>
+    private readonly ILauncherStorageService? _launcherStorage;
 
     // The old _useLightPalette mirror is gone with the switch it fed (RemEx-zk5bc): the null-mode
     // fallback reads settings.UseLightPalette inline at load, and the save path carries the stored
@@ -597,11 +618,16 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         }
     }
 
-    public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService, ILogger<CustomizationViewModel>? logger = null)
+    public CustomizationViewModel(
+        ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService,
+        HomeViewModel? home = null, ILauncherStorageService? launcherStorage = null,
+        ILogger<CustomizationViewModel>? logger = null)
     {
         _shell = shell;
         _layoutService = layoutService;
         _themeService = themeService;
+        _home = home;
+        _launcherStorage = launcherStorage;
         _logger = logger ?? NullLogger<CustomizationViewModel>.Instance;
 
         // NOT EmbeddedHostServiceLocator.Require<T>, which throws when the host is absent — the
@@ -635,6 +661,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _cardBorderThickness = settings.CardBorderThickness;
         _glassOpacity = settings.GlassOpacity;
         _appWindowOpacity = settings.AppWindowOpacity;
+        _flyoutOpacity = Math.Clamp(settings.FlyoutOpacity, 0.0, 1.0);
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
         _schemeVariant = SchemeVariants.Normalize(settings.SchemeVariant);
@@ -824,6 +851,21 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
 
+        // Flyout section (Flyout D2 .2, RemEx-4kv0g.18.6). Tiles first - it needs no collaborator and
+        // has to be non-empty before the section can render anything. Cards mirrors the pins that
+        // exist right now and re-derives whenever HomeViewModel's collection changes; Apps reloads
+        // from the launcher store asynchronously (RefreshFlyoutApps), the same "reload on open/
+        // Refresh" contract TrayFlyoutViewModel already gives its own copy of this list.
+        RebuildFlyoutTiles();
+        RebuildFlyoutCards();
+        if (_home is not null)
+        {
+            _onPinnedSensorsChanged = (_, _) => RebuildFlyoutCards();
+            _home.PinnedSensors.CollectionChanged += _onPinnedSensorsChanged;
+        }
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+        RefreshFlyoutApps();
+
         // Load available background types
         RefreshBackgroundTypes();
 
@@ -834,6 +876,121 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // only if the seed actually changes (PushSeedToAccent assigns AccentColor; the generated
         // setter is a no-op for an equal string).
         if (IsWallpaperSource) _ = RefreshWallpaperSeedsAsync();
+    }
+
+    // ═══ Flyout section (Flyout D2 .2, RemEx-4kv0g.18.6) ═══
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => RebuildFlyoutTiles();
+
+    /// <summary>Every toggle in the three Flyout checklists funnels here — the same "flip a flag,
+    /// persist the whole record" shape every other control on this sheet uses.</summary>
+    private void OnFlyoutChoiceShownChanged(object? sender, bool value) => ApplyAndSave();
+
+    /// <summary>
+    /// The six tray toolbar buttons, stable id + localized label, in <c>TrayFlyoutViewModel
+    /// .RebuildToolbar</c>'s own order. A prior choice's <see cref="FlyoutTileChoice.IsShown"/>
+    /// survives the rebuild (a locale switch must not clobber an in-flight, not-yet-persisted
+    /// toggle); only a tile seen for the first time falls back to
+    /// <c>CustomizationSettings.FlyoutHiddenTileIds</c>.
+    /// </summary>
+    private void RebuildFlyoutTiles()
+    {
+        var existing = FlyoutTiles.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
+        var hidden = _layoutService.CurrentProfile.Customization.FlyoutHiddenTileIds ?? [];
+
+        foreach (var tile in FlyoutTiles) tile.ShownChanged -= OnFlyoutChoiceShownChanged;
+        FlyoutTiles.Clear();
+
+        foreach (var (id, labelKey) in FlyoutTileDefinitions)
+        {
+            var isShown = existing.TryGetValue(id, out var prior)
+                ? prior.IsShown
+                : !hidden.Contains(id, StringComparer.OrdinalIgnoreCase);
+
+            var choice = new FlyoutTileChoice(id, LocalizationService.Instance[labelKey], isShown);
+            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            FlyoutTiles.Add(choice);
+        }
+    }
+
+    /// <summary>Stable id + the localization key <c>TrayFlyoutViewModel.RebuildToolbar</c> reads for
+    /// that same tile's label - nothing new to translate, only reused.</summary>
+    private static readonly (string Id, string LabelKey)[] FlyoutTileDefinitions =
+    [
+        ("lock", "Tray_Tile_Lock"),
+        ("sleep", "Tray_Tile_Sleep"),
+        ("remote", "Tray_Tile_RemoteDesktop"),
+        ("send", "Tray_Tile_SendFile"),
+        ("pair", "Btn_Pair"),
+        ("power", "PaletteCategory_Power"),
+    ];
+
+    /// <summary>
+    /// One entry per <see cref="HomeViewModel.PinnedSensors"/> entry, checked = shown in the tray
+    /// flyout. A no-op when <see cref="_home"/> is null (no collaborator in this test/host). A pin
+    /// already in the list keeps its live <see cref="FlyoutCardChoice.IsShown"/>; a newly pinned
+    /// sensor falls back to <c>CustomizationSettings.FlyoutHiddenSensorIds</c> — shown unless it is
+    /// on that hidden list, matching <c>TrayFlyoutViewModel.RebuildFlyoutSensors</c>'s own default.
+    /// </summary>
+    private void RebuildFlyoutCards()
+    {
+        if (_home is null) return;
+
+        var existing = FlyoutCards.ToDictionary(c => c.SensorId, StringComparer.OrdinalIgnoreCase);
+        var hidden = _layoutService.CurrentProfile.Customization.FlyoutHiddenSensorIds ?? [];
+
+        foreach (var card in FlyoutCards) card.ShownChanged -= OnFlyoutChoiceShownChanged;
+        FlyoutCards.Clear();
+
+        foreach (var sensor in _home.PinnedSensors)
+        {
+            var isShown = existing.TryGetValue(sensor.Name, out var prior)
+                ? prior.IsShown
+                : !hidden.Contains(sensor.Name, StringComparer.OrdinalIgnoreCase);
+
+            var choice = new FlyoutCardChoice(sensor.Name, sensor.DisplayName, isShown);
+            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            FlyoutCards.Add(choice);
+        }
+    }
+
+    /// <summary>Reloads <see cref="FlyoutApps"/> from the launcher store — the view calls this on
+    /// attach (<c>PersonalizationPanelView.ConfigureViewModel</c>) so a launcher entry added or
+    /// removed elsewhere shows up the next time this sheet opens, the same "reload on open" contract
+    /// <c>TrayFlyoutViewModel.Refresh</c> gives its own copy of the launcher list.</summary>
+    public void RefreshFlyoutApps() => _ = RefreshFlyoutAppsAsync();
+
+    private async Task RefreshFlyoutAppsAsync()
+    {
+        if (_launcherStorage is null) return;
+
+        List<AppEntry> entries;
+        try
+        {
+            entries = await _launcherStorage.LoadEntriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "CustomizationViewModel: failed to load launcher entries for the Flyout section's Apps checklist");
+            entries = [];
+        }
+
+        var existing = FlyoutApps.ToDictionary(a => a.Id);
+        var shown = _layoutService.CurrentProfile.Customization.FlyoutAppIds ?? [];
+
+        foreach (var app in FlyoutApps) app.ShownChanged -= OnFlyoutChoiceShownChanged;
+        FlyoutApps.Clear();
+
+        foreach (var entry in entries.OrderBy(e => e.Order))
+        {
+            var isShown = existing.TryGetValue(entry.Id, out var prior)
+                ? prior.IsShown
+                : shown.Contains(entry.Id);
+
+            var choice = new FlyoutAppChoice(entry.Id, entry.DisplayName, entry.IconBase64, isShown);
+            choice.ShownChanged += OnFlyoutChoiceShownChanged;
+            FlyoutApps.Add(choice);
+        }
     }
 
     private void RefreshBackgroundTypes()
@@ -1025,6 +1182,36 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _appWindowOpacity;
+
+    /// <summary>
+    /// Opacity of the tray flyout popup's own glass (Flyout D2 .2, RemEx-4kv0g.18.6) — independent of
+    /// <see cref="GlassOpacity"/>, which only ever shapes the canvas cards. See
+    /// <c>CustomizationSettings.FlyoutOpacity</c>'s own doc for the default.
+    /// </summary>
+    [ObservableProperty]
+    private double _flyoutOpacity;
+
+    /// <summary>
+    /// The Flyout section's Cards checklist: one entry per <see cref="HomeViewModel.PinnedSensors"/>
+    /// entry, rebuilt whenever that collection changes. Checked = shown in the tray flyout; toggling
+    /// an entry writes <c>CustomizationSettings.FlyoutHiddenSensorIds</c> (Flyout D2 .2,
+    /// RemEx-4kv0g.18.6).
+    /// </summary>
+    public ObservableCollection<FlyoutCardChoice> FlyoutCards { get; } = new();
+
+    /// <summary>
+    /// The Flyout section's Buttons checklist — the six tray toolbar actions, stable ids and
+    /// localized labels. Toggling an entry writes <c>CustomizationSettings.FlyoutHiddenTileIds</c>
+    /// (Flyout D2 .2, RemEx-4kv0g.18.6).
+    /// </summary>
+    public ObservableCollection<FlyoutTileChoice> FlyoutTiles { get; } = new();
+
+    /// <summary>
+    /// The Flyout section's Apps checklist — one entry per launcher entry, launcher order. Ticking an
+    /// entry writes <c>CustomizationSettings.FlyoutAppIds</c>, a shown-list (Flyout D2 .2,
+    /// RemEx-4kv0g.18.6).
+    /// </summary>
+    public ObservableCollection<FlyoutAppChoice> FlyoutApps { get; } = new();
 
     [ObservableProperty]
     private double _glowStrength;
@@ -1360,6 +1547,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     }
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
     partial void OnAppWindowOpacityChanged(double value) => ApplyAndSave();
+    partial void OnFlyoutOpacityChanged(double value) => ApplyAndSave();
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();
     partial void OnAccentColorChanged(string value)
     {
@@ -1569,13 +1757,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
             Typography = BuildTypographySettings(),
-            // Flyout D2 .1 (RemEx-4kv0g.18.5): no Personalize control for these yet - that is
-            // drop 2 of this spec (RemEx-4kv0g.18.6). Carried forward verbatim so a save from any
-            // OTHER slider on this sheet does not silently reset a flyout choice nobody edited here.
-            FlyoutOpacity = carried.FlyoutOpacity,
-            FlyoutHiddenSensorIds = carried.FlyoutHiddenSensorIds,
-            FlyoutHiddenTileIds = carried.FlyoutHiddenTileIds,
-            FlyoutAppIds = carried.FlyoutAppIds,
+            // Flyout D2 .2 (RemEx-4kv0g.18.6): the Flyout section's own controls, not carried
+            // forward - FlyoutCards/FlyoutTiles/FlyoutApps are this sheet's live state now, the same
+            // way CornerRadius etc. above are theirs.
+            FlyoutOpacity = Math.Clamp(FlyoutOpacity, 0.0, 1.0),
+            FlyoutHiddenSensorIds = FlyoutCards.Where(c => !c.IsShown).Select(c => c.SensorId).ToList(),
+            FlyoutHiddenTileIds = FlyoutTiles.Where(t => !t.IsShown).Select(t => t.Id).ToList(),
+            FlyoutAppIds = FlyoutApps.Where(a => a.IsShown).Select(a => a.Id).ToList(),
         };
     }
 
@@ -1969,5 +2157,85 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         SavedPalettes.Clear();
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         if (_phoneThemeStore is not null) _phoneThemeStore.Changed -= _onPhoneThemeChanged;
+        if (_home is not null && _onPinnedSensorsChanged is not null) _home.PinnedSensors.CollectionChanged -= _onPinnedSensorsChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
     }
+}
+
+/// <summary>One row in the Flyout section's Cards checklist (Flyout D2 .2, RemEx-4kv0g.18.6) — a
+/// subset of <see cref="HomeViewModel.PinnedSensors"/>, checked = shown in the tray flyout.</summary>
+public partial class FlyoutCardChoice : ObservableObject
+{
+    /// <summary><see cref="Remex.Desktop.ViewModels.SensorViewModel.Name"/> — the same id
+    /// <c>CustomizationSettings.FlyoutHiddenSensorIds</c> and <c>DashboardProfile.PinnedSensorIds</c>
+    /// use.</summary>
+    public string SensorId { get; }
+
+    public string DisplayName { get; }
+
+    [ObservableProperty]
+    private bool _isShown;
+
+    public event EventHandler<bool>? ShownChanged;
+
+    public FlyoutCardChoice(string sensorId, string displayName, bool isShown)
+    {
+        SensorId = sensorId;
+        DisplayName = displayName;
+        _isShown = isShown;
+    }
+
+    partial void OnIsShownChanged(bool value) => ShownChanged?.Invoke(this, value);
+}
+
+/// <summary>One row in the Flyout section's Buttons checklist (Flyout D2 .2, RemEx-4kv0g.18.6) — one
+/// of the six tray toolbar actions.</summary>
+public partial class FlyoutTileChoice : ObservableObject
+{
+    /// <summary>Stable id — <c>lock</c>/<c>sleep</c>/<c>remote</c>/<c>send</c>/<c>pair</c>/<c>power</c>
+    /// — matching <c>TrayTile.Id</c> and <c>CustomizationSettings.FlyoutHiddenTileIds</c>.</summary>
+    public string Id { get; }
+
+    public string Label { get; }
+
+    [ObservableProperty]
+    private bool _isShown;
+
+    public event EventHandler<bool>? ShownChanged;
+
+    public FlyoutTileChoice(string id, string label, bool isShown)
+    {
+        Id = id;
+        Label = label;
+        _isShown = isShown;
+    }
+
+    partial void OnIsShownChanged(bool value) => ShownChanged?.Invoke(this, value);
+}
+
+/// <summary>One row in the Flyout section's Apps checklist (Flyout D2 .2, RemEx-4kv0g.18.6) — one
+/// launcher entry. Unlike the other two lists this is opt-IN: unchecked is the default.</summary>
+public partial class FlyoutAppChoice : ObservableObject
+{
+    /// <summary><see cref="AppEntry.Id"/> — matches <c>CustomizationSettings.FlyoutAppIds</c>.</summary>
+    public Guid Id { get; }
+
+    public string DisplayName { get; }
+
+    public string? IconBase64 { get; }
+
+    [ObservableProperty]
+    private bool _isShown;
+
+    public event EventHandler<bool>? ShownChanged;
+
+    public FlyoutAppChoice(Guid id, string displayName, string? iconBase64, bool isShown)
+    {
+        Id = id;
+        DisplayName = displayName;
+        IconBase64 = iconBase64;
+        _isShown = isShown;
+    }
+
+    partial void OnIsShownChanged(bool value) => ShownChanged?.Invoke(this, value);
 }

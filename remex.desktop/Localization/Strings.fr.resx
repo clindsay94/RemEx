@@ -402,6 +402,30 @@
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opacité de la fenêtre</value>
   </data>
+  <data name="Custom_SectionFlyout" xml:space="preserve">
+    <value>VOLET</value>
+  </data>
+  <data name="Custom_FlyoutOpacity" xml:space="preserve">
+    <value>Opacité du volet</value>
+  </data>
+  <data name="Custom_FlyoutOpacityTooltip" xml:space="preserve">
+    <value>Degré de transparence du volet de la barre d'état lui-même. Les cartes conservent leur propre opacité de carte.</value>
+  </data>
+  <data name="Custom_FlyoutCards" xml:space="preserve">
+    <value>Cartes</value>
+  </data>
+  <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
+    <value>Épinglez un capteur sur le canevas pour l'afficher ici.</value>
+  </data>
+  <data name="Custom_FlyoutButtons" xml:space="preserve">
+    <value>Boutons</value>
+  </data>
+  <data name="Custom_FlyoutApps" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="Custom_FlyoutApps_None" xml:space="preserve">
+    <value>Ajoutez des applications dans le lanceur d'applications pour choisir des raccourcis.</value>
+  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensité de la lueur</value>
   </data>
