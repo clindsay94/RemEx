@@ -24,6 +24,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- Sensor cards on the PC follow the Material theme. A card that was never recoloured takes its
+  colours from the active palette by sensor category — CPU cards from the primary family, memory
+  from secondary, GPU from tertiary, rotating for network, storage and power/thermal — with the
+  glass painted in that family's Container colour, the title and value in its ink, and the graph
+  in its main role; the Card Opacity slider now runs from fully clear (0) to a solid theme-coloured
+  card. On dual-metric cards the second line is always a visibly different colour (the next family,
+  or a neutral when the palette makes them alike — Monochrome, Fidelity and Content included). Home
+  pinned tiles and the tray strip's sparkline follow the same family. Cards recoloured from the
+  right-click menu keep their preset exactly; the menu's first entry is now "Follow theme".
+  `docs/MEASURE-sensor-cards.md` records the eyes pass. (RemEx-4kv0g.3)
 - Colour parity between the PC and the phone: the PC's palette engine is now a port of Google's
   material-color-utilities (the library Jetpack Compose paints with) — `Remex.Core.Theming.Mcu` —
   instead of the older MaterialColorUtilities NuGet package, so the same seed, variant, mode and
