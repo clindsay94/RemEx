@@ -24,6 +24,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- The tray popup by the clock shows your pinned sensors as the same cards the Sensors canvas
+  shows — same size, sparkline, value plate and legend, same theme family or preset — in a grid
+  that wraps to the popup's width (two columns at the default size, four when pinned and widened)
+  and scrolls when they do not fit; in transient mode the popup caps itself so it never grows past
+  the screen. The old one-line strip is gone. The card's visual now lives in one control
+  (`SensorCardContent`) that the canvas and the popup both host, so they cannot drift apart.
+  (RemEx-4kv0g.18, part 1)
+- Card colour presets can no longer be lost to a layout that carries none: a persisted card with
+  no theme keeps the live one, themed cards are stored explicitly, and both the host's layout store
+  and the PC's layout file merge themes forward instead of overwriting. (RemEx-4kv0g.3)
 - Sensor cards on the PC follow the Material theme. A card that was never recoloured takes its
   colours from the active palette by sensor category — CPU cards from the primary family, memory
   from secondary, GPU from tertiary, rotating for network, storage and power/thermal — with the
