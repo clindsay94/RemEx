@@ -1,5 +1,4 @@
 using Avalonia;
-using Remex.Desktop.Converters;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Tests;
@@ -134,22 +133,21 @@ public class TrayFlyoutGeometryTests
                 <= TrayFlyoutGeometryValidator.MaxHeight);
     }
 
-    // Fix round 1 (Opus review, MEDIUM): CardsMaxHeight's derivation assumes the transient window
-    // is TrayFlyoutGeometry.DefaultWidth wide, giving TilesMaxHeight's "2 rows of 6 tiles".
-    // TrayFlyoutWindow.ApplyMode(isPinned: false) now enforces that width on every transition to
-    // transient mode; this pins the OTHER half of that guarantee — that DefaultWidth itself still
-    // resolves to 2 tile rows — so a change to either constant that broke the pairing would fail
-    // here instead of silently clipping the last tile row live.
-    //
-    // Fix round 2 (controller's eyes pass): DefaultWidth moved 420 -> 528 to fit two card columns
-    // (see DefaultWidthFitsTwoCardColumns below), which crosses TrayTileColumnsConverter's 520
-    // FourColumnWidth threshold — 4 columns now, not 3. 6 tiles still make 2 rows either way
-    // (ceil(6/4) == ceil(6/3) == 2), so CardsMaxHeight's tile budget is unaffected; renamed to say
-    // what is actually true now.
+    // RemEx-4kv0g.18.5: the tile grid (UniformGrid + TrayTileColumnsConverter) is gone, replaced by
+    // one WrapPanel toolbar row over TrayFlyoutViewModel.ToolbarItems. This test replaces
+    // DefaultWidthYieldsFourTileColumns (which asserted the deleted converter's column count) with
+    // the promise that actually matters now: the six action tiles fit ONE row at DefaultWidth
+    // without wrapping, so the common case (no app shortcuts ticked) never pays for a second row.
+    // Shortcuts/a divider only ever ADD width, so this is the minimum-width case, not the maximum.
     [Fact]
-    public void DefaultWidthYieldsFourTileColumns()
+    public void ToolbarFitsSixItemsInOneRowAtDefaultWidth()
     {
-        Assert.Equal(4, TrayTileColumnsConverter.ColumnsFor(TrayFlyoutGeometry.DefaultWidth));
+        const int ToolbarItemCount = 6; // the six action tiles (lock/sleep/remote/send/pair/power)
+        const double ToolbarItemFootprint = 40; // Classes="tertiary icon-button" 32px default + Margin="4" each side
+
+        Assert.True(
+            ToolbarItemCount * ToolbarItemFootprint
+                <= TrayFlyoutGeometry.DefaultWidth - TrayFlyoutGeometry.ChromeSideInset);
     }
 
     // Fix round 2 (controller's eyes pass on the installed build): DefaultWidth/MaxWidth's "N card

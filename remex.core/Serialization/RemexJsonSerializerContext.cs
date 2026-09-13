@@ -87,6 +87,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(List<DesktopWindowInfo>))]
 [JsonSerializable(typeof(List<DesktopDisplayInfo>))]
 [JsonSerializable(typeof(List<DesktopCaptureMode>))]
+[JsonSerializable(typeof(List<Guid>))]
 [JsonSerializable(typeof(List<ProcessInfo>))]
 [JsonSerializable(typeof(List<SensorReading>))]
 [JsonSerializable(typeof(List<string>))]

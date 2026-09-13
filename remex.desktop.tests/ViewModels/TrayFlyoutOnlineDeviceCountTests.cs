@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Models;
+using Remex.Core.Services;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
@@ -60,7 +62,7 @@ public sealed class TrayFlyoutOnlineDeviceCountTests : IAsyncLifetime
         _shell.DiagnosticsLogDispatch = run => run();
 
         var home = new HomeViewModel(connection, _shell);
-        _tray = new TrayFlyoutViewModel(_shell, home);
+        _tray = new TrayFlyoutViewModel(_shell, home, new FakeLauncherStorage());
     }
 
     public Task DisposeAsync()
@@ -114,6 +116,16 @@ public sealed class TrayFlyoutOnlineDeviceCountTests : IAsyncLifetime
     {
         public IReadOnlyList<PairedDeviceRow> Rows { get; set; } = rows;
         public IReadOnlyList<PairedDeviceRow> PairedDevices() => Rows;
+    }
+
+    /// <summary>
+    /// Empty by construction: this test file exercises the online-device-count seam only, not the
+    /// toolbar's app-shortcut behaviour (see <c>TrayFlyoutViewModelToolbarTests</c> for that).
+    /// </summary>
+    private sealed class FakeLauncherStorage : ILauncherStorageService
+    {
+        public Task<List<AppEntry>> LoadEntriesAsync() => Task.FromResult(new List<AppEntry>());
+        public Task SaveEntriesAsync(IEnumerable<AppEntry> entries) => Task.CompletedTask;
     }
 
     private sealed class Provider(IClientSessionSource sessions, IPairedDeviceSource devices) : IServiceProvider

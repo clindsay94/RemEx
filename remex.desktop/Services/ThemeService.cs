@@ -517,6 +517,16 @@ public class ThemeService : IDisposable
 
         SetResourceOverrideInternal("GlassBaseDark", palette.Surface);
         SetResourceOverrideInternal("GlassBaseDarkBrush", new SolidColorBrush(palette.Surface));
+
+        // The tray flyout popup's OWN glass (Flyout D2 .1, RemEx-4kv0g.18.5) - independent of the
+        // canvas cards' GlassOpacity below, per Connor's decision (2026-09-13): popup opacity
+        // affects the popup chrome only, cards keep the app's own Card Opacity. Same colour
+        // GlassBaseDarkBrush uses (palette.Surface); only the alpha differs, driven by
+        // FlyoutOpacity instead of GlassOpacity. Default 1.0 reproduces GlassBaseDarkBrush's
+        // previously-opaque alpha exactly, so an unmigrated profile's popup looks unchanged.
+        byte flyoutAlpha = (byte)Math.Round(Math.Clamp(settings.FlyoutOpacity, 0.0, 1.0) * 255);
+        SetResourceOverrideInternal("FlyoutGlassBrush", new SolidColorBrush(WithAlpha(palette.Surface, flyoutAlpha)));
+
         SetResourceOverrideInternal("GlassBaseMedium", palette.SurfaceVariant);
         SetResourceOverrideInternal("GlassBaseMediumBrush", new SolidColorBrush(palette.SurfaceVariant));
         SetResourceOverrideInternal("TextPrimary", palette.OnSurface);

@@ -44,13 +44,33 @@ public sealed record TrayFlyoutGeometry
     /// (2 × 212 + <see cref="CardsPanelInset"/> = 436) with headroom; pinned by
     /// <c>TrayFlyoutGeometryTests.DefaultWidthFitsTwoCardColumns</c>.
     /// <para>
-    /// This also changes the tile grid: <c>TrayTileColumnsConverter.ColumnsFor(528)</c> is 4 (the
-    /// 520 threshold), not 3 — but 6 tiles still lay out in 2 rows either way (⌈6/4⌉ = ⌈6/3⌉ = 2),
-    /// so <see cref="CardsMaxHeight"/>'s tile budget is unchanged; pinned by
-    /// <c>TrayFlyoutGeometryTests.DefaultWidthYieldsFourTileColumns</c>.
+    /// RemEx-4kv0g.18.5 REPLACED THE TILE GRID WITH A TOOLBAR ROW, so the paragraph this used to
+    /// carry about <c>TrayTileColumnsConverter</c>'s column math no longer applies — that converter
+    /// and <c>TrayTileColumnsTests</c> are deleted. The toolbar's own width promise is
+    /// <see cref="ToolbarRowHeight"/>'s doc and <c>TrayFlyoutGeometryTests.ToolbarFitsSixItemsInOneRowAtDefaultWidth</c>:
+    /// the six tiles (<c>Classes="tertiary icon-button"</c>, App.axaml's 32px default, 40px
+    /// footprint each with their own <c>Margin="4"</c>) fit one <c>WrapPanel</c> row at this width
+    /// with room to spare for a divider and shortcuts before it needs a second row.
+    /// <see cref="CardsMaxHeight"/>'s own tile-row budget (<c>TilesMaxHeight</c>, 164, sized for the
+    /// old 66px 2-row grid) is NOT re-derived by this change — RemEx-4kv0g.18.5 deliberately left it
+    /// as-is, since the new toolbar's actual height is smaller, not larger, so the existing budget
+    /// stays a safe (now overly generous) upper bound. The full re-derivation is RemEx-4kv0g.18.6.
     /// </para>
     /// </remarks>
     public const double DefaultWidth = 528;
+
+    /// <summary>
+    /// Height budget for one row of the toolbar row's icon buttons (Flyout D2 .1, RemEx-4kv0g.18.5)
+    /// — introduced now so <c>CardsMaxHeight</c>'s full re-derivation (RemEx-4kv0g.18.6) has a named
+    /// constant to build on, rather than a bare literal appearing in that task's diff with no
+    /// history. Derivation: <c>Classes="tertiary icon-button"</c>'s App.axaml default (32px) + its
+    /// own <c>Margin="4"</c> top and bottom (32 + 4 + 4 = 40), plus the toolbar
+    /// <c>ItemsControl</c>'s own top margin (<c>Margin="0,16,0,0"</c>, 16) = 56. NOT YET WIRED INTO
+    /// <see cref="CardsMaxHeight"/>'s own arithmetic — <c>CardsMaxHeight</c> keeps its
+    /// RemEx-4kv0g.18.2 value unchanged this task (see <see cref="DefaultWidth"/>'s remarks for why
+    /// that is still safe).
+    /// </summary>
+    public const double ToolbarRowHeight = 56;
 
     /// <summary>
     /// Cap on the pinned-sensor cards <c>ScrollViewer</c>'s height (<c>TrayFlyoutWindow.axaml</c>,

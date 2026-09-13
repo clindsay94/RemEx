@@ -129,8 +129,8 @@ public partial class TrayFlyoutWindow : Window
         // round 1). Nothing else resets Width on unpin or in ShowAtTray's transient branch (that
         // branch only sets Position) — so a window pinned-and-resized down toward
         // TrayFlyoutGeometryValidator.MinWidth (320, reachable through the resize grips) and then
-        // unpinned would otherwise STAY that narrow, giving TrayTileColumnsConverter fewer tile
-        // columns and more tile rows than CardsMaxHeight's budget has room for — and showing the
+        // unpinned would otherwise STAY that narrow, wrapping the toolbar row (RemEx-4kv0g.18.5,
+        // WrapPanel) onto more rows than CardsMaxHeight's budget has room for — and showing the
         // cards grid as a single scrolling column instead of the two-plus DefaultWidth (528, fix
         // round 2) promises. Setting Width here is what makes OnTogglePin's own remark below
         // ("unpin means go back to being a popup ... at the default size") actually true.
@@ -278,22 +278,31 @@ public partial class TrayFlyoutWindow : Window
     }
 
     /// <summary>
-    /// Raises the main window for the tiles that navigate it, and only those.
+    /// Raises the main window for the tiles that navigate it, and closes the popup for a tile OR an
+    /// app shortcut that just launched something outside RemEx.
     /// </summary>
     /// <remarks>
-    /// The tile's own <c>Command</c> does the navigating; this is the other half the old flyout had
-    /// and the tile grid initially lost. RemEx closes to the tray by default, so telling
-    /// <c>ShellViewModel</c> to change page without showing the window changes a page nobody can
-    /// see. Gated on <see cref="TrayTile.OpensMainWindow"/> because Lock and Sleep must not pop a
-    /// window up as the screen goes away.
+    /// TWO DIFFERENT REASONS TO HIDE, DELIBERATELY NOT MERGED. A <see cref="TrayTile"/> with
+    /// <see cref="TrayTile.OpensMainWindow"/> also raises RemEx's own window — the tile's own
+    /// <c>Command</c> navigates, and this is the other half the old flyout had. A
+    /// <see cref="TrayShortcut"/> (Flyout D2 .1, RemEx-4kv0g.18.5) launches a DIFFERENT app entirely,
+    /// so bringing RemEx's window forward after it would be the wrong window popping up; it only
+    /// hides the popup, the same closing gesture a click-away already gives. Lock, Sleep and the
+    /// Power submenu button are excluded from both by construction - none of them reach here with
+    /// <c>OpensMainWindow: true</c>, and the submenu button has no <c>Click</c> handler at all.
     /// </remarks>
     private void OnTileClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is not TrayTile { OpensMainWindow: true })
-            return;
-
-        Hide();
-        App.BringMainWindowToFront();
+        switch ((sender as Control)?.DataContext)
+        {
+            case TrayTile { OpensMainWindow: true }:
+                Hide();
+                App.BringMainWindowToFront();
+                break;
+            case TrayShortcut:
+                Hide();
+                break;
+        }
     }
 
     private void OnOpenMainApp(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

@@ -43,8 +43,17 @@ public static class CustomizationMigration
     ///     profile field, so a schema-5-or-earlier profile has no such key at all — it deserialises
     ///     to the record default (1) regardless of which theme it names, which would silently
     ///     shave Monolith's border on every upgrade without this arm.
+    /// 7 = the tray flyout's own settings added (Flyout D2 .1, RemEx-4kv0g.18.5):
+    ///     <c>FlyoutOpacity</c>, <c>FlyoutHiddenSensorIds</c>, <c>FlyoutHiddenTileIds</c>,
+    ///     <c>FlyoutAppIds</c>. None had a slider before this bead, so a schema-6-or-earlier
+    ///     profile has no such keys — they deserialise to the CLR default for their declared type
+    ///     (0.0, and NULL — not even the record's own empty-list initializer, see
+    ///     <c>CustomizationSettings.Typography</c>'s remarks for the same source-gen limitation),
+    ///     not the record's own defaults. Left unrepaired that renders the popup's glass fully
+    ///     transparent for every upgrading profile and null-crashes the first read of the hidden
+    ///     lists.
     /// </remarks>
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -91,6 +100,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 4) migrated = FromSchemaThree(migrated);
         if (migrated.SchemaVersion < 5) migrated = FromSchemaFour(migrated);
         if (migrated.SchemaVersion < 6) migrated = FromSchemaFive(migrated);
+        if (migrated.SchemaVersion < 7) migrated = FromSchemaSix(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -226,6 +236,30 @@ public static class CustomizationMigration
     /// </remarks>
     private static CustomizationSettings FromSchemaFive(CustomizationSettings settings) =>
         settings with { CardBorderThickness = SeedPresetCatalog.Resolve(settings.ThemeId).CardBorderThickness };
+
+    /// <summary>
+    /// Schema 6 → 7: the tray flyout's own settings (Flyout D2 .1, RemEx-4kv0g.18.5). ONE
+    /// <c>with</c> EXPRESSION, so a field this arm does not name cannot be dropped (the
+    /// RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// UNAMBIGUOUS, THE SAME SHAPE AS <see cref="FromSchemaFive"/>'s OWN ARM. None of these four
+    /// fields had a slider or any other user-facing control before this bead (the Personalize
+    /// section that edits them is RemEx-4kv0g.18.6), so every profile below schema 7 has no "did
+    /// the user choose this" question to weigh — it necessarily carries the source-generated
+    /// deserializer's absent-key artifact for its declared type, not the record's own default.
+    /// <c>FlyoutOpacity</c> reads back 0.0 (not its declared 1.0), which would render the popup's
+    /// own glass fully transparent on upgrade; the three lists read back <c>null</c> (not even an
+    /// empty list), which null-refs the first filter a caller runs over them.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaSix(CustomizationSettings settings) =>
+        settings with
+        {
+            FlyoutOpacity = 1.0,
+            FlyoutHiddenSensorIds = new(),
+            FlyoutHiddenTileIds = new(),
+            FlyoutAppIds = new(),
+        };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

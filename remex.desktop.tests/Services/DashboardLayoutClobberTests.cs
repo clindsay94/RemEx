@@ -105,13 +105,16 @@ public class DashboardLayoutClobberTests : IDisposable
         // Custom) - those are excluded here for the same reason ThemeMode is: this test isolates
         // "fields no arm claims", not "every field is byte-identical". Arm 6 (RemEx-bnz2x) also
         // legitimately rewrites CardBorderThickness from the (nonsense, reflection-generated) ThemeId
-        // this fixture carries, for the same reason.
+        // this fixture carries, and arm 7 (RemEx-4kv0g.18.5) legitimately rewrites the four flyout
+        // fields, for the same reason.
         AssertSameCustomization(onDisk, loaded.Customization,
             "the schema-1-to-3 migration only touches the fields its arms claim; every other field must carry forward",
             nameof(CustomizationSettings.ThemeMode), nameof(CustomizationSettings.SchemaVersion),
             nameof(CustomizationSettings.CustomAccentColors), nameof(CustomizationSettings.SavedPalettes),
             nameof(CustomizationSettings.SchemeVariant), nameof(CustomizationSettings.ColorSource),
-            nameof(CustomizationSettings.CardBorderThickness));
+            nameof(CustomizationSettings.CardBorderThickness),
+            nameof(CustomizationSettings.FlyoutOpacity), nameof(CustomizationSettings.FlyoutHiddenSensorIds),
+            nameof(CustomizationSettings.FlyoutHiddenTileIds), nameof(CustomizationSettings.FlyoutAppIds));
     }
 
     [Fact]
@@ -583,6 +586,13 @@ public class DashboardLayoutClobberTests : IDisposable
                 var t when t == typeof(bool) => !(bool)current!,
                 var t when t == typeof(bool?) => current is null ? true : !(bool)current,
                 var t when t == typeof(IReadOnlyList<string>) => new List<string> { "#112233", "#445566" },
+                // Flyout D2 .1 (RemEx-4kv0g.18.5): the flyout's own hidden-id/shown-id lists.
+                // A DIFFERENT DECLARED TYPE FROM CustomAccentColors ABOVE (List<string>, not
+                // IReadOnlyList<string>) is exactly why this needs its own case rather than reusing
+                // that branch - the switch matches on the property's declared type, not the runtime
+                // shape, and List<string> != IReadOnlyList<string> to a type-pattern switch.
+                var t when t == typeof(List<string>) => new List<string> { "nondefault-a", "nondefault-b" },
+                var t when t == typeof(List<Guid>) => new List<Guid> { Guid.NewGuid(), Guid.NewGuid() },
                 var t when t == typeof(int) => 7,
                 var t when t == typeof(IReadOnlyList<SavedPalette>) => new List<SavedPalette>
                 {
@@ -629,6 +639,10 @@ public class DashboardLayoutClobberTests : IDisposable
             else if (expectedValue is IReadOnlyList<SavedPalette> expectedPalettes && actualValue is IReadOnlyList<SavedPalette> actualPalettes)
             {
                 actualPalettes.Should().Equal(expectedPalettes, because + $" (property: {prop.Name})");
+            }
+            else if (expectedValue is IReadOnlyList<Guid> expectedGuids && actualValue is IReadOnlyList<Guid> actualGuids)
+            {
+                actualGuids.Should().Equal(expectedGuids, because + $" (property: {prop.Name})");
             }
             else
             {

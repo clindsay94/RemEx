@@ -1569,6 +1569,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             WallpaperBlur = Math.Clamp(WallpaperBlur, 0.0, 1.0),
             SavedPalettes = SavedPalettes.Select(t => t.Record).ToList(),
             Typography = BuildTypographySettings(),
+            // Flyout D2 .1 (RemEx-4kv0g.18.5): no Personalize control for these yet - that is
+            // drop 2 of this spec (RemEx-4kv0g.18.6). Carried forward verbatim so a save from any
+            // OTHER slider on this sheet does not silently reset a flyout choice nobody edited here.
+            FlyoutOpacity = carried.FlyoutOpacity,
+            FlyoutHiddenSensorIds = carried.FlyoutHiddenSensorIds,
+            FlyoutHiddenTileIds = carried.FlyoutHiddenTileIds,
+            FlyoutAppIds = carried.FlyoutAppIds,
         };
     }
 

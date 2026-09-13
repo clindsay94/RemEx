@@ -1,17 +1,36 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using Remex.Core.Models;
+using Remex.Core.Services;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
 
-/// <summary>One button in the tray flyout's action grid.</summary>
-public sealed record TrayTile
+/// <summary>One entry in the tray flyout's toolbar row: a tile, a divider, or an app shortcut.</summary>
+/// <remarks>
+/// A CLOSED HIERARCHY BY DESIGN (Flyout D2 .1, RemEx-4kv0g.18.5). <c>ToolbarItems</c> is one list of
+/// this base type so the row's <c>ItemsControl</c> can pick the right shape per item through
+/// Avalonia's <c>DataTemplates</c>/<c>x:DataType</c> matching — no <c>if</c>s in XAML, and no second
+/// list to keep in sync with the first.
+/// </remarks>
+public abstract record TrayToolbarItem;
+
+/// <summary>One button in the tray flyout's toolbar row.</summary>
+public sealed record TrayTile : TrayToolbarItem
 {
+    /// <summary>
+    /// Stable identifier — <c>lock</c>, <c>sleep</c>, <c>remote</c>, <c>send</c>, <c>pair</c> or
+    /// <c>power</c> — independent of <see cref="Label"/> so a hidden-tile setting
+    /// (<c>CustomizationSettings.FlyoutHiddenTileIds</c>) survives a language switch.
+    /// </summary>
+    public required string Id { get; init; }
+
     public required string Label { get; init; }
 
     /// <summary>
@@ -39,6 +58,24 @@ public sealed record TrayTile
     public bool OpensMainWindow { get; init; }
 }
 
+/// <summary>Separates the six action tiles from the app shortcuts that follow them, when any exist.</summary>
+public sealed record TrayToolbarDivider : TrayToolbarItem;
+
+/// <summary>An app-launcher shortcut in the tray flyout's toolbar row (Flyout D2 .1, RemEx-4kv0g.18.5).</summary>
+/// <remarks>
+/// LOCAL ONLY, LIKE EVERY OTHER ITEM ON THIS ROW — see <see cref="TrayFlyoutViewModel"/>'s own
+/// remarks. <see cref="LaunchCommand"/> never checks <c>ConnectionViewModel.IsConnected</c> the way
+/// <c>AppLauncherViewModel.LaunchAppAsync</c> does; forwarding a launch to a connected phone from the
+/// tray of the PC that phone is paired to would be the phone-control command RemEx does not have.
+/// </remarks>
+public sealed record TrayShortcut : TrayToolbarItem
+{
+    public required Guid EntryId { get; init; }
+    public required string DisplayName { get; init; }
+    public string? IconBase64 { get; init; }
+    public required ICommand LaunchCommand { get; init; }
+}
+
 /// <summary>
 /// The tray flyout's own view model.
 /// </summary>
@@ -56,13 +93,23 @@ public sealed record TrayTile
 /// <para>
 /// EVERY ACTION HERE TARGETS THIS PC. RemEx has no PC-to-phone command channel — there is no
 /// message type in <c>remex.core</c> that could carry one (see RemEx-uov9y). Do not add a tile
-/// whose label implies the phone is being controlled.
+/// whose label implies the phone is being controlled. This is also why <see cref="TrayShortcut"/>'s
+/// launch never routes through a connected session the way the App Launcher page's own launch does.
 /// </para>
 /// </remarks>
 public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly HomeViewModel _home;
+    private readonly ILauncherStorageService _launcherStorage;
+
+    /// <summary>
+    /// The launcher's own entries, cached from the last <see cref="ILauncherStorageService.LoadEntriesAsync"/>
+    /// call so <see cref="RebuildToolbar"/> can run synchronously between reloads. Reloaded in the
+    /// constructor and on every <see cref="Refresh"/> (RemEx-4kv0g.18.5) — the same "reload on show"
+    /// contract <c>Refresh</c> already gives phone presence and the pinned-sensor list.
+    /// </summary>
+    private IReadOnlyList<AppEntry> _launcherEntries = [];
 
     /// <summary>Supplied by the view; see <c>ConfirmationDialogHost</c>. Title, message, button.</summary>
     /// <remarks>
@@ -76,7 +123,16 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     /// <summary>Exposed because the status strip binds <c>Connection.StatusText</c>.</summary>
     public ConnectionViewModel Connection => _shell.Connection;
 
-    public ObservableCollection<SensorViewModel> PinnedSensors => _home.PinnedSensors;
+    /// <summary>
+    /// The Home pins, minus <c>CustomizationSettings.FlyoutHiddenSensorIds</c> (Flyout D2 .1,
+    /// RemEx-4kv0g.18.5). A SEPARATE COLLECTION FROM <c>HomeViewModel.PinnedSensors</c>, not a
+    /// filtered view over it, because Avalonia's <c>ItemsControl</c> needs a collection it can bind
+    /// to directly and <c>Where(...)</c> over an <c>ObservableCollection</c> does not itself raise
+    /// <c>CollectionChanged</c>. Rebuilt on <see cref="Refresh"/>, whenever
+    /// <c>HomeViewModel.PinnedSensors</c> itself changes, and whenever customization settings change
+    /// (the hidden list can move even with the pins untouched).
+    /// </summary>
+    public ObservableCollection<SensorViewModel> FlyoutSensors { get; } = new();
 
     [ObservableProperty]
     private bool _isPinned;
@@ -93,7 +149,20 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     partial void OnIsPinnedChanged(bool value) => OnPropertyChanged(nameof(PinTooltip));
 
     [ObservableProperty]
-    private IReadOnlyList<TrayTile> _tiles = [];
+    private IReadOnlyList<TrayToolbarItem> _toolbarItems = [];
+
+    /// <summary>
+    /// The <see cref="TrayTile"/> subset of <see cref="ToolbarItems"/>, kept for the tests and call
+    /// sites that only ever cared about tiles.
+    /// </summary>
+    /// <remarks>
+    /// SET ONCE PER <see cref="RebuildToolbar"/> CALL, NOT COMPUTED ON EVERY READ. A plain
+    /// <c>ToolbarItems.OfType&lt;TrayTile&gt;().ToList()</c> getter would hand back a fresh list
+    /// object on every access, which breaks <c>TrayFlyoutOnlineDeviceCountTests</c>' proof that a
+    /// bare presence signal does not re-run <c>RebuildToolbar</c> — that test snapshots this
+    /// reference once and asserts it is the SAME object after the signal, not merely an equal one.
+    /// </remarks>
+    public IReadOnlyList<TrayTile> Tiles { get; private set; } = [];
 
     /// <summary>
     /// Online paired devices, shown as the presence badge's content (RemEx-rjnbo.1).
@@ -113,16 +182,17 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 
     partial void OnOnlineDeviceCountChanged(int value) => OnPropertyChanged(nameof(HasOnlineDevices));
 
-    public TrayFlyoutViewModel(ShellViewModel shell, HomeViewModel home)
+    public TrayFlyoutViewModel(ShellViewModel shell, HomeViewModel home, ILauncherStorageService launcherStorage)
     {
         _shell = shell;
         _home = home;
+        _launcherStorage = launcherStorage;
 
         // Rebuild when phone presence changes, so the Remote tile enables and disables in place
         // rather than at the next time the flyout happens to be reopened. Also refresh the badge's
         // OnlineDeviceCount on every presence signal, not only IsPhoneAttached (review, MEDIUM,
-        // RemEx-rjnbo.1): RebuildTiles previously only ran on show / IsPhoneAttached / locale, and a
-        // PINNED flyout is never re-shown (:126), so the count froze the moment a second paired
+        // RemEx-rjnbo.1): RebuildToolbar previously only ran on show / IsPhoneAttached / locale, and
+        // a PINNED flyout is never re-shown (:126), so the count froze the moment a second paired
         // device changed state without flipping IsPhoneAttached itself. Both handlers subscribe to
         // the same PhonePresenceMonitor.PropertyChanged event that already drives IsPhoneAttached -
         // no dispatcher marshalling here, matching every other Presence handler in this file and
@@ -130,13 +200,33 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         Presence.PropertyChanged += OnPresenceChanged;
         Presence.PropertyChanged += OnPresenceChangedForOnlineDeviceCount;
 
-        // And rebuild on a language switch. Every tile label is a snapshot taken in RebuildTiles,
+        // And rebuild on a language switch. Every tile label is a snapshot taken in RebuildToolbar,
         // and a PINNED flyout is never re-shown - so without this it keeps the previous language
         // until the app restarts, sitting next to a shell and a tray menu that both changed.
         // PhonePresenceMonitor and the tray menu subscribe for the same reason.
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
 
-        RebuildTiles();
+        // Rebuild the toolbar and the cards row whenever customization settings change (Flyout D2
+        // .1, RemEx-4kv0g.18.5): FlyoutOpacity itself only ever reaches ThemeService, but
+        // FlyoutHiddenTileIds/FlyoutAppIds/FlyoutHiddenSensorIds live on the same record and this is
+        // the one signal that fires whenever any of them are saved. ShellViewModel.Customization is
+        // reached rather than a direct ThemeService.CustomizationApplied subscription so this view
+        // model does not need a third settings-carrying dependency threaded through its
+        // constructor - ShellViewModel already re-raises PropertyChanged(nameof(Customization)) from
+        // that exact event (see ShellViewModel's own _onCustomizationApplied).
+        _shell.PropertyChanged += OnShellPropertyChanged;
+
+        // The cards row tracks HomeViewModel.PinnedSensors directly: a pin/unpin on the canvas must
+        // reach the flyout without waiting for the next Refresh (a pinned flyout is never re-shown).
+        _home.PinnedSensors.CollectionChanged += OnPinnedSensorsChanged;
+
+        RebuildToolbar();
+        RebuildFlyoutSensors();
+
+        // Fire-and-forget, like AppLauncherViewModel.LoadLaunchersAsync: the toolbar already rendered
+        // above with whatever was cached (nothing, on first construction), and rebuilds again once
+        // the launcher's own entries are in.
+        _ = ReloadLauncherEntriesAsync();
     }
 
     /// <summary>Refreshes everything the flyout shows. Called each time it is about to be shown.</summary>
@@ -144,11 +234,13 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     {
         _home.RefreshPinnedSensors();
         Presence.Refresh();
-        RebuildTiles();
+        RebuildToolbar();
+        RebuildFlyoutSensors();
+        _ = ReloadLauncherEntriesAsync();
     }
 
     /// <summary>
-    /// Detaches both subscriptions above. This view model is registered with
+    /// Detaches every subscription above. This view model is registered with
     /// <c>AddSingleton</c> (App.axaml.cs), so in practice the standard DI container calls this once,
     /// at process shutdown, when it disposes its singletons — there is no earlier point in this
     /// view model's life where detaching would be correct. It exists now (rather than the previous
@@ -161,23 +253,25 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         Presence.PropertyChanged -= OnPresenceChanged;
         Presence.PropertyChanged -= OnPresenceChangedForOnlineDeviceCount;
         LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+        _shell.PropertyChanged -= OnShellPropertyChanged;
+        _home.PinnedSensors.CollectionChanged -= OnPinnedSensorsChanged;
     }
 
     private void OnPresenceChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(PhonePresenceMonitor.IsPhoneAttached))
-            RebuildTiles();
+            RebuildToolbar();
     }
 
     /// <summary>
     /// Keeps <see cref="OnlineDeviceCount"/> live for a PINNED flyout (review, MEDIUM, RemEx-rjnbo.1).
     /// </summary>
     /// <remarks>
-    /// DELIBERATELY SEPARATE FROM <see cref="OnPresenceChanged"/> AND FROM <see cref="RebuildTiles"/>.
+    /// DELIBERATELY SEPARATE FROM <see cref="OnPresenceChanged"/> AND FROM <see cref="RebuildToolbar"/>.
     /// A pinned flyout is shown once and never rebuilt again, so the only way its count can move is a
     /// handler that runs off the presence signal directly rather than off the next call to
-    /// <see cref="Refresh"/>. It refreshes only the count, not the whole tile set, so a test can pin
-    /// that this path runs without RebuildTiles running a second time alongside it. Unfiltered on
+    /// <see cref="Refresh"/>. It refreshes only the count, not the whole toolbar, so a test can pin
+    /// that this path runs without RebuildToolbar running a second time alongside it. Unfiltered on
     /// <c>e.PropertyName</c> on purpose: <see cref="IPairedDeviceSource"/> has no change event of its
     /// own (RemEx-rjnbo.1's own remarks), so every presence tick is the closest live signal there is
     /// that a paired device's online state may have moved even when <c>IsPhoneAttached</c> itself did
@@ -186,8 +280,8 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     private void OnPresenceChangedForOnlineDeviceCount(object? sender, PropertyChangedEventArgs e) =>
         RefreshOnlineDeviceCount();
 
-    /// <summary>The <see cref="OnlineDeviceCount"/> half of <see cref="RebuildTiles"/>, split out so
-    /// it can run on its own from a live presence signal without rebuilding the whole tile set.</summary>
+    /// <summary>The <see cref="OnlineDeviceCount"/> half of <see cref="RebuildToolbar"/>, split out so
+    /// it can run on its own from a live presence signal without rebuilding the whole toolbar.</summary>
     private void RefreshOnlineDeviceCount()
     {
         // Resolved on every call rather than cached (RemEx-rjnbo.1, same reasoning as
@@ -208,30 +302,105 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     /// user takes about once. Matching one of the three by string would be cheaper and would break
     /// silently the day someone tidies that list.
     /// </remarks>
-    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => RebuildTiles();
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => RebuildToolbar();
 
-    private void RebuildTiles()
+    /// <summary>
+    /// Fires whenever <c>ShellViewModel.Customization</c> changes — i.e. on every
+    /// <c>ThemeService.CustomizationApplied</c>, since that is the only thing that sets it (Flyout D2
+    /// .1, RemEx-4kv0g.18.5). Both the toolbar's hidden tiles/shortcuts and the cards row's hidden
+    /// sensors live on that one settings record, so both rebuild together.
+    /// </summary>
+    private void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ShellViewModel.Customization))
+            return;
+
+        RebuildToolbar();
+        RebuildFlyoutSensors();
+    }
+
+    private void OnPinnedSensorsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+        RebuildFlyoutSensors();
+
+    /// <summary>
+    /// Rebuilds <see cref="FlyoutSensors"/> from <c>HomeViewModel.PinnedSensors</c>, minus
+    /// <c>CustomizationSettings.FlyoutHiddenSensorIds</c> (Flyout D2 .1, RemEx-4kv0g.18.5). The
+    /// hidden list is empty until .18.6 gives it a Personalize control, so today this always mirrors
+    /// every pin — the filter exists so that task is a settings-only change, not a view model one.
+    /// </summary>
+    private void RebuildFlyoutSensors()
+    {
+        // NULL-SAFE ON PURPOSE, NOT JUST EMPTY-SAFE. RemexJson's source-generated deserializer
+        // leaves an absent JSON key at the CLR default for its declared type - null for a List<T>,
+        // not the record's own `= new()` initializer (see CustomizationMigration's schema-6->7 arm
+        // doc). CustomizationMigration repairs this for every REAL load, but a hand-built or
+        // script-generated profile that already claims the current schema (bypassing every arm) can
+        // still reach here with a null list, and hidden.Count on null is a NullReferenceException
+        // that would take the whole flyout down over a settings file, not a code bug.
+        var hidden = _shell.Customization.FlyoutHiddenSensorIds ?? [];
+
+        FlyoutSensors.Clear();
+        foreach (var sensor in _home.PinnedSensors)
+        {
+            if (hidden.Count > 0 && hidden.Contains(sensor.Name, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            FlyoutSensors.Add(sensor);
+        }
+    }
+
+    /// <summary>
+    /// Reloads <see cref="_launcherEntries"/> from storage and rebuilds the toolbar against the
+    /// fresh list — the same "reload on Refresh" contract phone presence and the pinned sensors
+    /// already get.
+    /// </summary>
+    private async Task ReloadLauncherEntriesAsync()
+    {
+        try
+        {
+            _launcherEntries = await _launcherStorage.LoadEntriesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Best-effort, like LauncherStorageService's own catch-and-empty on the read side: a
+            // corrupt or unreadable launchers.json must not stop the six action tiles from showing.
+            System.Diagnostics.Debug.WriteLine($"[TrayFlyout] Failed to load launcher entries: {ex.Message}");
+            _launcherEntries = [];
+        }
+
+        RebuildToolbar();
+    }
+
+    private void RebuildToolbar()
     {
         var remoteEnabled = TrayTileRules.IsRemoteDesktopEnabled(Presence.IsPhoneAttached);
 
         RefreshOnlineDeviceCount();
 
-        Tiles =
-        [
+        var settings = _shell.Customization;
+        // Null-safe for the same reason RebuildFlyoutSensors' own hidden-list read is - see that
+        // method's remarks.
+        var hiddenTileIds = settings.FlyoutHiddenTileIds ?? [];
+
+        var tiles = new List<TrayTile>
+        {
             new TrayTile
             {
+                Id = "lock",
                 Label = LocalizationService.Instance["Tray_Tile_Lock"],
                 Icon = MaterialIconKind.Lock,
                 Command = _shell.Connection.LockCommand,
             },
             new TrayTile
             {
+                Id = "sleep",
                 Label = LocalizationService.Instance["Tray_Tile_Sleep"],
                 Icon = MaterialIconKind.WeatherNight,
                 Command = _shell.Connection.SleepCommand,
             },
             new TrayTile
             {
+                Id = "remote",
                 Label = LocalizationService.Instance["Tray_Tile_RemoteDesktop"],
                 Icon = MaterialIconKind.Monitor,
                 Command = OpenRemoteDesktopCommand,
@@ -243,6 +412,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
             },
             new TrayTile
             {
+                Id = "send",
                 Label = LocalizationService.Instance["Tray_Tile_SendFile"],
                 Icon = MaterialIconKind.Upload,
                 Command = OpenTransfersCommand,
@@ -250,6 +420,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
             },
             new TrayTile
             {
+                Id = "pair",
                 Label = LocalizationService.Instance["Btn_Pair"],
                 Icon = MaterialIconKind.LinkVariant,
                 // Always enabled: RemEx supports several paired devices, so gating this on
@@ -259,14 +430,71 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
             },
             new TrayTile
             {
+                Id = "power",
                 Label = LocalizationService.Instance["PaletteCategory_Power"],
                 Icon = MaterialIconKind.Power,
                 Command = NoOpCommand,
                 HasSubmenu = true,
             },
-        ];
+        };
+
+        var visibleTiles = hiddenTileIds.Count == 0
+            ? tiles
+            : tiles.Where(tile => !hiddenTileIds.Contains(tile.Id, StringComparer.OrdinalIgnoreCase)).ToList();
+
+        var items = new List<TrayToolbarItem>(visibleTiles);
+
+        // App shortcuts, after a divider, only when at least one selected id still resolves to a
+        // launcher entry (Flyout D2 .1, RemEx-4kv0g.18.5 §2). An id that no longer exists in the
+        // launcher is skipped rather than shown broken, and a settings.FlyoutAppIds that resolves to
+        // nothing at all must not leave a dangling divider with no shortcuts after it.
+        var appIds = settings.FlyoutAppIds ?? [];
+        if (appIds.Count > 0)
+        {
+            List<TrayShortcut>? shortcuts = null;
+
+            foreach (var appId in appIds)
+            {
+                var entry = _launcherEntries.FirstOrDefault(e => e.Id == appId);
+                if (entry is null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TrayFlyout] FlyoutAppIds contains {appId}, no matching launcher entry - skipped.");
+                    continue;
+                }
+
+                (shortcuts ??= []).Add(new TrayShortcut
+                {
+                    EntryId = entry.Id,
+                    DisplayName = entry.DisplayName,
+                    IconBase64 = entry.IconBase64,
+                    LaunchCommand = new AsyncRelayCommand(() => LaunchShortcutAsync(entry)),
+                });
+            }
+
+            if (shortcuts is { Count: > 0 })
+            {
+                items.Add(new TrayToolbarDivider());
+                items.AddRange(shortcuts);
+            }
+        }
+
+        ToolbarItems = items;
+        Tiles = visibleTiles;
 
         OnPropertyChanged(nameof(PinTooltip));
+    }
+
+    /// <summary>
+    /// Launches an app-launcher entry from the tray, LOCALLY ONLY — see <see cref="TrayShortcut"/>'s
+    /// own remarks for why this never checks <c>ConnectionViewModel.IsConnected</c> the way
+    /// <c>AppLauncherViewModel.LaunchAppAsync</c> does.
+    /// </summary>
+    private static async Task LaunchShortcutAsync(AppEntry entry)
+    {
+        // Feeds the Home "Recent activity" panel, same as the App Launcher page's own launch.
+        ActivityService.Instance.Record(ActivityKind.AppLaunched, entry.DisplayName);
+
+        await EmbeddedHostServiceLocator.Require<IAppLauncherService>().LaunchAppAsync(entry.TargetPath);
     }
 
     [RelayCommand]

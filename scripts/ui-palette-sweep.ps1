@@ -265,12 +265,17 @@ try {
 
         # Only the customization fields the sweep cares about — everything else in the profile
         # (canvas layout, connection history, sensor alerts...) passes through untouched.
-        # schemaVersion 6 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
+        # schemaVersion 7 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
         # a lower number is re-migrated on read, which is not what a sweep cell asked for. Every
         # cell above uses ThemeId BaseDarkGlass or Dynamic, both of which carry the record default
         # CardBorderThickness (1) - RemEx-bnz2x's new field needs no cell-specific write here for
-        # the same reason cornerRadius never needed one.
-        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 6                  -Force
+        # the same reason cornerRadius never needed one. RemEx-4kv0g.18.5's four flyout fields
+        # (FlyoutOpacity/FlyoutHiddenSensorIds/FlyoutHiddenTileIds/FlyoutAppIds) are left unwritten
+        # too, on different grounds: at schemaVersion 7 the host will NOT re-migrate this profile,
+        # so those four actually come back as the JSON-absent-key CLR default (0.0 / null), not the
+        # record's own 1.0/empty-list default - but this sweep never opens the tray flyout, so that
+        # gap never reaches a screenshot it checks.
+        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 7                  -Force
         $customization | Add-Member -NotePropertyName 'baseTheme'              -NotePropertyValue $cell.ThemeId       -Force
         $customization | Add-Member -NotePropertyName 'accentColor'            -NotePropertyValue $cell.Seed          -Force
         $customization | Add-Member -NotePropertyName 'schemeVariant'          -NotePropertyValue $cell.SchemeVariant -Force

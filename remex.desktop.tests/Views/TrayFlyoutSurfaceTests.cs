@@ -86,7 +86,7 @@ public class TrayFlyoutSurfaceTests
     }
 
     [Fact]
-    public void PinnedSensorsAreCanvasCardsInAScrollingWrapPanel()
+    public void FlyoutSensorsAreCanvasCardsInAScrollingWrapPanel()
     {
         var text = File.ReadAllText(ViewPath);
 
@@ -94,6 +94,14 @@ public class TrayFlyoutSurfaceTests
             "the flyout should render pinned sensors with the shared card control, not its own markup");
         text.Should().Contain("<WrapPanel",
             "cards should lay out in a wrapping grid, not a horizontal strip");
+
+        // Flyout D2 .1 (RemEx-4kv0g.18.5): the cards row binds FlyoutSensors, not
+        // HomeViewModel.PinnedSensors directly, so a hidden-sensor setting can exclude a pin without
+        // touching Home's own collection.
+        text.Should().Contain("ItemsSource=\"{Binding FlyoutSensors}\"",
+            "the cards ItemsControl must bind the flyout's own filtered collection");
+        text.Should().Contain("IsVisible=\"{Binding !!FlyoutSensors.Count}\"",
+            "the cards row's collapse-when-empty check must follow the same filtered collection");
 
         var scrollViewer = Regex.Match(text, @"<ScrollViewer\b[^>]*>", RegexOptions.Singleline);
         scrollViewer.Success.Should().BeTrue("the cards should sit inside a ScrollViewer");
@@ -167,6 +175,91 @@ public class TrayFlyoutSurfaceTests
     }
 
     /// <summary>
+    /// Flyout D2 .1 (RemEx-4kv0g.18.5): the six-tile grid became a wrapping, icon-only toolbar row
+    /// with app shortcuts after a divider. Parsed structurally, like
+    /// <see cref="FlyoutSensorsAreCanvasCardsInAScrollingWrapPanel"/>'s card nesting checks, so a
+    /// template that exists somewhere in the file but is not actually wired to the right item type
+    /// fails here instead of passing a flat substring scan.
+    /// </summary>
+    [Fact]
+    public void ActionsAreAnIconOnlyToolbarRow()
+    {
+        var text = File.ReadAllText(ViewPath);
+
+        text.Should().NotContain("x:Key=\"TrayTileFace\"",
+            "the shared tile-face DataTemplate is gone - each toolbar item template draws its own content");
+        text.Should().NotContain("<UniformGrid",
+            "the fixed-column tile grid is gone - the toolbar wraps instead of committing to a column count");
+
+        var doc = XDocument.Parse(text);
+        XNamespace av = "https://github.com/avaloniaui";
+        XNamespace xNs = "http://schemas.microsoft.com/winfx/2006/xaml";
+        XNamespace miNs = "using:Material.Icons.Avalonia";
+
+        var contentGrid = doc.Descendants(av + "Grid")
+            .Single(g => (string?)g.Attribute(xNs + "Name") == "ContentGrid");
+
+        var toolbar = contentGrid.Elements(av + "ItemsControl")
+            .SingleOrDefault(ic => (string?)ic.Attribute("ItemsSource") == "{Binding ToolbarItems}");
+        toolbar.Should().NotBeNull("the toolbar row must be an ItemsControl bound to ToolbarItems");
+
+        var toolbarPanelProperty = toolbar!.Element(av + "ItemsControl.ItemsPanel");
+        toolbarPanelProperty.Should().NotBeNull();
+        toolbarPanelProperty!.Descendants(av + "WrapPanel").Should().ContainSingle(
+            "the toolbar's ItemsPanel must be a WrapPanel, not the old UniformGrid");
+
+        var dataTemplatesProperty = toolbar.Element(av + "ItemsControl.DataTemplates");
+        dataTemplatesProperty.Should().NotBeNull(
+            "the toolbar must pick a template per item type via DataTemplates, not one static ItemTemplate");
+
+        var templates = dataTemplatesProperty!.Elements(av + "DataTemplate").ToList();
+        templates.Should().HaveCount(3, "one DataTemplate each for TrayTile, TrayToolbarDivider and TrayShortcut");
+
+        // TrayTile: icon-only, tooltip + accessible name on Label, the Power submenu intact.
+        var tileTemplate = templates.Single(t => (string?)t.Attribute(xNs + "DataType") == "vm:TrayTile");
+        tileTemplate.Descendants(av + "TextBlock").Should().BeEmpty(
+            "the toolbar tile is icon-only - no label TextBlock should survive from the old tile face");
+        tileTemplate.Descendants(miNs + "MaterialIcon").Should().Contain(
+            icon => (string?)icon.Attribute("Kind") == "{Binding Icon}",
+            "the tile must still render its glyph from TrayTile.Icon");
+
+        var plainTileButton = tileTemplate.Descendants(av + "Button")
+            .SingleOrDefault(b => (string?)b.Attribute("IsVisible") == "{Binding !HasSubmenu}");
+        plainTileButton.Should().NotBeNull("the plain (non-submenu) tile button must still exist");
+        ((string?)plainTileButton!.Attribute("ToolTip.Tip")).Should().Be("{Binding Label}",
+            "the enabled case's tooltip is the Button's own Label, per the Panel/Button precedence");
+        ((string?)plainTileButton.Attribute("AutomationProperties.Name")).Should().Be("{Binding Label}");
+        ((string?)plainTileButton.Attribute("Command")).Should().Be("{Binding Command}");
+        ((string?)plainTileButton.Attribute("Click")).Should().Be("OnTileClicked");
+
+        var submenuButton = tileTemplate.Descendants(av + "Button")
+            .SingleOrDefault(b => (string?)b.Attribute("IsVisible") == "{Binding HasSubmenu}");
+        submenuButton.Should().NotBeNull("the Power submenu button must still exist");
+        var menuFlyout = submenuButton!.Descendants(av + "MenuFlyout").SingleOrDefault();
+        menuFlyout.Should().NotBeNull("the submenu tile must still carry its MenuFlyout");
+        menuFlyout!.Elements(av + "MenuItem").Should().HaveCount(4,
+            "Restart/Shutdown/SignOut/Hibernate must all still be reachable from the glyph button");
+
+        // TrayToolbarDivider: a thin vertical rule, not a tile.
+        var dividerTemplate = templates.Single(t => (string?)t.Attribute(xNs + "DataType") == "vm:TrayToolbarDivider");
+        dividerTemplate.Descendants(av + "Border").Should().ContainSingle(
+            "the divider must render as a single Border rule");
+
+        // TrayShortcut: an Image through the base64 converter, tooltip/name on DisplayName.
+        var shortcutTemplate = templates.Single(t => (string?)t.Attribute(xNs + "DataType") == "vm:TrayShortcut");
+        var shortcutButton = shortcutTemplate.Element(av + "Button");
+        shortcutButton.Should().NotBeNull("the shortcut must render as a single Button, matching the tile shape");
+        ((string?)shortcutButton!.Attribute("ToolTip.Tip")).Should().Be("{Binding DisplayName}");
+        ((string?)shortcutButton.Attribute("AutomationProperties.Name")).Should().Be("{Binding DisplayName}");
+        ((string?)shortcutButton.Attribute("Command")).Should().Be("{Binding LaunchCommand}");
+
+        var shortcutImage = shortcutButton.Descendants(av + "Image").SingleOrDefault();
+        shortcutImage.Should().NotBeNull("the shortcut's icon must be an Image, not a MaterialIcon glyph");
+        ((string?)shortcutImage!.Attribute("Source")).Should().Contain("Base64ToImageConverter",
+            "the shortcut icon must decode through the same converter the App Launcher page uses");
+    }
+
+    /// <summary>
     /// Fix round 3 (whole-branch review): <see cref="TrayFlyoutGeometry.ChromeSideInset"/> and
     /// <see cref="TrayFlyoutGeometry.CardsPanelInset"/> are hand-derived from four XAML margins.
     /// This reads those four literals back out of the file and checks the arithmetic against the
@@ -178,19 +271,21 @@ public class TrayFlyoutSurfaceTests
     {
         var text = File.ReadAllText(ViewPath);
 
-        // Outer Border (the transparent-window shadow-and-rounding frame around the card).
+        // Outer Border (the transparent-window shadow-and-rounding frame around the card). The
+        // Background key changed to FlyoutGlassBrush in RemEx-4kv0g.18.5 (Flyout D2 .1) - same
+        // Border, only the brush key moved.
         var outerBorderMargin = double.Parse(Regex.Match(text,
-                @"<Border Background=""\{DynamicResource GlassBaseDarkBrush\}""[^>]*Margin=""(?<v>[\d.]+)""")
+                @"<Border Background=""\{DynamicResource FlyoutGlassBrush\}""[^>]*Margin=""(?<v>[\d.]+)""")
             .Groups["v"].Value);
 
-        // ContentGrid (the named Grid the header/cards/tiles rows live in).
+        // ContentGrid (the named Grid the header/cards/toolbar rows live in).
         var contentGridMargin = double.Parse(Regex.Match(text,
                 @"<Grid x:Name=""ContentGrid""[^>]*Margin=""(?<v>[\d.]+)""")
             .Groups["v"].Value);
 
         // The cards ItemsControl's own Margin="H,V" - only the horizontal half feeds CardsPanelInset.
         var itemsControlHorizontalMargin = double.Parse(Regex.Match(text,
-                @"<ItemsControl ItemsSource=""\{Binding PinnedSensors\}"" Margin=""(?<h>[\d.]+),[\d.]+""")
+                @"<ItemsControl ItemsSource=""\{Binding FlyoutSensors\}"" Margin=""(?<h>[\d.]+),[\d.]+""")
             .Groups["h"].Value);
 
         // The flyout-card Border's own Margin (all four sides equal - single-value shorthand).

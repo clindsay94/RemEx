@@ -78,6 +78,9 @@
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
+    <!-- The tray flyout popup's own glass (Flyout D2 .1, RemEx-4kv0g.18.5) - same fallback colour
+         as GlassBaseDarkBrush; ThemeService overrides the alpha from FlyoutOpacity on every apply. -->
+    <SolidColorBrush x:Key="FlyoutGlassBrush" Color="{DynamicResource GlassBaseDark}"/>
     <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
     <!-- Text/icons ON an accent-filled surface. MEASURED, not chosen: white on this palette's

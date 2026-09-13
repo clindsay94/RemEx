@@ -287,6 +287,35 @@ public record CustomizationSettings
     /// <summary>Opacity (0.1 to 1.0) of the entire app window when Glass mode is active.</summary>
     public double AppWindowOpacity { get; init; } = 0.92;
 
+    /// <summary>
+    /// Opacity (0.0 to 1.0) of the tray flyout popup's own glass, independent of
+    /// <see cref="GlassOpacity"/> (the canvas cards' opacity — untouched by this value). Default
+    /// 1.0 is today's look: before this field existed, <c>GlassBaseDarkBrush</c> was opaque
+    /// (<c>palette.Surface</c> at full alpha) — see <c>ThemeService</c>'s <c>FlyoutGlassBrush</c>.
+    /// </summary>
+    public double FlyoutOpacity { get; init; } = 1.0;
+
+    /// <summary>
+    /// Home-pinned sensor ids (<c>SensorViewModel.Name</c>, the same id
+    /// <see cref="DashboardProfile.PinnedSensorIds"/> uses) hidden from the tray flyout's cards row.
+    /// A hidden-list, not a shown-list, so a sensor newly pinned on the canvas shows in the flyout by
+    /// default without a settings change.
+    /// </summary>
+    public List<string> FlyoutHiddenSensorIds { get; init; } = new();
+
+    /// <summary>
+    /// Stable tile ids (<c>lock</c>, <c>sleep</c>, <c>remote</c>, <c>send</c>, <c>pair</c>,
+    /// <c>power</c>) hidden from the tray flyout's toolbar row.
+    /// </summary>
+    public List<string> FlyoutHiddenTileIds { get; init; } = new();
+
+    /// <summary>
+    /// Launcher entry ids (<see cref="AppEntry.Id"/>) shown as shortcuts in the tray flyout's
+    /// toolbar row, after a divider, in launcher order. A shown-list, since apps are opt-in — an
+    /// empty launcher or an empty list means no shortcuts, not "show everything".
+    /// </summary>
+    public List<Guid> FlyoutAppIds { get; init; } = new();
+
     /// <summary>Relative strength of the neon/glow effects.</summary>
     public double GlowStrength { get; init; } = 2;
 

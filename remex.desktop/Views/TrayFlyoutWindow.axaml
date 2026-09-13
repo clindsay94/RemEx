@@ -21,24 +21,6 @@
          see that constant's XML doc), because Avalonia needs literals in XAML - change one, change
          the other. -->
 
-    <Window.Resources>
-        <!-- Shared by both tile buttons below so the plain tile and the submenu tile cannot
-             drift apart visually. -->
-        <DataTemplate x:Key="TrayTileFace" x:DataType="vm:TrayTile">
-            <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="{Binding Icon}"
-                                 Foreground="{DynamicResource AccentPrimaryBrush}"
-                                 Width="18" Height="18"
-                                 HorizontalAlignment="Center"/>
-                <TextBlock Text="{Binding Label}"
-                           Theme="{StaticResource OverlineTextBlock}" FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextPrimaryBrush}"/>
-            </StackPanel>
-        </DataTemplate>
-    </Window.Resources>
-
     <Window.Styles>
         <!-- (RemEx-rjnbo.1) The presence badge now shows a device count, so a fixed 10x10 only
              fits the dot state (HasOnlineDevices false): at two-plus online devices the same size
@@ -59,7 +41,7 @@
          it gets clipped by the window bounds into a hard band (RemEx-la0rk round 3). Margin 44 clears
          blur+OffsetY=43. Elevation3's 48/12 would need Margin ~=60, which eats too much of the
          320x240 MinWidth/MinHeight floor from TrayFlyoutGeometryValidator for the tile grid below. -->
-    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="{DynamicResource Elevation2Shadow}">
+    <Border Background="{DynamicResource FlyoutGlassBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="{DynamicResource Elevation2Shadow}">
         <!-- Row 1 (the cards ScrollViewer) starts Auto and the tiles row (2) is always Auto — the
              cards row is the only one whose Height changes, flipped to "*" by ApplyMode in the
              code-behind when the window is pinned, so a resized-taller pinned window hands the
@@ -157,8 +139,8 @@
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto"
                           MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"
-                          IsVisible="{Binding !!PinnedSensors.Count}">
-                <ItemsControl ItemsSource="{Binding PinnedSensors}" Margin="6,0">
+                          IsVisible="{Binding !!FlyoutSensors.Count}">
+                <ItemsControl ItemsSource="{Binding FlyoutSensors}" Margin="6,0">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal"/>
@@ -186,42 +168,62 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <!-- Action grid. Columns are driven by the window's own width so that resizing reveals
-                 more of the grid per row instead of only stretching the tiles. -->
-            <ItemsControl Grid.Row="2" ItemsSource="{Binding Tiles}" Margin="0,16,0,0">
+            <!-- Toolbar row (Flyout D2 .1, RemEx-4kv0g.18.5). ONE ItemsControl over
+                 TrayFlyoutViewModel.ToolbarItems - a closed TrayToolbarItem hierarchy (TrayTile /
+                 TrayToolbarDivider / TrayShortcut) rendered through three DataTemplates keyed by
+                 x:DataType below, so there are no `if`s in this XAML and no second list to keep in
+                 sync with the first. WrapPanel, not UniformGrid: the six tiles are icon-only
+                 buttons now, not the old 66px content tiles TrayTileColumnsConverter's column math
+                 was sized for - that converter and its column grid are gone (RemEx-4kv0g.18.5,
+                 TrayFlyoutGeometry.ToolbarRowHeight). A wrapping row only spills to a second line
+                 once app shortcuts push the row past the window's width.
+
+                 Classes="tertiary icon-button" ON PURPOSE, NOT A NEW PER-VIEW STYLE
+                 (docs/BUTTON-VOCABULARY.md, ButtonVocabularyTests): the header buttons three rows
+                 up (Cog/Pin/Close) already wear this exact combination, just with ".compact" for
+                 their smaller 28px size - this row omits ".compact" for the 32px default instead,
+                 no bespoke class or inline Width/Height/CornerRadius/Padding needed. Width/Height
+                 are NOT set inline for the same reason: the class already owns them. -->
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding ToolbarItems}" Margin="0,16,0,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <UniformGrid Columns="{Binding $parent[Window].Bounds.Width,
-                                               Converter={x:Static conv:TrayTileColumnsConverter.Instance}}"/>
+                        <WrapPanel Orientation="Horizontal"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                <ItemsControl.DataTemplates>
                     <DataTemplate x:DataType="vm:TrayTile">
                         <!-- The tooltip hangs on the PANEL, not on the Button. DisabledTooltip is
                              non-null only when IsEnabled is false, and Avalonia excludes disabled
                              controls from hit testing with no ShowOnDisabled equivalent - so on the
                              Button the one string that explains why a tile is dead could never
-                             open. The panel stays enabled, so the pointer still reaches it. -->
+                             open. The panel stays enabled, so the pointer still reaches it. When
+                             DisabledTooltip is null (the enabled case), the Panel's own ToolTip.Tip
+                             resolves to nothing and the Button's ToolTip.Tip="{Binding Label}"
+                             below is what actually shows on hover. -->
                         <Panel ToolTip.Tip="{Binding DisabledTooltip}">
                             <!-- Ordinary tile -->
-                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
+                            <Button Margin="4" Classes="tertiary icon-button"
                                     IsVisible="{Binding !HasSubmenu}"
                                     Command="{Binding Command}"
                                     IsEnabled="{Binding IsEnabled}"
+                                    ToolTip.Tip="{Binding Label}"
                                     AutomationProperties.Name="{Binding Label}"
-                                    ContentTemplate="{StaticResource TrayTileFace}"
-                                    Content="{Binding}"
-                                    Click="OnTileClicked"/>
+                                    Click="OnTileClicked">
+                                <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20"
+                                                  Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            </Button>
 
-                            <!-- Submenu tile. A second Button rather than a conditional Flyout,
-                                 because Button.Flyout cannot be set per-item from one DataTemplate.
-                                 Placement="Top" matters: the window usually sits at the bottom-right
-                                 of the screen, where a downward flyout would open off-screen. -->
-                            <Button Height="66" Margin="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="tile"
+                            <!-- Submenu tile (Power). A second Button rather than a conditional
+                                 Flyout, because Button.Flyout cannot be set per-item from one
+                                 DataTemplate. Placement="Top" matters: the window usually sits at
+                                 the bottom-right of the screen, where a downward flyout would open
+                                 off-screen. -->
+                            <Button Margin="4" Classes="tertiary icon-button"
                                     IsVisible="{Binding HasSubmenu}"
-                                    AutomationProperties.Name="{Binding Label}"
-                                    ContentTemplate="{StaticResource TrayTileFace}"
-                                    Content="{Binding}">
+                                    ToolTip.Tip="{Binding Label}"
+                                    AutomationProperties.Name="{Binding Label}">
+                                <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20"
+                                                  Foreground="{DynamicResource AccentPrimaryBrush}"/>
                                 <Button.Flyout>
                                     <MenuFlyout Placement="Top">
                                         <MenuItem Header="{local:Localize Confirm_Restart_Btn}"
@@ -241,7 +243,24 @@
                             </Button>
                         </Panel>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
+
+                    <DataTemplate x:DataType="vm:TrayToolbarDivider">
+                        <Border Width="1" Height="24" Margin="8,0" VerticalAlignment="Center"
+                                Background="{DynamicResource TextMutedBrush}"/>
+                    </DataTemplate>
+
+                    <DataTemplate x:DataType="vm:TrayShortcut">
+                        <Button Margin="4" Classes="tertiary icon-button"
+                                Command="{Binding LaunchCommand}"
+                                ToolTip.Tip="{Binding DisplayName}"
+                                AutomationProperties.Name="{Binding DisplayName}"
+                                Click="OnTileClicked">
+                            <Image Width="20" Height="20"
+                                   Source="{Binding IconBase64, Converter={x:Static conv:Base64ToImageConverter.Instance}}"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.DataTemplates>
             </ItemsControl>
 
         </Grid>

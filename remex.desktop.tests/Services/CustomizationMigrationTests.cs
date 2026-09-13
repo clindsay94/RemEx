@@ -31,13 +31,14 @@ public class CustomizationMigrationTests
     /// arm rather than adding a schema 5, because 4 never shipped between the two tasks. Schema 5
     /// (RemEx-ceu4x) could not do the same thing for the same reason arm 3 -&gt; 4 could not fold
     /// into arm 2 -&gt; 3: schema 4 had already shipped, so a real profile on disk at schema 4 needs
-    /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness.
+    /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness,
+    /// and schema 7 (RemEx-4kv0g.18.5) again for the tray flyout's own settings.
     /// Move this number only with a new arm and a reason.
     /// </summary>
     [Fact]
-    public void TheCurrentSchemaIsSixUntilANewArmSaysOtherwise()
+    public void TheCurrentSchemaIsSevenUntilANewArmSaysOtherwise()
     {
-        CustomizationMigration.CurrentSchemaVersion.Should().Be(6);
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(7);
     }
 
     /// <summary>
@@ -264,13 +265,18 @@ public class CustomizationMigrationTests
 
         // Arm 6 (RemEx-bnz2x) also runs here and resolves CardBorderThickness from the (nonsense,
         // reflection-generated) ThemeId - the one field this "arm 3 only" test has to name
-        // explicitly now, the same way arm 4->5 already earns its own exclusion elsewhere.
+        // explicitly now, the same way arm 4->5 already earns its own exclusion elsewhere. Arm 7
+        // (RemEx-4kv0g.18.5) also runs here and resets the flyout fields to their true defaults.
         after.Should().BeEquivalentTo(
             before with
             {
                 SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
                 ColorSource = ColorSources.Custom,
                 CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+                FlyoutOpacity = 1.0,
+                FlyoutHiddenSensorIds = new List<string>(),
+                FlyoutHiddenTileIds = new List<string>(),
+                FlyoutAppIds = new List<Guid>(),
             },
             "arm 3 rewrites only the fields the spec names");
     }
@@ -410,13 +416,18 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        // Arm 6 (RemEx-bnz2x) also runs here; see ArmThreeDropsNoField above for why
-        // CardBorderThickness has to be named explicitly rather than assumed unchanged.
+        // Arm 6 (RemEx-bnz2x) and arm 7 (RemEx-4kv0g.18.5) also run here; see ArmThreeDropsNoField
+        // above for why CardBorderThickness/the flyout fields have to be named explicitly rather
+        // than assumed unchanged.
         after.Should().BeEquivalentTo(before with
         {
             SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
             ThemeSeedChromaRequest = before.ThemeSeedChroma,
             CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+            FlyoutOpacity = 1.0,
+            FlyoutHiddenSensorIds = new List<string>(),
+            FlyoutHiddenTileIds = new List<string>(),
+            FlyoutAppIds = new List<Guid>(),
         }, "arm 5 rewrites only ThemeSeedChromaRequest");
     }
 
@@ -451,11 +462,57 @@ public class CustomizationMigrationTests
 
         var after = CustomizationMigration.Migrate(before, out _);
 
+        // Arm 7 (RemEx-4kv0g.18.5) also runs here; see ArmThreeDropsNoField above for why the
+        // flyout fields have to be named explicitly rather than assumed unchanged.
         after.Should().BeEquivalentTo(before with
         {
             SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
             CardBorderThickness = SeedPresetCatalog.Resolve(before.ThemeId).CardBorderThickness,
+            FlyoutOpacity = 1.0,
+            FlyoutHiddenSensorIds = new List<string>(),
+            FlyoutHiddenTileIds = new List<string>(),
+            FlyoutAppIds = new List<Guid>(),
         }, "arm 6 rewrites only CardBorderThickness");
+    }
+
+    // ─── Arm 7: the tray flyout's own settings (Flyout D2 .1, RemEx-4kv0g.18.5) ─────────────────
+
+    [Fact]
+    public void ASchemaSixProfileAdoptsTheFlyoutDefaults()
+    {
+        // Schema 6 already shipped, so a real profile on disk at exactly schema 6 has none of the
+        // four flyout keys at all - they deserialise to the CLR default for their declared type
+        // (0.0, and null for the lists), not the record's own defaults (1.0, empty lists).
+        var before = SchemaTwo() with { SchemaVersion = 6, FlyoutOpacity = 0.0, FlyoutHiddenSensorIds = null!, FlyoutHiddenTileIds = null!, FlyoutAppIds = null! };
+
+        var migrated = CustomizationMigration.Migrate(before, out var warning);
+
+        warning.Should().BeNull("nothing here needed repairing, only seeding");
+        migrated.FlyoutOpacity.Should().Be(1.0, "the popup's glass must reproduce today's opaque look, not render invisible");
+        migrated.FlyoutHiddenSensorIds.Should().BeEmpty();
+        migrated.FlyoutHiddenTileIds.Should().BeEmpty();
+        migrated.FlyoutAppIds.Should().BeEmpty();
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void ArmSevenDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same shape as the other ArmXDropsNoField tests: one `with`
+        // expression, so every field it does not name survives verbatim. Built by reflection so a
+        // field added next year is covered.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 6);
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            FlyoutOpacity = 1.0,
+            FlyoutHiddenSensorIds = new List<string>(),
+            FlyoutHiddenTileIds = new List<string>(),
+            FlyoutAppIds = new List<Guid>(),
+        }, "arm 7 rewrites only the four flyout fields");
     }
 
     [Fact]
