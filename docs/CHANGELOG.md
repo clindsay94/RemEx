@@ -24,6 +24,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- Colour parity between the PC and the phone: the PC's palette engine is now a port of Google's
+  material-color-utilities (the library Jetpack Compose paints with) — `Remex.Core.Theming.Mcu` —
+  instead of the older MaterialColorUtilities NuGet package, so the same seed, variant, mode and
+  contrast yield the same colours on both platforms, and "Match my phone" reproduces the phone
+  exactly. Both apps now offer all nine Material 3 variants (Fidelity and Content are new), the
+  phone's fixed roles (`primaryFixed` …) come from the seed instead of Compose's defaults, and the
+  PC's Contrast control means what the phone's does across its whole −1..1 range — "Softer" is a
+  genuine reduced-contrast scheme. A committed vector file generated from Google's classes proves it
+  on both sides, and `docs/MEASURE-palette-parity.md` records the side-by-side eyes pass. Success
+  and warning colours are unchanged. (RemEx-4kv0g.6–.14)
 - Repo docs refreshed for 2.5.0. The README was rewritten in the owner's voice: live badges that
   pull release, build, download and license state from GitHub instead of hard-coded values, an ASCII
   terminal-window banner in the `>R▮` brand, a mermaid pairing diagram and channel map, a "where it's

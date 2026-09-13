@@ -139,9 +139,12 @@ than one that admits it produced nothing.
 Do not apply one platform's axes to the other.
 
 - **PC only (`remex.desktop` / `remex.agent`)** — one seed colour (`CustomizationSettings.AccentColor`)
-  crossed with `SchemeVariant` (7 values — TonalSpot, Vibrant, Expressive, Rainbow, FruitSalad,
-  Content, Spritz), `ThemeMode` (`Light`/`Dark`/`System`), and `ThemeContrast` (-1.0 to 1.0), generated
-  into a full palette by `DynamicColorGenerator`. `SeedPresetCatalog.All`
+  crossed with `SchemeVariant` (9 values — TonalSpot, Expressive, FruitSalad, Rainbow, Vibrant,
+  Neutral, Monochrome, Fidelity, Content; `remex.desktop/Models/SchemeVariants.cs`), `ThemeMode`
+  (`Light`/`Dark`/`System`), and `ThemeContrast` (-1.0 to 1.0), generated into a full palette by
+  `DynamicColorGenerator` — a thin adapter over `Remex.Core.Theming.Mcu`, the port of Google's
+  material-color-utilities that `remex.core` carries so the PC and the phone derive identical roles
+  from the same seed (`McuVectorTests` / `ThemeParityTest` pin both to one committed vector file). `SeedPresetCatalog.All`
   (`remex.desktop/Models/SeedPreset.cs`) ships starting points — **BaseDarkGlass** (the default),
   **CyberNOC**, **SolarFlare**, **Monolith**, Daybreak, Voltage, Sorbet, and **Dynamic** (the user's
   own seed; never overwritten) — but a preset is data fed into the same generator any custom colour
@@ -173,9 +176,10 @@ Do not apply one platform's axes to the other.
   (`dynamicDark/LightColorScheme(context)`, whenever `dynamicColor` is on — the `SDK_INT >= S`
   conjunct was dead at minSdk 34 and was removed in RemEx-jcl4p); and the **static fallback**
   (`DarkColorScheme`/`LightColorScheme`, used when dynamic color is off — still a real shipping path,
-  now for that reason alone rather than also for API < 31). Orthogonal axes on top: `darkTheme` (light/dark/system), `themeStyle` (7
+  now for that reason alone rather than also for API < 31). Orthogonal axes on top: `darkTheme` (light/dark/system), `themeStyle` (9
   values — `tonal_spot` default, plus expressive, vibrant, neutral, **monochrome**, fruit_salad,
-  rainbow), and `themeContrast` (0.0 → 1.0). Monochrome and contrast 1.0 are the harshest tests: a
+  rainbow, fidelity, content — all Google's `Scheme*` classes, `ui/theme/Theme.kt`), and
+  `themeContrast` (-1.0 → 1.0). Monochrome and contrast 1.0 are the harshest tests: a
   hardcoded color literal that looks fine on the default scheme will fail there.
 
 **Never ask for four-theme verification of an Android change** — there is nothing to verify against
