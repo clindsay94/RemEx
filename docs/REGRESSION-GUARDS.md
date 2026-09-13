@@ -733,7 +733,7 @@ and settle, so the click still visibly registers before the window goes away.
 
 ### The tray flyout's cards `ScrollViewer` must keep an explicit `MaxHeight` (INVARIANT)
 
-`remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer` (:126-182 area,
+`remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer` (:151-176,
 `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"`);
 `remex.desktop/Services/TrayFlyoutGeometry.cs` — `CardsMaxHeight`;
 `remex.desktop.tests/Views/TrayFlyoutSurfaceTests.cs`, `remex.desktop.tests/TrayFlyoutGeometryTests.cs` —
@@ -752,7 +752,7 @@ a floor-level safety net, but does not normally engage since the window's own ce
 (`TrayFlyoutGeometryValidator.MaxHeight = 800`) is reached first.
 
 This is also why the geometry limits are duplicated in XAML and `TrayFlyoutGeometry`/
-`TrayFlyoutGeometryValidator` on purpose (see the comment at `TrayFlyoutWindow.axaml:16-19`): Avalonia
+`TrayFlyoutGeometryValidator` on purpose (see the comment at `TrayFlyoutWindow.axaml:17-20`): Avalonia
 needs literal `Width`/`Height`/`MinWidth`/`MinHeight`/`MaxWidth`/`MaxHeight` values in XAML, so those and
 the C# constants have to be changed together — the duplication is intentional, not drift to be cleaned up.
 

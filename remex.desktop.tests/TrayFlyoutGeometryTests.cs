@@ -1,4 +1,5 @@
 using Avalonia;
+using Remex.Desktop.Converters;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Tests;
@@ -120,11 +121,28 @@ public class TrayFlyoutGeometryTests
     private const double HeaderHeight = 56;
     private const double TilesMaxHeight = 164;
 
+    // Fix round 1: the budget test omitted the 68px of window/Grid/cards-row margins the
+    // derivation comment counts (24 outer Border + 32 content Grid + 12 cards row's own top
+    // margin). Named so the full budget — not just header+tiles — has to fit under MaxHeight.
+    private const double FixedMargins = 68;
+
     [Fact]
     public void CardsMaxHeightLeavesRoomForHeaderAndTilesInsideMaxHeight()
     {
         Assert.True(
-            TrayFlyoutGeometry.CardsMaxHeight + HeaderHeight + TilesMaxHeight
+            TrayFlyoutGeometry.CardsMaxHeight + HeaderHeight + TilesMaxHeight + FixedMargins
                 <= TrayFlyoutGeometryValidator.MaxHeight);
+    }
+
+    // Fix round 1 (Opus review, MEDIUM): CardsMaxHeight's derivation assumes the transient window
+    // is TrayFlyoutGeometry.DefaultWidth wide, giving TilesMaxHeight's "2 rows of 6 tiles" via 3
+    // columns. TrayFlyoutWindow.ApplyMode(isPinned: false) now enforces that width on every
+    // transition to transient mode; this pins the OTHER half of that guarantee — that
+    // DefaultWidth itself still resolves to 3 columns — so a change to either constant that broke
+    // the pairing would fail here instead of silently clipping the last tile row live.
+    [Fact]
+    public void DefaultWidthYieldsThreeTileColumns()
+    {
+        Assert.Equal(3, TrayTileColumnsConverter.ColumnsFor(TrayFlyoutGeometry.DefaultWidth));
     }
 }

@@ -12,6 +12,19 @@ public sealed record TrayFlyoutGeometry
     public double Height { get; init; }
 
     /// <summary>
+    /// The transient popup's width (the same literal as <c>TrayFlyoutWindow.axaml</c>'s
+    /// <c>Width="420"</c>). <c>TrayFlyoutWindow</c> ENFORCES this — not merely assumes it — by
+    /// setting <c>Width = DefaultWidth</c> whenever it enters transient mode (its
+    /// <c>ApplyMode(isPinned: false)</c>), because nothing else resets <c>Width</c> on unpin or in
+    /// <c>ShowAtTray</c>'s transient branch (only <c>Position</c> is set there): a pinned window
+    /// resized down to <c>TrayFlyoutGeometryValidator.MinWidth</c> (320, reachable through the
+    /// resize grips) and then unpinned would otherwise stay 320 wide, giving
+    /// <c>TrayTileColumnsConverter.ColumnsFor</c> 2 columns instead of 3 — 3 tile rows instead of 2
+    /// — which <see cref="CardsMaxHeight"/>'s budget below does not have room for.
+    /// </summary>
+    public const double DefaultWidth = 420;
+
+    /// <summary>
     /// Cap on the pinned-sensor cards <c>ScrollViewer</c>'s height (<c>TrayFlyoutWindow.axaml</c>,
     /// the cards row) while the window is transient (<c>SizeToContent.Height</c>, no user resize).
     /// </summary>
@@ -21,8 +34,9 @@ public sealed record TrayFlyoutGeometry
     /// past the screen and nothing throws.
     /// <para>
     /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c> as of RemEx-4kv0g.18.2, at
-    /// the transient window's fixed default <c>Width="420"</c> (transient is not user-resizable,
-    /// so 420 is the only width this has to hold for):
+    /// <see cref="DefaultWidth"/> (420) — ENFORCED for the transient window by
+    /// <c>TrayFlyoutWindow.ApplyMode(isPinned: false)</c>, not merely assumed, so 420 really is the
+    /// only width this budget has to hold for:
     /// <code>
     ///   TrayFlyoutGeometryValidator.MaxHeight ................................ 800
     /// − outer Border margin (Margin="12" around the card, 12 top + 12 bottom) ... 24

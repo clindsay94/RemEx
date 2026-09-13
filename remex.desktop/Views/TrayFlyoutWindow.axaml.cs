@@ -125,6 +125,19 @@ public partial class TrayFlyoutWindow : Window
         CanResize = isPinned;
         SizeToContent = isPinned ? SizeToContent.Manual : SizeToContent.Height;
 
+        // ENFORCES TrayFlyoutGeometry.CardsMaxHeight's own width assumption (RemEx-4kv0g.18.2 fix
+        // round 1). Nothing else resets Width on unpin or in ShowAtTray's transient branch (that
+        // branch only sets Position) — so a window pinned-and-resized down toward
+        // TrayFlyoutGeometryValidator.MinWidth (320, reachable through the resize grips) and then
+        // unpinned would otherwise STAY that narrow. At Width < 380
+        // (TrayTileColumnsConverter.ThreeColumnWidth) the six tiles lay out 2 columns instead of
+        // 3 — three tile rows instead of two — which CardsMaxHeight's budget has no room for, so
+        // SizeToContent.Height would clamp at the window's own 800 ceiling and clip the last tile
+        // row. Setting Width here is what makes OnTogglePin's own remark below ("unpin means go
+        // back to being a popup ... at the default size") actually true.
+        if (!isPinned)
+            Width = TrayFlyoutGeometry.DefaultWidth;
+
         // The cards row (ContentGrid.RowDefinitions[1]) is Auto in transient mode, so
         // SizeToContent.Height measures it like any other content and the ScrollViewer's own
         // MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}" caps how tall that
