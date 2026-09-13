@@ -9,21 +9,23 @@ namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
 /// Guards RemEx-1ufoa.2, carried into Spec B's family styling (RemEx-4kv0g.3.2). The dual-metric
-/// legend plate on the Sensors canvas card is, for an overridden card, the per-sensor
-/// <c>Sensor.Theme.CardBackground</c> (dark by default) at translucent alpha — so an overridden
-/// card's legend/value/title text must still bind through its OWN <c>Sensor.Theme.*</c>, never a
+/// legend plate on the Sensors card is, for an overridden card, the per-sensor
+/// <c>Theme.CardBackground</c> (dark by default) at translucent alpha — so an overridden
+/// card's legend/value/title text must still bind through its OWN <c>Theme.*</c>, never a
 /// generic palette brush that could be dark-on-dark on a light seed. Each family's themed text must
 /// use that family's own paired ink token, never a different family's or a hardcoded literal.
 /// </summary>
 /// <remarks>
 /// FIX ROUND 1 RESTORES THE RIGOUR an earlier pass replaced with <c>string.Contain()</c> over the
 /// whole style file — a substring check passes whether a setter sits under the right selector or
-/// the wrong one, and whether a TextBlock in CanvasView.axaml still carries its class or lost it.
+/// the wrong one, and whether a TextBlock in the card content still carries its class or lost it.
 /// This parses <c>Styles/SensorCardFamilies.axaml</c> as XML and resolves each assertion against
 /// the specific Style element the Selector attribute names (exact selector-part matching, not
 /// substring — "TextBlock.card-value" is itself a substring of "TextBlock.card-value-2", which is
-/// exactly the kind of false-positive substring matching invites), and parses CanvasView.axaml to
-/// confirm the legend TextBlocks still carry the class the style rules depend on.
+/// exactly the kind of false-positive substring matching invites), and parses
+/// <c>Controls/SensorCardContent.axaml</c> (RemEx-4kv0g.18.1 moved the card content there out of
+/// CanvasView.axaml) to confirm the legend TextBlocks still carry the class the style rules depend
+/// on.
 /// </remarks>
 public class CanvasLegendContrastTests
 {
@@ -47,45 +49,51 @@ public class CanvasLegendContrastTests
     }
 
     [Fact]
-    public void OverriddenCanvasCard_UnitAndLegendNameStyle_BindsSensorThemeUnitColor()
+    public void OverriddenCard_UnitAndLegendNameStyle_BindsThemeUnitColor()
     {
+        // RemEx-4kv0g.18.1: the canvas-only "ctrl|DraggableCard.family-custom" selector is gone —
+        // SensorCardContent's DataContext is the SensorViewModel on every host, so one
+        // host-agnostic ".family-custom" selector now binds Theme.UnitColor directly (no "Sensor."
+        // prefix) for canvas, Home tile and tray strip alike.
         var doc = LoadStyles();
 
         var style = FindStyleByExactSelectors(doc,
-            "ctrl|DraggableCard.family-custom TextBlock.card-unit",
-            "ctrl|DraggableCard.family-custom TextBlock.card-legend-name");
+            ".family-custom TextBlock.card-unit",
+            ".family-custom TextBlock.card-legend-name");
 
         SetterValue(style, "Foreground").Should().Be(
-            "{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
-            "an overridden card's legend names and unit text must bind Sensor.Theme.UnitColor, never a palette brush");
+            "{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+            "an overridden card's legend names and unit text must bind Theme.UnitColor, never a palette brush");
     }
 
     [Fact]
-    public void OverriddenCanvasCard_TitleAndValueStyles_EachBindTheirOwnSensorThemeField()
+    public void OverriddenCard_TitleAndValueStyles_EachBindTheirOwnThemeField()
     {
         var doc = LoadStyles();
 
-        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.sensor-title"), "Foreground")
-            .Should().Be("{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+        SetterValue(FindStyleByExactSelectors(doc, ".family-custom TextBlock.sensor-title"), "Foreground")
+            .Should().Be("{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
                 "the title must bind LabelColor specifically, not a neighbouring field");
 
-        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.card-value"), "Foreground")
-            .Should().Be("{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+        SetterValue(FindStyleByExactSelectors(doc, ".family-custom TextBlock.card-value"), "Foreground")
+            .Should().Be("{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}",
                 "the primary value must bind ValueColor, not the LabelColor a substring check could not tell apart");
 
-        SetterValue(FindStyleByExactSelectors(doc, "ctrl|DraggableCard.family-custom TextBlock.card-value-2"), "Foreground")
-            .Should().Be("{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}",
+        SetterValue(FindStyleByExactSelectors(doc, ".family-custom TextBlock.card-value-2"), "Foreground")
+            .Should().Be("{Binding SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}",
                 "the secondary (dual-metric) value must follow the sibling sensor's accent, not the primary ValueColor");
     }
 
     [Fact]
-    public void CanvasView_BothLegendNameTextBlocks_CarryTheLegendNameClass()
+    public void SensorCardContent_BothLegendNameTextBlocks_CarryTheLegendNameClass()
     {
-        var doc = XDocument.Parse(ReadCanvasView());
+        // RemEx-4kv0g.18.1: this structure lives in Controls/SensorCardContent.axaml now, and the
+        // legend Border's binding dropped its "Sensor." prefix along with everything else it moved.
+        var doc = XDocument.Parse(ReadSensorCardContent());
         var ns = doc.Root!.GetDefaultNamespace();
 
         var legendBorder = doc.Descendants(ns + "Border")
-            .SingleOrDefault(b => (string?)b.Attribute("IsVisible") == "{Binding Sensor.IsDualMetric}");
+            .SingleOrDefault(b => (string?)b.Attribute("IsVisible") == "{Binding IsDualMetric}");
 
         legendBorder.Should().NotBeNull("exactly one dual-metric legend Border should exist on the Sensors card");
 
@@ -147,8 +155,8 @@ public class CanvasLegendContrastTests
     private static string ReadSensorCardFamilies()
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Styles", "SensorCardFamilies.axaml"));
 
-    private static string ReadCanvasView()
-        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CanvasView.axaml"));
+    private static string ReadSensorCardContent()
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Controls", "SensorCardContent.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

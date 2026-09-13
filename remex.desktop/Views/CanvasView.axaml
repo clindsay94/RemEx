@@ -389,110 +389,27 @@
                                             </Border>
                                         </StackPanel>
 
-                                        <!-- ═══ SENSOR ═══ -->
-                                        <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}" RowDefinitions="Auto,*">
-                                            <!-- Row 0: title band on top, above the sparkline (readable without a plate). A Grid,
-                                                 not a StackPanel (gate finding, RemEx-8wpvr.4): a horizontal StackPanel gives its
-                                                 children infinite width along the stack axis, so the title's TextTrimming never
-                                                 actually fired once the bell shared the row - at a 200px card width the bell
-                                                 rendered past the card's right edge, overlapping the neighbour. ColumnDefinitions
-                                                 "*,Auto" bounds the title to the remaining width (so it trims) and pins the bell to
-                                                 its own Auto column (so it always stays inside the padding). -->
-                                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="8,5,8,2" VerticalAlignment="Top">
-                                                <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="4">
-                                                    <mi:MaterialIcon Grid.Column="0" Kind="Pin" Width="10" Height="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
-                                                    <!-- Title (Personalize → Text "Sensor text", RemEx-jt6w5): SensorTitleTextBlock carries the
-                                                         size, the weight (Bold by default, so no inline FontWeight — a local value would outrank
-                                                         the Bold switch) and the halo. The Border is the value plate's own treatment drawn BEHIND
-                                                         the title when "Backdrop behind titles" is on: a SIBLING in a Panel, never a wrapper
-                                                         (hiding a wrapper hides the title), with a negative margin so the plate breathes past the
-                                                         glyph box without moving the text. The Panel is Left-aligned in the star column so the
-                                                         title still trims. -->
-                                                    <Panel Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                        <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
-                                                        <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="sensor-title" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                    </Panel>
-                                                </Grid>
-                                                <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own
-                                                     PointerPressed handling (it marks the event Handled) stops DraggableCard's
-                                                     OnPointerPressed from seeing it, the same way every other in-card button in this
-                                                     app avoids starting a drag — no extra plumbing needed. Classes.tripped drives the
-                                                     two "Button.alert-bell[.tripped]" icon styles below. No local BorderThickness
-                                                     (Opus review, RemEx-8wpvr.4): a local value outranks ".tertiary"'s BorderThickness
-                                                     Setter regardless of pseudo-class, so it was also outranking the
-                                                     ":focus-visible /template/ ContentPresenter" ring setter and hiding it. -->
-                                                <Button Grid.Column="1" Classes="tertiary icon-button alert-bell" Classes.tripped="{Binding IsAlertTripped}" Width="20" Height="20" Margin="4,0,0,0" VerticalAlignment="Center" IsVisible="{Binding HasAlert}" Command="{Binding AcknowledgeAlertCommand}" ToolTip.Tip="{Binding AlertTooltip}" AutomationProperties.Name="{Binding AlertTooltip}">
-                                                    <mi:MaterialIcon Width="14" Height="14" Classes="card-icon"/>
-                                                </Button>
-                                            </Grid>
+                                        <!-- ═══ SENSOR ═══ The card's visual moved to Controls/SensorCardContent.axaml verbatim
+                                             (RemEx-4kv0g.18.1) so the canvas and the tray flyout (.18.2) host the same markup.
+                                             DataContext stays this element's own (CanvasCardViewModel) — we bind Sensor rather
+                                             than setting DataContext="{Binding Sensor}" directly, because once DataContext flips
+                                             to the sensor the five properties below would no longer resolve against this card VM
+                                             (see SensorCardContent's own header comment). -->
+                                        <ctrl:SensorCardContent IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}"
+                                            Sensor="{Binding Sensor}"
+                                            IsPinnedToHome="{Binding IsPinnedToHome}"
+                                            HasAlert="{Binding HasAlert}"
+                                            IsAlertTripped="{Binding IsAlertTripped}"
+                                            AcknowledgeAlertCommand="{Binding AcknowledgeAlertCommand}"
+                                            AlertTooltip="{Binding AlertTooltip}"/>
 
-                                            <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
-                                            <Grid Grid.Row="1">
-                                                <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" SecondaryHistory="{Binding Sensor.SecondaryHistory}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6" Classes="card-spark"/>
-
-                                                <!-- Value plate: its OWN Viewbox (title excluded) so every card's number renders at a
-                                                     consistent size; DownOnly means short values don't balloon. Layered above the
-                                                     sparkline on a semi-opaque plate so it stays crisp over the prominent line. -->
-                                                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="34" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding Sensor.ShowValueOverlay}">
-                                                    <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
-                                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Classes="card-value">
-                                                                <TextBlock.Text>
-                                                                    <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
-                                                                        <Binding Path="Sensor.Value"/>
-                                                                        <Binding Path="Sensor.Unit"/>
-                                                                    </MultiBinding>
-                                                                </TextBlock.Text>
-                                                            </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.Unit}" Theme="{StaticResource CaptionTextBlock}" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </Viewbox>
-
-                                                <!-- Dual Metric: the SECOND sensor's value, mirrored bottom-right and tinted with the
-                                                     secondary accent so it maps to the amber line (the primary value stays bottom-left). -->
-                                                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="30" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6"
-                                                         IsVisible="{Binding Sensor.HasSecondary}">
-                                                    <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
-                                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                            <TextBlock Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Classes="card-value-2">
-                                                                <TextBlock.Text>
-                                                                    <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
-                                                                        <Binding Path="Sensor.SecondarySensor.Value"/>
-                                                                        <Binding Path="Sensor.SecondarySensor.Unit"/>
-                                                                    </MultiBinding>
-                                                                </TextBlock.Text>
-                                                            </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.Unit}" Theme="{StaticResource OverlineTextBlock}" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </Viewbox>
-
-                                                <!-- Dual Metric legend: colour key mapping each line to its sensor. The plate is the
-                                                     per-sensor theme's CardBackground (dark by default), so its text follows the
-                                                     sensor theme too, same as the value badges above — a palette text brush can be
-                                                     dark-on-dark on a light seed (RemEx-1ufoa.2). The names take SensorMetricNameTextBlock
-                                                     (Personalize → Text "Sensor text", RemEx-jt6w5); this plate already is the backdrop
-                                                     treatment, so the backdrop switch adds nothing here. -->
-                                                <Border IsVisible="{Binding Sensor.IsDualMetric}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
-                                                        CornerRadius="5" Padding="6,4"
-                                                        Classes="card-legend-plate">
-                                                    <StackPanel Spacing="3">
-                                                        <StackPanel Orientation="Horizontal" Spacing="5">
-                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Classes="card-legend-1"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Classes="card-legend-name"/>
-                                                        </StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding Sensor.HasSecondary}">
-                                                            <Border Width="9" Height="9" CornerRadius="2" VerticalAlignment="Center" Classes="card-legend-2"/>
-                                                            <TextBlock Text="{Binding Sensor.SecondarySensor.DisplayName}" Theme="{StaticResource SensorMetricNameTextBlock}" MaxWidth="120" TextTrimming="CharacterEllipsis" Classes="card-legend-name"/>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Grid>
-
-                                            <!-- Inline rename editor: normal-sized overlay spanning the card. Commits on Enter/blur. -->
-                                            <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" AutomationProperties.Name="{local:Localize Canvas_Rename}" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
-                                        </Grid>
+                                        <!-- Inline rename editor: normal-sized overlay spanning the card. Commits on Enter/blur.
+                                             Stayed here rather than moving into SensorCardContent (RemEx-4kv0g.18.1): CommitRename
+                                             below pattern-matches the sender's DataContext against CanvasCardViewModel, which is
+                                             this element's DataContext, not the sensor's — SensorCardContent's content no longer
+                                             has that VM in scope. Grid.Row/RowSpan are vestigial (this outer Grid has no
+                                             RowDefinitions, so there's one implicit row/column already) but kept as they were. -->
+                                        <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" AutomationProperties.Name="{local:Localize Canvas_Rename}" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
                                     </Grid>
                                 </ctrl:DraggableCard>
                             </DataTemplate>

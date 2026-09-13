@@ -37,11 +37,15 @@ public class CanvasAlertVisualTests
     {
         var bellTag = ExtractAlertBellButtonTag();
 
-        bellTag.Should().Contain("IsVisible=\"{Binding HasAlert}\"",
+        // RemEx-4kv0g.18.1: HasAlert/IsAlertTripped/AcknowledgeAlertCommand live on
+        // CanvasCardViewModel, not on the sensor SensorCardContent's own content binds against — so
+        // these three now reach it via RelativeSource off the control itself (see
+        // SensorCardContent.axaml's header comment), not a plain "{Binding X}".
+        bellTag.Should().Contain("IsVisible=\"{Binding HasAlert, RelativeSource={RelativeSource AncestorType=ctrl:SensorCardContent}}\"",
             "the bell must only show on a card with a configured alert");
-        bellTag.Should().Contain("Classes.tripped=\"{Binding IsAlertTripped}\"",
+        bellTag.Should().Contain("Classes.tripped=\"{Binding IsAlertTripped, RelativeSource={RelativeSource AncestorType=ctrl:SensorCardContent}}\"",
             "the tripped/armed Kind+Foreground swap is driven by a class bound to IsAlertTripped");
-        bellTag.Should().Contain("Command=\"{Binding AcknowledgeAlertCommand}\"",
+        bellTag.Should().Contain("Command=\"{Binding AcknowledgeAlertCommand, RelativeSource={RelativeSource AncestorType=ctrl:SensorCardContent}}\"",
             "clicking the bell must acknowledge the trip the same way clicking the card body does");
     }
 
@@ -109,7 +113,7 @@ public class CanvasAlertVisualTests
     [Fact]
     public void SensorCardHeaderRowIsAGridWithTitleStarAndBellAutoColumn()
     {
-        var text = CanvasViewText();
+        var text = SensorCardContentText();
         var bellTag = ExtractAlertBellButtonTag();
 
         var headerGridPattern = new Regex(
@@ -246,6 +250,13 @@ public class CanvasAlertVisualTests
     private static string CanvasViewText() =>
         StripXmlComments(File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CanvasView.axaml")));
 
+    /// <summary>RemEx-4kv0g.18.1 moved the sensor card's title row (and the alert bell in it) out of
+    /// CanvasView.axaml into Controls/SensorCardContent.axaml verbatim — the alert-active glow
+    /// styles this class also guards stayed in CanvasView.axaml's own UserControl.Styles, so only
+    /// the bell/header-row assertions below switched files.</summary>
+    private static string SensorCardContentText() =>
+        StripXmlComments(File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Controls", "SensorCardContent.axaml")));
+
     private static string StripXmlComments(string xaml) =>
         Regex.Replace(xaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
 
@@ -253,9 +264,9 @@ public class CanvasAlertVisualTests
     /// distinctive "alert-bell" vocabulary exception class) out of the sensor card template.</summary>
     private static string ExtractAlertBellButtonTag()
     {
-        var text = CanvasViewText();
+        var text = SensorCardContentText();
         var match = Regex.Match(text, @"<Button\b[^>]*\balert-bell\b[^>]*>", RegexOptions.Singleline);
-        match.Success.Should().BeTrue("CanvasView.axaml must declare the header alert bell Button");
+        match.Success.Should().BeTrue("SensorCardContent.axaml must declare the header alert bell Button");
         return match.Value;
     }
 

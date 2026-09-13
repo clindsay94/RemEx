@@ -59,12 +59,17 @@
          part class instead — that move is the whole trick this file depends on.
 
          family-custom IS THE EXCEPTION, ON PURPOSE. An overridden card keeps today's hex
-         bindings (Sensor.Theme.* / Theme.*) inside these Style setters — a Binding inside a
-         Setter resolves against the TARGET element's DataContext, which is why the same part
-         class needs two different binding paths across hosts: the canvas card's DataContext is
-         CanvasCardViewModel (bindings go through ".Sensor"), while the Home tile and tray strip
-         bind SensorViewModel directly (no prefix). family-custom sets no card Background —
-         an overridden card keeps CardBackgroundBrush, exactly as before this spec. -->
+         bindings (Theme.* / SecondaryAccentHex) inside these Style setters — a Binding inside a
+         Setter resolves against the TARGET element's DataContext. Before RemEx-4kv0g.18.1 that
+         needed two rule sets, because the canvas card's DataContext was CanvasCardViewModel
+         (bindings went through ".Sensor") while the Home tile and tray strip bound SensorViewModel
+         directly. Since 18.1 extracted the card content into Controls/SensorCardContent.axaml, its
+         DataContext is SensorViewModel on every host — canvas, Home tile and tray strip alike — so
+         one host-agnostic set below (class-only ancestor, no host-type qualifier) now covers all
+         three; only the tray strip's sparkline keeps a second, host-qualified rule (below, on
+         StackPanel.tray-sensor) because .18.2 still owns deleting that strip. family-custom sets
+         no card Background — an overridden card keeps CardBackgroundBrush, exactly as before this
+         spec. -->
 
     <!-- ─── Primary ─── -->
     <Style Selector="ctrl|DraggableCard.family-primary">
@@ -224,73 +229,73 @@
         <Setter Property="Foreground" Value="{DynamicResource CardSeriesNeutralBrush}"/>
     </Style>
 
-    <!-- ═══ family-custom: canvas host (DataContext = CanvasCardViewModel, bindings go through
-         ".Sensor") ═══ -->
-    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.sensor-title" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Foreground" Value="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    <!-- ═══ family-custom (RemEx-4kv0g.18.1): one host-agnostic rule set. SensorCardContent's
+         DataContext is SensorViewModel on every host — canvas, Home tile, tray strip — so a
+         class-only ancestor selector, the same shape the family-{F} rules above use, now covers
+         all three; no more "ctrl|DraggableCard.family-custom" / "material|Card.family-custom"
+         duplication, and no more canvas-only "Sensor."-prefixed binding path. ═══ -->
+    <Style Selector=".family-custom TextBlock.sensor-title" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-value" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Foreground" Value="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-value-2" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Foreground" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom TextBlock.card-unit, ctrl|DraggableCard.family-custom TextBlock.card-legend-name" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom Border.card-pill" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
-    </Style>
-    <!-- Value plates were always 0.8; the legend plate below was always 0.78 — restored as two
-         classes after fix round 1 found the earlier single "card-plate" class had collapsed the
-         two alphas into one and silently changed the value plate's look on an overridden card. -->
-    <Style Selector="ctrl|DraggableCard.family-custom Border.card-plate" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-plate" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Background" Value="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="AccentColor" Value="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
-        <Setter Property="SecondaryAccentColor" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-1" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Background" Value="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-    <Style Selector="ctrl|DraggableCard.family-custom Border.card-legend-2" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Background" Value="{Binding Sensor.SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-    <!-- The alert bell's resting icon colour (CanvasView.axaml's Button.alert-bell mi|MaterialIcon)
-         moved here rather than staying inline, so CanvasView.axaml carries no per-theme colour
-         binding at all — the family case is covered by ".family-{F} mi|MaterialIcon.card-icon"
-         above via the icon's own "card-icon" class. -->
-    <Style Selector="ctrl|DraggableCard.family-custom Button.alert-bell mi|MaterialIcon" x:DataType="vm:CanvasCardViewModel">
-        <Setter Property="Foreground" Value="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-    </Style>
-
-    <!-- ═══ family-custom: Home pinned tile (DataContext = SensorViewModel directly, no prefix) ═══ -->
+    <!-- Home tile's sensor-title, alone among these parts, kept its own static colour before
+         RemEx-4kv0g.18.1 (TextSecondaryBrush, not Theme.LabelColor) — the design doc's claim that
+         "the Home tile ... already bind[s] Theme.…" does not hold for this one part, verified
+         against the file as it stood at a52d6400. Preserved via a host-qualified override,
+         declared after the merged rule so it wins the same-tier tie, instead of silently changing
+         the Home tile's look as a side effect of a canvas-only extraction (see task report). -->
     <Style Selector="material|Card.family-custom TextBlock.sensor-title" x:DataType="vm:SensorViewModel">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
-    <!-- Spec B §5 (RemEx-4kv0g.3.2 review): the tile's value/unit follow on<F>Container too — an
-         overridden tile keeps its own hex, same as the canvas card's card-value/card-unit. -->
-    <Style Selector="material|Card.family-custom TextBlock.card-value" x:DataType="vm:SensorViewModel">
+    <Style Selector=".family-custom TextBlock.card-value" x:DataType="vm:SensorViewModel">
         <Setter Property="Foreground" Value="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
-    <Style Selector="material|Card.family-custom TextBlock.card-unit" x:DataType="vm:SensorViewModel">
+    <Style Selector=".family-custom TextBlock.card-value-2" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector=".family-custom TextBlock.card-unit, .family-custom TextBlock.card-legend-name" x:DataType="vm:SensorViewModel">
         <Setter Property="Foreground" Value="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     </Style>
-    <Style Selector="material|Card.family-custom Border.card-pill" x:DataType="vm:SensorViewModel">
+    <Style Selector=".family-custom Border.card-pill" x:DataType="vm:SensorViewModel">
         <Setter Property="Background" Value="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
     </Style>
-    <Style Selector="material|Card.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
-        <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    <!-- Value plates were always 0.8; the legend plate below was always 0.78 — kept as two
+         classes after fix round 1 found the earlier single "card-plate" class had collapsed the
+         two alphas into one and silently changed the value plate's look on an overridden card. -->
+    <Style Selector=".family-custom Border.card-plate" x:DataType="vm:SensorViewModel">
+        <Setter Property="Background" Value="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}"/>
     </Style>
-    <Style Selector="material|Card.family-custom mi|MaterialIcon.card-icon" x:DataType="vm:SensorViewModel">
+    <Style Selector=".family-custom Border.card-legend-plate" x:DataType="vm:SensorViewModel">
+        <Setter Property="Background" Value="{Binding Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.78}"/>
+    </Style>
+    <Style Selector=".family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
+        <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+        <Setter Property="SecondaryAccentColor" Value="{Binding SecondaryAccentHex, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
+    </Style>
+    <Style Selector=".family-custom Border.card-legend-1" x:DataType="vm:SensorViewModel">
+        <Setter Property="Background" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <Style Selector=".family-custom Border.card-legend-2" x:DataType="vm:SensorViewModel">
+        <Setter Property="Background" Value="{Binding SecondaryAccentHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
+    <!-- Generic card-icon colour (the Home tile's own Flash icon, e.g.) — declared BEFORE the
+         alert-bell rule below on purpose: both are StyleTrigger tier (a class on each side) and
+         the alert bell's icon carries "card-icon" too, so the two rules tie on the same element;
+         per this file's precedence note at the top, the later declaration wins the tie, and the
+         bell must win with Theme.UnitColor (see that rule) to stay pixel-identical to before
+         RemEx-4kv0g.18.1, when the two lived on non-colliding host-qualified selectors. -->
+    <Style Selector=".family-custom mi|MaterialIcon.card-icon" x:DataType="vm:SensorViewModel">
         <Setter Property="Foreground" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
     </Style>
+    <!-- The alert bell's resting icon colour (SensorCardContent.axaml's Button.alert-bell
+         mi|MaterialIcon) — kept apart from the generic card-icon rule above (different bound
+         colour) and declared after it so it wins the tie on the bell's own icon. -->
+    <Style Selector=".family-custom Button.alert-bell mi|MaterialIcon" x:DataType="vm:SensorViewModel">
+        <Setter Property="Foreground" Value="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    </Style>
 
-    <!-- ═══ family-custom: tray flyout strip (DataContext = SensorViewModel directly) ═══ -->
+    <!-- ═══ family-custom: tray flyout strip only (DataContext = SensorViewModel directly) ═══
+         Still host-qualified and still duplicates AccentColor from the rule above — .18.2 deletes
+         this strip and this rule together, so it is left alone here rather than folded in. -->
     <Style Selector="StackPanel.tray-sensor.family-custom ctrl|SparklineControl.card-spark" x:DataType="vm:SensorViewModel">
         <Setter Property="AccentColor" Value="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}"/>
     </Style>
