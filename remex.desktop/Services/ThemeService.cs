@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Material.Styles.Themes;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
+using Remex.Core.Theming;
 using Remex.Core.Theming.Mcu;
 using System.Diagnostics;
 
@@ -534,6 +535,47 @@ public class ThemeService : IDisposable
         SetResourceOverrideInternal("CardBorder", palette.Outline);
         SetResourceOverrideInternal("CardBorderBrush", new SolidColorBrush(palette.Outline));
 
+        // Spec B (RemEx-4kv0g.3): per-family card resources. The body follows GlassOpacity down to
+        // fully clear (0); ink, plates and series keep their own alpha so a clear card stays legible.
+        var cardBodyAlpha = (byte)Math.Round(Math.Clamp(settings.GlassOpacity, 0.0, 1.0) * 255);
+        var variant = SchemeVariants.ToMcu(settings.SchemeVariant);
+
+        var primaryContainer = ToColor(roles.PrimaryContainer);
+        var onPrimaryContainer = ToColor(roles.OnPrimaryContainer);
+        SetResourceOverrideInternal("CardBodyPrimaryBrush", new SolidColorBrush(WithAlpha(primaryContainer, cardBodyAlpha)));
+        SetResourceOverrideInternal("CardPlatePrimaryBrush", new SolidColorBrush(WithAlpha(primaryContainer, 217)));   // 0.85
+        SetResourceOverrideInternal("CardInkPrimaryBrush", new SolidColorBrush(onPrimaryContainer));
+        SetResourceOverrideInternal("CardInkDimPrimaryBrush", new SolidColorBrush(WithAlpha(onPrimaryContainer, 179))); // 0.70
+        SetResourceOverrideInternal("CardSeriesPrimary", ToColor(roles["primary"]));
+        SetResourceOverrideInternal("CardSeriesTwoPrimary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Primary, variant)]));
+
+        var secondaryContainer = ToColor(roles.SecondaryContainer);
+        var onSecondaryContainer = ToColor(roles.OnSecondaryContainer);
+        SetResourceOverrideInternal("CardBodySecondaryBrush", new SolidColorBrush(WithAlpha(secondaryContainer, cardBodyAlpha)));
+        SetResourceOverrideInternal("CardPlateSecondaryBrush", new SolidColorBrush(WithAlpha(secondaryContainer, 217)));
+        SetResourceOverrideInternal("CardInkSecondaryBrush", new SolidColorBrush(onSecondaryContainer));
+        SetResourceOverrideInternal("CardInkDimSecondaryBrush", new SolidColorBrush(WithAlpha(onSecondaryContainer, 179)));
+        SetResourceOverrideInternal("CardSeriesSecondary", ToColor(roles["secondary"]));
+        SetResourceOverrideInternal("CardSeriesTwoSecondary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Secondary, variant)]));
+
+        var tertiaryContainer = ToColor(roles.TertiaryContainer);
+        var onTertiaryContainer = ToColor(roles.OnTertiaryContainer);
+        SetResourceOverrideInternal("CardBodyTertiaryBrush", new SolidColorBrush(WithAlpha(tertiaryContainer, cardBodyAlpha)));
+        SetResourceOverrideInternal("CardPlateTertiaryBrush", new SolidColorBrush(WithAlpha(tertiaryContainer, 217)));
+        SetResourceOverrideInternal("CardInkTertiaryBrush", new SolidColorBrush(onTertiaryContainer));
+        SetResourceOverrideInternal("CardInkDimTertiaryBrush", new SolidColorBrush(WithAlpha(onTertiaryContainer, 179)));
+        SetResourceOverrideInternal("CardSeriesTertiary", ToColor(roles["tertiary"]));
+        SetResourceOverrideInternal("CardSeriesTwoTertiary", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Tertiary, variant)]));
+
+        var surfaceContainerHigh = ToColor(roles.SurfaceContainerHigh);
+        var onSurface = ToColor(roles.OnSurface);
+        SetResourceOverrideInternal("CardBodyNeutralBrush", new SolidColorBrush(WithAlpha(surfaceContainerHigh, cardBodyAlpha)));
+        SetResourceOverrideInternal("CardPlateNeutralBrush", new SolidColorBrush(WithAlpha(surfaceContainerHigh, 217)));
+        SetResourceOverrideInternal("CardInkNeutralBrush", new SolidColorBrush(onSurface));
+        SetResourceOverrideInternal("CardInkDimNeutralBrush", new SolidColorBrush(WithAlpha(onSurface, 179)));
+        SetResourceOverrideInternal("CardSeriesNeutral", ToColor(roles["outline"]));
+        SetResourceOverrideInternal("CardSeriesTwoNeutral", ToColor(roles[SensorFamilies.SeriesTwoRole(SensorFamily.Neutral, variant)]));
+
         // Popup surfaces (RemEx-mmrgc's neighbour, no bead — Connor reported this live).
         // Material.Avalonia's ComboBox.axaml wraps its dropdown in an un-Themed controls:Card,
         // which resolves App.axaml's app-wide {x:Type material:Card} override and so paints
@@ -856,6 +898,9 @@ public class ThemeService : IDisposable
     }
 
     private static Color ToColor(uint argb) => Color.FromUInt32(argb);
+
+    /// <summary>Same colour, a different alpha (spec B §2's per-component alphas over a shared role colour).</summary>
+    private static Color WithAlpha(Color c, byte a) => Color.FromArgb(a, c.R, c.G, c.B);
 
     /// <summary>
     /// Injects a colour from physical hardware (RGB peripherals, via a hardware-sync source) as the
