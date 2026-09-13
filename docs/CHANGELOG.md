@@ -33,7 +33,7 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   PC's Contrast control means what the phone's does across its whole −1..1 range — "Softer" is a
   genuine reduced-contrast scheme. A committed vector file generated from Google's classes proves it
   on both sides, and `docs/MEASURE-palette-parity.md` records the side-by-side eyes pass. Success
-  and warning colours are unchanged. (RemEx-4kv0g.6–.14)
+  and warning keep their fixed seeds and Tonal Spot derivation. (RemEx-4kv0g.6–.14)
 - Repo docs refreshed for 2.5.0. The README was rewritten in the owner's voice: live badges that
   pull release, build, download and license state from GitHub instead of hard-coded values, an ASCII
   terminal-window banner in the `>R▮` brand, a mermaid pairing diagram and channel map, a "where it's

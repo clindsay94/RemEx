@@ -179,9 +179,9 @@ public class SeedPresetCatalogTests
 
     /// <summary>Every seed parses and every variant is one the generator actually recognises.</summary>
     /// <remarks>
-    /// <c>DynamicColorGenerator.StyleFor</c> falls through to TonalSpot for anything it does not
-    /// know, so a typo'd variant is not an error — it is a preset that silently renders as a
-    /// different one. This is the only place that can catch it.
+    /// <c>SchemeVariants.Normalize</c> (and so <c>ToMcu</c>) falls through to TonalSpot for
+    /// anything it does not know, so a typo'd variant is not an error — it is a preset that
+    /// silently renders as a different one. This is the only place that can catch it.
     /// </remarks>
     [Fact]
     public void EverySeedParsesAndEveryVariantIsRecognised()

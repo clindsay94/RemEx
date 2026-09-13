@@ -74,7 +74,7 @@ Scripts (outside the repo, kept with the SDD workspace): `%TEMP%\remex-ui\eyes\{
 
 ## Decision
 
-**PASS.** Every PC swatch equals the port's value for the tuple the phone sent, every phone pixel equals the same value composited into the panel's colour space, and where the adopted seed is a grid seed the committed vector row equals both. No cell needed either side "matched by eye"; nothing was adjusted. Follow-ups filed, neither a colour defect: RemEx-4kv0g.15 (Vibrancy readback after Match my phone: requested vs achievable chroma), RemEx-4kv0g.16 (contrast slider detent at 0 on both platforms).
+**PASS.** Every PC swatch equals the port's value for the tuple the phone sent, every phone pixel equals the same value composited into the panel's colour space, and where the adopted tuple is a grid tuple the committed vector row equals both (cell 9's contrast is −0.5039, one slider-width off the −0.5 row, so there the row is one unit away in primary and the port at the received value is what both sides show). No cell needed either side "matched by eye"; nothing was adjusted. Follow-ups filed, neither a colour defect: RemEx-4kv0g.15 (Vibrancy readback after Match my phone: requested vs achievable chroma), RemEx-4kv0g.16 (contrast slider detent at 0 on both platforms).
 
 ## Eyes pass
 
