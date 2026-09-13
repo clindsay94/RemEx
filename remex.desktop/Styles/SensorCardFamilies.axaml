@@ -13,23 +13,27 @@
          card-legend-1, card-legend-2, card-legend-name, card-icon.
 
          THE ACTUAL AVALONIA PRECEDENCE RULE (whole-branch review — the earlier comment here said
-         "registration order", which is only half of it). A selector that carries a class or a
-         pseudo-class (".family-primary", ":pointerover") resolves at BindingPriority.StyleTrigger;
-         a selector with only element/type parts (plain "TextBlock") resolves at the lower
-         BindingPriority.Style. The higher tier ALWAYS wins, regardless of where either style is
-         registered — declaration/include order only decides a tie WITHIN the same tier. Two
-         concrete cases this file has hit:
-           - "sensor-title", NOT "card-title" (fix round 1). App.axaml:992's global
-             "TextBlock.card-title" and this file's ".family-primary TextBlock.card-title" were
-             BOTH Style-tier (no pseudo-class on either side), so that collision really was decided
-             by registration order — App.axaml's rule happened to register later and won. Renamed
-             to sidestep the collision entirely rather than relying on include order to fix it.
-           - The Home tile hover rules below exist BECAUSE tier beats order: App.axaml's
-             "material|Card.interactive:pointerover" is StyleTrigger tier (a pseudo-class), so this
-             file's plain "material|Card.family-{F}" Background setter — Style tier — could never
-             outrank it on hover no matter where the StyleInclude sat. The fix has to be a
-             StyleTrigger-tier rule of its own (see below), and ONLY THEN does registration order
-             (this file's StyleInclude sits after App.axaml's hover blocks) decide the tie.
+         "registration order", which is only half of it). A selector that carries a class OR a
+         pseudo-class (".family-primary", ".card-title", ":pointerover") is an *activated* style
+         and resolves at BindingPriority.StyleTrigger; a selector with only element/type parts
+         (plain "TextBlock", "ctrl|SparklineControl") resolves at the lower BindingPriority.Style.
+         The higher tier ALWAYS wins, regardless of where either style is registered — that is why
+         every rule in this file beats App.axaml's plain "TextBlock" and "ctrl|SparklineControl"
+         styles even though those are declared later. Declaration/include order only decides a
+         tie WITHIN the same tier. Two concrete cases this file has hit, both same-tier ties:
+           - "sensor-title", NOT "card-title" (fix round 1). App.axaml's global
+             "TextBlock.card-title" (page headers) and this file's ".family-primary
+             TextBlock.card-title" were BOTH StyleTrigger tier (a class on each side), so the tie
+             went to registration order — App.axaml's rule registered later and won, and every
+             sensor title rendered as a page header. Renamed to sidestep the collision entirely
+             rather than relying on include order to fix it.
+           - The Home tile hover rules below (whole-branch review). App.axaml's
+             "material|Card.interactive:pointerover" and this file's "material|Card.family-{F}"
+             are again both StyleTrigger tier, so with this include registered BEFORE the hover
+             block the hover rule won and repainted a themed tile with CardBackgroundHoverBrush.
+             The StyleInclude now sits after App.axaml's hover blocks, and the explicit
+             "family-{F}.interactive:pointerover" rules say what a themed tile does on hover
+             (keeps its family body) instead of leaving it to whichever rule happens to be later.
          Never reuse a part class name here without checking
          `git grep -n "\.card-" remex.desktop/App.axaml remex.desktop/Styles remex.desktop/Themes`
          first — a collision is silent, not a compile error or a binding warning.

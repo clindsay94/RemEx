@@ -304,15 +304,16 @@
 
         <!-- Spec B (RemEx-4kv0g.3): sensor card family classes — canvas, Home tiles, tray strip.
              MUST STAY AFTER the two Card :pointerover hover blocks above (whole-branch review). A
-             selector carrying a class or pseudo-class resolves at BindingPriority.StyleTrigger; a
-             type-only selector resolves at the lower Style priority. The two hover rules above are
-             both StyleTrigger tier (Class + :pointerover), so this file's plain
-             "material|Card.family-{F}" Background setter — Style tier, no pseudo-class — could never
-             outrank them regardless of where this include sits: tier beats declaration order, always.
-             SensorCardFamilies.axaml answers that with its OWN ":pointerover" rules (also StyleTrigger
-             tier, see the four "family-{F}.interactive:pointerover" rules near the top of that file),
-             and WITHIN a tier, order decides — which is the one case this include's position actually
-             controls, and why it has to be registered after both blocks above, not before them. -->
+             selector carrying a class OR a pseudo-class is activated and resolves at
+             BindingPriority.StyleTrigger; only a type-only selector resolves at the lower Style
+             priority. The hover rules above ("material|Card.interactive:pointerover") and that
+             file's "material|Card.family-{F}" are therefore the SAME tier, and within a tier
+             declaration order decides: with this include registered before the hover blocks, the
+             hover rule won and repainted a themed Home tile with CardBackgroundHoverBrush. Sitting
+             after them, the family rules win the tie, and the file's own four
+             "family-{F}.interactive:pointerover" rules state what a themed tile does on hover rather
+             than leaving it to ordering. (Tier still beats order against type-only styles such as
+             the plain "TextBlock" and "ctrl|SparklineControl" rules earlier in this file.) -->
         <StyleInclude Source="avares://Remex.Desktop/Styles/SensorCardFamilies.axaml"/>
 
         <!-- Surface variant (RemEx-zm6gp): for cards that HOST a list rather than act as a
