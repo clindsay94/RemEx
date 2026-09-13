@@ -96,9 +96,12 @@ public class TrayFlyoutSurfaceTests
         var scrollViewer = Regex.Match(text, @"<ScrollViewer\b[^>]*>", RegexOptions.Singleline);
         scrollViewer.Success.Should().BeTrue("the cards should sit inside a ScrollViewer");
         var normalizedScrollViewer = Regex.Replace(scrollViewer.Value, @"\s+", " ");
+        normalizedScrollViewer.Should().Contain("x:Name=\"CardsScrollViewer\"",
+            "ApplyMode (fix round 2) needs a named element to relax MaxHeight to PositiveInfinity while pinned");
         normalizedScrollViewer.Should().Contain("HorizontalScrollBarVisibility=\"Disabled\"");
         normalizedScrollViewer.Should().MatchRegex(
-            @"MaxHeight=""\{x:Static svc:TrayFlyoutGeometry\.CardsMaxHeight\}""");
+            @"MaxHeight=""\{x:Static svc:TrayFlyoutGeometry\.CardsMaxHeight\}""",
+            "this is only the TRANSIENT starting value; ApplyMode overrides it at runtime per mode");
 
         var card = Regex.Match(text, @"<Border Classes=""flyout-card""[^>]*>", RegexOptions.Singleline);
         card.Success.Should().BeTrue("the card host should be a Border.flyout-card");

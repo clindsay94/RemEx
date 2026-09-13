@@ -10,14 +10,16 @@
     x:Class="Remex.Desktop.Views.TrayFlyoutWindow"
     x:DataType="vm:TrayFlyoutViewModel"
     Title="{local:Localize TrayFlyout_Title}"
-    Width="420" Height="400"
+    Width="528" Height="400"
     MinWidth="320" MinHeight="240"
-    MaxWidth="900" MaxHeight="800">
+    MaxWidth="944" MaxHeight="800">
 
     <!-- SizeToContent, CanResize, Focusable and ShowInTaskbar are deliberately absent: the
          code-behind's ApplyMode and constructor own them, and a value here would fight it.
-         The Min/Max above duplicate TrayFlyoutGeometryValidator's constants because Avalonia
-         needs literals in XAML - change one, change the other. -->
+         The Min/Max above duplicate TrayFlyoutGeometryValidator's constants, and Width duplicates
+         TrayFlyoutGeometry.DefaultWidth (528, fix round 2 - wide enough for two 212px card columns;
+         see that constant's XML doc), because Avalonia needs literals in XAML - change one, change
+         the other. -->
 
     <Window.Resources>
         <!-- Shared by both tile buttons below so the plain tile and the submenu tile cannot
@@ -140,15 +142,17 @@
                  single-bang form was already used in this file, so the positive case is written as
                  its double rather than relying on an implicit int-to-bool that may not exist.
 
-                 MaxHeight IS A HARD REQUIREMENT, NOT A NICETY (docs/REGRESSION-GUARDS.md). In
-                 transient mode the window's own SizeToContent="Height" has no natural bound on
-                 this row, so without an explicit cap a long pin list grows the popup past the
-                 screen and nothing throws. TrayFlyoutGeometry.CardsMaxHeight is that constant -
+                 MaxHeight IS A HARD REQUIREMENT IN TRANSIENT MODE ONLY, NOT A NICETY
+                 (docs/REGRESSION-GUARDS.md). In transient mode the window's own
+                 SizeToContent="Height" has no natural bound on this row, so without an explicit cap
+                 a long pin list grows the popup past the screen and nothing throws.
+                 TrayFlyoutGeometry.CardsMaxHeight is that constant, set below as the XAML default -
                  see its derivation comment. In pinned mode this row's RowDefinition switches to
-                 star-sized (ApplyMode, TrayFlyoutWindow.axaml.cs) so the ScrollViewer instead takes
-                 whatever height the resize leaves free; MaxHeight then only guards the case where
-                 the window is at its own 800-tall ceiling. -->
-            <ScrollViewer Grid.Row="1"
+                 star-sized AND CardsScrollViewer.MaxHeight is overridden to
+                 double.PositiveInfinity (ApplyMode, TrayFlyoutWindow.axaml.cs, fix round 2) so the
+                 cards row takes every bit of height the resize leaves free above the fixed-height
+                 tiles row - CardsMaxHeight does not apply while pinned at all. -->
+            <ScrollViewer x:Name="CardsScrollViewer" Grid.Row="1"
                           Margin="0,12,0,0"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto"

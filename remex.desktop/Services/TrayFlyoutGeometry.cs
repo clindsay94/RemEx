@@ -11,31 +11,68 @@ public sealed record TrayFlyoutGeometry
     public double Width { get; init; }
     public double Height { get; init; }
 
+    // ═══ Column-fit constants (fix round 2) — the pieces DefaultWidth/MaxWidth's own promise
+    // ("N columns of cards fit") is pinned against by TrayFlyoutGeometryTests, instead of the
+    // promise living only in prose. Read the same sizes TrayFlyoutWindow.axaml uses:
+    //   - ChromeSideInset: outer Border Margin="12" (12+12) + content Grid Margin="16" (16+16) = 56.
+    //   - ScrollBarAllowance: worst case width the vertical ScrollBar can claim when it shows = 16.
+    //   - CardPitch: one flyout-card's footprint — Border Width="200" + Margin="6" each side = 212.
+    //   - CardsPanelInset: the cards ItemsControl's own Margin="6,0" (6+6) = 12.
+    // A window fits N card columns when Width - ChromeSideInset - ScrollBarAllowance
+    // >= N * CardPitch + CardsPanelInset (see TrayFlyoutGeometryTests.MaxWidthFitsFourCardColumns
+    // / DefaultWidthFitsTwoCardColumns).
+    public const double ChromeSideInset = 56;
+    public const double ScrollBarAllowance = 16;
+    public const double CardPitch = 212;
+    public const double CardsPanelInset = 12;
+
     /// <summary>
     /// The transient popup's width (the same literal as <c>TrayFlyoutWindow.axaml</c>'s
-    /// <c>Width="420"</c>). <c>TrayFlyoutWindow</c> ENFORCES this — not merely assumes it — by
+    /// <c>Width="528"</c>). <c>TrayFlyoutWindow</c> ENFORCES this — not merely assumes it — by
     /// setting <c>Width = DefaultWidth</c> whenever it enters transient mode (its
     /// <c>ApplyMode(isPinned: false)</c>), because nothing else resets <c>Width</c> on unpin or in
     /// <c>ShowAtTray</c>'s transient branch (only <c>Position</c> is set there): a pinned window
     /// resized down to <c>TrayFlyoutGeometryValidator.MinWidth</c> (320, reachable through the
-    /// resize grips) and then unpinned would otherwise stay 320 wide, giving
-    /// <c>TrayTileColumnsConverter.ColumnsFor</c> 2 columns instead of 3 — 3 tile rows instead of 2
-    /// — which <see cref="CardsMaxHeight"/>'s budget below does not have room for.
+    /// resize grips) and then unpinned would otherwise stay 320 wide.
     /// </summary>
-    public const double DefaultWidth = 420;
+    /// <remarks>
+    /// 528, NOT THE OLD 420 (fix round 2 — controller's eyes pass on the installed build). At 420
+    /// the popup's own content width (420 − <see cref="ChromeSideInset"/> −
+    /// <see cref="ScrollBarAllowance"/> = 348) fits only ONE 212px card column with the scrollbar
+    /// showing, not two — the transient default rendered as a single scrolling column instead of a
+    /// grid. 528's content width (528 − 56 − 16 = 456) clears two columns' <see cref="CardPitch"/>
+    /// (2 × 212 + <see cref="CardsPanelInset"/> = 436) with headroom; pinned by
+    /// <c>TrayFlyoutGeometryTests.DefaultWidthFitsTwoCardColumns</c>.
+    /// <para>
+    /// This also changes the tile grid: <c>TrayTileColumnsConverter.ColumnsFor(528)</c> is 4 (the
+    /// 520 threshold), not 3 — but 6 tiles still lay out in 2 rows either way (⌈6/4⌉ = ⌈6/3⌉ = 2),
+    /// so <see cref="CardsMaxHeight"/>'s tile budget is unchanged; pinned by
+    /// <c>TrayFlyoutGeometryTests.DefaultWidthYieldsFourTileColumns</c>.
+    /// </para>
+    /// </remarks>
+    public const double DefaultWidth = 528;
 
     /// <summary>
     /// Cap on the pinned-sensor cards <c>ScrollViewer</c>'s height (<c>TrayFlyoutWindow.axaml</c>,
-    /// the cards row) while the window is transient (<c>SizeToContent.Height</c>, no user resize).
+    /// the cards row) — TRANSIENT MODE ONLY (<c>SizeToContent.Height</c>, no user resize).
     /// </summary>
     /// <remarks>
     /// REQUIRED, NOT A NICETY (docs/REGRESSION-GUARDS.md). A height-sized window has no natural
     /// bound on an inner ScrollViewer, so without this constant a long pin list grows the popup
     /// past the screen and nothing throws.
     /// <para>
+    /// PINNED MODE DOES NOT USE THIS CONSTANT (fix round 2). <c>ApplyMode</c> sets the cards
+    /// ScrollViewer's <c>MaxHeight</c> to <c>double.PositiveInfinity</c> when pinned, so the
+    /// star-sized cards row can take all the free height the user's resize leaves above the
+    /// fixed-height tiles row — the earlier build still capped at 486 while pinned, leaving ~50px
+    /// empty below the tiles on an 894×787 popup with rows hidden behind a needless scrollbar. The
+    /// XAML <c>MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"</c> attribute is only
+    /// the TRANSIENT starting value; <c>ApplyMode</c> overrides it every mode switch.
+    /// </para>
+    /// <para>
     /// Derivation, all logical px, from <c>TrayFlyoutWindow.axaml</c> as of RemEx-4kv0g.18.2, at
-    /// <see cref="DefaultWidth"/> (420) — ENFORCED for the transient window by
-    /// <c>TrayFlyoutWindow.ApplyMode(isPinned: false)</c>, not merely assumed, so 420 really is the
+    /// <see cref="DefaultWidth"/> (528) — ENFORCED for the transient window by
+    /// <c>TrayFlyoutWindow.ApplyMode(isPinned: false)</c>, not merely assumed, so 528 really is the
     /// only width this budget has to hold for:
     /// <code>
     ///   TrayFlyoutGeometryValidator.MaxHeight ................................ 800
@@ -44,8 +81,8 @@ public sealed record TrayFlyoutGeometry
     /// − header row (badge/status text/icon buttons; conservative estimate that
     ///   leaves headroom for a larger Personalize → Text scale) .................. 56
     /// − cards row's own top margin (ScrollViewer Margin="0,12,0,0") .............. 12
-    /// − tiles row at its tallest: 6 tiles at width 420 lay out 3 columns via
-    ///   TrayTileColumnsConverter.ColumnsFor(420), i.e. 2 rows of Button
+    /// − tiles row at its tallest: 6 tiles at width 528 lay out 4 columns via
+    ///   TrayTileColumnsConverter.ColumnsFor(528), i.e. still 2 rows (⌈6/4⌉ = 2) of Button
     ///   Height="66" Margin="4" (66 + 4+4 = 74 per row, ×2 = 148), plus the
     ///   ItemsControl's own top margin (Margin="0,16,0,0") .................... 164
     ///                                                                        ------
@@ -58,6 +95,14 @@ public sealed record TrayFlyoutGeometry
     /// Personalize → Text scale via <c>Typo.*</c> resources — and is deliberately generous so the
     /// derived cap stays a floor rather than a value that could clip. Re-derive by hand if the
     /// header row, the tile button height/margin, or the card size (200×150, Margin="6") change.
+    /// </para>
+    /// <para>
+    /// The flyout's geometry (position/size/pin state) persists to
+    /// <c>C:\ProgramData\RemEx\tray_flyout_layout.json</c> — machine-wide, not per-user
+    /// (<c>RemexDataPaths.ResolveDirectory</c> relocates Windows stores there; see
+    /// <c>TrayFlyoutLayoutStore</c>). A stale saved width below <see cref="DefaultWidth"/> is not a
+    /// concern for this budget: <c>ApplyMode(isPinned: false)</c> enforces <see cref="DefaultWidth"/>
+    /// on every transient transition regardless of what was loaded from disk.
     /// </para>
     /// </remarks>
     public const double CardsMaxHeight = 486;
@@ -82,7 +127,14 @@ public sealed record TrayFlyoutGeometry
 public static class TrayFlyoutGeometryValidator
 {
     public const double MinWidth = 320;
-    public const double MaxWidth = 900;
+
+    // 944, not the old 900 (fix round 2 — controller's eyes pass on the installed build). At 900
+    // the popup's content width (900 − TrayFlyoutGeometry.ChromeSideInset −
+    // TrayFlyoutGeometry.ScrollBarAllowance = 828) falls short of four 212px card columns
+    // (4 × TrayFlyoutGeometry.CardPitch + TrayFlyoutGeometry.CardsPanelInset = 860) by 32px, so the
+    // widest pinned size only ever showed three columns. 944's content width (872) clears it with
+    // room; pinned by TrayFlyoutGeometryTests.MaxWidthFitsFourCardColumns.
+    public const double MaxWidth = 944;
     public const double MinHeight = 240;
     public const double MaxHeight = 800;
 

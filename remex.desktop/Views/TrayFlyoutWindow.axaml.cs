@@ -129,28 +129,32 @@ public partial class TrayFlyoutWindow : Window
         // round 1). Nothing else resets Width on unpin or in ShowAtTray's transient branch (that
         // branch only sets Position) — so a window pinned-and-resized down toward
         // TrayFlyoutGeometryValidator.MinWidth (320, reachable through the resize grips) and then
-        // unpinned would otherwise STAY that narrow. At Width < 380
-        // (TrayTileColumnsConverter.ThreeColumnWidth) the six tiles lay out 2 columns instead of
-        // 3 — three tile rows instead of two — which CardsMaxHeight's budget has no room for, so
-        // SizeToContent.Height would clamp at the window's own 800 ceiling and clip the last tile
-        // row. Setting Width here is what makes OnTogglePin's own remark below ("unpin means go
-        // back to being a popup ... at the default size") actually true.
+        // unpinned would otherwise STAY that narrow, giving TrayTileColumnsConverter fewer tile
+        // columns and more tile rows than CardsMaxHeight's budget has room for — and showing the
+        // cards grid as a single scrolling column instead of the two-plus DefaultWidth (528, fix
+        // round 2) promises. Setting Width here is what makes OnTogglePin's own remark below
+        // ("unpin means go back to being a popup ... at the default size") actually true.
         if (!isPinned)
             Width = TrayFlyoutGeometry.DefaultWidth;
 
         // The cards row (ContentGrid.RowDefinitions[1]) is Auto in transient mode, so
-        // SizeToContent.Height measures it like any other content and the ScrollViewer's own
-        // MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}" caps how tall that
-        // measurement can grow (RemEx-4kv0g.18.2). Pinned, it becomes star-sized so the row takes
-        // whatever height the user's resize leaves free above the fixed-height tiles row, instead
-        // of the tiles row stretching. RowDefinition is not part of the visual tree, so it cannot
-        // pick this mode up from a XAML binding to the window's DataContext — ApplyMode already
-        // owns the other half of this same mode switch (Focusable/CanResize/SizeToContent above).
+        // SizeToContent.Height measures it like any other content and CardsScrollViewer.MaxHeight
+        // caps how tall that measurement can grow (RemEx-4kv0g.18.2). Pinned, the row becomes
+        // star-sized AND MaxHeight is relaxed to PositiveInfinity (fix round 2 — CardsMaxHeight is
+        // a TRANSIENT-only cap; leaving it in force while pinned left ~50px of empty space below
+        // the tiles on a resized-tall popup, with rows hidden behind a needless scrollbar) so the
+        // row genuinely takes whatever height the user's resize leaves free above the fixed-height
+        // tiles row, instead of the tiles row stretching. RowDefinition is not part of the visual
+        // tree, so it cannot pick this mode up from a XAML binding to the window's DataContext —
+        // ApplyMode already owns the other half of this same mode switch
+        // (Focusable/CanResize/SizeToContent above).
         if (ContentGrid.RowDefinitions.Count > 1)
         {
             ContentGrid.RowDefinitions[1].Height =
                 isPinned ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
         }
+
+        CardsScrollViewer.MaxHeight = isPinned ? double.PositiveInfinity : TrayFlyoutGeometry.CardsMaxHeight;
 
         if (ViewModel is { } vm)
             vm.IsPinned = isPinned;

@@ -135,14 +135,42 @@ public class TrayFlyoutGeometryTests
     }
 
     // Fix round 1 (Opus review, MEDIUM): CardsMaxHeight's derivation assumes the transient window
-    // is TrayFlyoutGeometry.DefaultWidth wide, giving TilesMaxHeight's "2 rows of 6 tiles" via 3
-    // columns. TrayFlyoutWindow.ApplyMode(isPinned: false) now enforces that width on every
-    // transition to transient mode; this pins the OTHER half of that guarantee — that
-    // DefaultWidth itself still resolves to 3 columns — so a change to either constant that broke
-    // the pairing would fail here instead of silently clipping the last tile row live.
+    // is TrayFlyoutGeometry.DefaultWidth wide, giving TilesMaxHeight's "2 rows of 6 tiles".
+    // TrayFlyoutWindow.ApplyMode(isPinned: false) now enforces that width on every transition to
+    // transient mode; this pins the OTHER half of that guarantee — that DefaultWidth itself still
+    // resolves to 2 tile rows — so a change to either constant that broke the pairing would fail
+    // here instead of silently clipping the last tile row live.
+    //
+    // Fix round 2 (controller's eyes pass): DefaultWidth moved 420 -> 528 to fit two card columns
+    // (see DefaultWidthFitsTwoCardColumns below), which crosses TrayTileColumnsConverter's 520
+    // FourColumnWidth threshold — 4 columns now, not 3. 6 tiles still make 2 rows either way
+    // (ceil(6/4) == ceil(6/3) == 2), so CardsMaxHeight's tile budget is unaffected; renamed to say
+    // what is actually true now.
     [Fact]
-    public void DefaultWidthYieldsThreeTileColumns()
+    public void DefaultWidthYieldsFourTileColumns()
     {
-        Assert.Equal(3, TrayTileColumnsConverter.ColumnsFor(TrayFlyoutGeometry.DefaultWidth));
+        Assert.Equal(4, TrayTileColumnsConverter.ColumnsFor(TrayFlyoutGeometry.DefaultWidth));
+    }
+
+    // Fix round 2 (controller's eyes pass on the installed build): DefaultWidth/MaxWidth's "N card
+    // columns fit" promise, pinned by arithmetic instead of left to prose that can drift from the
+    // XAML. A window fits N columns when its content width (Width minus the chrome margins minus
+    // room for the vertical scrollbar) covers N card footprints plus the cards panel's own inset —
+    // see TrayFlyoutGeometry's ChromeSideInset/ScrollBarAllowance/CardPitch/CardsPanelInset XML
+    // doc for where each number comes from.
+    [Fact]
+    public void DefaultWidthFitsTwoCardColumns()
+    {
+        Assert.True(
+            TrayFlyoutGeometry.DefaultWidth - TrayFlyoutGeometry.ChromeSideInset - TrayFlyoutGeometry.ScrollBarAllowance
+                >= 2 * TrayFlyoutGeometry.CardPitch + TrayFlyoutGeometry.CardsPanelInset);
+    }
+
+    [Fact]
+    public void MaxWidthFitsFourCardColumns()
+    {
+        Assert.True(
+            TrayFlyoutGeometryValidator.MaxWidth - TrayFlyoutGeometry.ChromeSideInset - TrayFlyoutGeometry.ScrollBarAllowance
+                >= 4 * TrayFlyoutGeometry.CardPitch + TrayFlyoutGeometry.CardsPanelInset);
     }
 }
