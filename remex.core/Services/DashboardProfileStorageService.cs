@@ -15,6 +15,15 @@ public interface IDashboardProfileStorageService
 public class DashboardProfileStorageService : IDashboardProfileStorageService
 {
     private readonly string _filePath;
+    // SaveProfileAsync is a read-merge-write; two LayoutUpdates in flight must not interleave or the
+    // second merges against a base the first is still replacing.
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
+
+    /// <summary>Test seam: a store rooted at an explicit file, never the machine-wide one (RemEx-4u29).</summary>
+    internal DashboardProfileStorageService(string filePath)
+    {
+        _filePath = filePath;
+    }
 
     public DashboardProfileStorageService()
     {
@@ -49,14 +58,24 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
-        // The phone pushes its layout here with LayoutUpdate and its copy carries no card themes
-        // (RemEx-4kv0g.3, the 2026-09-13 preset wipe): a themeless card keeps the theme the stored
-        // copy already has for it, so a phone-side reorder cannot strip the PC's presets and hand
-        // the stripped layout back on the next LayoutSync. A card that arrives WITH a theme wins.
-        var existing = await LoadProfileAsync();
-        profile = profile with { Cards = CardThemeMerge.PreserveThemes(profile.Cards, existing.Cards) };
-        var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
-        // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
-        await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);
+        // A LayoutUpdate whose cards carry no colour information must not strip the themes this
+        // store already holds (RemEx-4kv0g.3, the 2026-09-13 preset wipe: a theme-less profile was
+        // handed back to the PC on LayoutSync and written over its presets; which writer produced
+        // that theme-less copy is still unidentified - see REGRESSION-GUARDS.md). A card that arrives
+        // with a theme wins; a card with none keeps the stored one. Serialised so two updates cannot
+        // interleave their read-merge-write.
+        await _saveLock.WaitAsync();
+        try
+        {
+            var existing = await LoadProfileAsync();
+            profile = profile with { Cards = CardThemeMerge.PreserveThemes(profile.Cards, existing.Cards) };
+            var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
+            // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
+            await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
     }
 }

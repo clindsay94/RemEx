@@ -1463,8 +1463,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         sensor.ShowValueOverlay = state.ShowValueOverlay;
         // Spec B §4 (RemEx-4kv0g.3.2), corrected 2026-09-13 after it erased every preset on this
         // machine. null means the source carries NO colour information and MUST keep the live theme:
-        // the layout the phone syncs back has no card themes, so with "null resets to follow-theme"
-        // the first sync after launch reset all 44 cards and the writer then persisted the loss.
+        // a theme-less profile reached ApplyProfile on LayoutSync (its writer is still unidentified -
+        // see REGRESSION-GUARDS.md), so with "null resets to follow-theme" that sync reset all 44
+        // cards and the writer then persisted the loss.
         // That "always assign" shape was introduced by a whole-branch review that misread the
         // pre-branch code; pre-branch was `if (state.CardTheme is not null) sensor.Theme = ...`,
         // i.e. null kept the live theme, and that is restored here. What DOES reset a live override
@@ -1856,9 +1857,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // moment a sync arrived, which is how an explicit Light/seed theme reverted to whatever the
         // host's profile happened to carry (RemEx-hmigd).
         var localBase = _layoutService.CurrentProfile ?? _profile;
-        // The host's cards carry no colour information when the phone last saved the layout
-        // (RemEx-4kv0g.3, the 2026-09-13 preset wipe): writing them verbatim replaced every preset in
-        // this file with null, and a restart then loaded the loss. Carry each card's theme forward
+        // The host's cards may carry no colour information (RemEx-4kv0g.3, the 2026-09-13 preset
+        // wipe: a theme-less profile arrived here and writing its cards verbatim replaced every preset
+        // in this file with null; a restart then loaded the loss). Carry each card's theme forward
         // from the live sensor (which ApplyPersistedSensorState just left intact for a null) and,
         // for a sensor not yet materialised, from what this file already holds for that card.
         var liveThemes = Cards.Concat(StagedCards)

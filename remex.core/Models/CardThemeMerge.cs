@@ -6,13 +6,14 @@ namespace Remex.Core.Models;
 /// </summary>
 /// <remarks>
 /// A <see cref="CardState.CardTheme"/> of <c>null</c> means "this source carries no colour
-/// information" — the phone's copy of the layout has no card themes at all, and it pushes that copy
-/// to the host with <c>LayoutUpdate</c>; the host then hands it back to the PC with
-/// <c>LayoutSync</c>. Anywhere such a layout is written over one that does carry themes, the themes
-/// must be carried forward or they are gone for good: the host store on a phone save, and the PC's
-/// per-user file when a sync lands. A card is matched by <see cref="CardState.CardId"/> first and by
-/// <see cref="CardState.SensorId"/> as the fallback (the phone can re-key a card). No reflection, no
-/// JSON — safe for the NativeAOT core. <c>docs/REGRESSION-GUARDS.md</c> pins this.
+/// information". On 2026-09-13 a theme-less profile reached the PC on <c>LayoutSync</c> and was
+/// written verbatim over the per-user file's presets; the writer that produced that theme-less copy
+/// in the host store has not been identified (the phone never sends a layout, and the PC's own
+/// <c>LayoutUpdate</c> carries themes), so every place a layout is written over one that may carry
+/// themes now merges instead: the host store on <c>LayoutUpdate</c>, and the PC's per-user file when
+/// a sync lands. A card is matched by <see cref="CardState.CardId"/> first and by
+/// <see cref="CardState.SensorId"/> as the fallback (a re-keyed card). No reflection, no JSON — safe
+/// for the NativeAOT core. <c>docs/REGRESSION-GUARDS.md</c> pins this.
 /// </remarks>
 public static class CardThemeMerge
 {
@@ -31,7 +32,7 @@ public static class CardThemeMerge
         foreach (var card in existing)
         {
             if (card.CardTheme is null) continue;
-            if (card.CardId.Length > 0) byId.TryAdd(card.CardId, card.CardTheme);
+            if (!string.IsNullOrEmpty(card.CardId)) byId.TryAdd(card.CardId, card.CardTheme);
             if (!string.IsNullOrEmpty(card.SensorId)) bySensor.TryAdd(card.SensorId, card.CardTheme);
         }
 
@@ -45,7 +46,7 @@ public static class CardThemeMerge
             }
 
             SensorCardTheme? kept = null;
-            if (card.CardId.Length > 0) byId.TryGetValue(card.CardId, out kept);
+            if (!string.IsNullOrEmpty(card.CardId)) byId.TryGetValue(card.CardId, out kept);
             if (kept is null && !string.IsNullOrEmpty(card.SensorId)) bySensor.TryGetValue(card.SensorId, out kept);
             merged.Add(kept is null ? card : card with { CardTheme = kept });
         }
