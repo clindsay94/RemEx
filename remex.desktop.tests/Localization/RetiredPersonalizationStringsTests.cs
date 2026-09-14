@@ -27,6 +27,13 @@ public class RetiredPersonalizationStringsTests
         "Custom_SelectEmeraldGreenTooltip", "Custom_SelectCrimsonRoseTooltip",
         "Custom_AddCustomColorTooltip", "Custom_CustomAccentColorTitle", "Custom_SystemSeedHeader",
         "Custom_SharePaletteHeader", "Custom_MatchWindowsAccent", "Custom_SeedFromWallpaper",
+
+        // RemEx-4kv0g.4.3: Personalize becomes five tabs - the tab strip is the header now, so the
+        // seven Custom_Section*/Advanced-tuning card headers below (Custom_SectionFlyout and
+        // Custom_SectionBehaviour are NOT in this list - they survive, reused as in-tab
+        // sub-headings) and the now-dissolved temporary Layout section's own header are retired.
+        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionText",
+        "Custom_SectionSavedPalettes", "Custom_AdvancedTuning", "Settings_Layout",
     };
 
     /// <summary>

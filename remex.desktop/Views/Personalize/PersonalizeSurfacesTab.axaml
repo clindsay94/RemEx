@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+    x:Class="Remex.Desktop.Views.Personalize.PersonalizeSurfacesTab" x:DataType="vm:CustomizationViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16">
+
+            <!-- ═══ Surfaces (Look, plus geometry lifted out of the retired Advanced tuning
+                 disclosure — Corner radius, Card opacity, Glow strength) ═══ -->
+            <material:Card Padding="20">
+                <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="*,2*">
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_BackgroundMode}" assists:ComboBoxAssist.Label="{local:Localize Custom_BackgroundMode}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_BgType_">
+                                                <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                <Binding/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <!-- Wallpaper mode's own controls (RemEx-ddynd): where the picture comes from, and how
+                         blurred it is. Same PrefixedLabelConverter pattern as the mode picker above. -->
+                    <StackPanel Spacing="10" IsVisible="{Binding IsWallpaperBackgroundSelected}">
+                        <Grid ColumnDefinitions="*,2*">
+                            <ComboBox Grid.Column="1" SelectedItem="{Binding WallpaperSource}" ItemsSource="{Binding AvailableWallpaperSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_WallpaperSource}" assists:ComboBoxAssist.Label="{local:Localize Custom_WallpaperSource}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:CompileBindings="False">
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_WallpaperSource_">
+                                                    <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                    <Binding/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </Grid>
+                        <Button Classes="secondary compact" Content="{local:Localize Custom_ChooseWallpaperImage}" Command="{Binding PickWallpaperImageCommand}" IsVisible="{Binding IsImageWallpaperSource}" AutomationProperties.Name="{local:Localize Custom_ChooseWallpaperImage}"/>
+                        <Grid ColumnDefinitions="*,2*">
+                            <TextBlock Text="{local:Localize Custom_WallpaperBlur}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                <Slider Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.2" Value="{Binding WallpaperBlur}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_WallpaperBlur}"/>
+                                <TextBlock Text="{Binding WallpaperBlur, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsWindowOpacityRelevant}">
+                        <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_AppWindowOpacity}"/>
+                            <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Corner radius, Card opacity, Glow strength: lifted verbatim out of the retired
+                         Advanced-tuning disclosure (spec §2) — geometry belongs with the rest of
+                         Surfaces now that the disclosure itself is gone. -->
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
+                        <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
+                                <Grid ColumnDefinitions="*,*" Width="160">
+                                    <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                            <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
+                        <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding GlassOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}" AutomationProperties.Name="{local:Localize Custom_GlassOpacity}"/>
+                                <Grid ColumnDefinitions="*,*" Width="160">
+                                    <TextBlock Text="{local:Localize Custom_Clear}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                            <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_NeonGlowTooltip}">
+                        <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="30" SmallChange="1" LargeChange="5" Value="{Binding GlowStrength}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_GlowStrength}"/>
+                                <Grid ColumnDefinitions="*,*" Width="160">
+                                    <TextBlock Text="{local:Localize Custom_GlowNone}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_GlowIntense}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                            <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </material:Card>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

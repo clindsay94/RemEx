@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Zapisz &amp; Połącz ponownie</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>UKŁAD</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Przyciągaj do siatki</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>ZAAWANSOWANE DOSTRAJANIE</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>Promień narożnika</value>
   </data>
@@ -3388,20 +3382,23 @@ Możesz zmienić:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nazwa palety</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>KOLOR</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>TRYB</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>WYGLĄD</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>ZACHOWANIE</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>ZAPISANE PALETY</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>Kolor</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>Palety</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>Powierzchnie</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>Tekst</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>Układ</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Źródło</value>
@@ -3490,8 +3487,8 @@ Możesz zmienić:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Zrezygnowano z elementu „{0}” po kilku próbach. Nic w nim nie zostało zmienione.</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>TEKST</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>CZCIONKI</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Nagłówki</value>

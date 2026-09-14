@@ -261,51 +261,57 @@ public class SeedPresetCatalogTests
     [Fact]
     public void ThePersonalizationPanelBindsTheGalleryRatherThanListingPresets()
     {
-        var axaml = File.ReadAllText(Path.Combine(
-            RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        // RemEx-4kv0g.4.3: the preset gallery and saved-palettes row moved onto the Palettes tab;
+        // the scheme-variant strip row moved onto the Colour tab.
+        var palettesAxaml = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizePalettesTab.axaml"));
+        var colourAxaml = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeColourTab.axaml"));
 
-        axaml.Should().Contain("ItemsSource=\"{Binding ThemePresets}\"",
+        palettesAxaml.Should().Contain("ItemsSource=\"{Binding ThemePresets}\"",
             "the gallery has to come from the catalog");
-        axaml.Should().Contain("SelectThemeCommand");
+        palettesAxaml.Should().Contain("SelectThemeCommand");
 
-        // Exactly three tile templates, not three templates plus leftovers. The preset gallery, the
-        // scheme-variant strip row (RemEx-lrxyo) and the saved-palettes row (RemEx-ddynd) are all
-        // catalog/collection-driven galleries sharing the .tile role from RemEx-z7pnx; a fourth
-        // would be a hand-authored duplicate of one of them.
-        Regex.Matches(axaml, @"Classes=""tile""").Should().HaveCount(3,
-            "the preset gallery, the scheme-variant strip row and the saved-palettes row are the only three tile templates");
+        // Exactly three tile templates in total, not three templates plus leftovers. The preset
+        // gallery, the scheme-variant strip row (RemEx-lrxyo) and the saved-palettes row
+        // (RemEx-ddynd) are all catalog/collection-driven galleries sharing the .tile role from
+        // RemEx-z7pnx; a fourth would be a hand-authored duplicate of one of them. Two of the three
+        // now live on Palettes, one on Colour.
+        Regex.Matches(palettesAxaml, @"Classes=""tile""").Should().HaveCount(2,
+            "the preset gallery and the saved-palettes row are the two tile templates on the Palettes tab");
+        Regex.Matches(colourAxaml, @"Classes=""tile""").Should().HaveCount(1,
+            "the scheme-variant strip row is the one tile template on the Colour tab");
 
         // And no colour literal survives INSIDE either gallery. Scoped to the ItemsControls on
-        // purpose: the accent quick-pick row further down the panel is literals by design — those
-        // buttons set a seed rather than describe one — so a whole-file scan would fail for the
-        // wrong reason and get deleted rather than fixed.
-        var gallery = Regex.Match(axaml, @"<ItemsControl ItemsSource=""\{Binding ThemePresets\}"".*?</ItemsControl>",
+        // purpose: the accent quick-pick row further up the Colour tab is literals by design —
+        // those buttons set a seed rather than describe one — so a whole-file scan would fail for
+        // the wrong reason and get deleted rather than fixed.
+        var gallery = Regex.Match(palettesAxaml, @"<ItemsControl ItemsSource=""\{Binding ThemePresets\}"".*?</ItemsControl>",
             RegexOptions.Singleline);
         gallery.Success.Should().BeTrue("the gallery block has to be findable for this scan to mean anything");
 
         Regex.Match(gallery.Value, @"#[0-9A-Fa-f]{6}").Success.Should().BeFalse(
             "a colour literal in the gallery is a tile describing a palette instead of rendering it");
 
-        axaml.Should().Contain("ItemsSource=\"{Binding SchemeVariantStrips}\"",
+        colourAxaml.Should().Contain("ItemsSource=\"{Binding SchemeVariantStrips}\"",
             "the variant row has to come from the same live-generated strips the seed change repaints");
-        axaml.Should().Contain("SelectSchemeVariantCommand");
+        colourAxaml.Should().Contain("SelectSchemeVariantCommand");
 
-        var variantStrip = Regex.Match(axaml, @"<ItemsControl ItemsSource=""\{Binding SchemeVariantStrips\}"".*?</ItemsControl>",
+        var variantStrip = Regex.Match(colourAxaml, @"<ItemsControl ItemsSource=""\{Binding SchemeVariantStrips\}"".*?</ItemsControl>",
             RegexOptions.Singleline);
         variantStrip.Success.Should().BeTrue("the variant strip block has to be findable for this scan to mean anything");
 
         Regex.Match(variantStrip.Value, @"#[0-9A-Fa-f]{6}").Success.Should().BeFalse(
             "a colour literal in the variant strip row is a swatch describing a palette instead of rendering it");
 
-        // WHICH two blocks own the tiles, not just how many exist (review LOW, RemEx-lrxyo). A bare
-        // count of 2 stays green if someone deletes the gallery's tile and hand-authors one
-        // somewhere else — the exact substitution the original "exactly one" assertion was written
-        // to catch. Both scoped blocks are already in hand, so pinning one tile inside each costs
-        // two lines and restores the precision the count lost when it went from 1 to 2.
+        // WHICH block owns the gallery's tile, not just how many exist (review LOW, RemEx-lrxyo). A
+        // bare count stays green if someone deletes the gallery's tile and hand-authors one
+        // somewhere else inside the same file — the exact substitution the original assertion was
+        // written to catch.
         Regex.Matches(gallery.Value, @"Classes=""tile""").Should().HaveCount(1,
-            "the preset gallery owns exactly one of the two tile templates");
+            "the preset gallery owns exactly one of the Palettes tab's two tile templates");
         Regex.Matches(variantStrip.Value, @"Classes=""tile""").Should().HaveCount(1,
-            "the variant strip row owns exactly one of the two tile templates");
+            "the variant strip row owns the Colour tab's one tile template");
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path

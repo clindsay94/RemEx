@@ -1,0 +1,236 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
+    xmlns:controls="using:Remex.Desktop.Controls"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+    x:Class="Remex.Desktop.Views.Personalize.PersonalizeColourTab" x:DataType="vm:CustomizationViewModel">
+
+    <!-- Mode, then Colour (spec §2): one seed, one path - pick where it comes from, shape it, pick
+         the mapping strategy, and see it previewed. Moved verbatim off PersonalizationPanelView
+         (RemEx-4kv0g.4.3); only the two section headers are gone - the tab strip is the header now. -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16">
+
+            <material:Card Padding="20">
+                <StackPanel Spacing="16">
+                    <!-- Persisted and honoured for a while with no UI (RemEx-5u0vy). -->
+                    <Grid ColumnDefinitions="*,2*">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{local:Localize Custom_BaseModeDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <!-- ITEM ORDER IS THE CONTRACT with ThemeModeToIndex: 0 Light, 1 Dark, 2 System
+                             (RemEx-zk5bc) - reordering silently remaps every saved choice. -->
+                        <ComboBox Grid.Column="1" SelectedIndex="{Binding ThemeModeIndex}" HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="{local:Localize Custom_BaseMode}" assists:ComboBoxAssist.Label="{local:Localize Custom_BaseMode}">
+                            <ComboBoxItem Content="{local:Localize Custom_ModeLight}"/>
+                            <ComboBoxItem Content="{local:Localize Custom_ModeDark}"/>
+                            <ComboBoxItem Content="{local:Localize Custom_ModeSystem}"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </material:Card>
+
+            <material:Card Padding="20">
+                <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="*,2*">
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding ColorSource}" ItemsSource="{Binding AvailableColorSources}" HorizontalAlignment="Left" Width="160" AutomationProperties.Name="{local:Localize Custom_ColorSource}" assists:ComboBoxAssist.Label="{local:Localize Custom_ColorSource}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_Source_">
+                                                <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                <Binding/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+
+                    <!-- "Match my phone" (RemEx-sudp8): moves ColorSource to Custom itself; hidden
+                         (not disabled) when no phone has synced a palette (RemEx-y06a0.1). -->
+                    <Button Classes="secondary compact" Content="{local:Localize Custom_MatchPhoneTheme}" Command="{Binding MatchPhoneThemeCommand}" IsVisible="{Binding HasPhoneTheme}" AutomationProperties.Name="{local:Localize Custom_MatchPhoneTheme}"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsWindowsAccentSource}">
+                        <Border x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding SourceAccentHex}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding SourceAccentHex}" AutomationProperties.Name="{local:Localize Custom_CurrentWindowsAccent}"/>
+                        <TextBlock Text="{Binding SourceAccentHex}" VerticalAlignment="Center" FontFamily="Consolas, monospace" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6" IsVisible="{Binding IsWallpaperSource}">
+                        <Button Classes="secondary compact" Content="{local:Localize Custom_RefreshWallpaperSeeds}" Command="{Binding RefreshWallpaperSeedsCommand}" AutomationProperties.Name="{local:Localize Custom_RefreshWallpaperSeeds}"/>
+                        <ItemsControl ItemsSource="{Binding WallpaperSeedCandidates}" IsVisible="{Binding HasWallpaperSeedCandidates}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SelectWallpaperSeedCommand}" CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Custom: the wheel, hex box and recent-seeds row - all three axes. -->
+                    <StackPanel Spacing="12" IsVisible="{Binding IsCustomSource}">
+                        <controls:HctColorWheel Width="176" Height="176" HorizontalAlignment="Center"
+                            Hue="{Binding SeedHue, Mode=TwoWay}" Chroma="{Binding SeedChroma, Mode=TwoWay}" Tone="{Binding SeedTone, Mode=TwoWay}"
+                            IsDragging="{Binding IsSeedDragging, Mode=OneWayToSource}" SeedCommitted="OnSeedCommitted"
+                            AutomationProperties.Name="{local:Localize Custom_SeedWheel}" ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="52"/>
+                            <Slider Grid.Column="1" Minimum="0" Maximum="360" SmallChange="1" LargeChange="15" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding CustomAccentHex}" PlaceholderText="{Binding AccentColor}" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" AutomationProperties.Name="{local:Localize Custom_SeedHex}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Custom_SeedHex}">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
+                                </TextBox.KeyBindings>
+                            </TextBox>
+                            <!-- CornerRadius=6 matches the compact-action-row exception (ShellView); no
+                                 literal Background/Foreground/Padding - .primary/.compact already supply
+                                 them (RemEx-cgrv3). -->
+                            <Button Grid.Column="1" Classes="primary compact" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
+                            <Border Grid.Column="2" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
+                        </Grid>
+
+                        <StackPanel Spacing="6" IsVisible="{Binding HasRecentSeeds}">
+                            <TextBlock Text="{local:Localize Custom_RecentSeeds}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                            <!-- Wrapping: eight swatches do not fit one row without pushing the last past
+                                 the drawer's edge (unreachable, not merely ugly). -->
+                            <ItemsControl ItemsSource="{Binding CustomAccentColors}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="swatch compact" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Vibrancy: the seed's chroma - every source keeps this slider. -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{local:Localize Custom_Vibrancy}" VerticalAlignment="Center" MinWidth="52"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="120" SmallChange="1" LargeChange="10" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_Vibrancy}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContrastTooltip}">
+                        <TextBlock Text="{local:Localize Custom_ContrastLevel}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="-1" Maximum="1" SmallChange="0.1" LargeChange="0.25" Value="{Binding ThemeContrast}" Width="160" TickFrequency="0.1" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_ContrastLevel}"/>
+                                <Grid ColumnDefinitions="*,*" Width="160">
+                                    <TextBlock Text="{local:Localize Custom_ContrastSofter}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_ContrastSharper}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ThemeContrast, StringFormat={}{0:F1}}" VerticalAlignment="Center" MinWidth="32" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- THE ROW PREVIEWS ITSELF (RemEx-lrxyo): each strip is DynamicColorGenerator run
+                         with that strip's OWN variant against the live seed/mode/contrast, so a strip
+                         cannot show a colour a click would not produce. -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{local:Localize Custom_Strategy}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <ItemsControl ItemsSource="{Binding SchemeVariantStrips}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SchemeVariantStripViewModel">
+                                    <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS Primary/Secondary/
+                                         Tertiary, so a variant cannot show a colour a click would not
+                                         produce; no separate OnSurfaceBrush dot needed any more. -->
+                                    <Button Classes="tile" Margin="0" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                            AutomationProperties.Name="{Binding DisplayName}" Classes.selected="{Binding IsSelected}"
+                                            Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}"
+                                            CommandParameter="{Binding Variant}">
+                                        <controls:PaletteChip Primary="{Binding PrimaryBrush}" Secondary="{Binding SecondaryBrush}" Tertiary="{Binding TertiaryBrush}"
+                                                               Label="{Binding DisplayName}" CornerRadius="{DynamicResource CardCornerRadius}"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- ═══ Preview ═══ Tonal ramp, then a live sample card so the palette's effect on
+                         real content - not just swatches - is visible at a glance. -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{local:Localize Custom_Preview}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <StackPanel Spacing="6">
+                            <!-- One Grid per palette; the DataTemplate is shared by copy, matching how the
+                                 rest of this view templates ItemsControl rows - colours are never literals. -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_Primary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.PrimaryTones}" AutomationProperties.Name="{local:Localize Custom_TonalRamp_Primary}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5" ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_Secondary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.SecondaryTones}" AutomationProperties.Name="{local:Localize Custom_TonalRamp_Secondary}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5" ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_Tertiary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.TertiaryTones}" AutomationProperties.Name="{local:Localize Custom_TonalRamp_Tertiary}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5" ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_Neutral}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" MinWidth="56"/>
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding TonalRamp.NeutralTones}" AutomationProperties.Name="{local:Localize Custom_TonalRamp_Neutral}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:TonalRampSwatch">
+                                        <Border Width="20" Height="20" CornerRadius="3" Background="{Binding Brush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0.5" ToolTip.Tip="{Binding Tone}"/>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Role pairs as foreground text ON their own background - an unreadable pair
+                             looks unreadable here, not merely similar to its neighbour. -->
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.PrimaryBrush}">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_PrimaryPair}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding TonalRamp.OnPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.SurfaceBrush}">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_SurfacePair}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding TonalRamp.OnSurfaceBrush}" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border Width="76" Height="44" CornerRadius="6" Background="{Binding TonalRamp.ErrorBrush}">
+                                <TextBlock Text="{local:Localize Custom_TonalRamp_ErrorPair}" Theme="{StaticResource CaptionTextBlock}" Foreground="{Binding TonalRamp.OnErrorBrush}" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Sample card: the same TonalRamp brushes on actual content - cards and text
+                             will look exactly like this once Apply is pressed. -->
+                        <Border Name="SampleCard" Background="{Binding TonalRamp.SurfaceBrush}" CornerRadius="{Binding SampleCardCornerRadius}" Opacity="{Binding AppWindowOpacity}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{local:Localize Custom_SampleCardTitle}" FontWeight="SemiBold" Foreground="{Binding TonalRamp.OnSurfaceBrush}"/>
+                                <TextBlock Text="{local:Localize Custom_SampleCardBody}" FontSize="12" TextWrapping="Wrap" Foreground="{Binding TonalRamp.OnSurfaceBrush}"/>
+                                <Border Background="{Binding TonalRamp.PrimaryBrush}" CornerRadius="{Binding SampleCardCornerRadius}" Padding="10,5" HorizontalAlignment="Left">
+                                    <TextBlock Text="{local:Localize Btn_Apply}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding TonalRamp.OnPrimaryBrush}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </material:Card>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

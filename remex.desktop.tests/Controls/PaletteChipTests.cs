@@ -134,14 +134,17 @@ public class PaletteChipTests
     [Fact]
     public void AllThreeChipRows_InstantiatePaletteChip()
     {
-        var panel = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        // RemEx-4kv0g.4.3: the three rows split across two tabs - the scheme-variant strip moved
+        // onto Colour, the preset gallery and saved-palette row onto Palettes.
+        var colour = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeColourTab.axaml"));
+        var palettes = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizePalettesTab.axaml"));
 
-        Regex.Matches(panel, @"<controls:PaletteChip\b").Count.Should().Be(3,
-            "the scheme-variant row, the built-in preset row and the saved-palette row each instantiate PaletteChip once per item template");
+        Regex.Matches(colour, @"<controls:PaletteChip\b").Count.Should().Be(1, "the scheme-variant row instantiates PaletteChip once per item template");
+        Regex.Matches(palettes, @"<controls:PaletteChip\b").Count.Should().Be(2, "the built-in preset row and the saved-palette row each instantiate PaletteChip once per item template");
 
-        var variantTemplate = Regex.Match(panel, @"x:DataType=""vm:SchemeVariantStripViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
-        var presetTemplate = Regex.Match(panel, @"x:DataType=""vm:SeedPresetTileViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
-        var savedTemplate = Regex.Match(panel, @"x:DataType=""vm:SavedPaletteTileViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
+        var variantTemplate = Regex.Match(colour, @"x:DataType=""vm:SchemeVariantStripViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
+        var presetTemplate = Regex.Match(palettes, @"x:DataType=""vm:SeedPresetTileViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
+        var savedTemplate = Regex.Match(palettes, @"x:DataType=""vm:SavedPaletteTileViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
         variantTemplate.Success.Should().BeTrue();
         presetTemplate.Success.Should().BeTrue();
         savedTemplate.Success.Should().BeTrue();

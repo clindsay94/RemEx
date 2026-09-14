@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Kaydet &amp; Yeniden Bağlan</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>DÜZEN</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kılavuza Yapıştır</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>GELİŞMİŞ İNCE AYAR</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>Köşe Yarıçapı</value>
   </data>
@@ -3391,20 +3385,23 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Palet adı</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>RENK</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>MOD</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>GÖRÜNÜM</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>DAVRANIŞ</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>KAYITLI PALETLER</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>Renk</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>Paletler</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>Yüzeyler</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>Metin</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>Düzen</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Kaynak</value>
@@ -3493,8 +3490,8 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Birkaç denemeden sonra “{0}” bırakıldı. O öğede hiçbir şey değişmedi.</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>METİN</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>YAZI TİPLERİ</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Başlıklar</value>

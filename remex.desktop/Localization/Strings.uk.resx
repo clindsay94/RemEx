@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Зберегти &amp; Перепідключити</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>МАКЕТ</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Прив'язати до сітки</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>РОЗШИРНЕ ТОНКЕ НАЛАШТУВАННЯ</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>Радіус кута</value>
   </data>
@@ -3388,20 +3382,23 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Назва палітри</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>КОЛІР</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>РЕЖИМ</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>ВИГЛЯД</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>ПОВЕДІНКА</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>ЗБЕРЕЖЕНІ ПАЛІТРИ</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>Колір</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>Палітри</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>Поверхні</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>Текст</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>Макет</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Джерело</value>
@@ -3490,8 +3487,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Після кількох спроб «{0}» покинуто. У цьому елементі нічого не змінено.</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>ТЕКСТ</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>ШРИФТИ</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Заголовки</value>

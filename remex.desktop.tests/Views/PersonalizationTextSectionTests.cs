@@ -8,22 +8,24 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// RemEx-jt6w5.5: the TEXT card sits between Look and Advanced fine-tuning, every control in it has an
-/// accessible name, its Reset button speaks the button vocabulary, and it adds exactly one inline size
-/// (the header, matching its five siblings) so the ratchet keeps its arithmetic.
+/// RemEx-jt6w5.5: the TEXT card sits above the FONTS sub-heading on the Text tab (spec
+/// 2026-09-13-personalize-tabs §2), every control in it has an accessible name, its Reset button
+/// speaks the button vocabulary, and it adds exactly one inline size (the header, matching its five
+/// siblings) so the ratchet keeps its arithmetic. Re-pointed at PersonalizeTextTab.axaml
+/// (RemEx-4kv0g.4.3); assertions on the card's own contents unchanged.
 /// </summary>
 public class PersonalizationTextSectionTests
 {
     [Fact]
-    public void TheTextCard_SitsAboveAdvancedFineTuning_BelowLook()
+    public void TheTextCard_SitsAboveTheFontsSubHeading()
     {
         var markup = PanelMarkup();
-        var look = markup.IndexOf("Localize Custom_SectionLook}", System.StringComparison.Ordinal);
-        var text = markup.IndexOf("Localize Custom_SectionText}", System.StringComparison.Ordinal);
-        var tuning = markup.IndexOf("Localize Custom_AdvancedTuning}", System.StringComparison.Ordinal);
+        var reset = markup.IndexOf("Localize Custom_TextReset}", System.StringComparison.Ordinal);
+        var fonts = markup.IndexOf("Localize Custom_SectionFonts}", System.StringComparison.Ordinal);
 
-        text.Should().BeGreaterThan(look).And.BeLessThan(tuning,
-            "the readability control comes before the advanced overrides (spec § Personalize UI)");
+        reset.Should().BeGreaterThan(-1, "the TEXT block's Reset button must be on the tab");
+        reset.Should().BeLessThan(fonts,
+            "the readability block (through Reset) comes before the Fonts sub-heading (spec §2)");
     }
 
     [Fact]
@@ -62,27 +64,34 @@ public class PersonalizationTextSectionTests
     }
 
     [Fact]
-    public void TheResetButton_IsTertiary_AndAddsOneInlineSizeOnly()
+    public void TheResetButton_IsTertiary_AndAddsNoInlineSize()
     {
         var card = TextCard();
 
         card.Should().Contain(@"<Button Classes=""tertiary"" Content=""{local:Localize Custom_TextReset}"" Command=""{Binding ResetTextToDefaultsCommand}""");
-        Regex.Matches(card, @"FontSize=""\d").Count.Should().Be(1, "only the section header, like its siblings — every other size comes from a Theme");
+        // The tab strip is the header now (RemEx-4kv0g.4.3) - this block's own Custom_SectionText
+        // header is retired, so unlike its card-era siblings this scope adds ZERO inline sizes;
+        // every other size still comes from a Theme.
+        Regex.Matches(card, @"FontSize=""\d").Count.Should().Be(0, "the section header that used to add one is gone - the tab strip is the header now");
     }
 
-    /// <summary>Markup from the TEXT header's card open tag to that card's closing tag.</summary>
+    /// <summary>Markup from the TEXT block's card open tag through the Reset button's close - the
+    /// original TEXT card's own scope, now the first of two blocks sharing one material:Card with
+    /// the Fonts sub-heading appended after it (spec §2).</summary>
     private static string TextCard()
     {
         var markup = PanelMarkup();
-        var header = markup.IndexOf("Localize Custom_SectionText}", System.StringComparison.Ordinal);
-        header.Should().BeGreaterOrEqualTo(0, "the TEXT section must be on the sheet");
-        var open = markup.LastIndexOf("<material:Card", header, System.StringComparison.Ordinal);
-        var close = markup.IndexOf("</material:Card>", header, System.StringComparison.Ordinal);
+        var anchor = markup.IndexOf("Localize Custom_TextHeaders}", System.StringComparison.Ordinal);
+        anchor.Should().BeGreaterOrEqualTo(0, "the TEXT block must be on the Text tab");
+        var open = markup.LastIndexOf("<material:Card", anchor, System.StringComparison.Ordinal);
+        var resetCommand = markup.IndexOf("ResetTextToDefaultsCommand", anchor, System.StringComparison.Ordinal);
+        resetCommand.Should().BeGreaterThan(0, "the Reset button closes out the TEXT block");
+        var close = markup.IndexOf("/>", resetCommand, System.StringComparison.Ordinal) + 2;
         return markup.Substring(open, close - open);
     }
 
     private static string PanelMarkup() => File.ReadAllText(
-        Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeTextTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

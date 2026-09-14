@@ -312,9 +312,13 @@ public class ShellSettingsSideSheetTests
     {
         // THE STRUCTURAL GUARD for review round 1's other HIGH finding: SideSheetContent is presented
         // inside a vertical StackPanel, which measures every child with infinite available height, so
-        // an unconstrained ScrollViewer sizes itself to its full content instead of scrolling -
-        // everything below the fold becomes unreachable, and PART_RootBorder's ClipToBounds="False"
-        // means it does not even get visually clipped, just runs off the window.
+        // an unconstrained view sizes itself to its full content instead of scrolling - everything
+        // below the fold becomes unreachable, and PART_RootBorder's ClipToBounds="False" means it does
+        // not even get visually clipped, just runs off the window.
+        //
+        // RemEx-4kv0g.4.3: the bound moved from a ScrollViewer wrapping PersonalizationPanelView onto
+        // PersonalizationPanelView itself - the five tabs each own their own ScrollViewer now, so the
+        // strip stays pinned while a tab's content scrolls within this same bound.
         //
         // Captured as ONE Singleline block, not three independent whole-file checks (review round 2,
         // MEDIUM 2): three unscoped checks cannot tell this MaxHeight from any other MultiBinding
@@ -324,10 +328,10 @@ public class ShellSettingsSideSheetTests
         // nothing, with a loose three-check version of this test staying green throughout (measured:
         // this is the exact defect the previous version of this test could not see).
         var block = Regex.Match(ShellMarkup(),
-            @"<ScrollViewer\.MaxHeight>(?<body>.*?)</ScrollViewer\.MaxHeight>",
+            @"<views:PersonalizationPanelView\.MaxHeight>(?<body>.*?)</views:PersonalizationPanelView\.MaxHeight>",
             RegexOptions.Singleline);
 
-        block.Success.Should().BeTrue("the settings ScrollViewer has to declare an explicit MaxHeight");
+        block.Success.Should().BeTrue("PersonalizationPanelView has to declare an explicit MaxHeight");
 
         var body = block.Groups["body"].Value;
         body.Should().Contain("Converter=\"{x:Static conv:SubtractHeightConverter.Instance}\"",
@@ -349,6 +353,40 @@ public class ShellSettingsSideSheetTests
             "SubtractHeightConverter computes values[0] - values[1] - the sheet's total height has to " +
             "be FIRST and the header's SECOND, or the result inverts to a negative number that floors " +
             "at 0 and the content area silently collapses to nothing");
+    }
+
+    /// <summary>
+    /// RemEx-4kv0g.4.3 (docs/REGRESSION-GUARDS.md): a ScrollViewer wrapping the Personalize host
+    /// would scroll the tab strip away along with its content and would swallow the MaxHeight bound
+    /// checked above the same way the old ShellView ScrollViewer.MaxHeight did one level up - the
+    /// exact regression this drop's height-bound move exists to avoid reintroducing.
+    /// </summary>
+    [Fact]
+    public void ThePersonalizeHost_HasNoWrappingScrollViewer()
+    {
+        var content = Regex.Match(ShellMarkup(),
+            @"<material:SideSheet\.SideSheetContent>(?<body>.*?)</material:SideSheet\.SideSheetContent>",
+            RegexOptions.Singleline);
+
+        content.Success.Should().BeTrue("the SideSheetContent block has to exist");
+        content.Groups["body"].Value.Should().NotContain("<ScrollViewer",
+            "each Personalize tab owns its own ScrollViewer now (spec §1) - none belongs around the host");
+    }
+
+    /// <summary>Companion to the guard above: every tab file actually keeps the ScrollViewer that
+    /// makes the host's own lack of one safe.</summary>
+    [Theory]
+    [InlineData("PersonalizeColourTab.axaml")]
+    [InlineData("PersonalizePalettesTab.axaml")]
+    [InlineData("PersonalizeSurfacesTab.axaml")]
+    [InlineData("PersonalizeTextTab.axaml")]
+    [InlineData("PersonalizeLayoutTab.axaml")]
+    public void EveryPersonalizeTabFile_RootsInItsOwnScrollViewer(string file)
+    {
+        var markup = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", file));
+
+        Regex.IsMatch(markup, @"<UserControl\b[\s\S]*?>\s*<ScrollViewer\b[^>]*HorizontalScrollBarVisibility=""Disabled""")
+            .Should().BeTrue($"{file} must root in a ScrollViewer - without it, this tab's content would run off the window the same way the pre-tabs sheet did");
     }
 
     [Fact]

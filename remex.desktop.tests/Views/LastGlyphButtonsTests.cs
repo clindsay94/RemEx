@@ -93,8 +93,10 @@ public class LastGlyphButtonsTests
     private static string ReadColorPickerPopup()
         => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Controls", "ColorPickerPopup.cs"));
 
+    /// <summary>RemEx-4kv0g.4.3: the saved-palette row (and its delete button) moved onto the
+    /// Palettes tab.</summary>
     private static string ReadPersonalizationPanelView()
-        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizePalettesTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

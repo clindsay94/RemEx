@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:controls="using:Remex.Desktop.Controls"
+    xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+    xmlns:mi="using:Material.Icons.Avalonia"
+    x:Class="Remex.Desktop.Views.Personalize.PersonalizePalettesTab" x:DataType="vm:CustomizationViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16">
+
+            <!-- ═══ Saved palettes ═══ -->
+            <material:Card Padding="20">
+                <StackPanel Spacing="16">
+                    <!-- THE GALLERY PREVIEWS ITSELF (RemEx-2gjwn). This was five hand-authored tiles whose
+                         swatch colours were literals - #050505 and #00F3FF for CyberNOC, and so on - copied
+                         from resource dictionaries that no longer exist. Every colour below now comes out of
+                         DynamicColorGenerator run on the preset's own seed and variant, which is the same call
+                         clicking the tile makes, so a tile cannot show a colour the app will not paint.
+
+                         THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
+                         Personalize drawer at roughly 300px. Five columns was already tight for four presets
+                         and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
+                         narrower than the word "Daybreak" at any legible size. Three gives ~92px and three
+                         rows, which the drawer scrolls. -->
+                    <TextBlock Text="{local:Localize Custom_BuiltInPresets}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <ItemsControl ItemsSource="{Binding ThemePresets}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
+                                <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS the preset's own
+                                     Primary/Secondary/Tertiary, so a tile still cannot show a colour
+                                     clicking it would not produce - the same guarantee the old
+                                     surface/outline/dots Border made, just as the fill instead of a
+                                     caption underneath it. -->
+                                <Button Classes="tile" Margin="4" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                        AutomationProperties.Name="{Binding DisplayName}"
+                                        Classes.selected="{Binding IsSelected}"
+                                        Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
+                                        CommandParameter="{Binding Id}">
+                                    <controls:PaletteChip Primary="{Binding PrimaryBrush}"
+                                                           Secondary="{Binding SecondaryBrush}"
+                                                           Tertiary="{Binding TertiaryBrush}"
+                                                           Label="{Binding DisplayName}"
+                                                           CornerRadius="{Binding PreviewCornerRadius}"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- The person's own palettes (RemEx-ddynd, spec section 7): whole recipes, painted like the
+                         presets above from their OWN seed and strategy. Presets have no delete; these do. -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{local:Localize Custom_UserPalettes}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <ItemsControl ItemsSource="{Binding SavedPalettes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
+                                    <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
+                                        <StackPanel Spacing="6">
+                                            <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS this
+                                                 palette's own Primary/Secondary/Tertiary, same guarantee
+                                                 as the other two rows. No IsSelected binding - a saved
+                                                 palette has no "currently selected" concept today (Apply
+                                                 is a one-shot action, not a toggle), so the chip stays in
+                                                 its resting (unselected) visual state, matching what this
+                                                 Button showed before. The rename TextBox below is
+                                                 untouched: DisplayName here is a read-only alias for the
+                                                 SAME Name it edits, not a second source of truth. -->
+                                            <Button Classes="tile" Padding="0" Background="Transparent" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                                    AutomationProperties.Name="{Binding Name}"
+                                                    Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <controls:PaletteChip Primary="{Binding PrimaryBrush}"
+                                                                       Secondary="{Binding SecondaryBrush}"
+                                                                       Tertiary="{Binding TertiaryBrush}"
+                                                                       Label="{Binding DisplayName}"
+                                                                       CornerRadius="{DynamicResource CardCornerRadius}"/>
+                                            </Button>
+                                            <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" TextAlignment="Center"
+                                                     Foreground="{Binding OnSurfaceBrush}"
+                                                     AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}"
+                                                     Classes="outline" UseFloatingPlaceholder="True"
+                                                     assists:TextFieldAssist.Label="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                                            <Button Classes="tertiary danger icon-button compact" HorizontalAlignment="Center"
+                                                    ToolTip.Tip="{local:Localize Custom_DeletePalette}" AutomationProperties.Name="{local:Localize Custom_DeletePalette}"
+                                                    Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).DeleteSavedPaletteCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <mi:MaterialIcon Kind="Close" Width="16" Height="16"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding NewPaletteName, Mode=TwoWay}" PlaceholderText="{local:Localize Custom_PaletteNamePlaceholder}" AutomationProperties.Name="{local:Localize Custom_PaletteNamePlaceholder}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Custom_PaletteNamePlaceholder}"/>
+                            <Button Grid.Column="1" Classes="secondary compact" Content="{local:Localize Custom_SavePalette}" Command="{Binding SaveCurrentPaletteCommand}" AutomationProperties.Name="{local:Localize Custom_SavePalette}"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Share palette (RemEx-a7uzb): copy the live palette as a compilable Avalonia
+                         ResourceDictionary, or export/import its recipe as JSON so a palette can travel
+                         to a future session or hand off to the phone. WrapPanel because the card is
+                         ~300px wide and three buttons do not fit one row. Copy as AXAML is a shipped
+                         RemEx-a7uzb feature the spec does not retire; Import and Export are the spec's. -->
+                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                        <Button Classes="secondary compact" Content="{local:Localize Custom_CopyPaletteAxaml}" Command="{Binding CopyPaletteAsAxamlCommand}" AutomationProperties.Name="{local:Localize Custom_CopyPaletteAxaml}"/>
+                        <Button Classes="secondary compact" Content="{local:Localize Custom_ExportPaletteJson}" Command="{Binding ExportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ExportPaletteJson}"/>
+                        <Button Classes="secondary compact" Content="{local:Localize Custom_ImportPaletteJson}" Command="{Binding ImportPaletteJsonCommand}" AutomationProperties.Name="{local:Localize Custom_ImportPaletteJson}"/>
+                    </WrapPanel>
+                </StackPanel>
+            </material:Card>
+
+            <!-- Foreground=TextMutedBrush is deliberate: a de-emphasized reset link, quieter than
+                 the .tertiary default TextSecondaryBrush (RemEx-cgrv3). Global reset for the whole
+                 sheet, not just this tab's own content - kept in its original document position,
+                 immediately after Saved palettes (RemEx-4kv0g.4.3: the panel host is a TabControl
+                 only now, so this moved here rather than staying behind on the host). -->
+            <Button Classes="tertiary" Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -809,6 +809,40 @@ This is also why the geometry limits are duplicated in XAML and `TrayFlyoutGeome
 needs literal `Width`/`Height`/`MinWidth`/`MinHeight`/`MaxWidth`/`MaxHeight` values in XAML, so those and
 the C# constants have to be changed together — the duplication is intentional, not drift to be cleaned up.
 
+### The Personalize sheet must keep an explicit height bound (INVARIANT)
+
+`remex.desktop/Views/ShellView.axaml` — `material:SideSheet.SideSheetContent` presents
+`<views:PersonalizationPanelView>` directly (RemEx-4kv0g.4.3; previously a `ScrollViewer` wrapped it),
+with a `PersonalizationPanelView.MaxHeight` `MultiBinding` through `SubtractHeightConverter`
+(`ConverterParameter="5"`, inputs `SettingsSideSheet.Bounds.Height` and `SettingsSheetHeader.Bounds.Height`
+— the header now includes the LANGUAGE card, so its `Bounds.Height` covers that for free);
+`remex.desktop/Views/PersonalizationPanelView.axaml` — a bare `TabControl`, the UserControl's ONLY
+child, no wrapping `Panel`; `remex.desktop/Views/Personalize/*.axaml` — each of the five tabs roots
+in its own `ScrollViewer HorizontalScrollBarVisibility="Disabled"`;
+`remex.desktop.tests/Views/ShellSettingsSideSheetTests.cs` (`TheSideSheetContent_HasABoundedScrollableHeight`,
+`ThePersonalizeHost_HasNoWrappingScrollViewer`, `EveryPersonalizeTabFile_RootsInItsOwnScrollViewer`),
+`remex.desktop.tests/Views/PersonalizationSheetLayoutTests.cs`.
+
+`material:SideSheet` presents `SideSheetContent` through `PART_SideContentPresenter`, a child of a
+vertical `StackPanel#PART_SideSheetPanel` — and a vertical `StackPanel` measures every child with
+INFINITE available height regardless of what height the `StackPanel` itself was given. Without an
+explicit `MaxHeight` on the content, it sizes itself to its full content instead of scrolling, and
+`PART_RootBorder` is `ClipToBounds="False"`, so nothing even clips it — it runs off the window. This
+is the same failure mode `ShellView`'s own history already lived once (its `ScrollViewer.MaxHeight`,
+review round 1, HIGH) and the tray flyout's `CardsScrollViewer`/toolbar `ItemsControl` guard above
+lives for the identical reason: an unbounded scrolling surface inside Avalonia is not a smaller bug,
+it is no bound at all.
+
+**The bound has to reach the `TabControl`, not stop at the `UserControl` wrapping it.** A `MaxHeight`
+on `PersonalizationPanelView` only constrains what its OWN content is measured against — if that
+content were a `StackPanel` (rather than the bare `TabControl` it is), the same infinite-height
+StackPanel quirk described above would reproduce ONE LEVEL DEEPER, inside the host itself, and the
+selected tab's content would grow unbounded again despite the outer `MaxHeight` looking correct. This
+is why `PersonalizationPanelView.axaml`'s root is the `TabControl` directly with no wrapping `Panel` —
+see that file's own comment — and why a future change that adds sibling content next to the
+`TabControl` (a footer link, a status row) MUST use a `Grid` with a star row for the `TabControl`, not
+a `StackPanel`.
+
 ---
 
 ## Dashboard layout — card colour presets

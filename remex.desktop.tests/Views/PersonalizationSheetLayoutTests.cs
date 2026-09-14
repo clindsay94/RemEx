@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -8,176 +9,185 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// The Personalization sheet's shape (spec section 3): eight cards in a pinned order, one path to a
-/// colour, no Tone slider, no seed setter reachable from the Saved palettes card. Source-text,
-/// because remex.desktop.tests has no headless render.
+/// The Personalization sheet's shape after RemEx-4kv0g.4.3 (spec 2026-09-13-personalize-tabs §1/§2):
+/// the host is a <c>TabControl</c> with five tabs, one <c>UserControl</c> per tab under
+/// <c>Views/Personalize/</c>. Source-text, because <c>remex.desktop.tests</c> has no headless render.
 /// </summary>
 public class PersonalizationSheetLayoutTests
 {
-    private static readonly string[] HeadersInOrder =
+    /// <summary>
+    /// Every <c>Custom_*</c> key that was reachable from <c>PersonalizationPanelView.axaml</c>
+    /// immediately before this task, computed ONCE via
+    /// <c>git show 1b147cc6:remex.desktop/Views/PersonalizationPanelView.axaml | grep -oE 'Custom_[A-Za-z0-9_]*' | sort -u</c>
+    /// and pasted here verbatim (RemEx-4kv0g.4.3 base commit, .4.2 + its review fixes).
+    /// </summary>
+    private static readonly string[] BeforeCustomKeys =
     {
-        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionFlyout",
-        "Custom_SectionText", "Custom_AdvancedTuning", "Custom_SectionBehaviour", "Custom_SectionSavedPalettes",
+        "Custom_AdvancedTuning", "Custom_AppWindowOpacity", "Custom_BackgroundMode", "Custom_BaseMode",
+        "Custom_BaseModeDesc", "Custom_BgType_", "Custom_BorderCornerRadiusPixelsTooltip",
+        "Custom_BuiltInPresets", "Custom_ChooseWallpaperImage", "Custom_Clear", "Custom_ColorSource",
+        "Custom_ContentFont", "Custom_ContentFontTip", "Custom_ContrastLevel", "Custom_ContrastSharper",
+        "Custom_ContrastSofter", "Custom_ContrastTooltip", "Custom_CopyPaletteAxaml", "Custom_CornerRadius",
+        "Custom_CornerRadiusGeneralTooltip", "Custom_CurrentWindowsAccent", "Custom_DeletePalette",
+        "Custom_ExportPaletteJson", "Custom_FlyoutApps", "Custom_FlyoutApps_None", "Custom_FlyoutButtons",
+        "Custom_FlyoutCards", "Custom_FlyoutCards_NoPins", "Custom_FlyoutOpacity", "Custom_FlyoutOpacityTooltip",
+        "Custom_Frosted", "Custom_GlassFrostingOpacityPercentTooltip", "Custom_GlassOpacity",
+        "Custom_GlassOpacityTooltip", "Custom_GlowIntense", "Custom_GlowNone", "Custom_GlowStrength",
+        "Custom_ImportPaletteJson", "Custom_MatchPhoneTheme", "Custom_ModeDark", "Custom_ModeLight",
+        "Custom_ModeSystem", "Custom_NeonGlowThicknessPixelsTooltip", "Custom_NeonGlowTooltip",
+        "Custom_PageTitleFont", "Custom_PageTitleFontTip", "Custom_PaletteNamePlaceholder", "Custom_Preview",
+        "Custom_RecentSeeds", "Custom_ReducedMotionDesc", "Custom_ReducedMotionTitle",
+        "Custom_RefreshWallpaperSeeds", "Custom_Reset", "Custom_Round", "Custom_SampleCardBody",
+        "Custom_SampleCardTitle", "Custom_SavePalette", "Custom_SectionBehaviour", "Custom_SectionColor",
+        "Custom_SectionFlyout", "Custom_SectionLook", "Custom_SectionMode", "Custom_SectionSavedPalettes",
+        "Custom_SectionText", "Custom_SeedHex", "Custom_SeedHue", "Custom_SeedWheel", "Custom_SeedWheelTooltip",
+        "Custom_Source_", "Custom_SplashScreen", "Custom_Square", "Custom_Strategy", "Custom_TextBody",
+        "Custom_TextBodyBold", "Custom_TextBodyTip", "Custom_TextHeaders", "Custom_TextHeadersBold",
+        "Custom_TextHeadersTip", "Custom_TextReset", "Custom_TextSensor", "Custom_TextSensorBackdrop",
+        "Custom_TextSensorBackdropTip", "Custom_TextSensorBold", "Custom_TextSensorTip", "Custom_TextShadow",
+        "Custom_TextShadowStrength", "Custom_TextShadowTip", "Custom_TextSizeLabelTip", "Custom_TextSmall",
+        "Custom_TextSmallBold", "Custom_TextSmallTip", "Custom_TonalRamp_ErrorPair", "Custom_TonalRamp_Neutral",
+        "Custom_TonalRamp_Primary", "Custom_TonalRamp_PrimaryPair", "Custom_TonalRamp_Secondary",
+        "Custom_TonalRamp_SurfacePair", "Custom_TonalRamp_Tertiary", "Custom_UiScale", "Custom_UiScaleTip",
+        "Custom_UserPalettes", "Custom_Vibrancy", "Custom_WallpaperBlur", "Custom_WallpaperSource",
+        "Custom_WallpaperSource_", "Custom_WelcomeSplashTooltip",
+    };
+
+    private static readonly string[] RetiredKeys =
+    {
+        "Custom_SectionColor", "Custom_SectionMode", "Custom_SectionLook", "Custom_SectionText",
+        "Custom_SectionSavedPalettes", "Custom_AdvancedTuning",
+    };
+
+    /// <summary>
+    /// Keys legitimately reused across two tabs — generic vocabulary, not a copy-paste duplicate.
+    /// Pre-existing in the single-file sheet, unrelated to this task's move: "Preview" labels both
+    /// the Colour tab's ramp preview AND the Layout tab's splash-screen Preview button;
+    /// "Clear"/"Frosted" are the end-of-slider labels shared by GlassOpacity (Surfaces) and
+    /// FlyoutOpacity (Layout) — both are 0..1 opacity sliders with the same two-word range caption.
+    /// </summary>
+    private static readonly string[] LegitimatelySharedKeys = { "Custom_Preview", "Custom_Clear", "Custom_Frosted" };
+
+    private static readonly (string File, string Header)[] Tabs =
+    {
+        ("PersonalizeColourTab.axaml", "Custom_Tab_Colour"),
+        ("PersonalizePalettesTab.axaml", "Custom_Tab_Palettes"),
+        ("PersonalizeSurfacesTab.axaml", "Custom_Tab_Surfaces"),
+        ("PersonalizeTextTab.axaml", "Custom_Tab_Text"),
+        ("PersonalizeLayoutTab.axaml", "Custom_Tab_Layout"),
     };
 
     [Fact]
-    public void TheEightSectionHeadersAppearInSpecOrder()
+    public void TheHostIsATabControlWithFiveHeadersInSpecOrder_EachContainingItsMatchingTabControl()
     {
-        var markup = PanelMarkup();
-        var positions = HeadersInOrder.Select(k => markup.IndexOf($"Localize {k}}}", System.StringComparison.Ordinal)).ToArray();
+        var host = HostMarkup();
 
-        positions.Should().OnlyContain(p => p >= 0, "every section header is on the sheet");
-        positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Flyout, Text, Fine-tuning, Behaviour, Saved palettes");
-    }
+        host.Should().Contain("<TabControl", "the host is a TabControl (spec §1)");
+        host.Should().Contain("SelectedIndex=\"{Binding SelectedTabIndex}\"");
 
-    /// <summary>
-    /// RemEx-4kv0g.4.2: the Layout section is temporary (drop 3 turns it into a real tab) but must
-    /// sit between Flyout and Text — the spot the brief calls for — and bind all three controls that
-    /// moved off Settings. Simple on purpose: this assertion is rewritten again in drop 3.
-    /// </summary>
-    [Fact]
-    public void TheTemporaryLayoutSectionSitsBetweenFlyoutAndTextWithItsThreeControls()
-    {
-        var markup = PanelMarkup();
-        var flyoutPos = markup.IndexOf("Localize Custom_SectionFlyout}", System.StringComparison.Ordinal);
-        var layoutPos = markup.IndexOf("Localize Settings_Layout}", System.StringComparison.Ordinal);
-        var textPos = markup.IndexOf("Localize Custom_SectionText}", System.StringComparison.Ordinal);
+        var headerPositions = Tabs.Select(t => host.IndexOf($"Localize {t.Header}}}", System.StringComparison.Ordinal)).ToArray();
+        headerPositions.Should().OnlyContain(p => p >= 0, "every tab header must be on the host");
+        headerPositions.Should().BeInAscendingOrder("spec §2: Colour, Palettes, Surfaces, Text, Layout");
 
-        flyoutPos.Should().BeGreaterThanOrEqualTo(0);
-        layoutPos.Should().BeGreaterThanOrEqualTo(0, "the LAYOUT section must be on the sheet");
-        textPos.Should().BeGreaterThanOrEqualTo(0);
-        layoutPos.Should().BeInRange(flyoutPos, textPos, "LAYOUT sits between Flyout and Text");
+        // Each TabItem's content is its matching personalize: control - not just present anywhere,
+        // but the item immediately following that header's own TabItem open tag.
+        foreach (var (file, header) in Tabs)
+        {
+            var controlName = Path.GetFileNameWithoutExtension(file);
+            var headerPos = host.IndexOf($"Localize {header}}}", System.StringComparison.Ordinal);
+            var tabItemOpen = host.LastIndexOf("<TabItem", headerPos, System.StringComparison.Ordinal);
+            var tabItemClose = host.IndexOf("</TabItem>", headerPos, System.StringComparison.Ordinal);
+            var body = host.Substring(tabItemOpen, tabItemClose - tabItemOpen);
 
-        var card = CardAfterHeader("Settings_Layout");
-        card.Should().Contain("{Binding Layout.IsSnapToGridEnabled}");
-        card.Should().Contain("{Binding Layout.GridSize");
-        card.Should().Contain("{Binding Layout.PinnedSensors}");
-        card.Should().Contain("Converter={x:Static ObjectConverters.IsNotNull}",
-            "a null Layout (some tests construct CustomizationViewModel without one) must render nothing");
+            body.Should().Contain($"<personalize:{controlName}",
+                $"the {header} TabItem must host {controlName}");
+        }
     }
 
     [Fact]
-    public void TheSavedPalettesCardBindsNoSeedSetter()
+    public void TheHostHasNoScrollViewerAroundThePersonalizeView()
     {
-        var card = SavedPalettesCard();
+        // The strip must stay pinned while each tab scrolls its own content (spec §1) - a
+        // ScrollViewer wrapping the whole TabControl would scroll the strip away with it, and (spec
+        // §5/REGRESSION-GUARDS) would swallow the MaxHeight bound the same way the old ShellView
+        // ScrollViewer did one level up.
+        HostMarkup().Should().NotContain("<ScrollViewer", "no ScrollViewer belongs around the Personalize view any more - each tab owns its own");
+    }
 
-        card.Should().NotContain("SetAccentCommand", "a saved palette is a whole palette; the accent-swatch shortcut is gone (spec section 1)");
-        card.Should().Contain("ThemePresets").And.Contain("SavedPalettes")
-            .And.Contain("SaveCurrentPaletteCommand").And.Contain("ImportPaletteJsonCommand").And.Contain("ExportPaletteJsonCommand");
+    [Theory]
+    [InlineData("PersonalizeColourTab.axaml")]
+    [InlineData("PersonalizePalettesTab.axaml")]
+    [InlineData("PersonalizeSurfacesTab.axaml")]
+    [InlineData("PersonalizeTextTab.axaml")]
+    [InlineData("PersonalizeLayoutTab.axaml")]
+    public void EveryTabFileRootsInItsOwnScrollViewer(string file)
+    {
+        var markup = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", file));
+        Regex.IsMatch(markup, @"<UserControl\b[\s\S]*?>\s*<ScrollViewer\b[^>]*HorizontalScrollBarVisibility=""Disabled""")
+            .Should().BeTrue($"{file} must root in a ScrollViewer that owns its own scrolling (spec §1/REGRESSION-GUARDS)");
     }
 
     [Fact]
-    public void TheToneSliderIsGoneButTheWheelStillCarriesTone()
+    public void TheUnionOfTabKeys_CoversEveryPreMoveKeyExceptTheSixRetiredOnes()
     {
-        var markup = PanelMarkup();
+        var expected = BeforeCustomKeys.Except(RetiredKeys).ToArray();
+        var union = AllTabCustomKeys();
 
-        Regex.IsMatch(markup, @"<Slider[^>]*Value=""\{Binding SeedTone").Should().BeFalse("Android has no tone slider (spec section 3)");
-        markup.Should().Contain("Tone=\"{Binding SeedTone", "the wheel still needs tone to render the disc");
-        markup.Should().NotContain("Custom_SeedTone");
+        var missing = expected.Except(union).ToArray();
+        missing.Should().BeEmpty(
+            "every Custom_* key the sheet carried before this task, other than the six retired section/disclosure headers, must still be reachable from one of the five tabs");
     }
 
     [Fact]
-    public void TheRetiredStrategyNamesAreNotOnTheSheet()
+    public void NoKeyAppearsInTwoTabFilesExceptTheDocumentedSharedVocabulary()
     {
-        PanelMarkup().Should().NotContain("Custom_Scheme_Content").And.NotContain("Custom_Scheme_Spritz");
+        var perFile = Tabs.Select(t => (t.File, Keys: TabCustomKeys(t.File))).ToArray();
+        var offenders = new List<string>();
+        var sharedSeen = new HashSet<string>();
+
+        for (var i = 0; i < perFile.Length; i++)
+        for (var j = i + 1; j < perFile.Length; j++)
+        {
+            foreach (var key in perFile[i].Keys.Intersect(perFile[j].Keys))
+            {
+                if (LegitimatelySharedKeys.Contains(key))
+                {
+                    sharedSeen.Add(key);
+                    continue;
+                }
+
+                offenders.Add($"{key} in both {perFile[i].File} and {perFile[j].File}");
+            }
+        }
+
+        offenders.Should().BeEmpty("a key duplicated across tabs (beyond the documented shared vocabulary) means content was copied instead of moved");
+
+        // Anti-vacuity: every documented exception has to actually be shared by two tabs today.
+        LegitimatelySharedKeys.Except(sharedSeen).Should().BeEmpty(
+            "a LegitimatelySharedKeys entry that no longer collides is stale and should be removed");
     }
 
     [Fact]
-    public void TheColourCardOffersSourceThenVibrancyContrastStrategyThenPreview()
+    public void TheRetiredKeysAppearInNoAxamlFile()
     {
-        var card = ColourCard();
-        var order = new[] { "AvailableColorSources", "Custom_Vibrancy", "Custom_ContrastLevel", "SchemeVariantStrips", "Custom_Preview" }
-            .Select(k => card.IndexOf(k, System.StringComparison.Ordinal)).ToArray();
+        var offenders = Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.axaml", SearchOption.AllDirectories)
+            .Where(f => RetiredKeys.Any(k => Regex.IsMatch(File.ReadAllText(f), $@"\b{Regex.Escape(k)}\b")))
+            .Select(Path.GetFileName)
+            .ToArray();
 
-        order.Should().OnlyContain(p => p >= 0);
-        order.Should().BeInAscendingOrder("source, then shape, then strategy, then preview — Android's flow");
-        card.Should().MatchRegex(@"SelectedItem=""\{Binding ColorSource[,}]", "the source picker writes ColorSource");
-        card.Should().MatchRegex(@"Value=""\{Binding SeedChroma[,}]", "Vibrancy keeps its SeedChroma backing field");
+        offenders.Should().BeEmpty("the six retired section/disclosure headers must appear in no .axaml - the tab strip is the header now");
     }
 
-    [Fact]
-    public void EachSourceShowsOnlyItsOwnControls()
-    {
-        var card = ColourCard();
+    private static string[] AllTabCustomKeys() => Tabs.SelectMany(t => TabCustomKeys(t.File)).Distinct().ToArray();
 
-        card.Should().MatchRegex(@"IsVisible=""\{Binding IsWindowsAccentSource\}""[^>]*>[\s\S]*?SourceAccentHex", "the Windows-accent swatch shows the current accent");
-        card.Should().MatchRegex(@"IsVisible=""\{Binding IsWallpaperSource\}""[\s\S]*?RefreshWallpaperSeedsCommand[\s\S]*?WallpaperSeedCandidates");
-        var custom = Regex.Match(card, @"IsVisible=""\{Binding IsCustomSource\}""[\s\S]*?</StackPanel>\s*</StackPanel>");
-        custom.Success.Should().BeTrue();
-        custom.Value.Should().Contain("<controls:HctColorWheel").And.Contain("CustomAccentHex").And.Contain("CustomAccentColors",
-            "the wheel, the hex box and the recents row live under Custom");
-    }
+    private static string[] TabCustomKeys(string file) => Regex.Matches(
+            File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", file)), @"Custom_[A-Za-z0-9_]*")
+        .Select(m => m.Value)
+        .Distinct()
+        .ToArray();
 
-    [Fact]
-    public void TheSampleCardTakesTheLivePaletteCornersAndWindowOpacity()
-    {
-        var card = ColourCard();
-        var sample = Regex.Match(card, @"<Border[^>]*Name=""SampleCard""[^>]*>");
-
-        sample.Success.Should().BeTrue();
-        sample.Value.Should().Contain("Background=\"{Binding TonalRamp.SurfaceBrush}\"")
-            .And.Contain("CornerRadius=\"{Binding SampleCardCornerRadius}\"")
-            .And.Contain("Opacity=\"{Binding AppWindowOpacity}\"");
-    }
-
-    [Fact]
-    public void TheLookCardHidesWallpaperControlsUnlessWallpaperIsSelected()
-    {
-        var card = CardAfterHeader("Custom_SectionLook");
-
-        card.Should().MatchRegex(@"SelectedItem=""\{Binding CanvasBackgroundType[,}]");
-        card.Should().MatchRegex(@"IsVisible=""\{Binding IsWallpaperBackgroundSelected\}""[\s\S]*?WallpaperSource[\s\S]*?WallpaperBlur");
-        card.Should().MatchRegex(@"IsVisible=""\{Binding IsWindowOpacityRelevant\}""[\s\S]*?AppWindowOpacity");
-    }
-
-    [Fact]
-    public void FineTuningIsAnExpanderHoldingGeometryAndTypography()
-    {
-        var card = CardAfterHeader("Custom_AdvancedTuning");
-
-        card.Should().StartWith("<Expander");
-        foreach (var binding in new[] { "CornerRadius", "GlassOpacity", "GlowStrength", "SelectedPageTitleFont", "SelectedBodyFont", "UiScale" })
-            card.Should().Contain($"{{Binding {binding}", $"{binding} moved into Fine-tuning");
-    }
-
-    [Fact]
-    public void BehaviourHasSplashWithPreviewAndReducedMotion()
-    {
-        var card = CardAfterHeader("Custom_SectionBehaviour");
-
-        card.Should().MatchRegex(@"SelectedItem=""\{Binding SplashStyle[,}]");
-        card.Should().Contain("PreviewSplashCommand");
-        card.Should().MatchRegex(@"IsChecked=""\{Binding IsReducedMotion[,}]");
-    }
-
-    [Fact]
-    public void ResetSitsBelowTheLastCard()
-    {
-        var markup = PanelMarkup();
-        markup.LastIndexOf("ResetToDefaultCommand", System.StringComparison.Ordinal)
-            .Should().BeGreaterThan(markup.LastIndexOf("</material:Card>", System.StringComparison.Ordinal));
-    }
-
-    private static string ColourCard() => CardAfterHeader("Custom_SectionColor");
-
-    private static string SavedPalettesCard() => CardAfterHeader("Custom_SectionSavedPalettes");
-
-    /// <summary>The markup from a card's header key to that card's closing tag (or the Expander's).</summary>
-    private static string CardAfterHeader(string headerKey)
-    {
-        var markup = PanelMarkup();
-        var start = markup.IndexOf($"Localize {headerKey}}}", System.StringComparison.Ordinal);
-        start.Should().BeGreaterOrEqualTo(0, $"{headerKey} must be on the sheet");
-        // Back up to the card/expander that owns the header.
-        var cardStart = markup.LastIndexOf("<material:Card", start, System.StringComparison.Ordinal);
-        var expanderStart = markup.LastIndexOf("<Expander", start, System.StringComparison.Ordinal);
-        var isExpander = expanderStart > cardStart;
-        var open = isExpander ? expanderStart : cardStart;
-        var close = markup.IndexOf(isExpander ? "</Expander>" : "</material:Card>", start, System.StringComparison.Ordinal);
-        return markup.Substring(open, close - open);
-    }
-
-    private static string PanelMarkup() => File.ReadAllText(
+    private static string HostMarkup() => File.ReadAllText(
         Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")

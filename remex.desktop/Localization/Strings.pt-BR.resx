@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Salvar &amp; Reconectar</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>DISPOSIÇÃO</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Encaixar na Grade</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>AJUSTE FINO AVANÇADO</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>Raio do Canto</value>
   </data>
@@ -3387,20 +3381,23 @@ Você pode mudar:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nome da paleta</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>COR</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>MODO</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>APARÊNCIA</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>COMPORTAMENTO</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>PALETAS SALVAS</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>Cor</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>Paletas</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>Superfícies</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>Disposição</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Origem</value>
@@ -3489,8 +3486,8 @@ Você pode mudar:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Desistimos de “{0}” após várias tentativas. Nada foi alterado nesse item.</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>TEXTO</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>FONTES</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Cabeçalhos</value>

@@ -1177,47 +1177,23 @@
                                  SideSheetHeaderTemplate="{x:Null}"
                                  IsHitTestVisible="{Binding IsSettingsPanelOpen}">
                 <material:SideSheet.SideSheetHeader>
+                    <!-- LANGUAGE now lives inside the header (RemEx-4kv0g.4.3), not the scrolling
+                         content: the five Personalize tabs each own their own ScrollViewer, so
+                         nothing below this Border scrolls independently any more, and Language has
+                         to stay reachable regardless of which tab is selected. Folding it in here
+                         also means SettingsSheetHeader.Bounds.Height - the second input to
+                         SubtractHeightConverter below - already covers it for free. -->
                     <Border Name="SettingsSheetHeader" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
-                                <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
-                            </StackPanel>
-                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Padding="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
-                                <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-                </material:SideSheet.SideSheetHeader>
-
-                <!-- Live personalization content: language + all visual customization.
-                     MaxHeight is a REAL constraint, not decoration (review round 1, HIGH): the
-                     template presents SideSheetContent through PART_SideContentPresenter, a child of
-                     StackPanel#PART_SideSheetPanel - and a vertical StackPanel measures every child
-                     with infinite available height, so without an explicit bound this ScrollViewer
-                     sizes itself to its full content instead of scrolling, and everything below the
-                     fold (PersonalizationPanelView alone is taller than a 1080p viewport) becomes
-                     unreachable - PART_RootBorder is ClipToBounds="False", so it does not even get
-                     clipped, it runs off the window. SubtractHeightConverter turns two live Bounds
-                     readings (this sheet's own full height, minus the header's actual rendered
-                     height) into the one number that is actually available, so a translated
-                     Subtitle that wraps to two lines still gets the header height it really needs
-                     instead of a guessed constant.
-
-                     ConverterParameter="5" cancels PART_SideContentPresenter's own
-                     Margin="0,5,0,0" (set by SideSheet's ControlTheme, unconditioned, so it applies
-                     regardless of pseudo-class) - without it MaxHeight overshoots the truly available
-                     space by exactly that margin, and on a maximised window the last 5px of the
-                     viewport sit past the window edge, unclipped (review round 2, LOW). -->
-                <material:SideSheet.SideSheetContent>
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                        <ScrollViewer.MaxHeight>
-                            <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}" ConverterParameter="5">
-                                <Binding ElementName="SettingsSideSheet" Path="Bounds.Height"/>
-                                <Binding ElementName="SettingsSheetHeader" Path="Bounds.Height"/>
-                            </MultiBinding>
-                        </ScrollViewer.MaxHeight>
-                        <StackPanel Margin="20" Spacing="16">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
+                                    <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
+                                </StackPanel>
+                                <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Padding="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                                    <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
+                                </Button>
+                            </Grid>
 
                             <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
                             <material:Card Padding="16" DataContext="{Binding SettingsVm}">
@@ -1231,12 +1207,43 @@
                                     </ComboBox>
                                 </StackPanel>
                             </material:Card>
-
-                            <!-- ═══ ALL VISUAL CUSTOMIZATION (live-applied via CustomizationViewModel) ═══ -->
-                            <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}"/>
-
                         </StackPanel>
-                    </ScrollViewer>
+                    </Border>
+                </material:SideSheet.SideSheetHeader>
+
+                <!-- Live personalization content: the five-tab Personalize host (RemEx-4kv0g.4.3).
+                     MaxHeight is a REAL constraint, not decoration (review round 1, HIGH): the
+                     template presents SideSheetContent through PART_SideContentPresenter, a child of
+                     StackPanel#PART_SideSheetPanel - and a vertical StackPanel measures every child
+                     with infinite available height, so without an explicit bound this view sizes
+                     itself to its full content instead of scrolling, and everything below the fold
+                     (PersonalizationPanelView alone is taller than a 1080p viewport) becomes
+                     unreachable - PART_RootBorder is ClipToBounds="False", so it does not even get
+                     clipped, it runs off the window. The bound now sits directly on
+                     PersonalizationPanelView instead of on a ScrollViewer around it: the tab strip
+                     inside stays pinned and each tab scrolls its own content within this same bound
+                     (PersonalizationPanelView.axaml uses a Grid, not a StackPanel, precisely so this
+                     MaxHeight actually reaches the TabControl instead of being swallowed the same way
+                     one level up). SubtractHeightConverter turns two live Bounds readings (this
+                     sheet's own full height, minus the header's actual rendered height - which now
+                     includes the Language card above) into the one number that is actually
+                     available, so a translated Subtitle that wraps to two lines still gets the header
+                     height it really needs instead of a guessed constant.
+
+                     ConverterParameter="5" cancels PART_SideContentPresenter's own
+                     Margin="0,5,0,0" (set by SideSheet's ControlTheme, unconditioned, so it applies
+                     regardless of pseudo-class) - without it MaxHeight overshoots the truly available
+                     space by exactly that margin, and on a maximised window the last 5px of the
+                     viewport sit past the window edge, unclipped (review round 2, LOW). -->
+                <material:SideSheet.SideSheetContent>
+                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}" Margin="20">
+                        <views:PersonalizationPanelView.MaxHeight>
+                            <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}" ConverterParameter="5">
+                                <Binding ElementName="SettingsSideSheet" Path="Bounds.Height"/>
+                                <Binding ElementName="SettingsSheetHeader" Path="Bounds.Height"/>
+                            </MultiBinding>
+                        </views:PersonalizationPanelView.MaxHeight>
+                    </views:PersonalizationPanelView>
                 </material:SideSheet.SideSheetContent>
             </material:SideSheet>
 

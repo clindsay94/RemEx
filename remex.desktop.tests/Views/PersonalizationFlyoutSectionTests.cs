@@ -8,24 +8,26 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Flyout D2 .2 (RemEx-4kv0g.18.6): the Flyout card sits between Look and Text, its four controls
-/// bind FlyoutOpacity/FlyoutCards/FlyoutTiles/FlyoutApps, every visible string routes through
+/// Flyout D2 .2 (RemEx-4kv0g.18.6): the Flyout card sits on the Layout tab, between the Layout
+/// section's own rows (spec 2026-09-13-personalize-tabs §2) and Behaviour, its four controls bind
+/// FlyoutOpacity/FlyoutCards/FlyoutTiles/FlyoutApps, every visible string routes through
 /// <c>local:Localize</c>, and it adds exactly one inline size (the header, matching its six
 /// siblings) so <c>TypographyVocabularyTests</c>' ratchet keeps its arithmetic. Source-text, like
-/// its siblings — <c>remex.desktop.tests</c> has no headless render.
+/// its siblings — <c>remex.desktop.tests</c> has no headless render. Re-pointed at
+/// PersonalizeLayoutTab.axaml (RemEx-4kv0g.4.3); assertions on the card's own contents unchanged.
 /// </summary>
 public class PersonalizationFlyoutSectionTests
 {
     [Fact]
-    public void TheFlyoutCard_SitsBetweenLookAndText()
+    public void TheFlyoutCard_SitsBetweenTheLayoutRowsAndBehaviour()
     {
         var markup = PanelMarkup();
-        var look = markup.IndexOf("Localize Custom_SectionLook}", System.StringComparison.Ordinal);
+        var uiScale = markup.IndexOf("Localize Custom_UiScale}", System.StringComparison.Ordinal);
         var flyout = markup.IndexOf("Localize Custom_SectionFlyout}", System.StringComparison.Ordinal);
-        var text = markup.IndexOf("Localize Custom_SectionText}", System.StringComparison.Ordinal);
+        var behaviour = markup.IndexOf("Localize Custom_SectionBehaviour}", System.StringComparison.Ordinal);
 
-        flyout.Should().BeGreaterThan(look).And.BeLessThan(text,
-            "spec §4: the Flyout section sits after Look, before Text");
+        flyout.Should().BeGreaterThan(uiScale).And.BeLessThan(behaviour,
+            "spec §2: the Layout tab is Layout rows, UI scale, then Flyout, then Behaviour");
     }
 
     [Fact]
@@ -121,7 +123,7 @@ public class PersonalizationFlyoutSectionTests
     }
 
     private static string PanelMarkup() => File.ReadAllText(
-        Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeLayoutTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

@@ -147,7 +147,7 @@ public class PaletteStudioWiringTests
         var markup = PanelMarkup();
 
         markup.Length.Should().BeGreaterThan(2000);
-        markup.Should().Contain("Custom_SectionColor");
+        markup.Should().Contain("Custom_ColorSource");
         StudioSection(markup).Length.Should().BeGreaterThan(500);
         ApplyAndSaveInitializer().Length.Should().BeGreaterThan(200);
 
@@ -161,23 +161,27 @@ public class PaletteStudioWiringTests
 
     // ═══════════════ Helpers ═══════════════
 
+    /// <summary>RemEx-4kv0g.4.3: the seed's card moved onto the Colour tab; the section header this
+    /// helper used to anchor on (Custom_SectionColor) is retired - the tab strip is the header now.</summary>
     private static string PanelMarkup() => File.ReadAllText(Path.Combine(RepoRoot(),
-        "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        "remex.desktop", "Views", "Personalize", "PersonalizeColourTab.axaml"));
 
     private static string ViewModelSource() => File.ReadAllText(Path.Combine(RepoRoot(),
         "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
 
     /// <summary>
     /// The seed's card — Colour, since RemEx-8twk0.8 folded the old standalone Palette Studio
-    /// section into it — from its header to the next card's header.
+    /// section into it. RemEx-4kv0g.4.3: its own Custom_SectionColor header is retired (the tab
+    /// strip is the header now), and it is the last material:Card in this file, so this anchors on
+    /// one of its own still-present controls instead and runs to the end of the file.
     /// </summary>
     private static string StudioSection(string markup)
     {
-        var start = markup.IndexOf("Custom_SectionColor", StringComparison.Ordinal);
-        start.Should().BeGreaterThanOrEqualTo(0, "the colour card's header is how this test finds it");
+        var anchor = markup.IndexOf("Custom_ColorSource", StringComparison.Ordinal);
+        anchor.Should().BeGreaterThanOrEqualTo(0, "the colour card's own Source control is how this test finds it");
 
-        var end = markup.IndexOf("Custom_SectionMode", start, StringComparison.Ordinal);
-        return end < 0 ? markup[start..] : markup[start..end];
+        var start = markup.LastIndexOf("<material:Card", anchor, StringComparison.Ordinal);
+        return markup[start..];
     }
 
     /// <summary>Exactly one member's body — expression-bodied or block-bodied — and nothing after it.</summary>

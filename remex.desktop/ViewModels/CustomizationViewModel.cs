@@ -38,6 +38,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     public LayoutSettingsViewModel? Layout { get; }
 
     /// <summary>
+    /// Which Personalize tab is showing (RemEx-4kv0g.4.3) — remembered for the run, not persisted:
+    /// closing and reopening the sheet lands back on this tab, but a restart always opens Colour.
+    /// Deliberately excluded from <see cref="BuildCurrentSettings"/>.
+    /// </summary>
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
+    /// <summary>
     /// Short-circuits only the persist half of <see cref="ApplyAndSave"/> — the live repaint (and
     /// preview/tile refresh) still runs, <c>_layoutService.RequestSave</c> alone does not.
     /// </summary>

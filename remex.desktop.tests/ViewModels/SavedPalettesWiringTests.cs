@@ -38,8 +38,10 @@ public class SavedPalettesWiringTests
         gallery.Value.Should().NotContain("DeleteSavedPaletteCommand");
     }
 
+    /// <summary>RemEx-4kv0g.4.3: the preset gallery and the saved-palette row both moved onto the
+    /// Palettes tab.</summary>
     private static string PanelMarkup() => File.ReadAllText(
-        Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizePalettesTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
     {

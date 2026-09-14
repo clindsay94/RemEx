@@ -8,13 +8,14 @@ namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
 /// The three chip rows this drop converts to <c>PaletteChip</c> (spec 2026-09-13 personalize-tabs
-/// §3, RemEx-9ql7v): the scheme-variant strip, the built-in preset gallery, and the saved-palette
-/// row. Every other detail of each row's own Button - Classes="tile" where it had it, its command,
-/// CommandParameter and AutomationProperties.Name - is untouched; only each Button's inner content
-/// changed. The saved-palette row keeps its separate rename TextBox and delete Button unmodified;
-/// it gets no IsSelected binding on its chip because a saved palette has no "currently selected"
-/// concept today (Apply is one-shot, not a toggle) - see SavedPaletteTileViewModel.cs's DisplayName
-/// doc comment. Source-text, like <c>PersonalizationSheetLayoutTests</c> and its siblings -
+/// §3, RemEx-9ql7v): the scheme-variant strip (now on the Colour tab), the built-in preset gallery
+/// and the saved-palette row (now on the Palettes tab, RemEx-4kv0g.4.3). Every other detail of each
+/// row's own Button - Classes="tile" where it had it, its command, CommandParameter and
+/// AutomationProperties.Name - is untouched; only each Button's inner content changed. The
+/// saved-palette row keeps its separate rename TextBox and delete Button unmodified; it gets no
+/// IsSelected binding on its chip because a saved palette has no "currently selected" concept today
+/// (Apply is one-shot, not a toggle) - see SavedPaletteTileViewModel.cs's DisplayName doc comment.
+/// Source-text, like <c>PersonalizationSheetLayoutTests</c> and its siblings -
 /// <c>remex.desktop.tests</c> has no headless render.
 /// </summary>
 public class PersonalizationChipRowsTests
@@ -58,7 +59,7 @@ public class PersonalizationChipRowsTests
     [Fact]
     public void TheSavedPaletteRow_KeepsItsApplyButtonAndRenameBox_AndHostsAPaletteChip()
     {
-        var markup = PanelMarkup();
+        var markup = PalettesMarkup();
         var template = Regex.Match(markup, @"x:DataType=""vm:SavedPaletteTileViewModel"">(?<body>[\s\S]*?)</DataTemplate>");
         template.Success.Should().BeTrue();
         var body = template.Groups["body"].Value;
@@ -81,10 +82,8 @@ public class PersonalizationChipRowsTests
     [Fact]
     public void AllThreeItemsControls_KeepTheirOwnItemsSource()
     {
-        var markup = PanelMarkup();
-
-        markup.Should().Contain(@"ItemsSource=""{Binding SchemeVariantStrips}""")
-            .And.Contain(@"ItemsSource=""{Binding ThemePresets}""")
+        ColourMarkup().Should().Contain(@"ItemsSource=""{Binding SchemeVariantStrips}""");
+        PalettesMarkup().Should().Contain(@"ItemsSource=""{Binding ThemePresets}""")
             .And.Contain(@"ItemsSource=""{Binding SavedPalettes}""");
     }
 
@@ -101,13 +100,12 @@ public class PersonalizationChipRowsTests
         return button.Substring(open, close + "/>".Length - open);
     }
 
-    private static string VariantButton() => ButtonInBody(TemplateBody("vm:SchemeVariantStripViewModel"));
+    private static string VariantButton() => ButtonInBody(TemplateBody(ColourMarkup(), "vm:SchemeVariantStripViewModel"));
 
-    private static string PresetButton() => ButtonInBody(TemplateBody("vm:SeedPresetTileViewModel"));
+    private static string PresetButton() => ButtonInBody(TemplateBody(PalettesMarkup(), "vm:SeedPresetTileViewModel"));
 
-    private static string TemplateBody(string dataType)
+    private static string TemplateBody(string markup, string dataType)
     {
-        var markup = PanelMarkup();
         var template = Regex.Match(markup, $@"x:DataType=""{Regex.Escape(dataType)}"">(?<body>[\s\S]*?)</DataTemplate>");
         template.Success.Should().BeTrue($"{dataType}'s DataTemplate must still exist");
         return template.Groups["body"].Value;
@@ -124,8 +122,13 @@ public class PersonalizationChipRowsTests
         return body.Substring(open, close + "</Button>".Length - open);
     }
 
-    private static string PanelMarkup() => File.ReadAllText(
-        Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml"));
+    /// <summary>The scheme-variant strip's chip row (RemEx-4kv0g.4.3: moved onto the Colour tab).</summary>
+    private static string ColourMarkup() => File.ReadAllText(
+        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeColourTab.axaml"));
+
+    /// <summary>The preset gallery and saved-palette rows (RemEx-4kv0g.4.3: moved onto the Palettes tab).</summary>
+    private static string PalettesMarkup() => File.ReadAllText(
+        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizePalettesTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
     {

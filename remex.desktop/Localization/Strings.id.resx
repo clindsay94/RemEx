@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Simpan &amp; Hubungkan Ulang</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>TATA LETAK</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kunci ke Grid</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>PENYETELAN LANJUTAN</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>Radius Sudut</value>
   </data>
@@ -3390,20 +3384,23 @@ Anda dapat mengubah:
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>Nama palet</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>WARNA</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>MODE TAMPILAN</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>TAMPILAN</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>PERILAKU</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>PALET TERSIMPAN</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>Warna</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>Palet</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>Permukaan</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>Teks</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>Tata Letak</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>Sumber</value>
@@ -3492,8 +3489,8 @@ Anda dapat mengubah:
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>Menyerah pada “{0}” setelah beberapa kali percobaan. Tidak ada yang berubah untuk item itu.</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>TEKS</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>FONT</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Judul</value>

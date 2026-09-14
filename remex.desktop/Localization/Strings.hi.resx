@@ -188,9 +188,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>सहेजें &amp; पुनः कनेक्ट करें</value>
   </data>
-  <data name="Settings_Layout" xml:space="preserve">
-    <value>लेआउट</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>ग्रिड पर स्नैप</value>
   </data>
@@ -390,9 +387,6 @@
   </data>
 
   
-  <data name="Custom_AdvancedTuning" xml:space="preserve">
-    <value>उन्नत फाइन-ट्यूनिंग</value>
-  </data>
   <data name="Custom_CornerRadius" xml:space="preserve">
     <value>कोने की त्रिज्या</value>
   </data>
@@ -3387,20 +3381,23 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_PaletteNamePlaceholder" xml:space="preserve">
     <value>पैलेट का नाम</value>
   </data>
-  <data name="Custom_SectionColor" xml:space="preserve">
-    <value>रंग</value>
-  </data>
-  <data name="Custom_SectionMode" xml:space="preserve">
-    <value>मोड</value>
-  </data>
-  <data name="Custom_SectionLook" xml:space="preserve">
-    <value>रूप</value>
-  </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
     <value>व्यवहार</value>
   </data>
-  <data name="Custom_SectionSavedPalettes" xml:space="preserve">
-    <value>सहेजे गए पैलेट</value>
+  <data name="Custom_Tab_Colour" xml:space="preserve">
+    <value>रंग</value>
+  </data>
+  <data name="Custom_Tab_Palettes" xml:space="preserve">
+    <value>पैलेट</value>
+  </data>
+  <data name="Custom_Tab_Surfaces" xml:space="preserve">
+    <value>सतहें</value>
+  </data>
+  <data name="Custom_Tab_Text" xml:space="preserve">
+    <value>टेक्स्ट</value>
+  </data>
+  <data name="Custom_Tab_Layout" xml:space="preserve">
+    <value>लेआउट</value>
   </data>
   <data name="Custom_ColorSource" xml:space="preserve">
     <value>स्रोत</value>
@@ -3489,8 +3486,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ConflictGaveUpFormat" xml:space="preserve">
     <value>कई कोशिशों के बाद “{0}” छोड़ दिया गया। उस आइटम में कुछ नहीं बदला।</value>
   </data>
-  <data name="Custom_SectionText" xml:space="preserve">
-    <value>टेक्स्ट</value>
+  <data name="Custom_SectionFonts" xml:space="preserve">
+    <value>फ़ॉन्ट</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>शीर्षक</value>
