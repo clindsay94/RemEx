@@ -24,6 +24,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- Personalize is five tabs instead of one long scroll: **Colour** (mode, source, seed, vibrancy,
+  contrast, scheme variants, preview), **Palettes** (built-in and saved palettes, save / delete /
+  export / import), **Surfaces** (background, wallpaper, window and card opacity, corner radius,
+  glow), **Text** (the type sliders, shadow and backdrop, fonts) and **Layout** (snap-to-grid, grid
+  size, pinned sensors, UI scale, the tray popup section, splash and reduced motion). Snap-to-grid,
+  grid size and pinned sensors moved here from the Settings page. The sheet remembers which tab you
+  were on; Reset to Theme Defaults sits under the tabs. The scheme-variant and palette chips are
+  bigger and filled with the palette's own three accent colours — primary with the name on it,
+  secondary and tertiary stacked beside — with the name in black or white by the primary's tone;
+  two chips per row so names never break mid-word. Nothing you had set changes; older profiles load
+  as before. (RemEx-4kv0g.4, RemEx-9ql7v)
 - The tray popup's actions — Lock, Sleep, Remote, Send, Pair, Power — are now a single row of
   glyph buttons with their names as tooltips, and apps from the App Launcher can join the row
   after a divider, icon only, name on hover. The popup has its own opacity, separate from Card
