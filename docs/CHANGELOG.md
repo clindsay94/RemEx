@@ -24,6 +24,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- The tray popup's actions — Lock, Sleep, Remote, Send, Pair, Power — are now a single row of
+  glyph buttons with their names as tooltips, and apps from the App Launcher can join the row
+  after a divider, icon only, name on hover. The popup has its own opacity, separate from Card
+  Opacity, so the chrome can go clear while the cards keep their glass. Personalize gains a
+  Flyout section for all of it: the popup opacity slider, which of your Home-pinned cards the
+  popup shows, which buttons, which apps. Settings persist as four new `CustomizationSettings`
+  fields (schema 7; older profiles load with everything shown and the popup solid), and the
+  pinned popup's minimum height now always shows a row of cards. (RemEx-4kv0g.18, part 2)
 - The tray popup by the clock shows your pinned sensors as the same cards the Sensors canvas
   shows — same size, sparkline, value plate and legend, same theme family or preset — in a grid
   that wraps to the popup's width (two columns at the default size, four when pinned and widened)
