@@ -506,9 +506,11 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             // Debug.WriteLine, not an ILogger (this VM has none - see the other two Debug.WriteLine
-            // calls at :367 and :482, same reasoning). An AsyncRelayCommand swallows an unobserved
-            // exception into its own ExecutionTask rather than crashing, but nothing was surfacing
-            // WHY a shortcut click did nothing; this at least gets the failure into the debug log.
+            // calls at :367 and :482, same reasoning). Without this catch the exception is not
+            // swallowed: AsyncRelayCommand's default options (no FlowExceptionsToTaskScheduler
+            // anywhere in the desktop) rethrow it on the UI thread, and the desktop has no
+            // UnhandledException handler - a ticked app whose exe was removed would have taken the
+            // process down from the tray (D2 branch review, MEDIUM). Log it and leave the popup up.
             System.Diagnostics.Debug.WriteLine($"[TrayFlyout] Launching '{entry.DisplayName}' failed: {ex.Message}");
         }
     }
