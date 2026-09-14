@@ -105,6 +105,23 @@ public class PersonalizationSheetLayoutTests
     }
 
     [Fact]
+    public void TheHostFooter_HoldsTheResetButtonAfterTheTabControl()
+    {
+        // RemEx-4kv0g.4.3 fix round 1: Reset moved off the Palettes tab onto the host itself, as a
+        // Grid RowDefinitions="*,Auto" footer under the TabControl - reachable from every tab instead
+        // of undiscoverable from the other four.
+        var host = HostMarkup();
+
+        host.Should().Contain("<Grid RowDefinitions=\"*,Auto\"", "the host's root has to be the Grid that gives the TabControl the star row and the Reset footer the Auto row");
+
+        var tabControlClose = host.IndexOf("</TabControl>", System.StringComparison.Ordinal);
+        var resetButton = host.IndexOf("Command=\"{Binding ResetToDefaultCommand}\"", System.StringComparison.Ordinal);
+
+        tabControlClose.Should().BeGreaterThan(-1, "the host must still contain the TabControl");
+        resetButton.Should().BeGreaterThan(tabControlClose, "the Reset button has to come after the TabControl, in the Grid's Auto row");
+    }
+
+    [Fact]
     public void TheHostHasNoScrollViewerAroundThePersonalizeView()
     {
         // The strip must stay pinned while each tab scrolls its own content (spec §1) - a
@@ -130,12 +147,15 @@ public class PersonalizationSheetLayoutTests
     [Fact]
     public void TheUnionOfTabKeys_CoversEveryPreMoveKeyExceptTheSixRetiredOnes()
     {
+        // Union includes the host, not just the five tab files: RemEx-4kv0g.4.3 fix round 1 moved
+        // Custom_Reset off the Palettes tab onto the host's own Grid footer, so it is reachable from
+        // the sheet as a whole even though no single tab file carries it any more.
         var expected = BeforeCustomKeys.Except(RetiredKeys).ToArray();
-        var union = AllTabCustomKeys();
+        var union = AllTabCustomKeys().Concat(TabCustomKeysIn(HostMarkup())).Distinct().ToArray();
 
         var missing = expected.Except(union).ToArray();
         missing.Should().BeEmpty(
-            "every Custom_* key the sheet carried before this task, other than the six retired section/disclosure headers, must still be reachable from one of the five tabs");
+            "every Custom_* key the sheet carried before this task, other than the six retired section/disclosure headers, must still be reachable from one of the five tabs or the host");
     }
 
     [Fact]
@@ -181,8 +201,10 @@ public class PersonalizationSheetLayoutTests
 
     private static string[] AllTabCustomKeys() => Tabs.SelectMany(t => TabCustomKeys(t.File)).Distinct().ToArray();
 
-    private static string[] TabCustomKeys(string file) => Regex.Matches(
-            File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", file)), @"Custom_[A-Za-z0-9_]*")
+    private static string[] TabCustomKeys(string file) =>
+        TabCustomKeysIn(File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", file)));
+
+    private static string[] TabCustomKeysIn(string markup) => Regex.Matches(markup, @"Custom_[A-Za-z0-9_]*")
         .Select(m => m.Value)
         .Distinct()
         .ToArray();

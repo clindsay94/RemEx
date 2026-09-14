@@ -10,28 +10,38 @@
          used to sit on ShellView's ScrollViewer now sits on this whole control (see ShellView.axaml
          and docs/REGRESSION-GUARDS.md).
 
-         The TabControl is this UserControl's ONLY child, deliberately, not wrapped in a Panel: a
-         vertical StackPanel measures every child with infinite available height regardless of what
-         height the StackPanel itself was given - the exact bug ShellView's old ScrollViewer.MaxHeight
-         comment documents, one level up. With no such wrapper here, the MaxHeight ShellView binds
-         onto this control reaches the TabControl directly, so its selected tab's own ScrollViewer
-         scrolls instead of the whole sheet running off the window. SelectedTabIndex is remembered for
-         the run (CustomizationViewModel), not persisted. -->
-    <TabControl SelectedIndex="{Binding SelectedTabIndex}" VerticalAlignment="Stretch">
-        <TabItem Header="{local:Localize Custom_Tab_Colour}">
-            <personalize:PersonalizeColourTab/>
-        </TabItem>
-        <TabItem Header="{local:Localize Custom_Tab_Palettes}">
-            <personalize:PersonalizePalettesTab/>
-        </TabItem>
-        <TabItem Header="{local:Localize Custom_Tab_Surfaces}">
-            <personalize:PersonalizeSurfacesTab/>
-        </TabItem>
-        <TabItem Header="{local:Localize Custom_Tab_Text}">
-            <personalize:PersonalizeTextTab/>
-        </TabItem>
-        <TabItem Header="{local:Localize Custom_Tab_Layout}">
-            <personalize:PersonalizeLayoutTab/>
-        </TabItem>
-    </TabControl>
+         Root is a Grid RowDefinitions="*,Auto", not a StackPanel: a vertical StackPanel measures
+         every child with infinite available height regardless of what height the StackPanel itself
+         was given - the exact bug ShellView's old ScrollViewer.MaxHeight comment documents, one level
+         up. The star row hands the MaxHeight ShellView binds onto this control straight to the
+         TabControl, so its selected tab's own ScrollViewer scrolls instead of the whole sheet running
+         off the window; the Auto row below it sizes to the Reset footer's own height and takes
+         nothing from the star row's budget. SelectedTabIndex is remembered for the run
+         (CustomizationViewModel), not persisted. -->
+    <Grid RowDefinitions="*,Auto">
+        <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTabIndex}" VerticalAlignment="Stretch">
+            <TabItem Header="{local:Localize Custom_Tab_Colour}">
+                <personalize:PersonalizeColourTab/>
+            </TabItem>
+            <TabItem Header="{local:Localize Custom_Tab_Palettes}">
+                <personalize:PersonalizePalettesTab/>
+            </TabItem>
+            <TabItem Header="{local:Localize Custom_Tab_Surfaces}">
+                <personalize:PersonalizeSurfacesTab/>
+            </TabItem>
+            <TabItem Header="{local:Localize Custom_Tab_Text}">
+                <personalize:PersonalizeTextTab/>
+            </TabItem>
+            <TabItem Header="{local:Localize Custom_Tab_Layout}">
+                <personalize:PersonalizeLayoutTab/>
+            </TabItem>
+        </TabControl>
+
+        <!-- Foreground=TextMutedBrush is deliberate: a de-emphasized reset link, quieter than the
+             .tertiary default TextSecondaryBrush (RemEx-cgrv3). Global reset for the whole sheet, not
+             just one tab's content - moved here from the Palettes tab (RemEx-4kv0g.4.3 fix round 1) so
+             it is reachable from every tab instead of undiscoverable from the other four. -->
+        <Button Grid.Row="1" Classes="tertiary" Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}"
+                HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" Margin="0,12,0,0"/>
+    </Grid>
 </UserControl>

@@ -353,6 +353,22 @@ public class ShellSettingsSideSheetTests
             "SubtractHeightConverter computes values[0] - values[1] - the sheet's total height has to " +
             "be FIRST and the header's SECOND, or the result inverts to a negative number that floors " +
             "at 0 and the content area silently collapses to nothing");
+
+        // Review round 3, HIGH: the element carrying MaxHeight must take its gutter as Padding, never
+        // Margin. Avalonia's MeasureCore clamps a control to its MaxHeight BEFORE adding margin, so a
+        // Margin here sits OUTSIDE the bound and overflows the sheet by exactly twice its value, while
+        // Padding (PersonalizationPanelView is a UserControl, a ContentControl) sits INSIDE the bound
+        // and is measured as part of what MaxHeight clamps. Margin="20" here overflowed the sheet by
+        // 40px and ran the bottom of every tab's viewport past the window edge, unclipped.
+        var openTag = Regex.Match(ShellMarkup(), @"<views:PersonalizationPanelView\b[^>]*>", RegexOptions.Singleline);
+        openTag.Success.Should().BeTrue("PersonalizationPanelView has to be declared as the sheet's content");
+
+        openTag.Value.Should().NotMatchRegex(@"\bMargin=",
+            "a Margin on the element carrying MaxHeight sits outside the clamp and overflows the sheet " +
+            "by exactly twice its value - the gutter has to be Padding instead");
+        openTag.Value.Should().MatchRegex(@"\bPadding=""20""",
+            "the 20px gutter has to be Padding, which lies inside the MaxHeight bound, not Margin, " +
+            "which lies outside it");
     }
 
     /// <summary>

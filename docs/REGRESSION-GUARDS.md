@@ -816,12 +816,20 @@ the C# constants have to be changed together — the duplication is intentional,
 with a `PersonalizationPanelView.MaxHeight` `MultiBinding` through `SubtractHeightConverter`
 (`ConverterParameter="5"`, inputs `SettingsSideSheet.Bounds.Height` and `SettingsSheetHeader.Bounds.Height`
 — the header now includes the LANGUAGE card, so its `Bounds.Height` covers that for free);
-`remex.desktop/Views/PersonalizationPanelView.axaml` — a bare `TabControl`, the UserControl's ONLY
-child, no wrapping `Panel`; `remex.desktop/Views/Personalize/*.axaml` — each of the five tabs roots
-in its own `ScrollViewer HorizontalScrollBarVisibility="Disabled"`;
+`remex.desktop/Views/PersonalizationPanelView.axaml` — a `Grid RowDefinitions="*,Auto"`, the
+UserControl's ONLY child, no wrapping `StackPanel`, with the `TabControl` in the star row and the
+Reset footer in the `Auto` row (RemEx-4kv0g.4.3 fix round 1); `remex.desktop/Views/Personalize/*.axaml`
+— each of the five tabs roots in its own `ScrollViewer HorizontalScrollBarVisibility="Disabled"`;
 `remex.desktop.tests/Views/ShellSettingsSideSheetTests.cs` (`TheSideSheetContent_HasABoundedScrollableHeight`,
 `ThePersonalizeHost_HasNoWrappingScrollViewer`, `EveryPersonalizeTabFile_RootsInItsOwnScrollViewer`),
 `remex.desktop.tests/Views/PersonalizationSheetLayoutTests.cs`.
+
+**The gutter on the bounded element has to be `Padding`, never `Margin`.** Avalonia's `MeasureCore`
+clamps a control to its `MaxHeight` BEFORE adding margin, so a `Margin` on `PersonalizationPanelView`
+sits OUTSIDE the bound and overflows the sheet by exactly twice its value, while `Padding` (a
+`UserControl` is a `ContentControl`) sits INSIDE the bound and is measured as part of what `MaxHeight`
+clamps — margin sits outside the bound, padding inside; the gutter must be padding. Review round 3's
+HIGH finding was `Margin="20"` on that element, overflowing the sheet by 40px.
 
 `material:SideSheet` presents `SideSheetContent` through `PART_SideContentPresenter`, a child of a
 vertical `StackPanel#PART_SideSheetPanel` — and a vertical `StackPanel` measures every child with
@@ -835,13 +843,13 @@ it is no bound at all.
 
 **The bound has to reach the `TabControl`, not stop at the `UserControl` wrapping it.** A `MaxHeight`
 on `PersonalizationPanelView` only constrains what its OWN content is measured against — if that
-content were a `StackPanel` (rather than the bare `TabControl` it is), the same infinite-height
-StackPanel quirk described above would reproduce ONE LEVEL DEEPER, inside the host itself, and the
-selected tab's content would grow unbounded again despite the outer `MaxHeight` looking correct. This
-is why `PersonalizationPanelView.axaml`'s root is the `TabControl` directly with no wrapping `Panel` —
-see that file's own comment — and why a future change that adds sibling content next to the
-`TabControl` (a footer link, a status row) MUST use a `Grid` with a star row for the `TabControl`, not
-a `StackPanel`.
+content were a `StackPanel`, the same infinite-height StackPanel quirk described above would
+reproduce ONE LEVEL DEEPER, inside the host itself, and the selected tab's content would grow
+unbounded again despite the outer `MaxHeight` looking correct. This is why `PersonalizationPanelView.axaml`'s
+root is a `Grid RowDefinitions="*,Auto"` whose star row hands the bound straight to the `TabControl`
+and whose `Auto` row holds the Reset footer below it (RemEx-4kv0g.4.3 fix round 1) — see that file's
+own comment — and why any future change that adds MORE sibling content next to the `TabControl` must
+keep using a `Grid` with a star row for the `TabControl`, never a `StackPanel`.
 
 ---
 

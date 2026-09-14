@@ -65,23 +65,9 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Corner radius, Card opacity, Glow strength: lifted verbatim out of the retired
-                         Advanced-tuning disclosure (spec §2) — geometry belongs with the rest of
-                         Surfaces now that the disclosure itself is gone. -->
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
-                        <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
-                                <Grid ColumnDefinitions="*,*" Width="160">
-                                    <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                </Grid>
-                            </StackPanel>
-                            <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                    </Grid>
-
+                    <!-- Card opacity, Corner radius, Glow strength: lifted verbatim out of the retired
+                         Advanced-tuning disclosure (spec §2 table) — geometry belongs with the rest
+                         of Surfaces now that the disclosure itself is gone. -->
                     <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
                         <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
@@ -93,6 +79,20 @@
                                 </Grid>
                             </StackPanel>
                             <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
+                        <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
+                                <Grid ColumnDefinitions="*,*" Width="160">
+                                    <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                            <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
 

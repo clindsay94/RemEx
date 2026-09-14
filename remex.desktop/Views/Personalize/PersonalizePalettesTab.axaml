@@ -122,13 +122,6 @@
                 </StackPanel>
             </material:Card>
 
-            <!-- Foreground=TextMutedBrush is deliberate: a de-emphasized reset link, quieter than
-                 the .tertiary default TextSecondaryBrush (RemEx-cgrv3). Global reset for the whole
-                 sheet, not just this tab's own content - kept in its original document position,
-                 immediately after Saved palettes (RemEx-4kv0g.4.3: the panel host is a TabControl
-                 only now, so this moved here rather than staying behind on the host). -->
-            <Button Classes="tertiary" Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
-
         </StackPanel>
     </ScrollViewer>
 </UserControl>

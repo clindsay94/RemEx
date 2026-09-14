@@ -58,18 +58,24 @@
                             </ItemsControl>
                         </ScrollViewer>
                     </StackPanel>
-
-                    <!-- UI scale: lifted verbatim out of the retired Advanced-tuning disclosure
-                         (spec §2) — it governs the whole shell's density, same register as grid size
-                         and pinned sensors. -->
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
-                        <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
-                            <Slider Minimum="0.85" Maximum="1.3" SmallChange="0.05" LargeChange="0.1" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" TickPlacement="BottomRight" IsSnapToTickEnabled="True" AutomationProperties.Name="{local:Localize Custom_UiScale}"/>
-                            <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                    </Grid>
                 </StackPanel>
+            </material:Card>
+
+            <!-- ═══ UI scale (RemEx-4kv0g.4.3 fix round 1) ═══ Lifted verbatim out of the retired
+                 Advanced-tuning disclosure (spec §2) — it governs the whole shell's density, same
+                 register as grid size and pinned sensors, but its own ungated card: the Layout card
+                 above is IsVisible-gated on Layout being non-null (some existing tests build
+                 CustomizationViewModel without one), and UI scale binds a property on the view model
+                 itself, not on Layout, so it must not disappear along with the Layout-specific rows
+                 when Layout is null (review round 3, LOW). -->
+            <material:Card Padding="20">
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
+                    <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
+                        <Slider Minimum="0.85" Maximum="1.3" SmallChange="0.05" LargeChange="0.1" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" TickPlacement="BottomRight" IsSnapToTickEnabled="True" AutomationProperties.Name="{local:Localize Custom_UiScale}"/>
+                        <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
             </material:Card>
 
             <!-- ═══ Flyout (Flyout D2 .2, RemEx-4kv0g.18.6) ═══ The tray popup's own opacity

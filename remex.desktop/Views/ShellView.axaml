@@ -1222,21 +1222,29 @@
                      clipped, it runs off the window. The bound now sits directly on
                      PersonalizationPanelView instead of on a ScrollViewer around it: the tab strip
                      inside stays pinned and each tab scrolls its own content within this same bound
-                     (PersonalizationPanelView.axaml uses a Grid, not a StackPanel, precisely so this
-                     MaxHeight actually reaches the TabControl instead of being swallowed the same way
-                     one level up). SubtractHeightConverter turns two live Bounds readings (this
-                     sheet's own full height, minus the header's actual rendered height - which now
-                     includes the Language card above) into the one number that is actually
-                     available, so a translated Subtitle that wraps to two lines still gets the header
-                     height it really needs instead of a guessed constant.
+                     (PersonalizationPanelView.axaml's root is a Grid RowDefinitions="*,Auto" - the
+                     TabControl sits in the star row, so this MaxHeight reaches it directly, and the
+                     Reset footer sits in the Auto row below it; a StackPanel here would measure the
+                     TabControl with infinite height regardless of what height the StackPanel itself
+                     was given, swallowing the bound the same way one level up). SubtractHeightConverter
+                     turns two live Bounds readings (this sheet's own full height, minus the header's
+                     actual rendered height - which now includes the Language card above) into the one
+                     number that is actually available, so a translated Subtitle that wraps to two
+                     lines still gets the header height it really needs instead of a guessed constant.
 
                      ConverterParameter="5" cancels PART_SideContentPresenter's own
                      Margin="0,5,0,0" (set by SideSheet's ControlTheme, unconditioned, so it applies
                      regardless of pseudo-class) - without it MaxHeight overshoots the truly available
                      space by exactly that margin, and on a maximised window the last 5px of the
-                     viewport sit past the window edge, unclipped (review round 2, LOW). -->
+                     viewport sit past the window edge, unclipped (review round 2, LOW).
+
+                     Padding="20" below, not Margin (review round 3, HIGH): Avalonia's MeasureCore
+                     clamps a control to its MaxHeight BEFORE adding margin, so a Margin here sits
+                     outside the bound and overflows the sheet by exactly twice its value, while
+                     Padding (PersonalizationPanelView is a UserControl, a ContentControl) sits inside
+                     it and is measured as part of what MaxHeight clamps. -->
                 <material:SideSheet.SideSheetContent>
-                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}" Margin="20">
+                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}" Padding="20">
                         <views:PersonalizationPanelView.MaxHeight>
                             <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}" ConverterParameter="5">
                                 <Binding ElementName="SettingsSideSheet" Path="Bounds.Height"/>
