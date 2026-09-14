@@ -495,10 +495,22 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     /// </summary>
     private static async Task LaunchShortcutAsync(AppEntry entry)
     {
-        // Feeds the Home "Recent activity" panel, same as the App Launcher page's own launch.
+        // Feeds the Home "Recent activity" panel, same as the App Launcher page's own launch,
+        // BEFORE the try - a launch failure shouldn't erase the fact that it was attempted.
         ActivityService.Instance.Record(ActivityKind.AppLaunched, entry.DisplayName);
 
-        await EmbeddedHostServiceLocator.Require<IAppLauncherService>().LaunchAppAsync(entry.TargetPath);
+        try
+        {
+            await EmbeddedHostServiceLocator.Require<IAppLauncherService>().LaunchAppAsync(entry.TargetPath);
+        }
+        catch (Exception ex)
+        {
+            // Debug.WriteLine, not an ILogger (this VM has none - see the other two Debug.WriteLine
+            // calls at :367 and :482, same reasoning). An AsyncRelayCommand swallows an unobserved
+            // exception into its own ExecutionTask rather than crashing, but nothing was surfacing
+            // WHY a shortcut click did nothing; this at least gets the failure into the debug log.
+            System.Diagnostics.Debug.WriteLine($"[TrayFlyout] Launching '{entry.DisplayName}' failed: {ex.Message}");
+        }
     }
 
     [RelayCommand]

@@ -315,6 +315,46 @@ public class TrayFlyoutSurfaceTests
     }
 
     /// <summary>
+    /// Fix round (whole-branch review, RemEx-4kv0g.18.8, MEDIUM): a shortcut click used to
+    /// unconditionally <c>Hide()</c> the flyout, even pinned - the one gesture a pinned flyout is
+    /// supposed to survive, same as click-away already does via <c>OnDeactivated</c>'s
+    /// <c>IsPinned</c> guard. <c>OnTileClicked</c> lives in the code-behind, not markup, and its
+    /// effect (does the window disappear) is not observable headless, so - like
+    /// <see cref="FlyoutSensorsAreCanvasCardsInAScrollingWrapPanel"/>'s CardsMaxHeight regex above -
+    /// this pins the guard expression by source regex instead of behaviour.
+    /// </summary>
+    [Fact]
+    public void ShortcutClickHidesOnlyWhenTheFlyoutIsTransient()
+    {
+        var codeBehindPath = Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayFlyoutWindow.axaml.cs");
+        var text = File.ReadAllText(codeBehindPath);
+
+        text.Should().MatchRegex(@"case TrayShortcut when ViewModel\?\.IsPinned != true:",
+            "a shortcut click must still hide a transient popup but must leave a pinned flyout open");
+    }
+
+    /// <summary>
+    /// Fix round (whole-branch review, RemEx-4kv0g.18.8, LOW): the Window element's
+    /// <c>MinHeight="382"</c> duplicates <see cref="TrayFlyoutGeometryValidator.MinHeight"/> because
+    /// Avalonia needs a literal in XAML (see the file's own top-of-file comment) - nothing but this
+    /// test catches the two drifting apart.
+    /// </summary>
+    [Fact]
+    public void MinHeightLiteralMatchesTheGeometryValidatorConstant()
+    {
+        var text = File.ReadAllText(ViewPath);
+
+        var windowElement = Regex.Match(text, @"<Window\b[^>]*>", RegexOptions.Singleline);
+        windowElement.Success.Should().BeTrue("the root element should be a Window");
+
+        var minHeightMatch = Regex.Match(windowElement.Value, @"MinHeight=""(\d+)""");
+        minHeightMatch.Success.Should().BeTrue("the Window element should carry an explicit MinHeight");
+
+        double.Parse(minHeightMatch.Groups[1].Value).Should().Be(TrayFlyoutGeometryValidator.MinHeight,
+            "the XAML MinHeight literal must stay in lockstep with TrayFlyoutGeometryValidator.MinHeight");
+    }
+
+    /// <summary>
     /// Repo root via <c>[CallerFilePath]</c> - matches the pattern used by
     /// <see cref="TypographyVocabularyTests"/> so this file survives being moved or run from a
     /// different working directory.

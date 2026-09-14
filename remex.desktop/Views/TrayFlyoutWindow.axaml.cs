@@ -287,8 +287,11 @@ public partial class TrayFlyoutWindow : Window
     /// <c>Command</c> navigates, and this is the other half the old flyout had. A
     /// <see cref="TrayShortcut"/> (Flyout D2 .1, RemEx-4kv0g.18.5) launches a DIFFERENT app entirely,
     /// so bringing RemEx's window forward after it would be the wrong window popping up; it only
-    /// hides the popup, the same closing gesture a click-away already gives. Lock, Sleep and the
-    /// Power submenu button are excluded from both by construction - none of them reach here with
+    /// hides the popup, the same closing gesture a click-away already gives — but ONLY when the
+    /// flyout is transient. A pinned flyout is a command center meant to stay open (the same
+    /// <c>IsPinned</c> gate <see cref="OnDeactivated"/> already applies to click-away), so a
+    /// shortcut click there must launch and leave the popup up. Lock, Sleep and the Power submenu
+    /// button are excluded from both by construction - none of them reach here with
     /// <c>OpensMainWindow: true</c>, and the submenu button has no <c>Click</c> handler at all.
     /// </remarks>
     private void OnTileClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -299,7 +302,7 @@ public partial class TrayFlyoutWindow : Window
                 Hide();
                 App.BringMainWindowToFront();
                 break;
-            case TrayShortcut:
+            case TrayShortcut when ViewModel?.IsPinned != true:
                 Hide();
                 break;
         }

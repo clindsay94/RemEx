@@ -734,8 +734,8 @@ and settle, so the click still visibly registers before the window goes away.
 ### The tray flyout's cards `ScrollViewer` AND toolbar `ItemsControl` must keep an explicit `MaxHeight` IN TRANSIENT MODE (INVARIANT)
 
 `remex.desktop/Views/TrayFlyoutWindow.axaml` — the cards row's `ScrollViewer`, named `CardsScrollViewer`
-(:137-142, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"` as its XAML/transient default),
-and the toolbar row's `ItemsControl` (:187-189, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarContentMaxHeight}"`,
+(:139-144, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"` as its XAML/transient default),
+and the toolbar row's `ItemsControl` (:201-203, `MaxHeight="{x:Static svc:TrayFlyoutGeometry.ToolbarContentMaxHeight}"`,
 `ClipToBounds="True"`, Flyout D2 .2, RemEx-4kv0g.18.6);
 `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` — `ApplyMode` sets `CardsScrollViewer.MaxHeight` at
 runtime, per mode (the toolbar row's cap is NOT relaxed by `ApplyMode` — it applies in both pinned and

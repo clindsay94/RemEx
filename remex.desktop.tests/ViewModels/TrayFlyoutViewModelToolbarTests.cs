@@ -177,6 +177,30 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
         _appLauncher.LaunchedPaths.Should().ContainSingle().Which.Should().Be(entry.TargetPath);
     }
 
+    /// <summary>
+    /// Fix round (whole-branch review, RemEx-4kv0g.18.8, MEDIUM): <c>LaunchShortcutAsync</c> used to
+    /// let <c>IAppLauncherService.LaunchAppAsync</c> throw straight through the dispatcher.
+    /// <see cref="InvalidOperationException"/> stands in for the real service's Win32Exception here -
+    /// the fake doesn't need the Win32-specific type to prove the <c>try/catch</c> swallows it
+    /// instead of the command's <c>ExecuteAsync</c> propagating it.
+    /// </summary>
+    [Fact]
+    public async Task ShortcutsLaunchCommandDoesNotThrowWhenTheLauncherServiceFails()
+    {
+        var entry = new AppEntry(Guid.NewGuid(), "Notepad", @"C:\Windows\notepad.exe", "#000000", null);
+        _launcherStorage.Entries = [entry];
+        _appLauncher.ThrowOnLaunch = new InvalidOperationException("target missing");
+        _shell.Customization = new CustomizationSettings { FlyoutAppIds = new List<Guid> { entry.Id } };
+        _tray.Refresh();
+
+        var shortcut = _tray.ToolbarItems.OfType<TrayShortcut>().Single();
+
+        var act = async () => await ((IAsyncRelayCommand)shortcut.LaunchCommand).ExecuteAsync(null);
+
+        await act.Should().NotThrowAsync(
+            "a failed launch should be logged, not crash the command that fired it");
+    }
+
     private sealed class FakeLauncherStorage : ILauncherStorageService
     {
         public List<AppEntry> Entries { get; set; } = new();
@@ -187,9 +211,13 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
     private sealed class FakeAppLauncherService : IAppLauncherService
     {
         public List<string> LaunchedPaths { get; } = new();
+        public Exception? ThrowOnLaunch { get; set; }
 
         public Task LaunchAppAsync(string targetPath)
         {
+            if (ThrowOnLaunch is { } ex)
+                throw ex;
+
             LaunchedPaths.Add(targetPath);
             return Task.CompletedTask;
         }
