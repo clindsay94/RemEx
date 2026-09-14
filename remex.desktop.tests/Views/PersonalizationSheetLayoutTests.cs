@@ -30,6 +30,32 @@ public class PersonalizationSheetLayoutTests
         positions.Should().BeInAscendingOrder("the order is the spec's: Colour, Mode, Look, Flyout, Text, Fine-tuning, Behaviour, Saved palettes");
     }
 
+    /// <summary>
+    /// RemEx-4kv0g.4.2: the Layout section is temporary (drop 3 turns it into a real tab) but must
+    /// sit between Flyout and Text — the spot the brief calls for — and bind all three controls that
+    /// moved off Settings. Simple on purpose: this assertion is rewritten again in drop 3.
+    /// </summary>
+    [Fact]
+    public void TheTemporaryLayoutSectionSitsBetweenFlyoutAndTextWithItsThreeControls()
+    {
+        var markup = PanelMarkup();
+        var flyoutPos = markup.IndexOf("Localize Custom_SectionFlyout}", System.StringComparison.Ordinal);
+        var layoutPos = markup.IndexOf("Localize Settings_Layout}", System.StringComparison.Ordinal);
+        var textPos = markup.IndexOf("Localize Custom_SectionText}", System.StringComparison.Ordinal);
+
+        flyoutPos.Should().BeGreaterThanOrEqualTo(0);
+        layoutPos.Should().BeGreaterThanOrEqualTo(0, "the LAYOUT section must be on the sheet");
+        textPos.Should().BeGreaterThanOrEqualTo(0);
+        layoutPos.Should().BeInRange(flyoutPos, textPos, "LAYOUT sits between Flyout and Text");
+
+        var card = CardAfterHeader("Settings_Layout");
+        card.Should().Contain("{Binding Layout.IsSnapToGridEnabled}");
+        card.Should().Contain("{Binding Layout.GridSize");
+        card.Should().Contain("{Binding Layout.PinnedSensors}");
+        card.Should().Contain("Converter={x:Static ObjectConverters.IsNotNull}",
+            "a null Layout (some tests construct CustomizationViewModel without one) must render nothing");
+    }
+
     [Fact]
     public void TheSavedPalettesCardBindsNoSeedSetter()
     {

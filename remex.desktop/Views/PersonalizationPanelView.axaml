@@ -464,6 +464,60 @@
             </StackPanel>
         </material:Card>
 
+        <!-- ═══ Card: Layout (RemEx-4kv0g.4.2) ═══ TEMPORARY — snap-to-grid, grid size and pinned
+             sensors, moved off the Settings page onto LayoutSettingsViewModel and parked here in
+             their own section until drop 3 gives Personalize real tabs and this becomes the Layout
+             tab's content. IsVisible gates the whole section on Layout being non-null: some existing
+             tests build CustomizationViewModel without one (see its ctor's optional `layout` param).
+             Markup, keys, tooltips and automation names carried over unchanged from SettingsView.axaml. -->
+        <material:Card Padding="20" IsVisible="{Binding Layout, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Settings_Layout}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_EnableAlignmentGuidesTooltip}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{local:Localize Settings_SnapToGrid}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                    </StackPanel>
+                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_SnapToGrid}" Grid.Column="1" IsChecked="{Binding Layout.IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                </Grid>
+
+                <StackPanel Spacing="8" IsEnabled="{Binding Layout.IsSnapToGridEnabled}" ToolTip.Tip="{local:Localize Settings_GridPlacementIncrementTooltip}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{local:Localize Settings_GridSize}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Grid.Column="1" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding Layout.GridSize, StringFormat={}{0} px}"/>
+                    </Grid>
+                    <Slider Minimum="10" Maximum="100" TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" SmallChange="10" LargeChange="20" Value="{Binding Layout.GridSize}" AutomationProperties.Name="{local:Localize Settings_GridSize}"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Settings_PinnedSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
+
+                    <!-- ScrollViewer + MaxHeight + VirtualizingStackPanel, all three load-bearing
+                         (bd memories itemscontrol / RemEx-u3abk): a bare ItemsControl defaults to a
+                         plain StackPanel that realizes every row, and a virtualizing panel with no
+                         bounded viewport realizes everything anyway. -->
+                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Layout.PinnedSensors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SensorPinItem">
+                                    <CheckBox AutomationProperties.Name="{Binding SensorName}" IsChecked="{Binding IsPinned}" Margin="0,4">
+                                        <TextBlock Text="{Binding SensorName}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </StackPanel>
+        </material:Card>
+
         <!-- ═══ Card 4: Text (RemEx-jt6w5) ═══ Readability first: per-section size and bold, the
              legibility halo, and the sensor-title backdrop. Sits ABOVE Advanced fine-tuning on
              purpose — this is the control a person reaches for when text is hard to read, not an

@@ -18,9 +18,9 @@ using Remex.Core.Services.FileTransfer;
 namespace Remex.Desktop.ViewModels;
 
 /// <summary>
-/// ViewModel for the Settings page.
-/// Manages snap-to-grid toggle, grid size, persisted host address,
-/// and sensor pinning to the Home screen.
+/// ViewModel for the Settings page. Manages persisted host address, language, tray/update/session
+/// toggles, sensor alerts, file-sharing trust and backup/restore. Snap-to-grid, grid size and pinned
+/// sensors moved to <see cref="LayoutSettingsViewModel"/> on the Personalize sheet (RemEx-4kv0g.4.2).
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
@@ -30,12 +30,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly FileTransferRootSettingsService _fileTransferRootSettings;
     private readonly RemexSavefileService _savefileService;
     private DashboardProfile _profile = new();
-
-    [ObservableProperty]
-    private bool _isSnapToGridEnabled;
-
-    [ObservableProperty]
-    private int _gridSize = 50;
 
     [ObservableProperty]
     private string _hostAddress = "wss://localhost:5005/ws";
@@ -556,9 +550,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnStreamQualityChanged(int value) => Save();
     partial void OnStreamFpsChanged(int value) => Save();
 
-    /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
-    public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
-
     public SettingsViewModel(
         DashboardLayoutService layoutService,
         ConnectionViewModel connection,
@@ -647,8 +638,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
-            GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             IsCloseToTrayEnabled = _profile.CloseToTray;
@@ -696,7 +685,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;
             UpdateHostCapabilitySummary();
-            RefreshSensors();
 
             // Seed connection history from the persisted profile
             _connection.ConnectionHistory.Clear();
@@ -712,15 +700,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(RefreshPairedDevices);
     }
 
-    /// <summary>
-    /// Rebuilds the available sensors list from the canvas VM's current cards.
-    /// </summary>
     public void Dispose()
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
-        foreach (var item in AvailableSensors)
-            item.PinChanged -= OnSensorPinChanged;
         foreach (var root in SharedRoots)
             UnsubscribeSharedRoot(root);
         foreach (var device in TrustedDevices)
@@ -728,78 +711,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         AlertsSection.Dispose();
     }
 
-    public void RefreshSensors()
-    {
-        // Unsubscribe from old items before clearing
-        foreach (var item in AvailableSensors)
-            item.PinChanged -= OnSensorPinChanged;
-        AvailableSensors.Clear();
-
-        var canvas = _shell.CanvasViewModel;
-        if (canvas is null) return;
-
-        var sensorCards = canvas.Cards
-            .Where(c => c.CardType == "Sensor" && c.Sensor != null)
-            .OrderBy(c => c.Sensor!.Name);
-
-        foreach (var card in sensorCards)
-        {
-            var name = card.Sensor!.Name;
-            var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
-            var isPinned = pinnedIds.Contains(name);
-            var source = card.Sensor.RawReading?.Source ?? "Unknown";
-            var item = new SensorPinItem(name, isPinned, source);
-            item.PinChanged += OnSensorPinChanged;
-            AvailableSensors.Add(item);
-        }
-    }
-
-    private void OnSensorPinChanged(object? sender, bool isPinned)
-    {
-        if (sender is not SensorPinItem item) return;
-
-        // Update the canvas card's pinned state
-        var canvas = _shell.CanvasViewModel;
-        var card = canvas?.Cards.FirstOrDefault(c => c.Sensor?.Name == item.SensorName);
-        if (card != null)
-        {
-            card.IsPinnedToHome = isPinned;
-        }
-
-        // Update profile
-        if (_profile.PinnedSensorIds == null)
-        {
-            // We can't assign to _profile.PinnedSensorIds directly because it's init-only.
-            // But _profile is a local field of type DashboardProfile (record).
-            // We should use 'with' or just ensure the list is initialized if it's a List<T>.
-            // Wait, DashboardProfile.PinnedSensorIds is public List<string> PinnedSensorIds { get; init; } = new();
-            // If it's null, we need to replace the profile instance or the property.
-            _profile = _profile with { PinnedSensorIds = new() };
-        }
-
-        if (isPinned && !_profile.PinnedSensorIds.Contains(item.SensorName))
-            _profile.PinnedSensorIds.Add(item.SensorName);
-        else if (!isPinned)
-            _profile.PinnedSensorIds.Remove(item.SensorName);
-
-        Save();
-    }
-
     // ═══════════════ Change handlers ═══════════════
-
-    partial void OnIsSnapToGridEnabledChanged(bool value)
-    {
-        if (_shell.CanvasViewModel is { } canvas)
-            canvas.IsSnapToGridEnabled = value;
-        Save();
-    }
-
-    partial void OnGridSizeChanged(int value)
-    {
-        if (_shell.CanvasViewModel is { } canvas)
-            canvas.GridSize = value;
-        Save();
-    }
 
     partial void OnHostAddressChanged(string value)
     {
@@ -887,10 +799,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NavigateBack()
     {
-        // Refresh Home's pinned sensors so changes made in Settings are immediately visible.
-        if (_shell.CurrentView is HomeViewModel home)
-            home.RefreshPinnedSensors();
-
+        // Home's pinned sensors are refreshed per pin change now, by LayoutSettingsViewModel itself
+        // (RemEx-4kv0g.4.2) — the Layout section is not something you navigate away from to trigger a
+        // save, unlike this page was.
         _shell.NavigateToHome();
     }
 
@@ -1241,9 +1152,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             // Import wrote the imported layout to disk and reloaded the live theme/language, but the
             // already-open canvas holds its own cards — refresh it in place so the restored layout
-            // appears without an app restart (RemEx-83c4). Also refresh this screen's sensor list.
+            // appears without an app restart (RemEx-83c4). The Layout VM (snap/grid/pinned sensors,
+            // RemEx-4kv0g.4.2) is a sibling view model now, not owned here, and may not even be
+            // constructed yet if Personalize was never opened — reload it only if it exists; a fresh
+            // construction reads the just-imported profile on its own.
             _shell.CanvasViewModel?.ReloadFromPersistedLayout();
-            RefreshSensors();
+            _ = (_shell.LayoutSettingsVm?.ReloadFromProfileAsync() ?? Task.CompletedTask);
 
             ShowTransientStatus(string.Format(
                 LocalizationService.Instance["Settings_ImportDone"],
@@ -1453,10 +1367,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void Save()
     {
-        var updated = _profile with
+        // BASE OF THE `with` IS _layoutService.CurrentProfile, NOT THE STALE _profile FIELD
+        // (RemEx-4kv0g.4.2). This VM no longer owns IsSnapToGridEnabled/GridSize/PinnedSensorIds —
+        // LayoutSettingsViewModel does, saving through its own CurrentProfile-based RequestSave calls
+        // — so _profile here is only ever as fresh as this VM's own last load/save. Building from it
+        // would silently clobber whatever the Layout VM had just written with whatever this field
+        // still remembered from InitializeAsync.
+        var updated = _layoutService.CurrentProfile with
         {
-            IsSnapToGridEnabled = IsSnapToGridEnabled,
-            GridSize = GridSize,
             HostAddress = HostAddress,
             Language = Language,
             CloseToTray = IsCloseToTrayEnabled,
@@ -1468,31 +1386,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _profile = updated;
         _layoutService.RequestSave(updated);
     }
-}
-
-/// <summary>
-/// Represents a sensor that can be pinned/unpinned to Home from Settings.
-/// </summary>
-public partial class SensorPinItem : ObservableObject
-{
-    public string SensorName { get; }
-
-    /// <summary>Telemetry data source: "HWInfo", "WindowsPerf", "Linux", or "Unknown".</summary>
-    public string Source { get; }
-
-    [ObservableProperty]
-    private bool _isPinned;
-
-    public event System.EventHandler<bool>? PinChanged;
-
-    public SensorPinItem(string sensorName, bool isPinned, string source = "Unknown")
-    {
-        SensorName = sensorName;
-        _isPinned = isPinned;
-        Source = source;
-    }
-
-    partial void OnIsPinnedChanged(bool value) => PinChanged?.Invoke(this, value);
 }
 
 public partial class FileTransferSharedRootItem : ObservableObject

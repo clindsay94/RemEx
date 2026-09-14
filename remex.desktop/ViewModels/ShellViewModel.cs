@@ -645,6 +645,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private RemoteViewModel? _remoteViewModel;
     private AppLauncherViewModel? _appLauncherViewModel;
     private CustomizationViewModel? _customizationViewModel;
+    private LayoutSettingsViewModel? _layoutSettingsViewModel;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
@@ -1507,23 +1508,40 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 _services.GetRequiredService<SensorAlertStore>(),
                 _alertTracker,
                 _canvasViewModel!);
-            _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
+            _ = _settingsViewModel.InitializeAsync();
             _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
             return;
         }
 
-        // Only rebuild the sensor list when the canvas sensor card count changes,
-        // avoiding 50+ CollectionChanged events on every Settings panel open.
+        // Only rebuild the sensor list when the canvas sensor card count changes, avoiding 50+
+        // CollectionChanged events on every Settings panel open. Pinned sensors moved to
+        // LayoutSettingsViewModel (RemEx-4kv0g.4.2) - this VM no longer has one of its own, so the
+        // hook retargets there; null when the Personalize sheet has never been opened (the legacy
+        // full Settings page reaches EnsureSettingsVm alone, never EnsureCustomizationVm), in which
+        // case there is nothing to refresh yet and the fresh LayoutSettingsViewModel's own
+        // InitializeAsync will read current cards when it is eventually constructed.
         var currentCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
         if (currentCount != _lastSensorCardCount)
         {
             _lastSensorCardCount = currentCount;
-            _settingsViewModel.RefreshSensors();
+            _layoutSettingsViewModel?.RefreshSensors();
         }
     }
 
     private void EnsureCustomizationVm()
     {
+        // Lazily constructed here, not at boot (RemEx-4kv0g.4.2) - the canvas already self-loads
+        // IsSnapToGridEnabled/GridSize from its own profile load at construction
+        // (CanvasDashboardViewModel.FinishInitialize), independent of any Settings/Layout VM, so
+        // nothing at startup depends on this VM existing yet. Matches SettingsViewModel's own lazy
+        // construction above.
+        if (_layoutSettingsViewModel is null)
+        {
+            _layoutSettingsViewModel = new LayoutSettingsViewModel(
+                _layoutService, _canvasViewModel, _services.GetService<HomeViewModel>());
+            _ = _layoutSettingsViewModel.InitializeAsync();
+        }
+
         // home/launcherStorage feed the Flyout section's Cards/Apps checklists (Flyout D2 .2,
         // RemEx-4kv0g.18.6) - both are registered AddSingleton in App.axaml.cs, the same DI surface
         // TrayFlyoutViewModel's own constructor injection already resolves them through. GetService,
@@ -1536,7 +1554,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             this, _layoutService, _themeService,
             _services.GetService<HomeViewModel>(),
             _services.GetService<ILauncherStorageService>(),
-            _services.GetRequiredService<ILogger<CustomizationViewModel>>());
+            _services.GetRequiredService<ILogger<CustomizationViewModel>>(),
+            _layoutSettingsViewModel);
     }
 
     /// <summary>
@@ -1564,6 +1583,16 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             return _customizationViewModel;
         }
     }
+
+    /// <summary>
+    /// The Layout VM (snap-to-grid, grid size, pinned sensors; RemEx-4kv0g.4.2), if the Personalize
+    /// sheet has been opened at least once this session. Unlike <see cref="CustomizationVm"/> and
+    /// <see cref="SettingsVm"/> this does NOT lazily construct one — <c>SettingsViewModel</c>'s
+    /// savefile-import path reads this only to refresh an already-open sheet; a sheet that was never
+    /// opened has nothing on screen to go stale, and its eventual construction reads the current
+    /// profile on its own.
+    /// </summary>
+    public LayoutSettingsViewModel? LayoutSettingsVm => _layoutSettingsViewModel;
 }
 
 /// <summary>A single entry in the shell's sensor-alert notification feed.</summary>

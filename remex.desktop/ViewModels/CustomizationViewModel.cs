@@ -31,6 +31,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private bool _isApplyingPreset;
 
     /// <summary>
+    /// Snap-to-grid, grid size and pinned sensors (RemEx-4kv0g.4.2) — a sibling view model, not owned
+    /// by this class; temporarily bound from a LAYOUT section on this sheet (drop 3 gives it a real
+    /// tab). Null only in tests that construct this VM without one.
+    /// </summary>
+    public LayoutSettingsViewModel? Layout { get; }
+
+    /// <summary>
     /// Short-circuits only the persist half of <see cref="ApplyAndSave"/> — the live repaint (and
     /// preview/tile refresh) still runs, <c>_layoutService.RequestSave</c> alone does not.
     /// </summary>
@@ -646,7 +653,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     public CustomizationViewModel(
         ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService,
         HomeViewModel? home = null, ILauncherStorageService? launcherStorage = null,
-        ILogger<CustomizationViewModel>? logger = null)
+        ILogger<CustomizationViewModel>? logger = null, LayoutSettingsViewModel? layout = null)
     {
         _shell = shell;
         _layoutService = layoutService;
@@ -654,6 +661,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _home = home;
         _launcherStorage = launcherStorage;
         _logger = logger ?? NullLogger<CustomizationViewModel>.Instance;
+        Layout = layout;
 
         // NOT EmbeddedHostServiceLocator.Require<T>, which throws when the host is absent — the
         // same reason SystemStatusViewModel.ResolveFromHost isn't either. This sheet has to survive

@@ -242,29 +242,6 @@
                 <!-- RIGHT COLUMN -->
                 <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
 
-                    <!-- ═══ Layout Section ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="20">
-                            <TextBlock Text="{local:Localize Settings_Layout}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_EnableAlignmentGuidesTooltip}">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_SnapToGrid}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                </StackPanel>
-                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_SnapToGrid}" Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                            </Grid>
-
-                            <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}" ToolTip.Tip="{local:Localize Settings_GridPlacementIncrementTooltip}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{local:Localize Settings_GridSize}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Grid.Column="1" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
-                                </Grid>
-                                <Slider Minimum="10" Maximum="100" TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" SmallChange="10" LargeChange="20" Value="{Binding GridSize}" AutomationProperties.Name="{local:Localize Settings_GridSize}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </material:Card>
-
                     <!-- ═══ Sensor Alerts Section (RemEx-8wpvr.5) ═══ -->
                     <material:Card Padding="24">
                         <StackPanel Spacing="16" DataContext="{Binding AlertsSection}">
@@ -306,36 +283,6 @@
                                 <Button Classes="secondary" Content="{local:Localize Settings_Alerts_AcknowledgeAll}" Command="{Binding AcknowledgeAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_AcknowledgeAll}"/>
                                 <Button Classes="secondary danger" Content="{local:Localize Settings_Alerts_ResetAll}" Command="{Binding ResetAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_ResetAll}"/>
                             </StackPanel>
-                        </StackPanel>
-                    </material:Card>
-
-                    <!-- ═══ Pinned Sensors Section ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_PinnedSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
-
-                            <!-- ScrollViewer + MaxHeight + VirtualizingStackPanel, all three load-bearing
-                                 (bd memories itemscontrol / RemEx-u3abk): a bare ItemsControl defaults to
-                                 a plain StackPanel that realizes every row, and a virtualizing panel with
-                                 no bounded viewport realizes everything anyway. The ScrollViewer/MaxHeight
-                                 were already here; only the ItemsPanel was missing (RemEx-cgrv3). -->
-                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding AvailableSensors}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:SensorPinItem">
-                                            <CheckBox AutomationProperties.Name="{Binding SensorName}" IsChecked="{Binding IsPinned}" Margin="0,4">
-                                                <TextBlock Text="{Binding SensorName}" Theme="{StaticResource CaptionTextBlock}" VerticalAlignment="Center"/>
-                                            </CheckBox>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
                         </StackPanel>
                     </material:Card>
 
