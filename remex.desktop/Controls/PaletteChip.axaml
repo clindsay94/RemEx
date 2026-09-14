@@ -12,8 +12,9 @@
          FILL AND LABEL ONLY - NO RING OF ITS OWN. The chip used to draw its own selection border on
          top of the host Button's ".tile.selected" ring (App.axaml:576-612), which stacked into two
          concentric rings at different radii on preset tiles (review-1-report.md MEDIUM #1). The
-         button's ring is the only one now; this control is just the fixed ChipWidth x ChipHeight box,
-         clipped to CornerRadius, holding the three fill regions and the label.
+         button's ring is the only one now; this control is just ChipHeight tall, stretched to its
+         host, never narrower than ChipMinWidth, clipped to CornerRadius, holding the three fill
+         regions and the label.
 
          The label sits on the primary field and gets its ink from Remex.Core.Theming.ChipInk against
          Primary's own colour (PaletteChip.axaml.cs, OnPropertyChanged) - black or white, whichever the
@@ -26,7 +27,7 @@
          it, toggling the "inked" class alongside LabelBrush in the same OnPropertyChanged branch so
          the two never go out of sync. -->
 
-    <Grid Width="{x:Static controls:PaletteChip.ChipWidth}" Height="{x:Static controls:PaletteChip.ChipHeight}">
+    <Grid MinWidth="{x:Static controls:PaletteChip.ChipMinWidth}" Height="{x:Static controls:PaletteChip.ChipHeight}" HorizontalAlignment="Stretch">
         <Border Name="PART_OuterBorder"
                 ClipToBounds="True"
                 CornerRadius="{Binding $parent[controls:PaletteChip].CornerRadius}">
@@ -43,7 +44,7 @@
                            Text="{Binding $parent[controls:PaletteChip].Label}"
                            Theme="{StaticResource Body2TextBlock}"
                            FontWeight="Bold"
-                           Margin="10,0"
+                           Margin="8,0"
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
                            MaxLines="2"

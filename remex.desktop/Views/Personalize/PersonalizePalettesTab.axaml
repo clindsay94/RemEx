@@ -20,16 +20,18 @@
                          DynamicColorGenerator run on the preset's own seed and variant, which is the same call
                          clicking the tile makes, so a tile cannot show a colour the app will not paint.
 
-                         THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
-                         Personalize drawer at roughly 300px. Five columns was already tight for four presets
-                         and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
-                         narrower than the word "Daybreak" at any legible size. Three gives ~92px and three
-                         rows, which the drawer scrolls. -->
+                         TWO COLUMNS, NOT THREE, AND THAT IS A MEASUREMENT (fix round 2, RemEx-4kv0g.4.4).
+                         Three columns broke long names mid-word under the monospace body font - "Monochrome"
+                         at 13px bold GoogleSansCode is ~78px, wider than a three-column label area. On the
+                         440-wide sheet the card content is ~335px, so two columns gives ~163px per column,
+                         ~155px per chip, and a label area (0.62 x 155 - 16 ~= 80px) that clears "Monochrome".
+                         The chip stretches to fill its column (PaletteChip.ChipMinWidth=150 is the floor, not
+                         a fixed width) instead of sizing off a caption underneath it. -->
                     <TextBlock Text="{local:Localize Custom_BuiltInPresets}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                     <ItemsControl ItemsSource="{Binding ThemePresets}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid Columns="3"/>
+                                <UniformGrid Columns="2"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
@@ -39,7 +41,7 @@
                                      clicking it would not produce - the same guarantee the old
                                      surface/outline/dots Border made, just as the fill instead of a
                                      caption underneath it. -->
-                                <Button Classes="tile" Margin="4" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                <Button Classes="tile" Margin="4" Padding="0" HorizontalAlignment="Stretch"
                                         AutomationProperties.Name="{Binding DisplayName}"
                                         Classes.selected="{Binding IsSelected}"
                                         Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
@@ -61,12 +63,12 @@
                         <ItemsControl ItemsSource="{Binding SavedPalettes}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3"/>
+                                    <UniformGrid Columns="2"/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
-                                    <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
+                                    <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="6">
                                             <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS this
                                                  palette's own Primary/Secondary/Tertiary, same guarantee
@@ -77,7 +79,7 @@
                                                  Button showed before. The rename TextBox below is
                                                  untouched: DisplayName here is a read-only alias for the
                                                  SAME Name it edits, not a second source of truth. -->
-                                            <Button Classes="tile" Padding="0" Background="Transparent" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                            <Button Classes="tile" Padding="0" Background="Transparent" HorizontalAlignment="Stretch"
                                                     AutomationProperties.Name="{Binding Name}"
                                                     Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
                                                     CommandParameter="{Binding}">

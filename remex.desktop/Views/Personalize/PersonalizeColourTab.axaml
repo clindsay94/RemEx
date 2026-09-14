@@ -139,13 +139,13 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="{local:Localize Custom_Strategy}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <ItemsControl ItemsSource="{Binding SchemeVariantStrips}">
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SchemeVariantStripViewModel">
                                     <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS Primary/Secondary/
                                          Tertiary, so a variant cannot show a colour a click would not
                                          produce; no separate OnSurfaceBrush dot needed any more. -->
-                                    <Button Classes="tile" Margin="0" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
+                                    <Button Classes="tile" Margin="4" Padding="0" HorizontalAlignment="Stretch"
                                             AutomationProperties.Name="{Binding DisplayName}" Classes.selected="{Binding IsSelected}"
                                             Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}"
                                             CommandParameter="{Binding Variant}">

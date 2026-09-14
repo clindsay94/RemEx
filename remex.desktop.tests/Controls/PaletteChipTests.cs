@@ -59,16 +59,21 @@ public class PaletteChipTests
     }
 
     [Fact]
-    public void ChipWidthAndHeight_AreConstantsNotLiterals()
+    public void ChipMinWidthAndHeight_AreConstantsNotLiterals_RootStretchesRatherThanFixedWidth()
     {
+        // Fix round 2 (RemEx-4kv0g.4.4): two chips per row, stretched, instead of a fixed 104px
+        // three-per-row box that broke long names mid-word under the monospace body font.
         var markup = ChipMarkup();
 
-        markup.Should().Contain(@"Width=""{x:Static controls:PaletteChip.ChipWidth}""");
+        markup.Should().Contain(@"MinWidth=""{x:Static controls:PaletteChip.ChipMinWidth}""");
         markup.Should().Contain(@"Height=""{x:Static controls:PaletteChip.ChipHeight}""");
+        markup.Should().NotMatchRegex(@"<Grid[^>]*\sWidth=""\{x:Static controls:PaletteChip\.ChipWidth\}""", "the root no longer takes a fixed Width - it stretches to its host");
+        markup.Should().Contain(@"Margin=""8,0""", "label margin shrank from 10 to 8 to give the label more room at the new, narrower two-per-row size");
 
         var code = ChipCode();
-        code.Should().Contain("public const double ChipWidth = 104;");
+        code.Should().Contain("public const double ChipMinWidth = 150;");
         code.Should().Contain("public const double ChipHeight = 60;");
+        code.Should().NotContain("ChipWidth = 104");
     }
 
     [Fact]

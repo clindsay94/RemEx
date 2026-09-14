@@ -87,6 +87,39 @@ public class PersonalizationChipRowsTests
             .And.Contain(@"ItemsSource=""{Binding SavedPalettes}""");
     }
 
+    [Fact]
+    public void AllThreeChipRows_UseTwoColumnUniformGrid_NoWrapPanel_NoFixedTileWidth()
+    {
+        // Fix round 2 (RemEx-4kv0g.4.4): three-per-row chips broke long names mid-word under the
+        // monospace body font; Connor chose two chips per row, each stretched to half the row.
+        // Scoped to just the three chip-row templates - PersonalizeColourTab.axaml and
+        // PersonalizePalettesTab.axaml each still legitimately use WrapPanel elsewhere (tonal-ramp
+        // rows, the share-palette button row), so a whole-file NotContain would false-positive.
+        var variantTemplate = TemplateBody(ColourMarkup(), "vm:SchemeVariantStripViewModel");
+        var presetTemplate = TemplateBody(PalettesMarkup(), "vm:SeedPresetTileViewModel");
+        var savedTemplate = TemplateBody(PalettesMarkup(), "vm:SavedPaletteTileViewModel");
+
+        foreach (var (name, template) in new[] { ("variant", variantTemplate), ("preset", presetTemplate), ("saved", savedTemplate) })
+        {
+            template.Should().NotContain("MinWidth=\"{x:Static controls:PaletteChip.ChipWidth}\"", $"the {name} tile button no longer takes a fixed ChipWidth");
+        }
+
+        var colourPanel = Regex.Match(ColourMarkup(), @"ItemsSource=""\{Binding SchemeVariantStrips\}""[\s\S]*?ItemsControl\.ItemsPanel>(?<panel>[\s\S]*?)</ItemsControl\.ItemsPanel>");
+        colourPanel.Success.Should().BeTrue();
+        colourPanel.Groups["panel"].Value.Should().Contain(@"<UniformGrid Columns=""2""").And.NotContain("WrapPanel");
+
+        var presetPanel = Regex.Match(PalettesMarkup(), @"ItemsSource=""\{Binding ThemePresets\}""[\s\S]*?ItemsControl\.ItemsPanel>(?<panel>[\s\S]*?)</ItemsControl\.ItemsPanel>");
+        presetPanel.Success.Should().BeTrue();
+        presetPanel.Groups["panel"].Value.Should().Contain(@"<UniformGrid Columns=""2""").And.NotContain("WrapPanel");
+
+        var savedPanel = Regex.Match(PalettesMarkup(), @"ItemsSource=""\{Binding SavedPalettes\}""[\s\S]*?ItemsControl\.ItemsPanel>(?<panel>[\s\S]*?)</ItemsControl\.ItemsPanel>");
+        savedPanel.Success.Should().BeTrue();
+        savedPanel.Groups["panel"].Value.Should().Contain(@"<UniformGrid Columns=""2""").And.NotContain("WrapPanel");
+
+        VariantButton().Should().Contain(@"HorizontalAlignment=""Stretch""");
+        PresetButton().Should().Contain(@"HorizontalAlignment=""Stretch""");
+    }
+
     /// <summary>The single <c>&lt;controls:PaletteChip .../&gt;</c> self-closing tag inside a button's
     /// markup - isolated from the surrounding Button's own attributes (notably its
     /// <c>Classes.selected="{Binding IsSelected}"</c>) so a check for "does the chip itself carry

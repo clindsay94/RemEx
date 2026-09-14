@@ -16,7 +16,7 @@ public partial class PaletteChip : UserControl
 {
     /// <summary>Chip footprint. Constants, not literals, so the row XAML and the tests that pin the
     /// size (<c>PaletteChipTests</c>) read the same number this control actually lays out to.</summary>
-    public const double ChipWidth = 104;
+    public const double ChipMinWidth = 150;
     public const double ChipHeight = 60;
 
     public static readonly StyledProperty<IBrush?> PrimaryProperty =

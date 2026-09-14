@@ -62,5 +62,19 @@ public class PersonalizeLayoutTabTests
     [Fact]
     public void RootsInAScrollViewer() => AssertRootsInScrollViewer(Markup());
 
+    [Fact]
+    public void SnapToGridDescription_Wraps()
+    {
+        // Fix round 2 (RemEx-4kv0g.4.4): on the 440px sheet the description clipped behind the
+        // ToggleSwitch; the enclosing Grid already gives the text column the star, so wrapping was
+        // the missing piece.
+        var markup = Markup();
+        var desc = System.Text.RegularExpressions.Regex.Match(markup,
+            @"<TextBlock[^>]*Text=""\{local:Localize Settings_SnapToGridDesc\}""[^>]*/>");
+
+        desc.Success.Should().BeTrue();
+        desc.Value.Should().Contain(@"TextWrapping=""Wrap""");
+    }
+
     private static string Markup() => TabMarkup(FileName);
 }
