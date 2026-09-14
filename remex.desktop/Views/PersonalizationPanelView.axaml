@@ -171,7 +171,6 @@
                                                            Secondary="{Binding SecondaryBrush}"
                                                            Tertiary="{Binding TertiaryBrush}"
                                                            Label="{Binding DisplayName}"
-                                                           IsSelected="{Binding IsSelected}"
                                                            CornerRadius="{DynamicResource CardCornerRadius}"/>
                                 </Button>
                             </DataTemplate>
@@ -672,7 +671,6 @@
                                                        Secondary="{Binding SecondaryBrush}"
                                                        Tertiary="{Binding TertiaryBrush}"
                                                        Label="{Binding DisplayName}"
-                                                       IsSelected="{Binding IsSelected}"
                                                        CornerRadius="{Binding PreviewCornerRadius}"/>
                             </Button>
                         </DataTemplate>

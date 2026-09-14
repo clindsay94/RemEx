@@ -3,30 +3,28 @@
     xmlns:controls="using:Remex.Desktop.Controls"
     x:Class="Remex.Desktop.Controls.PaletteChip">
 
-    <!-- ═══ PaletteChip (spec 2026-09-13 personalize-tabs §3, RemEx-9ql7v) ═══ All three chip rows
-         (scheme variants, built-in presets, saved palettes) painted their own colours as three dots
-         plus a caption; this replaces that with the palette's own three accents AS the fill,
-         geometry C: primary the left 62% at full height, secondary the top half of the
-         right 38%, tertiary the bottom half. The outer Border is a fixed ChipWidth x ChipHeight box
-         (this UserControl's content Grid) so selection never changes the chip's footprint inside its
-         host Button - only the ring INSIDE that box grows: unselected is BorderThickness="1" with a
-         1px Margin (today's Border look, outline-brush pad), selected is BorderThickness="2" with no
-         margin (the ring eats the same 2px either way, so nothing shifts). Toggled by the "selected"
-         class PaletteChip.axaml.cs sets from IsSelected, styled below rather than in code so the two
-         states are one declarative pair instead of an imperative else-branch.
+    <!-- ═══ PaletteChip (spec 2026-09-13 personalize-tabs §3, RemEx-9ql7v; fix round 1,
+         RemEx-4kv0g.4.1) ═══ All three chip rows (scheme variants, built-in presets, saved palettes)
+         painted their own colours as three dots plus a caption; this replaces that with the
+         palette's own three accents AS the fill, geometry C: primary the left 62% at full height,
+         secondary the top half of the right 38%, tertiary the bottom half.
+
+         FILL AND LABEL ONLY - NO RING OF ITS OWN. The chip used to draw its own selection border on
+         top of the host Button's ".tile.selected" ring (App.axaml:576-612), which stacked into two
+         concentric rings at different radii on preset tiles (review-1-report.md MEDIUM #1). The
+         button's ring is the only one now; this control is just the fixed ChipWidth x ChipHeight box,
+         clipped to CornerRadius, holding the three fill regions and the label.
 
          The label sits on the primary field and gets its ink from Remex.Core.Theming.ChipInk against
-         Primary's own colour (PaletteChip.axaml.cs, OnPropertyChanged) - black or white, whichever
-         the palette engine would already call "on-primary" for that tone. Primary is not always a
-         solid brush (a caller could hand this control anything IBrush), so LabelBrush is nullable and
-         the Foreground binding's TargetNullValue falls back to the app's own TextPrimaryBrush - a
-         real DynamicResource, so a theme change still repaints that fallback case live.
-
-         SELECTED STATE IS A CLASS, NOT A PSEUDO-CLASS - see BusyPlaceholder.axaml's header comment:
-         a pseudo-class selector matching this control's OWN type from inside this same file was
-         verified live (ui-hotreload) not to reliably apply; a plain Classes match the same way
-         DashboardBackgroundControl.axaml's Classes.aurora-animated does IS reliable. PaletteChip.axaml.cs
-         toggles Classes["selected"] on itself from IsSelected, matched below by explicit type name. -->
+         Primary's own colour (PaletteChip.axaml.cs, OnPropertyChanged) - black or white, whichever the
+         palette engine would already call "on-primary" for that tone. Primary is not always a solid
+         brush (a caller could hand this control anything IBrush), so LabelBrush can be null - and a
+         DynamicResourceExtension stored in TargetNullValue is never evaluated (it's an IBinding, not a
+         value; review-1-report.md MEDIUM #2), so the fallback is a real Style instead: the plain
+         "TextBlock#PART_Label" style below sets the default Foreground, and the "TextBlock#PART_Label.
+         inked" style overrides it with LabelBrush once PaletteChip.axaml.cs has a real colour to hand
+         it, toggling the "inked" class alongside LabelBrush in the same OnPropertyChanged branch so
+         the two never go out of sync. -->
 
     <Grid Width="{x:Static controls:PaletteChip.ChipWidth}" Height="{x:Static controls:PaletteChip.ChipHeight}">
         <Border Name="PART_OuterBorder"
@@ -40,7 +38,8 @@
                 <Border Grid.Column="1" Grid.Row="1"
                         Background="{Binding $parent[controls:PaletteChip].Tertiary}"/>
 
-                <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
+                <TextBlock Name="PART_Label"
+                           Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
                            Text="{Binding $parent[controls:PaletteChip].Label}"
                            Theme="{StaticResource Body2TextBlock}"
                            FontWeight="Bold"
@@ -48,25 +47,17 @@
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
                            MaxLines="2"
-                           TextTrimming="CharacterEllipsis"
-                           Foreground="{Binding $parent[controls:PaletteChip].LabelBrush, TargetNullValue={DynamicResource TextPrimaryBrush}}"/>
+                           TextTrimming="CharacterEllipsis"/>
             </Grid>
         </Border>
     </Grid>
 
     <UserControl.Styles>
-        <Style Selector="Border#PART_OuterBorder">
-            <Setter Property="Margin" Value="1"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+        <Style Selector="TextBlock#PART_Label">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
-        <!-- Matched by explicit type name, not "^" (see the header comment). The 2px accent ring
-             eats the 1px Margin the unselected state reserved for it, so the box PART_OuterBorder
-             occupies never changes size. -->
-        <Style Selector="controls|PaletteChip.selected Border#PART_OuterBorder">
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        <Style Selector="TextBlock#PART_Label.inked">
+            <Setter Property="Foreground" Value="{Binding $parent[controls:PaletteChip].LabelBrush}"/>
         </Style>
     </UserControl.Styles>
 </UserControl>

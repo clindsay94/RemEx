@@ -91,22 +91,44 @@ public class PaletteChipTests
     }
 
     [Fact]
-    public void SelectionRing_UsesAccentPrimaryBrush_AndNeverChangesTheOuterFootprint()
+    public void NoOwnRing_TheHostButtonIsTheOnlySelectionRing()
     {
         var markup = ChipMarkup();
 
-        var selectedStyle = Regex.Match(markup, @"<Style Selector=""[^""]*\.selected[^""]*"">(?<body>[\s\S]*?)</Style>");
-        selectedStyle.Success.Should().BeTrue("a style keyed off the .selected class must exist");
-        selectedStyle.Groups["body"].Value.Should()
-            .MatchRegex(@"Property=""Margin""\s+Value=""0""", "selected: no margin")
-            .And.MatchRegex(@"Property=""BorderThickness""\s+Value=""2""", "selected: 2px ring")
-            .And.MatchRegex(@"Property=""BorderBrush""\s+Value=""\{DynamicResource AccentPrimaryBrush\}""", "the selected ring is the accent colour");
+        markup.Should().NotContain("IsSelected", "the chip has no selection concept of its own any more (fix round 1, RemEx-4kv0g.4.1) - the host Button's .tile.selected ring is the only ring");
+        markup.Should().NotMatchRegex(@"Selector=""[^""]*\.selected[^""]*""", "no style is keyed off a .selected class in this control any more");
+        markup.Should().NotMatchRegex(@"BorderThickness|BorderBrush", "PART_OuterBorder no longer draws any border of its own - fill and label only, clipped to CornerRadius");
 
-        var restingStyle = Regex.Match(markup, @"<Style Selector=""Border#PART_OuterBorder"">(?<body>[\s\S]*?)</Style>");
-        restingStyle.Success.Should().BeTrue("the resting (unselected) style must exist");
-        restingStyle.Groups["body"].Value.Should()
-            .MatchRegex(@"Property=""Margin""\s+Value=""1""", "unselected: 1px margin")
-            .And.MatchRegex(@"Property=""BorderThickness""\s+Value=""1""", "unselected: 1px border — same total footprint as selected (1+1 == 0+2)");
+        var code = ChipCode();
+        code.Should().NotContain("IsSelectedProperty").And.NotContain("public bool IsSelected");
+    }
+
+    [Fact]
+    public void NoTargetNullValue_LabelFallsBackThroughAStyle()
+    {
+        var markup = ChipMarkup();
+
+        markup.Should().NotContain("TargetNullValue=", "a DynamicResourceExtension stored in TargetNullValue is never evaluated (review-1-report.md MEDIUM) - the fallback must be a real Style instead");
+
+        var defaultStyle = Regex.Match(markup, @"<Style Selector=""TextBlock#PART_Label"">(?<body>[\s\S]*?)</Style>");
+        defaultStyle.Success.Should().BeTrue("a default-foreground style for the label must exist");
+        defaultStyle.Groups["body"].Value.Should().MatchRegex(@"Property=""Foreground""\s+Value=""\{DynamicResource TextPrimaryBrush\}""");
+
+        var inkedStyle = Regex.Match(markup, @"<Style Selector=""TextBlock#PART_Label\.inked"">(?<body>[\s\S]*?)</Style>");
+        inkedStyle.Success.Should().BeTrue("an .inked style bound to LabelBrush must exist");
+        inkedStyle.Groups["body"].Value.Should().MatchRegex(@"Property=""Foreground""\s+Value=""\{Binding \$parent\[controls:PaletteChip\]\.LabelBrush\}""");
+
+        markup.Should().Contain(@"Name=""PART_Label""", "the label needs a name for the two Foreground styles to select on");
+    }
+
+    [Fact]
+    public void LabelBrush_IsRegisteredAsADirectProperty()
+    {
+        var code = ChipCode();
+
+        code.Should().MatchRegex(@"DirectProperty<PaletteChip,\s*IBrush\?>\s+LabelBrushProperty", "LabelBrush must be read-only - a DirectProperty, not a StyledProperty callers could SetValue on")
+            .And.Contain("RegisterDirect<PaletteChip, IBrush?>(nameof(LabelBrush)")
+            .And.MatchRegex(@"private\s+set\s*=>\s*SetAndRaise\(LabelBrushProperty", "the setter must be private");
     }
 
     [Fact]

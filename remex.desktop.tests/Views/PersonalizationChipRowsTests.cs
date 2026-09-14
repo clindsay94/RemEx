@@ -25,7 +25,7 @@ public class PersonalizationChipRowsTests
         var button = VariantButton();
 
         button.Should().Contain(@"Classes=""tile""")
-            .And.Contain(@"Classes.selected=""{Binding IsSelected}""")
+            .And.Contain(@"Classes.selected=""{Binding IsSelected}""", "the button keeps the single selection ring (fix round 1, RemEx-4kv0g.4.1)")
             .And.Contain("AutomationProperties.Name=\"{Binding DisplayName}\"")
             .And.Contain("Command=\"{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}\"")
             .And.Contain(@"CommandParameter=""{Binding Variant}""")
@@ -34,6 +34,7 @@ public class PersonalizationChipRowsTests
 
         button.Should().NotMatchRegex(@"<Border Width=""14"" Height=""14"" CornerRadius=""7""", "the old dot swatches are gone");
         button.Should().NotContain("OnSurfaceBrush", "the variant chip's fourth dot is dropped (spec §3)");
+        ChipTag(button).Should().NotContain("IsSelected", "the chip itself carries no selection concept any more - only the button's Classes.selected does");
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class PersonalizationChipRowsTests
         var button = PresetButton();
 
         button.Should().Contain(@"Classes=""tile""")
-            .And.Contain(@"Classes.selected=""{Binding IsSelected}""")
+            .And.Contain(@"Classes.selected=""{Binding IsSelected}""", "the button keeps the single selection ring (fix round 1, RemEx-4kv0g.4.1)")
             .And.Contain("AutomationProperties.Name=\"{Binding DisplayName}\"")
             .And.Contain("Command=\"{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}\"")
             .And.Contain(@"CommandParameter=""{Binding Id}""")
@@ -51,6 +52,7 @@ public class PersonalizationChipRowsTests
 
         button.Should().NotMatchRegex(@"<Border Width=""14"" Height=""14"" CornerRadius=""7""", "the old dot swatches are gone");
         button.Should().NotMatchRegex(@"FontSize=""10""", "the old inline-size caption is gone with the Border it lived in");
+        ChipTag(button).Should().NotContain("IsSelected", "the chip itself carries no selection concept any more - only the button's Classes.selected does");
     }
 
     [Fact]
@@ -84,6 +86,19 @@ public class PersonalizationChipRowsTests
         markup.Should().Contain(@"ItemsSource=""{Binding SchemeVariantStrips}""")
             .And.Contain(@"ItemsSource=""{Binding ThemePresets}""")
             .And.Contain(@"ItemsSource=""{Binding SavedPalettes}""");
+    }
+
+    /// <summary>The single <c>&lt;controls:PaletteChip .../&gt;</c> self-closing tag inside a button's
+    /// markup - isolated from the surrounding Button's own attributes (notably its
+    /// <c>Classes.selected="{Binding IsSelected}"</c>) so a check for "does the chip itself carry
+    /// IsSelected" can't false-positive on the button's unrelated binding of the same name.</summary>
+    private static string ChipTag(string button)
+    {
+        var open = button.IndexOf("<controls:PaletteChip", System.StringComparison.Ordinal);
+        var close = button.IndexOf("/>", open, System.StringComparison.Ordinal);
+        open.Should().BeGreaterOrEqualTo(0);
+        close.Should().BeGreaterThan(open);
+        return button.Substring(open, close + "/>".Length - open);
     }
 
     private static string VariantButton() => ButtonInBody(TemplateBody("vm:SchemeVariantStripViewModel"));
