@@ -153,41 +153,26 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SchemeVariantStripViewModel">
-                                <Button Classes="tile" Margin="0" Padding="0" MinWidth="56"
+                                <!-- PaletteChip (RemEx-9ql7v, spec §3) replaces the old dots+caption
+                                     Border: the fill IS Primary/Secondary/Tertiary, so a variant
+                                     cannot show a colour a click would not produce, and there is no
+                                     longer a fourth OnSurfaceBrush dot needed to separate variants
+                                     that share accents (e.g. Rainbow vs TonalSpot) - the fill regions
+                                     alone are the same colours as before, plus the fill IS the
+                                     differentiator: two variants sharing accents also shared this
+                                     view's three swatches, and still do; that concern lives in the
+                                     seed/variant selection itself, not in this preview tile. -->
+                                <Button Classes="tile" Margin="0" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
                                         AutomationProperties.Name="{Binding DisplayName}"
                                         Classes.selected="{Binding IsSelected}"
                                         Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}"
                                         CommandParameter="{Binding Variant}">
-                                    <!-- Same shape as the preset tile: painted in the strip's OWN
-                                         surface/outline/on-surface, so a variant whose own text is
-                                         unreadable against its own surface looks unreadable here. -->
-                                    <Border Background="{Binding SurfaceBrush}"
-                                            BorderBrush="{Binding OutlineBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="6"
-                                            Padding="6,8">
-                                        <StackPanel Spacing="4">
-                                            <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center">
-                                                <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
-                                                <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
-                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
-                                                <!-- THE NEUTRAL CHIP IS WHAT SEPARATES TWO VARIANTS THAT SHARE ACCENTS
-                                                     (review LOW, RemEx-lrxyo). Rainbow is TonalSpot with the neutral
-                                                     palette's chroma taken to zero, so for a saturated seed the two
-                                                     produce IDENTICAL primary/secondary/tertiary — measured on a dark
-                                                     red seed, all three match exactly and the entire difference
-                                                     is the neutrals. Three accent chips therefore render them
-                                                     indistinguishable, and a picker whose choices look the same reads
-                                                     as broken rather than as faithful. OnSurface is the neutral that
-                                                     carries the difference AND is already bound here, so this needs
-                                                     no new view-model surface. -->
-                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding OnSurfaceBrush}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource OverlineTextBlock}"
-                                                       TextAlignment="Center" TextWrapping="Wrap"
-                                                       Foreground="{Binding OnSurfaceBrush}"/>
-                                        </StackPanel>
-                                    </Border>
+                                    <controls:PaletteChip Primary="{Binding PrimaryBrush}"
+                                                           Secondary="{Binding SecondaryBrush}"
+                                                           Tertiary="{Binding TertiaryBrush}"
+                                                           Label="{Binding DisplayName}"
+                                                           IsSelected="{Binding IsSelected}"
+                                                           CornerRadius="{DynamicResource CardCornerRadius}"/>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -673,30 +658,22 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
-                            <Button Classes="tile" Margin="4" Padding="0"
+                            <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS the preset's own
+                                 Primary/Secondary/Tertiary, so a tile still cannot show a colour
+                                 clicking it would not produce - the same guarantee the old
+                                 surface/outline/dots Border made, just as the fill instead of a
+                                 caption underneath it. -->
+                            <Button Classes="tile" Margin="4" Padding="0" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
                                     AutomationProperties.Name="{Binding DisplayName}"
                                     Classes.selected="{Binding IsSelected}"
                                     Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
                                     CommandParameter="{Binding Id}">
-                                <!-- The card is painted in the preset's OWN surface/outline, and the label in
-                                     its OWN on-surface, so the tile doubles as the contrast check: a preset
-                                     whose text is unreadable against its surface looks unreadable here. -->
-                                <Border Background="{Binding SurfaceBrush}"
-                                        BorderBrush="{Binding OutlineBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="{Binding PreviewCornerRadius}"
-                                        Padding="6,8">
-                                    <StackPanel Spacing="6">
-                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                            <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
-                                            <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
-                                            <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="10" FontWeight="Bold"
-                                                   TextAlignment="Center" TextWrapping="Wrap"
-                                                   Foreground="{Binding OnSurfaceBrush}"/>
-                                    </StackPanel>
-                                </Border>
+                                <controls:PaletteChip Primary="{Binding PrimaryBrush}"
+                                                       Secondary="{Binding SecondaryBrush}"
+                                                       Tertiary="{Binding TertiaryBrush}"
+                                                       Label="{Binding DisplayName}"
+                                                       IsSelected="{Binding IsSelected}"
+                                                       CornerRadius="{Binding PreviewCornerRadius}"/>
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -716,15 +693,24 @@
                             <DataTemplate x:DataType="vm:SavedPaletteTileViewModel">
                                 <Border Margin="4" Background="{Binding SurfaceBrush}" BorderBrush="{Binding OutlineBrush}" BorderThickness="1" CornerRadius="8" Padding="6,8">
                                     <StackPanel Spacing="6">
-                                        <Button Classes="tile" Padding="0" Background="Transparent"
+                                        <!-- PaletteChip (RemEx-9ql7v, spec §3): the fill IS this
+                                             palette's own Primary/Secondary/Tertiary, same guarantee
+                                             as the other two rows. No IsSelected binding - a saved
+                                             palette has no "currently selected" concept today (Apply
+                                             is a one-shot action, not a toggle), so the chip stays in
+                                             its resting (unselected) visual state, matching what this
+                                             Button showed before. The rename TextBox below is
+                                             untouched: DisplayName here is a read-only alias for the
+                                             SAME Name it edits, not a second source of truth. -->
+                                        <Button Classes="tile" Padding="0" Background="Transparent" MinWidth="{x:Static controls:PaletteChip.ChipWidth}"
                                                 AutomationProperties.Name="{Binding Name}"
                                                 Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).ApplySavedPaletteCommand}"
                                                 CommandParameter="{Binding}">
-                                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                                <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
-                                                <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
-                                                <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
-                                            </StackPanel>
+                                            <controls:PaletteChip Primary="{Binding PrimaryBrush}"
+                                                                   Secondary="{Binding SecondaryBrush}"
+                                                                   Tertiary="{Binding TertiaryBrush}"
+                                                                   Label="{Binding DisplayName}"
+                                                                   CornerRadius="{DynamicResource CardCornerRadius}"/>
                                         </Button>
                                         <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" TextAlignment="Center"
                                                  Foreground="{Binding OnSurfaceBrush}"

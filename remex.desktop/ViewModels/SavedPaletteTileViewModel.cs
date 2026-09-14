@@ -31,7 +31,16 @@ public sealed partial class SavedPaletteTileViewModel : ObservableObject
     /// <summary>Raised after a rename lands in <see cref="Record"/>, so the owner can persist.</summary>
     public event Action<SavedPaletteTileViewModel>? Renamed;
 
-    [ObservableProperty] private string _name;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    private string _name;
+
+    /// <summary>
+    /// Alias for <see cref="Name"/> (spec 2026-09-13 personalize-tabs §3, RemEx-9ql7v): PaletteChip's
+    /// Label binds the same property name across all three chip rows, and this row's name is still
+    /// the person's own editable text, not a localized display string.
+    /// </summary>
+    public string DisplayName => Name;
 
     [ObservableProperty] private IBrush _surfaceBrush;
     [ObservableProperty] private IBrush _primaryBrush;

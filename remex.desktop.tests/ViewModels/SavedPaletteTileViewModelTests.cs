@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Media;
 using FluentAssertions;
 using Remex.Core.Models;
@@ -50,5 +51,27 @@ public class SavedPaletteTileViewModelTests
 
         tile.Record.Name.Should().Be("Dusk");
         tile.Name.Should().Be("Dusk");
+    }
+
+    /// <summary>
+    /// DisplayName (RemEx-9ql7v, spec 2026-09-13 personalize-tabs §3): PaletteChip's Label binds
+    /// this alongside PrimaryBrush/SecondaryBrush/TertiaryBrush the same way the variant and preset
+    /// rows bind their own DisplayName, so a rename has to reach the chip's baked-in label, not only
+    /// the separate rename TextBox that still edits Name directly.
+    /// </summary>
+    [Fact]
+    public void DisplayNameAliasesNameAndRaisesPropertyChangedOnRename()
+    {
+        var tile = new SavedPaletteTileViewModel(Dusk());
+        tile.DisplayName.Should().Be("Dusk");
+
+        var raised = new System.Collections.Generic.List<string?>();
+        ((INotifyPropertyChanged)tile).PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        tile.Name = "Evening";
+
+        tile.DisplayName.Should().Be("Evening");
+        raised.Should().Contain(nameof(SavedPaletteTileViewModel.DisplayName),
+            "NotifyPropertyChangedFor must fire so a rename repaints the chip's label, not just the TextBox bound directly to Name");
     }
 }
