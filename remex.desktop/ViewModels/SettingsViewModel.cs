@@ -1383,7 +1383,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             StreamFps = StreamFps
         };
 
-        _profile = updated;
+        // No `_profile = updated` here: nothing reads _profile after InitializeAsync, and keeping a
+        // second copy alive is exactly the stale-base hazard the comment above describes.
         _layoutService.RequestSave(updated);
     }
 }

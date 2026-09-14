@@ -190,6 +190,39 @@ public sealed class LayoutSettingsViewModelTests
         }
     }
 
+    /// <summary>
+    /// Drop-2 review (MEDIUM): a sensor pinned from the canvas's own card menu lands in the stored
+    /// profile through the canvas's merge, not through this checklist. A later checkbox toggle here
+    /// must add or remove ITS name in the stored list, never re-serialise the checklist - that would
+    /// silently unpin the canvas-pinned sensor.
+    /// </summary>
+    [Fact]
+    public async Task TogglingOneCheckboxKeepsAPinMadeFromTheCanvas()
+    {
+        var tempDir = Directory.CreateTempSubdirectory("remex-4kv0g42-").FullName;
+        try
+        {
+            var (layout, _, vm) = await NewInitializedAsync(tempDir, SensorCard("GPU Hotspot"), SensorCard("CPU Package"));
+
+            // The canvas pins CPU Package behind this VM's back (its checklist still says unpinned).
+            layout.RequestSave(layout.CurrentProfile with { PinnedSensorIds = new() { "CPU Package" } });
+            vm.PinnedSensors.Single(s => s.SensorName == "CPU Package").IsPinned.Should().BeFalse("the checklist is stale by design here");
+
+            vm.PinnedSensors.Single(s => s.SensorName == "GPU Hotspot").IsPinned = true;
+
+            layout.CurrentProfile.PinnedSensorIds.Should().BeEquivalentTo(new[] { "CPU Package", "GPU Hotspot" },
+                "the stored list gains the toggled name and keeps the canvas-made pin");
+
+            vm.PinnedSensors.Single(s => s.SensorName == "GPU Hotspot").IsPinned = false;
+
+            layout.CurrentProfile.PinnedSensorIds.Should().BeEquivalentTo(new[] { "CPU Package" });
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
     [Fact]
     public async Task ReloadFromProfileAsyncReReadsCurrentProfile()
     {

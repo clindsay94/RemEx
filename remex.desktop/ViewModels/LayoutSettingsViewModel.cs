@@ -133,8 +133,18 @@ public sealed partial class LayoutSettingsViewModel : ObservableObject
         if (card != null)
             card.IsPinnedToHome = isPinned;
 
-        var pinnedNames = PinnedSensors.Where(p => p.IsPinned).Select(p => p.SensorName).ToList();
-        SaveLayout(profile => profile with { PinnedSensorIds = pinnedNames });
+        // The stored list ± this one name, NOT this VM's checklist re-serialised (drop-2 review,
+        // MEDIUM): a card pinned from the canvas's own menu (SetCardPinned → TriggerSave's merge) is
+        // absent from a checklist built before that click, so re-serialising the checklist would
+        // silently unpin it. Case-insensitive to match CanvasDashboardViewModel.SetCardPinned.
+        SaveLayout(profile =>
+        {
+            var ids = new List<string>(profile.PinnedSensorIds ?? new List<string>());
+            ids.RemoveAll(id => string.Equals(id, item.SensorName, StringComparison.OrdinalIgnoreCase));
+            if (isPinned)
+                ids.Add(item.SensorName);
+            return profile with { PinnedSensorIds = ids };
+        });
 
         // Not gated behind navigate-back any more (RemEx-4kv0g.4.2) — the Layout section lives on the
         // always-open Personalize sheet, which has no "leaving the page" moment to hang this off.
