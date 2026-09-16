@@ -75,6 +75,7 @@ public class DashboardBackdropTintTests
 
     [Theory]
     [InlineData("IsAcrylic", 0.25)]
+    [InlineData("IsMica", 0.25)]
     public void TheBackdropTint_ScalesWithGlassOpacity(string modeConverter, double expectedCeiling)
     {
         var modePanel = FindModePanel(modeConverter);
@@ -113,6 +114,28 @@ public class DashboardBackdropTintTests
             .Should().BeApproximately(expectedCeiling, 0.001,
                 "the ceiling is what Frosted (GlassOpacity = 1.0) reproduces — it must match the " +
                 "measured maximum veil, not drift from it");
+    }
+
+    [Fact]
+    public void TheMicaPanel_HasNoAccentTintAndNoWallpaperImage()
+    {
+        // Mica supplies the colour itself (DWM paints it, MicaBackdrop.cs) - this panel is only
+        // the shared GlassOpacity veil pinned above. An accent tint or a wallpaper Image here
+        // would be re-tinting or duplicating what DWM already draws.
+        var modePanel = FindModePanel("IsMica");
+
+        modePanel.Elements(XName.Get("Image", Avalonia)).Should().BeEmpty(
+            "Mica's imagery comes from the DWM backdrop, not an Image element");
+
+        var accentRectangles = modePanel
+            .Elements(XName.Get("Rectangle", Avalonia))
+            .Where(rect => (rect.Attribute("Fill")?.Value ?? string.Empty).Contains("AccentPrimary")
+                || rect.Descendants(XName.Get("SolidColorBrush", Avalonia))
+                    .Any(brush => (brush.Attribute("Color")?.Value ?? string.Empty).Contains("AccentPrimary")))
+            .ToList();
+
+        accentRectangles.Should().BeEmpty(
+            "Mica must not be re-tinted with an accent colour on top of what DWM already paints");
     }
 
     private static XElement FindModePanel(string modeConverter)

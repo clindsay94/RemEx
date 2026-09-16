@@ -1110,6 +1110,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         AvailableBackgroundTypes.Clear();
         AvailableBackgroundTypes.Add("Aurora");
         AvailableBackgroundTypes.Add("Wallpaper");
+        // Mica (RemEx-rq0xl): only offered where MicaBackdrop can actually ask DWM for the
+        // backdrop (Windows 11 22H2+). A persisted "Mica" anywhere else falls through the same
+        // unsupported-material fallback below as any other unavailable choice.
+        if (OperatingSystem.IsWindows() && MicaBackdrop.IsSupported)
+        {
+            AvailableBackgroundTypes.Add("Mica");
+        }
         if (OperatingSystem.IsWindows())
         {
             AvailableBackgroundTypes.Add("Acrylic");

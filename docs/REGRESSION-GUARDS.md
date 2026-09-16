@@ -605,6 +605,31 @@ property should be *absent*, check what the theme puts there in your absence. Th
 as the scrim's priority bug (`ShellView.axaml:162-176`) on a different axis — there the override lost
 to an activated selector, here the absence lost to a plain default.
 
+### Mica is requested as `Transparent` + our own DWM call, never the `Mica` hint (INVARIANT)
+
+`remex.desktop/Services/MicaBackdrop.cs` and the Mica branch of `MainWindow.axaml.cs`'s
+`OnCustomizationApplied` — the window asks for `WindowTransparencyLevel.Transparent`, never
+`.Mica`, and `MicaBackdrop.TryApply` calls
+`DwmSetWindowAttribute(hwnd, 38 /* DWMWA_SYSTEMBACKDROP_TYPE */, 2 /* DWMSBT_MAINWINDOW */)`
+itself once the window has a handle.
+
+On Windows 11 26200 with Avalonia 12.1.1, `TransparencyLevelHint = Mica` makes
+`ActualTransparencyLevel` report Mica while Avalonia never actually asks DWM for it —
+`DWMWA_SYSTEMBACKDROP_TYPE` reads back `0` (the legacy `DWMWA_MICA_EFFECT`, 1029, no longer
+exists on this OS) and Avalonia paints its own flat layer instead. This is the same shape as the
+2026-08-27 probe on RemEx-z94c7 that first retired Mica: window pixels invariant to the desktop
+wallpaper underneath, with no exception and no log line — the transparency API reports success
+throughout. The re-probe (mica-spike, task 1, RemEx-rq0xl, 2026-09-16) confirmed the mechanism:
+with the `Mica` hint, `DWMWA_SYSTEMBACKDROP_TYPE` read `0` at every phase; requesting `Transparent`
+instead and forcing `DwmSetWindowAttribute(38, MAINWINDOW)` from inside the app produced a real,
+wallpaper-derived tint (`#23151A` on the rainbow-wallpaper monitor vs. a flat `#111418` base) —
+`mica-spike-mode4.log`,
+`.superpowers/sdd/2026-09-13-personalize-tabs/eyes/audit/`.
+
+Requesting the `Mica` hint again — even alongside the DWM call — silently reintroduces the flat
+covering layer and no test in this suite has a headless render to catch it; only the source can be
+pinned, by `MicaBackdropTests` and `MainWindowBackdropTests`.
+
 ### `RenderTransform` is not a keyframe-animatable property (INVARIANT)
 
 `remex.desktop/Views/HomeView.axaml:53-137` — the six staggered entrance keyframe `Style.Animations`

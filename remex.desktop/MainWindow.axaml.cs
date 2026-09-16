@@ -15,6 +15,13 @@ public partial class MainWindow : Window
     private ThemeService? _themeService;
     private ColorSourceCoordinator? _colorSources;
 
+    // Mica (RemEx-rq0xl): set by OnCustomizationApplied's Mica branch when the window has no
+    // platform handle yet (startup — settings are applied before Opened fires) and consumed once
+    // the handle exists. Cleared whenever a later apply leaves Mica, so a pick made before Opened
+    // fires can never overwrite a subsequent, real pick of something else.
+    private bool _micaPending;
+    private string? _previousBackgroundMaterial;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -48,6 +55,19 @@ public partial class MainWindow : Window
         // from also dismissing overlays on the same keystroke. When not in FullScreen this handler
         // is a no-op and Escape reaches DismissOverlaysCommand exactly as before.
         AddHandler(KeyDownEvent, OnEscapeExitsFullScreen, RoutingStrategies.Tunnel);
+
+        // Mica (RemEx-rq0xl): settings are applied (see below) before this window has ever opened,
+        // so the first Mica apply always finds no platform handle and sets _micaPending. This is
+        // the retry once the handle exists — unconditional, unlike the _colorSources block below,
+        // because Mica must not depend on that optional service being registered.
+        Opened += (_, _) =>
+        {
+            if (_micaPending && OperatingSystem.IsWindows())
+            {
+                _micaPending = false;
+                MicaBackdrop.TryApply(this, ActualThemeVariant == ThemeVariant.Dark);
+            }
+        };
 
         _themeService = App.Services.GetService<ThemeService>(); // optional service
         if (_themeService is not null)
@@ -126,11 +146,38 @@ public partial class MainWindow : Window
             // it must never be left at whatever translucent value preceded this customization.
             TransparencyBackgroundFallback = OpaqueSurfaceFallbackBrush();
 
-            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
+            // Leaving Mica for anything else must clear the DWM backdrop exactly once — not on
+            // every apply, since OnCustomizationApplied also fires for unrelated slider nudges
+            // while some OTHER material stays selected the whole time (RemEx-rq0xl).
+            var wasMica = _previousBackgroundMaterial == "Mica";
+            _previousBackgroundMaterial = settings.BackgroundMaterial;
+            _micaPending = false;
+
+            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica" && MicaBackdrop.IsSupported)
+            {
+                // Deliberately NOT the platform's own Mica transparency hint: Avalonia 12.1.1 never
+                // asks DWM for the system backdrop when given that hint — ActualTransparencyLevel
+                // reports Mica while DWMWA_SYSTEMBACKDROP_TYPE stays 0 and Avalonia paints its own
+                // flat layer instead (docs/REGRESSION-GUARDS.md, "Mica is requested as Transparent
+                // + our own DWM call"). Transparent gets a real compositor surface; MicaBackdrop.
+                // TryApply below is what actually asks DWM to paint Mica onto it.
+                TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
+                Background = Brushes.Transparent;
+                Opacity = 1.0;
+
+                var dark = ActualThemeVariant == ThemeVariant.Dark;
+                if (!MicaBackdrop.TryApply(this, dark))
+                {
+                    // No handle yet (startup, before Opened) — retried once Opened fires.
+                    _micaPending = true;
+                }
+            }
+            else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
                 Opacity = 1.0;
+                if (wasMica && OperatingSystem.IsWindows()) MicaBackdrop.Clear(this);
             }
             else if (settings.BackgroundMaterial == "Glass")
             {
@@ -139,6 +186,7 @@ public partial class MainWindow : Window
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
                 Opacity = Math.Clamp(settings.AppWindowOpacity, 0.1, 1.0);
+                if (wasMica && OperatingSystem.IsWindows()) MicaBackdrop.Clear(this);
             }
             else
             {
@@ -152,6 +200,7 @@ public partial class MainWindow : Window
                 // form would have made a "non-transparent" window partially transparent.
                 Background = OpaqueSurfaceFallbackBrush();
                 Opacity = 1.0;
+                if (wasMica && OperatingSystem.IsWindows()) MicaBackdrop.Clear(this);
             }
         });
     }

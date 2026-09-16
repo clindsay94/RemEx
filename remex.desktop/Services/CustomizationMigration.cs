@@ -189,6 +189,11 @@ public static class CustomizationMigration
     /// arm's flip, so this arm mirrors that arm's rule rather than the model default alone
     /// reaching those files.
     /// </para>
+    /// <para>
+    /// Mica is back in the picker from schema 7 on (RemEx-rq0xl) — this arm still only rewrites a
+    /// Mica seen at schema 3, the version it was actually retired at; a schema-7 profile saved with
+    /// <c>BackgroundMaterial = "Mica"</c> is a deliberate, renderable choice and is left untouched.
+    /// </para>
     /// </remarks>
     private static CustomizationSettings FromSchemaThree(CustomizationSettings settings)
     {

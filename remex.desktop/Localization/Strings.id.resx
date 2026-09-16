@@ -2862,6 +2862,9 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
   <data name="Custom_BgType_Glass" xml:space="preserve">
     <value>Kaca</value>
   </data>

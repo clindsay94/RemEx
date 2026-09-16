@@ -228,6 +228,19 @@
                         </Rectangle>
                     </Panel>
 
+                    <!-- ═══ Mica Mode (Windows 11 22H2+, RemEx-rq0xl) ═══
+                         Mica itself supplies the colour: MainWindow requests a Transparent window and
+                         MicaBackdrop.cs calls DwmSetWindowAttribute(DWMWA_SYSTEMBACKDROP_TYPE) so DWM
+                         paints the wallpaper-derived backdrop directly (see
+                         docs/REGRESSION-GUARDS.md, "Mica is requested as Transparent + our own DWM
+                         call" — the TransparencyLevelHint=Mica hint paints Avalonia's own flat layer
+                         instead and never reaches DWM at all). This panel therefore carries only the
+                         same GlassOpacity-derived veil Acrylic uses to keep ink legible — no accent
+                         tint (Mica is not re-tinted) and no wallpaper Image (DWM already paints it). -->
+                    <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.25, FallbackValue=0.0, TargetNullValue=0.0}" />
+                    </Panel>
+
                     <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
                     <!-- The window itself is transparent; this panel adds only a subtle frosted tint
                  so UI elements remain readable when the desktop shows behind the window. -->

@@ -2859,6 +2859,9 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_BgType_Acrylic" xml:space="preserve">
     <value>Acrylic</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
   <data name="Custom_BgType_Glass" xml:space="preserve">
     <value>ग्लास</value>
   </data>
