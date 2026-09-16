@@ -25,6 +25,12 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="PadClickLabelBrush" Value="{DynamicResource SystemSuccessBrush}"/>
+            <Setter Property="PadBackgroundBrush" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="PadHoveredBrush" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="PadCenterBrush" Value="{DynamicResource PalettePrimaryContainerBrush}"/>
+            <Setter Property="PadCenterPressedBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="PadArrowBrush" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="PadGridBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
         <!-- Animation for the remote cursor crosshair -->

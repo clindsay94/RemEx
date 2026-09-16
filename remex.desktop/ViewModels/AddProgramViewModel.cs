@@ -24,7 +24,7 @@ public partial class AddProgramViewModel : ObservableObject
     private string _displayName = string.Empty;
 
     [ObservableProperty]
-    private string _hexColor = DefaultHexColor;
+    private string _hexColor = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)).ToString();
 
     [ObservableProperty]
     private Avalonia.Media.Color _validatedColor;
@@ -117,7 +117,7 @@ public partial class AddProgramViewModel : ObservableObject
         }
         else
         {
-            ValidatedColor = Avalonia.Media.Color.Parse(DefaultHexColor); // Default fallback
+            ValidatedColor = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)); // Default fallback, keyed to the live theme
             IsHexColorValid = false;
         }
     }

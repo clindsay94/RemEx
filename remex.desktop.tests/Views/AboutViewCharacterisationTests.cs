@@ -163,6 +163,30 @@ public class AboutViewCharacterisationTests
     }
 
     [Fact]
+    public void WhatsNewTitleWrapsAndDescriptionClampsToTwoLines()
+    {
+        // Audit RemEx-4kv0g.5.5: "What's New" titles ran off the card edge and descriptions showed
+        // one clipped line with no visual sign anything was cut. The title (bound to Version) needs
+        // TextWrapping="Wrap"; the description (bound to Description, which already wrapped) needs a
+        // MaxLines/TextTrimming pair so an overflow is a visible "…" instead of silently absent.
+        var itemTemplate = Between(About(), @"<TextBlock Text=""{Binding Version}""", "</DataTemplate>");
+
+        var titleTag = ElementWithAttributes(itemTemplate, "TextBlock");
+        titleTag.Should().Contain(@"TextWrapping=""Wrap""",
+            "the What's New item title must wrap instead of running off the card edge");
+
+        var descriptionTag = Elements(itemTemplate)
+            .Should().ContainSingle(e => e.Contains(@"Text=""{Binding Description}"""),
+                "the What's New item template should still bind Description exactly once")
+            .Which;
+        descriptionTag.Should().Contain(@"TextWrapping=""Wrap""");
+        descriptionTag.Should().Contain(@"MaxLines=""2""",
+            "the description must clamp to two lines rather than showing one silently clipped line");
+        descriptionTag.Should().Contain(@"TextTrimming=""CharacterEllipsis""",
+            "an overflowing description must end in a visible ellipsis, not a hard clip");
+    }
+
+    [Fact]
     public void NoLegacyHeightOneDividerBordersRemain()
     {
         About().Should().NotMatchRegex(@"<Border Height=""1""",

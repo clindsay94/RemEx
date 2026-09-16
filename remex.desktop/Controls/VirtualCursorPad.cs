@@ -54,6 +54,10 @@ public class VirtualCursorPad : Control
         AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadClickLabelBrush),
             defaultValue: new SolidColorBrush(Color.FromArgb(220, 107, 255, 107)));
 
+    public static readonly StyledProperty<IBrush> PadGridBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadGridBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(60, 128, 128, 255)));
+
     public IBrush PadBackgroundBrush
     {
         get => GetValue(PadBackgroundBrushProperty);
@@ -102,6 +106,12 @@ public class VirtualCursorPad : Control
         set => SetValue(PadClickLabelBrushProperty, value);
     }
 
+    public IBrush PadGridBrush
+    {
+        get => GetValue(PadGridBrushProperty);
+        set => SetValue(PadGridBrushProperty, value);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -112,7 +122,8 @@ public class VirtualCursorPad : Control
             change.Property == PadBorderBrushProperty ||
             change.Property == PadOuterGlowBrushProperty ||
             change.Property == PadArrowBrushProperty ||
-            change.Property == PadClickLabelBrushProperty)
+            change.Property == PadClickLabelBrushProperty ||
+            change.Property == PadGridBrushProperty)
         {
             InvalidateVisual();
         }
@@ -154,7 +165,7 @@ public class VirtualCursorPad : Control
         context.DrawEllipse(PadBackgroundBrush, borderPen, center, OuterRadius, OuterRadius);
 
         // Divider lines (X shape from center circle to outer edge)
-        var pen = new Pen(new SolidColorBrush(Color.FromArgb(60, 128, 128, 255)), 1);
+        var pen = new Pen(PadGridBrush, 1);
         context.DrawLine(pen, new Point(0, 0), new Point(OuterRadius * 2, OuterRadius * 2));
         context.DrawLine(pen, new Point(OuterRadius * 2, 0), new Point(0, OuterRadius * 2));
 

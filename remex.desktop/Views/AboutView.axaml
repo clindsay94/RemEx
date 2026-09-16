@@ -179,8 +179,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Spacing="4" Margin="0,0,0,12">
-                                            <TextBlock Text="{Binding Version}" Theme="{StaticResource Subtitle2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                            <TextBlock Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Version}" Theme="{StaticResource Subtitle2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

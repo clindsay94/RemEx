@@ -143,6 +143,28 @@ public class ShellSnackbarHostTests
     }
 
     [Fact]
+    public void TheIconBrushIsResolvedThroughThemeResourcesNotAssignedDirectly()
+    {
+        // Audit RemEx-4kv0g.5.3: the toast's severity colour must come from the live theme, with the
+        // literal only as the keyed lookup's fallback (the pattern the title/message textBrush lookup
+        // just above it already uses) - never a bare `Brushes.X` assigned straight to iconBrush.
+        Assert.Contains(
+            "var iconBrush = ThemeResources.Brush(brushKey, FallbackBrush(importance));",
+            ShellCodeBehind(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("NotificationImportance.Problem => Brushes.IndianRed,")]
+    [InlineData("NotificationImportance.Outcome => Brushes.MediumSeaGreen,")]
+    [InlineData("_ => Brushes.Gray,")]
+    public void TheFallbackBrushSwitchKeepsEachImportancesLiteral(string expectedArm)
+    {
+        // Pins the FallbackBrush switch arms themselves, so a future edit cannot quietly change which
+        // literal backs which severity while still passing the "goes through ThemeResources" test above.
+        Assert.Contains(expectedArm, ShellCodeBehind(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TheSnackbarTextIsNotFlattenedIntoOneRun()
     {
         // Real case this guards: ConnectionViewModel raises Notify(Problem, "Transfer failed",

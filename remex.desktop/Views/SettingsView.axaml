@@ -93,7 +93,7 @@
                         <StackPanel Spacing="20">
                             <TextBlock Text="{local:Localize Settings_Connection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <StackPanel Spacing="10">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
                                         <!-- Phone presence, not the loopback link (RemEx-7zzw). Connection.IsConnected is this app's
@@ -328,7 +328,7 @@
                         <ItemsControl ItemsSource="{Binding SharedRoots}" Margin="0,10,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
-                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                    <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <StackPanel Spacing="4">
                                                 <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -368,7 +368,7 @@
                         <ItemsControl ItemsSource="{Binding PairedDevices}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:PairedDeviceItem">
-                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                    <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
                                         <Grid ColumnDefinitions="Auto,*">
                                             <!-- PER-DEVICE, from this row's own session lookup — not the shell's
                                                  "is any phone attached" (RemEx-porg / RemEx-7zzw). Binding the
@@ -445,7 +445,7 @@
                         <ItemsControl ItemsSource="{Binding TrustedDevices}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:FileTrustDeviceItem">
-                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                    <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
                                         <StackPanel Spacing="12">
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <!-- Name first, id underneath (RemEx-9me77). The id stays because it is the

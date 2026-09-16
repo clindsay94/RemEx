@@ -373,7 +373,7 @@
                                                     <TextBlock Foreground="{DynamicResource SystemErrorBrush}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
                                                 </StackPanel>
                                             </StackPanel>
-                                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
+                                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
                                                 <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
@@ -455,7 +455,7 @@
 
                 <!-- ═══ COACH MARK OVERLAY (first-visit hint) — card + arrow positioned in code-behind
                      (OnCoachLayout) to aim at the real Sensors button wherever it lands. ═══ -->
-                <Grid x:Name="CoachOverlay" IsVisible="{Binding CoachMarkVisible}" Background="#40000000">
+                <Grid x:Name="CoachOverlay" IsVisible="{Binding CoachMarkVisible}" Background="{DynamicResource GlassOverlayBrush}">
                     <Canvas x:Name="CoachCanvas">
                         <!-- Arrow (stroke) + arrowhead (fill); geometry set at runtime. -->
                         <Path x:Name="CoachArrow" Stroke="{DynamicResource AccentPrimaryBrush}" StrokeThickness="3" StrokeLineCap="Round" StrokeJoin="Round"/>

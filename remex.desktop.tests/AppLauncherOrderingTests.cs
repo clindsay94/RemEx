@@ -147,4 +147,20 @@ public sealed class AppLauncherOrderingTests
         Assert.Equal(original.HexColor, vm.HexColor);
         Assert.Equal("preserved-icon-base64", vm.IconBase64);
     }
+
+    [Fact]
+    public void DefaultHexColor_ResolvesThroughThemeResources_NotTheBareRetiredVioletLiteral()
+    {
+        // Audit RemEx-4kv0g.5.5: the retired violet accent (#4A3AFF) must only ever be reached as
+        // ThemeResources' fallback, never assigned directly, so a themed AccentPrimary wins whenever
+        // one is available. Same "no live Application" hook ThemeResourcesTests uses — there is no
+        // Avalonia Application in this test process, so the lookup itself degrades to the fallback,
+        // which is exactly the wiring under test: the default must equal what THAT call produces,
+        // not a hardcoded string.
+        var expected = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse("#4A3AFF")).ToString();
+
+        var vm = new AddProgramViewModel(new IconExtractionService());
+
+        Assert.Equal(expected, vm.HexColor);
+    }
 }

@@ -258,7 +258,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
         if (string.IsNullOrWhiteSpace(hexColor) || !hexColor.StartsWith("#", StringComparison.Ordinal))
         {
-            hexColor = DefaultHexColor;
+            hexColor = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)).ToString();
         }
 
         if (string.IsNullOrWhiteSpace(iconBase64))

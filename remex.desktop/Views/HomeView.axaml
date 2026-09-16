@@ -164,7 +164,7 @@
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Foreground="{DynamicResource TextMutedBrush}" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,12,0"/>
                             <TextBlock Grid.Column="1" Text="{local:Localize Home_SearchPrompt}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Normal" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                            <Border Grid.Column="2" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
+                            <Border Grid.Column="2" Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
                                 <TextBlock Text="Ctrl + K" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                         </Grid>
@@ -173,19 +173,19 @@
                     <!-- Keyboard shortcuts strip -->
                     <WrapPanel HorizontalAlignment="Center" Margin="0,6,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
-                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <TextBlock Text="Ctrl + 1–7" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                             <TextBlock Text="{local:Localize Home_ScNav}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
-                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <TextBlock Text="Ctrl + ," Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                             <TextBlock Text="{local:Localize Home_ScSettings}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
-                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <TextBlock Text="Esc" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                             <TextBlock Text="{local:Localize Home_ScClose}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
@@ -486,7 +486,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="services:ActivityEntry">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,9">
-                                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GlassBaseDarkBrush}" Margin="0,0,14,0">
+                                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="10" Background="{DynamicResource CardPlateNeutralBrush}" Margin="0,0,14,0">
                                             <mi:MaterialIcon Kind="{Binding Kind, Converter={x:Static conv:ActivityKindToIconKindConverter.Instance}}" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <TextBlock Grid.Column="1" Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
