@@ -149,8 +149,13 @@ public partial class MainWindow : Window
             // Leaving Mica for anything else must clear the DWM backdrop exactly once — not on
             // every apply, since OnCustomizationApplied also fires for unrelated slider nudges
             // while some OTHER material stays selected the whole time (RemEx-rq0xl).
+            // "Mica" is recorded only when the Mica branch can actually run - a persisted Mica on a
+            // Windows build below 22H2 takes the Acrylic-less fallback path and must not queue a
+            // Clear that DWM would reject (review LOW).
             var wasMica = _previousBackgroundMaterial == "Mica";
-            _previousBackgroundMaterial = settings.BackgroundMaterial;
+            _previousBackgroundMaterial = settings.BackgroundMaterial == "Mica" && !(OperatingSystem.IsWindows() && MicaBackdrop.IsSupported)
+                ? null
+                : settings.BackgroundMaterial;
             _micaPending = false;
 
             if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica" && MicaBackdrop.IsSupported)

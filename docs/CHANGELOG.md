@@ -13,6 +13,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Mica is back as a background mode on Windows 11 (22H2 and later). It was pulled in 2.5 because
+  it never rendered: Avalonia reports Mica as active but never asks Windows for the system backdrop,
+  and paints a flat colour of its own instead. RemEx now asks for a plain transparent window and
+  requests the backdrop from DWM itself, so the real material — the soft, wallpaper-tinted surface
+  the Windows Settings app uses — shows through, following Light and Dark with the theme. Cards
+  keep their glass over it at the same Card Opacity as Acrylic. Older Windows and Linux fall back
+  as before without losing the saved choice. (RemEx-rq0xl, RemEx-z94c7)
+
 - Personalize → Text (PC). Four sliders — Headers, Body, Small text, Sensor text — scale each
   type-scale member from 80% to 160% of its own size, each with a Bold switch that returns to the
   member's own weight when off; the label reads `default → current` in points. A Text shadow switch
@@ -88,6 +96,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   `docs/REGRESSION-GUARDS.md` anchors, and moved-doc links. The repo-owned `.mcp.json` idea was
   dropped: MCP servers stay at user scope, and `scripts/check-mcp-health.ps1` no longer demands the
   file. (RemEx-t9vg4)
+
+### Fixed
+
+- The Aurora background actually draws its mesh. Its three colour blobs had radii written as bare
+  numbers, which Avalonia reads as device pixels — one-pixel circles — so the whole surface painted
+  the base colour and Aurora looked like a flat black or white sheet. The radii are percentages
+  now and the test refuses anything else. (RemEx-uil4h)
+
 
 ## [2.5.0] — 2026-09-10
 
