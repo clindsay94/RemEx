@@ -92,6 +92,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
 
     private static readonly Guid IID_IDXGIDevice = new("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
     private static readonly Guid IID_ID3D11Texture2D = new("6f15aaf2-d208-4e89-9ab4-489535d34f9c");
+    private static readonly Guid IID_IDirect3DDxgiInterfaceAccess = new("A9B3D012-3DF2-4EE3-B8D1-8695F457D3C1");
     private static readonly Guid IID_IGraphicsCaptureSession3 = new("f2cdd966-22ae-5ea1-9596-3a289344c3be");
     // IGraphicsCaptureSession2 carries put_IsCursorCaptureEnabled — used as a COM fallback when the
     // WinRT projection's IsCursorCaptureEnabled setter throws (older projection versions).
@@ -181,6 +182,11 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int QueryInterfaceFn(IntPtr self, ref Guid riid, out IntPtr ppvObject);
+
+    // IDirect3DDxgiInterfaceAccess::GetInterface — vtable slot 3 (after the three IUnknown slots; the
+    // interface derives from IUnknown, not IInspectable).
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int GetInterfaceFn(IntPtr self, ref Guid iid, out IntPtr ppv);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate uint ReleaseFn(IntPtr self);
@@ -713,17 +719,33 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             // If the monitor changed size mid-stream, WGC raises a content-size-changed condition; the
             // surface still carries its real size, which we honor via the staging texture below.
             IDirect3DSurface surface = frame.Surface;
-            var access = surface as IDirect3DDxgiInterfaceAccess;
-            if (access is null)
-            {
-                isLive = false;
-                return _lastRawFrame;
-            }
-
             Guid texIid = IID_ID3D11Texture2D;
-            int hr = access.GetInterface(texIid, out srcTex);
+            int hr;
+            if (surface is IDirect3DDxgiInterfaceAccess access)
+            {
+                hr = access.GetInterface(texIid, out srcTex);
+            }
+            else
+            {
+                // The projected surface does not always answer a managed 'as' cast to the ComImport
+                // interface (it did not in a bare console host, RemEx-f8r77 probe 2026-09-16). Go to the
+                // native object and QueryInterface it ourselves, then call GetInterface via the vtable.
+                var native = (surface as WinRT.IWinRTObject)?.NativeObject.ThisPtr ?? IntPtr.Zero;
+                IntPtr accessPtr = IntPtr.Zero;
+                if (native == IntPtr.Zero
+                    || QueryInterface(native, IID_IDirect3DDxgiInterfaceAccess, out accessPtr) != S_OK
+                    || accessPtr == IntPtr.Zero)
+                {
+                    _logger.LogDebug("WGC: frame surface does not expose IDirect3DDxgiInterfaceAccess (managed cast and native QI both failed).");
+                    isLive = false;
+                    return _lastRawFrame;
+                }
+                try { hr = GetSlot<GetInterfaceFn>(accessPtr, 3)(accessPtr, ref texIid, out srcTex); }
+                finally { Release(ref accessPtr); }
+            }
             if (hr != S_OK || srcTex == IntPtr.Zero)
             {
+                _logger.LogDebug("WGC: GetInterface(ID3D11Texture2D) failed hr=0x{Hr:X8}.", hr);
                 isLive = false;
                 return _lastRawFrame;
             }
@@ -758,6 +780,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         int mapHr = MapResource(_d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
         if (mapHr != S_OK)
         {
+            _logger.LogDebug("WGC: Map(staging) failed hr=0x{Hr:X8}.", mapHr);
             isLive = false;
             return _lastRawFrame;
         }
