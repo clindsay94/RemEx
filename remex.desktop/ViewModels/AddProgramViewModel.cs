@@ -24,7 +24,7 @@ public partial class AddProgramViewModel : ObservableObject
     private string _displayName = string.Empty;
 
     [ObservableProperty]
-    private string _hexColor = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)).ToString();
+    private string _hexColor = AppLauncherViewModel.ToRgbHex(ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)));
 
     [ObservableProperty]
     private Avalonia.Media.Color _validatedColor;

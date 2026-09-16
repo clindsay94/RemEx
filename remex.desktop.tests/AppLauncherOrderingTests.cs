@@ -157,7 +157,8 @@ public sealed class AppLauncherOrderingTests
         // Avalonia Application in this test process, so the lookup itself degrades to the fallback,
         // which is exactly the wiring under test: the default must equal what THAT call produces,
         // not a hardcoded string.
-        var expected = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse("#4A3AFF")).ToString();
+        // Six-digit "#RRGGBB" like every stored app colour, not Color.ToString()'s "#AARRGGBB" (review LOW).
+        var expected = AppLauncherViewModel.ToRgbHex(ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse("#4A3AFF")));
 
         var vm = new AddProgramViewModel(new IconExtractionService());
 

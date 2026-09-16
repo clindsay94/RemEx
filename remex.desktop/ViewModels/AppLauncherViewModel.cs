@@ -13,6 +13,9 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 {
     private const string DefaultHexColor = "#4A3AFF";
 
+    /// <summary>Six-digit "#RRGGBB" - the form every stored app colour has always had; Color.ToString() would emit "#AARRGGBB".</summary>
+    internal static string ToRgbHex(Avalonia.Media.Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
     private readonly ShellViewModel _shell;
     private readonly ILauncherStorageService _storageService;
     private readonly RemexSavefileService? _savefileService;
@@ -258,7 +261,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
         if (string.IsNullOrWhiteSpace(hexColor) || !hexColor.StartsWith("#", StringComparison.Ordinal))
         {
-            hexColor = ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)).ToString();
+            hexColor = ToRgbHex(ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)));
         }
 
         if (string.IsNullOrWhiteSpace(iconBase64))
@@ -432,7 +435,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
             var name = System.IO.Path.GetFileNameWithoutExtension(path);
             if (string.IsNullOrWhiteSpace(name)) name = System.IO.Path.GetFileName(path);
 
-            var entry = NormalizeEntry(new AppEntry(Guid.NewGuid(), name, path, "#4A3AFF", null));
+            var entry = NormalizeEntry(new AppEntry(Guid.NewGuid(), name, path, string.Empty, null));
 
             if (Connection.IsConnected)
             {

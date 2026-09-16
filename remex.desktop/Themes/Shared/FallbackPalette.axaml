@@ -54,6 +54,10 @@
          sparkline's second series to a control state that can never move without breaking the other.
          Same colour, same fallback literal, a name that means what it is used for. -->
     <Color x:Key="PaletteTertiary">#543BD9</Color>
+    <!-- The M3 PrimaryContainer role. ThemeService has overridden it since the palette port; this
+         declaration exists so the key is legal before the first apply and ThemeKeyCoverageTests can
+         see it (audit-fix review 2026-09-16 - RemoteDesktopView's cursor pad was its first XAML consumer). -->
+    <Color x:Key="PalettePrimaryContainer">#4A3AFF</Color>
 
     <!-- Aurora mesh set (RemEx-ddynd): overridden from the seed on every apply; these are the
          tone-30 values of the default seed so the first frame is not transparent. -->
@@ -95,6 +99,7 @@
     <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
     <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
     <SolidColorBrush x:Key="PaletteTertiaryBrush" Color="{DynamicResource PaletteTertiary}"/>
+    <SolidColorBrush x:Key="PalettePrimaryContainerBrush" Color="{DynamicResource PalettePrimaryContainer}"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
     <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
     <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
