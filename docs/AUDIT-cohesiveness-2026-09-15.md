@@ -1,0 +1,31 @@
+# AUDIT: every PC screen on the scheme (RemEx-4kv0g.5)
+
+Date: 2026-09-15 · main `fb7b663e` / installed `81ff7621` · Connor's live profile: seed `#0061A4`, Fidelity, contrast −0.50, Card Opacity 0.17, background Acrylic over the desktop wallpaper, body font GoogleSansCode (mono).
+
+## Method
+
+Two halves, as the bead asked. **Static sweep** — a script over every `.axaml`/`.cs` in `remex.desktop` outside `Themes/`, `bin/`, `obj/` and generated files, for `#RRGGBB(AA)` literals, `Color.Parse`, `Colors.X`, `Brushes.X`, `new SolidColorBrush`, `Color.From…`, plus named-colour XAML attributes (`Foreground="White"` etc.), each hit classified by hand; and a cross-check that every colour key in `Themes/Shared/FallbackPalette.axaml` is overridden by `ThemeService` (90 of 94 keys are — the four that are not are corner radii). **Eyes pass** — the nine drawer destinations (Home, Sensors, Commands, Launcher, Processes, Files, Logs & Diagnostics, Settings, About) screenshotted in Dark and in Light at the live seed, plus the Personalize sheet from the spec-C pass. Navigation by real clicks on the drawer items with the window verified unobstructed first (`screens.ps1`), mode switched through the sheet's Base-mode combo; everything restored afterwards (Dark, Home, drawer collapsed). Captures: `.superpowers/sdd/2026-09-13-personalize-tabs/eyes/audit/` (local).
+
+**Deliberately not done:** a second seed / variant pair. Every finding below is structural (which brush a surface uses, which colours are literals, how Light composes over a wallpaper); the palette generator itself is bit-exact against the MCU oracle (spec A, `docs/MEASURE-palette-parity.md`), so a second seed would recolour the same defects, not reveal new ones. **Not reachable without keystrokes or a stream:** the command palette (Ctrl+K), the tray balloon, the Set Alert / Copy alert / Confirm / pairing dialogs, the Remote Desktop view. The tray flyout was audited by the D2 pass (`docs/MEASURE-flyout-toolbar.md`).
+
+## Findings
+
+| # | Sev | Where | What | Should be |
+|---|---|---|---|---|
+| 1 | HIGH | every view, Light mode over Acrylic (`light-*.png`) | Light puts dark ink on surfaces that never lighten: the window body stays the raw dark wallpaper and the cards are 17 % glass over it, so labels on Commands' tiles, Settings' rows, Launcher's tiles and Home's copy are unreadable; the text-shadow halo only smears them. Dark is fine because dark ink is not in play. | The backdrop tint must follow the mode: in Light, a light surface tint with an opacity floor behind the acrylic (or a floor on Card Opacity in Light), so `onSurface` ink always has its container under it. `DashboardBackgroundControl` / the glass brushes in `ThemeService`. |
+| 2 | MED | 16 views — the inline "plates": MAC address (`RemoteView.axaml:133`), connection status (`SettingsView.axaml`), Files header/toolbar (`FileTransferView.axaml:34,67,…`), About, CanvasView, dialogs | Plates paint `GlassBaseDarkBrush`, the **window's** glass base (tone ≈ 6 in Dark, ≈ 98 in Light). Inside a 17 % card it reads as a black hole in Dark (`dark-Commands.png`) and a white slab in Light (`light-montage.png`). This is the "MAC address section" Connor named. | One plate role: a container-tier surface (`surfaceContainerHigh`-class brush, e.g. `CardPlateBrush` / the card families' plate) so a plate sits *in* its card in both modes. |
+| 3 | MED | `ShellView.axaml.cs:435-437` | Notification importance colours are literals: `Brushes.IndianRed` / `MediumSeaGreen` / `Gray`. | `SystemErrorBrush` / `SystemSuccessBrush` / `TextMutedBrush` via `ThemeResources.Brush`. |
+| 4 | MED | Remote Desktop view, `Controls/VirtualCursorPad.cs:27-55,157` + `RemoteDesktopView.axaml:16` | The cursor pad registers eight brushes with hard-coded violet ARGB defaults and a fixed grid pen; the view's style themes only three (`PadBorderBrush`, `PadOuterGlowBrush`, `PadClickLabelBrush`). | Style all eight from roles (background/hover → surface containers, centre/pressed → primary container, arrows → onSurface, pen → outline). |
+| 5 | LOW | Launcher, `AppLauncherViewModel.cs:14`, `AddProgramViewModel.cs:18` | Default tile colour `#4A3AFF` (the retired violet accent) for apps without a colour. | `ThemeResources.Color("AccentPrimary", …)` at the time of use. |
+| 6 | LOW | Commands, `RemoteView.axaml:151-198` | The nine power tiles' glyphs inherit `TextPrimaryBrush` — every glyph neutral (Connor: "the glyphs could be part of the theming"). | Graceful tiles' `MaterialIcon` in `AccentPrimaryBrush`, Forced tiles' in `SystemErrorBrush`; labels stay. |
+| 7 | LOW | `CanvasView.axaml:458` | Coach-mark scrim `Background="#40000000"`. | The scrim resource (`GlassOverlayBrush` or a `ScrimBrush`). |
+| 8 | LOW | About, `AboutView.axaml:177-186` | "What's New" titles run off the card edge and descriptions show one clipped line (`dark-About.png`). Layout, not colour, but it is on every About screen. | `TextWrapping="Wrap"` on the title, `MaxLines`/`TextTrimming` on the description. |
+| — | ok | `ColorPickerPopup`, `HctColorWheel`, `CanvasMinimap`, `LogLevelToBrushConverter`, `SensorColorConverter`, `SparklineControl`, `CardCustomizationConverters`, `TrayBalloonWindow` | Literals are `ThemeResources.Brush/Color(key, fallback)` fallbacks — the keyed lookup wins whenever a theme is loaded. | Keep. |
+| — | ok | `BrandMark.cs`, `PairingQrPanelView.axaml:33` (white QR backing), `SeedPreset.cs`, `ThemeResources.ForegroundOn` | Brand colours; QR quiet zone must be white for scanners; preset seeds; black/white ink by luminance. | Keep. |
+| — | ok | Sensors canvas | 37 cards carry Connor's explicit presets (Sunset, Magenta & Cyan, Smoke & Gold …); the 7 themed cards follow the family rules from spec B. | By design. |
+
+Status dots and badges: the phone's green dot and the red Terminate / Disconnect / Delete buttons are `SystemSuccess` / `SystemError`, both derived through the MCU scheme (`DynamicColorGenerator.cs:89`) at the live mode and contrast — semantic colours, on the scheme.
+
+## Child bugs
+
+Filed under RemEx-4kv0g.5 as `.5.1`–`.5.5` (Light backdrop; plate role; notification brushes; cursor pad; the LOW bundle 5–8). Fixes land there; the sensor-surface rule set stays under RemEx-4kv0g.3.
