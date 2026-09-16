@@ -103,8 +103,33 @@ public class AuroraMeshTests
         }
     }
 
-    private static string RadiusAttribute(XElement layer, string attribute) =>
-        layer.Descendants(XName.Get("RadialGradientBrush", Avalonia)).Single().Attribute(attribute)!.Value;
+    /// <summary>
+    /// The radius as a fraction of the rectangle - and it MUST be written as a percentage. Avalonia's
+    /// <c>RadialGradientBrush.RadiusX/RadiusY</c> are <c>RelativeScalar</c>s: "98%" is relative, but a
+    /// bare "0.98" is 0.98 device pixels. The mesh shipped with bare numbers, so each blob was a
+    /// one-pixel circle and Aurora rendered as a flat sheet (RemEx-4kv0g.5 audit, 2026-09-15). Every
+    /// radius test in this class goes through here so the unit can never be dropped again.
+    /// </summary>
+    private static string RadiusAttribute(XElement layer, string attribute)
+    {
+        var raw = layer.Descendants(XName.Get("RadialGradientBrush", Avalonia)).Single().Attribute(attribute)!.Value;
+        raw.Should().EndWith("%",
+            $"{layer.Attribute("Name")?.Value}'s {attribute} must be a percentage - a bare number is device pixels, which is the invisible one-pixel blob Aurora shipped with");
+        var percent = double.Parse(raw.TrimEnd('%'), CultureInfo.InvariantCulture);
+        return (percent / 100.0).ToString(CultureInfo.InvariantCulture);
+    }
+
+    [Fact]
+    public void EveryBlobRadiusCarriesThePercentUnit()
+    {
+        foreach (var layer in Layers())
+        foreach (var axis in new[] { "RadiusX", "RadiusY" })
+        {
+            var raw = layer.Descendants(XName.Get("RadialGradientBrush", Avalonia)).Single().Attribute(axis)!.Value;
+            raw.Should().MatchRegex(@"^\d+(\.\d+)?%$",
+                $"{layer.Attribute("Name")?.Value} {axis}: RelativeScalar treats a bare number as absolute pixels; only a percentage is a fraction of the rectangle");
+        }
+    }
 
     [Fact]
     public void PeakOpacitiesReadOnADarkSurfaceAtAGlance()

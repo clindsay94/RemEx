@@ -120,13 +120,20 @@
                          REDUCED MOTION FREEZES, IT DOES NOT HIDE. Each layer's static Opacity IS
                          its first keyframe; the animation lives on a class bound to the inverse of
                          IsReducedMotion, so removing the class stops the animation and the property
-                         falls back to that static value. AuroraMeshTests pins the pairing. -->
+                         falls back to that static value. AuroraMeshTests pins the pairing.
+
+                         RADII ARE PERCENTAGES, NEVER BARE NUMBERS (RemEx-4kv0g.5 audit, 2026-09-15).
+                         RadialGradientBrush.RadiusX/RadiusY are RelativeScalars: "98%" is 98% of the
+                         rectangle, but a bare "0.98" is 0.98 DEVICE PIXELS. The mesh shipped as
+                         RadiusX="0.98" etc., so every blob was a one-pixel circle and the whole layer
+                         painted its Offset-1 stop - the base colour - which is why Aurora read as a
+                         flat black or white sheet for months. AuroraMeshTests requires the unit. -->
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAurora}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
                         <Rectangle Name="AuroraLayer1" Opacity="0.55" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="25%,35%" RadiusX="0.98" RadiusY="1.13">
+                                <RadialGradientBrush Center="25%,35%" RadiusX="98%" RadiusY="113%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraPrimary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
@@ -146,7 +153,7 @@
 
                         <Rectangle Name="AuroraLayer2" Opacity="0.42" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="72%,65%" RadiusX="1.05" RadiusY="0.90">
+                                <RadialGradientBrush Center="72%,65%" RadiusX="105%" RadiusY="90%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraSecondary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
@@ -166,7 +173,7 @@
 
                         <Rectangle Name="AuroraLayer3" Opacity="0.30" Classes.aurora-animated="{Binding !IsReducedMotion}">
                             <Rectangle.Fill>
-                                <RadialGradientBrush Center="50%,8%" RadiusX="0.83" RadiusY="0.68">
+                                <RadialGradientBrush Center="50%,8%" RadiusX="83%" RadiusY="68%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraTertiary}" />
                                     <GradientStop Offset="1" Color="{DynamicResource GlassBaseDark}" />
                                 </RadialGradientBrush>
