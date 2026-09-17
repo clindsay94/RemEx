@@ -905,6 +905,15 @@
             <Setter Property="assists:TabControlAssist.TabHeaderForeground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="assists:TabControlAssist.TabHeaderInactiveBrush" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
+        <!-- Header breathing room. MaterialTabItem gives each header MinWidth 90 and lays the text
+             in a ContentPresenter whose Margin is {TemplateBinding Padding} - and never sets
+             Padding, so it is 0. Short headers sit centred in their 90px and look spaced; a header
+             wider than 90px in the mono font ("Palettes", "Surfaces" on the Personalize sheet)
+             fills its slot and touches its neighbour with no gap at all. 16px a side is the M3
+             tab inset; it does not move a header that already fits in 90px. -->
+        <Style Selector="TabItem">
+            <Setter Property="Padding" Value="16,0"/>
+        </Style>
 
         <!-- EXPANDERS. Two changes, and the first is not a colour.
 
