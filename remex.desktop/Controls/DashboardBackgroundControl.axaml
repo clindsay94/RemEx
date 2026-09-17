@@ -195,11 +195,20 @@
                          The bitmap is decoded once per path change (ShellViewModel) and blurred by an
                          Effect on the Image — nothing here animates, so the blur is not re-rendered per
                          frame. The surface veil sits over it at the WINDOW opacity, the same knob Glass
-                         mode uses for "how much shows through", so text keeps its contrast. -->
+                         mode uses for "how much shows through", so text keeps its contrast — with a
+                         Light-mode floor (VeilOpacityConverter.LightFloor, RemEx-4kv0g.5.1) so a light
+                         palette gets a light ground rather than dark ink on a dark wallpaper. -->
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
                         <Image Source="{Binding WallpaperBitmap}" Stretch="UniformToFill"
                                Effect="{Binding WallpaperBlurRadius, Converter={x:Static converters:BlurRadiusToEffectConverter.Instance}}" />
-                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.AppWindowOpacity}" />
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}">
+                            <Rectangle.Opacity>
+                                <MultiBinding Converter="{x:Static converters:VeilOpacityConverter.Instance}" ConverterParameter="1.0">
+                                    <Binding Path="Customization.AppWindowOpacity"/>
+                                    <Binding Path="$self.ActualThemeVariant"/>
+                                </MultiBinding>
+                            </Rectangle.Opacity>
+                        </Rectangle>
                     </Panel>
 
                     <!-- ═══ TINTS OVER OS BACKDROPS COMPENSATE FOR AN OPAQUE BRUSH (RemEx-c437b).
@@ -211,16 +220,30 @@
                          control's to change), which silently turned these tints into opaque sheets:
                          Acrylic went 63%→100% and the backdrop vanished. Each Rectangle therefore
                          carries the old EFFECTIVE opacity as a ceiling. Acrylic (RemEx-mmrgc) scales
-                         that ceiling by Customization.GlassOpacity via MultiplyConverter, so Card
-                         Opacity's "Clear" leaves the backdrop nearly bare and "Frosted" reproduces
-                         the old fixed value — Glass's tint stays a fixed literal below. Solid mode
-                         is the one mode whose sheet is opaque on purpose. -->
+                         that ceiling by Customization.GlassOpacity, so Card Opacity's "Clear" leaves
+                         the backdrop nearly bare and "Frosted" reproduces the old fixed value — Glass's
+                         tint stays a fixed literal below. Solid mode is the one mode whose sheet is
+                         opaque on purpose. For Wallpaper and Acrylic the scaling lives in
+                         VeilOpacityConverter, which also takes the rectangle's ActualThemeVariant: when
+                         the palette resolves LIGHT the veil is raised to VeilOpacityConverter.LightFloor
+                         (RemEx-4kv0g.5.1), because the light Surface at 0.25 cannot lift a dark
+                         backdrop and the light palette's dark ink landed on a dark ground. Dark keeps
+                         the measured ceilings untouched. Mica stays on MultiplyConverter with no floor —
+                         DWM paints Mica light or dark to match the theme, so see its panel below. -->
 
                     <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
                         <!-- Veil scales with Card Opacity: GlassOpacity × 0.25 ceiling (RemEx-mmrgc).
-                             Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.25. -->
-                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.25, FallbackValue=0.0, TargetNullValue=0.0}" />
+                             Clear (0.01) ≈ no veil, Frosted (1.0) reproduces today's fixed 0.25.
+                             Light mode floors the result (see the block comment above). -->
+                        <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}">
+                            <Rectangle.Opacity>
+                                <MultiBinding Converter="{x:Static converters:VeilOpacityConverter.Instance}" ConverterParameter="0.25">
+                                    <Binding Path="Customization.GlassOpacity"/>
+                                    <Binding Path="$self.ActualThemeVariant"/>
+                                </MultiBinding>
+                            </Rectangle.Opacity>
+                        </Rectangle>
                         <Rectangle Opacity="{Binding Customization.GlassOpacity}">
                             <Rectangle.Fill>
                                 <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
@@ -238,6 +261,11 @@
                          same GlassOpacity-derived veil Acrylic uses to keep ink legible — no accent
                          tint (Mica is not re-tinted) and no wallpaper Image (DWM already paints it). -->
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
+                        <!-- Mica is EXEMPT from the Light-mode floor the Wallpaper and Acrylic veils carry
+                             (RemEx-4kv0g.5.1). MicaBackdrop.TryApply sets DWMWA_USE_IMMERSIVE_DARK_MODE from
+                             the theme, so DWM already paints a LIGHT Mica under a light palette — the ink is
+                             legible without a floor, and light Mica is such a faint wash (confirmed on
+                             26200, RemEx-kir7r) that a 0.55 veil would erase the only Mica there is. -->
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="{Binding Customization.GlassOpacity, Converter={x:Static converters:MultiplyConverter.Instance}, ConverterParameter=0.25, FallbackValue=0.0, TargetNullValue=0.0}" />
                     </Panel>
 

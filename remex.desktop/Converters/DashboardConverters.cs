@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Data.Converters;
+using Avalonia.Styling;
 
 namespace Remex.Desktop.Converters;
 
@@ -183,6 +184,48 @@ public class MultiplyConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
+}
+
+/// <summary>
+/// Opacity of the surface veil DashboardBackgroundControl lays over a wallpaper or an Acrylic
+/// backdrop. Inputs: [0] the user's opacity knob (Customization.AppWindowOpacity or
+/// GlassOpacity), [1] the rectangle's ActualThemeVariant. ConverterParameter is the ceiling,
+/// multiplied in exactly as <see cref="MultiplyConverter"/> does. Then, only when the palette
+/// resolved LIGHT, the result is raised to <see cref="LightFloor"/> (RemEx-4kv0g.5.1).
+/// </summary>
+/// <remarks>
+/// GlassBaseDarkBrush is the solved Surface, so in Light mode the veil is a light sheet — but at
+/// GlassOpacity × 0.25 it is far too thin to lift a dark wallpaper or a dark Acrylic backdrop,
+/// and the light palette's dark onSurface ink lands on a dark ground on every view. Dark mode is
+/// untouched on purpose: its ceilings were set by measurement (DashboardBackdropTintTests) and a
+/// heavier dark veil is the exact change that once made Mica look dead. Bad or unresolved
+/// inputs fall to "no veil" in Dark (the property default, 1.0, would be an opaque sheet);
+/// Light still gets its floor, since the floor IS the fix. The Mica veil does NOT use this
+/// converter: DWM already paints Mica light under a light theme (MicaBackdrop.TryApply sets
+/// immersive-dark from the theme), so it needs no floor and a floor would bury it.
+/// </remarks>
+public class VeilOpacityConverter : IMultiValueConverter
+{
+    public static readonly VeilOpacityConverter Instance = new();
+
+    /// <summary>
+    /// Minimum veil alpha once the palette resolves Light: a readable light surface behind the
+    /// cards that still lets the wallpaper or backdrop show through. Re-measure before moving it.
+    /// </summary>
+    public const double LightFloor = 0.55;
+
+    public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var knob = values.Count > 0 && values[0] is double d ? d : 0.0;
+        var factor = parameter is string s &&
+                     double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)
+            ? f
+            : 0.0;
+        var veil = Math.Clamp(knob * factor, 0.0, 1.0);
+
+        var isLight = values.Count > 1 && values[1] is ThemeVariant variant && variant == ThemeVariant.Light;
+        return isLight ? Math.Max(veil, LightFloor) : veil;
+    }
 }
 
 /// <summary>

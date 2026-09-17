@@ -40,6 +40,17 @@ namespace Remex.Desktop.Tests.Controls;
 /// have broken the "Frosted = fully opaque veil, no backdrop at all" case this remark used to warn
 /// against — scaling is what avoids that. Glass mode's tint stays a fixed literal, unscaled.
 /// </para>
+/// <para>
+/// LIGHT MODE IS THE ONE EXCEPTION, AND IT GOES THE OTHER WAY (RemEx-4kv0g.5.1). GlassBaseDark
+/// is the solved Surface, so in a Light palette the veil is a light sheet — and at 0.25 it is far
+/// too thin to lift a dark wallpaper or backdrop, leaving the light palette's dark onSurface ink
+/// on a dark ground on every view. The Wallpaper and Acrylic veils therefore bind through
+/// VeilOpacityConverter, which multiplies exactly as MultiplyConverter did and then, only when the
+/// rectangle's ActualThemeVariant is Light, raises the result to VeilOpacityConverter.LightFloor.
+/// Dark's numbers are unchanged; the converter's own tests pin both halves. Mica is exempt: DWM
+/// paints it light under a light theme already, and light Mica is faint enough that the floor
+/// would erase it (RemEx-kir7r) — its test below pins the plain MultiplyConverter shape.
+/// </para>
 /// </remarks>
 public class DashboardBackdropTintTests
 {
@@ -73,12 +84,14 @@ public class DashboardBackdropTintTests
             ;
     }
 
-    [Theory]
-    [InlineData("IsAcrylic", 0.25)]
-    [InlineData("IsMica", 0.25)]
-    public void TheBackdropTint_ScalesWithGlassOpacity(string modeConverter, double expectedCeiling)
+    [Fact]
+    public void TheMicaTint_ScalesWithGlassOpacity_AndIsExemptFromTheLightFloor()
     {
-        var modePanel = FindModePanel(modeConverter);
+        // Mica keeps the plain MultiplyConverter binding: DWM paints Mica light or dark to match
+        // the theme (MicaBackdrop.TryApply sets DWMWA_USE_IMMERSIVE_DARK_MODE), so a light palette
+        // already sits on a light backdrop and needs no floor — and light Mica is such a faint
+        // wash that VeilOpacityConverter's 0.55 floor would erase it (RemEx-kir7r).
+        var modePanel = FindModePanel("IsMica");
 
         var tintRectangles = modePanel
             .Elements(XName.Get("Rectangle", Avalonia))
@@ -98,7 +111,10 @@ public class DashboardBackdropTintTests
         opacityValue.Should().Contain("Customization.GlassOpacity",
             "the veil scales with the Card Opacity slider (RemEx-mmrgc)");
         opacityValue.Should().Contain("MultiplyConverter.Instance",
-            "scaling — not a raw binding — is what keeps Frosted (1.0) from going fully opaque");
+            "scaling — not a raw binding — is what keeps Frosted (1.0) from going fully opaque; " +
+            "and MultiplyConverter, not VeilOpacityConverter, is what keeps Mica floor-free");
+        opacityValue.Should().NotContain("VeilOpacityConverter",
+            "Mica is exempt from the Light floor — see the panel comment");
         opacityValue.Should().Contain("FallbackValue=0",
             "an unresolved binding skips the converter and leaves Opacity at its default of 1.0 — " +
             "an opaque sheet — so the fallback has to be 'no veil', not 'full veil'");
@@ -111,8 +127,69 @@ public class DashboardBackdropTintTests
             "the ConverterParameter carries the veil's ceiling — it must be present and numeric");
 
         double.Parse(parameterMatch.Groups["value"].Value, System.Globalization.CultureInfo.InvariantCulture)
-            .Should().BeApproximately(expectedCeiling, 0.001,
+            .Should().BeApproximately(0.25, 0.001,
                 "the ceiling is what Frosted (GlassOpacity = 1.0) reproduces — it must match the " +
+                "measured maximum veil, not drift from it");
+    }
+
+    [Theory]
+    [InlineData("IsAcrylic", "Customization.GlassOpacity", 0.25)]
+    [InlineData("IsWallpaper", "Customization.AppWindowOpacity", 1.0)]
+    public void TheBackdropTint_ScalesWithTheKnobAndFloorsInLight(
+        string modeConverter, string knobPath, double expectedCeiling)
+    {
+        var modePanel = FindModePanel(modeConverter);
+
+        var tintRectangles = modePanel
+            .Elements(XName.Get("Rectangle", Avalonia))
+            .Where(rect => (rect.Attribute("Fill")?.Value ?? string.Empty)
+                .Contains("GlassBaseDarkBrush"))
+            .ToList();
+
+        tintRectangles.Should().ContainSingle(
+            "the mode's base tint is the one GlassBaseDarkBrush rectangle in its panel");
+
+        var tint = tintRectangles[0];
+        tint.Attribute("Opacity").Should().BeNull(
+            "the veil's Opacity is a MultiBinding (knob + ActualThemeVariant) in property-element " +
+            "form — an Opacity attribute here would be a second, competing value");
+
+        var multiBinding = tint
+            .Elements(XName.Get("Rectangle.Opacity", Avalonia))
+            .Elements(XName.Get("MultiBinding", Avalonia))
+            .Should().ContainSingle(
+                "the veil must bind to something — an omitted Opacity inherits full alpha from the " +
+                "opaque GlassBaseDarkBrush and the OS backdrop disappears")
+            .Subject;
+
+        (multiBinding.Attribute("Converter")?.Value ?? string.Empty)
+            .Should().Contain("VeilOpacityConverter.Instance",
+                "VeilOpacityConverter is MultiplyConverter's scaling plus the Light-mode floor " +
+                "(RemEx-4kv0g.5.1) — scaling, not a raw binding, keeps Frosted (1.0) from going " +
+                "fully opaque in Dark, and the converter itself returns 'no veil' for an " +
+                "unresolved knob rather than leaving Opacity at its default of 1.0");
+
+        var bindingPaths = multiBinding
+            .Elements(XName.Get("Binding", Avalonia))
+            .Select(b => b.Attribute("Path")?.Value ?? string.Empty)
+            .ToList();
+
+        bindingPaths.Should().HaveCount(2,
+            "the converter reads exactly [0] the opacity knob and [1] the theme variant");
+        bindingPaths[0].Should().Be(knobPath,
+            "input [0] is the user's opacity knob for this mode (RemEx-mmrgc / RemEx-ddynd)");
+        bindingPaths[1].Should().Be("$self.ActualThemeVariant",
+            "input [1] is the rectangle's own resolved theme variant — ThemeService sets " +
+            "Application.RequestedThemeVariant from ResolveIsLight, so this is what makes the " +
+            "floor apply in Light and re-evaluate on a Light/Dark switch without a VM property");
+
+        var parameter = multiBinding.Attribute("ConverterParameter")?.Value;
+        parameter.Should().NotBeNullOrEmpty(
+            "the ConverterParameter carries the veil's ceiling — it must be present and numeric");
+
+        double.Parse(parameter!, System.Globalization.CultureInfo.InvariantCulture)
+            .Should().BeApproximately(expectedCeiling, 0.001,
+                "the ceiling is what Frosted (knob = 1.0) reproduces in Dark — it must match the " +
                 "measured maximum veil, not drift from it");
     }
 

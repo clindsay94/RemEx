@@ -40,8 +40,21 @@ public class WallpaperPanelTests
 
         var veil = panel.Elements(XName.Get("Rectangle", Avalonia))
             .Single(r => (r.Attribute("Fill")?.Value ?? "").Contains("GlassBaseDarkBrush"));
-        veil.Attribute("Opacity")!.Value.Should().Be("{Binding Customization.AppWindowOpacity}",
-            "the surface sits over the image at the window opacity so text keeps its contrast");
+        // The veil's Opacity is a MultiBinding (window opacity + ActualThemeVariant) through
+        // VeilOpacityConverter at factor 1.0 - the window-opacity knob passes straight through in
+        // Dark, and Light raises it to the floor (RemEx-4kv0g.5.1). DashboardBackdropTintTests
+        // pins the converter and the variant input; this test only cares that the knob is the
+        // window opacity.
+        veil.Attribute("Opacity").Should().BeNull("the veil's Opacity is the MultiBinding element below");
+        var veilBinding = veil
+            .Elements(XName.Get("Rectangle.Opacity", Avalonia))
+            .Elements(XName.Get("MultiBinding", Avalonia))
+            .Single();
+        veilBinding.Attribute("ConverterParameter")!.Value.Should().Be("1.0",
+            "the window-opacity knob is used as-is, not scaled like the Acrylic/Mica ceilings");
+        veilBinding.Elements(XName.Get("Binding", Avalonia)).First().Attribute("Path")!.Value
+            .Should().Be("Customization.AppWindowOpacity",
+                "the surface sits over the image at the window opacity so text keeps its contrast");
         panel.Descendants(XName.Get("Animation", Avalonia)).Should().BeEmpty(
             "nothing animates in this panel, so the blurred bitmap is not re-rendered per frame");
     }
