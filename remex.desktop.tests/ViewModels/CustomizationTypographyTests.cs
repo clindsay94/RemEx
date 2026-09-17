@@ -33,8 +33,8 @@ public class CustomizationTypographyTests : IDisposable
 
     private static readonly TypographySettings Tuned = new()
     {
-        HeadersScale = 1.4, BodyScale = 0.85, SmallScale = 1.2, SensorScale = 1.5,
-        HeadersBold = true, BodyBold = true, SmallBold = true, SensorBold = true,
+        HeadersScale = 1.4, SubtitlesScale = 1.3, BodyScale = 0.85, SmallScale = 1.2, SensorScale = 1.5,
+        HeadersBold = true, SubtitlesBold = true, BodyBold = true, SmallBold = true, SensorBold = true,
         SensorTitleBackdrop = true, ShadowEnabled = false, ShadowStrength = 90,
     };
 
@@ -44,10 +44,12 @@ public class CustomizationTypographyTests : IDisposable
         var (vm, _, _) = MakeVm(Tuned with { HeadersScale = 9, ShadowStrength = 500 });
 
         vm.HeadersScale.Should().Be(TypographySettings.MaxScale);
+        vm.SubtitlesScale.Should().Be(1.3);
         vm.BodyScale.Should().Be(0.85);
         vm.SmallScale.Should().Be(1.2);
         vm.SensorScale.Should().Be(1.5);
         vm.HeadersBold.Should().BeTrue();
+        vm.SubtitlesBold.Should().BeTrue();
         vm.SensorTitleBackdrop.Should().BeTrue();
         vm.TextShadowEnabled.Should().BeFalse();
         vm.TextShadowStrength.Should().Be(TypographySettings.MaxShadowStrength);
@@ -59,14 +61,17 @@ public class CustomizationTypographyTests : IDisposable
         var (vm, _, _) = MakeVm(TypographySettings.Default);
 
         vm.HeadersSizeLabel.Should().Be("20 → 20");
+        vm.SubtitlesSizeLabel.Should().Be("12 → 12");
         vm.BodySizeLabel.Should().Be("14 → 14");
         vm.SmallSizeLabel.Should().Be("12 → 12");
         vm.SensorSizeLabel.Should().Be("12 → 12");
 
         vm.HeadersScale = 1.2;
         vm.BodyScale = 1.05;
+        vm.SubtitlesScale = 1.5;
 
         vm.HeadersSizeLabel.Should().Be("20 → 24");
+        vm.SubtitlesSizeLabel.Should().Be("12 → 18");
         vm.BodySizeLabel.Should().Be("14 → 15", "14.7 rounds away from zero");
         vm.SmallSizeLabel.Should().Be("12 → 12", "another section's slider does not move this label");
     }
@@ -104,15 +109,18 @@ public class CustomizationTypographyTests : IDisposable
 
         vm.ResetTextToDefaultsCommand.Execute(null);
 
-        applied.Should().Be(1, "eleven fields change but the sheet must save once, not eleven times");
+        applied.Should().Be(1, "thirteen fields change but the sheet must save once, not thirteen times");
         layout.CurrentProfile.Customization.Typography.Should().Be(TypographySettings.Default);
         layout.CurrentProfile.Customization.CornerRadius.Should().Be(9, "reset touches the Text section only");
         vm.HeadersScale.Should().Be(1.0);
+        vm.SubtitlesScale.Should().Be(1.0);
+        vm.SubtitlesBold.Should().BeFalse();
         vm.SensorBold.Should().BeFalse();
         vm.SensorTitleBackdrop.Should().BeFalse();
         vm.TextShadowEnabled.Should().BeTrue();
         vm.TextShadowStrength.Should().Be(40);
         vm.HeadersSizeLabel.Should().Be("20 → 20");
+        vm.SubtitlesSizeLabel.Should().Be("12 → 12");
     }
 
     [Fact]

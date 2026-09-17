@@ -3562,4 +3562,19 @@ Możesz zmienić:
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>Treść</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Podtytuły</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>Wiersz pod każdym tytułem strony.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Pogrubione podtytuły</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Czcionka podtytułów</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Czcionka wiersza pod każdym tytułem strony. Domyślnie czcionka tytułu strony.</value>
+  </data>
 </root>

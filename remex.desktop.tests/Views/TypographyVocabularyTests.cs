@@ -133,20 +133,24 @@ public class TypographyVocabularyTests
     {
         // page-title and page-subtitle are NOT retired by this bead precisely because they carry the
         // live font-family binding. CustomizationViewModel's picker reaches text through
-        // PageTitleFontFamily; a Material type ControlTheme sets size and weight only. Anyone
-        // "finishing the migration" by swapping these for Headline5TextBlock and deleting the class
-        // silently breaks the page-title half of the font picker, and nothing else in this suite
-        // would notice.
+        // PageTitleFontFamily (page-subtitle through its OWN key, PageSubtitleFontFamily, since
+        // RemEx-n6csl); a Material type ControlTheme sets size and weight only. Anyone "finishing
+        // the migration" by swapping these for Headline5TextBlock and deleting the class silently
+        // breaks the font picker on this text, and nothing else in this suite would notice.
         var app = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml"));
 
-        foreach (var cls in new[] { "page-title", "page-subtitle" })
+        foreach (var (cls, expectedFontFamilyKey) in new[]
+                 {
+                     ("page-title", "PageTitleFontFamily"),
+                     ("page-subtitle", "PageSubtitleFontFamily"),
+                 })
         {
             var style = Regex.Match(app,
                 $@"<Style Selector=""TextBlock\.{cls}"">(?<body>.*?)</Style>",
                 RegexOptions.Singleline);
 
             style.Success.Should().BeTrue($"TextBlock.{cls} is still in use and must still be declared");
-            style.Groups["body"].Value.Should().Contain("PageTitleFontFamily",
+            style.Groups["body"].Value.Should().Contain(expectedFontFamilyKey,
                 $"{cls} exists to carry the live font-family binding that a Material type " +
                 "ControlTheme cannot — dropping it breaks the font picker on this text");
         }

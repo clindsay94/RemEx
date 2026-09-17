@@ -13,10 +13,12 @@ public class TypographySettingsTests
         var t = new TypographySettings();
 
         Assert.Equal(1.0, t.HeadersScale);
+        Assert.Equal(1.0, t.SubtitlesScale);
         Assert.Equal(1.0, t.BodyScale);
         Assert.Equal(1.0, t.SmallScale);
         Assert.Equal(1.0, t.SensorScale);
         Assert.False(t.HeadersBold);
+        Assert.False(t.SubtitlesBold);
         Assert.False(t.BodyBold);
         Assert.False(t.SmallBold);
         Assert.False(t.SensorBold);
@@ -31,13 +33,14 @@ public class TypographySettingsTests
     {
         var wild = new TypographySettings
         {
-            HeadersScale = 9, BodyScale = 0.1, SmallScale = double.NaN, SensorScale = -1,
+            HeadersScale = 9, SubtitlesScale = -3, BodyScale = 0.1, SmallScale = double.NaN, SensorScale = -1,
             ShadowStrength = 250, HeadersBold = true,
         };
 
         var n = TypographySettings.Normalize(wild);
 
         Assert.Equal(TypographySettings.MaxScale, n.HeadersScale);
+        Assert.Equal(1.0, n.SubtitlesScale);   // negative is "no value", not the floor
         Assert.Equal(TypographySettings.MinScale, n.BodyScale);
         Assert.Equal(1.0, n.SmallScale);   // NaN is "no value", not "the floor"
         Assert.Equal(1.0, n.SensorScale);  // negative likewise
@@ -100,5 +103,34 @@ public class TypographySettingsTests
         var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
 
         Assert.Equal(TypographySettings.Default, TypographySettings.Normalize(back.Typography));
+    }
+
+    /// <summary>
+    /// RemEx-n6csl: a profile written before <c>PageSubtitleFontFamily</c> existed has no
+    /// <c>pageSubtitleFont</c> key at all. Null is the "follows PageTitleFontFamily" signal
+    /// (ThemeService reads it as <c>settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily</c>),
+    /// so an upgraded profile must deserialize to null here, not to Orbitron or to the empty string.
+    /// </summary>
+    [Fact]
+    public void OlderProfile_WithoutPageSubtitleFont_DeserializesToNull()
+    {
+        const string json = "{\"baseTheme\":\"BaseDarkGlass\",\"pageTitleFont\":\"avares://Remex.Desktop/Assets/Fonts#Orbitron\"}";
+
+        var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
+
+        Assert.Null(back.PageSubtitleFontFamily);
+        Assert.Equal("avares://Remex.Desktop/Assets/Fonts#Orbitron", back.PageTitleFontFamily);
+    }
+
+    [Fact]
+    public void PageSubtitleFontFamily_RoundTrips_ThroughSourceGeneratedJson()
+    {
+        var original = new CustomizationSettings { PageSubtitleFontFamily = "Comic Sans MS" };
+
+        var json = JsonSerializer.Serialize(original, RemexJsonSerializerContext.Default.CustomizationSettings);
+        Assert.Contains("\"pageSubtitleFont\":\"Comic Sans MS\"", json);
+
+        var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
+        Assert.Equal("Comic Sans MS", back.PageSubtitleFontFamily);
     }
 }

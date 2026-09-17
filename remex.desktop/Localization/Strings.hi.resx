@@ -3561,4 +3561,19 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>कंटेंट</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>उपशीर्षक</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>हर पेज शीर्षक के नीचे की पंक्ति।</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>बोल्ड उपशीर्षक</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>उपशीर्षक फ़ॉन्ट</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>हर पेज शीर्षक के नीचे की पंक्ति के लिए फ़ॉन्ट। डिफ़ॉल्ट रूप से पेज शीर्षक का फ़ॉन्ट।</value>
+  </data>
 </root>

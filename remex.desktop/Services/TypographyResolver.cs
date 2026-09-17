@@ -6,10 +6,11 @@ using Remex.Core.Models;
 
 namespace Remex.Desktop.Services;
 
-/// <summary>The four rows of Personalize → Text (spec § Sections and what they cover).</summary>
+/// <summary>The five rows of Personalize → Text (spec § Sections and what they cover).</summary>
 public enum TypographySection
 {
     Headers,
+    Subtitles, // Inserted mid-enum (RemEx-n6csl); safe because nothing persists the ordinal — scales persist by property name.
     Body,
     Small,
     Sensor,
@@ -115,7 +116,7 @@ public static class TypographyResolver
         new TypographyMember("PageTitle", TypographySection.Headers, 30, FontWeight.Black),      // App.axaml TextBlock.page-title
         new TypographyMember("CardTitle", TypographySection.Headers, 18, FontWeight.Black),      // App.axaml TextBlock.card-title
         new TypographyMember("Body2", TypographySection.Body, 14, FontWeight.Regular),
-        new TypographyMember("PageSubtitle", TypographySection.Body, 12, FontWeight.Medium),     // App.axaml TextBlock.page-subtitle
+        new TypographyMember("PageSubtitle", TypographySection.Subtitles, 12, FontWeight.Medium), // App.axaml TextBlock.page-subtitle
         new TypographyMember("Caption", TypographySection.Small, 12, FontWeight.Regular),
         new TypographyMember("Overline", TypographySection.Small, 10, FontWeight.Regular),
         new TypographyMember("SensorTitle", TypographySection.Sensor, 12, FontWeight.Bold),      // was CaptionTextBlock + FontWeight="Bold" on the canvas card
@@ -126,19 +127,22 @@ public static class TypographyResolver
     public static readonly IReadOnlyDictionary<TypographySection, string> ReferenceMember = new Dictionary<TypographySection, string>
     {
         [TypographySection.Headers] = "Headline6",
+        [TypographySection.Subtitles] = "PageSubtitle",
         [TypographySection.Body] = "Body2",
         [TypographySection.Small] = "Caption",
         [TypographySection.Sensor] = "SensorTitle",
     };
 
     /// <summary>
-    /// Which sections receive the halo when the switch is on. All four is the spec's default; the
+    /// Which sections receive the halo when the switch is on. All of them is the spec's default; the
     /// spec's measured fallback (Task 6, RemEx-jt6w5.6) is <c>{ Headers, Sensor }</c> — change it
     /// here and in <c>TypographyResolverTests.ShadowedSections_IsTheSpecDefault_AllFour</c> together.
+    /// Subtitles is in because page-subtitle wore Body's halo before it had its own row (RemEx-n6csl),
+    /// so its look is preserved.
     /// </summary>
     public static IReadOnlySet<TypographySection> ShadowedSections { get; } = new HashSet<TypographySection>
     {
-        TypographySection.Headers, TypographySection.Body, TypographySection.Small, TypographySection.Sensor,
+        TypographySection.Headers, TypographySection.Subtitles, TypographySection.Body, TypographySection.Small, TypographySection.Sensor,
     };
 
     public static string ShadowKey(TypographySection section) => $"Typo.{section}.Effect";
@@ -148,6 +152,7 @@ public static class TypographyResolver
     public static double ScaleFor(TypographySettings settings, TypographySection section) => section switch
     {
         TypographySection.Headers => settings.HeadersScale,
+        TypographySection.Subtitles => settings.SubtitlesScale,
         TypographySection.Body => settings.BodyScale,
         TypographySection.Small => settings.SmallScale,
         TypographySection.Sensor => settings.SensorScale,
@@ -157,6 +162,7 @@ public static class TypographyResolver
     public static bool BoldFor(TypographySettings settings, TypographySection section) => section switch
     {
         TypographySection.Headers => settings.HeadersBold,
+        TypographySection.Subtitles => settings.SubtitlesBold,
         TypographySection.Body => settings.BodyBold,
         TypographySection.Small => settings.SmallBold,
         TypographySection.Sensor => settings.SensorBold,

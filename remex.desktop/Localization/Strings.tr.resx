@@ -3565,4 +3565,19 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>İçerik</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Alt başlıklar</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>Her sayfa başlığının altındaki satır.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Kalın alt başlıklar</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Alt başlık yazı tipi</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Her sayfa başlığının altındaki satır için yazı tipi. Varsayılan olarak sayfa başlığı yazı tipini kullanır.</value>
+  </data>
 </root>

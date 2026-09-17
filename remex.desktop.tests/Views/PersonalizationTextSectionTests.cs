@@ -34,7 +34,7 @@ public class PersonalizationTextSectionTests
         var card = TextCard();
         var controls = Regex.Matches(card, @"<(Slider|ToggleSwitch|Button)\b[^>]*>").Select(m => m.Value).ToArray();
 
-        controls.Length.Should().BeGreaterOrEqualTo(12, "5 sliders, 6 switches and the reset button");
+        controls.Length.Should().BeGreaterOrEqualTo(13, "6 sliders (RemEx-n6csl adds Subtitles), 6 switches and the reset button");
         controls.Where(c => !c.Contains("AutomationProperties.Name=")).Should().BeEmpty();
     }
 
@@ -45,10 +45,10 @@ public class PersonalizationTextSectionTests
 
         foreach (var binding in new[]
                  {
-                     "HeadersScale", "BodyScale", "SmallScale", "SensorScale",
-                     "HeadersBold", "BodyBold", "SmallBold", "SensorBold",
+                     "HeadersScale", "SubtitlesScale", "BodyScale", "SmallScale", "SensorScale",
+                     "HeadersBold", "SubtitlesBold", "BodyBold", "SmallBold", "SensorBold",
                      "SensorTitleBackdrop", "TextShadowEnabled", "TextShadowStrength",
-                     "HeadersSizeLabel", "BodySizeLabel", "SmallSizeLabel", "SensorSizeLabel",
+                     "HeadersSizeLabel", "SubtitlesSizeLabel", "BodySizeLabel", "SmallSizeLabel", "SensorSizeLabel",
                      "ResetTextToDefaultsCommand",
                  })
         {
@@ -60,7 +60,7 @@ public class PersonalizationTextSectionTests
     public void TheSizeSliders_CoverTheSpecRange_InFiveHundredthSteps()
     {
         Regex.Matches(TextCard(), @"<Slider Minimum=""0\.8"" Maximum=""1\.6"" SmallChange=""0\.05"" LargeChange=""0\.1"" TickFrequency=""0\.05"" IsSnapToTickEnabled=""True""")
-            .Count.Should().Be(4);
+            .Count.Should().Be(5, "Headers, Subtitles (RemEx-n6csl), Body, Small, Sensor");
     }
 
     [Fact]

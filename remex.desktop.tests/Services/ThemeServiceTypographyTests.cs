@@ -1,3 +1,4 @@
+using System.IO;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
@@ -90,4 +91,32 @@ public class ThemeServiceTypographyTests
         applied!.FontSizes["Typo.Headline6.FontSize"].Should().Be(20, "a null Typography must fall back to defaults, not keep the previous customisation");
         applied.DefaultFontSize.Should().Be(14);
     }
+
+    /// <summary>
+    /// RemEx-n6csl: the own-key mechanism (ThemeService.ApplyCustomizationCore, guarded by
+    /// <c>if (Application.Current is { } app)</c>) writes <c>PageSubtitleFontFamily</c> straight onto
+    /// <c>Application.Resources</c>, the same mechanism as <c>PageTitleFontFamily</c>. This suite runs
+    /// with no Avalonia <c>Application</c> (see <see cref="ThemeResourcesTests"/> - "No Avalonia
+    /// Application in a unit test" is this project's deliberate norm), so that branch never executes
+    /// here and <c>theme.Typography.LastApplied</c>/<c>Overrides</c> - the seam every other test in
+    /// this file exercises - cannot see font-family resources at all: they live in
+    /// <see cref="TypographyResolver"/>'s FontSizes/FontWeights/SectionShadows, not fonts. Pinned at
+    /// SOURCE level instead, the same way <see cref="Views.TypographyStylesTests"/> pins the App.axaml
+    /// side of this same fallback.
+    /// </summary>
+    [Fact]
+    public void PageSubtitleFontFamilyResource_FallsBackToPageTitleFontFamily_AtSourceLevel()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "ThemeService.cs"));
+
+        source.Should().Contain(
+            @"app.Resources[""PageSubtitleFontFamily""] = SystemFontService.ResolveFontOrDefault(",
+            "PageSubtitleFontFamily must be written through the same own-key/guard mechanism as PageTitleFontFamily");
+        source.Should().Contain(
+            "settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily",
+            "a profile with no chosen subtitle font must fall back to the title font, not silently reset to the Orbitron default");
+    }
+
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisSourceFile = "")
+        => System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

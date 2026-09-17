@@ -29,6 +29,8 @@
             <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
             <!-- Themeable header font — overridden live by the personalization font picker; default = Orbitron. -->
             <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
+            <!-- Themeable page-subtitle font — overridden live by the picker; an unset profile value follows the title font, so the default matches it. -->
+            <FontFamily x:Key="PageSubtitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
             <!-- Themeable content/body font — overridden live by the picker; default = Inter (the app default font). -->
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
             <!-- Overall UI scale (the personalization "UI size" slider). Overridden live by ThemeService. -->
@@ -993,11 +995,11 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
         <Style Selector="TextBlock.page-subtitle">
-            <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
-            <!-- Personalize → Text "Body" (RemEx-jt6w5); base 12/Medium is TypographyResolver.Members. -->
+            <Setter Property="FontFamily" Value="{DynamicResource PageSubtitleFontFamily}"/>
+            <!-- Personalize → Text "Subtitles" (RemEx-n6csl); base 12/Medium is TypographyResolver.Members. -->
             <Setter Property="FontSize" Value="{DynamicResource Typo.PageSubtitle.FontSize}"/>
             <Setter Property="FontWeight" Value="{DynamicResource Typo.PageSubtitle.FontWeight}"/>
-            <Setter Property="Effect" Value="{DynamicResource Typo.Body.Effect}"/>
+            <Setter Property="Effect" Value="{DynamicResource Typo.Subtitles.Effect}"/>
             <Setter Property="LetterSpacing" Value="4"/>
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         </Style>

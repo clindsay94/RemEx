@@ -3564,4 +3564,19 @@ Anda dapat mengubah:
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>Konten</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Subjudul</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>Baris di bawah setiap judul halaman.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Subjudul tebal</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Font subjudul</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Font untuk baris di bawah setiap judul halaman. Secara bawaan mengikuti font judul halaman.</value>
+  </data>
 </root>

@@ -3562,4 +3562,19 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>Вміст</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Підзаголовки</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>Рядок під кожним заголовком сторінки.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Жирні підзаголовки</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Шрифт підзаголовків</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Шрифт рядка під кожним заголовком сторінки. Типово — шрифт заголовка сторінки.</value>
+  </data>
 </root>

@@ -100,6 +100,19 @@ public class TypographyStylesTests
     }
 
     [Fact]
+    public void AppAxaml_DeclaresPageSubtitleFontFamily_AsItsOwnKey_BesidePageTitleFontFamily()
+    {
+        // ThemeService writes app.Resources["PageSubtitleFontFamily"] directly (own-key mechanism,
+        // ThemeService.cs:766-772) because a dictionary's own keys outrank a merged dictionary's -
+        // so a resource with this exact key must exist in App.axaml's own <Application.Resources>
+        // for the DynamicResource in TextBlock.page-subtitle to ever resolve.
+        var app = AppMarkup();
+
+        app.Should().Contain(@"<FontFamily x:Key=""PageTitleFontFamily"">");
+        app.Should().Contain(@"<FontFamily x:Key=""PageSubtitleFontFamily"">");
+    }
+
+    [Fact]
     public void AppAxaml_IncludesTypography_AfterTheMaterialTheme_InsideApplicationStyles()
     {
         var app = AppMarkup();
@@ -112,10 +125,10 @@ public class TypographyStylesTests
     }
 
     [Theory]
-    [InlineData("page-title", "PageTitle", "Headers", true)]
-    [InlineData("page-subtitle", "PageSubtitle", "Body", true)]
-    [InlineData("card-title", "CardTitle", "Headers", false)]
-    public void TheKeptClasses_BindSizeWeightAndEffect_ToTypoKeys(string cls, string member, string section, bool carriesTheFontFamily)
+    [InlineData("page-title", "PageTitle", "Headers", "PageTitleFontFamily")]
+    [InlineData("page-subtitle", "PageSubtitle", "Subtitles", "PageSubtitleFontFamily")]
+    [InlineData("card-title", "CardTitle", "Headers", null)]
+    public void TheKeptClasses_BindSizeWeightAndEffect_ToTypoKeys(string cls, string member, string section, string? expectedFontFamilyKey)
     {
         var style = Regex.Match(AppMarkup(),
             $@"<Style Selector=""TextBlock\.{cls}"">(?<body>.*?)</Style>", RegexOptions.Singleline);
@@ -125,7 +138,8 @@ public class TypographyStylesTests
         body.Should().Contain($@"<Setter Property=""FontSize"" Value=""{{DynamicResource Typo.{member}.FontSize}}""/>");
         body.Should().Contain($@"<Setter Property=""FontWeight"" Value=""{{DynamicResource Typo.{member}.FontWeight}}""/>");
         body.Should().Contain($@"<Setter Property=""Effect"" Value=""{{DynamicResource Typo.{section}.Effect}}""/>");
-        if (carriesTheFontFamily) body.Should().Contain("PageTitleFontFamily", "the font picker's live binding must survive");
+        if (expectedFontFamilyKey is not null)
+            body.Should().Contain(expectedFontFamilyKey, "the font picker's live binding must survive, and page-subtitle carries its OWN key (RemEx-n6csl), not PageTitleFontFamily");
     }
 
     [Fact]

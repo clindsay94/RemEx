@@ -766,6 +766,11 @@ public class ThemeService : IDisposable
             app.Resources["PageTitleFontFamily"] = SystemFontService.ResolveFontOrDefault(
                 settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron");
 
+            // An unset subtitle font follows the title font (RemEx-n6csl): the field is null in every
+            // profile written before it existed, and page-subtitle used the title font until then.
+            app.Resources["PageSubtitleFontFamily"] = SystemFontService.ResolveFontOrDefault(
+                settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron");
+
             app.Resources["BodyFontFamily"] = SystemFontService.ResolveFontOrDefault(
                 settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter");
 

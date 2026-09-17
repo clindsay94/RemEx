@@ -760,6 +760,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _splashStyle = settings.SplashStyle;
         _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
                                  ?? AvailableFonts.FirstOrDefault();
+        // Null on disk means "follows the title font" (RemEx-n6csl); the picker shows the effective font.
+        _selectedPageSubtitleFont = AvailableFonts.FirstOrDefault(f => f.Value == (settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily))
+                                    ?? AvailableFonts.FirstOrDefault();
         _selectedBodyFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.BodyFontFamily)
                             ?? AvailableFonts.FirstOrDefault();
         _uiScale = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
@@ -767,10 +770,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // Personalize → Text (RemEx-jt6w5): clamped on read, never rewritten on disk until touched.
         var typography = TypographySettings.Normalize(settings.Typography);
         _headersScale = typography.HeadersScale;
+        _subtitlesScale = typography.SubtitlesScale;
         _bodyScale = typography.BodyScale;
         _smallScale = typography.SmallScale;
         _sensorScale = typography.SensorScale;
         _headersBold = typography.HeadersBold;
+        _subtitlesBold = typography.SubtitlesBold;
         _bodyBold = typography.BodyBold;
         _smallBold = typography.SmallBold;
         _sensorBold = typography.SensorBold;
@@ -1439,6 +1444,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         ApplyAndSave();
     }
 
+    /// <summary>
+    /// The selected page-subtitle font (RemEx-n6csl); persisted as its <see cref="FontOption.Value"/>.
+    /// Loaded as the effective font (the title font when the profile has none), so the picker never
+    /// shows an empty selection for an upgraded profile.
+    /// </summary>
+    [ObservableProperty]
+    private FontOption? _selectedPageSubtitleFont;
+
+    partial void OnSelectedPageSubtitleFontChanged(FontOption? value)
+    {
+        ValidateFonts();
+        ApplyAndSave();
+    }
+
     /// <summary>The selected content/body font; persisted as its <see cref="FontOption.Value"/>.</summary>
     [ObservableProperty]
     private FontOption? _selectedBodyFont;
@@ -1469,7 +1488,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     // ─── Personalize → Text (RemEx-jt6w5) ─────────────────────────────────────────────────────────
     // Each generated setter applies live through ApplyAndSave, exactly like UiScale above; the values
     // reach ThemeService.ApplyCustomizationCore → TypographyService with the rest of the record. The
-    // reset command raises _isResettingTypography so its eleven assignments produce ONE apply-and-save.
+    // reset command raises _isResettingTypography so its thirteen assignments produce ONE apply-and-save.
 
     /// <summary>Headers size multiplier (0.80–1.60): Headline5/6, Subtitle1, page-title, card-title.</summary>
     [ObservableProperty]
@@ -1478,7 +1497,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnHeadersScaleChanged(double value) => ApplyTypographyChange();
 
-    /// <summary>Body size multiplier: Body2, page-subtitle and untagged text.</summary>
+    /// <summary>Subtitles size multiplier: the page-subtitle line under each page title (RemEx-n6csl).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SubtitlesSizeLabel))]
+    private double _subtitlesScale = 1.0;
+
+    partial void OnSubtitlesScaleChanged(double value) => ApplyTypographyChange();
+
+    /// <summary>Body size multiplier: Body2 and untagged text.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BodySizeLabel))]
     private double _bodyScale = 1.0;
@@ -1503,6 +1529,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private bool _headersBold;
 
     partial void OnHeadersBoldChanged(bool value) => ApplyTypographyChange();
+
+    [ObservableProperty]
+    private bool _subtitlesBold;
+
+    partial void OnSubtitlesBoldChanged(bool value) => ApplyTypographyChange();
 
     [ObservableProperty]
     private bool _bodyBold;
@@ -1540,6 +1571,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// <summary>"default → effective" for the section's reference member (Headline6 = 20 pt).</summary>
     public string HeadersSizeLabel => SizeLabel(TypographySection.Headers, HeadersScale);
 
+    /// <summary>Reference member PageSubtitle = 12 pt.</summary>
+    public string SubtitlesSizeLabel => SizeLabel(TypographySection.Subtitles, SubtitlesScale);
+
     /// <summary>Reference member Body2 = 14 pt.</summary>
     public string BodySizeLabel => SizeLabel(TypographySection.Body, BodyScale);
 
@@ -1566,10 +1600,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private TypographySettings BuildTypographySettings() => TypographySettings.Normalize(new TypographySettings
     {
         HeadersScale = HeadersScale,
+        SubtitlesScale = SubtitlesScale,
         BodyScale = BodyScale,
         SmallScale = SmallScale,
         SensorScale = SensorScale,
         HeadersBold = HeadersBold,
+        SubtitlesBold = SubtitlesBold,
         BodyBold = BodyBold,
         SmallBold = SmallBold,
         SensorBold = SensorBold,
@@ -1587,10 +1623,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         try
         {
             HeadersScale = defaults.HeadersScale;
+            SubtitlesScale = defaults.SubtitlesScale;
             BodyScale = defaults.BodyScale;
             SmallScale = defaults.SmallScale;
             SensorScale = defaults.SensorScale;
             HeadersBold = defaults.HeadersBold;
+            SubtitlesBold = defaults.SubtitlesBold;
             BodyBold = defaults.BodyBold;
             SmallBold = defaults.SmallBold;
             SensorBold = defaults.SensorBold;
@@ -1612,6 +1650,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         var unavailable = new System.Collections.Generic.List<string>();
         if (SelectedPageTitleFont is { } title && !SystemFontService.TryResolveFont(title.Value, out _))
             unavailable.Add(title.DisplayName);
+        if (SelectedPageSubtitleFont is { } subtitle && !SystemFontService.TryResolveFont(subtitle.Value, out _))
+            unavailable.Add(subtitle.DisplayName);
         if (SelectedBodyFont is { } body && !SystemFontService.TryResolveFont(body.Value, out _))
             unavailable.Add(body.DisplayName);
 
@@ -1876,6 +1916,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             SyncWithHardware = carried.SyncWithHardware,
             SplashStyle = SplashStyle,
             PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
+            // No literal fallback: null stays null and keeps following the title font (RemEx-n6csl).
+            PageSubtitleFontFamily = SelectedPageSubtitleFont?.Value,
             CardHeaderFontFamily = carried.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             UiScale = UiScale,

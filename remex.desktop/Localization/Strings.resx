@@ -3567,4 +3567,19 @@ You can change:
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>Content</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Subtitles</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>The line under each page title.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Bold subtitles</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Subtitle Font</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Font for the line under each page title. Defaults to the page title font.</value>
+  </data>
 </root>

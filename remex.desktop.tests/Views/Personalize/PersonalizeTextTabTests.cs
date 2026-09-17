@@ -22,15 +22,16 @@ public class PersonalizeTextTabTests
         var markup = Markup();
         var keys = new[]
         {
-            "Custom_TextHeaders", "Custom_TextBody", "Custom_TextSmall", "Custom_TextSensor",
+            "Custom_TextHeaders", "Custom_TextSubtitles", "Custom_TextBody", "Custom_TextSmall", "Custom_TextSensor",
             "Custom_TextSensorBackdrop", "Custom_TextShadow", "Custom_TextShadowStrength",
-            "Custom_TextReset", "Custom_SectionFonts", "Custom_PageTitleFont", "Custom_ContentFont",
+            "Custom_TextReset", "Custom_SectionFonts", "Custom_PageTitleFont", "Custom_SubtitleFont", "Custom_ContentFont",
         };
         var positions = keys.Select(k => markup.IndexOf(k, System.StringComparison.Ordinal)).ToArray();
 
         positions.Should().OnlyContain(p => p >= 0, "every control this tab carries must be on it");
         positions.Should().BeInAscendingOrder(
-            "spec §2: the TEXT block through Reset, then the FONTS sub-heading, page-title font, content font");
+            "spec §2 (RemEx-n6csl): Headers, then Subtitles, then the rest of the TEXT block through " +
+            "Reset, then the FONTS sub-heading, page-title font, subtitle font, content font");
     }
 
     [Fact]

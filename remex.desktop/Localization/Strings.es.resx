@@ -3575,4 +3575,19 @@ Puedes cambiar:
   <data name="Custom_Scheme_Content" xml:space="preserve">
     <value>Contenido</value>
   </data>
+  <data name="Custom_TextSubtitles" xml:space="preserve">
+    <value>Subtítulos</value>
+  </data>
+  <data name="Custom_TextSubtitlesTip" xml:space="preserve">
+    <value>La línea debajo de cada título de página.</value>
+  </data>
+  <data name="Custom_TextSubtitlesBold" xml:space="preserve">
+    <value>Subtítulos en negrita</value>
+  </data>
+  <data name="Custom_SubtitleFont" xml:space="preserve">
+    <value>Fuente de subtítulos</value>
+  </data>
+  <data name="Custom_SubtitleFontTip" xml:space="preserve">
+    <value>Fuente para la línea debajo de cada título de página. Por defecto usa la fuente del título de página.</value>
+  </data>
 </root>

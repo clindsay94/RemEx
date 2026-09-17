@@ -25,6 +25,13 @@
                         <ToggleSwitch Grid.Column="3" IsChecked="{Binding HeadersBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextHeadersBold}"/>
                     </Grid>
 
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextSubtitlesTip}">
+                        <TextBlock Text="{local:Localize Custom_TextSubtitles}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding SubtitlesScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSubtitles}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SubtitlesSizeLabel}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="48" Margin="12,0" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{local:Localize Custom_TextSizeLabelTip}"/>
+                        <ToggleSwitch Grid.Column="3" IsChecked="{Binding SubtitlesBold}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextSubtitlesBold}"/>
+                    </Grid>
+
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{local:Localize Custom_TextBodyTip}">
                         <TextBlock Text="{local:Localize Custom_TextBody}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                         <Slider Minimum="0.8" Maximum="1.6" SmallChange="0.05" LargeChange="0.1" TickFrequency="0.05" IsSnapToTickEnabled="True" Grid.Column="1" Value="{Binding BodyScale}" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_TextBody}"/>
@@ -75,6 +82,9 @@
 
                     <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_PageTitleFontTip}">
                         <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedPageTitleFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340" AutomationProperties.Name="{local:Localize Custom_PageTitleFont}" assists:ComboBoxAssist.Label="{local:Localize Custom_PageTitleFont}"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_SubtitleFontTip}">
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedPageSubtitleFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340" AutomationProperties.Name="{local:Localize Custom_SubtitleFont}" assists:ComboBoxAssist.Label="{local:Localize Custom_SubtitleFont}"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContentFontTip}">
                         <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedBodyFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340" AutomationProperties.Name="{local:Localize Custom_ContentFont}" assists:ComboBoxAssist.Label="{local:Localize Custom_ContentFont}"/>

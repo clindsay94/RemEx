@@ -995,6 +995,30 @@ public class CustomizationMigrationTests
     }
 
 
+    /// <summary>
+    /// RemEx-n6csl: a profile from before <c>PageSubtitleFontFamily</c> existed has no
+    /// <c>pageSubtitleFont</c> key at all, deserialized through the same
+    /// <c>DashboardLayoutService.JsonOptions</c> the app reads real profiles with (not the default
+    /// options - see <see cref="LegacyProfile"/>'s remarks on why that distinction matters here).
+    /// </summary>
+    [Fact]
+    public void ProfileWithoutPageSubtitleFont_DeserializesWithNullPageSubtitleFontFamily()
+    {
+        const string json = """
+        {
+          "baseTheme": "BaseDarkGlass",
+          "pageTitleFont": "avares://Remex.Desktop/Assets/Fonts#Orbitron"
+        }
+        """;
+
+        var settings = JsonSerializer.Deserialize<CustomizationSettings>(json, DashboardLayoutService.JsonOptions);
+
+        settings.Should().NotBeNull();
+        settings!.PageSubtitleFontFamily.Should().BeNull(
+            "null means 'follows PageTitleFontFamily' - an upgraded profile must keep its subtitles matching, not reset to Orbitron");
+        settings.PageTitleFontFamily.Should().Be("avares://Remex.Desktop/Assets/Fonts#Orbitron");
+    }
+
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
     // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")

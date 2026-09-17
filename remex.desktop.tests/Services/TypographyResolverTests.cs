@@ -52,7 +52,25 @@ public class TypographyResolverTests
 
         r.DefaultFontSize.Should().Be(21);
         r.FontSizes["Typo.Body2.FontSize"].Should().Be(21);
+        r.FontSizes["Typo.PageSubtitle.FontSize"].Should().Be(12, "PageSubtitle moved to its own Subtitles section (RemEx-n6csl) and no longer follows Body");
+    }
+
+    [Fact]
+    public void SubtitlesScale_ReachesPageSubtitle_AndOnlyPageSubtitle()
+    {
+        var r = TypographyResolver.Resolve(new TypographySettings { SubtitlesScale = 1.5 }, Dark);
+
         r.FontSizes["Typo.PageSubtitle.FontSize"].Should().Be(18);
+        r.FontSizes["Typo.Body2.FontSize"].Should().Be(14, "Body is a different section from Subtitles");
+    }
+
+    [Fact]
+    public void SubtitlesBold_FlipsOnlyPageSubtitlesWeight()
+    {
+        var r = TypographyResolver.Resolve(new TypographySettings { SubtitlesBold = true }, Dark);
+
+        r.FontWeights["Typo.PageSubtitle.FontWeight"].Should().Be(FontWeight.Bold);
+        r.FontWeights["Typo.Body2.FontWeight"].Should().Be(FontWeight.Regular, "Bold on Subtitles must not reach Body");
     }
 
     [Fact]
@@ -147,19 +165,28 @@ public class TypographyResolverTests
     }
 
     [Fact]
-    public void ShadowedSections_IsTheSpecDefault_AllFour()
+    public void ShadowedSections_IsTheSpecDefault_AllFive()
     {
         // Task 6 (RemEx-jt6w5.6) may shrink this to Headers + Sensor if the measured cost says so;
         // change this assertion in the same commit as the table, with the measurement's path in the message.
+        // Subtitles joined the set in RemEx-n6csl: page-subtitle wore Body's halo before it had its
+        // own row, so its look is preserved.
         TypographyResolver.ShadowedSections.Should().BeEquivalentTo(new[]
         {
-            TypographySection.Headers, TypographySection.Body, TypographySection.Small, TypographySection.Sensor,
+            TypographySection.Headers, TypographySection.Subtitles, TypographySection.Body, TypographySection.Small, TypographySection.Sensor,
         });
+    }
+
+    [Fact]
+    public void ShadowKey_ForSubtitles_IsTypoSubtitlesEffect()
+    {
+        TypographyResolver.ShadowKey(TypographySection.Subtitles).Should().Be("Typo.Subtitles.Effect");
     }
 
     [Theory]
     [InlineData(TypographySection.Headers, 1.0, 20, 20)]
     [InlineData(TypographySection.Headers, 1.2, 20, 24)]
+    [InlineData(TypographySection.Subtitles, 1.5, 12, 18)]
     [InlineData(TypographySection.Body, 1.05, 14, 15)]
     [InlineData(TypographySection.Small, 0.8, 12, 10)]
     [InlineData(TypographySection.Sensor, 1.5, 12, 18)]

@@ -424,6 +424,15 @@ public record CustomizationSettings
     [JsonPropertyName("pageTitleFont")]
     public string PageTitleFontFamily { get; init; } = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
 
+    /// <summary>
+    /// Font family for the page-subtitle line under each page title (RemEx-n6csl). <c>null</c> means
+    /// "follows <see cref="PageTitleFontFamily"/>" — the upgrade path for profiles written before this
+    /// field existed, which is why it is nullable with no default rather than defaulting to Orbitron:
+    /// a profile that chose a custom title font keeps its subtitles matching after upgrade.
+    /// </summary>
+    [JsonPropertyName("pageSubtitleFont")]
+    public string? PageSubtitleFontFamily { get; init; }
+
     /// <summary>Font family for card / section headers. Empty = inherit the app default. (Reserved for the card-header tier.)</summary>
     [JsonPropertyName("cardHeaderFont")]
     public string CardHeaderFontFamily { get; init; } = "";

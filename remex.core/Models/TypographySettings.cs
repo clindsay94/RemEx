@@ -29,7 +29,15 @@ public record TypographySettings
     [JsonPropertyName("headersScale")]
     public double HeadersScale { get; init; } = 1.0;
 
-    /// <summary>Body: Body2, page-subtitle and untagged text.</summary>
+    /// <summary>
+    /// Subtitles: the page-subtitle line under each page title (RemEx-n6csl). Absent from profiles
+    /// written before it existed, so the deserializer leaves the default 1.0 — the same size
+    /// Body gave it at 1.0 — and an upgraded profile renders exactly as it did.
+    /// </summary>
+    [JsonPropertyName("subtitlesScale")]
+    public double SubtitlesScale { get; init; } = 1.0;
+
+    /// <summary>Body: Body2 and untagged text.</summary>
     [JsonPropertyName("bodyScale")]
     public double BodyScale { get; init; } = 1.0;
 
@@ -44,6 +52,9 @@ public record TypographySettings
     /// <summary>On = <c>FontWeight.Bold</c> for every member of the section; off = each member's own default weight.</summary>
     [JsonPropertyName("headersBold")]
     public bool HeadersBold { get; init; }
+
+    [JsonPropertyName("subtitlesBold")]
+    public bool SubtitlesBold { get; init; }
 
     [JsonPropertyName("bodyBold")]
     public bool BodyBold { get; init; }
@@ -88,6 +99,7 @@ public record TypographySettings
         return value with
         {
             HeadersScale = ClampScale(value.HeadersScale),
+            SubtitlesScale = ClampScale(value.SubtitlesScale),
             BodyScale = ClampScale(value.BodyScale),
             SmallScale = ClampScale(value.SmallScale),
             SensorScale = ClampScale(value.SensorScale),
