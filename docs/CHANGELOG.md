@@ -13,6 +13,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
+  440 up to 60% of the window), double-click the edge to go back to the default, and the width you
+  choose is remembered with the rest of your customization. The default is wider too — 520 instead
+  of 440 — and the tab names (Colour, Palettes, Surfaces, Text, Layout) sit at the left of each tab
+  instead of being centred, so they read cleanly instead of clipping under a larger header font.
+  (RemEx-vkkcq)
+
 - Mica is back as a background mode on Windows 11 (22H2 and later). It was pulled in 2.5 because
   it never rendered: Avalonia reports Mica as active but never asks Windows for the system backdrop,
   and paints a flat colour of its own instead. RemEx now asks for a plain transparent window and

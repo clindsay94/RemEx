@@ -583,6 +583,8 @@ public class DashboardLayoutClobberTests : IDisposable
             {
                 var t when t == typeof(string) => "nondefault-" + prop.Name,
                 var t when t == typeof(double) => 12.5,
+                // PersonalizeSheetWidth (RemEx-vkkcq): nullable, null = "use the default".
+                var t when t == typeof(double?) => current is null ? 690.0 : (double)current + 100,
                 var t when t == typeof(bool) => !(bool)current!,
                 var t when t == typeof(bool?) => current is null ? true : !(bool)current,
                 var t when t == typeof(IReadOnlyList<string>) => new List<string> { "#112233", "#445566" },

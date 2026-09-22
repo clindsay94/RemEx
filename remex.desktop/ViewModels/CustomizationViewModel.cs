@@ -1921,6 +1921,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             CardHeaderFontFamily = carried.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             UiScale = UiScale,
+            // Carried from the shell, not owned by this screen: the sheet's resize grip lives on
+            // ShellView and ShellViewModel commits it on drag end (RemEx-vkkcq). Listed here so a
+            // Personalize save does not reset it to null (the round-trip guard insists on it).
+            // The shell is optional here (tests build this view-model without one), in which case
+            // the stored value passes through untouched.
+            PersonalizeSheetWidth = _shell?.PersonalizeSheetWidth ?? carried.PersonalizeSheetWidth,
             CustomAccentColors = CustomAccentColors.Take(MaxRecentSeeds).ToList(),
             // Task 1 carries these forward verbatim; Tasks 3, 5 and 7 replace each `carried.X`
             // with the view model's own live value as the sheet gains the control for it.

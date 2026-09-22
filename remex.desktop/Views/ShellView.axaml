@@ -454,7 +454,9 @@
     </UserControl.Styles>
 
     <ctrl:DashboardBackgroundControl>
-        <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Named for the Personalize grip's drag math (RemEx-vkkcq): this Grid never moves during
+             a drag, so it is the coordinate space the pointer is read in. See the grip comment. -->
+        <Grid Name="ShellRoot" RowDefinitions="Auto,*,Auto">
             <!-- ═══ APP BAR (RemEx-a3prn, revised per Opus review round 2 of 38fa221) ═══
                  THE SURFACE IS TWO ELEMENTS, NOT ONE, because neither alone can give both a
                  theme-tracked translucent fill AND a GlowStrength-aware elevation shadow:
@@ -1171,7 +1173,7 @@
                                  KeyboardNavigation.TabNavigation="Cycle"
                                  SideSheetOpened="{Binding IsSettingsPanelOpen, Mode=TwoWay}"
                                  SideSheetDirection="Right"
-                                 SideSheetWidth="440"
+                                 SideSheetWidth="{Binding PersonalizeSheetWidth}"
                                  SideSheetPadding="0"
                                  SideSheetCanClose="False"
                                  SideSheetHeaderTemplate="{x:Null}"
@@ -1254,6 +1256,60 @@
                     </views:PersonalizationPanelView>
                 </material:SideSheet.SideSheetContent>
             </material:SideSheet>
+
+            <!-- ═══ PERSONALIZE SHEET RESIZE GRIP (RemEx-vkkcq) ═══
+                 A SIBLING after the SideSheet, not a child of it. The sheet's template has no slot
+                 that spans both SideSheetHeader and SideSheetContent, so a grip placed inside
+                 either would only run the height of that one part - and a template override to add
+                 one is exactly what the hazard comments above rule out. Sitting in the same
+                 full-bleed Grid.RowSpan="3" cell, declared after the sheet so it paints and
+                 hit-tests on top of it, this Panel gets the full window height for free.
+
+                 The Panel is right-aligned with its Width bound to the SAME PersonalizeSheetWidth
+                 the sheet's SideSheetWidth binds to, so its left edge IS the sheet's left edge on
+                 every drag frame, without a converter or any knowledge of the sheet's internals.
+                 No Background on the Panel on purpose: an unpainted Panel is not hit-testable, so
+                 only the 8px Thumb takes pointer events and the rest of the sheet underneath keeps
+                 receiving its own. IsVisible follows IsSettingsPanelOpen so a closed sheet leaves no
+                 invisible 8px strip catching clicks at the window's right edge.
+
+                 The Thumb straddles the edge (Margin -4 pulls half of it outside the Panel; Panel
+                 does not clip) so the grab target is 4px of scrim plus 4px of sheet, and its
+                 template root Border is Background="Transparent", NOT null: null would leave only
+                 the 1px line hit-testable, the same trap the SideSheet's own Background comment
+                 above describes. The visible line is a child, not the hit surface.
+
+                 The drag is ABSOLUTE, not Thumb-relative (fix round 1). Thumb.DragDelta reports the
+                 pointer relative to the Thumb's own origin, and this Thumb rides on a Panel whose
+                 Width is the very value the drag edits - so after every frame the Thumb has moved
+                 under the pointer, the vector collapses to a pixel or three, and Avalonia re-raises
+                 pointer-moved for the element that shifted. Measured: one 100px drag became 564
+                 DragDelta calls that netted 10px. ShellView.axaml.cs instead reads the pointer in
+                 the ShellRoot Grid's coordinates (it never moves), records the grab offset at
+                 DragStarted, and sets width = shellWidth - (pointerX + grabOffset) on PointerMoved -
+                 the edge lands under the cursor however fast the pointer outruns layout. The shell
+                 width is ShellRoot's Bounds.Width, the same space the pointer is read in.
+                 ShellView.axaml.cs wires DragStarted/PointerMoved/DragCompleted/DoubleTapped. -->
+            <Panel Name="PersonalizeSheetGripPanel"
+                   Grid.Row="0" Grid.RowSpan="3"
+                   HorizontalAlignment="Right"
+                   Width="{Binding PersonalizeSheetWidth}"
+                   IsVisible="{Binding IsSettingsPanelOpen}">
+                <Thumb Name="PersonalizeSheetResizeGrip"
+                       HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                       Width="8" Margin="-4,0,0,0"
+                       Cursor="SizeWestEast"
+                       AutomationProperties.Name="{conv:Localize A11y_ResizePersonalizeSheet}">
+                    <Thumb.Template>
+                        <ControlTemplate>
+                            <Border Background="Transparent">
+                                <Border Width="1" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                        Background="{DynamicResource CardBorderBrush}"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Thumb.Template>
+                </Thumb>
+            </Panel>
 
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right, RemEx-bado6, revised per Opus review round 2
                  of a4c0997) ═══

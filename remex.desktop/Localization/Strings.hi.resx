@@ -2755,6 +2755,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="A11y_Close" xml:space="preserve">
     <value>बंद करें</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>वैयक्तिकृत करें पैनल का आकार बदलें</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>खारिज करें</value>
   </data>

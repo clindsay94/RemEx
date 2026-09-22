@@ -2756,6 +2756,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="A11y_Close" xml:space="preserve">
     <value>Закрити</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Змінити розмір панелі «Персоналізувати»</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Відхилити</value>
   </data>

@@ -2758,6 +2758,9 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="A11y_Close" xml:space="preserve">
     <value>Tutup</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Ubah ukuran panel Personalisasi</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Tutup pesan</value>
   </data>

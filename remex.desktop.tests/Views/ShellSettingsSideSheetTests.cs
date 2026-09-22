@@ -120,6 +120,47 @@ public class ShellSettingsSideSheetTests
             "own type name instead of the Personalize title/subtitle it actually contains");
     }
 
+    /// <summary>
+    /// RemEx-vkkcq: the sheet's width is now user-resizable and bound to the ViewModel, not
+    /// hard-coded, and the resize grip is a sibling AFTER the SideSheet closes so it sits on top of
+    /// the whole full-bleed panel rather than being clipped as one of its children.
+    /// </summary>
+    [Fact]
+    public void TheSideSheetWidthIsBound_AndTheResizeGripIsASiblingAfterIt()
+    {
+        var xaml = ShellMarkup();
+
+        var sheetOpenTag = Regex.Match(xaml, @"<material:SideSheet\b[^>]*>", RegexOptions.Singleline);
+        sheetOpenTag.Success.Should().BeTrue("the SideSheet element has to exist");
+
+        sheetOpenTag.Value.Should().MatchRegex(
+            @"SideSheetWidth\s*=\s*""\{Binding\s+PersonalizeSheetWidth\s*\}""",
+            "the sheet's width has to be bound to the ViewModel so the drag grip and persistence " +
+            "can drive it, rather than staying the old hard-coded 440");
+
+        // RemEx-b8dxy guard, still true after this change: Background="Transparent" must not have
+        // been disturbed while touching this same open tag for the width binding.
+        sheetOpenTag.Value.Should().MatchRegex(@"\bBackground=""Transparent""",
+            "the RemEx-b8dxy blank-shell guard - unset lets Material's opaque default paint the whole shell");
+
+        var sheetEnd = xaml.IndexOf("</material:SideSheet>", StringComparison.Ordinal);
+        sheetEnd.Should().BeGreaterThan(-1, "the SideSheet element has to be closed");
+
+        var thumbIndex = xaml.IndexOf("<Thumb Name=\"PersonalizeSheetResizeGrip\"", StringComparison.Ordinal);
+        thumbIndex.Should().BeGreaterThan(-1, "the resize grip Thumb has to exist");
+        thumbIndex.Should().BeGreaterThan(sheetEnd,
+            "the grip has to be declared AFTER </material:SideSheet> - a sibling on top of the panel, " +
+            "not a child clipped to its content");
+
+        var thumbOpenTag = Regex.Match(xaml, @"<Thumb Name=""PersonalizeSheetResizeGrip""[^>]*>", RegexOptions.Singleline);
+        thumbOpenTag.Success.Should().BeTrue("the grip's own opening tag has to exist");
+
+        thumbOpenTag.Value.Should().MatchRegex(@"Cursor\s*=\s*""SizeWestEast""",
+            "the grip has to signal a horizontal resize affordance");
+        thumbOpenTag.Value.Should().MatchRegex(@"AutomationProperties\.Name\s*=\s*""\{conv:Localize\s+A11y_",
+            "the grip needs a localized accessible name, not a hard-coded English string");
+    }
+
     [Fact]
     public void TheSideSheetOpenStateBindsTwoWay()
     {

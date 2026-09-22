@@ -2769,6 +2769,9 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="A11y_Close" xml:space="preserve">
     <value>Cerrar</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Cambiar el tamaño del panel Personalizar</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Descartar</value>
   </data>

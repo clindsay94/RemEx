@@ -2756,6 +2756,9 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="A11y_Close" xml:space="preserve">
     <value>Zamknij</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Zmień rozmiar panelu Personalizuj</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Odrzuć</value>
   </data>

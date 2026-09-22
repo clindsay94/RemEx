@@ -2761,6 +2761,9 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="A11y_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Resize Personalize panel</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Dismiss</value>
   </data>

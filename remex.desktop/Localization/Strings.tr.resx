@@ -2759,6 +2759,9 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="A11y_Close" xml:space="preserve">
     <value>Kapat</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Kişiselleştir panelini yeniden boyutlandır</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Yoksay</value>
   </data>

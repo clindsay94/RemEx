@@ -133,4 +133,31 @@ public class TypographySettingsTests
         var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
         Assert.Equal("Comic Sans MS", back.PageSubtitleFontFamily);
     }
+
+    /// <summary>
+    /// RemEx-vkkcq: <c>PersonalizeSheetWidth</c> is the same additive-nullable pattern as
+    /// <see cref="PageSubtitleFontFamily_RoundTrips_ThroughSourceGeneratedJson"/> - null means
+    /// "follows the 520px default", not "zero width".
+    /// </summary>
+    [Fact]
+    public void PersonalizeSheetWidth_RoundTrips()
+    {
+        var original = new CustomizationSettings { PersonalizeSheetWidth = 700 };
+
+        var json = JsonSerializer.Serialize(original, RemexJsonSerializerContext.Default.CustomizationSettings);
+        Assert.Contains("\"personalizeSheetWidth\":700", json);
+
+        var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
+        Assert.Equal(700, back.PersonalizeSheetWidth);
+    }
+
+    [Fact]
+    public void PersonalizeSheetWidth_MissingKey_IsNull()
+    {
+        const string json = "{\"baseTheme\":\"BaseDarkGlass\"}";
+
+        var back = JsonSerializer.Deserialize(json, RemexJsonSerializerContext.Default.CustomizationSettings)!;
+
+        Assert.Null(back.PersonalizeSheetWidth);
+    }
 }

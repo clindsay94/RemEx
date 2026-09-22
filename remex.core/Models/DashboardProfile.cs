@@ -433,6 +433,18 @@ public record CustomizationSettings
     [JsonPropertyName("pageSubtitleFont")]
     public string? PageSubtitleFontFamily { get; init; }
 
+    /// <summary>
+    /// Width of the Personalize side sheet in device-independent pixels, dragged by the sheet's
+    /// left-edge grip (RemEx-vkkcq). <c>null</c> = default 520 (<c>ShellViewModel.DefaultPersonalizeSheetWidth</c>).
+    /// Nullable with no default for the same reason as <see cref="PageSubtitleFontFamily"/>: a profile
+    /// written before this field existed round-trips without the key instead of stamping a number,
+    /// so the default can move later without rewriting every profile. The stored value is only a
+    /// request - the shell re-clamps it to [440, 60% of the window] at load and on every window
+    /// resize, so a width saved on a wide monitor never covers most of a narrower one.
+    /// </summary>
+    [JsonPropertyName("personalizeSheetWidth")]
+    public double? PersonalizeSheetWidth { get; init; }
+
     /// <summary>Font family for card / section headers. Empty = inherit the app default. (Reserved for the card-header tier.)</summary>
     [JsonPropertyName("cardHeaderFont")]
     public string CardHeaderFontFamily { get; init; } = "";

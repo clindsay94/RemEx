@@ -2755,6 +2755,9 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="A11y_Close" xml:space="preserve">
     <value>Fermer</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Redimensionner le panneau Personnaliser</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Ignorer</value>
   </data>

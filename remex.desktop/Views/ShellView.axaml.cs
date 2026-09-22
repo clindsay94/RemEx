@@ -4,6 +4,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -76,6 +77,20 @@ public partial class ShellView : UserControl
     private IInputElement? _drawerInvoker;
     private IInputElement? _sheetInvoker;
 
+    // RemEx-vkkcq: the sheet's left-edge resize grip (a sibling Panel's Thumb, see the XAML).
+    // Re-resolved wherever _settingsSideSheet is, because a hot reload replaces both controls.
+    // _shellRoot is the outer Grid the pointer is read against during a drag - the one element
+    // in the chain that does not move when the sheet width changes (fix round 1, see
+    // OnSheetGripPointerMoved).
+    private Thumb? _sheetResizeGrip;
+    private Grid? _shellRoot;
+
+    // Drag state. The grab offset is (sheet left edge - pointer X) in _shellRoot coordinates,
+    // recorded at press so the edge stays exactly where it was under the cursor for the whole
+    // drag rather than snapping to the cursor's centre line.
+    private bool _isSheetDragging;
+    private double _sheetDragGrabOffset;
+
     public ShellView()
     {
         InitializeComponent();
@@ -121,6 +136,7 @@ public partial class ShellView : UserControl
         _gearFab = this.FindControl<FloatingButton>("GearFab");
         _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
         _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
+        WireSheetResizeGrip();
 
         // The XAML sets a plain CrossFade to keep the designer honest; the guarded equivalent is
         // installed here before the first navigation can reach either host. Sequencing keeps the main
@@ -279,6 +295,7 @@ public partial class ShellView : UserControl
         _gearFab = this.FindControl<FloatingButton>("GearFab");
         _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
         _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
+        WireSheetResizeGrip();
 
         if (_pageHost != null)
         {
@@ -299,6 +316,118 @@ public partial class ShellView : UserControl
             RequestPageView(vm.CurrentView);
             ResyncNavListSelection();
         }
+    }
+
+    /// <summary>
+    /// Wires the Personalize sheet's resize grip and the shell-width re-clamp (RemEx-vkkcq). Called
+    /// from both <see cref="OnLoaded"/> and <see cref="InitializeComponentState"/>, the way the
+    /// FindControl block is, so a hot reload re-wires the replacement controls.
+    /// </summary>
+    /// <remarks>
+    /// Idempotent by unsubscribing before subscribing, the same shape as DraggableCard's
+    /// PART_ResizeThumb hookup: OnLoaded runs again on every reattach to the visual tree, and the
+    /// controls are the same instances then, so a plain <c>+=</c> would stack a second handler and
+    /// double-apply every drag frame. The handlers resolve the view model from DataContext at
+    /// invocation rather than capturing it, so nothing here has to be re-done on a DataContext
+    /// change and there is no per-VM teardown to add to OnDataContextChanged.
+    /// </remarks>
+    private void WireSheetResizeGrip()
+    {
+        if (_sheetResizeGrip != null)
+        {
+            _sheetResizeGrip.RemoveHandler(PointerPressedEvent, OnSheetGripPointerPressed);
+            _sheetResizeGrip.DragStarted -= OnSheetResizeDragStarted;
+            _sheetResizeGrip.PointerMoved -= OnSheetGripPointerMoved;
+            _sheetResizeGrip.DragCompleted -= OnSheetResizeDragCompleted;
+            _sheetResizeGrip.DoubleTapped -= OnSheetResizeGripDoubleTapped;
+        }
+
+        _shellRoot = this.FindControl<Grid>("ShellRoot");
+        _sheetResizeGrip = this.FindControl<Thumb>("PersonalizeSheetResizeGrip");
+        if (_sheetResizeGrip != null)
+        {
+            // handledEventsToo: Thumb.OnPointerPressed marks the press handled (that is what makes
+            // it a drag and not a click-through), and this handler still needs to see it to read
+            // the pointer's absolute position - DragStarted carries only a Thumb-relative vector.
+            _sheetResizeGrip.AddHandler(PointerPressedEvent, OnSheetGripPointerPressed, handledEventsToo: true);
+            _sheetResizeGrip.DragStarted += OnSheetResizeDragStarted;
+            _sheetResizeGrip.PointerMoved += OnSheetGripPointerMoved;
+            _sheetResizeGrip.DragCompleted += OnSheetResizeDragCompleted;
+            _sheetResizeGrip.DoubleTapped += OnSheetResizeGripDoubleTapped;
+        }
+
+        // The 60% ceiling is a function of the window width, and a stored width is applied by the
+        // view model before the window has one. Re-clamping on every size change is what keeps a
+        // shrunken window from leaving the sheet covering most of it. No save here: a clamp is
+        // not a choice the user made, so the persisted request survives to the next launch even
+        // when this session's window was too narrow to honour it.
+        if (_shellRoot != null)
+        {
+            _shellRoot.SizeChanged -= OnShellRootSizeChanged;
+            _shellRoot.SizeChanged += OnShellRootSizeChanged;
+        }
+    }
+
+    /// <summary>
+    /// The shell's width for clamping: the ShellRoot Grid's own Bounds.Width, which is also the
+    /// coordinate space the drag reads the pointer in, so the two can never disagree by a margin.
+    /// 0 before layout, which the view model's clamp treats as "floor only".
+    /// </summary>
+    private double ShellWidthForSheetClamp() => _shellRoot?.Bounds.Width ?? 0;
+
+    // Fix round 1: the drag is ABSOLUTE, not Thumb-relative. Thumb.DragDelta's vector is measured
+    // from the Thumb's own origin, and this Thumb sits on a Panel whose Width is the value being
+    // edited - so every applied frame moved the Thumb under the pointer, the next vector was the
+    // 1-3px residue, and Avalonia re-raised pointer-moved for the element that had shifted. One
+    // synthetic 100px drag measured 564 Resize calls that netted 10px. Reading the pointer in
+    // ShellRoot's space (it never moves) and setting the width from that position outright makes
+    // each frame idempotent: a re-raised move at the same pointer X computes the same width, the
+    // setter no-ops on equality, and the loop has nothing to feed on. It also means a pointer that
+    // outruns layout still lands the edge exactly under the cursor.
+    private void OnSheetGripPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_shellRoot == null || DataContext is not ShellViewModel vm)
+            return;
+
+        // Dragging LEFT (smaller X) widens the sheet, because the sheet is docked right: its left
+        // edge sits at shellWidth - width. The offset is where the cursor grabbed relative to that
+        // edge, taken from the view model's width rather than the Thumb's arranged position so a
+        // press never jumps the edge even if the grip has been laid out somewhere else.
+        var sheetLeft = ShellWidthForSheetClamp() - vm.PersonalizeSheetWidth;
+        _sheetDragGrabOffset = sheetLeft - e.GetPosition(_shellRoot).X;
+    }
+
+    private void OnSheetResizeDragStarted(object? sender, VectorEventArgs e) => _isSheetDragging = true;
+
+    private void OnSheetGripPointerMoved(object? sender, PointerEventArgs e)
+    {
+        // The Thumb holds pointer capture for the whole drag, so this sees every move even once
+        // the cursor is outside the grip or the window; the flag keeps a plain hover out of it.
+        if (!_isSheetDragging || _shellRoot == null || DataContext is not ShellViewModel vm)
+            return;
+
+        var shellWidth = ShellWidthForSheetClamp();
+        var pointerX = e.GetPosition(_shellRoot).X;
+        vm.ResizePersonalizeSheet(shellWidth - (pointerX + _sheetDragGrabOffset), shellWidth);
+    }
+
+    private void OnSheetResizeDragCompleted(object? sender, VectorEventArgs e)
+    {
+        _isSheetDragging = false;
+        if (DataContext is ShellViewModel vm)
+            vm.CommitPersonalizeSheetWidth();
+    }
+
+    private void OnSheetResizeGripDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is ShellViewModel vm)
+            vm.ResetPersonalizeSheetWidth();
+    }
+
+    private void OnShellRootSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is ShellViewModel vm)
+            vm.ResizePersonalizeSheet(vm.PersonalizeSheetWidth, e.NewSize.Width);
     }
 
     /// <summary>
@@ -595,6 +724,21 @@ public partial class ShellView : UserControl
                 ref _sheetInvoker,
                 () => _settingsSheetCloseButton,
                 _gearFab);
+        }
+
+        // RemEx-vkkcq review MEDIUM: the view model re-syncs PersonalizeSheetWidth from every
+        // applied CustomizationSettings (import, profile switch) and floors it, but only this view
+        // knows the shell width the 60% ceiling is a fraction of - a profile saved at 2300 on a
+        // 3840 monitor and imported onto a 1920 window would otherwise land at 2300. Re-clamp here
+        // against the live width; the [ObservableProperty] setter no-ops on an equal value, so the
+        // re-entrant notification from a corrected width cannot loop, and every drag frame that is
+        // already inside the clamp costs one equality check. Skipped before layout (width 0): the
+        // clamp would collapse to its floor and throw away a stored width the window could honour
+        // once it has a size - OnShellRootSizeChanged applies the ceiling then.
+        if (e.PropertyName == nameof(ShellViewModel.PersonalizeSheetWidth) &&
+            sender is ShellViewModel widthVm && ShellWidthForSheetClamp() > 0)
+        {
+            widthVm.ResizePersonalizeSheet(widthVm.PersonalizeSheetWidth, ShellWidthForSheetClamp());
         }
 
         // The direction only raises a notification when it actually changes, which is correct here:

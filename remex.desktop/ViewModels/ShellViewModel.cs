@@ -655,6 +655,91 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
 
+    // ═══════════════ Personalize sheet width (RemEx-vkkcq) ═══════════════
+
+    /// <summary>Width the Personalize sheet opens at when nothing is stored (or after a reset).</summary>
+    public const double DefaultPersonalizeSheetWidth = 520;
+
+    /// <summary>
+    /// Narrowest the sheet can be dragged. 440 is what the sheet was fixed at before it became
+    /// resizable, so it is the width every tab header and control inside was already laid out for.
+    /// </summary>
+    public const double MinPersonalizeSheetWidth = 440;
+
+    /// <summary>Widest the sheet may be, as a fraction of the shell's own width.</summary>
+    private const double MaxPersonalizeSheetFraction = 0.6;
+
+    /// <summary>
+    /// Live width of the Personalize side sheet. Bound by ShellView.axaml to the SideSheet's
+    /// SideSheetWidth AND to the width of the resize-grip Panel beside it, so the grip tracks the
+    /// sheet edge on every drag frame. Owned here, not by <see cref="CustomizationViewModel"/>:
+    /// the drag happens on the shell, before the sheet's content is involved, and the shell is the
+    /// only thing that knows its own width to clamp against. Persisted in
+    /// <see cref="Remex.Core.Models.CustomizationSettings.PersonalizeSheetWidth"/> - written from
+    /// here on drag end, and carried by CustomizationViewModel.BuildCurrentSettings so a
+    /// Personalize save does not wipe it.
+    /// </summary>
+    [ObservableProperty]
+    private double _personalizeSheetWidth = DefaultPersonalizeSheetWidth;
+
+    /// <summary>
+    /// Clamps a requested sheet width to [<see cref="MinPersonalizeSheetWidth"/>, 60% of
+    /// <paramref name="shellWidth"/>]. A shell width of 0 or less (not laid out yet) or a NaN request
+    /// collapses to the floor rather than throwing or letting garbage through - both happen
+    /// legitimately during startup, when a stored width is applied before the window has a size.
+    /// </summary>
+    public static double ClampPersonalizeSheetWidth(double requested, double shellWidth)
+    {
+        if (double.IsNaN(requested)) return MinPersonalizeSheetWidth;
+        var max = double.IsFinite(shellWidth) && shellWidth > 0
+            ? Math.Max(MinPersonalizeSheetWidth, shellWidth * MaxPersonalizeSheetFraction)
+            : MinPersonalizeSheetWidth;
+        return Math.Clamp(requested, MinPersonalizeSheetWidth, max);
+    }
+
+    /// <summary>
+    /// Applies a drag frame: sets the clamped width without saving. Persisting per frame would
+    /// queue a profile write on every pointer move; <see cref="CommitPersonalizeSheetWidth"/> does
+    /// that once, on drag end.
+    /// </summary>
+    public void ResizePersonalizeSheet(double requested, double shellWidth) =>
+        PersonalizeSheetWidth = ClampPersonalizeSheetWidth(requested, shellWidth);
+
+    /// <summary>
+    /// Persists the current width through the profile's only save path (debounced, atomic
+    /// temp+move). Built as <c>CurrentProfile with { Customization = ... with { ... } }</c> so every
+    /// other customization field carries through untouched.
+    /// </summary>
+    public void CommitPersonalizeSheetWidth()
+    {
+        var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+        var updated = current with
+        {
+            Customization = current.Customization with { PersonalizeSheetWidth = PersonalizeSheetWidth },
+        };
+        _layoutService.RequestSave(updated);
+    }
+
+    /// <summary>Double-click on the grip: back to <see cref="DefaultPersonalizeSheetWidth"/>, saved.</summary>
+    public void ResetPersonalizeSheetWidth()
+    {
+        PersonalizeSheetWidth = DefaultPersonalizeSheetWidth;
+        CommitPersonalizeSheetWidth();
+    }
+
+    /// <summary>
+    /// What a stored (or absent) width means at load: null is the default, anything else is floored
+    /// at the minimum. The 60% ceiling is NOT applied here - the view model has no window width at
+    /// construction - ShellView's SizeChanged re-clamp applies it the moment the shell has a size.
+    /// </summary>
+    private static double SheetWidthFromSettings(Remex.Core.Models.CustomizationSettings settings)
+    {
+        var stored = settings.PersonalizeSheetWidth;
+        return stored is { } w && double.IsFinite(w)
+            ? Math.Max(MinPersonalizeSheetWidth, w)
+            : DefaultPersonalizeSheetWidth;
+    }
+
     /// <summary>The decoded wallpaper for the Wallpaper background mode, or null. Decoded once per
     /// path change on a worker thread and cached here; the blur is an Effect on the Image, so
     /// nothing re-renders per frame (spec section 9).</summary>
@@ -830,12 +915,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         {
             Customization = settings;
             RefreshWallpaperBackdrop(settings);
+            // Re-synced on every apply, not just at load, so a profile import or switch brings its
+            // own sheet width with it. A save from the Personalize sheet itself round-trips the
+            // live value (BuildCurrentSettings carries it), so this is a no-op in that case.
+            PersonalizeSheetWidth = SheetWidthFromSettings(settings);
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
             RefreshWallpaperBackdrop(Customization);
+            _personalizeSheetWidth = SheetWidthFromSettings(Customization);
         }
 
 

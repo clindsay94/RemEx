@@ -131,6 +131,35 @@ public class PersonalizationSheetLayoutTests
         HostMarkup().Should().NotContain("<ScrollViewer", "no ScrollViewer belongs around the Personalize view any more - each tab owns its own");
     }
 
+    [Fact]
+    public void TheTabHeadersAreLeftAlignedInTheirTabs_WithoutTouchingTheirMinWidth()
+    {
+        // RemEx-vkkcq fix round 1 (Connor): the header text sits at the left of its tab, not centred.
+        // Material centres it twice - HorizontalContentAlignment=Center on the TabItem and
+        // HorizontalAlignment=Center on the template's PART_ContentPresenter - so both have to be
+        // overridden or the presenter keeps floating in the middle of its 90px slot. The MinWidth
+        // and the App.axaml 16px inset are deliberately not this view's business.
+        var host = HostMarkup();
+
+        var tabItemStyle = Regex.Match(host, @"<Style Selector=""TabItem"">[\s\S]*?</Style>");
+        tabItemStyle.Success.Should().BeTrue("the host styles its own TabItems");
+        tabItemStyle.Value.Should().MatchRegex(
+            @"<Setter Property=""HorizontalContentAlignment"" Value=""Left""\s*/>",
+            "the header content has to be left-aligned inside the presenter");
+
+        var presenterStyle = Regex.Match(host,
+            @"<Style Selector=""TabItem /template/ ContentPresenter#PART_ContentPresenter"">[\s\S]*?</Style>");
+        presenterStyle.Success.Should().BeTrue("the template presenter's own centring has to be overridden too");
+        presenterStyle.Value.Should().MatchRegex(
+            @"<Setter Property=""HorizontalAlignment"" Value=""Left""\s*/>",
+            "the presenter itself has to sit at the left of the tab, not centred in it");
+
+        host.Should().NotContain("Property=\"MinWidth\"", "the header slot width is Material's, not this view's");
+        host.Should().NotContain("MinWidth=\"", "the header slot width is Material's, not this view's");
+        host.Should().NotContain("Property=\"Padding\"", "the 16px inset lives in App.axaml, not here");
+        Regex.IsMatch(host, @"Property=""Template""").Should().BeFalse("alignment is a setter, never a template override");
+    }
+
     [Theory]
     [InlineData("PersonalizeColourTab.axaml")]
     [InlineData("PersonalizePalettesTab.axaml")]

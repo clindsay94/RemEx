@@ -2755,6 +2755,9 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="A11y_Close" xml:space="preserve">
     <value>Fechar</value>
   </data>
+  <data name="A11y_ResizePersonalizeSheet" xml:space="preserve">
+    <value>Redimensionar o painel Personalizar</value>
+  </data>
   <data name="A11y_Dismiss" xml:space="preserve">
     <value>Dispensar</value>
   </data>
