@@ -106,6 +106,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   explicit acknowledgement, and the phone waits for that before sending anything that needs
   pairing (the palette, the Share-to-PC folder list). (RemEx-0vpw5)
 
+- Settings → Sensor alerts: the "No alerts configured" line is readable over a wallpaper. It was
+  drawn in the palette's outline tone, a border colour that disappeared against a busy background;
+  it now uses the same supporting-text colour as the other descriptions on the page. (RemEx-8wpvr.12)
+
 - The Aurora background actually draws its mesh. Its three colour blobs had radii written as bare
   numbers, which Avalonia reads as device pixels — one-pixel circles — so the whole surface painted
   the base colour and Aurora looked like a flat black or white sheet. The radii are percentages

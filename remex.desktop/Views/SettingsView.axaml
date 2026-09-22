@@ -247,7 +247,10 @@
                         <StackPanel Spacing="16" DataContext="{Binding AlertsSection}">
                             <TextBlock Text="{local:Localize Settings_Alerts_Title}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                            <TextBlock Text="{local:Localize Settings_Alerts_Empty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"/>
+                            <!-- Secondary (OnSurfaceVariant), not Muted (Outline): this is the card's only content
+                                 when there are no alerts, and Outline is a border tone that vanished against the
+                                 wallpaper in the eyes pass (RemEx-8wpvr.12). -->
+                            <TextBlock Text="{local:Localize Settings_Alerts_Empty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"/>
 
                             <!-- Virtualising ListBox, not a bare ItemsControl (bd memory: a bare
                                  ItemsControl realizes every row). MaxHeight bounds the card height

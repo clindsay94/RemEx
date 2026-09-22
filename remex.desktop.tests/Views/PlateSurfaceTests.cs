@@ -39,6 +39,17 @@ public class PlateSurfaceTests
         => Markup("SettingsView.axaml").Should().MatchRegex(pattern, because);
 
     [Fact]
+    public void SettingsViewAlertsEmptyStateUsesTheSecondaryTextBrushNotOutline()
+    {
+        // RemEx-8wpvr.12: TextMutedBrush is the palette's Outline - a border tone, ~3:1 - and the
+        // alerts card's empty-state line vanished in it against the wallpaper. As the card's only
+        // content it is supporting text, which is OnSurfaceVariant (TextSecondaryBrush).
+        Markup("SettingsView.axaml").Should().MatchRegex(
+            @"<TextBlock Text=""\{local:Localize Settings_Alerts_Empty\}""[^>]*Foreground=""\{DynamicResource TextSecondaryBrush\}""",
+            "the alerts empty-state line must use the supporting-text brush, not the Outline tone");
+    }
+
+    [Fact]
     public void SettingsViewQrAndPinBoxesStillUseTheWindowGlassBrush()
     {
         // These two are the window-glass boxes behind a QR code and a PIN — explicitly out of
