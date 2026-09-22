@@ -49,6 +49,12 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     public event Action<List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
     public event Action<List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
     public event Action<bool>? ConnectionStateChanged;
+    /// <summary>
+    /// The host accepted our reconnect proof: the control socket is paired and every gated send is
+    /// now honoured. Fires strictly after <see cref="ConnectionStateChanged"/>(true) and never on a
+    /// failed proof. Pairing-gated sends (theme_sync) key off this, not off the open (RemEx-0vpw5).
+    /// </summary>
+    public event Action? Authenticated;
     public event Action<RemexMessage>? MessageReceived;
     public event Action<string>? ConnectionFailed;
 
@@ -498,6 +504,13 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 // HMAC-SHA256(reconnectSecret, nonce). Done off the receive loop so we never
                 // block message processing on the outbound send gate.
                 RespondToReconnectChallenge(msg.ReconnectChallenge, _webSocket);
+                break;
+
+            case MessageTypes.ReconnectResult when msg.ReconnectResult is { Success: true }:
+                // PAIR-1 ack: the proof verified host-side. This is the "paired" edge the phone
+                // gates theme_sync on; the WebSocket open is not, because the challenge has not
+                // even been issued yet at that point.
+                Authenticated?.Invoke();
                 break;
 
             case MessageTypes.CommandResponse:

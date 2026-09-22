@@ -99,6 +99,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The phone's palette reaches the PC as soon as it reconnects. The phone used to send its theme
+  the instant the socket opened — before it had proven who it was — so the PC refused it as an
+  unpaired message and nothing told the phone it had been dropped; the colours only arrived the
+  next time the phone's theme actually changed. The PC now answers a successful reconnect with an
+  explicit acknowledgement, and the phone waits for that before sending anything that needs
+  pairing (the palette, the Share-to-PC folder list). (RemEx-0vpw5)
+
 - The Aurora background actually draws its mesh. Its three colour blobs had radii written as bare
   numbers, which Avalonia reads as device pixels — one-pixel circles — so the whole surface painted
   the base colour and Aurora looked like a flat black or white sheet. The radii are percentages

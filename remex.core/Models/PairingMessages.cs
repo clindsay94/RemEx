@@ -57,3 +57,14 @@ public sealed record ReconnectProof
     [JsonPropertyName("proofHmac")] public required string ProofHmacBase64 { get; init; }
     [JsonPropertyName("clientId")] public string? ClientId { get; init; }
 }
+
+/// <summary>
+/// Host → client acknowledgement of a verified <see cref="ReconnectProof"/>. The host sends it only
+/// when the proof checks out, so <see cref="Success"/> is always <c>true</c> on the wire today; the
+/// field exists so a future host can say "no" explicitly instead of staying silent.
+/// </summary>
+public sealed record ReconnectResult([property: JsonPropertyName("success")] bool Success)
+{
+    /// <summary>Parameterless for the source-generated deserializer; <see cref="Success"/> is <c>init</c>.</summary>
+    public ReconnectResult() : this(false) { }
+}

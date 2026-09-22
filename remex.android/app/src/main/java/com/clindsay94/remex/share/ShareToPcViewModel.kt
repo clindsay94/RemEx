@@ -103,8 +103,12 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         viewModelScope.launch {
-            RemexClientManager.isConnected.collect { connected ->
-                if (connected && hostConfigured && !rootsLoaded) loadRoots()
+            // isAuthenticated, not isConnected (RemEx-0vpw5): file_roots_request is pairing-gated
+            // host-side, and the socket is open before the host has acked the reconnect proof, so a
+            // request sent on the open is rejected and the roots never load until something else
+            // re-triggers it. The ack is the edge on which the host will actually answer.
+            RemexClientManager.isAuthenticated.collect { authenticated ->
+                if (authenticated && hostConfigured && !rootsLoaded) loadRoots()
                 recomputePhase()
             }
         }

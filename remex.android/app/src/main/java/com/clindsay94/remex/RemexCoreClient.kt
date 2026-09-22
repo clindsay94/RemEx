@@ -23,6 +23,16 @@ object RemexCoreClient {
     interface RemexCallback {
         fun onTelemetryUpdate(telemetryData: String?)
         fun onConnectionStateChanged(isConnected: Boolean)
+
+        /**
+         * The host accepted our reconnect proof: the control socket is paired and pairing-gated
+         * sends (theme_sync) are honoured from here on (RemEx-0vpw5).
+         *
+         * Always arrives AFTER [onConnectionStateChanged] `(true)` for the same socket and never
+         * for a rejected proof. The open itself is NOT this signal - the host issues the challenge
+         * lazily on our kickoff ping, so anything gated that is sent on open is rejected.
+         */
+        fun onAuthenticated()
         fun onLauncherSync(launcherData: String?)
         fun onProcessListSync(processData: String?)
         fun onFrameReceived(frame: ByteArray?)

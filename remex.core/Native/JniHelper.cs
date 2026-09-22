@@ -269,6 +269,20 @@ public static unsafe class JniHelper
         callVoidMethodA(envPtr, obj, methodId, args);
     }
 
+    /// <summary>Invokes a void instance method taking no arguments (<c>()V</c>).</summary>
+    /// <remarks>
+    /// Still goes through <c>CallVoidMethodA</c> with an empty jvalue array rather than the variadic
+    /// <c>CallVoidMethod</c>: the variadic entry has no fixed native signature to declare a function
+    /// pointer for, and the <c>A</c> variant ignores the array for a <c>()V</c> method.
+    /// </remarks>
+    public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId)
+    {
+        var env = (JNIEnv*)envPtr;
+        var callVoidMethodA = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, JValue*, void>)env->Functions[63];
+        var args = stackalloc JValue[1];
+        callVoidMethodA(envPtr, obj, methodId, args);
+    }
+
     /// <summary>Allocates a Java byte array, returned as a LOCAL reference.</summary>
     public static IntPtr NewByteArray(IntPtr envPtr, int len)
     {

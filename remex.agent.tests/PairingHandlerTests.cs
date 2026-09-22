@@ -550,6 +550,261 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
         }
     }
 
+    /// <summary>
+    /// A verified reconnect proof gets an explicit ack, and gated sends after it are honoured
+    /// (RemEx-0vpw5).
+    /// </summary>
+    /// <remarks>
+    /// Design (A): the phone gates <c>theme_sync</c> (and anything else pairing-gated) on this ack
+    /// rather than on bare socket open, because the host rejects a gated send that races the proof.
+    /// This test proves the ack fires on success and that a gated send issued after it goes through
+    /// cleanly — no failed <c>command_response</c> sneaks in between the ack and a later pong.
+    /// </remarks>
+    [Fact]
+    public async Task ValidReconnectProof_SendsReconnectResult_AndAcceptsGatedSendsAfterIt()
+    {
+        var factory = new RemexHostFactory().WithServices(services =>
+            services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>());
+
+        var pairingService = factory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
+        var sessions = factory.Services.GetRequiredService<ClientSessionRegistry>();
+        var wsClient = factory.Server.CreateWebSocketClient();
+
+        const string clientId = "reconnect-ack-client";
+        byte[] sessionKey;
+
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingRequest,
+                ClientId = clientId,
+                PairingRequest = new PairingRequest
+                {
+                    ClientPublicKeyBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo()),
+                    ClientName = "Reconnect Ack Client",
+                    ClientVersion = "2.0.0",
+                    ClientId = clientId,
+                },
+            }, CancellationToken.None);
+
+            var pairingResponse = await ReceiveOfTypeAsync(ws, MessageTypes.PairingResponse);
+            Assert.NotNull(pairingResponse?.PairingResponse);
+
+            using var hostPeer = ECDiffieHellman.Create();
+            hostPeer.ImportSubjectPublicKeyInfo(
+                Convert.FromBase64String(pairingResponse!.PairingResponse!.HostPublicKeyBase64), out _);
+
+            sessionKey = HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey),
+                outputLength: 32,
+                salt: Convert.FromBase64String(pairingResponse.PairingResponse.CertificateSpkiHashBase64),
+                info: System.Text.Encoding.UTF8.GetBytes("remex-pair-v1"));
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingComplete,
+                ClientId = clientId,
+                PairingComplete = new PairingComplete
+                {
+                    ClientId = clientId,
+                    ClientPinHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        sessionKey,
+                        System.Text.Encoding.UTF8.GetBytes("ack:" + pairingService.GetActivePin()))),
+                },
+            }, CancellationToken.None);
+
+            var complete = await ReceiveOfTypeAsync(ws, MessageTypes.PairingComplete);
+            Assert.True(complete?.CommandSuccess);
+        }
+
+        await WaitForSessionCountAsync(sessions, 0, SessionDrainBudget);
+
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            await MessageSerializer.SendAsync(
+                ws, new RemexMessage { Type = MessageTypes.Ping, ClientId = clientId }, CancellationToken.None);
+
+            var challenge = await ReceiveOfTypeAsync(ws, MessageTypes.ReconnectChallenge);
+            Assert.NotNull(challenge?.ReconnectChallenge);
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.ReconnectProof,
+                ClientId = clientId,
+                ReconnectProof = new ReconnectProof
+                {
+                    ClientId = clientId,
+                    ProofHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        sessionKey,
+                        Convert.FromBase64String(challenge!.ReconnectChallenge!.NonceBase64))),
+                },
+            }, CancellationToken.None);
+
+            // The ack itself: a valid proof gets an explicit reconnect_result, success == true.
+            var result = await ReceiveOfTypeAsync(ws, MessageTypes.ReconnectResult);
+            Assert.NotNull(result?.ReconnectResult);
+            Assert.True(result!.ReconnectResult!.Success);
+
+            // A gated send issued only after the ack (the phone's real trigger) must be honoured —
+            // not rejected as if it had raced bare socket-open.
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.ThemeSync,
+                ClientId = clientId,
+                ThemeSync = new Remex.Core.Models.PhoneThemeSnapshot { SeedHex = "#336699" },
+            }, CancellationToken.None);
+
+            await MessageSerializer.SendAsync(
+                ws, new RemexMessage { Type = MessageTypes.Ping, ClientId = clientId }, CancellationToken.None);
+
+            // Drain until the pong, and fail fast if a rejection (the "Pairing required"
+            // command_response) shows up on the way — that would mean the gated theme_sync above
+            // was treated as unpaired despite the ack.
+            RemexMessage? pong = null;
+            for (var i = 0; i < 12; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+                if (msg is null) break;
+                if (msg.Type == MessageTypes.CommandResponse && msg.CommandSuccess == false)
+                {
+                    Assert.Fail($"Unexpected failed command_response after the reconnect ack: {msg.CommandMessage}");
+                }
+                if (msg.Type == MessageTypes.Pong)
+                {
+                    pong = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(pong);
+        }
+    }
+
+    /// <summary>A bad reconnect proof gets no ack — the failure path stays silent (RemEx-0vpw5).</summary>
+    [Fact]
+    public async Task InvalidReconnectProof_SendsNoReconnectResult()
+    {
+        var factory = new RemexHostFactory().WithServices(services =>
+            services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>());
+
+        var pairingService = factory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
+        var sessions = factory.Services.GetRequiredService<ClientSessionRegistry>();
+        var wsClient = factory.Server.CreateWebSocketClient();
+
+        const string clientId = "reconnect-bad-proof-client";
+
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingRequest,
+                ClientId = clientId,
+                PairingRequest = new PairingRequest
+                {
+                    ClientPublicKeyBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo()),
+                    ClientName = "Reconnect Bad Proof Client",
+                    ClientVersion = "2.0.0",
+                    ClientId = clientId,
+                },
+            }, CancellationToken.None);
+
+            var pairingResponse = await ReceiveOfTypeAsync(ws, MessageTypes.PairingResponse);
+            Assert.NotNull(pairingResponse?.PairingResponse);
+
+            using var hostPeer = ECDiffieHellman.Create();
+            hostPeer.ImportSubjectPublicKeyInfo(
+                Convert.FromBase64String(pairingResponse!.PairingResponse!.HostPublicKeyBase64), out _);
+
+            var sessionKey = HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey),
+                outputLength: 32,
+                salt: Convert.FromBase64String(pairingResponse.PairingResponse.CertificateSpkiHashBase64),
+                info: System.Text.Encoding.UTF8.GetBytes("remex-pair-v1"));
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingComplete,
+                ClientId = clientId,
+                PairingComplete = new PairingComplete
+                {
+                    ClientId = clientId,
+                    ClientPinHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        sessionKey,
+                        System.Text.Encoding.UTF8.GetBytes("ack:" + pairingService.GetActivePin()))),
+                },
+            }, CancellationToken.None);
+
+            var complete = await ReceiveOfTypeAsync(ws, MessageTypes.PairingComplete);
+            Assert.True(complete?.CommandSuccess);
+        }
+
+        await WaitForSessionCountAsync(sessions, 0, SessionDrainBudget);
+
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            await MessageSerializer.SendAsync(
+                ws, new RemexMessage { Type = MessageTypes.Ping, ClientId = clientId }, CancellationToken.None);
+
+            var challenge = await ReceiveOfTypeAsync(ws, MessageTypes.ReconnectChallenge);
+            Assert.NotNull(challenge?.ReconnectChallenge);
+
+            // The SAME ping that provoked the challenge also falls through the normal Ping case and
+            // gets its own pong — the challenge check runs before the switch, not instead of it. Drain
+            // that pong here, deterministically, or it sits unread at the front of the queue and the
+            // loop below would match it before ever looking at what the bad proof produced.
+            Assert.NotNull(await ReceiveOfTypeAsync(ws, MessageTypes.Pong));
+
+            // Garbage proof — no correct HMAC over the nonce.
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.ReconnectProof,
+                ClientId = clientId,
+                ReconnectProof = new ReconnectProof
+                {
+                    ClientId = clientId,
+                    ProofHmacBase64 = Convert.ToBase64String(new byte[32]),
+                },
+            }, CancellationToken.None);
+
+            // Round-trip on something that always answers, so we know the host has finished
+            // processing the bad proof before asserting its absence. Read frames one at a time
+            // rather than via ReceiveOfTypeAsync(Pong) — that helper discards every non-matching
+            // frame on the way, so a reconnect_result sent (wrongly) BEFORE the pong would be
+            // swallowed silently and this test would prove nothing. The host handles a socket's
+            // messages sequentially, so anything the failure branch sends lands before the pong
+            // this ping provokes.
+            await MessageSerializer.SendAsync(
+                ws, new RemexMessage { Type = MessageTypes.Ping, ClientId = clientId }, CancellationToken.None);
+
+            RemexMessage? pong = null;
+            for (var i = 0; i < 12; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+                if (msg is null) break;
+                if (msg.Type == MessageTypes.ReconnectResult)
+                {
+                    Assert.Fail("A bad reconnect proof must never get a reconnect_result — the failure path is silent.");
+                }
+                if (msg.Type == MessageTypes.Pong)
+                {
+                    pong = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(pong);
+        }
+    }
+
     /// <summary>How long a wait on something the host does on its own schedule may take.</summary>
     private static readonly TimeSpan DefaultWaitBudget = TimeSpan.FromSeconds(30);
 

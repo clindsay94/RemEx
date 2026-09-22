@@ -78,6 +78,30 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _connectedHost = MutableStateFlow<EstablishedConnection?>(null)
     val connectedHost = _connectedHost.asStateFlow()
 
+    /**
+     * The PC whose reconnect proof the host has ACCEPTED, or null until it does (and null again on
+     * every disconnect). This is the "paired" edge, and it is later than [connectedHost]: the socket
+     * opens, the kickoff ping triggers the host's challenge, the native client answers it, and only
+     * the host's `reconnect_result` ack lands here. Anything the host gates on pairing - theme_sync
+     * is the one that bit (RemEx-0vpw5) - must key off this, not off [connectedHost], or it is sent
+     * into the gap and rejected with a command_response nobody is waiting for.
+     *
+     * Same shape as [connectedHost] rather than a bare Boolean, for the same reason (RemEx-bz9t): a
+     * host switch drives disconnect-then-connect-then-authenticated, and a collector that missed the
+     * intervening null would see no change on a Boolean that went true, true.
+     */
+    private val _authenticatedConnection = MutableStateFlow<EstablishedConnection?>(null)
+    val authenticatedConnection = _authenticatedConnection.asStateFlow()
+
+    /**
+     * True once the host has acked this connection's reconnect proof; see [authenticatedConnection].
+     * Kept as its own flow, set in the same call, rather than derived with `map().stateIn()`: a derived
+     * flow updates on [managerScope] (Main) a hop later, and the JVM tests read this synchronously
+     * after the callback, exactly as they do [isConnected].
+     */
+    private val _isAuthenticated = MutableStateFlow(false)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
     /** Host/port of the connect attempt in flight, so a success can be attributed to a PC. */
     @Volatile private var pendingTarget: Pair<String, Int>? = null
 
@@ -334,7 +358,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         val sender =
                 ThemeSyncSender(
                         scope = CoroutineScope(managerScope.coroutineContext + Dispatchers.IO),
-                        isConnected = { _isConnected.value },
+                        isAuthenticated = { _isAuthenticated.value },
                         resolveSeed = { snapshot -> ThemeSyncSeedResolver.resolve(appContext, snapshot) },
                         send = { json -> RemexCoreClient.SendMessage(json) },
                 )
@@ -346,8 +370,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     .collect { snapshot -> sender.onThemeChanged(snapshot) }
         }
 
+        // AUTHENTICATED, NOT CONNECTED (RemEx-0vpw5). theme_sync is pairing-gated host-side, and the
+        // socket opening is before the host has even issued its reconnect challenge - so a send
+        // keyed on [connectedHost] arrived unpaired, was rejected, and the palette only ever reached
+        // the PC on the next phone-side theme change. [authenticatedConnection] is the host's ack.
         managerScope.launch(Dispatchers.IO) {
-            connectedHost.filterNotNull().collect {
+            authenticatedConnection.filterNotNull().collect {
                 sender.onConnected(settings.personalizationPreferencesFlow.first().toThemeSnapshot())
             }
         }
@@ -838,6 +866,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     override fun onConnectionStateChanged(isConnected: Boolean) {
+        // Cleared in BOTH directions, and BEFORE [_isConnected] moves: a fresh socket is not paired
+        // until the host acks its proof, on a host switch the previous PC's ack must not survive into
+        // the new connection, and no reader may ever observe connected=false with authenticated=true.
+        _isAuthenticated.value = false
+        _authenticatedConnection.value = null
         _isConnected.value = isConnected
         _isConnecting.value = false
         // Which PC this is, not merely that there is one. A host switch drives this callback false
@@ -879,6 +912,20 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // re-request until its TTL expires. The cached bitmaps themselves are not connection-scoped
         // (see [artworkCache]'s KDoc), so only the in-flight bookkeeping is cleared.
         artworkCache.clearAllInFlight()
+    }
+
+    override fun onAuthenticated() {
+        // Stamped with the connection that is up NOW, so a collector can tell "A authenticated" from
+        // "B authenticated" across a host switch (the epoch is what differs). Native posts this on
+        // the same thread as, and strictly after, onConnectionStateChanged(true), so [_connectedHost]
+        // is already the right PC. An ack with no socket up is stale and says nothing.
+        if (!_isConnected.value) return
+        // Flag BEFORE trigger: [_authenticatedConnection] is what the theme collector wakes on, and
+        // the sender it then calls reads [_isAuthenticated] as its predicate. Written the other way
+        // round, a collector that wins the race sees false and silently drops the one-shot palette
+        // send this signal exists to deliver.
+        _isAuthenticated.value = true
+        _authenticatedConnection.value = _connectedHost.value
     }
 
     fun setConnecting(isConnecting: Boolean) {
@@ -1153,6 +1200,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onConnectionError(reason: String?) {
+        // Auth pair first, for the same reason as onConnectionStateChanged: never connected=false
+        // with authenticated=true.
+        _isAuthenticated.value = false
+        _authenticatedConnection.value = null
         _isConnected.value = false
         _isConnecting.value = false
         _connectedHost.value = null

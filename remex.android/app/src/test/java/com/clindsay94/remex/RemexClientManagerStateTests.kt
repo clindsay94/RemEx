@@ -77,6 +77,44 @@ class RemexClientManagerStateTests {
         )
     }
 
+    // ---- isAuthenticated: the host's reconnect_result ack, not bare socket-open (RemEx-0vpw5) ----
+
+    @Test
+    fun `onConnectionStateChanged(true) leaves isAuthenticated false`() {
+        RemexClientManager.onConnectionStateChanged(isConnected = true)
+
+        assertFalse(
+            "A bare socket-open is not an ack — isAuthenticated must wait for onAuthenticated().",
+            RemexClientManager.isAuthenticated.value
+        )
+
+        RemexClientManager.onConnectionStateChanged(isConnected = false)
+    }
+
+    @Test
+    fun `onAuthenticated() sets isAuthenticated true`() {
+        RemexClientManager.onConnectionStateChanged(isConnected = true)
+        RemexClientManager.onAuthenticated()
+
+        assertEquals(true, RemexClientManager.isAuthenticated.value)
+
+        RemexClientManager.onConnectionStateChanged(isConnected = false)
+    }
+
+    @Test
+    fun `onConnectionStateChanged(false) clears isAuthenticated`() {
+        RemexClientManager.onConnectionStateChanged(isConnected = true)
+        RemexClientManager.onAuthenticated()
+        assertEquals(true, RemexClientManager.isAuthenticated.value)
+
+        RemexClientManager.onConnectionStateChanged(isConnected = false)
+
+        assertFalse(
+            "A dropped socket must clear the ack — a new connection re-earns it.",
+            RemexClientManager.isAuthenticated.value
+        )
+    }
+
     // ---- connectedHost: which PC connected, not merely that one did (RemEx-bz9t) ----
     //
     // The Known PCs list stamps `lastConnectedAtMillis` from this flow. It used to stamp from the

@@ -168,6 +168,12 @@ public static class AndroidNativeExports
     private static IntPtr _callbackGlobalRef;
     private static IntPtr _onTelemetryUpdateMethodId;
     private static IntPtr _onConnectionStateChangedMethodId;
+    /// <summary>
+    /// Carries the host's <c>reconnect_result</c> ack to Kotlin: the control socket is paired, and
+    /// pairing-gated sends (theme_sync) may start. Always posted AFTER the connected=true post, on the
+    /// same Java thread, so Kotlin never sees "authenticated" on a socket it has not seen open.
+    /// </summary>
+    private static IntPtr _onAuthenticatedMethodId;
     private static IntPtr _onLauncherSyncMethodId;
     private static IntPtr _onProcessListSyncMethodId;
     private static IntPtr _onFrameReceivedMethodId;
@@ -229,6 +235,7 @@ public static class AndroidNativeExports
     {
         RemexNativeClient.Current.TelemetryReceived += OnNativeTelemetryReceived;
         RemexNativeClient.Current.ConnectionStateChanged += OnNativeConnectionStateChanged;
+        RemexNativeClient.Current.Authenticated += OnNativeAuthenticated;
         RemexNativeClient.Current.LauncherEntriesReceived += OnNativeLauncherEntriesReceived;
         RemexNativeClient.Current.ProcessListReceived += OnNativeProcessListReceived;
         RemexNativeClient.Current.MessageReceived += OnNativeMessageReceived;
@@ -300,6 +307,7 @@ public static class AndroidNativeExports
         _callbackGlobalRef = IntPtr.Zero;
         _onTelemetryUpdateMethodId = IntPtr.Zero;
         _onConnectionStateChangedMethodId = IntPtr.Zero;
+        _onAuthenticatedMethodId = IntPtr.Zero;
         _onLauncherSyncMethodId = IntPtr.Zero;
         _onProcessListSyncMethodId = IntPtr.Zero;
         _onFrameReceivedMethodId = IntPtr.Zero;
@@ -413,6 +421,7 @@ public static class AndroidNativeExports
             {
                 var onTelemetryUpdateMethodId = GetRequiredCallbackMethodId(env, clazz, "onTelemetryUpdate", "(Ljava/lang/String;)V");
                 var onConnectionStateChangedMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionStateChanged", "(Z)V");
+                var onAuthenticatedMethodId = GetRequiredCallbackMethodId(env, clazz, "onAuthenticated", "()V");
                 var onLauncherSyncMethodId = GetRequiredCallbackMethodId(env, clazz, "onLauncherSync", "(Ljava/lang/String;)V");
                 var onProcessListSyncMethodId = GetRequiredCallbackMethodId(env, clazz, "onProcessListSync", "(Ljava/lang/String;)V");
                 var onFrameReceivedMethodId = GetRequiredCallbackMethodId(env, clazz, "onFrameReceived", "([B)V");
@@ -435,6 +444,7 @@ public static class AndroidNativeExports
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
+                    || onAuthenticatedMethodId == IntPtr.Zero
                     || onLauncherSyncMethodId == IntPtr.Zero
                     || onProcessListSyncMethodId == IntPtr.Zero
                     || onFrameReceivedMethodId == IntPtr.Zero
@@ -462,6 +472,7 @@ public static class AndroidNativeExports
                 _callbackGlobalRef = newCallbackGlobalRef;
                 _onTelemetryUpdateMethodId = onTelemetryUpdateMethodId;
                 _onConnectionStateChangedMethodId = onConnectionStateChangedMethodId;
+                _onAuthenticatedMethodId = onAuthenticatedMethodId;
                 _onLauncherSyncMethodId = onLauncherSyncMethodId;
                 _onProcessListSyncMethodId = onProcessListSyncMethodId;
                 _onFrameReceivedMethodId = onFrameReceivedMethodId;
@@ -1724,6 +1735,11 @@ public static class AndroidNativeExports
         NotifyJavaConnectionState(isConnected);
     }
 
+    private static void OnNativeAuthenticated()
+    {
+        NotifyJavaAuthenticated();
+    }
+
     private static void OnNativeFrameReceived(byte[] frame)
     {
         NotifyJavaFrame(frame);
@@ -1972,6 +1988,37 @@ public static class AndroidNativeExports
             if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
 
             JniHelper.CallVoidMethod(env, callback, methodId, isConnected);
+            if (JniHelper.ExceptionCheck(env))
+            {
+                JniHelper.ExceptionClear(env);
+                JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
+            }
+        });
+    }
+
+    /// <summary>
+    /// The host acked our reconnect proof. Routed through <see cref="PostToJavaThread"/> like the
+    /// connection-state post so the two keep their order: the ack is raised from the receive loop,
+    /// which only starts after <c>ConnectionStateChanged(true)</c> has already been posted.
+    /// </summary>
+    private static void NotifyJavaAuthenticated()
+    {
+        lock (SyncRoot)
+        {
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onAuthenticatedMethodId == IntPtr.Zero) return;
+        }
+
+        PostToJavaThread(env =>
+        {
+            IntPtr callback, methodId;
+            lock (SyncRoot)
+            {
+                callback = _callbackGlobalRef;
+                methodId = _onAuthenticatedMethodId;
+            }
+            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+
+            JniHelper.CallVoidMethod(env, callback, methodId);
             if (JniHelper.ExceptionCheck(env))
             {
                 JniHelper.ExceptionClear(env);

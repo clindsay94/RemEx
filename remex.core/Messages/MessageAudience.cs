@@ -129,6 +129,9 @@ public static class MessageAudience
         [MessageTypes.Pong] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.ProcessListSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.ReconnectChallenge] = ClientSurface.AndroidControl | ClientSurface.DesktopStream,
+        // Only the control socket's PingPongHandler acks a proof; the desktop stream's handshake
+        // authenticates inline and never sends this (RemEx-0vpw5).
+        [MessageTypes.ReconnectResult] = ClientSurface.AndroidControl,
         [MessageTypes.Telemetry] = ClientSurface.AndroidControl | ClientSurface.PcUi,
     };
 }

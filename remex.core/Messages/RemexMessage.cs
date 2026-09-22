@@ -198,6 +198,10 @@ public sealed record RemexMessage
     [JsonPropertyName("reconnectProof")]
     public ReconnectProof? ReconnectProof { get; init; }
 
+    /// <summary>Host → client reconnect acknowledgement (the proof verified; the socket is paired).</summary>
+    [JsonPropertyName("reconnectResult")]
+    public ReconnectResult? ReconnectResult { get; init; }
+
     // ── 2.0 File Transfer ──
 
     [JsonPropertyName("fileTransferStart")]
@@ -473,6 +477,14 @@ public static class MessageTypes
     public const string ReconnectChallenge = "reconnect_challenge";
     /// <summary>Client → host reconnect proof (HMAC over the challenge nonce).</summary>
     public const string ReconnectProof = "reconnect_proof";
+    /// <summary>
+    /// Host → client acknowledgement that a <see cref="ReconnectProof"/> verified and the control
+    /// socket is now paired. Sent on success only; the failure path stays silent. This is the phone's
+    /// cue to start pairing-gated sends such as <see cref="ThemeSync"/> — bare WebSocket open is not,
+    /// because the host rejects anything gated until the proof lands (RemEx-0vpw5). An old phone has no
+    /// case for it and ignores the frame; no <c>protocolVersion</c> bump.
+    /// </summary>
+    public const string ReconnectResult = "reconnect_result";
     /// <summary>
     /// Client → host request to relay the active pairing PIN over the pairing <c>/ws</c> socket
     /// (ASI-compliant replacement for the trust-all HTTP auto-fetch). Gated host-side by

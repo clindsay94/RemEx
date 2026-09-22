@@ -12,10 +12,14 @@ import kotlinx.coroutines.launch
 const val ThemeSyncDebounceMs = 500L
 
 /**
- * Sends `theme_sync` once after a connection is established, and again on every theme-flow
+ * Sends `theme_sync` once after a connection is AUTHENTICATED, and again on every theme-flow
  * change — debounced, never on a timer (RemEx-y06a0.1).
  *
- * Constructor-injected [isConnected], [resolveSeed], [send] and [clock] rather than reaching for
+ * Authenticated, not merely connected (RemEx-0vpw5): `theme_sync` is pairing-gated host-side, and
+ * the socket opens before the host has issued its reconnect challenge, so a send keyed on the
+ * open arrives unpaired and is rejected. [isAuthenticated] is the host's `reconnect_result` ack.
+ *
+ * Constructor-injected [isAuthenticated], [resolveSeed], [send] and [clock] rather than reaching for
  * [com.clindsay94.remex.RemexClientManager] / [ThemeSyncSeedResolver] / a `Context` /
  * `System.currentTimeMillis()` directly, so this is testable with `runTest` and a fake sender —
  * no real sockets, no Robolectric — exactly as [MediaSeekReconciler] stays JVM-only by taking no
@@ -28,7 +32,7 @@ const val ThemeSyncDebounceMs = 500L
 @OptIn(FlowPreview::class)
 class ThemeSyncSender(
         private val scope: CoroutineScope,
-        private val isConnected: () -> Boolean,
+        private val isAuthenticated: () -> Boolean,
         private val resolveSeed: (ThemeSnapshot) -> String,
         private val send: (String) -> Unit,
         private val clock: () -> Long = System::currentTimeMillis,
@@ -43,21 +47,22 @@ class ThemeSyncSender(
         init {
                 scope.launch {
                         pendingChange.filterNotNull().debounce(debounceMs).collectLatest { snapshot ->
-                                if (isConnected()) deliver(snapshot)
+                                if (isAuthenticated()) deliver(snapshot)
                         }
                 }
         }
 
         /**
-         * Call once the handshake actually completes, with the theme as it stands right now — NOT
-         * cached from before the connection existed, so a device that changed its palette while
-         * disconnected announces the current one rather than a stale one from the last session.
+         * Call once the host has acked the reconnect proof (not on socket open — see class doc),
+         * with the theme as it stands right now — NOT cached from before the connection existed,
+         * so a device that changed its palette while disconnected announces the current one rather
+         * than a stale one from the last session.
          *
          * Sent immediately, bypassing the debounce: this is the "next connect sends the latest"
          * half of the contract, not a change to collapse against a burst.
          */
         fun onConnected(snapshot: ThemeSnapshot) {
-                if (isConnected()) deliver(snapshot)
+                if (isAuthenticated()) deliver(snapshot)
         }
 
         /** Call on every SettingsManager theme-flow emission, connected or not (see class doc). */

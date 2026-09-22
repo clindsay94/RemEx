@@ -762,6 +762,22 @@ public sealed class PingPongHandler(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
                             RecordDeviceConnectedActivity(nameStore.Resolve(connectionClientId), connectionClientId);
+
+                            // ACK THE PROOF, BECAUSE THE PHONE OTHERWISE HAS NO IDEA WHEN IT IS PAIRED.
+                            // Its only other signal is WebSocket open, which arrives BEFORE the
+                            // challenge, so anything pairing-gated it sends on open (theme_sync) is
+                            // rejected above and the rejection is a command_response no pending
+                            // command claims. This lands after MarkAuthenticated, so by the time the
+                            // phone reads it every gated send is accepted. Success only — a failed
+                            // proof stays silent, exactly as before (RemEx-0vpw5).
+                            await MessageSerializer.SendAsync(
+                                webSocket,
+                                new RemexMessage
+                                {
+                                    Type = MessageTypes.ReconnectResult,
+                                    ReconnectResult = new ReconnectResult { Success = true },
+                                },
+                                ct);
                         }
                         else
                         {

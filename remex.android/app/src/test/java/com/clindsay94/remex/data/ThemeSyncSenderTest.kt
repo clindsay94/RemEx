@@ -46,12 +46,12 @@ class ThemeSyncSenderTest {
                 JSONObject(json).getJSONObject("themeSync").getString("style")
 
         @Test
-        fun `sends once, immediately, after connect`() = runTest {
+        fun `sends once, immediately, after authenticated`() = runTest {
                 val sent = mutableListOf<String>()
                 val sender =
                         ThemeSyncSender(
                                 scope = backgroundScope,
-                                isConnected = { true },
+                                isAuthenticated = { true },
                                 resolveSeed = { "#AABBCC" },
                                 send = { sent += it },
                                 clock = { 1_000L },
@@ -69,7 +69,7 @@ class ThemeSyncSenderTest {
                 val sender =
                         ThemeSyncSender(
                                 scope = backgroundScope,
-                                isConnected = { false },
+                                isAuthenticated = { false },
                                 resolveSeed = { "#AABBCC" },
                                 send = { sent += it },
                                 clock = { 1_000L },
@@ -85,6 +85,31 @@ class ThemeSyncSenderTest {
         }
 
         @Test
+        fun `does not send while connected but not authenticated`() = runTest {
+                // The bare WebSocket is open (isConnected on the manager), but the host has not yet
+                // acked the reconnect proof — the exact gap Design (A) exists to close. A theme_sync
+                // fired here would race the host's pairing gate and be rejected today; the sender must
+                // stay quiet until the ack lands.
+                val sent = mutableListOf<String>()
+                val sender =
+                        ThemeSyncSender(
+                                scope = backgroundScope,
+                                isAuthenticated = { false },
+                                resolveSeed = { "#AABBCC" },
+                                send = { sent += it },
+                                clock = { 1_000L },
+                        )
+
+                sender.onConnected(snapshot())
+                sender.onThemeChanged(snapshot(themeStyle = "vibrant"))
+
+                assertTrue(
+                        "no theme_sync may be sent while connected but not yet authenticated",
+                        sent.isEmpty(),
+                )
+        }
+
+        @Test
         fun `the next connect sends the CURRENT theme, not one queued from before it`() = runTest {
                 // "no send while disconnected; the next connect sends the latest" — the wire contract
                 // is explicit that a connect always carries the current settings snapshot the caller
@@ -94,7 +119,7 @@ class ThemeSyncSenderTest {
                 val sender =
                         ThemeSyncSender(
                                 scope = backgroundScope,
-                                isConnected = { connected },
+                                isAuthenticated = { connected },
                                 resolveSeed = { "#AABBCC" },
                                 send = { sent += it },
                                 clock = { 1_000L },
@@ -119,7 +144,7 @@ class ThemeSyncSenderTest {
                 val sender =
                         ThemeSyncSender(
                                 scope = backgroundScope,
-                                isConnected = { true },
+                                isAuthenticated = { true },
                                 resolveSeed = { "#AABBCC" },
                                 send = { sent += it },
                                 clock = { currentClock },
@@ -144,7 +169,7 @@ class ThemeSyncSenderTest {
                         val sender =
                                 ThemeSyncSender(
                                         scope = scope,
-                                        isConnected = { true },
+                                        isAuthenticated = { true },
                                         resolveSeed = { "#AABBCC" },
                                         send = { sent += it },
                                         clock = { 1_000L },
@@ -184,7 +209,7 @@ class ThemeSyncSenderTest {
                         val sender =
                                 ThemeSyncSender(
                                         scope = scope,
-                                        isConnected = { true },
+                                        isAuthenticated = { true },
                                         resolveSeed = { "#AABBCC" },
                                         send = { sent += it },
                                         clock = { 1_000L },
