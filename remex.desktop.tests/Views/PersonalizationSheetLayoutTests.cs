@@ -132,17 +132,25 @@ public class PersonalizationSheetLayoutTests
     }
 
     [Fact]
-    public void TheTabHeadersAreLeftAlignedInTheirTabs_WithoutTouchingTheirMinWidth()
+    public void TheTabHeadersAreExactlyTheirTextsWidth_FlushLeft_WithNoInset()
     {
-        // RemEx-vkkcq fix round 1 (Connor): the header text sits at the left of its tab, not centred.
-        // Material centres it twice - HorizontalContentAlignment=Center on the TabItem and
-        // HorizontalAlignment=Center on the template's PART_ContentPresenter - so both have to be
-        // overridden or the presenter keeps floating in the middle of its 90px slot. The MinWidth
-        // and the App.axaml 16px inset are deliberately not this view's business.
+        // RemEx-vkkcq (Connor): "no inset on the tabs, and just make them as wide as the text, that
+        // way if I change it to a different font it doesn't look ridiculous." Three defaults fight
+        // that and each has a setter here: App.axaml's 16px Padding inset, MaterialTabItem's 90px
+        // MinWidth, and the strip's even width-sharing panel. Material also centres the header twice
+        // (HorizontalContentAlignment=Center on the TabItem and HorizontalAlignment=Center on the
+        // template's PART_ContentPresenter), so both are pinned Left. No pixel width anywhere, so a
+        // font change cannot break it.
         var host = HostMarkup();
 
         var tabItemStyle = Regex.Match(host, @"<Style Selector=""TabItem"">[\s\S]*?</Style>");
         tabItemStyle.Success.Should().BeTrue("the host styles its own TabItems");
+        tabItemStyle.Value.Should().MatchRegex(
+            @"<Setter Property=""Padding"" Value=""0""\s*/>",
+            "the App.axaml 16px inset is undone here so the name starts at the tab's left edge");
+        tabItemStyle.Value.Should().MatchRegex(
+            @"<Setter Property=""MinWidth"" Value=""0""\s*/>",
+            "Material's 90px MinWidth would pad a short name like Text out to a fixed slot");
         tabItemStyle.Value.Should().MatchRegex(
             @"<Setter Property=""HorizontalContentAlignment"" Value=""Left""\s*/>",
             "the header content has to be left-aligned inside the presenter");
@@ -154,10 +162,14 @@ public class PersonalizationSheetLayoutTests
             @"<Setter Property=""HorizontalAlignment"" Value=""Left""\s*/>",
             "the presenter itself has to sit at the left of the tab, not centred in it");
 
-        host.Should().NotContain("Property=\"MinWidth\"", "the header slot width is Material's, not this view's");
-        host.Should().NotContain("MinWidth=\"", "the header slot width is Material's, not this view's");
-        host.Should().NotContain("Property=\"Padding\"", "the 16px inset lives in App.axaml, not here");
-        Regex.IsMatch(host, @"Property=""Template""").Should().BeFalse("alignment is a setter, never a template override");
+        var tabControlStyle = Regex.Match(host, @"<Style Selector=""TabControl"">[\s\S]*?</Style>");
+        tabControlStyle.Success.Should().BeTrue("the strip's panel is what shares width evenly, so the host has to replace it");
+        tabControlStyle.Value.Should().MatchRegex(
+            @"<ItemsPanelTemplate>\s*<StackPanel Orientation=""Horizontal"" Spacing=""\d+""\s*/>\s*</ItemsPanelTemplate>",
+            "a horizontal StackPanel gives each tab its content width; Spacing keeps neighbours apart without an inset");
+
+        Regex.IsMatch(host, @"Property=""Template""").Should().BeFalse("all of this is setters, never a template override");
+        Regex.IsMatch(host, @"(Min|Max)?Width=""[1-9]").Should().BeFalse("no pixel width on the tabs - the text decides");
     }
 
     [Theory]

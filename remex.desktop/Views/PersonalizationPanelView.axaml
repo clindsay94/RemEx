@@ -6,17 +6,33 @@
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
     <UserControl.Styles>
-        <!-- Tab header text sits at the LEFT of its tab, not centred (RemEx-vkkcq fix round 1,
-             Connor's ask). Two setters because Material centres the header twice: MaterialTabItem
-             sets HorizontalContentAlignment=Center on the TabItem AND, in a template style,
-             HorizontalAlignment=Center on PART_ContentPresenter itself - so the presenter shrinks
-             to its text and floats in the middle of the 90px MinWidth slot, and the content
-             alignment alone moves nothing. The /template/ form is an alignment setter, not a
-             template override (FocusVisibleStyleGuardTests.NoViewReplacesTheTabItemTemplate...),
-             and it matches only the TabItem's own presenter, not the RippleEffect's inner one,
-             whose TemplatedParent is the ripple. App.axaml's Padding="16,0" inset still applies,
-             so the text starts 16px in from the tab's left edge. MinWidth is untouched. -->
+        <!-- Each tab is exactly as wide as its own name, with the name at its left edge
+             (RemEx-vkkcq, Connor: "no inset on the tabs, and just make them as wide as the text,
+             that way if I change it to a different font it doesn't look ridiculous"). Three things
+             conspire against that by default and all three are undone here:
+               - App.axaml's TabItem Padding="16,0" inset -> Padding 0.
+               - MaterialTabItem's MinWidth=90 -> 0, so a short name like "Text" is not padded out.
+               - The strip's default panel shares the width out evenly -> a horizontal StackPanel,
+                 so a tab takes its content width and the underline is the word's width. Spacing
+                 is what keeps neighbours apart now that there is no inset; it is between tabs,
+                 not inside them, so the name still starts at the tab's left edge.
+             Material also centres the header twice (HorizontalContentAlignment=Center on the
+             TabItem AND HorizontalAlignment=Center on PART_ContentPresenter in a template style);
+             both are pinned Left so the content cannot float. The /template/ form is an alignment
+             setter, not a template override (FocusVisibleStyleGuardTests.NoViewReplacesTheTabItem
+             Template...), and it matches only the TabItem's own presenter, not the RippleEffect's
+             inner one, whose TemplatedParent is the ripple. Font-agnostic by construction: nothing
+             here is a pixel width. -->
+        <Style Selector="TabControl">
+            <Setter Property="ItemsPanel">
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="24"/>
+                </ItemsPanelTemplate>
+            </Setter>
+        </Style>
         <Style Selector="TabItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
         </Style>
         <Style Selector="TabItem /template/ ContentPresenter#PART_ContentPresenter">
