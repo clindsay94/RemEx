@@ -62,6 +62,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   thumbnail cache is capped at 200 entries with the oldest dropped first, instead of holding every
   thumbnail from every folder browsed that session. (perf audit P0-19 through P0-21)
 
+- Stream-path and startup wins: the PC host now decodes file thumbnails at a sampled size instead
+  of full resolution before scaling down; the phone's fps overlay updates once a second instead of
+  on every video frame; the desktop Remote Desktop viewer reuses one receive buffer instead of
+  allocating fresh per frame and always shows the latest decoded frame instead of queuing every one;
+  and a profile load that finds nothing changed since it was last applied no longer re-applies the
+  theme or rewrites the splash sidecar, so a normal launch applies the theme once instead of twice.
+  (perf audit P0-15 through P0-18)
+
 - Personalize is five tabs instead of one long scroll: **Colour** (mode, source, seed, vibrancy,
   contrast, scheme variants, preview), **Palettes** (built-in and saved palettes, save / delete /
   export / import), **Surfaces** (background, wallpaper, window and card opacity, corner radius,

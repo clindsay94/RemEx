@@ -202,6 +202,41 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <summary>Test seam: the current value of <see cref="_hasLoadedOnce"/>.</summary>
     internal bool HasLoadedOnceForTests => _hasLoadedOnce;
 
+    /// <summary>
+    /// The customization this service last handed to <see cref="LastSeedSidecar.WriteAsync"/> from a
+    /// successful load (perf P0-18). Only read and written under <c>_gate</c>, inside
+    /// <see cref="LoadAsyncCore"/>. Null until the first load of the session has written one.
+    /// </summary>
+    /// <remarks>
+    /// TRACKED SEPARATELY FROM THE THEME SERVICE'S REQUESTED SETTINGS ON PURPOSE. The pre-window apply
+    /// (<c>App.ApplyThemeBeforeWindowShown</c>) and <c>ColorSourceCoordinator</c> both apply a
+    /// customization without writing the sidecar, so "the theme already has this" does not mean "the
+    /// sidecar already has this". Skipping the sidecar on the theme check alone would drop the
+    /// once-per-session refresh RemEx-alwfa.1 relies on to give an older install its first sidecar.
+    /// </remarks>
+    private CustomizationSettings? _lastSidecarCustomization;
+
+    /// <summary>
+    /// Whether two customizations would produce the same persisted profile content (perf P0-18).
+    /// </summary>
+    /// <remarks>
+    /// COMPARED AS SERIALIZED JSON, NOT WITH THE RECORD'S OWN <c>Equals</c>. <see cref="CustomizationSettings"/>
+    /// is a record, but it carries <c>List</c>/<c>IReadOnlyList</c> members, and record equality compares
+    /// those by reference - so two reads of the same file would never compare equal, and the skip this
+    /// exists for would never fire. Serializing through <see cref="JsonOptions"/> compares exactly what a
+    /// profile on disk would hold, which is the sense of "same" a reload cares about. Doubles round-trip
+    /// exactly through System.Text.Json, so a value read back from disk matches the one that wrote it.
+    /// </remarks>
+    internal static bool CustomizationContentEquals(CustomizationSettings? a, CustomizationSettings? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+        return string.Equals(
+            JsonSerializer.Serialize(a, JsonOptions),
+            JsonSerializer.Serialize(b, JsonOptions),
+            StringComparison.Ordinal);
+    }
+
     private readonly ILogger<DashboardLayoutService> _logger;
 
     /// <summary>Raised after a profile is successfully written to disk by <see cref="SaveInternalAsync"/> (i.e. after <see cref="SaveAsync"/> or a flushed <see cref="RequestSave"/>).</summary>
@@ -421,15 +456,36 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                 Trace.TraceWarning($"DashboardLayoutService.LoadAsync: customization migrated with repairs - {outcome.Warning}");
             }
 
-            // Apply persisted theme settings to the UI.
-            _themeService.ApplyCustomization(profile.Customization);
+            // Apply persisted theme settings to the UI - UNLESS THE THEME SERVICE ALREADY HAS EXACTLY
+            // THESE (perf P0-18). Every LoadAsync used to re-run the full palette generate-and-push,
+            // including the periodic refresh and autosnapshot reads where nothing changed, and startup
+            // painted twice: App.ApplyThemeBeforeWindowShown applies this same file's migrated
+            // customization pre-window, then the initial ReloadAsync applied it again moments later.
+            // Compared against ThemeService.UserSettings (what was last REQUESTED, set synchronously
+            // before the apply's post), so a load that genuinely differs - an external edit, a
+            // migration with repairs, an import, the first load with nothing applied - still applies.
+            //
+            // BRACE-LESS ON PURPOSE: CustomizationMigrationTests.EveryThemeApplyInTheAppIsPrecededByAMigrationInTheSameMethod
+            // scopes each apply to its nearest enclosing brace pair, and a braced if-block would hide
+            // the MigrateProfile calls above from it.
+            var themeAlreadyRequested = CustomizationContentEquals(profile.Customization, _themeService.UserSettings);
+            if (!themeAlreadyRequested) _themeService.ApplyCustomization(profile.Customization);
 
             // Refreshes the splash's last-seed sidecar (RemEx-alwfa.1, decision (b)) from whatever
             // just loaded, so an install that predates this bead gets a sidecar the very first time
             // it starts, without the user ever opening Personalize. Fire-and-forget: a sidecar write
             // failure must never fail a profile load, and WriteAsync already logs its own failures.
-            LastSeedSidecar.WriteAsync(profile.Customization, _logger)
-                .FireAndForget("write the last-seed splash sidecar", _logger);
+            //
+            // Skipped only when BOTH the theme apply above was skipped AND this service already wrote
+            // this exact customization to the sidecar this session (perf P0-18) - see
+            // _lastSidecarCustomization for why the theme check alone is not enough. Whenever the theme
+            // is re-applied, the sidecar is rewritten alongside it, exactly as before.
+            if (!themeAlreadyRequested || !CustomizationContentEquals(profile.Customization, _lastSidecarCustomization))
+            {
+                LastSeedSidecar.WriteAsync(profile.Customization, _logger)
+                    .FireAndForget("write the last-seed splash sidecar", _logger);
+                _lastSidecarCustomization = profile.Customization;
+            }
 
             CurrentProfile = profile;
 

@@ -927,6 +927,27 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     private int _consecutiveDecodeFailures;
 
+    /// <summary>
+    /// Perf audit P0-17: the newest decoded frame not yet applied to <see cref="CurrentFrame"/> -
+    /// a <see cref="Bitmap"/>, <see cref="ClearFrameRequest"/>, or null. One slot, latest wins: a
+    /// frame that arrives while an apply is still queued replaces the one waiting, so a UI thread
+    /// that falls behind catches up to the newest frame instead of draining a backlog of stale
+    /// ones. Whatever is replaced here was never displayed, so disposing it off the UI thread is
+    /// safe. Written by the receive thread, taken by <see cref="ApplyPendingFrame"/> on the UI
+    /// thread, always through <see cref="Interlocked.Exchange{T}(ref T, T)"/>.
+    /// </summary>
+    private object? _pendingFrame;
+
+    /// <summary>
+    /// Stream-serial change: blank the frame. Goes through <see cref="_pendingFrame"/> rather than
+    /// its own post so it stays ordered with frames - a new-stream frame that arrives after it
+    /// simply replaces it, and an old-stream frame queued before it can never be applied after it.
+    /// </summary>
+    private static readonly object ClearFrameRequest = new();
+
+    /// <summary>1 while an <see cref="ApplyPendingFrame"/> post is queued and has not started.</summary>
+    private int _frameApplyQueued;
+
     private void OnFrameReceived(byte[] jpegBytes)
     {
         try
@@ -934,12 +955,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             using var ms = new MemoryStream(jpegBytes);
             var bitmap = new Bitmap(ms);
 
-            Dispatcher.UIThread.Post(() =>
-            {
-                var old = CurrentFrame;
-                CurrentFrame = bitmap;
-                old?.Dispose();
-            });
+            QueuePendingFrame(bitmap);
 
             _consecutiveDecodeFailures = 0;
             HasStreamError = false;
@@ -979,6 +995,41 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void QueuePendingFrame(object frameOrClear)
+    {
+        if (Interlocked.Exchange(ref _pendingFrame, frameOrClear) is Bitmap superseded)
+        {
+            superseded.Dispose();
+        }
+
+        if (Interlocked.CompareExchange(ref _frameApplyQueued, 1, 0) == 0)
+        {
+            Dispatcher.UIThread.Post(ApplyPendingFrame);
+        }
+    }
+
+    private void ApplyPendingFrame()
+    {
+        // Re-arm before taking the slot: a frame landing after this line posts a fresh apply, so
+        // nothing queued in between can be stranded. A spare apply just finds the slot empty.
+        Interlocked.Exchange(ref _frameApplyQueued, 0);
+
+        switch (Interlocked.Exchange(ref _pendingFrame, null))
+        {
+            case Bitmap stranded when _disposed:
+                stranded.Dispose();
+                break;
+            case Bitmap bitmap:
+                var old = CurrentFrame;
+                CurrentFrame = bitmap;
+                old?.Dispose();
+                break;
+            case not null:
+                ClearCurrentFrame();
+                break;
+        }
+    }
+
     private void OnMetaReceived(DesktopMeta meta)
     {
         // Detect self-connection (infinite mirror prevention)
@@ -996,7 +1047,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         if (meta.StreamSerial > 0 && meta.StreamSerial != _currentStreamSerial)
         {
             _currentStreamSerial = meta.StreamSerial;
-            Dispatcher.UIThread.Post(ClearCurrentFrame);
+            QueuePendingFrame(ClearFrameRequest);
             ResetRemoteCursorOverlay();
         }
 
@@ -1020,7 +1071,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         if (descriptor.StreamSerial > 0 && descriptor.StreamSerial != _currentStreamSerial)
         {
             _currentStreamSerial = descriptor.StreamSerial;
-            Dispatcher.UIThread.Post(ClearCurrentFrame);
+            QueuePendingFrame(ClearFrameRequest);
             ResetRemoteCursorOverlay();
         }
     }
@@ -1178,6 +1229,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.CursorShapeReceived -= OnCursorShapeReceived;
         _desktopService.Disconnected -= OnDisconnected;
         _desktopService.Dispose();
+        if (Interlocked.Exchange(ref _pendingFrame, null) is Bitmap pendingFrame)
+        {
+            pendingFrame.Dispose();
+        }
+
         CurrentFrame?.Dispose();
         _disposed = true; // ReleaseCachedCursorShape: the view is going away, dispose the displayed shape too
         _cursorShapeCache.Clear();

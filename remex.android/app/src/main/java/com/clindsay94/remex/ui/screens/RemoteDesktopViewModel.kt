@@ -93,6 +93,9 @@ internal const val DESKTOP_INPUT_PERMISSION_RETRY = "desktop_input_permission_re
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
 
+/** Minimum gap between fps StateFlow writes; the overlay only needs ~1 Hz (perf P0-16). */
+private const val FPS_PUBLISH_INTERVAL_MS = 1000L
+
 /**
  * Decode-progress escalation thresholds (RemEx-vj7b): frames are ARRIVING but nothing has decoded —
  * the arrival watchdog above cannot see this state because it resets on every arriving frame, even
@@ -581,9 +584,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
         if (frameTimestampsMs.size >= 2) {
             val elapsedSec = (now - frameTimestampsMs.first()) / 1000f
-            _fps.value = (frameTimestampsMs.size - 1) / elapsedSec
+            // The window above is maintained every frame so the rate stays accurate, but the StateFlow
+            // write is throttled: fps is collected at the root of RemoteDesktopScreen, so publishing
+            // per frame recomposed the whole screen 30-60 times a second for a text overlay (P0-16).
+            if (now - lastFpsPublishMs >= FPS_PUBLISH_INTERVAL_MS) {
+                lastFpsPublishMs = now
+                _fps.value = (frameTimestampsMs.size - 1) / elapsedSec
+            }
         }
     }
+
+    /** Last time [_fps] was written. Reset to 0 on stream start so the first rate publishes at once. */
+    @Volatile private var lastFpsPublishMs = 0L
 
     // --- Frame-arrival watchdog (RemEx-5t4) ---
     // A display/target switch — or a host slow to tear down the previous DXGI capture — can leave the
@@ -638,6 +650,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         frameWatchdogJob?.cancel()
         lastFrameArrivalMs = System.currentTimeMillis()
         lastDecodeProgressMs = lastFrameArrivalMs
+        lastFpsPublishMs = 0L
         frameWatchdogJob =
                 viewModelScope.launch {
                     var lastRenderedSample = -1

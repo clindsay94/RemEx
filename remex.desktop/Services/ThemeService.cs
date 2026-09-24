@@ -116,6 +116,15 @@ public class ThemeService : IDisposable
     /// </remarks>
     private CustomizationSettings? _userSettings;
 
+    /// <summary>The user's own most-recently-requested settings — see <see cref="_userSettings"/>.</summary>
+    /// <remarks>
+    /// A TEST SEAM THAT PRODUCTION ALSO READS (perf P0-18). <c>DashboardLayoutService.LoadAsyncCore</c>
+    /// compares a freshly loaded customization against this to skip re-applying a theme that is
+    /// already requested. Set synchronously by <see cref="ApplyCustomization"/>, before its post,
+    /// so a load that runs before the posted apply has landed still sees what was asked for.
+    /// </remarks>
+    internal CustomizationSettings? UserSettings => _userSettings;
+
     /// <summary>
     /// How this service gets onto the UI thread. Production leaves it alone; a test replaces it
     /// with <c>a =&gt; a()</c> to run the hop inline (RemEx-w6c4s).
@@ -994,8 +1003,6 @@ public class ThemeService : IDisposable
     // The injection path is meant to be verifiable without hardware; these exist for exactly that
     // and production code has no reason to call them.
 
-    /// <summary>The user's own most-recently-requested settings — see <see cref="_userSettings"/>.</summary>
-    internal CustomizationSettings? UserSettings => _userSettings;
 
     /// <summary>The live hardware override colour, or null when sync is off / has reported nothing.</summary>
     internal Color? HardwareAccentOverride => _hardwareAccentOverride;

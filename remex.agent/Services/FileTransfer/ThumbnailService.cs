@@ -74,7 +74,7 @@ public sealed class ThumbnailService
             var bytes = await File.ReadAllBytesAsync(absoluteFilePath, ct);
             ct.ThrowIfCancellationRequested();
 
-            using var source = SKBitmap.Decode(bytes);
+            using var source = DecodeSampled(bytes, maxDim);
             if (source is null || source.Width <= 0 || source.Height <= 0)
                 return null;
 
@@ -117,6 +117,44 @@ public sealed class ThumbnailService
                 return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Decodes <paramref name="bytes"/> at a size close to <paramref name="maxDim"/> instead of the source's
+    /// full resolution (perf audit P0-15). A 12 MP photo decoded at full res is ~48 MB of pixels for a
+    /// 128 px thumbnail; <see cref="SKCodec"/> can sample directly from the encoded data during decode, so
+    /// asking for a size near the target skips that intermediate full-resolution bitmap entirely. Falls back
+    /// to a plain <see cref="SKBitmap.Decode(SKCodec)"/> when the codec can't be created or the source is
+    /// already at or below <paramref name="maxDim"/> — <see cref="ScaleToFit"/> still runs afterward to land
+    /// on the exact target size, since <see cref="SKCodec.GetScaledDimensions"/> only returns the nearest
+    /// size the decoder supports natively.
+    /// </summary>
+    private static SKBitmap? DecodeSampled(byte[] bytes, int maxDim)
+    {
+        using var codec = SKCodec.Create(new SKMemoryStream(bytes));
+        if (codec is null)
+            return SKBitmap.Decode(bytes);
+
+        var info = codec.Info;
+        if (info.Width <= 0 || info.Height <= 0)
+            return null;
+
+        var longest = Math.Max(info.Width, info.Height);
+        if (longest <= maxDim)
+            return SKBitmap.Decode(codec);
+
+        var scale = (float)maxDim / longest;
+        var targetSize = codec.GetScaledDimensions(scale);
+        // Review fix (perf audit P0-15): SKBitmap.Decode(SKCodec) - the plain-decode path used for
+        // already-small sources just above, and what SKBitmap.Decode(byte[]) used before this row -
+        // always premultiplies alpha. Copying info.AlphaType verbatim kept Unpremul for a PNG/WebP
+        // source, so a transparent pixel's hidden RGB survived into the sampled decode; the JPEG
+        // encoder then paints that hidden colour instead of the black premultiplied result the old
+        // path produced, showing ghost content/fringes through what should read as transparent.
+        var alphaType = info.AlphaType == SKAlphaType.Unpremul ? SKAlphaType.Premul : info.AlphaType;
+        var targetInfo = new SKImageInfo(
+            Math.Max(1, targetSize.Width), Math.Max(1, targetSize.Height), info.ColorType, alphaType);
+        return SKBitmap.Decode(codec, targetInfo);
     }
 
     /// <summary>

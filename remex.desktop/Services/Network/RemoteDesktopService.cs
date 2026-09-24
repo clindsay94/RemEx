@@ -297,50 +297,41 @@ public class RemoteDesktopService : IDisposable
 
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[1024 * 256]; // 256KB buffer for frames
+        // Perf audit P0-17: one receive buffer for the life of the loop. Each message is received
+        // straight into it (grown by doubling when a message outgrows it, then kept at that size),
+        // so the steady state allocates nothing per message except the one owned copy of the frame
+        // payload that FrameReceived hands to its subscriber.
+        var buffer = new byte[1024 * 256]; // 256KB initial buffer for frames
 
         try
         {
             while (_webSocket?.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
-                using var ms = new MemoryStream();
+                var messageLength = 0;
                 WebSocketReceiveResult result;
 
                 do
                 {
-                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                    if (messageLength == buffer.Length)
+                    {
+                        Array.Resize(ref buffer, buffer.Length * 2);
+                    }
+
+                    result = await _webSocket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer, messageLength, buffer.Length - messageLength), ct);
                     if (result.MessageType == WebSocketMessageType.Close) return;
-                    ms.Write(buffer, 0, result.Count);
+                    messageLength += result.Count;
                 }
                 while (!result.EndOfMessage);
 
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    var binaryPayload = ms.ToArray();
-                    if (DesktopFrameEnvelope.TryRead(binaryPayload, out var header, out var payload))
-                    {
-                        var latestSerial = Interlocked.Read(ref _latestStreamSerial);
-                        if (header.StreamSerial < latestSerial)
-                        {
-                            continue;
-                        }
-
-                        if (header.StreamSerial > latestSerial)
-                        {
-                            Interlocked.Exchange(ref _latestStreamSerial, header.StreamSerial);
-                        }
-
-                        FrameReceived?.Invoke(payload.ToArray());
-                    }
-                    else
-                    {
-                        FrameReceived?.Invoke(binaryPayload);
-                    }
+                    DispatchBinaryFrame(new ReadOnlySpan<byte>(buffer, 0, messageLength));
                 }
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {
                     // Text = JSON control message
-                    var json = Encoding.UTF8.GetString(ms.ToArray());
+                    var json = Encoding.UTF8.GetString(buffer, 0, messageLength);
                     var msg = JsonSerializer.Deserialize<RemexMessage>(json, JsonOptions);
 
                     if (msg?.Type == MessageTypes.DesktopMeta && msg.DesktopMeta is not null)
@@ -386,6 +377,35 @@ public class RemoteDesktopService : IDisposable
         finally
         {
             Disconnected?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Parses one binary message viewed in place over the reusable receive buffer, and hands the
+    /// frame payload to <see cref="FrameReceived"/>. The StreamSerial stale-frame check runs on the
+    /// header before anything is copied or delivered. The payload is copied exactly once, because
+    /// the subscriber keeps it past this call while the buffer is reused for the next message.
+    /// </summary>
+    private void DispatchBinaryFrame(ReadOnlySpan<byte> message)
+    {
+        if (DesktopFrameEnvelope.TryRead(message, out var header, out var payload))
+        {
+            var latestSerial = Interlocked.Read(ref _latestStreamSerial);
+            if (header.StreamSerial < latestSerial)
+            {
+                return;
+            }
+
+            if (header.StreamSerial > latestSerial)
+            {
+                Interlocked.Exchange(ref _latestStreamSerial, header.StreamSerial);
+            }
+
+            FrameReceived?.Invoke(payload.ToArray());
+        }
+        else
+        {
+            FrameReceived?.Invoke(message.ToArray());
         }
     }
 
