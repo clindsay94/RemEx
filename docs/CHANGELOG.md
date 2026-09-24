@@ -56,6 +56,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   Nothing changes about what you see while actually using the app; this only stops work that was
   running for no audience. (perf audit P0-1 through P0-11)
 
+- A round of leak/unbounded-growth fixes: the desktop Remote Desktop view no longer double-subscribes
+  its view-model on every attach; cursor shapes are cached with a 32-entry LRU on both platforms
+  instead of growing without bound for the life of a session; and the Android file browser's
+  thumbnail cache is capped at 200 entries with the oldest dropped first, instead of holding every
+  thumbnail from every folder browsed that session. (perf audit P0-19 through P0-21)
+
 - Personalize is five tabs instead of one long scroll: **Colour** (mode, source, seed, vibrancy,
   contrast, scheme variants, preview), **Palettes** (built-in and saved palettes, save / delete /
   export / import), **Surfaces** (background, wallpaper, window and card opacity, corner radius,

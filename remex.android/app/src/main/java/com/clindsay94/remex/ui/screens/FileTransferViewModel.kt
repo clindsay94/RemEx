@@ -187,6 +187,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private var propertiesTargetRelative: String? = null
 
     // ── Thumbnails (relativePath -> base64 JPEG, "" = requested/absent) ────────
+    // Perf audit P0-21: soft cap, oldest-evicted when exceeded (see handleThumbnailResponse).
     private val _thumbnails = MutableStateFlow<Map<String, String>>(emptyMap())
     val thumbnails = _thumbnails.asStateFlow()
     private val requestedThumbnails = ConcurrentHashMap<String, Boolean>()
@@ -580,6 +581,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
          * two. Running out is counted as an ordinary failure, which is what it is.
          */
         const val MAX_CONFLICT_ROUNDS = 3
+
+        // Perf audit P0-21: soft cap, oldest-evicted when exceeded (see handleThumbnailResponse).
+        const val MAX_CACHED_THUMBNAILS = 200
     }
 
     private fun manageSelectedTo(destFolder: String, operation: String) {
@@ -1703,6 +1707,16 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         entries.addAll(parseEntries(response.optJSONArray("entries")))
         _rawEntries.value = entries
         requestedThumbnails.clear()
+        // Perf audit P0-21: drop thumbnails for paths not in the new listing - keeps the guard-noted
+        // requestedThumbnails dedup invariant intact (cleared just above, same as before this row)
+        // while stopping the thumbnail cache itself from carrying every folder ever browsed this
+        // session. Same relativePath-or-combinePath key requestThumbnail() uses (:1055-ish above).
+        val currentPaths =
+            entries
+                .filter { !it.isDirectory }
+                .map { it.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, it.name) }
+                .toSet()
+        _thumbnails.value = _thumbnails.value.filterKeys { it in currentPaths }
         recomputeDisplayed()
     }
 
@@ -1885,7 +1899,25 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val requestId = response.optString("requestId")
         val path = pendingThumbnailPaths.remove(requestId) ?: return
         val base64 = response.optMeaningfulString("jpegBase64") ?: return
-        _thumbnails.value = _thumbnails.value + (path to base64)
+        // Perf audit P0-21: capped rather than left to grow for the whole session - up to 96 KB
+        // base64 JPEGs per entry, and the uncapped map was also copied whole on every single insert
+        // (`+`), so an unbounded map made every later insert more expensive too. `+` builds on a
+        // LinkedHashMap, so iteration order is insertion order; dropping the oldest entries when over
+        // the cap approximates LRU without tracking access separately.
+        val updated = _thumbnails.value + (path to base64)
+        if (updated.size > MAX_CACHED_THUMBNAILS) {
+            val evicted = updated.entries.take(updated.size - MAX_CACHED_THUMBNAILS)
+            // Review fix (perf audit P0-21): trimming _thumbnails alone left the evicted paths in
+            // requestedThumbnails, so requestThumbnail()'s dedup check (:1058-ish,
+            // putIfAbsent(...) != null) silently refused to re-request them - a folder with more
+            // entries than the cap would blank out its earliest thumbnails permanently on scroll-back,
+            // not just until the cache filled, which is worse than having no cap at all. Releasing the
+            // dedup key alongside the cache entry lets a re-scroll ask for it again.
+            evicted.forEach { requestedThumbnails.remove(it.key) }
+            _thumbnails.value = updated - evicted.map { it.key }.toSet()
+        } else {
+            _thumbnails.value = updated
+        }
     }
 
     // ── Legacy transfer stream handlers ───────────────────────────────────────

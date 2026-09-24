@@ -116,6 +116,17 @@ public partial class RemoteDesktopView : UserControl
             return;
         }
 
+        // Perf audit P0-19: DataContextChanged and OnAttachedToVisualTree both call this - on a
+        // normal view creation, DataContext is set first (attaching vm), then the control attaches
+        // to the visual tree and called this a second time with the SAME vm, double-subscribing
+        // ViewportZoomResetRequested and PropertyChanged with no matching second detach. A no-op
+        // when the vm is already attached leaves the existing single-attach behavior for every other
+        // path (a real vm swap still goes through OnDataContextChanged's detach-then-attach).
+        if (ReferenceEquals(_attachedViewModel, vm))
+        {
+            return;
+        }
+
         _attachedViewModel = vm;
         vm.ViewportZoomResetRequested += ResetViewport;
         vm.PropertyChanged += OnViewModelPropertyChanged;

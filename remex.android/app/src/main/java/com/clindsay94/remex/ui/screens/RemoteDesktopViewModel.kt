@@ -431,8 +431,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private data class CursorShapeEntry(val bitmap: ImageBitmap, val hotspotX: Int, val hotspotY: Int)
 
     // Decoded shapes cached by serial; cursor-state messages pick the active one. Touched from two
-    // collector coroutines, so use a concurrent map.
-    private val cursorShapeCache = java.util.concurrent.ConcurrentHashMap<Long, CursorShapeEntry>()
+    // collector coroutines, so the cache is synchronized. LRU-capped and cleared on stop, disconnect
+    // and display switch: the host mints a new serial per shape change, so an uncapped map grew for
+    // the whole session (perf audit P0-20).
+    private val cursorShapeCache = CursorShapeCache<CursorShapeEntry>()
     @Volatile private var activeCursorShapeSerial = -1L
 
     /**
@@ -744,6 +746,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // connectFailures, drops the display catalog, recycles the frame). This is a pause. The
         // current bitmap is kept because the UI stops collecting while stopped and may still hold it.
         _isStreaming.value = false
+        // The host force-sends the current shape when the stream comes back (P0-20).
+        cursorShapeCache.clear()
         // StopDesktopStream disconnects too, so no side-request socket is left open (P0-7).
         forgetDesktopSideSocket()
         if (RemexCoreClient.isLibraryLoaded) {
@@ -1203,6 +1207,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     releaseAllModifiers()
                     _isStreaming.value = false
                     recycleCurrentFrame()
+                    cursorShapeCache.clear() // P0-20
                     // Force a fresh catalog query on the next connection.
                     catalogRequested = false
                     displaysLoaded = false
@@ -1735,6 +1740,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(remembered) }
         }
 
+        // The old target's shapes are dead weight; the host force-sends the current shape when
+        // the stream restarts on the new one (P0-20).
+        cursorShapeCache.clear()
+
         if (_isStreaming.value) {
             restartStreamWithCurrentTarget()
         }
@@ -1792,6 +1801,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // then clear the frame reference.
         _isStreaming.value = false
         recycleCurrentFrame()
+        cursorShapeCache.clear() // P0-20
 
         // StopDesktopStream disconnects too, so no side-request socket is left open (P0-7).
         forgetDesktopSideSocket()
@@ -2128,7 +2138,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * ONLY THE CPU WORK MOVED. The assignments stay where they were, because `collect` is sequential
      * and a `withContext` inside it does not reorder emissions — which matters here, since the serial
      * decides which shape is active and applying two out of order would leave the wrong cursor on
-     * screen. `cursorShapeCache` is a `ConcurrentHashMap` and the three destinations are StateFlows,
+     * screen. `cursorShapeCache` is synchronized and the three destinations are StateFlows,
      * so none of this needed new synchronisation; it needed the heavy part to stop running on Main.
      */
     private suspend fun handleCursorShape(shapeJson: String) {

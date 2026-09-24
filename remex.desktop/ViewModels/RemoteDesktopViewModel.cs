@@ -253,8 +253,19 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private int _cursorHotspotY;
     private int _cursorShapeWidth;
     private int _cursorShapeHeight;
-    private readonly Dictionary<long, Bitmap> _cursorShapeCache = new();
-    private readonly Dictionary<long, DesktopCursorShape> _cursorShapeInfoCache = new();
+    // Perf audit P0-20: the host mints a new ShapeSerial on every cursor-shape change, so a plain
+    // dictionary keyed by serial grew for the whole session. LRU-capped, and cleared on stream stop,
+    // disconnect and display switch (the host force-sends the current shape when a stream boots).
+    // Only the size is kept alongside the bitmap - holding the whole DesktopCursorShape kept a second
+    // copy of every shape's pixels alive. UI thread only.
+    internal const int CursorShapeCacheCapacity = 32;
+    private readonly LruCache<long, CachedCursorShape> _cursorShapeCache;
+    private bool _disposed;
+
+    private sealed record CachedCursorShape(Bitmap Bitmap, int Width, int Height);
+
+    /// <summary>Test seam (InternalsVisibleTo): how many decoded cursor shapes are cached.</summary>
+    internal int CursorShapeCacheCount => _cursorShapeCache.Count;
 
     public RemoteDesktopViewModel(
         ConnectionViewModel connection,
@@ -266,6 +277,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _shell = shell;
         _immersiveMode = immersiveMode;
         _logger = logger ?? NullLogger<RemoteDesktopViewModel>.Instance;
+        _cursorShapeCache = new LruCache<long, CachedCursorShape>(CursorShapeCacheCapacity, ReleaseCachedCursorShape);
         _desktopService = new RemoteDesktopService();
         _desktopService.FrameReceived += OnFrameReceived;
         _desktopService.MetaReceived += OnMetaReceived;
@@ -496,6 +508,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             SetStatus(() => LocalizationService.Instance["Status_Stopped"]);
             ActualFps = 0;
             ResetRemoteCursorOverlay();
+            ClearCursorShapeCache();
         }
     }
 
@@ -659,6 +672,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             HasStreamError = false;
             ClearCurrentFrame();
             ResetRemoteCursorOverlay();
+            ClearCursorShapeCache();
 
             await _desktopService.SwitchTargetAsync(new DesktopTargetSwitchRequest
             {
@@ -1028,14 +1042,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             _cursorHotspotX = state.HotspotX;
             _cursorHotspotY = state.HotspotY;
             if (_activeCursorShapeSerial > 0 &&
-                _cursorShapeCache.TryGetValue(_activeCursorShapeSerial, out var cursorBitmap))
+                _cursorShapeCache.TryGetValue(_activeCursorShapeSerial, out var cachedShape))
             {
-                if (_cursorShapeInfoCache.TryGetValue(_activeCursorShapeSerial, out var cursorShape))
-                {
-                    _cursorShapeWidth = cursorShape.Width;
-                    _cursorShapeHeight = cursorShape.Height;
-                }
-                RemoteCursorBitmap = cursorBitmap;
+                _cursorShapeWidth = cachedShape.Width;
+                _cursorShapeHeight = cachedShape.Height;
+                RemoteCursorBitmap = cachedShape.Bitmap;
             }
             else
             {
@@ -1057,13 +1068,6 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             var bitmap = CreateCursorBitmap(shape);
-            if (_cursorShapeCache.TryGetValue(shape.ShapeSerial, out var existingBitmap) && !ReferenceEquals(existingBitmap, bitmap))
-            {
-                existingBitmap.Dispose();
-            }
-
-            _cursorShapeCache[shape.ShapeSerial] = bitmap;
-            _cursorShapeInfoCache[shape.ShapeSerial] = shape;
             if (shape.ShapeSerial == _activeCursorShapeSerial)
             {
                 _cursorShapeWidth = shape.Width;
@@ -1072,6 +1076,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(CursorShapeWidth));
                 OnPropertyChanged(nameof(CursorShapeHeight));
             }
+
+            // After the swap above, so a re-sent active serial's old bitmap is no longer on screen
+            // when Set disposes it. Set also disposes whatever falls off the LRU tail
+            // (ReleaseCachedCursorShape).
+            _cursorShapeCache.Set(shape.ShapeSerial, new CachedCursorShape(bitmap, shape.Width, shape.Height));
         });
     }
 
@@ -1084,6 +1093,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             SetStatus(() => LocalizationService.Instance["Status_Disconnected"]);
             ActualFps = 0;
             ResetRemoteCursorOverlay();
+            ClearCursorShapeCache();
         });
     }
 
@@ -1169,10 +1179,8 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.Disconnected -= OnDisconnected;
         _desktopService.Dispose();
         CurrentFrame?.Dispose();
-        foreach (var bitmap in _cursorShapeCache.Values)
-        {
-            bitmap.Dispose();
-        }
+        _disposed = true; // ReleaseCachedCursorShape: the view is going away, dispose the displayed shape too
+        _cursorShapeCache.Clear();
     }
 
     public int RemoteCursorHostX => _remoteCursorHostX;
@@ -1278,6 +1286,29 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             RemoteCursorBitmap = null;
             IsRemoteCursorOverlayVisible = false;
         });
+    }
+
+    /// <summary>
+    /// Perf audit P0-20: drops every cached cursor shape on stream stop, disconnect and display
+    /// switch. Posted, like <see cref="ResetRemoteCursorOverlay"/>, so it lands after that has
+    /// already let go of the displayed bitmap and the whole cache can be disposed.
+    /// </summary>
+    private void ClearCursorShapeCache() => Dispatcher.UIThread.Post(_cursorShapeCache.Clear);
+
+    /// <summary>
+    /// Disposes a cursor shape leaving <see cref="_cursorShapeCache"/> - evicted off the LRU tail,
+    /// replaced under the same serial, or cleared. The bitmap still on screen is left alone while
+    /// the view model lives: disposing a bound Image source breaks the next render. The active
+    /// serial is touched on every cursor-state update, so in practice it is never the eldest.
+    /// </summary>
+    private void ReleaseCachedCursorShape(CachedCursorShape shape)
+    {
+        if (!_disposed && ReferenceEquals(shape.Bitmap, RemoteCursorBitmap))
+        {
+            return;
+        }
+
+        shape.Bitmap.Dispose();
     }
 
     private static Bitmap CreateCursorBitmap(DesktopCursorShape shape)
