@@ -499,6 +499,77 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
+    // Perf audit P0-3: set when a live stream was stopped because the page left the foreground
+    // (navigated away, window hidden to the tray, or minimized), so coming back restarts it. A
+    // stream the user stopped themselves never sets it.
+    private bool _resumeStreamOnForeground;
+    private bool _isStreamForeground = true;
+    private Task _backgroundStopTask = Task.CompletedTask;
+
+    /// <summary>Test seam (InternalsVisibleTo): a background stop is waiting to be resumed.</summary>
+    internal bool IsStreamPausedForBackground => _resumeStreamOnForeground;
+
+    /// <summary>
+    /// Perf audit P0-3: the shell calls this whenever the RD page gains or loses the foreground -
+    /// <c>true</c> only while this page is the current view AND the window is visible and not
+    /// minimized. Losing it stops a live stream through the SAME <see cref="StopStreamAsync"/> path
+    /// the Stop button uses (DesktopStop to the host, which bumps its StreamSerial, then Disconnect,
+    /// which resets the client-side latest serial), so the stale-frame guard is untouched and the
+    /// client stops receiving and decoding frames nobody can see. Regaining it re-runs
+    /// <see cref="StartStreamAsync"/>, a fresh connect + DesktopStart, the same as pressing Start.
+    /// </summary>
+    internal async Task SetStreamForegroundAsync(bool isForeground)
+    {
+        _isStreamForeground = isForeground;
+
+        if (!isForeground)
+        {
+            // A Start the user just pressed (or one this method's own resume kicked off on an
+            // earlier flip) may still be connecting - IsStreaming only flips true when it
+            // finishes - so catch it here instead of leaving it to stream off-screen until the
+            // NEXT time the page leaves.
+            if (StartStreamCommand.IsRunning)
+                await StartStreamCommand.ExecutionTask!;
+
+            // Foreground may have flipped back to true and then to false again while the await
+            // above was pending (e.g. minimize-then-restore-then-minimize during the connect
+            // window); only the LATEST call's flip should decide whether to stop. _isStreamForeground
+            // reflects whichever call ran last, so if it no longer matches what this call set, a
+            // newer call has already taken over and this one must not act.
+            if (_isStreamForeground != isForeground)
+                return;
+
+            if (IsStreaming && !_resumeStreamOnForeground)
+            {
+                _resumeStreamOnForeground = true;
+                _backgroundStopTask = StopStreamAsync();
+            }
+
+            await _backgroundStopTask;
+            return;
+        }
+
+        if (!_resumeStreamOnForeground)
+            return;
+
+        // A quick away-and-back can arrive while the stop is still in flight; IsStreaming only
+        // drops in its finally block, so wait for it or CanStartStream would refuse the restart.
+        await _backgroundStopTask;
+
+        // Went away again while the stop finished: stay paused, keep the resume pending.
+        if (!_isStreamForeground)
+            return;
+
+        _resumeStreamOnForeground = false;
+        if (CanStartStream())
+        {
+            // Through the command, not the bare method, so its IsRunning/ExecutionTask engage -
+            // the busy state this same method waits on above if the page leaves again mid-connect,
+            // and the disabled Start button that stops a manual click from racing this resume.
+            await StartStreamCommand.ExecuteAsync(null);
+        }
+    }
+
     [RelayCommand]
     private async Task ApplySettingsAsync()
     {

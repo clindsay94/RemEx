@@ -374,11 +374,46 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         {
             try
             {
+                // Perf audit P0-9: OnLoaded/OnUnloaded only gate visual-tree attachment, not the
+                // window being minimized or hidden to tray, so a cached-but-still-loaded page kept
+                // rebuilding the process ObservableCollection every 2s with nothing to look at. A
+                // null shell (design-time / tests) polls unconditionally, same as before this row.
+                if (_shell is { IsWindowVisible: false })
+                {
+                    await WaitForWindowVisibleAsync(ct);
+                    continue;
+                }
+
                 await RefreshProcessesAsync();
                 await Task.Delay(2000, ct); // Poll every 2 seconds
             }
             catch (OperationCanceledException) { /* polling was cancelled because the view went away */ }
             catch { await Task.Delay(2000, ct); }
+        }
+    }
+
+    /// <summary>Suspends until the shell's window becomes visible again, woken by
+    /// <see cref="ShellViewModel.IsWindowVisible"/>'s PropertyChanged rather than polling.</summary>
+    private async Task WaitForWindowVisibleAsync(CancellationToken ct)
+    {
+        if (_shell is not { } shell)
+            return;
+
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        PropertyChangedEventHandler handler = (_, e) =>
+        {
+            if (e.PropertyName == nameof(ShellViewModel.IsWindowVisible) && shell.IsWindowVisible)
+                tcs.TrySetResult();
+        };
+        shell.PropertyChanged += handler;
+        try
+        {
+            using var registration = ct.Register(() => tcs.TrySetCanceled(ct));
+            await tcs.Task;
+        }
+        finally
+        {
+            shell.PropertyChanged -= handler;
         }
     }
 

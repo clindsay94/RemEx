@@ -22,6 +22,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,12 +66,15 @@ fun TaskManagerScreen(
     val killError by viewModel.killError.collectAsStateWithLifecycle()
     val loadError by viewModel.loadError.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel, isVisible, isConnected) {
+    // isVisible is pager-only (current page, not mid-scroll) and never reflects the app going to
+    // the background (P0-1). A LaunchedEffect keyed on lifecycle state does NOT catch that: Compose
+    // pauses the frame clock on ON_STOP, so the effect can't re-run until ON_START, by which point
+    // the state has already gone back to STARTED - the poll would never actually stop while
+    // backgrounded. LifecycleStartEffect is a lifecycle OBSERVER, not a recomposition, so its
+    // onStopOrDispose fires on ON_STOP regardless of the frame clock.
+    LifecycleStartEffect(viewModel, isVisible, isConnected) {
         viewModel.setAutoRefreshEnabled(isVisible && isConnected)
-    }
-
-    DisposableEffect(viewModel) {
-        onDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
+        onStopOrDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
     }
 
     TaskManagerScreenContent(

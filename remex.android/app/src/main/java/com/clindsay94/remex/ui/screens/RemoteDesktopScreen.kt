@@ -33,6 +33,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -336,6 +339,23 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
         var streamRequested by rememberSaveable { mutableStateOf(false) }
+
+        // Stop the stream while the app is backgrounded or the screen is off, and bring it back on
+        // return (perf audit P0-4). An observer rather than an effect keyed on lifecycle state: the
+        // window recomposer pauses on ON_STOP, so a state-keyed effect would not run until ON_START,
+        // by which time the state reads STARTED again and the pause never happens.
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner, viewModel) {
+                val observer = LifecycleEventObserver { _, event ->
+                        when (event) {
+                                Lifecycle.Event.ON_START -> viewModel.setAppForeground(true)
+                                Lifecycle.Event.ON_STOP -> viewModel.setAppForeground(false)
+                                else -> Unit
+                        }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
 
         // Drop the landscape request if the stream never came up (connection/host error).
         LaunchedEffect(desktopError) {

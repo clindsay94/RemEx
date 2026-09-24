@@ -699,6 +699,106 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         frameWatchdogJob = null
     }
 
+    // --- Background gating (perf audit P0-4) ---
+    // Backgrounding the app used to leave the PC capturing, encoding and sending at full rate, and the
+    // watchdog above firing keyframe nudges and restarts at a stream nobody could see. The screen now
+    // reports its lifecycle here; see RemoteDesktopBackgroundGate for why this is a stop + restart and
+    // why the watchdog is disarmed with it rather than left to read the pause as a stall.
+    private val backgroundGate = RemoteDesktopBackgroundGate()
+
+    /**
+     * Called by the screen whenever its lifecycle crosses STARTED. Going to the background stops the
+     * stream on the host and disarms the frame watchdog; coming back restarts it, which re-arms the
+     * watchdog and makes the host's new encoder open with SPS/PPS+IDR, so the picture is current
+     * rather than the frame from before the pause. A fresh stream that still fails to decode is
+     * handled by the watchdog's own keyframe nudge — the existing throttled path — as on any start.
+     */
+    fun setAppForeground(foreground: Boolean) {
+        val streamWanted = _isStreaming.value || reconnectJob?.isActive == true || pendingStreamStart
+        when (backgroundGate.onForegroundChanged(foreground, streamWanted)) {
+            RemoteDesktopBackgroundGate.Action.NONE -> Unit
+            RemoteDesktopBackgroundGate.Action.PAUSE -> pauseStreamForBackground()
+            RemoteDesktopBackgroundGate.Action.RESUME -> {
+                Log.i(TAG, "Back in the foreground; restarting the desktop stream.")
+                startStreaming()
+            }
+        }
+    }
+
+    private fun pauseStreamForBackground() {
+        Log.i(TAG, "Backgrounded; stopping the desktop stream until the app returns.")
+        // Same order as stopStreaming: a LOCKED modifier must not stay held on the PC for however
+        // long the phone sits in a pocket (RemEx-yi8o).
+        releaseAllModifiers()
+        reconnectJob?.cancel()
+        reconnectJob = null
+        restartJob?.cancel()
+        restartJob = null
+        // Disarm BEFORE the stream stops: a running watchdog would read the silence as a stall and
+        // reconnect in the background (REGRESSION-GUARDS "Frame-arrival watchdog").
+        cancelFrameWatchdog()
+        catalogTimeoutJob?.cancel()
+        catalogTimeoutJob = null
+        pendingStreamStart = false
+        // Deliberately NOT stopStreaming(): that ends the episode (resets decodeStallRestarts and
+        // connectFailures, drops the display catalog, recycles the frame). This is a pause. The
+        // current bitmap is kept because the UI stops collecting while stopped and may still hold it.
+        _isStreaming.value = false
+        // StopDesktopStream disconnects too, so no side-request socket is left open (P0-7).
+        forgetDesktopSideSocket()
+        if (RemexCoreClient.isLibraryLoaded) {
+            RemexCoreClient.StopDesktopStream().getOrNull()
+        }
+    }
+
+    // --- Idle desktop socket (perf audit P0-7) ---
+    // The display-catalog preload, and a window query or action, open /ws/desktop with no stream on
+    // it, and nothing used to close it again. See DesktopSocketIdlePolicy for when closing is safe.
+    // Main thread only, like the stream flags the policy reads - that is what orders the close ahead
+    // of any DesktopStart on the core's desktop work queue.
+    private var desktopSideSocketMayBeOpen = false
+    private var desktopSocketIdleJob: Job? = null
+
+    /** A side request is using (or has just reopened) the desktop socket; restart its idle clock. */
+    private fun armDesktopSocketIdleClose() {
+        desktopSideSocketMayBeOpen = true
+        desktopSocketIdleJob?.cancel()
+        desktopSocketIdleJob =
+                viewModelScope.launch {
+                    delay(DesktopSocketIdlePolicy.IDLE_CLOSE_MS)
+                    closeIdleDesktopSocket("idle")
+                }
+    }
+
+    /** The stream now owns the socket, or a stop has already disconnected it. */
+    private fun forgetDesktopSideSocket() {
+        desktopSideSocketMayBeOpen = false
+        desktopSocketIdleJob?.cancel()
+        desktopSocketIdleJob = null
+    }
+
+    private fun closeIdleDesktopSocket(why: String) {
+        val startScheduled = reconnectJob?.isActive == true || restartJob?.isActive == true
+        if (!DesktopSocketIdlePolicy.mayClose(
+                        socketMayBeOpen = desktopSideSocketMayBeOpen,
+                        isStreaming = _isStreaming.value,
+                        pendingStreamStart = pendingStreamStart,
+                        startScheduled = startScheduled,
+                )
+        ) {
+            return
+        }
+        forgetDesktopSideSocket()
+        // A catalog query whose reply has not come must be asked again next time rather than
+        // assumed in flight; the disconnect may have eaten its answer. A reply that does still
+        // arrive (the query reopened the socket after this close) re-arms this close.
+        if (!displaysLoaded) catalogRequested = false
+        Log.i(TAG, "Closing the stream-less desktop socket ($why).")
+        if (RemexCoreClient.isLibraryLoaded) {
+            RemexCoreClient.StopDesktopStream().getOrNull()
+        }
+    }
+
     /**
      * Whether a tagged desktop error describes a failure to REACH the PC rather than something going
      * wrong on a PC that answered (RemEx-nl0z).
@@ -1118,6 +1218,16 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
         }
+
+        // Perf audit P0-7: a stream-less desktop socket closes on ON_STOP rather than waiting out its
+        // idle window. The APP-level flag (P0-5), not the screen's setAppForeground: the preload runs
+        // on connect, so the socket can be open while this screen is not even showing. A running
+        // stream is left to the P0-4 pause, which the policy enforces by refusing while one exists.
+        viewModelScope.launch {
+            RemexClientManager.appForeground.collect { foreground ->
+                if (!foreground) closeIdleDesktopSocket("app backgrounded")
+            }
+        }
     }
 
     /**
@@ -1206,6 +1316,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun attemptReconnect() {
         if (!_capabilityState.value.supportsRemoteDesktop) return
+        // Backgrounded: the stream was stopped on purpose, and the foreground restart owns bringing
+        // it back. A stream error or socket drop arriving meanwhile must not restart it (P0-4).
+        if (!backgroundGate.allowsStreamStart()) return
         if (reconnectJob?.isActive == true) return
         if (reconnectAttempts >= maxReconnectAttempts) {
             _desktopError.value = getApplication<Application>().getString(R.string.remote_desktop_connection_lost)
@@ -1425,6 +1538,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun actuallyStartStreaming() {
+        // Every start funnels through here (reconnect backoff, catalog arrival or timeout, display
+        // switch restart), so this one check keeps a backgrounded stream stopped whatever raced the
+        // pause. The foreground restart comes back through startStreaming (P0-4).
+        if (!backgroundGate.allowsStreamStart()) {
+            Log.i(TAG, "Stream start suppressed while backgrounded.")
+            catalogTimeoutJob?.cancel()
+            catalogTimeoutJob = null
+            pendingStreamStart = false
+            return
+        }
+
         // Cleared unconditionally, unlike the fatal error above (RemEx-iaxc). This is NOT because a
         // new session re-asks for permission on its own - it does not, which is exactly why
         // retryInputPermission() exists (RemEx-5bwpv): a refusal usually outlives the reconnect, and
@@ -1438,6 +1562,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         catalogTimeoutJob?.cancel()
         catalogTimeoutJob = null
         pendingStreamStart = false
+        // The stream owns the desktop socket from here; its own stop path disconnects it (P0-7).
+        forgetDesktopSideSocket()
 
         val config = buildConfigJson()
         clearErrorIfFreshAttempt()
@@ -1467,6 +1593,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (!RemexCoreClient.isLibraryLoaded) return
         catalogRequested = true
         Log.i(TAG, "Requesting display catalog from host")
+        // The query connects /ws/desktop if it is down; close it again once idle (P0-7).
+        armDesktopSocketIdleClose()
         viewModelScope.launch(sendDispatcher) {
             val message = JSONObject().apply { put("type", "desktop_display_query") }
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
@@ -1487,6 +1615,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun handleDisplayCatalog(catalogJson: String) {
+        // A reply proves the socket is open, including one the query reopened after an idle close
+        // had already run; re-arm so that socket closes too (P0-7). Armed BEFORE any start below,
+        // which then takes the socket over and disarms it.
+        armDesktopSocketIdleClose()
         try {
             val json = JSONObject(catalogJson)
             val modes = supportedCaptureModes(json)
@@ -1608,8 +1740,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    // Perf audit P0-4: tracked so pauseStreamForBackground can cancel a restart sitting in its
+    // 200ms delay - otherwise a background/foreground flip lands mid-delay, actuallyStartStreaming
+    // reads isForeground=true just before the pause flips it, and the stream starts (and re-arms
+    // the watchdog) in the background.
+    private var restartJob: Job? = null
+
     private fun restartStreamWithCurrentTarget() {
-        viewModelScope.launch(sendDispatcher) {
+        restartJob = viewModelScope.launch(sendDispatcher) {
             reconnectJob?.cancel()
             reconnectAttempts = 0
             if (RemexCoreClient.isLibraryLoaded) {
@@ -1617,7 +1755,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             }
             // Give the host a moment to tear down the previous capture session.
             delay(200)
-            actuallyStartStreaming()
+            // On Main, not sendDispatcher: cancelling this job only helps while it's suspended in
+            // the delay above - once past it, actuallyStartStreaming() has no suspension point of
+            // its own, so running it on Main serializes it with pauseStreamForBackground (also
+            // Main), closing the window where this could read isForeground=true and start the
+            // stream (and re-arm the watchdog) just as the app backgrounds.
+            withContext(Dispatchers.Main) { actuallyStartStreaming() }
         }
     }
 
@@ -1628,9 +1771,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         reconnectJob?.cancel()
         reconnectJob = null
+        // A display switch's restart may still be in its 200ms delay; without this a manual Stop
+        // could be immediately undone by that pending restart bringing the stream back.
+        restartJob?.cancel()
+        restartJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
         decodeStallRestarts = 0 // Manual stop ends the episode; the next session gets fresh restarts (RemEx-vj7b)
         connectFailures = 0 // Likewise: the user acted, so the next attempt starts with a full budget (RemEx-nl0z)
+        backgroundGate.cancelResume() // A deliberate stop must not come back on the next foreground (P0-4)
         cancelFrameWatchdog()
 
         catalogTimeoutJob?.cancel()
@@ -1645,6 +1793,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         _isStreaming.value = false
         recycleCurrentFrame()
 
+        // StopDesktopStream disconnects too, so no side-request socket is left open (P0-7).
+        forgetDesktopSideSocket()
         if (RemexCoreClient.isLibraryLoaded) {
             RemexCoreClient.StopDesktopStream().getOrNull()
         }
@@ -1905,6 +2055,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
+        // Connects /ws/desktop if it is down; idle-closed like the catalog preload (P0-7).
+        armDesktopSocketIdleClose()
         viewModelScope.launch(sendDispatcher) {
             val message =
                     JSONObject().apply {
@@ -2250,6 +2402,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
+        // Connects /ws/desktop if it is down; idle-closed like the catalog preload (P0-7).
+        armDesktopSocketIdleClose()
         viewModelScope.launch(sendDispatcher) {
             val actionJson =
                     JSONObject().apply {

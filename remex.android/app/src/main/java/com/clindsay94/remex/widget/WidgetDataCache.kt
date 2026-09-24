@@ -131,23 +131,41 @@ object WidgetDataCache {
                 var lastRenderMs = 0L
                 RemexClientManager.telemetry.collect { data ->
                     val now = System.currentTimeMillis()
+                    // `lastRenderMs` advances on every interval regardless of whether a widget turns
+                    // out to be placed, so `hasHardwareWidgets` (a GlanceAppWidgetManager query) runs
+                    // once per render interval, not on every ~1 Hz telemetry tick (perf audit P0-6
+                    // review round 1 caught this: gating the interval check ITSELF on widget presence
+                    // meant lastRenderMs never advanced without one, so the query ran every tick).
                     if (shouldRender(now, lastRenderMs, intervalMs.get())) {
                         lastRenderMs = now
+                        // The write is unconditional so a widget placed later reads the current
+                        // reading rather than one stale from before it existed; only the re-render
+                        // itself is skipped when nothing reads it (perf audit P0-6 review round 2:
+                        // an earlier version of this fix put the write inside the widget-presence
+                        // check too, so a widget placed with no prior cache rendered empty).
                         renderTick(
                                 data,
                                 write = { putTelemetryJson(appContext, it) },
-                                render = { refreshHardwareWidgets(appContext) }
+                                render = { if (hasHardwareWidgets(appContext)) refreshHardwareWidgets(appContext) }
                         )
                     }
                 }
             }
             launch {
                 RemexClientManager.launcherEntries.collect { data ->
+                    // Perf audit P0-6 review round 1 caught this: `launcherEntries` holds one value
+                    // and this collector consumes it, so gating the WRITE (not just the widget
+                    // update below) on widget presence drops a sync that arrived with none placed -
+                    // permanently, since nothing re-emits it. The prefs write is one small String and
+                    // stays unconditional; only the widget.update() loop, the actual per-widget Glance
+                    // render, is skipped when nothing reads it.
                     prefs(appContext).edit().putString(KEY_LAUNCHER, data).apply()
                     try {
                         val manager = GlanceAppWidgetManager(appContext)
+                        val glanceIds = manager.getGlanceIds(AppLauncherWidget::class.java)
+                        if (glanceIds.isEmpty()) return@collect
                         val widget = AppLauncherWidget()
-                        manager.getGlanceIds(AppLauncherWidget::class.java).forEach { glanceId ->
+                        glanceIds.forEach { glanceId ->
                             widget.update(appContext, glanceId)
                         }
                     } catch (e: Exception) {
@@ -210,6 +228,25 @@ object WidgetDataCache {
     fun putTelemetryJson(context: Context, json: String) {
         prefs(context.applicationContext).edit().putString(KEY_TELEMETRY, json).apply()
     }
+
+    /**
+     * True if any hardware-info widget is on the home screen. Errs towards true on a failed query,
+     * same rationale as [com.clindsay94.remex.RemexClientManager]'s `isHardwareWidgetPlaced`: skipping
+     * a cheap re-render needlessly costs nothing visible, a widget frozen because a query failed is a
+     * visible bug. `catch (Exception)`, not `runCatching`, because this is a suspend call and
+     * `getGlanceIds` can throw `CancellationException` on a cancelled caller - swallowing that (as
+     * `runCatching` would) is the exact trap `renderTick`'s own doc comment above warns about.
+     */
+    internal suspend fun hasHardwareWidgets(context: Context): Boolean =
+        try {
+            GlanceAppWidgetManager(context.applicationContext)
+                .getGlanceIds(HardwareInfoWidget::class.java)
+                .isNotEmpty()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            true
+        }
 
     /** Re-render all hardware-info widgets from the current cache. */
     suspend fun refreshHardwareWidgets(context: Context) {

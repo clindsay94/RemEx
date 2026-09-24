@@ -168,7 +168,14 @@ public static class HostBootstrapper
                     sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Agent.Services.Session.WindowsInteractiveSessionGuard>>())
                 : new Remex.Agent.Services.Session.NoOpInteractiveSessionGuard());
 
-        builder.Services.AddSingleton<TelemetryBackgroundService>();
+        // THE SAMPLERS ARE GATED ON WHO IS READING THEM (perf audit P0-10), and the gate is handed in
+        // explicitly rather than left to plain activation: their constructors treat a missing gate as
+        // "always sample" so tests can build them bare, which means `AddSingleton<T>()` here would
+        // compile, run, and silently bring back the 1 Hz poll on every idle tray-resident PC. One
+        // SamplingDemand EACH - telemetry and media have different readers, and sharing one would let
+        // the PC's own window keep the media session polled for nobody.
+        builder.Services.AddSingleton(sp =>
+            ActivatorUtilities.CreateInstance<TelemetryBackgroundService>(sp, new SamplingDemand()));
         builder.Services.AddHostedService(sp => sp.GetRequiredService<TelemetryBackgroundService>());
         // Same instance again, under the interface the in-process UI can name (RemEx-ite8).
         builder.Services.AddSingleton<Remex.Core.Services.ITelemetryBroadcaster>(
@@ -221,7 +228,11 @@ public static class HostBootstrapper
             sp.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionReader>() as Remex.Agent.Services.Media.IMediaSeekTarget
             ?? Remex.Agent.Services.Media.NullMediaSeekTarget.Instance);
 
-        builder.Services.AddSingleton<Remex.Agent.Services.Media.MediaSessionBackgroundService>();
+        // Gated on connected clients (perf audit P0-10); see the telemetry sampler above for why the
+        // gate is passed explicitly.
+        builder.Services.AddSingleton(sp =>
+            ActivatorUtilities.CreateInstance<Remex.Agent.Services.Media.MediaSessionBackgroundService>(
+                sp, new SamplingDemand()));
         builder.Services.AddHostedService(sp =>
             sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
         // Same instance under the interface its consumers name, the shape used by the telemetry

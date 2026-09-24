@@ -35,4 +35,25 @@ public interface ITelemetryBroadcaster
     /// their own thread; a UI subscriber posts to the dispatcher.
     /// </summary>
     event Action<TelemetryPayload>? TelemetryPublished;
+
+    /// <summary>
+    /// Declares that something is reading these samples right now, and keeps the sampler running
+    /// until the returned lease is disposed (perf audit P0-10).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE SAMPLER ONLY SAMPLES WHILE SOMEONE HOLDS ONE. It used to poll every sensor once a second for
+    /// the whole life of the process, so a tray-resident PC with no phone attached and its window
+    /// hidden was paying for ~450 sensor reads a second that nothing looked at. Subscribing to
+    /// <see cref="TelemetryPublished"/> is NOT a claim of demand: the in-process UI stays subscribed
+    /// for its whole life, and whether it actually needs samples changes as windows show and hide.
+    /// </para>
+    /// <para>
+    /// Disposing the lease is idempotent. Holding several is fine: the sampler runs while ANY is held.
+    /// While nothing is held, <see cref="CurrentTelemetry"/> may go back to null rather than keep
+    /// reporting a reading that is no longer current; the next sample lands within one period of a
+    /// lease being taken.
+    /// </para>
+    /// </remarks>
+    IDisposable AcquireDemand();
 }

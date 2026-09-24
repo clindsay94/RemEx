@@ -88,6 +88,21 @@ internal sealed class TelemetrySnapshotGate<T> where T : class
         Interlocked.Exchange(ref _state, new State(snapshot)).Retire();
 
     /// <summary>
+    /// Forgets the current snapshot, so <see cref="Current"/> is null until the next publish (perf
+    /// audit P0-10).
+    /// </summary>
+    /// <remarks>
+    /// Called when a sampler goes idle because nobody is reading. Without it, the next consumer to
+    /// arrive - possibly an hour later - would be handed the last reading taken before the sampler
+    /// stopped, as though current, because <see cref="WaitForNextAsync"/> returns an unseen snapshot
+    /// immediately. The same swap-then-retire as <see cref="Publish"/>, so the single-field argument in
+    /// the class remarks holds unchanged: anyone parked on the retired state wakes, reads a null
+    /// snapshot, and parks again on the new state's pulse, which the next real publish completes.
+    /// </remarks>
+    public void Clear() =>
+        Interlocked.Exchange(ref _state, new State(null)).Retire();
+
+    /// <summary>
     /// Returns as soon as a snapshot exists that is not <paramref name="alreadySeen"/>.
     /// </summary>
     /// <remarks>

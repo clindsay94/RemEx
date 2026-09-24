@@ -205,15 +205,24 @@ object FileTransferEngine {
             val next = _queue.value.firstOrNull { it.state == TransferState.Queued }
             if (next == null) {
                 onQueueIdle?.invoke()
-                // Wait for a new enqueue; poll cheaply.
-                kotlinx.coroutines.delay(750)
+                // Perf audit P0-8: suspend on the queue itself instead of polling every 750ms for the
+                // process lifetime once started - a permanent wake in a process the foreground service
+                // keeps alive. `first { }` resumes the instant a Queued item appears (a new enqueue,
+                // or resume() re-queuing a paused one), so this fires onQueueIdle once per busy-to-idle
+                // edge, same as before, just without the interim polling.
+                _queue.first { it.any { transfer -> transfer.state == TransferState.Queued } }
                 continue
             }
             runOne(next)
         }
     }
 
-    private suspend fun runOne(t: QueuedTransfer) {
+    // Leased for the whole transfer (perf audit P0-7): the binary channel's idle close must not fire
+    // between ensureChannel and the sink registration that follows a successful negotiate - nor across
+    // a resumed download's re-hash of its partial, which also runs before the sink goes up.
+    private suspend fun runOne(t: QueuedTransfer) = FileTransferChannelClient.withLease { runOneLeased(t) }
+
+    private suspend fun runOneLeased(t: QueuedTransfer) {
         try {
             updateState(t.id) { it.copy(state = TransferState.Negotiating, error = null) }
             if (!ensureChannel()) {

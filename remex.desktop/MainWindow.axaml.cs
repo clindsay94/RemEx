@@ -97,6 +97,13 @@ public partial class MainWindow : Window
         base.OnPropertyChanged(change);
         if (change.Property == IsVisibleProperty || change.Property == WindowStateProperty)
             _colorSources?.SetWindowVisible(IsVisible && WindowState != WindowState.Minimized);
+
+        // Perf audit P0-2: the shell's decorative infinite animations (Aurora mesh, gradient
+        // breathing, presence pulse) gate on this. DataContext is included because it is assigned
+        // after construction, and a window that starts hidden in the tray never raises IsVisible.
+        if ((change.Property == IsVisibleProperty || change.Property == WindowStateProperty || change.Property == DataContextProperty)
+            && DataContext is ViewModels.ShellViewModel shell)
+            shell.IsWindowVisible = IsVisible && WindowState != WindowState.Minimized;
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

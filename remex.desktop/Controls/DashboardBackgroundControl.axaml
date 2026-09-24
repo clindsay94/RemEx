@@ -86,8 +86,12 @@
                          Both transitions come off the .palette-bg-gradient-base class above, where
                          the suppressor can reach them. -->
                     <Rectangle Classes="palette-bg-gradient-base" IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8"/>
-                    <!-- Animated opacity pulse — suppressed when reduced motion is on -->
-                    <Rectangle Classes="palette-bg" Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
+                    <!-- Animated opacity pulse — suppressed when reduced motion is on. The animation
+                         itself is also class-gated on .window-visible (perf audit P0-2), so a
+                         tray-hidden or minimized window stops ticking it; the static Opacity equals
+                         the first keyframe so a restore resumes without a jump, the same pairing the
+                         Aurora layers below keep. -->
+                    <Rectangle Classes="palette-bg" Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated" Opacity="0.7" Classes.window-visible="{Binding IsWindowVisible}">
                         <Rectangle.IsVisible>
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="EffectiveBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
@@ -95,7 +99,7 @@
                             </MultiBinding>
                         </Rectangle.IsVisible>
                         <Rectangle.Styles>
-                            <Style Selector="Rectangle">
+                            <Style Selector="Rectangle#GradientAnimated.window-visible">
                                 <Style.Animations>
                                     <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                         <KeyFrame KeyTime="0:0:0">
@@ -121,6 +125,10 @@
                          its first keyframe; the animation lives on a class bound to the inverse of
                          IsReducedMotion, so removing the class stops the animation and the property
                          falls back to that static value. AuroraMeshTests pins the pairing.
+                         The same selector ALSO requires .window-visible (ShellViewModel.IsWindowVisible,
+                         perf audit P0-2): an AND on top of the reduced-motion gate, never a
+                         replacement, so a tray-hidden or minimized window freezes at the same
+                         first keyframe instead of animating for the life of the process.
 
                          RADII ARE PERCENTAGES, NEVER BARE NUMBERS (RemEx-4kv0g.5 audit, 2026-09-15).
                          RadialGradientBrush.RadiusX/RadiusY are RelativeScalars: "98%" is 98% of the
@@ -131,7 +139,7 @@
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAurora}}">
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}" />
 
-                        <Rectangle Name="AuroraLayer1" Opacity="0.55" Classes.aurora-animated="{Binding !IsReducedMotion}">
+                        <Rectangle Name="AuroraLayer1" Opacity="0.55" Classes.aurora-animated="{Binding !IsReducedMotion}" Classes.window-visible="{Binding IsWindowVisible}">
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="25%,35%" RadiusX="98%" RadiusY="113%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraPrimary}" />
@@ -139,7 +147,7 @@
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer1.aurora-animated">
+                                <Style Selector="Rectangle#AuroraLayer1.aurora-animated.window-visible">
                                     <Style.Animations>
                                         <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.55"/></KeyFrame>
@@ -151,7 +159,7 @@
                             </Rectangle.Styles>
                         </Rectangle>
 
-                        <Rectangle Name="AuroraLayer2" Opacity="0.42" Classes.aurora-animated="{Binding !IsReducedMotion}">
+                        <Rectangle Name="AuroraLayer2" Opacity="0.42" Classes.aurora-animated="{Binding !IsReducedMotion}" Classes.window-visible="{Binding IsWindowVisible}">
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="72%,65%" RadiusX="105%" RadiusY="90%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraSecondary}" />
@@ -159,7 +167,7 @@
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer2.aurora-animated">
+                                <Style Selector="Rectangle#AuroraLayer2.aurora-animated.window-visible">
                                     <Style.Animations>
                                         <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.42"/></KeyFrame>
@@ -171,7 +179,7 @@
                             </Rectangle.Styles>
                         </Rectangle>
 
-                        <Rectangle Name="AuroraLayer3" Opacity="0.30" Classes.aurora-animated="{Binding !IsReducedMotion}">
+                        <Rectangle Name="AuroraLayer3" Opacity="0.30" Classes.aurora-animated="{Binding !IsReducedMotion}" Classes.window-visible="{Binding IsWindowVisible}">
                             <Rectangle.Fill>
                                 <RadialGradientBrush Center="50%,8%" RadiusX="83%" RadiusY="68%">
                                     <GradientStop Offset="0" Color="{DynamicResource AuroraTertiary}" />
@@ -179,7 +187,7 @@
                                 </RadialGradientBrush>
                             </Rectangle.Fill>
                             <Rectangle.Styles>
-                                <Style Selector="Rectangle#AuroraLayer3.aurora-animated">
+                                <Style Selector="Rectangle#AuroraLayer3.aurora-animated.window-visible">
                                     <Style.Animations>
                                         <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
                                             <KeyFrame KeyTime="0:0:0"><Setter Property="Opacity" Value="0.30"/></KeyFrame>

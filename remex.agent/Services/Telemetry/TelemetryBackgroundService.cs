@@ -9,10 +9,19 @@ namespace Remex.Agent.Services.Telemetry;
 /// A background service that polls telemetry data periodically and caches the latest payload.
 /// This prevents redundant system scans when multiple clients are connected.
 /// </summary>
+/// <param name="demand">
+/// Who is reading (perf audit P0-10). The sampler does its work only on ticks where someone holds a
+/// lease. **NULL MEANS UNGATED** - it samples every tick, as before P0-10 - which is what the tests
+/// that build a sampler directly get. Production MUST pass a real one: HostBootstrapper does, and
+/// leaving it to plain DI activation would silently supply null and bring back the idle burn.
+/// </param>
 public sealed class TelemetryBackgroundService(
     ITelemetryService telemetryService,
-    ILogger<TelemetryBackgroundService> logger) : BackgroundService, ITelemetryBroadcaster
+    ILogger<TelemetryBackgroundService> logger,
+    SamplingDemand? demand = null) : BackgroundService, ITelemetryBroadcaster
 {
+    private readonly SamplingDemand _demand = demand ?? SamplingDemand.Ungated();
+
     /// <summary>
     /// One sample and the exact bytes that carry it, published together.
     /// </summary>
@@ -112,6 +121,12 @@ public sealed class TelemetryBackgroundService(
     /// </remarks>
     public event Action<TelemetryPayload>? TelemetryPublished;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Taken by each phone's telemetry stream while it is not paused, and by the PC's own UI while a
+    /// window, the tray flyout's sensor cards, or an armed sensor alert needs samples.
+    /// </remarks>
+    public IDisposable AcquireDemand() => _demand.Acquire();
 
     /// <summary>How often a sample is taken.</summary>
     internal static readonly TimeSpan SamplePeriod = TimeSpan.FromSeconds(1);
@@ -153,42 +168,48 @@ public sealed class TelemetryBackgroundService(
         {
             try
             {
-                var payload = await telemetryService.GetTelemetryAsync(stoppingToken);
+                // PERF AUDIT P0-10: the work runs only while someone is reading. The timer above is
+                // untouched and keeps its grid while idle, so when sampling resumes it lands on the
+                // same even spacing it left. See ShouldSampleThisTick.
+                if (ShouldSampleThisTick())
+                {
+                    var payload = await telemetryService.GetTelemetryAsync(stoppingToken);
 
-                // Serialized ONCE per tick rather than once per connected client, and now only if a
-                // client actually asks (RemEx-jyuem). Measured at 74 KB on a 453-sensor machine, so
-                // building it per client was an allocation per stream per second - and building it
-                // eagerly meant an idle PC with no phone connected paid ~4.4 MB a minute for bytes
-                // nobody read. The desktop's own dashboard reads Payload, never Frame.
-                //
-                // THE TIMESTAMP IS CAPTURED HERE, NOT INSIDE THE BUILDER, so the envelope still says
-                // when the sample was TAKEN rather than when some later stream happened to ask for
-                // it. Sharing the bytes means sharing that timestamp, which changes its meaning from
-                // "when this was sent" to "when this was sampled". Nothing reads it: the only
-                // consumer of RemexMessage.Timestamp anywhere is the Pong round-trip measurement,
-                // which echoes the SENDER's value on a different message type entirely. Sample time
-                // is also the more truthful thing for a telemetry frame to carry. (RemEx-0zbj)
-                var sampledAt = System.Diagnostics.Stopwatch.GetTimestamp();
+                    // Serialized ONCE per tick rather than once per connected client, and now only if a
+                    // client actually asks (RemEx-jyuem). Measured at 74 KB on a 453-sensor machine, so
+                    // building it per client was an allocation per stream per second - and building it
+                    // eagerly meant an idle PC with no phone connected paid ~4.4 MB a minute for bytes
+                    // nobody read. The desktop's own dashboard reads Payload, never Frame.
+                    //
+                    // THE TIMESTAMP IS CAPTURED HERE, NOT INSIDE THE BUILDER, so the envelope still says
+                    // when the sample was TAKEN rather than when some later stream happened to ask for
+                    // it. Sharing the bytes means sharing that timestamp, which changes its meaning from
+                    // "when this was sent" to "when this was sampled". Nothing reads it: the only
+                    // consumer of RemexMessage.Timestamp anywhere is the Pong round-trip measurement,
+                    // which echoes the SENDER's value on a different message type entirely. Sample time
+                    // is also the more truthful thing for a telemetry frame to carry. (RemEx-0zbj)
+                    var sampledAt = System.Diagnostics.Stopwatch.GetTimestamp();
 
-                var snapshot = new TelemetrySnapshot(
-                    payload,
-                    () => MessageSerializer.Serialize(new RemexMessage
+                    var snapshot = new TelemetrySnapshot(
+                        payload,
+                        () => MessageSerializer.Serialize(new RemexMessage
+                        {
+                            Type = MessageTypes.Telemetry,
+                            Telemetry = payload,
+                            Timestamp = sampledAt,
+                        }));
+                    _gate.Publish(snapshot);
+
+                    try
                     {
-                        Type = MessageTypes.Telemetry,
-                        Telemetry = payload,
-                        Timestamp = sampledAt,
-                    }));
-                _gate.Publish(snapshot);
-
-                try
-                {
-                    TelemetryPublished?.Invoke(snapshot.Payload);
-                }
-                catch (Exception ex)
-                {
-                    // A broken in-process subscriber must not take the sampler down with it — every
-                    // connected phone is fed from this same loop.
-                    logger.LogWarning(ex, "A telemetry subscriber threw; continuing to sample.");
+                        TelemetryPublished?.Invoke(snapshot.Payload);
+                    }
+                    catch (Exception ex)
+                    {
+                        // A broken in-process subscriber must not take the sampler down with it — every
+                        // connected phone is fed from this same loop.
+                        logger.LogWarning(ex, "A telemetry subscriber threw; continuing to sample.");
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -219,5 +240,38 @@ public sealed class TelemetryBackgroundService(
         }
 
         logger.LogInformation("Telemetry background broadcaster stopped.");
+    }
+
+    /// <summary>
+    /// Whether this tick should poll the sensors, going idle or resuming as consumers come and go
+    /// (perf audit P0-10).
+    /// </summary>
+    /// <remarks>
+    /// GOING IDLE CLEARS THE PUBLISHED SNAPSHOT. A phone connecting or resuming later would otherwise
+    /// be sent the last reading taken before the sampler stopped - minutes or hours old - as its
+    /// current one, and plot it as the newest point on its history. Clearing makes it wait for the
+    /// next tick instead, at most one period. The in-process UI keeps whatever it last displayed until
+    /// then; <see cref="TelemetryPublished"/> is not raised by the clear.
+    /// </remarks>
+    private bool ShouldSampleThisTick()
+    {
+        switch (_demand.NextTick())
+        {
+            case SampleTick.Sample:
+                return true;
+
+            case SampleTick.Resume:
+                logger.LogInformation(
+                    "Telemetry sampling resumed ({Consumers} consumer(s)).", _demand.Consumers);
+                return true;
+
+            case SampleTick.Idle:
+                _gate.Clear();
+                logger.LogInformation("Telemetry sampling idle: nothing is reading it.");
+                return false;
+
+            default:
+                return false;
+        }
     }
 }

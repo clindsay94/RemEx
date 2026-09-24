@@ -417,10 +417,16 @@ object AndroidFileTransferHost {
                     // waiting out its 30-second ready timeout for a phone that already knew.
                     // ensureBinaryChannel has already logged WHICH of its three failures happened;
                     // this line is what ties that to the transfer the user is watching.
-                    if (!ensureBinaryChannel()) {
-                        Log.w(TAG, "Binary channel unavailable for an incoming v3 offer; declining it.")
+                    //
+                    // LEASED ACROSS BOTH CALLS (perf audit P0-7), so the channel's idle close cannot
+                    // land between opening it and handleOffer registering the transfer's sink - which
+                    // for a resumed receive comes only after re-hashing the partial.
+                    FileTransferChannelClient.withLease {
+                        if (!ensureBinaryChannel()) {
+                            Log.w(TAG, "Binary channel unavailable for an incoming v3 offer; declining it.")
+                        }
+                        hostHandler?.handleControlMessage(json)
                     }
-                    hostHandler?.handleControlMessage(json)
                 }
                 // Incoming push from the PC: consent-gated on this (serving) device (plan §2 / WP9).
                 // Dispatched off the collector so a 60s prompt cannot head-of-line-block other inbound

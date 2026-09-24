@@ -44,8 +44,10 @@ import kotlinx.coroutines.launch
  */
 class FileTransferJobService : JobService() {
 
-    // Observes the engine queue for the running job's lifetime; cancelled in [cleanup].
-    private var scope: CoroutineScope? = null
+    // Observes the engine queue for the running job's lifetime; cancelled in [cleanup]. @Volatile:
+    // drainLoop calls onQueueIdle from the engine's own IO-dispatcher scope (perf audit P0-8 review
+    // round 2), a different thread than onStartJob, so a plain field risks a stale read of null here.
+    @Volatile private var scope: CoroutineScope? = null
 
     // The live job's parameters, needed to (re)attach the notification and to call jobFinished().
     @Volatile private var params: JobParameters? = null
@@ -64,14 +66,37 @@ class FileTransferJobService : JobService() {
         // Post the mandatory UIDT notification immediately from the current queue…
         updateNotification(modelOf(FileTransferEngine.queue.value))
 
-        // …retire the job once the engine has drained the queue…
-        FileTransferEngine.onQueueIdle = { scope?.launch { finish(reschedule = false) } }
-
         // …and keep the notification live as bytes flow. Data frames fire per-chunk (thousands/sec),
         // so quantize to a whole-percent NotifModel (distinctUntilChanged collapses identical frames)
         // and sample() throttles bursts under the OS notification-update rate limit — same as the FGS.
+        //
+        // Created and assigned BEFORE onQueueIdle is registered below (perf audit P0-8 review round
+        // 2): drainLoop calls onQueueIdle from the engine's own IO-dispatcher scope, a different
+        // thread than this one, so a callback that closed over a still-null `scope` could fire and
+        // silently no-op if the engine reached idle before this assignment ran.
         val s = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         scope = s
+
+        // …retire the job once the engine has drained the queue…
+        FileTransferEngine.onQueueIdle = { scope?.launch { finish(reschedule = false) } }
+
+        // Perf audit P0-8 review: drainLoop no longer re-polls every 750ms, so a callback registered
+        // AFTER the loop has already reached (and stayed at) idle would previously have been picked
+        // up on the next tick - now nothing calls it again, and this job (and its foreground
+        // notification) never retires. Catch that race here: if the queue is already idle by the time
+        // the callback is wired up, finish immediately instead of waiting for an edge that already
+        // happened before this line ran.
+        if (FileTransferEngine.queue.value.none {
+                    it.state == TransferState.Queued ||
+                        it.state == TransferState.Negotiating ||
+                        it.state == TransferState.Active ||
+                        it.state == TransferState.Verifying
+                }
+        ) {
+            finish(reschedule = false)
+            return true
+        }
+
         s.launch {
             FileTransferEngine.queue
                 .map { modelOf(it) }

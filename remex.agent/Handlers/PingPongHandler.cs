@@ -188,7 +188,11 @@ public sealed class PingPongHandler(
         // bypass pairing. The "some other process owns port 5005" case cannot arise — Program.cs holds
         // a Local\RemExGuiHost single-instance mutex.
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var streamTask = isLoopback ? Task.CompletedTask : StreamTelemetryAsync(webSocket, streamCts.Token);
+        // THIS connection's pause switch (perf audit P0-5): set by telemetry_pause / telemetry_resume
+        // below, read only by this connection's stream. A local, so one phone pausing cannot silence
+        // any other client, and a reconnect always starts unpaused.
+        var telemetryPause = new TelemetryPauseGate();
+        var streamTask = isLoopback ? Task.CompletedTask : StreamTelemetryAsync(webSocket, telemetryPause, streamCts.Token);
 
         // What the PC is playing, on the same terms as telemetry: pushed, not polled, and not to the
         // PC's own UI (RemEx-xx6xf). A SEPARATE LOOP RATHER THAN A BRANCH INSIDE THE TELEMETRY ONE,
@@ -445,6 +449,19 @@ public sealed class PingPongHandler(
                         var reqEntries = await launcherStorage.LoadEntriesAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = reqEntries }, ct);
                         logger.LogInformation("Launcher list sent to client on request ({Count} entries).", reqEntries.Count);
+                        break;
+
+                    // The phone went to the background / came back (perf audit P0-5). Scoped to this
+                    // socket's stream only; see TelemetryPauseGate. Pairing-gated like everything
+                    // else - the phone sends these only once authenticated.
+                    case MessageTypes.TelemetryPause:
+                        telemetryPause.Pause();
+                        logger.LogDebug("Telemetry paused for this connection.");
+                        break;
+
+                    case MessageTypes.TelemetryResume:
+                        telemetryPause.Resume();
+                        logger.LogDebug("Telemetry resumed for this connection.");
                         break;
 
                     case MessageTypes.ProcessListRequest:
@@ -1516,6 +1533,12 @@ public sealed class PingPongHandler(
             return;
         }
 
+        // Keeps the host's media sampler reading for as long as this stream lives (perf audit P0-10);
+        // with no stream anywhere it stops polling the media session altogether. A sampler that was
+        // idle has no reading, so the first send below waits at most one poll for a fresh one rather
+        // than delivering whatever was playing when it stopped.
+        using var demand = mediaSessionMonitor.AcquireDemand();
+
         Remex.Core.Models.MediaPlaybackState? lastSent = null;
 
         while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
@@ -1555,7 +1578,13 @@ public sealed class PingPongHandler(
         }
     }
 
-    private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
+    /// <remarks>
+    /// Internal rather than private so the per-connection pause (perf audit P0-5) can be driven
+    /// without a paired socket - the same seam as <see cref="DispatchInput"/>. The residual gap is the
+    /// usual one: this proves the loop honours <paramref name="pause"/>, not that the receive loop's
+    /// <c>switch</c> still routes <c>telemetry_pause</c> into it.
+    /// </remarks>
+    internal async Task StreamTelemetryAsync(WebSocket webSocket, TelemetryPauseGate pause, CancellationToken ct)
     {
         // Per-iteration try/catch: a single transient failure (e.g. /proc read race,
         // hwmon entry briefly unreadable, websocket send hiccup) used to kill the loop
@@ -1569,8 +1598,30 @@ public sealed class PingPongHandler(
         // one-second backoff after a perfectly healthy tick, halving that client's update rate.
         var tickFailed = false;
 
+        // THIS CONNECTION'S CLAIM ON THE SAMPLER (perf audit P0-10): held while it wants samples,
+        // dropped while it is paused, released when the stream ends. The sampler polls only while
+        // someone holds one, so a paused phone no longer keeps ~450 sensor reads a second going for
+        // nobody. Released by the `using` on every exit path, including a thrown one.
+        using var demand = new DemandHold(telemetryBackgroundService.AcquireDemand);
+
         while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
+            // Read ONCE per pass (review, P0-10): pause.IsPaused was read again below for the send
+            // check and the wait choice. A resume landing between those reads left demand.Set(false)
+            // already applied but the wait choice still seeing "not paused" - so IF this was the only
+            // consumer, the sampler had already gone idle and cleared CurrentSnapshot, and this pass
+            // took the sampler-wait branch below with NO active lease to ever make the sampler run
+            // again. The stream then goes silent forever, with no error and no later pause/resume able
+            // to wake it - the exact silent-failure class REGRESSION-GUARDS.md exists to prevent.
+            //
+            // Re-evaluated every pass, which is what makes pause and resume take and drop the claim:
+            // a paused pass releases it and then parks on the resume wait below; the first pass after
+            // the resume takes it again. When that resume found the sampler idle, CurrentSnapshot is
+            // null and the send below is skipped until the next tick publishes a fresh sample - at
+            // most one period - rather than sending the reading from before it went idle.
+            var isPaused = pause.IsPaused;
+            demand.Set(!isPaused);
+
             try
             {
                 var snapshot = telemetryBackgroundService.CurrentSnapshot;
@@ -1580,7 +1631,11 @@ public sealed class PingPongHandler(
                 // block for seconds — where the old code cheerfully re-sent an identical 60-100 KB
                 // envelope every second to every client. Reference equality is the right test: the
                 // sampler publishes a new snapshot object per successful poll. (RemEx-0zbj)
-                if (snapshot != null && !ReferenceEquals(snapshot, lastSentSnapshot))
+                //
+                // Nothing is sent while the client has paused its telemetry (perf audit P0-5). A
+                // skipped sample leaves lastSentSnapshot where it was, so the first pass after a
+                // resume finds the current sample unsent and delivers it immediately.
+                if (snapshot != null && !ReferenceEquals(snapshot, lastSentSnapshot) && !isPaused)
                 {
                     await MessageSerializer.SendRawAsync(webSocket, snapshot.Frame, ct);
                     lastSentSnapshot = snapshot;
@@ -1630,10 +1685,21 @@ public sealed class PingPongHandler(
                 // for as long as the fault lasts. Task.Delay(1000) used to provide that spacing for
                 // free by pacing every iteration; once the wait replaced the clock, the error path
                 // was the one case left with no pacing at all. This is a backoff, not a clock.
+                //
+                // **A PAUSED CONNECTION WAITS FOR THE RESUME, NOT FOR THE SAMPLER (perf audit P0-5).**
+                // Waiting on the sampler while paused would wake this loop every second to skip a
+                // send; waiting on the pause instead costs nothing until the client comes back. The
+                // pause never touches lastSentSnapshot, so the invariant above is unaffected. A pause
+                // that lands while the sampler wait below is in flight is honoured on the next pass:
+                // the send is skipped at the top and the loop then parks here.
                 if (tickFailed)
                 {
                     tickFailed = false;
                     await Task.Delay(1000, ct);
+                }
+                else if (isPaused)
+                {
+                    await pause.WaitWhilePausedAsync(ct);
                 }
                 else
                 {

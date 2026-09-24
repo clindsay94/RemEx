@@ -1,8 +1,16 @@
 package com.clindsay94.remex
 
+import android.appwidget.AppWidgetManager
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
+import android.net.Network
+import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Base64
 import android.util.Log
@@ -13,9 +21,14 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.data.ThemeSyncSeedResolver
 import com.clindsay94.remex.data.ThemeSyncSender
 import com.clindsay94.remex.data.toThemeSnapshot
+import com.clindsay94.remex.service.FileTransferChannelClient
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
 import com.clindsay94.remex.ui.screens.PairingSurface
+import com.clindsay94.remex.widget.HardwareInfoWidgetReceiver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +39,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -34,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicLong
 import org.json.JSONObject
 
@@ -92,6 +108,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      */
     private val _authenticatedConnection = MutableStateFlow<EstablishedConnection?>(null)
     val authenticatedConnection = _authenticatedConnection.asStateFlow()
+
+    /**
+     * Whether any of the app's UI is started — the ONE app-level foreground flag (perf audit P0-5),
+     * fed by the ProcessLifecycleOwner observer in [startTelemetryBackgroundPause]. Exposed so the
+     * other background gates (P0-7's idle socket closes) read this rather than registering a second
+     * observer that could disagree with it. False until the observer reports ON_START: [initialize]
+     * can run from a widget callback with no UI started.
+     */
+    private val _appForeground = MutableStateFlow(false)
+    val appForeground = _appForeground.asStateFlow()
 
     /**
      * True once the host has acked this connection's reconnect proof; see [authenticatedConnection].
@@ -380,18 +406,25 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             }
         }
 
+        startTelemetryBackgroundPause(appContext)
+        val reconnectAllowed = startReconnectGateSignals(appContext)
+
         // Start Global Connection Heartbeat with exponential backoff.
-        // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS).
-        // The failure counter resets to 0 whenever the device is connected.
+        // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS) - see [ReconnectGate.backoffDelayMs].
+        // The failure counter resets to 0 whenever the device is connected, and whenever
+        // [ReconnectGate] reopens after pausing the loop (perf audit P0-11).
         managerScope.launch(Dispatchers.IO) {
             var consecutiveFailures = 0
-            val baseDelayMs = 5_000L
-            val maxDelayMs = 300_000L // 5 minutes
+            val baseDelayMs = ReconnectGate.BASE_DELAY_MS
 
             while (true) {
                 if (isConnected.value) {
-                    // Connected — reset backoff and poll at base rate
+                    // Connected — reset backoff. Perf audit P0-11: suspend until the connection drops
+                    // rather than waking every 5 s to look, then give the same one-interval grace the
+                    // poll used to before the first reconnect attempt (so a host switch's own
+                    // disconnect-then-connect is not raced; RemEx-bz9t).
                     consecutiveFailures = 0
+                    isConnected.first { !it }
                     delay(baseDelayMs)
                     continue
                 }
@@ -410,17 +443,27 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 val host = settings.hostFlow.first()
 
                 if (host.isBlank()) {
+                    // Perf audit P0-11: nothing to reconnect to until a PC is saved, so wait for one
+                    // instead of polling; the delay keeps the old grace before racing the pairing
+                    // flow's own connect.
+                    settings.hostFlow.first { it.isNotBlank() }
                     delay(baseDelayMs)
                     continue
                 }
 
-                // 2^20 * 5000ms ≈ 87 minutes, which already exceeds maxDelayMs (5 min),
-                // so coerceAtMost(20) safely avoids Int overflow on the shift.
-                val backoffMs =
-                        minOf(
-                                baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)),
-                                maxDelayMs
-                        )
+                // Perf audit P0-11: no network, or backgrounded with nothing on screen that needs the
+                // connection - park until that changes rather than retrying into a void. Reopening
+                // resets the backoff so the attempt happens at once (the app came back, or the
+                // network did), then re-checks everything from the top.
+                if (!reconnectAllowed.first()) {
+                    Log.d("RemexManager", "Heartbeat paused: no network or app backgrounded")
+                    reconnectAllowed.first { it }
+                    Log.d("RemexManager", "Heartbeat resumed")
+                    consecutiveFailures = 0
+                    continue
+                }
+
+                val backoffMs = ReconnectGate.backoffDelayMs(consecutiveFailures)
 
                 // mDNS Self-Healing: If we fail consecutively, try to discover the host automatically in
                 // the background — but ONLY when the saved host is on a network where local multicast
@@ -477,10 +520,173 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 )
                 connect(null, true)
                 consecutiveFailures++
-                delay(backoffMs)
+                // Sleep out the backoff, but cut it short if the gate closes meanwhile, so the loop
+                // parks at the check above and the gate reopening - not the rest of a backoff of up
+                // to 5 minutes - decides when the next attempt happens (perf audit P0-11).
+                withTimeoutOrNull(backoffMs) { reconnectAllowed.first { !it } }
             }
         }
     }
+
+    /**
+     * Wires the signals [ReconnectGate] decides on and returns whether the heartbeat may attempt a
+     * reconnect now, as a flow that re-emits whenever any of them changes (perf audit P0-11).
+     *
+     * Foreground reuses [appForeground] (P0-5's one app-level flag). Network and screen state are new:
+     * nothing else in the app tracked either. Both fail OPEN - if the system service is missing or the
+     * registration throws, the flag stays true and the heartbeat behaves as it did before the gate,
+     * because a battery cost is recoverable and a connection that never comes back is not.
+     *
+     * Called once, from [initialize], which its early return keeps single-shot; the callback and the
+     * receiver are registered on the application context and live as long as the process.
+     */
+    private fun startReconnectGateSignals(appContext: Context): Flow<Boolean> {
+        val networkAvailable = MutableStateFlow(true)
+        runCatching {
+            val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return@runCatching
+            networkAvailable.value = cm.activeNetwork != null
+            cm.registerDefaultNetworkCallback(
+                    object : ConnectivityManager.NetworkCallback() {
+                        // Tracked by identity: on a switch (Wi-Fi to cellular) the new default's
+                        // onAvailable can arrive before the old one's onLost.
+                        @Volatile private var current: Network? = null
+
+                        override fun onAvailable(network: Network) {
+                            current = network
+                            networkAvailable.value = true
+                        }
+
+                        override fun onLost(network: Network) {
+                            if (current == null || current == network) {
+                                current = null
+                                networkAvailable.value = false
+                            }
+                        }
+                    }
+            )
+        }.onFailure {
+            // Review fix (perf audit P0-11): the initial `networkAvailable.value = cm.activeNetwork
+            // != null` line above can run (and see no network) BEFORE registerDefaultNetworkCallback
+            // throws - leaving the flag stuck at false for the process lifetime instead of the
+            // fail-open true this gate promises everywhere else. Reset it here so a broken callback
+            // registration degrades to "always allow" rather than "never reconnect again".
+            networkAvailable.value = true
+            Log.w("RemexManager", "Network callback unavailable; reconnect gate ignores network", it)
+        }
+
+        val screenInteractive = MutableStateFlow(true)
+        runCatching {
+            screenInteractive.value =
+                    appContext.getSystemService(PowerManager::class.java)?.isInteractive ?: true
+            // SCREEN_ON/OFF are only delivered to receivers registered at runtime. They are protected
+            // system broadcasts, so NOT_EXPORTED still receives them.
+            appContext.registerReceiver(
+                    object : BroadcastReceiver() {
+                        override fun onReceive(context: Context?, intent: Intent?) {
+                            when (intent?.action) {
+                                Intent.ACTION_SCREEN_ON -> screenInteractive.value = true
+                                Intent.ACTION_SCREEN_OFF -> screenInteractive.value = false
+                            }
+                        }
+                    },
+                    IntentFilter().apply {
+                        addAction(Intent.ACTION_SCREEN_ON)
+                        addAction(Intent.ACTION_SCREEN_OFF)
+                    },
+                    Context.RECEIVER_NOT_EXPORTED,
+            )
+        }.onFailure {
+            // Same shape as the network flag's fix above: registerReceiver throwing after the
+            // initial isInteractive read left screenInteractive potentially stuck at a stale false.
+            screenInteractive.value = true
+            Log.w("RemexManager", "Screen-state receiver unavailable; reconnect gate assumes screen on", it)
+        }
+
+        return combine(networkAvailable, appForeground, screenInteractive) { network, foreground, screenOn ->
+            ReconnectGate.allows(
+                    networkAvailable = network,
+                    foreground = foreground,
+                    screenInteractive = screenOn,
+                    // Only consulted when the answer can hinge on it, since it is a binder call.
+                    widgetPlaced = network && !foreground && screenOn && isHardwareWidgetPlaced(appContext),
+            )
+        }.distinctUntilChanged()
+    }
+
+    /**
+     * Pauses the host's 1 Hz telemetry push while the app is in the background and resumes it on the
+     * way back (perf audit P0-5). See [TelemetryBackgroundGate] for the decision table.
+     *
+     * APP-LEVEL, NOT SCREEN-LEVEL: telemetry feeds the dashboard and the widget cache, not one screen,
+     * so this keys off ProcessLifecycleOwner (which also debounces ON_STOP, so a rotation does not
+     * pause and resume). AUTHENTICATED, NOT CONNECTED, for the same reason as theme_sync above: the
+     * messages are pairing-gated host-side, and a fresh socket starts unpaused, so every new
+     * authenticated connection is re-reconciled while the app is still backgrounded.
+     *
+     * Called once, from [initialize], which its early return keeps single-shot.
+     */
+    private fun startTelemetryBackgroundPause(appContext: Context) {
+        val gate = TelemetryBackgroundGate()
+        // [_appForeground] is false until the observer below reports ON_START: initialize() can run
+        // from a widget callback with no UI started, and the registration replays the current state
+        // at once.
+
+        // managerScope is Dispatchers.Main, which addObserver requires.
+        managerScope.launch {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(
+                    LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_START -> _appForeground.value = true
+                            Lifecycle.Event.ON_STOP -> _appForeground.value = false
+                            else -> Unit
+                        }
+                    }
+            )
+        }
+
+        // Perf audit P0-7: the binary /ws/files channel closes on the same signal once it is idle.
+        managerScope.launch {
+            appForeground.collect { FileTransferChannelClient.setAppForeground(it) }
+        }
+
+        managerScope.launch {
+            combine(appForeground, authenticatedConnection) { foreground, connection ->
+                foreground to connection
+            }.collect { (foreground, connection) ->
+                val action = gate.reconcile(foreground, connection, isHardwareWidgetPlaced(appContext))
+                val message =
+                        when (action) {
+                            TelemetryBackgroundGate.Action.PAUSE ->
+                                    JSONObject().apply { put("type", "telemetry_pause") }
+                            TelemetryBackgroundGate.Action.RESUME ->
+                                    JSONObject().apply { put("type", "telemetry_resume") }
+                            TelemetryBackgroundGate.Action.NONE -> return@collect
+                        }
+                // Blocking JNI send, so off the main thread (RemEx-66rf). On failure, roll the gate's
+                // state back so it no longer believes the host is synced - the next reconcile (a
+                // foreground or connection change) then sees a mismatch again and retries, instead of
+                // leaving a stale-paused or stale-streaming host with nothing left to prompt a fix.
+                withContext(Dispatchers.IO) {
+                    RemexCoreClient.SendMessage(message.toString()).onFailure {
+                        Log.w("RemexManager", "Failed to send ${message.optString("type")}", it)
+                        gate.revertFailedSend(connection, action)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a hardware widget is on the home screen. It renders from the live telemetry stream
+     * while the app is backgrounded, so its presence keeps the stream running. Errs towards true:
+     * streaming needlessly costs battery, a frozen widget is a visible bug.
+     */
+    private fun isHardwareWidgetPlaced(context: Context): Boolean =
+            runCatching {
+                AppWidgetManager.getInstance(context)
+                        .getAppWidgetIds(ComponentName(context, HardwareInfoWidgetReceiver::class.java))
+                        .isNotEmpty()
+            }.getOrDefault(true)
 
     /**
      * True when [host] is on a network where mDNS/local multicast discovery could plausibly reach the

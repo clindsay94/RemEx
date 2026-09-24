@@ -26,9 +26,20 @@ public class ShellPresencePulseTests
     public void ShowPresencePulseRequiresBothAnAttachedPhoneAndMotionNotReduced()
     {
         ShellViewModelSource().Should().MatchRegex(
-            @"public bool ShowPresencePulse => Presence\.IsPhoneAttached && !IsReducedMotion;",
-            "the pulse has to require an attached phone AND motion not being reduced — either " +
-            "input alone is not enough");
+            @"public bool ShowPresencePulse => Presence\.IsPhoneAttached && !IsReducedMotion && IsWindowVisible;",
+            "the pulse has to require an attached phone AND motion not being reduced AND the " +
+            "window being shown (perf audit P0-2) — no input alone is enough");
+    }
+
+    [Fact]
+    public void WindowVisibilityChangingReRaisesThePulseFlag()
+    {
+        // Perf audit P0-2: a tray-hidden or minimized window must stop the infinite pulse, and a
+        // restore must restart it - which only happens if flipping IsWindowVisible re-raises the
+        // computed flag the .pulse class is bound to.
+        ShellViewModelSource().Should().MatchRegex(
+            @"partial void OnIsWindowVisibleChanged\(bool value\)\s*\{[^}]*OnPropertyChanged\(nameof\(ShowPresencePulse\)\);",
+            "without re-raising ShowPresencePulse, hiding the window to the tray leaves the badge pulsing");
     }
 
     [Fact]

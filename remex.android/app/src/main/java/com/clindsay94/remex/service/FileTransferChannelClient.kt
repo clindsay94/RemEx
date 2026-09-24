@@ -16,6 +16,12 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -135,6 +141,59 @@ internal suspend fun resolveReconnectSecret(
 ): String? = spkiHash.takeIf { it.isNotBlank() }?.let { lookup(it) } ?: lookup(host)
 
 /**
+ * How long an idle `/ws/files` channel is kept while the app is in the foreground (perf audit P0-7).
+ * Long enough that a user browsing between transfers does not pay a TLS + PAIR-1 handshake per file.
+ */
+internal const val FILE_CHANNEL_FOREGROUND_IDLE_MS = 60_000L
+
+/**
+ * The same, once the app is backgrounded (P0-7). Short rather than zero so a queue draining
+ * back-to-back transfers, or a PC pushing a batch one offer after another, does not reconnect
+ * between files — but short enough that a phone in a pocket stops waking its radio for the
+ * 10-second pings within seconds of the last transfer.
+ */
+internal const val FILE_CHANNEL_BACKGROUND_IDLE_MS = 5_000L
+
+internal fun fileChannelIdleWindowMs(appForeground: Boolean): Long =
+    if (appForeground) FILE_CHANNEL_FOREGROUND_IDLE_MS else FILE_CHANNEL_BACKGROUND_IDLE_MS
+
+/**
+ * The idle-close decision for the binary channel (perf audit P0-7): `null` stops watching (nothing is
+ * open), `0` closes now, and anything else is how long to wait before asking again.
+ *
+ * **A LIVE SINK OR A HELD LEASE IS NEVER IDLE, WHATEVER THE CLOCK SAYS.** This is what keeps the
+ * idle close on the right side of the ack-before-complete guard (docs/REGRESSION-GUARDS.md, "Never
+ * announce `file_transfer_complete` before the peer has acked the data"). Every sender and receiver
+ * keeps its sink registered until its drain and completion handshake have finished —
+ * `FileTransferEngine.runUpload`/`runDownload` unregister in their `finally`, after the result;
+ * `FileHostHandler.beginHostSend` in its `finally`, after the drain and `sendComplete`;
+ * `FileHostHandler.handleComplete` only once the peer's completion has arrived, which the peer sends
+ * only after this side acked every byte. Closing the socket under a sink would be the historical
+ * "Transfer incomplete" failure arriving by a different road: an early close instead of an early
+ * completion.
+ *
+ * The LEASE covers the stretch where the channel is needed but no sink exists yet: between opening
+ * it and the peer's `file_transfer_ready` (up to the engine's 30 s negotiate wait), and a resumed
+ * download's re-hash of its partial, which can take longer than any sensible idle window. A
+ * timestamp alone cannot bound either.
+ *
+ * Pure, so it is testable; the state it reads is private to a singleton no JVM test can drive.
+ */
+internal fun fileChannelIdleDelayMs(
+    open: Boolean,
+    liveSinks: Int,
+    leases: Int,
+    quietMs: Long,
+    idleWindowMs: Long,
+): Long? =
+    when {
+        !open -> null
+        liveSinks > 0 || leases > 0 -> idleWindowMs
+        quietMs >= idleWindowMs -> 0L
+        else -> idleWindowMs - quietMs
+    }
+
+/**
  * OkHttp WSS client for the dedicated binary `/ws/files` channel (plan §1.1, WP5). This is a plain
  * Kotlin socket — **no JNI / native-lib changes** — that carries only bulk `data`/`ack`/`error`
  * frames; the JSON control plane (offer/ready/complete/result/control/browse/consent) stays on the
@@ -162,6 +221,88 @@ object FileTransferChannelClient : FileFrameChannel {
 
     override val isOpen: Boolean get() = openState
 
+    // ── Idle close (perf audit P0-7) ───────────────────────────────────────────
+    // The channel used to stay open for good after the last transfer, and its 10 s OkHttp ping kept
+    // the radio waking for nothing - including screen-off. It now closes once nothing needs it for
+    // [fileChannelIdleWindowMs], and the next transfer reopens it through ensureConnected as it
+    // already did for a first transfer. See [fileChannelIdleDelayMs] for why that can never cut a
+    // transfer's completion handshake short.
+
+    /** Guards [leases] and [idleJob], and makes the idle check atomic with lease/sink registration. */
+    private val idleLock = Any()
+    private var leases = 0
+    private var idleJob: Job? = null
+    @Volatile private var lastActivityMs = monotonicNowMs()
+    @Volatile private var appForeground = true
+    private val idleScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private fun monotonicNowMs(): Long = System.nanoTime() / 1_000_000L
+
+    private fun touch() {
+        lastActivityMs = monotonicNowMs()
+    }
+
+    /**
+     * Holds the channel open across [block] even while no sink is registered (P0-7). Callers take it
+     * BEFORE [isOpenTo]/[ensureConnected], so the idle close either ran first (and they reconnect) or
+     * sees the lease (and leaves the socket alone) - never closes it between the two.
+     */
+    suspend fun <T> withLease(block: suspend () -> T): T {
+        synchronized(idleLock) {
+            leases++
+            touch()
+        }
+        try {
+            return block()
+        } finally {
+            synchronized(idleLock) {
+                leases--
+                touch()
+            }
+        }
+    }
+
+    /**
+     * The app-level foreground signal (P0-5's ProcessLifecycleOwner flag, forwarded by
+     * RemexClientManager). Backgrounding shortens the idle window and re-evaluates at once, so an
+     * idle channel closes on ON_STOP rather than a minute later.
+     */
+    fun setAppForeground(foreground: Boolean) {
+        if (appForeground == foreground) return
+        appForeground = foreground
+        if (openState) armIdleWatch()
+    }
+
+    /** (Re)starts the watcher that closes this channel once [fileChannelIdleDelayMs] says so. */
+    private fun armIdleWatch() {
+        synchronized(idleLock) {
+            idleJob?.cancel()
+            idleJob =
+                idleScope.launch {
+                    while (true) {
+                        val wait =
+                            synchronized(idleLock) {
+                                val next =
+                                    fileChannelIdleDelayMs(
+                                        open = openState,
+                                        liveSinks = sinks.size,
+                                        leases = leases,
+                                        quietMs = monotonicNowMs() - lastActivityMs,
+                                        idleWindowMs = fileChannelIdleWindowMs(appForeground),
+                                    )
+                                if (next == 0L) {
+                                    Log.i(TAG, "Binary /ws/files channel idle; closing it until the next transfer")
+                                    closeInternal("idle")
+                                }
+                                next
+                            }
+                        if (wait == null || wait == 0L) return@launch
+                        delay(wait)
+                    }
+                }
+        }
+    }
+
     /**
      * Whether the channel is open **to this exact host**, and not merely open (RemEx-5t4k9).
      *
@@ -177,11 +318,17 @@ object FileTransferChannelClient : FileFrameChannel {
         channelMatches(openState, currentKey, ChannelTarget(host, port, clientId))
 
     override fun registerSink(transferId: String, sink: FileFrameSink) {
-        sinks[transferId] = sink
+        // Under the idle lock so the idle check cannot count zero sinks and close around it (P0-7).
+        synchronized(idleLock) {
+            sinks[transferId] = sink
+            touch()
+        }
     }
 
     override fun unregisterSink(transferId: String) {
         sinks.remove(transferId)
+        // The idle window runs from the END of the last transfer, not its start (P0-7).
+        touch()
     }
 
     override fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray): Boolean {
@@ -247,6 +394,7 @@ object FileTransferChannelClient : FileFrameChannel {
         spkiHash: String,
     ): Boolean {
         val key = ChannelTarget(host, port, clientId)
+        touch()
         if (channelMatches(openState, currentKey, key)) return true
         // Tear down any prior socket to a different host before reconnecting.
         closeInternal()
@@ -358,6 +506,8 @@ object FileTransferChannelClient : FileFrameChannel {
                         openState = true
                         currentKey = key
                         Log.i(TAG, "Binary /ws/files channel open to $host:$port (reconnect proof sent)")
+                        touch()
+                        armIdleWatch()
                         if (!opened.isCompleted) opened.complete(true)
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to answer /ws/files reconnect challenge; closing", e)
@@ -464,10 +614,10 @@ object FileTransferChannelClient : FileFrameChannel {
         }
     }
 
-    private fun closeInternal() {
+    private fun closeInternal(reason: String = "reconnect") {
         val hadSocket = webSocket != null
         try {
-            webSocket?.close(1000, "reconnect")
+            webSocket?.close(1000, reason)
         } catch (e: Exception) {
             // best-effort
         }

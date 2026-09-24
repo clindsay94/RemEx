@@ -39,6 +39,23 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- The phone app now asks the PC to stop sending live sensor readings while it is in the background,
+  and to start again as soon as you come back, so a phone in your pocket no longer takes a 60-100 KB
+  update every second. If a Hardware widget is on your home screen the readings keep flowing so it
+  stays current. Protocol: two new client → host message types, `telemetry_pause` and
+  `telemetry_resume`, scoped to the sending connection. Additive, so no `protocolVersion` bump; an
+  older PC ignores them and keeps streaming. (perf audit P0-5)
+
+- A round of idle/background battery fixes across both apps: the phone's Task Manager, Remote
+  Desktop stream, secondary file/catalog sockets, file-transfer queue drain, and reconnect heartbeat
+  now pause when there's nothing to show or nowhere to send, instead of polling on a fixed timer
+  regardless of whether the screen is on, the app is foregrounded, or a network is even reachable.
+  On the PC side, the Aurora/gradient/presence animations, the Task Manager poll, and the telemetry
+  and media-session samplers now gate the same way — off when the dashboard is hidden, the window is
+  minimized, or nobody (phone, dashboard, tray, or an armed sensor alert) is asking for a reading.
+  Nothing changes about what you see while actually using the app; this only stops work that was
+  running for no audience. (perf audit P0-1 through P0-11)
+
 - Personalize is five tabs instead of one long scroll: **Colour** (mode, source, seed, vibrancy,
   contrast, scheme variants, preview), **Palettes** (built-in and saved palettes, save / delete /
   export / import), **Surfaces** (background, wallpaper, window and card opacity, corner radius,

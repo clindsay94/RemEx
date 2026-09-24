@@ -68,6 +68,17 @@ public interface IMediaSessionMonitor
     /// </para>
     /// </remarks>
     Task<bool> TrySeekAsync(long positionMs, CancellationToken ct);
+
+    /// <summary>
+    /// Declares that a client is receiving readings, keeping the sampler polling until the returned
+    /// lease is disposed (perf audit P0-10). Disposing is idempotent.
+    /// </summary>
+    /// <remarks>
+    /// The sampler reads the media session only while a lease is held, and forgets its last reading
+    /// when the last one is released, so <see cref="Current"/> can go back to null. The PC's own UI
+    /// does not read media state, so in practice the holders are connected phones.
+    /// </remarks>
+    IDisposable AcquireDemand();
 }
 
 /// <inheritdoc cref="IMediaSessionMonitor"/>
@@ -79,13 +90,21 @@ public interface IMediaSessionMonitor
 /// store-before-publish invariant — so a phone that asks for an id from a fresh <c>media_state</c>
 /// never races the store that is supposed to answer it.
 /// </remarks>
+/// <param name="demand">
+/// Who is reading (perf audit P0-10); the session is read only on ticks where a lease is held.
+/// **NULL MEANS UNGATED** - every tick reads, as before P0-10 - which is what the tests that build a
+/// sampler directly get. Production MUST pass a real one: HostBootstrapper does.
+/// </param>
 internal sealed class MediaSessionBackgroundService(
     IMediaSessionReader reader,
     IMediaArtworkSource artworkSource,
     IMediaArtworkStore artworkStore,
     IMediaSeekTarget seekTarget,
-    ILogger<MediaSessionBackgroundService> logger) : BackgroundService, IMediaSessionMonitor
+    ILogger<MediaSessionBackgroundService> logger,
+    SamplingDemand? demand = null) : BackgroundService, IMediaSessionMonitor
 {
+    private readonly SamplingDemand _demand = demand ?? SamplingDemand.Ungated();
+
     /// <summary>
     /// How often the media session is read.
     /// </summary>
@@ -127,6 +146,9 @@ internal sealed class MediaSessionBackgroundService(
     public Task<bool> TrySeekAsync(long positionMs, CancellationToken ct)
         => seekTarget.TrySeekAsync(positionMs, ct);
 
+    /// <inheritdoc />
+    public IDisposable AcquireDemand() => _demand.Acquire();
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _stoppingToken = stoppingToken;
@@ -152,6 +174,31 @@ internal sealed class MediaSessionBackgroundService(
 
         do
         {
+            // PERF AUDIT P0-10: the cross-process read runs only while a client is receiving. The
+            // timer keeps its grid while idle. `continue` in a do-while goes to the condition, so a
+            // skipped tick still waits for the next one rather than spinning.
+            switch (_demand.NextTick())
+            {
+                case SampleTick.Skip:
+                    continue;
+
+                case SampleTick.Idle:
+                    // FORGET THE LAST READING, BOTH COPIES. The gate's, so a phone connecting later is
+                    // not sent a track that may have ended an hour ago as what is playing now; and
+                    // lastPublished, so the first reading after resuming is published even if it
+                    // happens to equal the one from before - otherwise the cleared gate would stay
+                    // empty and a newly connected phone would never be told anything.
+                    _gate.Clear();
+                    lastPublished = null;
+                    logger.LogInformation("Media session sampling idle: no client is receiving it.");
+                    continue;
+
+                case SampleTick.Resume:
+                    logger.LogInformation(
+                        "Media session sampling resumed ({Consumers} client(s)).", _demand.Consumers);
+                    break;
+            }
+
             MediaPlaybackState reading;
             try
             {

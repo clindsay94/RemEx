@@ -626,6 +626,23 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     partial void OnIsPaletteDraggingChanged(bool value) => OnPropertyChanged(nameof(SuppressPaletteTransitions));
 
     /// <summary>
+    /// True while the main window is shown AND not minimized (perf audit P0-2). Pushed by
+    /// <see cref="Remex.Desktop.MainWindow"/> on every IsVisible / WindowState / DataContext change;
+    /// defaults to true so a host with no MainWindow (single-view) animates as before. Infinite
+    /// decorative animations (the Aurora mesh, the gradient breathing, the presence pulse) AND this
+    /// into their existing reduced-motion gate, so a tray-hidden or minimized process stops ticking
+    /// them instead of animating for its whole life. NOT persisted: transient window state.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isWindowVisible = true;
+
+    partial void OnIsWindowVisibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowPresencePulse));
+        UpdateRemoteDesktopStreamForeground();
+    }
+
+    /// <summary>
     /// Whether the window/backdrop crossfade that follows a palette change should be skipped in
     /// favour of an instant snap — either because the user asked for reduced motion, or because a
     /// wheel drag is live and the preview needs to track the pointer with no easing. Bound onto the
@@ -1055,9 +1072,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// True when the drawer-footer connection button's presence badge should pulse (RemEx-d7xj8):
-    /// only while a phone is actually attached, and never when the user prefers reduced motion.
+    /// only while a phone is actually attached, never when the user prefers reduced motion, and
+    /// never while the window is hidden to the tray or minimized (<see cref="IsWindowVisible"/>).
     /// </summary>
-    public bool ShowPresencePulse => Presence.IsPhoneAttached && !IsReducedMotion;
+    public bool ShowPresencePulse => Presence.IsPhoneAttached && !IsReducedMotion && IsWindowVisible;
 
     /// <summary>
     /// This PC's host name, for the drawer header identity block (RemEx-dnqws). The same value
@@ -1386,6 +1404,25 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         CurrentView = viewModel;
         // Auto-close drawer on mobile/narrow after navigation
         IsDrawerOpen = false;
+
+        UpdateRemoteDesktopStreamForeground();
+    }
+
+    /// <summary>
+    /// Perf audit P0-3: the Remote Desktop stream only runs while its page is the current view AND
+    /// the window is shown and not minimized (<see cref="IsWindowVisible"/>). Leaving the page, or
+    /// hiding the window to the tray, stops it; coming back resumes it. Navigation only swaps
+    /// <see cref="CurrentView"/> and the view's detach only unsubscribes, so without this the
+    /// heaviest client path kept receiving and decoding with nothing on screen.
+    /// </summary>
+    private void UpdateRemoteDesktopStreamForeground()
+    {
+        if (_remoteDesktopViewModel is null)
+            return;
+
+        var isForeground = IsWindowVisible && ReferenceEquals(CurrentView, _remoteDesktopViewModel);
+        // Stop and Start both catch their own failures and report through the page's status line.
+        _ = _remoteDesktopViewModel.SetStreamForegroundAsync(isForeground);
     }
 
     // ═══════════════ Navigation Commands ═══════════════

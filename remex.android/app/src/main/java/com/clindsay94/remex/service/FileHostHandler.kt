@@ -1439,6 +1439,12 @@ class FileHostHandler(
         override fun onChannelClosed() {
             // Keep the partial + manifest for a later resume; just release the file handle.
             close()
+            // Perf audit P0-7 review: unregister so this doesn't stay an orphaned sink forever if
+            // the PC dies mid-push and never resumes or cancels. FileTransferChannelClient's idle
+            // close never fires while any sink is registered, so leaving this one up would undo the
+            // idle-close saving for the rest of the process's life. Safe to call even if the PC does
+            // resume afterward: a resume re-registers a fresh session's sink under its own transferId.
+            channel.unregisterSink(transferId)
         }
 
         suspend fun finalizeAndCommit(expectedSha: String?, facade: FileSystemFacade): TransferOutcome {

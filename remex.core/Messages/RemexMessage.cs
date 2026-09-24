@@ -418,6 +418,19 @@ public static class MessageTypes
     public const string Ping = "ping";
     public const string Pong = "pong";
     public const string Telemetry = "telemetry";
+    /// <summary>
+    /// Client → host: stop pushing <see cref="Telemetry"/> to THIS connection until
+    /// <see cref="TelemetryResume"/> arrives (perf audit P0-5). Sent by the phone when it goes to the
+    /// background, so the host stops sending a 60-100 KB envelope every second to a pocket. Scoped to
+    /// the sending socket: every other client keeps its stream, and a new connection always starts
+    /// unpaused. Additive; a host that predates it ignores the type and simply keeps streaming.
+    /// </summary>
+    public const string TelemetryPause = "telemetry_pause";
+    /// <summary>
+    /// Client → host: undo <see cref="TelemetryPause"/>. The host sends the current sample straight
+    /// away rather than waiting for the next tick.
+    /// </summary>
+    public const string TelemetryResume = "telemetry_resume";
     public const string Command = "command";
     public const string CommandResponse = "command_response";
     public const string LauncherSync = "launcher_sync";

@@ -301,6 +301,9 @@ public partial class App : Application
 
             _ = viewModel.Connection.AutoConnectAsync();
 
+            // Perf audit P0-10: the host's sensor sampler now runs only while something is reading.
+            WireTelemetryDemand(viewModel);
+
             // P8-G: keep tray icon tooltip in sync with live sensor readings
             viewModel.Connection.TelemetryReceived += telemetry =>
             {
@@ -490,6 +493,8 @@ public partial class App : Application
             // returns false when the owner has no visible window, so a destructive action declines
             // rather than proceeding unconfirmed if that ever stops being true.
             vm.OnConfirmationRequested = ConfirmationDialogHost.For(_flyout);
+
+            TrackFlyoutTelemetryDemand(_flyout, vm);
         }
 
         // The flyout refreshes itself in ShowAtTray now - HomeViewModel is no longer its data
@@ -535,6 +540,76 @@ public partial class App : Application
         };
 
         Apply();
+    }
+
+    /// <summary>The UI's claim on the in-process host's sensor sampler (perf audit P0-10).</summary>
+    private TelemetryDemandCoordinator? _telemetryDemand;
+
+    /// <summary>
+    /// Feeds <see cref="TelemetryDemandCoordinator"/> the window and sensor-alert signals (perf audit
+    /// P0-10). The flyout's signal is added when the flyout is first built, in
+    /// <see cref="TrackFlyoutTelemetryDemand"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NO IN-PROCESS HOST, NOTHING TO GATE: a UI whose host failed to start takes telemetry off the
+    /// socket from wherever it is connected, and there is no local sampler to keep running.
+    /// </para>
+    /// <para>
+    /// SEEDED, THEN SUBSCRIBED. The alert store may already hold the profile's alerts by the time this
+    /// runs (the dashboard view model loads them as the shell is built), and its Changed event does
+    /// not replay, so reading it once here is what keeps an alert armed at start-up from being missed
+    /// until the user next edits one.
+    /// </para>
+    /// </remarks>
+    private void WireTelemetryDemand(ShellViewModel shell)
+    {
+        if (EmbeddedHostServices?.GetService(typeof(ITelemetryBroadcaster)) is not ITelemetryBroadcaster broadcaster)
+            return;
+
+        var alerts = Services.GetRequiredService<SensorAlertStore>();
+        var demand = new TelemetryDemandCoordinator(broadcaster.AcquireDemand);
+        _telemetryDemand = demand;
+
+        demand.IsWindowVisible = shell.IsWindowVisible;
+        demand.HasArmedAlerts = alerts.All.Count > 0;
+
+        shell.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ShellViewModel.IsWindowVisible))
+                OnUiThread(() => demand.IsWindowVisible = shell.IsWindowVisible);
+        };
+
+        // The store is UI-thread affine and its own callers keep to that, but a profile import can
+        // start off it; the post is cheap insurance for a coordinator that is not thread-safe.
+        alerts.Changed += () => OnUiThread(() => demand.HasArmedAlerts = alerts.All.Count > 0);
+    }
+
+    /// <summary>
+    /// Adds the tray flyout's signal to the telemetry demand: open, with pinned sensor cards in it
+    /// (perf audit P0-10). It is the only live readout on screen while the main window is hidden.
+    /// </summary>
+    private void TrackFlyoutTelemetryDemand(TrayFlyoutWindow flyout, TrayFlyoutViewModel vm)
+    {
+        if (_telemetryDemand is not { } demand)
+            return;
+
+        void Apply() => demand.IsFlyoutShowingSensors = flyout.IsVisible && vm.FlyoutSensors.Count > 0;
+
+        flyout.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == Visual.IsVisibleProperty) Apply();
+        };
+        vm.FlyoutSensors.CollectionChanged += (_, _) => OnUiThread(Apply);
+        Apply();
+    }
+
+    private static void OnUiThread(Action action)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            action();
+        else
+            Avalonia.Threading.Dispatcher.UIThread.Post(action);
     }
 
     private void OnShowMainWindow(object? sender, EventArgs e) => BringMainWindowToFront();
