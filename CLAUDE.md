@@ -146,7 +146,7 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) â€
 <!-- gitnexus:start -->
 # GitNexus â€” Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (33773 symbols, 74900 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (33866 symbols, 75104 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
