@@ -1272,30 +1272,35 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     /**
      * Delivers the answer to [RemexCoreClient.RequestMediaArtwork]: one JSON string
-     * `{artworkId, pngBase64}`, never pushed unsolicited. Runs on the JNI delivery thread, so every
-     * failure here is silent - malformed JSON, a blank id, bad base64, or a decode that returns null
-     * all land on doing nothing rather than throwing off that thread.
+     * `{artworkId, pngBase64}`, never pushed unsolicited. Dispatches to [Dispatchers.Default] (perf
+     * audit P0-13, so a multi-MB reply's JSON parse and decode never run synchronously on the JNI
+     * delivery thread), so every failure here is silent - malformed JSON, a blank id, bad base64, or
+     * a decode that returns null all land on doing nothing rather than throwing off that thread.
      *
      * A missing `pngBase64` means the host has evicted the id; that is remembered via
      * [MediaArtworkCache.markEvicted] so [reconcileArtwork] does not keep re-requesting it. A bitmap
      * that fails to decode is treated the same way, per contract.
      */
     override fun onMediaArtwork(mediaArtworkJson: String?) {
-        val json = mediaArtworkJson?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return
-        val id = json.optString("artworkId").ifBlank { null } ?: return
-        val base64 =
-                if (json.has("pngBase64") && !json.isNull("pngBase64")) {
-                    json.optString("pngBase64").ifBlank { null }
-                } else {
-                    null
-                }
-        Log.d("RemexManager", "media_artwork: $id bytes=${base64?.length ?: 0}")
-        if (base64 == null) {
-            artworkCache.markEvicted(id)
-            return
-        }
-        managerScope.launch {
-            val bitmap = withContext(Dispatchers.Default) { decodeDownsampledArtwork(base64) }
+        // Perf audit P0-13: JSONObject(...) scans the whole string, including the embedded base64
+        // payload, so parsing a multi-MB artwork reply here would run on the JNI data-dispatcher
+        // thread the same way the base64 decode used to - moved inside the coroutine, off that
+        // thread, alongside the decode it was already deferring.
+        managerScope.launch(Dispatchers.Default) {
+            val json = mediaArtworkJson?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return@launch
+            val id = json.optString("artworkId").ifBlank { null } ?: return@launch
+            val base64 =
+                    if (json.has("pngBase64") && !json.isNull("pngBase64")) {
+                        json.optString("pngBase64").ifBlank { null }
+                    } else {
+                        null
+                    }
+            Log.d("RemexManager", "media_artwork: $id bytes=${base64?.length ?: 0}")
+            if (base64 == null) {
+                artworkCache.markEvicted(id)
+                return@launch
+            }
+            val bitmap = decodeDownsampledArtwork(base64)
             if (bitmap == null) {
                 artworkCache.markEvicted(id)
                 return@launch

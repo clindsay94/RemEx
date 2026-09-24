@@ -70,6 +70,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   theme or rewrites the splash sidecar, so a normal launch applies the theme once instead of twice.
   (perf audit P0-15 through P0-18)
 
+- Connection resilience: both the phone's and the PC's native control sockets now send a keepalive
+  and abort a send that stalls instead of hanging indefinitely, and a Close frame from the peer is
+  handled without risking a self-deadlock; the phone's JNI callback delivery splits video frames
+  (shed-newest under load) from telemetry/process/launcher data (never dropped, coalesced to the
+  latest value) so a stalled Java consumer can no longer block network receive, and a frame dropped
+  under load earns exactly one throttled keyframe request, claimed once the stream can actually
+  deliver it and never carried over into the next session; the desktop input queue merges a run of
+  absolute pointer-move events down to the latest one when the PC falls behind, while button/key
+  events and the moves either side of them are never reordered, and once one queued item fails to
+  connect the rest fail fast for 10 seconds instead of each serially waiting out its own timeout.
+  (perf audit P0-12 through P0-14)
+
 - Personalize is five tabs instead of one long scroll: **Colour** (mode, source, seed, vibrancy,
   contrast, scheme variants, preview), **Palettes** (built-in and saved palettes, save / delete /
   export / import), **Surfaces** (background, wallpaper, window and card opacity, corner radius,

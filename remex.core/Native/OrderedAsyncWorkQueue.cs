@@ -25,11 +25,23 @@ namespace Remex.Core.Native;
 /// draining because one item threw would take every later operation with it, which is a far worse
 /// failure than the one that threw.
 /// </para>
+/// <para>
+/// COALESCING IS ADJACENCY-ONLY, AND THAT IS WHAT KEEPS IT FROM BEING A LATEST-WINS SLOT (perf audit
+/// P0-14). An item queued with a coalesce key is skipped only when the item IMMEDIATELY behind it in
+/// the queue carries the same key — the newer one supersedes it and runs in its place. Nothing ever
+/// moves: a skipped item's successor was already next in line, so no item runs earlier or later
+/// relative to any item it was not merged with. An unkeyed item (a button, a key, a stream command)
+/// between two keyed ones breaks the run, so both keyed items run, one on each side of it, exactly as
+/// queued. Callers key only work that is genuinely superseded by its successor — an ABSOLUTE pointer
+/// move, never a relative one, whose deltas add up rather than replace each other.
+/// </para>
 /// </remarks>
 internal sealed class OrderedAsyncWorkQueue
 {
-    private readonly Channel<(string Label, Func<Task> Work)> _queue =
-        Channel.CreateUnbounded<(string, Func<Task>)>(new UnboundedChannelOptions { SingleReader = true });
+    private readonly record struct QueuedWork(string Label, Func<Task> Work, string? CoalesceKey);
+
+    private readonly Channel<QueuedWork> _queue =
+        Channel.CreateUnbounded<QueuedWork>(new UnboundedChannelOptions { SingleReader = true });
 
     private readonly Action<string, Exception>? _onError;
     private readonly TimeSpan _itemTimeout;
@@ -69,15 +81,25 @@ internal sealed class OrderedAsyncWorkQueue
     /// Ordering is by call order: the channel is FIFO and an unbounded channel
     /// accepts synchronously, so two calls from one thread are queued in the order they were made.
     /// </remarks>
-    internal void Enqueue(string label, Func<Task> work)
+    /// <param name="coalesceKey">
+    /// Optional. When set, this item is skipped if — at the moment the consumer reaches it — the
+    /// very next queued item has the same key. Leave null for anything whose effect is not fully
+    /// replaced by its successor's; see the class remarks.
+    /// </param>
+    internal void Enqueue(string label, Func<Task> work, string? coalesceKey = null)
     {
         EnsureLoopStarted();
 
-        if (!_queue.Writer.TryWrite((label, work)))
+        if (!_queue.Writer.TryWrite(new QueuedWork(label, work, coalesceKey)))
         {
             _onError?.Invoke(label, new InvalidOperationException("work queue rejected the item"));
         }
     }
+
+    /// <summary>How many items have been skipped as superseded by an identical-key successor.</summary>
+    internal long CoalescedCount => Interlocked.Read(ref _coalescedCount);
+
+    private long _coalescedCount;
 
     private void EnsureLoopStarted()
     {
@@ -93,20 +115,44 @@ internal sealed class OrderedAsyncWorkQueue
 
     private async Task RunAsync()
     {
-        await foreach (var (label, work) in _queue.Reader.ReadAllAsync())
+        var reader = _queue.Reader;
+        while (await reader.WaitToReadAsync())
         {
-            try
+            while (reader.TryRead(out var item))
             {
-                // THE AWAIT IS THE GUARANTEE. Change this to `_ = work()` and everything still
-                // compiles, every call site still looks right, and the reordering bug is back with
-                // nothing to indicate it. The timeout is what stops that guarantee turning into a
-                // permanent stall when an item never completes.
-                await work().WaitAsync(_itemTimeout);
-            }
-            catch (Exception ex)
-            {
-                _onError?.Invoke(label, ex);
+                if (IsSupersededByNext(reader, item))
+                {
+                    Interlocked.Increment(ref _coalescedCount);
+                    continue;
+                }
+
+                try
+                {
+                    // THE AWAIT IS THE GUARANTEE. Change this to `_ = work()` and everything still
+                    // compiles, every call site still looks right, and the reordering bug is back with
+                    // nothing to indicate it. The timeout is what stops that guarantee turning into a
+                    // permanent stall when an item never completes.
+                    await item.Work().WaitAsync(_itemTimeout);
+                }
+                catch (Exception ex)
+                {
+                    _onError?.Invoke(item.Label, ex);
+                }
             }
         }
     }
+
+    /// <summary>
+    /// True when <paramref name="item"/> is keyed and the item directly behind it has the same key.
+    /// </summary>
+    /// <remarks>
+    /// Peek, never scan. Looking past the head for a later match would merge across whatever sits in
+    /// between — a mouseDown between two moves would then run AFTER the position it was meant to
+    /// precede, which is the reordering this class exists to prevent. Safe as a peek-then-read because
+    /// the reader is single: nothing else can take the head between this check and the next TryRead.
+    /// </remarks>
+    private static bool IsSupersededByNext(ChannelReader<QueuedWork> reader, QueuedWork item) =>
+        item.CoalesceKey is not null
+        && reader.TryPeek(out var next)
+        && string.Equals(next.CoalesceKey, item.CoalesceKey, StringComparison.Ordinal);
 }

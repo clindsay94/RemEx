@@ -123,6 +123,8 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         // Force wss:// for 2.0
         var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}");
         _webSocket = new ClientWebSocket();
+        // A half-open link must become a detected drop, not a parked receive loop (perf audit P0-12).
+        SocketLiveness.ApplyKeepAlive(_webSocket.Options);
 
         JniHelper.AndroidLogE("RemexNative", $"Attempting connection to {wsUri}");
 
@@ -373,8 +375,13 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         try
         {
             // Re-check inside the gate — we may have been closed while waiting.
-            if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
-            await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+            var socket = _webSocket;
+            if (socket == null || socket.State != WebSocketState.Open) return;
+            // Bounded (perf audit P0-12): the outbound queue calls this with no token, so on a
+            // half-open socket an unbounded send parked the queue — and, holding the gate, every
+            // command behind it — until the OS dropped TCP. On expiry the socket is aborted, which
+            // fails the receive loop and raises ConnectionStateChanged(false) for the reconnect.
+            await SocketLiveness.SendOrAbortAsync(socket, new ArraySegment<byte>(bytes), WebSocketMessageType.Text, ct);
         }
         finally
         {
@@ -403,7 +410,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         {
             // Re-check the SAME captured socket inside the gate — never fall back to _webSocket.
             if (targetSocket.State != WebSocketState.Open) return;
-            await targetSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+            await SocketLiveness.SendOrAbortAsync(targetSocket, new ArraySegment<byte>(bytes), WebSocketMessageType.Text, ct);
         }
         finally
         {
@@ -429,7 +436,14 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                         result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
-                            await DisconnectAsync();
+                            // The host closed the connection: report the drop and leave. NOT
+                            // DisconnectAsync — it awaits _receiveLoopTask, which is this very loop,
+                            // so calling it from here awaited itself forever: false never fired, and
+                            // every later ConnectAsync hung on the same stuck task. Teardown of the
+                            // socket happens in the next ConnectAsync/DisconnectAsync, called from
+                            // outside the loop, where awaiting the (now finished) task is correct.
+                            JniHelper.AndroidLogE("RemexNative", $"Host closed the connection ({result.CloseStatus}); reporting disconnect.");
+                            ConnectionStateChanged?.Invoke(false);
                             return;
                         }
 
@@ -457,10 +471,26 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                     accumulator?.Dispose();
                 }
             }
+
+            // Left the loop without being told to: the socket stopped being Open between two messages
+            // (aborted by the keep-alive or a send deadline — perf audit P0-12). That is a drop, and
+            // without this nothing would report it: the reconnect heartbeat waits on this event.
+            if (!ct.IsCancellationRequested)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"Receive loop ended with the socket {_webSocket?.State}; reporting disconnect.");
+                ConnectionStateChanged?.Invoke(false);
+            }
         }
-        catch (OperationCanceledException) { /* cancellation is how this wait normally ends */ }
-        catch (Exception)
+        // ONLY OUR OWN cancellation is a quiet exit (DisconnectAsync, or ConnectAsync replacing this
+        // socket). An aborted socket ALSO fails ReceiveAsync with OperationCanceledException — the
+        // framework's way of saying "Aborted" — and that is a dropped connection, not a shutdown. It
+        // used to be swallowed here, so a keep-alive timeout, a send deadline, or a command's own 10 s
+        // budget cancelling its send (which aborts the socket) left the UI connected to a dead socket
+        // and the heartbeat never reconnected. (perf audit P0-12)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { /* cancellation is how this wait normally ends */ }
+        catch (Exception ex)
         {
+            JniHelper.AndroidLogE("RemexNative", $"Receive loop failed ({ex.GetType().Name}: {ex.Message}); reporting disconnect.");
             ConnectionStateChanged?.Invoke(false);
         }
         finally

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Remex.Core.Models;
 using Remex.Core.Native;
 using Xunit;
 
@@ -206,6 +207,100 @@ public class OrderedAsyncWorkQueueTests
 
         gate.SetResult();
         await WaitFor(() => order.Count == 2, "the blocked queue should finish once released");
+    }
+
+    [Fact]
+    public async Task AdjacentPointerMovesCollapseToTheNewestAndNothingCrossesAButton()
+    {
+        // P0-14, THE ORDERING HALF. A backlog of moves collapses, but a button between two moves
+        // must keep BOTH moves, one on each side of it: the move before a mouseUp is where the
+        // button releases, and the move after a mouseDown is the drag. Merging across the button
+        // would run it at the wrong position — the reordering this class exists to prevent.
+        var queue = new OrderedAsyncWorkQueue();
+        var ran = new ConcurrentQueue<string>();
+        var gate = new TaskCompletionSource();
+
+        // Hold the consumer so everything below is genuinely queued behind it, as it is on a slow link.
+        queue.Enqueue("gate", async () => { await gate.Task; ran.Enqueue("gate"); });
+
+        void Move(string name) =>
+            queue.Enqueue(name, () => { ran.Enqueue(name); return Task.CompletedTask; }, "move");
+        void Button(string name) =>
+            queue.Enqueue(name, () => { ran.Enqueue(name); return Task.CompletedTask; });
+
+        Move("m1"); Move("m2"); Move("m3");
+        Button("down");
+        Move("m4");
+        Button("up");
+        Move("m5"); Move("m6");
+
+        gate.SetResult();
+        await WaitFor(() => ran.Count == 6, "the collapsed queue should drain");
+        await Task.Delay(50); // anything wrongly kept would run after m6 and show up here
+
+        Assert.Equal(new[] { "gate", "m3", "down", "m4", "up", "m6" }, ran.ToArray());
+        Assert.Equal(3, queue.CoalescedCount);
+    }
+
+    [Fact]
+    public async Task DifferentKeysAndUnkeyedItemsNeverCoalesce()
+    {
+        // The key is the whole contract: unkeyed work is never skipped, and two different keys are
+        // two different things even when adjacent.
+        var queue = new OrderedAsyncWorkQueue();
+        var ran = new ConcurrentQueue<string>();
+        var gate = new TaskCompletionSource();
+
+        queue.Enqueue("gate", async () => { await gate.Task; ran.Enqueue("gate"); });
+        queue.Enqueue("a", () => { ran.Enqueue("a"); return Task.CompletedTask; }, "k1");
+        queue.Enqueue("b", () => { ran.Enqueue("b"); return Task.CompletedTask; }, "k2");
+        queue.Enqueue("c", () => { ran.Enqueue("c"); return Task.CompletedTask; });
+        queue.Enqueue("d", () => { ran.Enqueue("d"); return Task.CompletedTask; });
+
+        gate.SetResult();
+        await WaitFor(() => ran.Count == 5, "nothing here may be skipped");
+
+        Assert.Equal(new[] { "gate", "a", "b", "c", "d" }, ran.ToArray());
+        Assert.Equal(0, queue.CoalescedCount);
+    }
+
+    [Fact]
+    public async Task AKeyedItemWithNothingBehindItStillRuns()
+    {
+        // Coalescing is decided when the consumer reaches an item, not retroactively: the newest move
+        // always runs, and a move already started is never "superseded" by one queued after it.
+        var queue = new OrderedAsyncWorkQueue();
+        var ran = new ConcurrentQueue<string>();
+        var firstStarted = new TaskCompletionSource();
+        var release = new TaskCompletionSource();
+
+        queue.Enqueue("m1", async () => { firstStarted.SetResult(); await release.Task; ran.Enqueue("m1"); }, "move");
+        await firstStarted.Task;
+        queue.Enqueue("m2", () => { ran.Enqueue("m2"); return Task.CompletedTask; }, "move");
+        release.SetResult();
+
+        await WaitFor(() => ran.Count == 2, "both moves should run");
+        Assert.Equal(new[] { "m1", "m2" }, ran.ToArray());
+    }
+
+    [Theory]
+    [InlineData(InputEventTypes.MouseMove, 10, 20, null, null, true)]   // absolute move: superseded by the next
+    [InlineData(InputEventTypes.MouseMove, null, null, 3, -2, false)]    // relative: deltas sum, never drop one
+    [InlineData(InputEventTypes.MouseMove, 10, null, null, null, false)] // half-absolute is not absolute
+    [InlineData(InputEventTypes.MouseMove, 10, 20, 3, -2, false)]         // x/y AND deltas set: host treats as relative
+    [InlineData(InputEventTypes.MouseDown, 10, 20, null, null, false)]   // buttons are never merged
+    [InlineData(InputEventTypes.MouseUp, null, null, null, null, false)]
+    [InlineData(InputEventTypes.MouseClick, 10, 20, null, null, false)]
+    [InlineData(InputEventTypes.MouseScroll, null, null, 0, 120, false)] // scroll deltas sum too
+    [InlineData(InputEventTypes.KeyDown, null, null, null, null, false)]
+    public void OnlyAbsolutePointerMovesAreKeyedForCoalescing(
+        string eventType, int? x, int? y, int? dx, int? dy, bool keyed)
+    {
+        var input = new InputEvent { EventType = eventType, X = x, Y = y, DeltaX = dx, DeltaY = dy };
+
+        var key = AndroidNativeExports.DesktopInputCoalesceKey(input);
+
+        Assert.Equal(keyed ? AndroidNativeExports.AbsolutePointerMoveCoalesceKey : null, key);
     }
 
     private static void InterlockedMax(ref int target, int value)

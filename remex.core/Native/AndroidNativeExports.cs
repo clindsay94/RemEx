@@ -78,63 +78,101 @@ public static class AndroidNativeExports
     // torn down the thread, which fail-fasts (observed on-device as SIGABRT ~40 s after
     // launch). A single long-lived dispatcher avoids both failure modes and also keeps the
     // 30–60 fps frame path free of per-callback attach/detach overhead.
-    // Bounded so a stalled Java consumer can never grow the queue without limit (OOM).
-    // The high-rate frame path enqueues as droppable: under backpressure the newest
-    // frames are shed rather than blocking the capture/network thread or accumulating
-    // unbounded latency. Low-rate control/data callbacks enqueue non-droppable and must
-    // not be lost, so they block briefly if the queue is momentarily full.
-    // (Finer latency tuning — drop-oldest / frame coalescing — belongs to RemEx-a1t.)
-    private const int JniWorkCapacity = 16;
-    private static readonly System.Collections.Concurrent.BlockingCollection<Action<IntPtr>> _jniWork = new(JniWorkCapacity);
-    // volatile: published via the double-checked lock below; ARM's weak memory model
-    // would otherwise permit an early/torn read of the reference.
-    private static volatile Thread? _jniDispatcher;
+    //
+    // TWO QUEUES, TWO DISPATCHERS (perf audit P0-13). Frames and data used to share one 16-slot
+    // queue drained by one thread, which coupled the video stream and the control socket three ways:
+    // a full queue parked the network receive thread on a blocking Add of a data callback (so the
+    // control socket stopped reading), frames were shed with nothing asking the host to repair the
+    // picture, and a slow data callback (multi-MB artwork JSON) held the one thread every frame was
+    // waiting on. Now:
+    //
+    //   * FRAME queue (H.264 frames + the binary cursor packet): bounded, NEVER blocks the producer.
+    //     Under backpressure the newest item is shed. A shed VIDEO frame records a keyframe debt that
+    //     FrameDropKeyframeGate turns into one throttled desktop_keyframe_request (see there).
+    //     One consumer, FIFO, so frame ORDER into Kotlin is unchanged; the H.264 decoder still runs
+    //     on its own H264DecodeLoop thread in synchronous mode (REGRESSION-GUARDS "Synchronous mode
+    //     only") — this only changes which JNI thread calls onFrameReceived.
+    //   * DATA queue (every string/void callback): NEVER blocks the producer, and never drops a
+    //     callback that must arrive. Connection state, authenticated, file_*, clipboard_*, errors,
+    //     stream descriptor/meta, cursor shape and artwork each carry an event or a reply that
+    //     nothing re-sends, and connected -> authenticated must keep its order, so they are queued
+    //     FIFO and unbounded — the same trade P0-12 made for OutboundMessageQueue. What bounds it is
+    //     that the only high-rate data callbacks are whole snapshots (telemetry, process list,
+    //     launcher list), and those are coalesced latest-wins per callback (LatestWinsSlots): at
+    //     most one of each is ever queued, and it delivers the newest value when it runs.
+    //
+    // No ordering guarantee is lost across the two queues that Kotlin relied on: each callback there
+    // feeds its own flow, collected independently, so frames and data were never ordered relative to
+    // each other past the JNI boundary anyway. Order WITHIN each queue is preserved.
+    private const int JniFrameCapacity = 16;
+    private static readonly BlockingCollection<Action<IntPtr>> _jniFrameWork = new(JniFrameCapacity);
+    private static readonly BlockingCollection<Action<IntPtr>> _jniDataWork = new();
+    // Published via the double-checked lock in EnsureDispatcher with Volatile.Read/Write: ARM's weak
+    // memory model would otherwise permit an early/torn read of the reference.
+    private static Thread? _jniFrameDispatcher;
+    private static Thread? _jniDataDispatcher;
+    private static readonly LatestWinsSlots<IntPtr, string> _pendingSnapshots = new();
+    private static readonly FrameDropKeyframeGate _frameDropKeyframes = new();
 
-    private static void PostToJavaThread(Action<IntPtr> work, bool droppable = false)
+    private static void EnsureDispatcher(ref Thread? slot, BlockingCollection<Action<IntPtr>> queue, string name)
     {
-        if (_jniDispatcher is null)
+        if (Volatile.Read(ref slot) is not null) return;
+
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            if (Volatile.Read(ref slot) is not null) return;
+
+            var thread = new Thread(() => JniDispatcherLoop(queue))
             {
-                if (_jniDispatcher is null)
-                {
-                    var thread = new Thread(JniDispatcherLoop)
-                    {
-                        IsBackground = true,
-                        Name = "RemexJniDispatch"
-                    };
-                    thread.Start();
-                    _jniDispatcher = thread;
-                }
-            }
+                IsBackground = true,
+                Name = name
+            };
+            thread.Start();
+            Volatile.Write(ref slot, thread);
         }
+    }
+
+    /// <summary>
+    /// Queues a data callback. Never blocks and never drops: see the note on the two queues above.
+    /// </summary>
+    private static void PostToJavaThread(Action<IntPtr> work)
+    {
+        EnsureDispatcher(ref _jniDataDispatcher, _jniDataWork, "RemexJniDispatch");
 
         try
         {
-            // Droppable (frames): shed silently when the consumer is backed up so the
-            // producer never blocks and memory stays bounded — the next frame supersedes
-            // the dropped one. Non-droppable (control/data): block until space frees so
-            // state-change callbacks are never lost.
-            if (droppable)
-            {
-                _jniWork.TryAdd(work);
-            }
-            else
-            {
-                _jniWork.Add(work);
-            }
+            _jniDataWork.Add(work);
         }
         catch (InvalidOperationException)
         {
             // Defensive only: thrown if the queue is ever marked complete (CompleteAdding).
-            // The dispatcher is a process-lifetime daemon that is intentionally never shut
+            // The dispatchers are process-lifetime daemons that are intentionally never shut
             // down — ClearCallbackState() just zeroes the callback so queued work no-ops —
             // so nothing calls CompleteAdding today and this path is currently unreachable.
             // Kept for forward-compatibility if an explicit teardown is ever added.
         }
     }
 
-    private static void JniDispatcherLoop()
+    /// <summary>
+    /// Offers a frame-path callback without blocking. Returns false when it was shed because the
+    /// Java consumer is backed up.
+    /// </summary>
+    private static bool TryPostFrameToJavaThread(Action<IntPtr> work)
+    {
+        EnsureDispatcher(ref _jniFrameDispatcher, _jniFrameWork, "RemexJniFrames");
+
+        try
+        {
+            return _jniFrameWork.TryAdd(work);
+        }
+        catch (InvalidOperationException)
+        {
+            // Unreachable today, for the same reason as in PostToJavaThread.
+            return false;
+        }
+    }
+
+    private static void JniDispatcherLoop(BlockingCollection<Action<IntPtr>> queue)
     {
         IntPtr vm;
         lock (SyncRoot)
@@ -151,7 +189,7 @@ public static class AndroidNativeExports
             JniHelper.AndroidLogE("RemexNative", "JNI dispatcher failed to attach to the JVM; Java callbacks are disabled.");
         }
 
-        foreach (var work in _jniWork.GetConsumingEnumerable())
+        foreach (var work in queue.GetConsumingEnumerable())
         {
             if (!attached) continue; // degraded mode: drain and drop so producers never block
             try
@@ -227,6 +265,15 @@ public static class AndroidNativeExports
     private static readonly PairingAbortRegistry PairingAborts = new();
 
     private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
+
+    // DELIBERATELY UNBOUNDED (perf audit P0-12). The legacy v2 upload path
+    // (FileTransferViewModel.legacyUpload) pushes every file_transfer_chunk through this queue with no
+    // backpressure and no retry, so a bounded drop-on-full queue would silently punch holes in an
+    // upload. The stall the audit found is fixed at the other end instead: each send is bounded
+    // (SocketLiveness.SendOrAbortAsync) and a dead socket is aborted, after which SendMessageAsync
+    // returns at once without sending for anything still queued. Those messages are DISCARDED, not
+    // delivered later: the queue empties instead of parking, and an interrupted legacy upload has to
+    // be restarted after the reconnect.
     private static readonly Channel<RemexMessage> OutboundMessageQueue = Channel.CreateUnbounded<RemexMessage>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
     private static int _outboundSendLoopStarted;
@@ -654,6 +701,7 @@ public static class AndroidNativeExports
             QueueDesktopWork("StartDesktopStream", async () =>
             {
                 var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                _frameDropKeyframes.Reset();
                 await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, spkiHash);
             });
         });
@@ -662,11 +710,24 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStreamNative")]
     public static void StopDesktopStream(IntPtr env, IntPtr thiz)
     {
-        QueueDesktopWork("StopDesktopStream", async () =>
+        QueueDesktopWork("StopDesktopStream", StopDesktopStreamAndResetAsync);
+    }
+
+    /// <summary>
+    /// Stops and disconnects the desktop stream, then forgets the stopped session's frame-drop
+    /// keyframe debt so the next session cannot spend its host keyframe allowance on it (P0-13).
+    /// </summary>
+    private static async Task StopDesktopStreamAndResetAsync()
+    {
+        try
         {
             await RemexDesktopClient.Current.StopStreamAsync();
             await RemexDesktopClient.Current.DisconnectAsync();
-        });
+        }
+        finally
+        {
+            _frameDropKeyframes.Reset();
+        }
     }
 
     /// <summary>
@@ -1556,6 +1617,27 @@ public static class AndroidNativeExports
 
     private static void QueueDesktopWork(string label, Func<Task> work) => DesktopWork.Enqueue(label, work);
 
+    /// <summary>Coalesce key shared by every absolute pointer move on the desktop queue.</summary>
+    internal const string AbsolutePointerMoveCoalesceKey = "desktop-absolute-pointer-move";
+
+    /// <summary>
+    /// The <see cref="OrderedAsyncWorkQueue"/> coalesce key for one desktop input, or null when the
+    /// event must never be merged (perf audit P0-14).
+    /// </summary>
+    /// <remarks>
+    /// ONLY AN ABSOLUTE MOUSE MOVE IS KEYED. A later absolute position fully replaces an earlier one,
+    /// so when the queue is behind (a slow link, a reconnect) a run of them collapses to the newest and
+    /// the backlog stops replaying stale cursor paths. Everything else stays unkeyed and therefore
+    /// strictly ordered: buttons and keys obviously, but also RELATIVE moves — their deltas sum, so
+    /// dropping one would lose motion — and scrolls, for the same reason. The queue merges only
+    /// ADJACENT same-key items, so a button event between two moves keeps both moves, one either side.
+    /// </remarks>
+    internal static string? DesktopInputCoalesceKey(InputEvent input) =>
+        input.EventType == InputEventTypes.MouseMove && input.X.HasValue && input.Y.HasValue
+            && !input.DeltaX.HasValue && !input.DeltaY.HasValue
+            ? AbsolutePointerMoveCoalesceKey
+            : null;
+
     private static void EnsureOutboundSendLoopStarted()
     {
         if (Interlocked.Exchange(ref _outboundSendLoopStarted, 1) == 1)
@@ -1587,22 +1669,26 @@ public static class AndroidNativeExports
                 QueueDesktopWork("DesktopStart", async () =>
                 {
                     var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    _frameDropKeyframes.Reset();
                     await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopInput when message.InputEvent != null:
-                QueueDesktopWork("DesktopInput", async () =>
+                DesktopWork.Enqueue("DesktopInput", async () =>
                 {
                     var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
                     await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, clientId, spkiHash);
-                });
+                }, DesktopInputCoalesceKey(message.InputEvent));
                 return true;
 
             case MessageTypes.DesktopConfig when message.DesktopConfig != null:
                 QueueDesktopWork("DesktopConfig", async () =>
                 {
                     var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    // StartStreamAsync opens a new session when none is running. Resetting a running
+                    // one only holds debt until its next IDR, which a config rebuild emits anyway.
+                    _frameDropKeyframes.Reset();
                     await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, clientId, spkiHash);
                 });
                 return true;
@@ -1640,11 +1726,7 @@ public static class AndroidNativeExports
                 return true;
 
             case MessageTypes.DesktopStop:
-                QueueDesktopWork("DesktopStop", async () =>
-                {
-                    await RemexDesktopClient.Current.StopStreamAsync();
-                    await RemexDesktopClient.Current.DisconnectAsync();
-                });
+                QueueDesktopWork("DesktopStop", StopDesktopStreamAndResetAsync);
                 return true;
 
             // On-demand keyframe (IDR) request after a decoder desync. Routed onto the desktop stream
@@ -1716,18 +1798,18 @@ public static class AndroidNativeExports
 
     private static void OnNativeProcessListReceived(List<ProcessInfo> processes)
     {
-        NotifyJavaData(_onProcessListSyncMethodId, RemexJson.Serialize(processes, RemexJsonSerializerContext.Default.ListProcessInfo));
+        NotifyJavaSnapshot(_onProcessListSyncMethodId, RemexJson.Serialize(processes, RemexJsonSerializerContext.Default.ListProcessInfo));
     }
 
     private static void OnNativeLauncherEntriesReceived(List<AppEntry> entries)
     {
-        NotifyJavaData(_onLauncherSyncMethodId, RemexJson.Serialize(entries, RemexJsonSerializerContext.Default.ListAppEntry));
+        NotifyJavaSnapshot(_onLauncherSyncMethodId, RemexJson.Serialize(entries, RemexJsonSerializerContext.Default.ListAppEntry));
     }
 
     private static void OnNativeTelemetryReceived(TelemetryPayload telemetry)
     {
         _cachedTelemetry = telemetry;
-        NotifyJavaData(_onTelemetryUpdateMethodId, RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload));
+        NotifyJavaSnapshot(_onTelemetryUpdateMethodId, RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload));
     }
 
     private static void OnNativeConnectionStateChanged(bool isConnected)
@@ -1786,26 +1868,67 @@ public static class AndroidNativeExports
     }
 
     private static void NotifyJavaFrame(byte[] frame)
-        => NotifyJavaByteArray(_onFrameReceivedMethodId, frame);
+    {
+        if (!NotifyJavaByteArray(_onFrameReceivedMethodId, frame))
+        {
+            // Shed under backpressure: the decoder will now run P-frames against a reference it
+            // never received. Owe the host a keyframe; claimed below once frames fit again.
+            _frameDropKeyframes.RecordDrop();
+            return;
+        }
+
+        // Scan for an IDR only while it matters (session not yet primed, or a debt an IDR would
+        // settle); the steady-state hot path skips the scan.
+        bool deliveredKeyframe = _frameDropKeyframes.WantsKeyframeCheck && FrameDropKeyframeGate.ContainsIdr(frame);
+        if (_frameDropKeyframes.TryClaimRequest(Environment.TickCount64, deliveredKeyframe))
+        {
+            RequestKeyframeAfterFrameDrop();
+        }
+    }
+
+    /// <summary>
+    /// Asks the host for an IDR after the frame queue shed video (perf audit P0-13). Same route as a
+    /// Kotlin-issued <c>desktop_keyframe_request</c> (the desktop stream socket, via the ordered
+    /// desktop work queue); the host's 5 s reinit cooldown still applies on top of
+    /// <see cref="FrameDropKeyframeGate"/>'s own throttle.
+    /// </summary>
+    private static void RequestKeyframeAfterFrameDrop()
+    {
+        JniHelper.AndroidLogE("RemexNative", "JNI frame queue shed video frames; requesting a keyframe to resync the decoder.");
+        QueueDesktopWork("DesktopKeyframeRequest (frame drop)", async () =>
+        {
+            // Only on a live stream. RequestKeyframeAsync connects before it checks for a stream, so
+            // without this a request that lands behind a user's DesktopStop would reopen the desktop
+            // socket the stop had just closed — for a request that then sends nothing.
+            var desktop = RemexDesktopClient.Current;
+            if (!desktop.IsConnected || !desktop.IsStreaming) return;
+
+            var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+            await desktop.RequestKeyframeAsync(host, port, clientId, spkiHash);
+        });
+    }
 
     // RD-E: forward the raw 32-byte "RDXC" cursor-position packet to Java as a byte[] (parsed in Kotlin
     // with ByteBuffer). Reuses the byte-array JNI path — no JSON string, no JSONObject on the hot path.
+    // A shed cursor packet needs no repair: the next one supersedes it.
     private static void OnNativeCursorBinaryReceived(byte[] packet)
         => NotifyJavaByteArray(_onDesktopCursorBinaryMethodId, packet);
 
     // Shared byte[] -> Java callback dispatch, used by both H.264 frames and the binary cursor packet.
-    private static void NotifyJavaByteArray(IntPtr targetMethodId, byte[] data)
+    // Returns false ONLY when the item was shed by a full frame queue; a callback that is simply not
+    // registered yet is not a drop and returns true, so it never owes a keyframe.
+    private static bool NotifyJavaByteArray(IntPtr targetMethodId, byte[] data)
     {
         lock (SyncRoot)
         {
-            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || targetMethodId == IntPtr.Zero) return;
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || targetMethodId == IntPtr.Zero) return true;
         }
 
         // The captured `data` is a fresh per-message array (RemexDesktopClient raises FrameReceived /
         // CursorBinaryReceived with ms.ToArray()), so holding the reference across the async hand-off is
         // safe. INVARIANT: if that producer is ever changed to pool/reuse buffers, this MUST copy before
         // enqueuing or the Java side will read torn data.
-        PostToJavaThread(env =>
+        return TryPostFrameToJavaThread(env =>
         {
             // Re-read the global ref under lock at execution time: it may have been replaced (and the old
             // one deleted) between enqueue and dispatch. The method id is stable for a given method.
@@ -1840,7 +1963,7 @@ public static class AndroidNativeExports
             {
                 JniHelper.DeleteLocalRef(env, jArray);
             }
-        }, droppable: true);
+        });
     }
 
     private static void OnNativeMessageReceived(RemexMessage msg)
@@ -1937,37 +2060,65 @@ public static class AndroidNativeExports
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || methodId == IntPtr.Zero) return;
         }
 
+        PostToJavaThread(env => CallJavaStringCallback(env, methodId, json));
+    }
+
+    /// <summary>
+    /// <see cref="NotifyJavaData"/> for a callback whose payload is a WHOLE SNAPSHOT that the next
+    /// one fully replaces (telemetry, the process list, the launcher list). Coalesced latest-wins
+    /// (perf audit P0-13): at most one delivery per callback is ever queued, and it hands Kotlin the
+    /// newest value at the moment it runs, so a stalled Java consumer cannot accumulate a backlog of
+    /// stale readings. Never use this for a callback that carries an event or a reply — those must
+    /// each arrive, and go through <see cref="NotifyJavaData"/>.
+    /// </summary>
+    private static void NotifyJavaSnapshot(IntPtr methodId, string json)
+    {
+        lock (SyncRoot)
+        {
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || methodId == IntPtr.Zero) return;
+        }
+
+        // False: a delivery for this callback is already queued and will now carry this value.
+        if (!_pendingSnapshots.Offer(methodId, json)) return;
+
         PostToJavaThread(env =>
         {
-            IntPtr callback;
-            lock (SyncRoot)
-            {
-                callback = _callbackGlobalRef;
-            }
-            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
-
-            IntPtr jString = JniHelper.CreateJString(env, json);
-            if (jString == IntPtr.Zero)
-            {
-                // Clear any pending exception from NewString (e.g. OutOfMemoryError) so it cannot
-                // bleed into the next callback on the shared dispatcher env (JNI-3 / RemEx-ymb).
-                if (JniHelper.ExceptionCheck(env)) JniHelper.ExceptionClear(env);
-                return;
-            }
-            try
-            {
-                JniHelper.CallVoidMethod(env, callback, methodId, jString);
-                if (JniHelper.ExceptionCheck(env))
-                {
-                    JniHelper.ExceptionClear(env);
-                    JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
-                }
-            }
-            finally
-            {
-                JniHelper.DeleteLocalRef(env, jString);
-            }
+            if (!_pendingSnapshots.TryTake(methodId, out var latest)) return;
+            CallJavaStringCallback(env, methodId, latest);
         });
+    }
+
+    // Runs on the data dispatcher thread: invokes one (Ljava/lang/String;)V callback.
+    private static void CallJavaStringCallback(IntPtr env, IntPtr methodId, string json)
+    {
+        IntPtr callback;
+        lock (SyncRoot)
+        {
+            callback = _callbackGlobalRef;
+        }
+        if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+
+        IntPtr jString = JniHelper.CreateJString(env, json);
+        if (jString == IntPtr.Zero)
+        {
+            // Clear any pending exception from NewString (e.g. OutOfMemoryError) so it cannot
+            // bleed into the next callback on the shared dispatcher env (JNI-3 / RemEx-ymb).
+            if (JniHelper.ExceptionCheck(env)) JniHelper.ExceptionClear(env);
+            return;
+        }
+        try
+        {
+            JniHelper.CallVoidMethod(env, callback, methodId, jString);
+            if (JniHelper.ExceptionCheck(env))
+            {
+                JniHelper.ExceptionClear(env);
+                JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
+            }
+        }
+        finally
+        {
+            JniHelper.DeleteLocalRef(env, jString);
+        }
     }
 
     private static void NotifyJavaConnectionState(bool isConnected)

@@ -358,9 +358,25 @@ public static unsafe class JniHelper
     /// Deliberately not routed through Java: this is what remains usable when the JNI path itself is
     /// broken, when no thread is attached, or when an exception is pending and any JNI call would
     /// abort the process. It is the diagnostic of last resort at this boundary.
+    /// <para>
+    /// A no-op where liblog does not exist (the desktop test host). A logging call must never be what
+    /// fails the code around it: without this, the first log line in <c>RemexNativeClient</c> threw
+    /// <see cref="DllNotFoundException"/> off-device, so none of its connect or receive paths could be
+    /// tested. On Android liblog is always present and nothing changes. (perf audit P0-12)
+    /// </para>
     /// </remarks>
     public static void AndroidLogE(string tag, string message)
     {
-        __android_log_print(6, tag, "%s", message);
+        if (_androidLogUnavailable) return;
+        try
+        {
+            __android_log_print(6, tag, "%s", message);
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            _androidLogUnavailable = true;
+        }
     }
+
+    private static volatile bool _androidLogUnavailable;
 }

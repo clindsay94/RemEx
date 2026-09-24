@@ -182,6 +182,10 @@ public sealed class RemexDesktopClient : IDisposable
 
         var wsUri = BuildDesktopUri(host, port, clientId);
         _webSocket = new ClientWebSocket();
+        // A half-open link must become a detected drop, not a parked receive loop (perf audit P0-12).
+        // An abort ends ReceiveLoopAsync, which clears _isStreaming; the next queued operation then
+        // reconnects through EnsureConnectedAsync (re-running the proof) and restarts the stream.
+        SocketLiveness.ApplyKeepAlive(_webSocket.Options);
 
         // Defense in depth: ALWAYS install the validation callback (never leave the socket to fall
         // through to the OS trust manager), and reject outright if somehow reached with no pin
@@ -206,8 +210,17 @@ public sealed class RemexDesktopClient : IDisposable
             {
                 await _webSocket.ConnectAsync(wsUri, connectCts.Token);
             }
+            catch (Exception ex) when (ex is not OperationCanceledException && !ct.IsCancellationRequested)
+            {
+                // Refused, unreachable, TLS pin mismatch: the PC did not take the connection. Recorded
+                // so queued input stops retrying it one item at a time (perf audit P0-14).
+                MarkConnectFailed();
+                throw;
+            }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
+                MarkConnectFailed();
+
                 // Distinguish OUR deadline from the caller's cancellation: the caller cancelling is not
                 // an error and must keep surfacing as OperationCanceledException, while a host that
                 // never answered is a real, reportable failure. Collapsing the two would make a
@@ -256,13 +269,91 @@ public sealed class RemexDesktopClient : IDisposable
             // DesktopErrorCodes.HandshakeTimeout.
             var english = DescribeHandshakeTimeout(host, port);
 
+            MarkConnectFailed();
             ReportConnectFailure(DesktopErrorCodes.HandshakeTimeout, english, $"{host}:{port}");
 
             throw new TimeoutException(english);
         }
 
+        Volatile.Write(ref _lastConnectFailureTicks, 0);
+
         _receiveCts = new CancellationTokenSource();
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
+    }
+
+    /// <summary>
+    /// How long after a failed connect queued input is dropped instead of starting a connect of its own.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE PROBLEM THIS SOLVES (perf audit P0-14). Desktop work runs on ONE ordered consumer
+    /// (RemEx-krvz). With the PC unreachable, every queued input item used to run its own full connect
+    /// — up to 15 s for the socket plus 10 s for the proof — one after another. A user who kept
+    /// touching the screen built a backlog that took minutes to drain, and when the PC came back the
+    /// surviving tail replayed that stale input onto the live desktop.
+    /// </para>
+    /// <para>
+    /// Now the ONE attempt that is already running (or just failed) speaks for everything queued
+    /// behind it: items that reach the head while this window is open return immediately, so a backlog
+    /// collapses in milliseconds once that attempt fails, and at most one input-triggered connect runs
+    /// per window. Explicit starts (<see cref="StartStreamAsync"/>, which the client's reconnect logic
+    /// drives) are NOT gated — they are how the user asks to try again — and any successful connect
+    /// clears the window.
+    /// </para>
+    /// <para>
+    /// DROPPING HERE CANNOT STRAND A HELD KEY. This only fires while the socket is not open, and a
+    /// socket that is not open is a session the host has already torn down, releasing every key it
+    /// injected for it (RemEx-e2p4). A keyUp delivered to a NEW session would release nothing, because
+    /// that session never pressed it.
+    /// </para>
+    /// </remarks>
+    private static readonly TimeSpan DefaultInputReconnectBackoff = TimeSpan.FromSeconds(10);
+
+    /// <summary>Test seam for <see cref="DefaultInputReconnectBackoff"/>; same caveats as <see cref="ConnectTimeoutOverrideForTests"/>.</summary>
+    internal static TimeSpan? InputReconnectBackoffOverrideForTests { get; set; }
+
+    private static TimeSpan InputReconnectBackoff => InputReconnectBackoffOverrideForTests ?? DefaultInputReconnectBackoff;
+
+    /// <summary><see cref="Environment.TickCount64"/> of the last failed connect; 0 when the last one succeeded.</summary>
+    private long _lastConnectFailureTicks;
+
+    /// <summary>Set once per failure so a dropped backlog logs one line, not one per item.</summary>
+    private int _inputDropLogged;
+
+    private void MarkConnectFailed()
+    {
+        // Never 0, which means "no failure": TickCount64 starts near zero on a fresh boot.
+        Volatile.Write(ref _lastConnectFailureTicks, Math.Max(1, Environment.TickCount64));
+        Volatile.Write(ref _inputDropLogged, 0);
+    }
+
+    /// <summary>Forgets a recorded connect failure. Tests only: lets a shared singleton start clean.</summary>
+    internal void ForgetConnectFailureForTests() => Volatile.Write(ref _lastConnectFailureTicks, 0);
+
+    /// <summary>
+    /// True when this input should be dropped rather than start a connect of its own, because the
+    /// socket is down and a connect failed within <see cref="InputReconnectBackoff"/>.
+    /// </summary>
+    private bool ShouldDropInputWhileUnreachable(string what)
+    {
+        if (IsConnected)
+        {
+            return false;
+        }
+
+        long failedAt = Volatile.Read(ref _lastConnectFailureTicks);
+        if (failedAt == 0 || Environment.TickCount64 - failedAt >= (long)InputReconnectBackoff.TotalMilliseconds)
+        {
+            return false;
+        }
+
+        if (Interlocked.Exchange(ref _inputDropLogged, 1) == 0)
+        {
+            JniHelper.AndroidLogE("RemexDesktop",
+                $"PC unreachable (connect failed {Environment.TickCount64 - failedAt} ms ago); dropping queued {what} instead of reconnecting per item.");
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -392,6 +483,13 @@ public sealed class RemexDesktopClient : IDisposable
             return;
         }
 
+        // The PC just failed to answer; the attempt that found that out speaks for this item too,
+        // rather than it paying a full connect timeout of its own (perf audit P0-14).
+        if (ShouldDropInputWhileUnreachable("input"))
+        {
+            return;
+        }
+
         await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         if (!_isStreaming)
@@ -460,6 +558,13 @@ public sealed class RemexDesktopClient : IDisposable
     /// </summary>
     public async Task RequestKeyframeAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
+        // A keyframe resyncs a decoder on a live stream; a reconnect starts a fresh stream that opens
+        // on an IDR anyway, so one of these is never worth a connect timeout of its own (P0-14).
+        if (ShouldDropInputWhileUnreachable("keyframe request"))
+        {
+            return;
+        }
+
         await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         if (!_isStreaming)
@@ -482,6 +587,11 @@ public sealed class RemexDesktopClient : IDisposable
         // Same as SendInputAsync, and likelier to fire: a burst of pointer samples from the user's
         // last touch can still be in flight when they stop the stream. (RemEx-yzbb)
         if (_streamStoppedByRequest)
+        {
+            return;
+        }
+
+        if (ShouldDropInputWhileUnreachable("pointer batch"))
         {
             return;
         }
@@ -584,12 +694,17 @@ public sealed class RemexDesktopClient : IDisposable
         {
             // Re-checked inside the gate: a teardown can complete while this call waits its turn,
             // and sending on a disposed socket throws where doing nothing is correct.
-            if (!IsConnected)
+            var socket = _webSocket;
+            if (socket is null || socket.State != WebSocketState.Open)
             {
                 return;
             }
 
-            await _webSocket!.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+            // Bounded (perf audit P0-12): every DesktopWork operation passes no token, so an unbounded
+            // send on a half-open socket parked the single-consumer queue — and every input and stop
+            // behind it — until the OS dropped TCP. On expiry the socket is aborted, the receive loop
+            // ends, and the next operation reconnects.
+            await SocketLiveness.SendOrAbortAsync(socket, new ArraySegment<byte>(bytes), WebSocketMessageType.Text, ct);
         }
         finally
         {
@@ -784,6 +899,11 @@ public sealed class RemexDesktopClient : IDisposable
                     }
                 }
             }
+
+            // Left the loop because the socket stopped being Open between two messages (aborted by the
+            // keep-alive or a send deadline — perf audit P0-12). Same meaning as the catch below: the
+            // stream is gone, so the next input must restart it rather than trust a stale flag.
+            _isStreaming = false;
         }
         catch
         {

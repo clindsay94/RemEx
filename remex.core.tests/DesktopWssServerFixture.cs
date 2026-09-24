@@ -65,9 +65,12 @@ internal sealed class DesktopWssServerFixture : IAsyncDisposable
     /// <summary>
     /// Starts the endpoint. <paramref name="onAccepted"/> runs once the socket is open and decides what
     /// the host does next; returning without sending anything is what a silent host looks like.
+    /// <paramref name="path"/> defaults to the desktop channel; pass <see cref="RemexConstants.WebSocketPath"/>
+    /// to stand in for the control socket that <c>RemexNativeClient</c> connects to.
     /// </summary>
     public static async Task<DesktopWssServerFixture> StartAsync(
-        Func<WebSocket, CancellationToken, Task>? onAccepted = null)
+        Func<WebSocket, CancellationToken, Task>? onAccepted = null,
+        string path = RemexConstants.WebSocketPath + "/desktop")
     {
         using var rsa = RSA.Create(2048);
         var request = new CertificateRequest("CN=remex-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -90,7 +93,7 @@ internal sealed class DesktopWssServerFixture : IAsyncDisposable
 
         DesktopWssServerFixture? fixture = null;
 
-        app.Map(RemexConstants.WebSocketPath + "/desktop", async context =>
+        app.Map(path, async context =>
         {
             if (!context.WebSockets.IsWebSocketRequest)
             {

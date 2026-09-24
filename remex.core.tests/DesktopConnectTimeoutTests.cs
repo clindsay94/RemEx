@@ -50,8 +50,15 @@ public class DesktopConnectTimeoutTests : IDisposable
     public DesktopConnectTimeoutTests() =>
         RemexDesktopClient.ConnectTimeoutOverrideForTests = ShortTimeout;
 
-    public void Dispose() =>
+    public void Dispose()
+    {
         RemexDesktopClient.ConnectTimeoutOverrideForTests = null;
+
+        // Every failed connect here opens the input fail-fast window on the shared singleton (P0-14).
+        // Left open, StoppedStreamDoesNotResurrectTests would pass because input was dropped as
+        // "PC unreachable" rather than because the stop latch held — green for the wrong reason.
+        RemexDesktopClient.Current.ForgetConnectFailureForTests();
+    }
 
     [Fact]
     public async Task AHostThatNeverAnswersFailsWithATimeoutRatherThanHanging()
