@@ -25,7 +25,7 @@ class TransferQueueTest {
                 destRoot = "root1",
                 destRelativePath = "sub",
             )
-        store().upsert(a)
+        store().upsert(emptyList(), a)
 
         // A brand-new store instance must read the persisted file (survives process death).
         val reloaded = store().load()
@@ -40,10 +40,11 @@ class TransferQueueTest {
     @Test
     fun upsert_replacesById_preservingOrder() {
         val s = store()
-        s.upsert(QueuedTransfer("a", FileTransferModes.UPLOAD, "a.bin", 1, "u1"))
-        s.upsert(QueuedTransfer("b", FileTransferModes.DOWNLOAD, "b.bin", 2, "u2"))
+        var q = s.upsert(emptyList(), QueuedTransfer("a", FileTransferModes.UPLOAD, "a.bin", 1, "u1"))
+        q = s.upsert(q, QueuedTransfer("b", FileTransferModes.DOWNLOAD, "b.bin", 2, "u2"))
         val updated =
             s.upsert(
+                q,
                 QueuedTransfer(
                     "a",
                     FileTransferModes.UPLOAD,
@@ -52,7 +53,7 @@ class TransferQueueTest {
                     "u1",
                     state = TransferState.Active,
                     bytesTransferred = 512,
-                )
+                ),
             )
         assertEquals(2, updated.size)
         assertEquals("a", updated[0].id) // order preserved
@@ -63,10 +64,10 @@ class TransferQueueTest {
     @Test
     fun pruneFinished_dropsDoneAndCancelled() {
         val s = store()
-        s.upsert(QueuedTransfer("a", FileTransferModes.UPLOAD, "a", 1, "u", state = TransferState.Done))
-        s.upsert(QueuedTransfer("b", FileTransferModes.UPLOAD, "b", 1, "u", state = TransferState.Active))
-        s.upsert(QueuedTransfer("c", FileTransferModes.UPLOAD, "c", 1, "u", state = TransferState.Cancelled))
-        val remaining = s.pruneFinished()
+        var q = s.upsert(emptyList(), QueuedTransfer("a", FileTransferModes.UPLOAD, "a", 1, "u", state = TransferState.Done))
+        q = s.upsert(q, QueuedTransfer("b", FileTransferModes.UPLOAD, "b", 1, "u", state = TransferState.Active))
+        q = s.upsert(q, QueuedTransfer("c", FileTransferModes.UPLOAD, "c", 1, "u", state = TransferState.Cancelled))
+        val remaining = s.pruneFinished(q)
         assertEquals(1, remaining.size)
         assertEquals("b", remaining[0].id)
     }
@@ -74,9 +75,9 @@ class TransferQueueTest {
     @Test
     fun remove_deletesById() {
         val s = store()
-        s.upsert(QueuedTransfer("a", FileTransferModes.UPLOAD, "a", 1, "u"))
-        s.upsert(QueuedTransfer("b", FileTransferModes.UPLOAD, "b", 1, "u"))
-        val after = s.remove("a")
+        var q = s.upsert(emptyList(), QueuedTransfer("a", FileTransferModes.UPLOAD, "a", 1, "u"))
+        q = s.upsert(q, QueuedTransfer("b", FileTransferModes.UPLOAD, "b", 1, "u"))
+        val after = s.remove(q, "a")
         assertEquals(1, after.size)
         assertEquals("b", after[0].id)
     }
@@ -84,6 +85,23 @@ class TransferQueueTest {
     @Test
     fun load_missingFile_returnsEmpty() {
         assertTrue(store().load().isEmpty())
+    }
+
+    @Test
+    fun pruneStale_dropsOnlyOldTerminalEntries() {
+        val s = store()
+        val now = System.currentTimeMillis()
+        val old = now - TransferQueueStore.SEVEN_DAYS_MS - 1000
+        var q = s.upsert(emptyList(), QueuedTransfer("old-done", FileTransferModes.UPLOAD, "a", 1, "u", state = TransferState.Done, createdAtMs = old))
+        q = s.upsert(q, QueuedTransfer("recent-done", FileTransferModes.UPLOAD, "b", 1, "u", state = TransferState.Done, createdAtMs = now))
+        q = s.upsert(q, QueuedTransfer("old-active", FileTransferModes.UPLOAD, "c", 1, "u", state = TransferState.Active, createdAtMs = old))
+        q = s.upsert(q, QueuedTransfer("old-failed", FileTransferModes.UPLOAD, "d", 1, "u", state = TransferState.Failed, createdAtMs = old))
+
+        val remaining = s.pruneStale()
+
+        assertEquals(setOf("recent-done", "old-active"), remaining.map { it.id }.toSet())
+        // Persisted too - a fresh store instance sees the same pruned set.
+        assertEquals(setOf("recent-done", "old-active"), store().load().map { it.id }.toSet())
     }
 
     @Test

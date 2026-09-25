@@ -39,8 +39,9 @@ namespace Remex.Agent.Tests;
 ///   • Whether it mirrors production depends on WHICH MJPEG TIER is active, and the answer is not
 ///     uniform. These sessions run MJPEG (the default codec, which is what lets this harness avoid
 ///     ffmpeg entirely, as the bead requires), and WindowsScreenCaptureService.CaptureScreenCore has
-///     three tiers. WGC and the GDI fallback JPEG-encode into a FRESH MemoryStream per call, so they
-///     do not alias. The DXGI tier DOES: DxgiDesktopCapture.TryCapture caches the encoded frame in
+///     three tiers. The GDI fallback JPEG-encodes into a FRESH MemoryStream per call, so it does not
+///     alias. WGC now does on a static desktop: RawFrameJpegCache hands back its last encode for an
+///     unchanged raw frame (P1-13). The DXGI tier DOES too: DxgiDesktopCapture.TryCapture caches the encoded frame in
 ///     _lastFrame (assigned once, at :829) and returns that identical memory on eight other paths,
 ///     including the static-desktop replay at :764 and the AccumulatedFrames==0 replay at :786-789,
 ///     both with isLive=true. On a static desktop that is the common case, so two concurrent clients
@@ -79,8 +80,8 @@ public sealed class ConcurrentDesktopClientsTests
     /// Hands EVERY caller the SAME array instance and never mutates it.
     ///
     /// This models the DXGI MJPEG tier faithfully — it caches its encoded frame and returns the same
-    /// memory on every static-desktop tick, so both clients get one array. It is NOT how the WGC or
-    /// GDI tiers behave (fresh stream per call), and it is also the shape a pooled backend would
+    /// memory on every static-desktop tick, so both clients get one array (WGC now does the same, P1-13).
+    /// It is NOT how the GDI tier behaves (fresh stream per call), and it is also the shape a pooled backend would
     /// present on any tier. See the class header for the tier split.
     /// </summary>
     private sealed class SharedBufferCaptureService : IScreenCaptureService

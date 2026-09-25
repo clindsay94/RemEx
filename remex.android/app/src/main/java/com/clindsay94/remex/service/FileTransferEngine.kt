@@ -53,6 +53,15 @@ object FileTransferEngine {
     private val _queue = MutableStateFlow<List<QueuedTransfer>>(emptyList())
     val queue = _queue.asStateFlow()
 
+    // Perf audit P1-32 review (round 1 HIGH): upsert/remove/pruneFinished/pruneStale now build the
+    // persisted file from the caller's in-memory _queue.value instead of re-reading disk, so a
+    // read-modify-write that isn't atomic can silently drop a concurrent mutation from BOTH the
+    // StateFlow and the file, with no self-healing re-read to recover it (unlike before this fix).
+    // enqueueUpload/enqueueDownload/cancel/clearFinished run on caller (ViewModel/UI) threads;
+    // updateState and updateProgress run on the engine's own Dispatchers.IO scope for every data
+    // frame - all six must serialize on the same lock around "read _queue.value, mutate, assign".
+    private val queueLock = Any()
+
     // Control-plane awaiters keyed by transferId (fulfilled from the fileTransferMessages collector).
     private val readyWaiters = ConcurrentHashMap<String, CompletableDeferred<ReadyInfo>>()
     private val resultWaiters = ConcurrentHashMap<String, CompletableDeferred<ResultInfo>>()
@@ -71,7 +80,10 @@ object FileTransferEngine {
         appContext = ctx.applicationContext
         settings = SettingsManager(appContext)
         queueStore = TransferQueueStore(appContext.filesDir)
-        _queue.value = queueStore.load()
+        // Perf audit P1-32: bound transfer_queue.json for an app the user never reopens by
+        // dropping stale terminal entries at startup. See TransferQueueStore.pruneStale for why
+        // this doesn't run on every terminal transition instead.
+        synchronized(queueLock) { _queue.value = queueStore.pruneStale() }
 
         scope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> onControlMessage(json) }
@@ -114,7 +126,7 @@ object FileTransferEngine {
                 destRelativePath = destRelativePath,
                 peerId = peerId,
             )
-        _queue.value = queueStore.upsert(t)
+        synchronized(queueLock) { _queue.value = queueStore.upsert(_queue.value, t) }
         return t.id
     }
 
@@ -138,7 +150,7 @@ object FileTransferEngine {
                 destRelativePath = sourceRelativePath,
                 peerId = peerId,
             )
-        _queue.value = queueStore.upsert(t)
+        synchronized(queueLock) { _queue.value = queueStore.upsert(_queue.value, t) }
         return t.id
     }
 
@@ -194,7 +206,7 @@ object FileTransferEngine {
     }
 
     fun clearFinished() {
-        _queue.value = queueStore.pruneFinished()
+        synchronized(queueLock) { _queue.value = queueStore.pruneFinished(_queue.value) }
     }
 
     // ── Queue drain loop (FIFO, one active at a time) ─────────────────────────
@@ -650,9 +662,13 @@ object FileTransferEngine {
     private fun downloadDir(): File = File(appContext.filesDir, "transfers/outgoing")
 
     private fun updateState(id: String, transform: (QueuedTransfer) -> QueuedTransfer) {
-        val current = _queue.value.firstOrNull { it.id == id } ?: return
-        val updated = transform(current)
-        _queue.value = queueStore.upsert(updated)
+        val updated =
+            synchronized(queueLock) {
+                val current = _queue.value.firstOrNull { it.id == id } ?: return
+                val next = transform(current)
+                _queue.value = queueStore.upsert(_queue.value, next)
+                next
+            }
 
         // RATE CLEANUP LIVES HERE RATHER THAN AT THE ELEVEN TERMINAL CALL SITES, because a
         // per-site version is a list that a future state transition silently drops off — and the
@@ -677,7 +693,9 @@ object FileTransferEngine {
         // so a wall clock would not produce a wrong speed, it would silently stop producing one.
         estimatorFor(id).update(bytes, SystemClock.elapsedRealtime())
 
-        _queue.value = _queue.value.map { if (it.id == id) it.copy(bytesTransferred = bytes) else it }
+        synchronized(queueLock) {
+            _queue.value = _queue.value.map { if (it.id == id) it.copy(bytesTransferred = bytes) else it }
+        }
     }
 
     // ── Throughput and time-remaining (RemEx-qmiv) ────────────────────────────

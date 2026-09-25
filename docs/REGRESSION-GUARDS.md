@@ -1030,11 +1030,18 @@ Reversing kind and capability **compiles cleanly and passes most of the suite**,
 failure presents as a transfer refused with nothing saying why.
 
 **The Desktop route requires a SURFACED owner window, and it must go through
-`BringMainWindowToFront()`.** `App.axaml.cs` `ShowFileConsentDialogAsync` calls that helper before
-`ShowDialog`. Avalonia's `ShowDialog` throws on a non-visible parent, and RemEx normally runs with
-`MainWindow` constructed but not surfaced, in three distinct states:
+`BringMainWindowToFront()`.** `App.axaml.cs` `ShowFileConsentDialogAsync` calls that helper BEFORE
+reading `desktop.MainWindow` — never checks it for non-null first, never uses it as a gate. Avalonia's
+`ShowDialog` throws on a non-visible parent, and RemEx can be in FOUR distinct states here (P1-29
+added the fourth):
 
-- **never shown** — the logon task starts it `--minimized` (`scripts/autostart-remex.ps1`);
+- **never constructed** — a `--minimized` logon start (`scripts/autostart-remex.ps1`) now defers
+  building `MainWindow` entirely, not just skips showing it (P1-29). `BringMainWindowToFront()`'s
+  `desktop.MainWindow ??= new MainWindow {...}` is what makes this safe — it is load-bearing for
+  EVERY consumer, not an edge case fallback, and any code that reads `desktop.MainWindow` without
+  going through this helper first can no longer assume it is non-null;
+- **constructed but never shown** — the pre-P1-29 minimized-start state, still reachable if
+  something else constructs the window before it is ever displayed;
 - **hidden to tray** — close-to-tray;
 - **minimized** — which reports `IsVisible == true`, so a `Show()`-only guard skips it entirely and
   `Activate()` alone leaves it in the taskbar.
@@ -1094,14 +1101,21 @@ happens inside the `Export` guard so managed throws are caught before escaping
 
 ### `WindowsInteractiveSessionGuard` — ref-counted keep-awake only
 
-`EngageForRemoteControl(clientId)` / `DisengageFromRemoteControl(clientId)` maintain an `_engaged`
-HashSet; the first engage and last disengage trigger the action. On engage it calls
-`SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED | ES_CONTINUOUS)`; on last
-disengage it clears the flag.
+`EngageForRemoteControl(clientId)` / `Disengage(clientId)` maintain an `_engaged`
+HashSet; the first engage and last disengage trigger the action. On engage it takes a handle-based
+power request (`PowerRequestKeepAwakeBackend`: `PowerCreateRequest` + `PowerSetRequest` for
+`PowerRequestSystemRequired` and `PowerRequestDisplayRequired`); on last disengage it clears both and
+closes the handle.
+
+**Do not go back to `SetThreadExecutionState`.** Its state is per calling thread, and engage and
+disengage run on different thread-pool workers (`RemoteDesktopHandler` awaits the whole stream in
+between), so the release from the second thread cleared nothing and the hold outlived the session
+(PERF-TRACKER P1-10). Confirm by hand with `powercfg /requests` (admin): the host process is listed
+under DISPLAY and SYSTEM while a client is connected, and gone after.
 
 **No `tscon`, no `WTSDisconnect`.** The guard lives inside the user session and must never disconnect
-or reconnect it — doing so produces a black screen plus access-denied input. It only ever re-locks a
-session it actually unlocked. `SessionGuardPolicy` and `SessionGuardAction` are deleted. Every
+or reconnect it — doing so produces a black screen plus access-denied input. It never changes lock
+state; it only holds the keep-awake request. `SessionGuardPolicy` and `SessionGuardAction` are deleted. Every
 engage/disengage is audit-logged with the client identity.
 
 **Security-sensitive:** while engaged the screen will not lock. The feature is off by default and is

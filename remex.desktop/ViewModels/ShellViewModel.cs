@@ -798,6 +798,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         if (settings.BackgroundMaterial != "Wallpaper")
         {
             EffectiveBackgroundType = settings.BackgroundMaterial;
+
+            // P1-27: leaving Wallpaper mode used to leave the ~15MB decoded bitmap resident for the
+            // rest of the session - it was only ever released on app shutdown (Dispose) or when
+            // switching to a DIFFERENT wallpaper path. Deferred, not synchronous, for the same
+            // reason the load path defers disposing a superseded bitmap (RemEx-8twk0.5): the Image
+            // control may still be compositing a frame that references it this tick.
+            if (WallpaperBitmap is { } stale)
+            {
+                WallpaperBitmap = null;
+                Dispatcher.UIThread.Post(() => stale.Dispose(), DispatcherPriority.Background);
+            }
+            _wallpaperPathLoaded = null;
+
             return;
         }
 
@@ -999,6 +1012,25 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             _customizationViewModel?.Dispose();
             _customizationViewModel = null;
             OnPropertyChanged(nameof(CustomizationVm));
+            // Review fix (round 1 MEDIUM): raised unconditionally, even when the sheet is closed -
+            // a closed sheet's off-screen PersonalizationPanelView still has the disposed instance
+            // as its DataContext until this fires, otherwise. Null is already the panel's normal
+            // pre-first-open state, so rebinding to null here is not a visible change for the user,
+            // just a correctness fix for what's sitting in memory bound to a disposed VM.
+            OnPropertyChanged(nameof(CustomizationVmForSheetBinding));
+
+            // P1-30: CustomizationVmForSheetBinding is non-building, so simply re-raising it here
+            // (the way CustomizationVm's own notification above does) would set the bound
+            // DataContext to null and leave it null - nothing else re-triggers EnsureCustomizationVm
+            // for a sheet that's already open, since ToggleSettingsPanel/NavigateToCustomization only
+            // run on the NEXT explicit open. Rebuild immediately, but only when the sheet is
+            // genuinely open right now - a closed sheet still gets the fully lazy, deferred-until-
+            // opened treatment this whole row exists for; only the "already open, must update now"
+            // case (the reason RemEx-waqb4 exists at all) pays the eager rebuild.
+            if (IsSettingsPanelOpen)
+            {
+                EnsureCustomizationVm();
+            }
         });
         _layoutService.ProfileReplaced += _onProfileReplaced;
 
@@ -1677,12 +1709,21 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // among them) - CustomizationViewModel already treats both as optional, the same tolerant
         // shape _phoneThemeStore uses, so a missing registration here should mean "no Flyout
         // collaborator", not a crash opening Personalize.
-        _customizationViewModel ??= new CustomizationViewModel(
-            this, _layoutService, _themeService,
-            _services.GetService<HomeViewModel>(),
-            _services.GetService<ILauncherStorageService>(),
-            _services.GetRequiredService<ILogger<CustomizationViewModel>>(),
-            _layoutSettingsViewModel);
+        if (_customizationViewModel is null)
+        {
+            _customizationViewModel = new CustomizationViewModel(
+                this, _layoutService, _themeService,
+                _services.GetService<HomeViewModel>(),
+                _services.GetService<ILauncherStorageService>(),
+                _services.GetRequiredService<ILogger<CustomizationViewModel>>(),
+                _layoutSettingsViewModel);
+
+            // P1-30: the sheet's own binding target (CustomizationVmForSheetBinding, non-building)
+            // only reflects a freshly-built VM once this notification fires - raised exactly here,
+            // not on every EnsureCustomizationVm call, so a toggle-open that finds the VM already
+            // built doesn't spam a redundant DataContext reassignment.
+            OnPropertyChanged(nameof(CustomizationVmForSheetBinding));
+        }
     }
 
     /// <summary>
@@ -1710,6 +1751,22 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             return _customizationViewModel;
         }
     }
+
+    /// <summary>
+    /// P1-30: the Personalize sheet's own <c>SideSheetContent</c> is ALWAYS present in ShellView's
+    /// visual tree (it just slides off-screen when closed, RemEx-zrlze), so a binding straight to
+    /// <see cref="CustomizationVm"/> - a BUILDING getter - forced the full CustomizationViewModel
+    /// (system-font enumeration, HctColorWheel's 26 tone discs) to construct at shell load, on the
+    /// UI thread, even for a session that never opens the sheet. This getter is deliberately
+    /// NON-building: it returns the already-constructed field, or null before the sheet has ever
+    /// been opened this session. <see cref="ToggleSettingsPanel"/>/<see cref="NavigateToCustomization"/>
+    /// already call <see cref="EnsureCustomizationVm"/> explicitly on open, and that method raises
+    /// this property's own change notification the moment it actually builds one - including the
+    /// rebuild <see cref="_onProfileReplaced"/> triggers for an already-open sheet - so the bound
+    /// DataContext picks up the real VM the instant it exists, without ever forcing its own
+    /// construction through the binding itself.
+    /// </summary>
+    public CustomizationViewModel? CustomizationVmForSheetBinding => _customizationViewModel;
 
     /// <summary>
     /// The Layout VM (snap-to-grid, grid size, pinned sensors; RemEx-4kv0g.4.2), if the Personalize

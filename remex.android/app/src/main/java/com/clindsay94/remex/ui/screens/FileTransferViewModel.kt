@@ -1057,6 +1057,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (entry.isDirectory || !FileManagerLogic.isThumbnailCandidate(entry.name)) return
         val rootId = _selectedRootId.value ?: return
         val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+        // P1-15: revisiting a folder clears requestedThumbnails (:1709-ish) but _thumbnails survives
+        // (filtered to the current listing, not wiped), so a still-cached entry needs no re-request.
+        if (_thumbnails.value.containsKey(relative)) return
         if (requestedThumbnails.putIfAbsent(relative, true) != null) return // already asked
         val requestId = newRequestId()
         // The thumbnail response echoes only requestId (not the path), so remember which path this id

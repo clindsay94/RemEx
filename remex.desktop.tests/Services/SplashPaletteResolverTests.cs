@@ -190,6 +190,11 @@ public sealed class SplashPaletteResolverTests
     [Fact]
     public async Task ResolveFromSidecar_WithRealSidecar_ResolvesWithoutThrowing()
     {
+        // P1-25's dedupe cache is static (process-wide) and this assembly runs its test classes
+        // sequentially (see AssemblyInfo.cs), so a value left behind by an earlier class could make
+        // this write silently skip as a no-op if it happens to match.
+        LastSeedSidecar.ResetCacheForTests();
+
         await LastSeedSidecar.WriteAsync(new CustomizationSettings
         {
             AccentColor = SampleSeed,

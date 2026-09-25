@@ -117,6 +117,20 @@ public interface IScreenCaptureService
     bool IsDisplayPoweredOff => false;
 
     /// <summary>
+    /// <c>true</c> when this backend's JPEG capture returns an unchanged screen as the SAME backing
+    /// buffer it returned before, and never writes to a buffer after returning it. Only then may a caller
+    /// treat "same buffer as the frame I last sent" as "nothing changed" and skip re-sending it (P1-13).
+    /// </summary>
+    /// <remarks>
+    /// Orthogonal to <see cref="ScreenCaptureResult.IsLive"/>: an unchanged frame on a healthy output is
+    /// still live, and a stale replay is still not. The comparison has to happen PER CALLER, not in the
+    /// backend: one capture instance serves every connected client, so "unchanged since the last capture"
+    /// is not "unchanged since this client's last frame". Default <c>false</c>, so a backend that has not
+    /// made the promise (Linux, test doubles, anything pooled) keeps sending every frame.
+    /// </remarks>
+    bool UnchangedFramesShareBuffer => false;
+
+    /// <summary>
     /// Returns the currently available remote desktop targets for this runtime.
     /// Default implementations expose a single virtual desktop surface for legacy backends.
     /// </summary>

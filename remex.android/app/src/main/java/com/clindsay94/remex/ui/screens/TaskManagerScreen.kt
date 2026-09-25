@@ -246,8 +246,20 @@ fun TaskManagerScreenContent(
                             }
                         }
                         TaskManagerListState.LIST -> {
-                            val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
-                            val maxCpu = remember(processes) { processes.maxOfOrNull { it.cpu } ?: 1.0 }
+                            // Review fix (P1-20): takeIf { it > 0.0 }, not just ?: 1.0 - rounding
+                            // cpu/ram to whole numbers means an idle host (every process < 0.5%)
+                            // now legitimately floors every value to exactly 0.0, so maxOfOrNull
+                            // can return 0.0 (not null) on every poll, not just the first one.
+                            // 0.0/0.0 is NaN, which coerceIn passes straight through into
+                            // animateFloatAsState.
+                            val maxRam =
+                                    remember(processes) {
+                                        processes.maxOfOrNull { it.ram }?.takeIf { it > 0.0 } ?: 1.0
+                                    }
+                            val maxCpu =
+                                    remember(processes) {
+                                        processes.maxOfOrNull { it.cpu }?.takeIf { it > 0.0 } ?: 1.0
+                                    }
                             LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = 80.dp)

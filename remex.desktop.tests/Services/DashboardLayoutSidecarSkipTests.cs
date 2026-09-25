@@ -41,6 +41,13 @@ public sealed class DashboardLayoutSidecarSkipTests : IDisposable
 
     private static void CleanUpSidecar()
     {
+        // P1-25: LoadAsync fires LastSeedSidecar.WriteAsync fire-and-forget, and its dedupe/debounce
+        // cache is static (process-wide) across this sequentially-run test assembly - without this
+        // reset, a write left pending by an earlier test class could land up to 400ms late, during
+        // THIS class's run, or a value equal to one an earlier class already wrote could be silently
+        // skipped here.
+        LastSeedSidecar.ResetCacheForTests();
+
         var path = LastSeedSidecar.FilePath;
         if (File.Exists(path)) File.Delete(path);
         var directory = Path.GetDirectoryName(path)!;

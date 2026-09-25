@@ -73,8 +73,11 @@ import kotlinx.coroutines.delay
  * debounce to avoid flashing during transient reconnection cycles.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-/** One full breathe of the connection chip's status dot (1.0x -> 1.4x, reversed). */
+/** Half a breathe of the connection chip's status dot (1.0x -> 1.4x OR 1.4x -> 1.0x). */
 private const val CONNECTION_CHIP_PULSE_MS = 1400
+
+/** Pulses per fresh connect before the dot settles steady (P1-21: not truly infinite). */
+private const val CONNECTION_CHIP_PULSE_CYCLES = 3
 
 @Composable
 fun NotConnectedBanner(
@@ -252,10 +255,27 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
         // The infinite pulse is only composed while it is actually visible (connected) and
         // motion is allowed — under reduce-motion the dot holds steady (RemEx-3gkr).
         val reducedMotion = LocalReducedMotion.current
+        // P1-21: this chip is composed for the whole app session (AppNavigation renders it above
+        // every screen while connected), so a truly infinite pulse kept RenderThread animating
+        // indefinitely - blocking the display's LTPO refresh-rate drop to idle for as long as the
+        // PC stayed connected, not just for a moment. Pulse only for a few cycles after a fresh
+        // connect (drawing the eye to the state change, which is the pulse's actual purpose) and
+        // hold steady afterward; reconnecting (isConnected flips false->true again) re-arms it.
+        var pulseActive by remember { mutableStateOf(false) }
+        LaunchedEffect(isConnected, reducedMotion) {
+                if (isConnected && !reducedMotion) {
+                        pulseActive = true
+                        // One "cycle" is a full reverse (1.0x -> 1.4x -> 1.0x), i.e. 2x the tween.
+                        delay(CONNECTION_CHIP_PULSE_CYCLES * 2L * CONNECTION_CHIP_PULSE_MS)
+                        pulseActive = false
+                } else {
+                        pulseActive = false
+                }
+        }
         // State (not a plain Float): the value is read inside graphicsLayer so pulse frames
         // stay in the draw phase and never recompose the chip.
         val pulseScale =
-                if (isConnected && !reducedMotion) {
+                if (pulseActive) {
                         val infiniteTransition = rememberInfiniteTransition(label = "chip_pulse")
                         infiniteTransition.animateFloat(
                                 initialValue = 1f,

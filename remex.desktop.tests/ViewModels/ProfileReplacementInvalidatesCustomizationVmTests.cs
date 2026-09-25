@@ -143,6 +143,73 @@ public sealed class ProfileReplacementInvalidatesCustomizationVmTests : IAsyncLi
     }
 
     [Fact]
+    public void CustomizationVmForSheetBinding_IsNullUntilTheSheetIsOpened()
+    {
+        // P1-30: the Personalize sheet's XAML binds this property, NOT CustomizationVm, specifically
+        // so ShellViewModel construction alone never builds CustomizationViewModel (system-font
+        // enumeration, HctColorWheel's 26 tone discs) - only actually opening the sheet does.
+        _shell.CustomizationVmForSheetBinding.Should().BeNull(
+            "the sheet content is always present in the visual tree, so if this property built " +
+            "eagerly the whole point of P1-30 would be defeated the same way CustomizationVm was");
+    }
+
+    [Fact]
+    public void CustomizationVmForSheetBinding_ReflectsTheBuiltVmAfterTheSheetOpens()
+    {
+        // Not ToggleSettingsPanelCommand: it also calls EnsureSettingsVm, which needs
+        // RemexSavefileService - not registered in this test's minimal DI, and irrelevant to what
+        // this test actually checks. IsSettingsPanelOpen=true plus a CustomizationVm read reproduces
+        // exactly what ToggleSettingsPanel/NavigateToCustomization do for the property under test.
+        _shell.IsSettingsPanelOpen = true;
+        _ = _shell.CustomizationVm;
+
+        _shell.CustomizationVmForSheetBinding.Should().NotBeNull(
+            "opening the sheet must build CustomizationViewModel - the sheet binding must reflect " +
+            "that build, or the sheet would open on nothing");
+        _shell.CustomizationVmForSheetBinding.Should().BeSameAs(_shell.CustomizationVm,
+            "both properties must resolve to the SAME cached instance - the non-building one is a " +
+            "read-only view of the same field, not a second VM");
+    }
+
+    [Fact]
+    public async Task CustomizationVmForSheetBinding_ReflectsTheRebuiltVmImmediatelyWhenTheSheetIsAlreadyOpen()
+    {
+        // Round-trips the RemEx-waqb4 rebuild-on-import mechanism through the NEW binding target.
+        // Deliberately does NOT read CustomizationVm anywhere in this test: a real bound, open sheet
+        // never does either - it only ever reads CustomizationVmForSheetBinding, so the eager
+        // rebuild for an open sheet has to happen entirely on the ProfileReplaced handler's own
+        // initiative, or the sheet is left showing a disposed, stale view model with nothing to
+        // trigger a refresh.
+        _shell.IsSettingsPanelOpen = true;
+        _ = _shell.CustomizationVm; // build the first instance, sheet now open
+        var original = _shell.CustomizationVmForSheetBinding;
+        original.Should().NotBeNull();
+        var importedCornerRadius = original!.CornerRadius + 7;
+
+        await ImportProfileWithCornerRadiusAsync(importedCornerRadius);
+
+        _shell.CustomizationVmForSheetBinding.Should().NotBeSameAs(original,
+            "a profile replacement while the sheet is open must rebuild immediately, not leave the " +
+            "bound sheet showing a disposed instance until something else happens to read CustomizationVm");
+        _shell.CustomizationVmForSheetBinding!.CornerRadius.Should().Be(importedCornerRadius);
+    }
+
+    [Fact]
+    public async Task CustomizationVmForSheetBinding_StaysNullAfterAProfileReplacementWhileTheSheetIsClosed()
+    {
+        // The other half of the same fix: a profile replacement while the sheet has NEVER been
+        // opened this session must not force a build either - that would silently reintroduce the
+        // exact eager construction P1-30 removed, just moved from shell-load time to import time.
+        var importedCornerRadius = 41.0;
+
+        await ImportProfileWithCornerRadiusAsync(importedCornerRadius);
+
+        _shell.CustomizationVmForSheetBinding.Should().BeNull(
+            "a profile replacement while the sheet is closed must not build CustomizationViewModel - " +
+            "only actually opening the sheet may do that");
+    }
+
+    [Fact]
     public void AnOrdinaryApplyAndSaveDoesNotRaiseProfileReplacedOrRebuildTheCachedVm()
     {
         var replacedCount = 0;

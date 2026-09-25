@@ -546,7 +546,24 @@ public static class HostBootstrapper
                 return;
             }
 
-            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            // P1-24: permessage-deflate for this socket only - repetitive telemetry/control JSON
+            // compresses well. NOT applied to /ws/desktop or /ws/files below: those carry already-
+            // compressed binary payloads (H.264/MJPEG frames, file chunks) where deflate spends CPU
+            // for no size win.
+            //
+            // DisableServerContextTakeover = true is REQUIRED, not optional - do not remove it. This
+            // socket carries attacker-reachable content (PingPongHandler's MediaState, settable via
+            // any browser tab's OS media-session API) alongside secrets (ClipboardContent, which can
+            // hold a password-manager secret) on the SAME connection. With context takeover on, a
+            // compression dictionary persists across messages, so a secret sent in one message stays
+            // in the deflate window and a later attacker-chosen title compresses against it - a
+            // CRIME/BREACH-class oracle a passive network observer (unaffected by this connection's
+            // SPKI cert pinning, which only stops an ACTIVE man-in-the-middle) could exploit via TLS
+            // record-length side channel. Per-message-only compression (context takeover off) closes
+            // that: no message's compressed size can leak information about a DIFFERENT message's
+            // content. See RemexNativeClient.cs's matching client-side option (must also be off).
+            using var ws = await context.WebSockets.AcceptWebSocketAsync(
+                new WebSocketAcceptContext { DangerousEnableCompression = true, DisableServerContextTakeover = true });
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
             using var handler = new PingPongHandler(
@@ -942,11 +959,17 @@ public static class HostBootstrapper
             // was only ever safe if loopback could not hold a paired identity, and until this guard
             // existed it could - so the skip was resting on something that was not true.
             //
-            // Only the Android client dials this endpoint - there is no PC-side consumer - so
-            // refusing a PAIRED id costs nothing real. A blank or unknown id is still admitted,
-            // which keeps the TestServer path working (it reports a null RemoteIpAddress and so
-            // arrives here) and leaves room for a genuine local consumer later; neither can collide
-            // with a phone's channel key.
+            // No legitimate loopback caller needs a PAIRED id, so refusing one costs nothing real.
+            // A blank or unknown id is still admitted, which keeps the TestServer path working (it
+            // reports a null RemoteIpAddress and so arrives here) and admits the one genuine local
+            // consumer: the PC UI's LoopbackFileChannelConnector (perf audit P1-5), which dials
+            // with NO clientId, i.e. the blank key. Neither can collide with a phone's channel key.
+            //
+            // KNOWN TRADEOFF, ACCEPTED FOR NOW: every blank-key local caller shares ONE channel key.
+            // A second local process that opens /ws/files with a blank id while a PC upload is in
+            // flight supersedes the PC UI's channel and so kills that upload. That is a local-only
+            // denial of service - it cannot reach a phone's transfer - and it is not worth a
+            // per-process identity today.
             //
             // WHY THIS IS NARROWER THAN RemEx-4215, which froze loopback at NO identity outright:
             // there the id was connectionClientId, a per-connection variable, so blanking it cost

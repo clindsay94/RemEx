@@ -8,6 +8,8 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +18,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -143,6 +147,11 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
 
                         if (descending) sorted.reversed() else sorted
                     }
+                    // P1-18: dedupe/exclude/filter/sort over 150+ processes every poll used to run
+                    // on Main (combine's upstream context, same as its collector unless redirected).
+                    // flowOn moves everything upstream of it to Default; only the final StateFlow
+                    // write stays on Main, which is what stateIn's collector needs.
+                    .flowOn(Dispatchers.Default)
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -176,29 +185,67 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             RemexClientManager.processList.collect { data ->
                 try {
-                    val array = JSONArray(data)
-                    val list = mutableListOf<ProcessInfo>()
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        list.add(
-                                ProcessInfo(
-                                        id = obj.getInt("id"),
-                                        name = obj.getString("name"),
-                                        cpu = obj.optDouble("cpuUsage", 0.0),
-                                        ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024),
-                                        // Absent or JSON null both mean "the PC could not
-                                        // read it", which the host treats as unchecked.
-                                        startTimeUnixMs =
-                                                if (obj.isNull("startTimeUnixMs")) null
-                                                else obj.optLong("startTimeUnixMs").takeIf { it > 0L }
-                                )
-                        )
-                    }
+                    // P1-18: parsed off Main, mirroring DashboardViewModel's telemetry parse
+                    // (RemEx-cite) - 150+ processes every 4s poll is real work with no reason to
+                    // run on the UI thread. Only the resulting list is applied back on Main.
+                    val list =
+                            withContext(Dispatchers.Default) {
+                                val array = JSONArray(data)
+                                val parsed = mutableListOf<ProcessInfo>()
+                                for (i in 0 until array.length()) {
+                                    val obj = array.getJSONObject(i)
+                                    parsed.add(
+                                            ProcessInfo(
+                                                    id = obj.getInt("id"),
+                                                    name = obj.getString("name"),
+                                                    // P1-20: rounded to displayed precision (the
+                                                    // UI only ever shows .toInt()% / .toInt()MB).
+                                                    // ProcessInfo is a data class, so raw
+                                                    // sub-percent/sub-MB noise between polls made
+                                                    // every row structurally "changed" even when
+                                                    // nothing visible moved, forcing a shape
+                                                    // rebuild (MorphPolygonShape has no
+                                                    // equals/hashCode either - see Theme.kt) on
+                                                    // every one of 150+ rows every ~4s poll.
+                                                    // Review fix: floor, not round - the display
+                                                    // truncates via .toInt() (0.6 -> "0%"), so
+                                                    // rounding here would visibly change what a
+                                                    // value displays as (0.6 -> "1%").
+                                                    cpu =
+                                                            kotlin.math.floor(
+                                                                    obj.optDouble("cpuUsage", 0.0)
+                                                            ),
+                                                    ram =
+                                                            kotlin.math.floor(
+                                                                    obj.optDouble(
+                                                                            "memoryUsage",
+                                                                            0.0
+                                                                    ) / (1024 * 1024)
+                                                            ),
+                                                    // Absent or JSON null both mean "the PC could
+                                                    // not read it", which the host treats as
+                                                    // unchecked.
+                                                    startTimeUnixMs =
+                                                            if (obj.isNull("startTimeUnixMs")) null
+                                                            else
+                                                                    obj.optLong("startTimeUnixMs")
+                                                                            .takeIf { it > 0L }
+                                            )
+                                    )
+                                }
+                                parsed
+                            }
                     _processes.value = list
                     // Reset the unresponsive-host detector — we just got a real response.
                     lastResponseAt = System.currentTimeMillis()
                     consecutiveTimeouts = 0
                     _loadError.value = null
+                } catch (e: CancellationException) {
+                    // Review fix (P1-18): withContext can now suspend inside this try (it didn't
+                    // before this row moved the parse to Dispatchers.Default), so a scope
+                    // cancellation (e.g. leaving the screen mid-parse) surfaces here too - rethrow
+                    // rather than let the catch-all below log it as a bogus parse failure.
+                    throw e
                 } catch (e: Exception) {
                     Log.w("TaskManagerVM", "Failed to parse process list", e)
                 } finally {

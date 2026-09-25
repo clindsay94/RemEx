@@ -78,4 +78,27 @@ class ReconnectGateTest {
         assertEquals(300_000L, ReconnectGate.backoffDelayMs(1_000))
         assertEquals(300_000L, ReconnectGate.backoffDelayMs(Int.MAX_VALUE))
     }
+
+    // Perf audit P1-1: mDNS self-heal must not reset the backoff when it only rediscovers the
+    // address that is already saved and already failing.
+
+    @Test
+    fun `self-heal rediscovering the saved address does not reset the backoff`() {
+        assertFalse(ReconnectGate.selfHealFoundNewAddress("192.168.1.20", 5005, "192.168.1.20", 5005))
+    }
+
+    @Test
+    fun `self-heal host comparison ignores case and surrounding whitespace`() {
+        assertFalse(ReconnectGate.selfHealFoundNewAddress("Gaming-PC.local", 5005, " gaming-pc.local ", 5005))
+    }
+
+    @Test
+    fun `self-heal finding a new host resets the backoff`() {
+        assertTrue(ReconnectGate.selfHealFoundNewAddress("192.168.1.20", 5005, "192.168.1.42", 5005))
+    }
+
+    @Test
+    fun `self-heal finding a new port on the same host resets the backoff`() {
+        assertTrue(ReconnectGate.selfHealFoundNewAddress("192.168.1.20", 5005, "192.168.1.20", 5006))
+    }
 }

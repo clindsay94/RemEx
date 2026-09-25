@@ -105,54 +105,142 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// </summary>
     public string? ActiveCodecName { get; private set; }
 
+    // Where ffmpeg lives is a property of the machine, not of one encoder instance, yet the handler
+    // builds TWO encoders per remote-desktop connection (the capability probe and the real stream).
+    // Detection spawns `where`/`which` and can block for up to 1.5s, so it used to cost up to ~3s per
+    // connection before the first frame. It now runs once per process and every instance reads the
+    // shared verdict. (RemEx-4j8ls, perf P1-7)
+    private static readonly FFmpegDetector SharedDetector = new(FindExecutable);
+
     public FFmpegH264Encoder(ILogger logger)
+        : this(logger, SharedDetector)
     {
-        _logger = Guard.NotNull(logger);
-        DetectFFmpeg();
     }
 
-    private void DetectFFmpeg()
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>): lets a test
+    /// supply its own <see cref="FFmpegDetector"/> so it can count detection runs without touching the
+    /// process-wide <see cref="SharedDetector"/>. Production always goes through the public constructor.
+    /// </summary>
+    internal FFmpegH264Encoder(ILogger logger, FFmpegDetector detector)
     {
-        try
+        _logger = Guard.NotNull(logger);
+        ApplyDetection(Guard.NotNull(detector).GetResult());
+    }
+
+    private void ApplyDetection(FFmpegDetection detection)
+    {
+        // Same outcomes and the same log lines as the old per-instance DetectFFmpeg; only the
+        // detection work behind them is shared.
+        if (detection.Error is not null)
         {
-            // 1. Check system path
-            _ffmpegPath = FindExecutable(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg");
+            _logger.LogDebug(detection.Error, "Failed to detect FFmpeg.");
+            IsAvailable = false;
+            return;
+        }
 
-            // 2. Check standard Windows installations if not in path
-            if (_ffmpegPath == null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        _ffmpegPath = detection.Path;
+        IsAvailable = _ffmpegPath != null;
+        if (IsAvailable)
+        {
+            _logger.LogInformation("FFmpeg H.264 encoder detected at: {Path}", _ffmpegPath);
+        }
+        else
+        {
+            _logger.LogWarning("FFmpeg not found. H.264 video streaming will be unavailable (falling back to MJPEG).");
+        }
+    }
+
+    /// <summary>Outcome of one ffmpeg lookup: the resolved path (null when not found), or the error.</summary>
+    internal readonly record struct FFmpegDetection(string? Path, Exception? Error);
+
+    /// <summary>
+    /// Runs the ffmpeg lookup (PATH via <c>where</c>/<c>which</c>, then the common Windows install
+    /// folders) and caches the verdict so concurrent and later encoders do not re-spawn the lookup.
+    ///
+    /// A found path is cached for the process lifetime: an installed ffmpeg does not move while the
+    /// host runs. A NOT-found verdict is retried after <see cref="FailedDetectionRetryMs"/>, mirroring
+    /// <see cref="ProbeCache"/> (RemEx-lq6h) as a defensive match against a transient failure (a
+    /// <c>where</c> spawn that overruns its 1.5s wait on a busy machine at logon reads as "not found").
+    /// A permanent negative here would pin that transient case to MJPEG until restart.
+    ///
+    /// NOTE: today this retry cannot actually be exercised in production, because
+    /// <c>RemoteDesktopHandler._ffmpegAvailableCache</c> already pins a negative result for the life of
+    /// the process before this detector is ever asked again — so an ffmpeg installed while the host
+    /// keeps running is not picked up until restart either way. Fixing that would mean having the
+    /// handler defer to this detector's retry instead of keeping its own permanent cache; out of scope
+    /// here (RemEx-4j8ls, P1-7).
+    /// </summary>
+    internal sealed class FFmpegDetector
+    {
+        internal const long FailedDetectionRetryMs = 30_000;
+
+        private readonly Func<string, string?> _findExecutable;
+        private readonly Func<long> _nowMs;
+        private readonly object _gate = new();
+        private FFmpegDetection? _cached;
+        private long _cachedAtMs;
+
+        internal FFmpegDetector(Func<string, string?> findExecutable, Func<long>? nowMs = null)
+        {
+            _findExecutable = Guard.NotNull(findExecutable);
+            _nowMs = nowMs ?? (static () => Environment.TickCount64);
+        }
+
+        internal FFmpegDetection GetResult()
+        {
+            // Held across the lookup on purpose: the probe encoder and the stream encoder can be
+            // constructed back to back, and the second should wait for the first's answer rather than
+            // start a second spawn of its own.
+            lock (_gate)
             {
-                var commonPaths = new[]
+                if (_cached is { } cached &&
+                    (cached.Path != null || _nowMs() - _cachedAtMs < FailedDetectionRetryMs))
                 {
-                    @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-                    @"C:\ffmpeg\bin\ffmpeg.exe",
-                    @"D:\ffmpeg\bin\ffmpeg.exe",
-                    @"E:\utilities\ffmpeg\bin\ffmpeg.exe"
-                };
-
-                foreach (var path in commonPaths)
-                {
-                    if (File.Exists(path))
-                    {
-                        _ffmpegPath = path;
-                        break;
-                    }
+                    return cached;
                 }
-            }
 
-            IsAvailable = _ffmpegPath != null;
-            if (IsAvailable)
-            {
-                _logger.LogInformation("FFmpeg H.264 encoder detected at: {Path}", _ffmpegPath);
-            }
-            else
-            {
-                _logger.LogWarning("FFmpeg not found. H.264 video streaming will be unavailable (falling back to MJPEG).");
+                var result = Detect();
+                _cached = result;
+                _cachedAtMs = _nowMs();
+                return result;
             }
         }
-        catch (Exception ex)
+
+        private FFmpegDetection Detect()
         {
-            _logger.LogDebug(ex, "Failed to detect FFmpeg.");
-            IsAvailable = false;
+            try
+            {
+                // 1. Check system path
+                var ffmpegPath = _findExecutable(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg");
+
+                // 2. Check standard Windows installations if not in path
+                if (ffmpegPath == null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    var commonPaths = new[]
+                    {
+                        @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+                        @"C:\ffmpeg\bin\ffmpeg.exe",
+                        @"D:\ffmpeg\bin\ffmpeg.exe",
+                        @"E:\utilities\ffmpeg\bin\ffmpeg.exe"
+                    };
+
+                    foreach (var path in commonPaths)
+                    {
+                        if (File.Exists(path))
+                        {
+                            ffmpegPath = path;
+                            break;
+                        }
+                    }
+                }
+
+                return new FFmpegDetection(ffmpegPath, null);
+            }
+            catch (Exception ex)
+            {
+                return new FFmpegDetection(null, ex);
+            }
         }
     }
 
@@ -426,11 +514,14 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// </summary>
     private bool ProbeCodec(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
-        // qp is excluded from the key on purpose: it is clamped to a universally valid H.264
-        // range in Initialize and never decides whether an encoder can open.
-        // Input dims are part of the key: they change the filter chain (a scale filter appears or
+        // qp and fps are excluded from the key on purpose: qp is clamped to a universally valid
+        // H.264 range in Initialize, and fps only changes -r/-g in the encoder args — neither
+        // decides whether the codec can open. Without this, moving the client's fps slider
+        // spawned a fresh ffmpeg probe process for a codec that was already known to work
+        // (P1-14; compounds with P1-2's reinit-on-config-change and P1-7's per-instance detection).
+        // Input dims stay in the key: they change the filter chain (a scale filter appears or
         // disappears), so a probe for the same OUTPUT size is not transferable between them.
-        var cacheKey = $"{codec}:{inputWidth}x{inputHeight}->{width}x{height}@{fps}";
+        var cacheKey = $"{codec}:{inputWidth}x{inputHeight}->{width}x{height}";
         if (ProbeCache.TryGetValue(cacheKey, out var cached) &&
             (cached.Ok || Environment.TickCount64 - cached.AtMs < FailedProbeRetryMs))
         {

@@ -224,6 +224,13 @@ public sealed class TransferSessionManager : IDisposable
             var legacyFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
             var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
+            // KNOWN TRADEOFF (perf audit P1-5 follow-up): uploads stage HERE, on the system volume,
+            // and are promoted to the destination root on completion - unlike the legacy Base64 path,
+            // which writes straight into the root. For a root on another volume that doubles the I/O
+            // (a cross-volume promote cannot be a rename, so it is a full copy) and needs the file's size free on the system
+            // volume too. And HandleInboundDataFrameAsync catches only InvalidOperationException, so
+            // an out-of-space IOException on a staged write surfaces to the sender as a generic
+            // "channel closed before the host acknowledged all data", not as a disk-space error.
             _stagingDir = Path.Combine(baseFolder, "transfers", "incoming");
         }
         else
@@ -1372,8 +1379,11 @@ public sealed class TransferSessionManager : IDisposable
     /// The guarantee is "a PAIRED client's transfer is protected from every other channel key", not
     /// "keys are isolated from each other". Two identity-less local callers both present the blank
     /// key RemEx-4u0d deliberately still admits, so they are indistinguishable here and could reach
-    /// each other's transfers. That matters only if a second local consumer of this endpoint ever
-    /// exists; today there is none.
+    /// each other's transfers. There IS now one such consumer - the PC UI's
+    /// LoopbackFileChannelConnector (perf audit P1-5) dials with no clientId, i.e. the blank key - so
+    /// a second blank-key local process could reach (or, by superseding the channel, kill) a PC
+    /// upload in flight. That is a local-only denial of service that cannot touch a paired client's
+    /// transfer, and it is accepted for now rather than minting a per-process identity.
     ///
     /// Both directions are consulted: a receive session is what a Data frame writes into, and a send
     /// session is what an Ack advances and an Error cancels.

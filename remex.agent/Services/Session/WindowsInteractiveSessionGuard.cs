@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
@@ -14,19 +13,33 @@ namespace Remex.Agent.Services.Session;
 /// It deliberately does NOT reconnect/disconnect sessions: the old <c>tscon</c> + <c>WTSDisconnectSession</c>
 /// dance only made sense for a Session-0 SYSTEM service resuming an orphaned RDP session. Living inside
 /// the session, disconnecting it would lock the very desktop we capture and inject input into (Win32
-/// error 5/6), so the guard never touches lock state — it only holds <c>SetThreadExecutionState</c>.
+/// error 5/6), so the guard never touches lock state — it only holds a keep-awake power request.
 /// (RemEx-aep Phase 4)
+///
+/// The hold is a handle-based power request (<see cref="PowerRequestKeepAwakeBackend"/>), not
+/// <c>SetThreadExecutionState</c>: engage and disengage arrive on different thread-pool threads, and
+/// the per-thread execution state could not be cleared from the second one (PERF-TRACKER P1-10).
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
 {
     private readonly ILogger<WindowsInteractiveSessionGuard> _logger;
+    private readonly IKeepAwakeBackend _backend;
     private readonly object _gate = new();
     private readonly HashSet<string> _engaged = new();
 
+    // The live keep-awake hold, or null. Only touched under _gate.
+    private IDisposable? _hold;
+
     public WindowsInteractiveSessionGuard(ILogger<WindowsInteractiveSessionGuard> logger)
+        : this(logger, new PowerRequestKeepAwakeBackend())
+    {
+    }
+
+    internal WindowsInteractiveSessionGuard(ILogger<WindowsInteractiveSessionGuard> logger, IKeepAwakeBackend backend)
     {
         _logger = Guard.NotNull(logger);
+        _backend = Guard.NotNull(backend);
     }
 
     public void EngageForRemoteControl(string clientId)
@@ -42,9 +55,9 @@ public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
 
             try
             {
-                // Prevent idle sleep / display-off while a client is connected. ES_CONTINUOUS makes the
-                // request sticky until we clear it on the last disconnect.
-                SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
+                // Prevent idle sleep / display-off while a client is connected. The hold stays until we
+                // release it on the last disconnect, from whatever thread that happens on.
+                _hold = _backend.Acquire();
                 _logger.LogInformation("Session guard: keeping the session awake for client {Client}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
             catch (Exception ex)
@@ -66,7 +79,9 @@ public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
             try
             {
                 // Drop the keep-awake hold; normal idle sleep / display-off resumes.
-                SetThreadExecutionState(ES_CONTINUOUS);
+                IDisposable? hold = _hold;
+                _hold = null;
+                hold?.Dispose();
                 _logger.LogInformation("Session guard: released keep-awake after client {Client} disconnected.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
             catch (Exception ex)
@@ -75,11 +90,4 @@ public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
             }
         }
     }
-
-    private const uint ES_CONTINUOUS = 0x80000000;
-    private const uint ES_SYSTEM_REQUIRED = 0x00000001;
-    private const uint ES_DISPLAY_REQUIRED = 0x00000002;
-
-    [DllImport("kernel32.dll")]
-    private static extern uint SetThreadExecutionState(uint esFlags);
 }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Remex.Core.Guards;
+using Remex.Core.Services;
 
 namespace Remex.Agent.Services.Readiness;
 
@@ -34,30 +35,187 @@ public sealed class FirewallQuery
     private readonly Func<string, string, CommandResult> _run;
     private readonly Func<string, string?> _readFile;
     private readonly Func<string?> _agentExecutablePath;
+    private readonly Func<string, DateTime?> _getFileLastWriteUtc;
+    private readonly Func<string?> _readCache;
+    private readonly Action<string> _writeCache;
+    private readonly Func<DateTime> _utcNow;
+
+    /// <summary>
+    /// How long a cached verdict is trusted before a launch pays the query cost again, bounding how
+    /// long a stale answer (a firewall rule changed after the verdict was cached, with no matching
+    /// exe-mtime change to invalidate it) can survive. Review fix (P1-23 round 1): mtime alone does
+    /// not reliably catch every real change - an MSI repair that leaves the binary's bytes (and so
+    /// its mtime) untouched while still touching firewall rules would otherwise pin a stale verdict
+    /// until a full reinstall.
+    /// </summary>
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
 
     /// <param name="run">Runs a command with arguments and returns its result. Must not throw.</param>
     /// <param name="readFile">Reads a file, or returns null if absent or unreadable.</param>
     /// <param name="agentExecutablePath">The running executable, to match Windows rules against.</param>
+    /// <param name="getFileLastWriteUtc">
+    /// The agent executable's own last-write time, or null if it can't be read. P1-23: an installer
+    /// or repair that overwrites this binary moves its mtime, which is a real (though not perfectly
+    /// reliable - see <see cref="CacheTtl"/>) signal a stale cached verdict might no longer hold,
+    /// without needing a separate install marker file. Defaults to a no-op (always null) for callers
+    /// that don't supply one, which disables this specific invalidation check rather than crashing -
+    /// the cache still expires via <see cref="CacheTtl"/> and still invalidates on exePath/port change.
+    /// </param>
+    /// <param name="readCache">
+    /// Reads the on-disk cache, or null if absent/unreadable/corrupt. Defaults to a no-op (always
+    /// null), which makes every call a fresh query — the shape existing tests and any caller that
+    /// doesn't care about caching already expect.
+    /// </param>
+    /// <param name="writeCache">Persists a fresh verdict to disk. Defaults to a no-op.</param>
+    /// <param name="utcNow">Defaults to <see cref="DateTime.UtcNow"/>; injected for TTL testing.</param>
     public FirewallQuery(
         Func<string, string, CommandResult> run,
         Func<string, string?> readFile,
-        Func<string?> agentExecutablePath)
+        Func<string?> agentExecutablePath,
+        Func<string, DateTime?>? getFileLastWriteUtc = null,
+        Func<string?>? readCache = null,
+        Action<string>? writeCache = null,
+        Func<DateTime>? utcNow = null)
     {
         _run = Guard.NotNull(run);
         _readFile = Guard.NotNull(readFile);
         _agentExecutablePath = Guard.NotNull(agentExecutablePath);
+        _getFileLastWriteUtc = getFileLastWriteUtc ?? (static _ => null);
+        _readCache = readCache ?? (static () => null);
+        _writeCache = writeCache ?? (static _ => { });
+        _utcNow = utcNow ?? (static () => DateTime.UtcNow);
     }
 
     /// <summary>The production instance, wired to the real process launcher and filesystem.</summary>
     public static FirewallQuery CreateDefault() =>
-        new(RunCommand, ReadFileOrNull, () => Environment.ProcessPath);
+        new(
+            RunCommand,
+            ReadFileOrNull,
+            () => Environment.ProcessPath,
+            GetFileLastWriteUtcOrNull,
+            ReadCacheFileOrNull,
+            WriteCacheFile);
+
+    private static readonly string CacheFilePath = Path.Combine(
+        RemexDataPaths.ResolveDirectory(
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex")),
+        "firewall_check_cache.json");
 
     /// <summary>
     /// Whether a firewall we can see permits inbound traffic on <paramref name="port"/>.
     /// </summary>
+    /// <remarks>
+    /// P1-23: this used to shell out (powershell.exe on Windows, firewall-cmd/ufw on Linux) on every
+    /// call, and the caller (the desktop app's Home screen) does exactly one call per app launch —
+    /// so every sign-in spawned a process to re-answer a question whose answer almost never changes.
+    /// Cached to disk, keyed on the agent executable's own path + mtime and the queried port, and
+    /// bounded by <see cref="CacheTtl"/> so a real change with no matching invalidation signal still
+    /// self-heals rather than sticking until reinstall.
+    /// <para>
+    /// Review fix (round 2): ONLY a <see langword="true"/> verdict is ever cached. A cached
+    /// <see langword="false"/> ("refused") would otherwise survive the user's own fix-then-Refresh
+    /// sequence — the exact case this readiness row exists for — for up to the TTL, making a real fix
+    /// look like it failed. A refused or unestablishable verdict is cheap to keep re-querying (it is
+    /// exactly the unhealthy case this row exists to catch promptly), so only the boring, common,
+    /// steady-state "yes, still allowed" answer is worth avoiding the process spawn for.
+    /// </para>
+    /// </remarks>
     /// <returns>True if allowed, false if refused, null if it could not be established.</returns>
-    public bool? IsInboundAllowed(int port) =>
-        OperatingSystem.IsWindows() ? QueryWindows() : QueryLinux(port);
+    public bool? IsInboundAllowed(int port)
+    {
+        var exePath = _agentExecutablePath();
+        var exeLastWriteUtc = string.IsNullOrWhiteSpace(exePath) ? null : _getFileLastWriteUtc(exePath);
+        var now = _utcNow();
+
+        var cached = TryReadCache();
+        if (cached is not null
+            && cached.ExePath == exePath
+            && cached.ExeLastWriteUtcTicks == exeLastWriteUtc?.Ticks
+            && cached.Port == port
+            && cached.Verdict == true
+            && IsFresh(cached.ComputedAtUtcTicks, now))
+        {
+            return cached.Verdict;
+        }
+
+        var verdict = OperatingSystem.IsWindows() ? QueryWindows() : QueryLinux(port);
+        if (verdict == true)
+        {
+            WriteCache(new FirewallCacheEntry(exePath, exeLastWriteUtc?.Ticks, port, verdict, now.Ticks));
+        }
+
+        return verdict;
+    }
+
+    /// <summary>
+    /// Whether a cache entry computed at <paramref name="computedAtUtcTicks"/> is still within
+    /// <see cref="CacheTtl"/> of <paramref name="now"/>. Review fix (round 2): guards against both a
+    /// tampered/corrupt out-of-range tick value (would otherwise throw constructing the
+    /// <see cref="DateTime"/>) and a backwards clock skew (would otherwise make a negative elapsed
+    /// span compare as "fresh" forever) — either is treated as stale rather than trusted.
+    /// </summary>
+    private static bool IsFresh(long computedAtUtcTicks, DateTime now)
+    {
+        if (computedAtUtcTicks < DateTime.MinValue.Ticks || computedAtUtcTicks > DateTime.MaxValue.Ticks)
+        {
+            return false;
+        }
+
+        var elapsed = now - new DateTime(computedAtUtcTicks, DateTimeKind.Utc);
+        return elapsed >= TimeSpan.Zero && elapsed < CacheTtl;
+    }
+
+    private FirewallCacheEntry? TryReadCache()
+    {
+        var raw = _readCache();
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<FirewallCacheEntry>(raw);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
+    private void WriteCache(FirewallCacheEntry entry)
+    {
+        try
+        {
+            _writeCache(System.Text.Json.JsonSerializer.Serialize(entry));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A failed cache write is not a failed query - the verdict just computed is still
+            // returned to the caller; the next launch simply pays the process-spawn cost again.
+        }
+    }
+
+    private static DateTime? GetFileLastWriteUtcOrNull(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static string? ReadCacheFileOrNull() => ReadFileOrNull(CacheFilePath);
+
+    private static void WriteCacheFile(string contents) =>
+        RemexDataPaths.WriteAllTextAtomic(CacheFilePath, contents);
+
+    /// <summary>
+    /// On-disk shape of the cached verdict. remex.agent has no NativeAOT/trim constraint (unlike
+    /// remex.core), so reflection-based <see cref="System.Text.Json.JsonSerializer"/> against this
+    /// plain positional record is fine.
+    /// </summary>
+    private sealed record FirewallCacheEntry(
+        string? ExePath, long? ExeLastWriteUtcTicks, int Port, bool? Verdict, long ComputedAtUtcTicks);
 
     /// <remarks>
     /// PowerShell rather than <c>netsh</c>, and the reason is localization. <c>netsh advfirewall

@@ -865,8 +865,51 @@ public class LinuxInputSimulationService : IInputSimulationService
         using var proc = Process.Start(psi);
         if (proc is null) return string.Empty;
 
-        var output = proc.StandardOutput.ReadToEnd();
-        proc.WaitForExit(2000);
+        // Begin BOTH reads before waiting (perf audit P1-4). `ReadToEnd()` on stdout alone blocks
+        // until the pipe closes — a hung xdotool never closes it, so it never even reached the
+        // WaitForExit(2000) below, and the "2s timeout" did nothing. Leaving stderr undrained is its
+        // own hazard: a tool that writes enough there to fill the OS pipe buffer blocks on ITS OWN
+        // write, which is indistinguishable from a hang. Starting both async reads first, THEN
+        // waiting, is the documented fix for the classic Process redirected-stream deadlock.
+        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+        var stderrTask = proc.StandardError.ReadToEndAsync();
+
+        if (!proc.WaitForExit(2000))
+        {
+            try
+            {
+                proc.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to kill a hung {Backend} process.", backend);
+            }
+
+            // The kill closes the pipes, which lets the pending reads finish instead of hanging.
+            proc.WaitForExit(500);
+        }
+
+        string output;
+        try
+        {
+            output = stdoutTask.Wait(500) ? stdoutTask.Result : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "{Backend} stdout read failed.", backend);
+            output = string.Empty;
+        }
+
+        try
+        {
+            if (stderrTask.Wait(500) && stderrTask.Result.Length > 0)
+                _logger.LogDebug("{Backend} stderr: {Stderr}", backend, stderrTask.Result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "{Backend} stderr read failed.", backend);
+        }
+
         return output;
     }
 }

@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,16 @@ public sealed class FileTransferService : IFileTransferService
     private readonly ILogger<FileTransferService> _logger;
     private readonly string _configPath;
     private readonly ThumbnailService _thumbnailService;
+
+    // P1-15: revisiting a folder re-requested (and re-encoded) every thumbnail with no cache on
+    // either side. Keyed on resolved path + mtime + size (not path alone), so a changed file never
+    // serves a stale thumbnail (C15) - a plain path-keyed cache would. Soft-capped and oldest-evicted,
+    // mirroring the Android side's MAX_CACHED_THUMBNAILS approach; this is a singleton service shared
+    // across every connected client, so the cache is process-lifetime, not per-connection.
+    private const int ThumbnailCacheCap = 500;
+    private readonly ConcurrentDictionary<ThumbnailCacheKey, (string? Base64, long InsertedAtMs)> _thumbnailCache = new();
+
+    private readonly record struct ThumbnailCacheKey(string Path, long ModifiedUtcTicks, long Size, int MaxDim);
 
     private sealed record ConfiguredRoot
     {
@@ -1486,12 +1498,38 @@ public sealed class FileTransferService : IFileTransferService
 
     private async Task<string?> GetThumbnailCore(string resolved, string rootDisplay, string relativePath, int maxDim, CancellationToken ct)
     {
-        if (!File.Exists(resolved))
+        var info = new FileInfo(resolved);
+        if (!info.Exists)
             throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
 
         var effectiveMaxDim = maxDim <= 0 ? FileTransferLimits.ThumbnailDefaultMaxDim : maxDim;
-        return await _thumbnailService.TryCreateThumbnailBase64Async(
+        var key = new ThumbnailCacheKey(resolved, info.LastWriteTimeUtc.Ticks, info.Length, effectiveMaxDim);
+        if (_thumbnailCache.TryGetValue(key, out var cached))
+            return cached.Base64;
+
+        var base64 = await _thumbnailService.TryCreateThumbnailBase64Async(
             resolved, effectiveMaxDim, FileTransferLimits.ThumbnailMaxBytes, ct);
+
+        // A null result is NOT cached: TryCreateThumbnailBase64Async returns null both for a file
+        // that can genuinely never thumbnail (wrong extension, corrupt image) and for a transient
+        // failure (locked file, cloud-placeholder not yet hydrated) - the two are indistinguishable
+        // from here, and since the mtime+size key won't change once the transient condition clears,
+        // a cached null would wrongly suppress every retry until the entry is evicted or the host
+        // restarts. Caching only real thumbnails keeps the fix scoped to its actual target: repeat
+        // encodes of a file that DID produce one, not permanently pinning a "no thumbnail" verdict.
+        if (base64 is null)
+            return null;
+
+        _thumbnailCache[key] = (base64, Environment.TickCount64);
+        if (_thumbnailCache.Count > ThumbnailCacheCap)
+        {
+            // Soft cap: evict the oldest entry rather than maintaining a strict LRU - a revisited
+            // folder re-populates on demand, so an occasional extra eviction just costs one re-encode.
+            var oldest = _thumbnailCache.OrderBy(static kv => kv.Value.InsertedAtMs).FirstOrDefault();
+            _thumbnailCache.TryRemove(oldest.Key, out _);
+        }
+
+        return base64;
     }
 
     /// <summary>

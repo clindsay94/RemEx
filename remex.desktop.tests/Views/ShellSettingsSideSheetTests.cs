@@ -430,6 +430,33 @@ public class ShellSettingsSideSheetTests
             "each Personalize tab owns its own ScrollViewer now (spec §1) - none belongs around the host");
     }
 
+    /// <summary>
+    /// P1-30: SideSheetContent is ALWAYS present in the visual tree (slides off-screen when closed,
+    /// RemEx-zrlze) - binding its DataContext straight to the BUILDING ShellViewModel.CustomizationVm
+    /// getter forced the whole Personalize VM (font enumeration, HctColorWheel's tone discs) to
+    /// construct at shell load for every session, whether or not the sheet is ever opened. The
+    /// behavioral tests for the fix (ProfileReplacementInvalidatesCustomizationVmTests) pin the VIEW
+    /// MODEL property; this pins the XAML binding target itself, so reverting just this one attribute
+    /// back to CustomizationVm - leaving the view-model-side fix untouched - still fails a test.
+    /// </summary>
+    [Fact]
+    public void ThePersonalizeHost_BindsTheNonBuildingSheetPropertyNotTheBuildingOne()
+    {
+        var content = Regex.Match(ShellMarkup(),
+            @"<material:SideSheet\.SideSheetContent>(?<body>.*?)</material:SideSheet\.SideSheetContent>",
+            RegexOptions.Singleline);
+
+        content.Success.Should().BeTrue("the SideSheetContent block has to exist");
+        var body = content.Groups["body"].Value;
+
+        body.Should().Contain("DataContext=\"{Binding CustomizationVmForSheetBinding}\"",
+            "the always-present sheet content must bind the non-building property, so shell load " +
+            "never forces CustomizationViewModel to construct");
+        body.Should().NotMatchRegex(@"DataContext=""\{Binding CustomizationVm\}""",
+            "binding the BUILDING CustomizationVm property here would defeat P1-30 entirely - the " +
+            "always-present content would force construction at shell load again, exactly as before");
+    }
+
     /// <summary>Companion to the guard above: every tab file actually keeps the ScrollViewer that
     /// makes the host's own lack of one safe.</summary>
     [Theory]

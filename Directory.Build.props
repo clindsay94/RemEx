@@ -67,6 +67,55 @@
   </PropertyGroup>
 
   <!--
+    VENDOR NATIVE SYMBOLS ARE NOT SHIPPED EITHER (RemEx-4j8ls, perf P1-6). Same leak as the doc files
+    above, through a different door: SkiaSharp.NativeAssets.* and HarfBuzzSharp.NativeAssets.* carry
+    runtimes/<rid>/native/lib*.pdb beside their .dll, NuGet resolves every file there as a native
+    asset, and a RID-specific publish flattens them into the app root, where RemEx.iss and
+    build-linux.sh glob them up. Measured on a Release win-x64 self-contained publish of remex.agent:
+    101.6 MB of PDBs, of which libSkiaSharp.pdb is 80.1 MB and libHarfBuzzSharp.pdb 20.0 MB.
+
+    KEYED ON AssetType=native, NOT ON NuGetPackageId ALONE, so RemEx's own portable PDBs (1.5 MB)
+    still ship. The first draft used NuGetPackageId and silently dropped Remex.Core.pdb and
+    Remex.Branding.pdb: transitive project references resolve through the assets file and carry a
+    package id too. Nothing here collects minidumps or symbolicates offline, but those files are what
+    put file:line into every exception stack trace the host logs, which is the useful part of a bug
+    report. Release only; Debug publishes unchanged.
+
+    THE DELETE IS FOR STALE COPIES, not decoration: build-installer.ps1 publishes on top of the
+    existing folder without cleaning it, so removing the items alone would leave the 100 MB from any
+    earlier publish sitting there for RemEx.iss to glob.
+  -->
+  <Target Name="RemexDropPackageNativeSymbolsFromPublish"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <_RemexPackageNativeSymbol Include="@(ResolvedFileToPublish)"
+                                 Condition="'%(ResolvedFileToPublish.Extension)' == '.pdb' and '%(ResolvedFileToPublish.AssetType)' == 'native' and '%(ResolvedFileToPublish.NuGetPackageId)' != ''" />
+      <ResolvedFileToPublish Remove="@(_RemexPackageNativeSymbol)" />
+    </ItemGroup>
+    <Delete Files="@(_RemexPackageNativeSymbol->'$(PublishDir)%(RelativePath)')" />
+  </Target>
+
+  <!--
+    THE FILE IS GONE; THE MANIFEST STILL NAMES IT (RemEx-4j8ls, perf P1-6, review round 1 MEDIUM).
+    GeneratePublishDependencyFile reads NativeCopyLocalItems, not ResolvedFileToPublish, so the target
+    above left Remex.Agent.deps.json listing runtimes/win-x64/native/libSkiaSharp.pdb and the HarfBuzz
+    one after they were deleted from the publish folder. Measured: a scratch publish with the fix above
+    but not this one still had both paths in the deps.json "native" section. Every item already in
+    NativeCopyLocalItems is native by construction, so this only needs to match Extension + a real
+    NuGetPackageId, unlike the item above which also has to rule out AssetType to spare RemEx's own
+    project-reference PDBs.
+  -->
+  <Target Name="RemexExcludePackageNativeSymbolsFromDepsFile"
+          BeforeTargets="_ComputeResolvedCopyLocalPublishAssets"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)"
+                            Condition="'%(NativeCopyLocalItems.Extension)' == '.pdb' and '%(NativeCopyLocalItems.NuGetPackageId)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <!--
     Build-id stamping, opted into per project rather than applied to all of them (RemEx-2ckhm).
     Only the assembly that DISPLAYS the id needs to carry it, and each project that opts in pays two
     `git` invocations per build. remex.desktop owns the About page, so it is the one that opts in;

@@ -1358,22 +1358,34 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 }
     }
 
+    /**
+     * Every `desktop_config` makes the host rebuild its encoder, and the sliders below fire on every
+     * drag tick. This sends the first change at once and then only the settled value once ticks stop
+     * for 200ms, instead of one rebuild per tick (perf P1-2). See [DesktopConfigPushDebouncer].
+     */
+    private val configPushDebouncer =
+            DesktopConfigPushDebouncer(
+                    scope = viewModelScope,
+                    nowMs = { android.os.SystemClock.elapsedRealtime() },
+                    send = { pushConfigIfStreaming() }
+            )
+
     fun updateQuality(value: Int) {
         _configState.update { it.copy(quality = value.coerceIn(1, 100)) }
         persistDesktopDefaults()
-        pushConfigIfStreaming()
+        configPushDebouncer.onChange()
     }
 
     fun updateTargetFps(value: Int) {
         _configState.update { it.copy(targetFps = value.coerceIn(1, DESKTOP_MAX_FPS)) }
         persistDesktopDefaults()
-        pushConfigIfStreaming()
+        configPushDebouncer.onChange()
     }
 
     fun updateScale(value: Float) {
         _configState.update { it.copy(scale = value.coerceIn(0.25f, 1.0f)) }
         persistDesktopDefaults()
-        pushConfigIfStreaming()
+        configPushDebouncer.onChange()
     }
 
     /**
@@ -1393,7 +1405,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             )
         }
         persistDesktopDefaults()
-        pushConfigIfStreaming()
+        // Through the debouncer too: a tap is normally sent at once (leading edge), and routing it
+        // here supersedes any trailing slider send still pending, so the host rebuilds once, not twice.
+        configPushDebouncer.onChange()
     }
 
     /**

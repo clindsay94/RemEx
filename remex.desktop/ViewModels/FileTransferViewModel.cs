@@ -82,7 +82,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // takes IFileTransferConnection so a test can answer a paste with `destination_exists`; what
         // was missing was any way to hand that client to this view model, which built its own from a
         // ConnectionViewModel that no test can make speak. Production passes nothing and is unchanged.
-        _client = client ?? new FileTransferClient(connection);
+        //
+        // The connector moves uploads to this PC's own host onto the binary /ws/files channel (perf
+        // audit P1-5); any other host keeps the legacy path. Read lazily, so a changed host address
+        // is picked up on the next upload.
+        _client = client ?? new FileTransferClient(
+            connection,
+            new LoopbackFileChannelConnector(() => connection.HostAddress, _logger));
 
         // SHARED WITH ShellViewModel WHEN SUPPLIED (RemEx-rjnbo.1). The Files-nav badge needs a live
         // transfer count before this view model has ever been built - it is lazily constructed on

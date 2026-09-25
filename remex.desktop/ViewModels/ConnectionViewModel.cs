@@ -1393,6 +1393,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     case MessageTypes.FileManifestResponse:
                     case MessageTypes.FileMetadataResponse:
                     case MessageTypes.FileThumbnailResponse:
+                    // ── v3 transfer negotiation, the control half of an upload whose bytes travel on
+                    //    /ws/files (perf audit P1-5). Only sent in reply to an offer this UI made. ──
+                    case MessageTypes.FileTransferReady:
+                    case MessageTypes.FileTransferResult:
                         FileTransferMessageReceived?.Invoke(message);
                         break;
                 }
@@ -1855,7 +1859,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     internal static string ResolvePhoneReachableHost(Uri uri, Func<string?> lanIpv4Provider) =>
         IsLoopbackAddress(uri) ? lanIpv4Provider() ?? uri.Host : uri.Host;
 
-    private static bool IsLoopbackHost(Uri uri) =>
+    /// <remarks>
+    /// Internal so <c>LoopbackFileChannelConnector</c> can CALL it rather than carry a copy (perf audit
+    /// P1-5): the binary file channel's TLS trust and its loopback-only gate must be exactly the
+    /// decision this channel made for the same host. See the inventory on <see cref="IsLoopbackAddress"/>.
+    /// </remarks>
+    internal static bool IsLoopbackHost(Uri uri) =>
         uri.Host is "localhost" or "127.0.0.1" or "::1";
 
     /// <summary>
@@ -1891,6 +1900,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     ///      the one that actually shipped the bug: the QR command is bound in two views, so a
     ///      loopback host went into the pairing payload and the phone scanned an unreachable
     ///      address.
+    ///   6. <c>LoopbackFileChannelConnector.TryBuildFilesUri</c> — CALLS <see cref="IsLoopbackHost"/>
+    ///      (no copy). It gates trust-on-first-use for /ws/files, so it belongs on the sign-off side
+    ///      with #1 and moves when #1 does (perf audit P1-5).
     ///
     /// So two literal copies remain and both are on the sign-off side. Do not add a sixth: the
     /// bracketed-IPv6 miss survived precisely because each site re-derived the predicate.
@@ -2095,10 +2107,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     return;
                 }
             }
-            // Fallback when no owner window is available — a single-view (non-window) lifetime, or
-            // a null ShellViewModel / MainWindow. Not reachable in practice: this UI only runs as
-            // the PC's classic desktop app, where a MainWindow is always present by the time pairing
-            // is requested. If it ever were taken, the method reports pairing as cancelled.
+            // Fallback when no owner window is available — a single-view (non-window) lifetime, a
+            // null ShellViewModel, or (since P1-29) a `--minimized` logon start whose MainWindow was
+            // deferred and never constructed here. Genuinely reachable now, not just theoretical: a
+            // pairing request that arrives before anything has called BringMainWindowToFront() hits
+            // this branch and reports pairing as cancelled rather than surfacing a window itself.
         });
         return result;
     }

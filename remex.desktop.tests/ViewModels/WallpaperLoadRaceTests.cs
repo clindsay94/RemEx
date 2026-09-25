@@ -108,6 +108,34 @@ public class WallpaperLoadRaceTests
                 "releases every other resource it owns");
     }
 
+    [Fact]
+    public void LeavingWallpaperModeReleasesTheBitmapInsteadOfHoldingItForTheSession()
+    {
+        // P1-27: before this row, RefreshWallpaperBackdrop's "not Wallpaper mode" early return only
+        // set EffectiveBackgroundType and returned - the ~15MB decoded bitmap (and the loaded-path
+        // bookkeeping that would otherwise skip a re-decode on switching back to the SAME path)
+        // stayed resident for the rest of the session, released only by app shutdown or by loading a
+        // DIFFERENT wallpaper path over it.
+        var body = ExtractMethod(ShellViewModelSource(), "RefreshWallpaperBackdrop");
+
+        var notWallpaperGuardIndex = body.IndexOf(
+            "settings.BackgroundMaterial != \"Wallpaper\"", System.StringComparison.Ordinal);
+        notWallpaperGuardIndex.Should().BeGreaterThanOrEqualTo(0, "the not-Wallpaper-mode branch must still exist");
+
+        var branchBody = body[notWallpaperGuardIndex..];
+        branchBody.Should().MatchRegex(
+            @"WallpaperBitmap\s*=\s*null;",
+            "leaving Wallpaper mode must clear WallpaperBitmap, not just change EffectiveBackgroundType");
+        branchBody.Should().MatchRegex(
+            @"Post\(\s*\(\)\s*=>\s*stale\.Dispose\(\)",
+            "the dispose must be DEFERRED via Dispatcher.UIThread.Post, matching the existing " +
+            "superseded-bitmap dispose in LoadWallpaperAsync (RemEx-8twk0.5) - a synchronous dispose " +
+            "here risks handing the renderer an already-disposed bitmap it may still be compositing");
+        branchBody.Should().Contain("_wallpaperPathLoaded = null;",
+            "clearing the loaded-path bookkeeping too, so returning to the SAME wallpaper path later " +
+            "re-decodes rather than incorrectly short-circuiting against a bitmap that no longer exists");
+    }
+
     /// <summary>
     /// Everything from a method's opening brace to the matching close at class indent (four
     /// spaces). Same heuristic <see cref="ShellPresencePulseTests"/>, <c>PaletteTransitionSuppressionTests</c>

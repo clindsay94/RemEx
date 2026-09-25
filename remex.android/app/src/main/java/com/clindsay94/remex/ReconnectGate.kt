@@ -51,4 +51,21 @@ internal object ReconnectGate {
             // 2^20 * 5000ms ≈ 87 minutes, which already exceeds MAX_DELAY_MS (5 min),
             // so coerceAtMost(20) safely avoids Long overflow on the shift.
             minOf(BASE_DELAY_MS * (1L shl consecutiveFailures.coerceAtMost(20)), MAX_DELAY_MS)
+
+    /**
+     * Whether a trusted host found by mDNS self-heal should reset the backoff (perf audit P1-1).
+     *
+     * Only a DIFFERENT address is news worth retrying at once. If discovery just finds the address
+     * that is already saved - and already failing - the PC answers mDNS but refuses the connection
+     * (firewall, agent not running), and resetting here pinned the retry near the fast end (~40 s)
+     * forever instead of letting it climb to [MAX_DELAY_MS]. Hostnames compare case-insensitively.
+     */
+    fun selfHealFoundNewAddress(
+            savedHost: String,
+            savedPort: Int,
+            discoveredHost: String,
+            discoveredPort: Int,
+    ): Boolean =
+            savedPort != discoveredPort ||
+                    !savedHost.trim().equals(discoveredHost.trim(), ignoreCase = true)
 }

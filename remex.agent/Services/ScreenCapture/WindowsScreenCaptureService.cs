@@ -96,6 +96,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     public string? BackendName => WgcServesActiveTarget() ? "wgc" : CanUseDxgiForCurrentTarget() ? "dxgi" : "gdi";
     public bool IsDisplayPoweredOff => _displayPower.IsDisplayOff;
 
+    // MJPEG dirty-frame skip (P1-13). WGC and DXGI both return an unchanged screen as the same JPEG
+    // memory (DXGI replays its cached encode; WGC goes through _wgcJpegCache) and never write to a
+    // returned buffer. GDI encodes fresh every call, so it just never matches and is always sent.
+    public bool UnchangedFramesShareBuffer => true;
+
+    private readonly RawFrameJpegCache _wgcJpegCache = new();
+
     // Win32 device name (e.g. \\.\DISPLAY1) of the active per-monitor target, or null for virtual-desktop
     // mode or an unresolved display. WGC and DXGI both capture per-monitor; virtual-desktop stays on GDI.
     private string? ActiveMonitorDeviceName()
@@ -375,11 +382,14 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 var wgcRaw = _wgc.TryCaptureRaw(scale, drawCursor, out var wgcLive);
                 if (wgcRaw is { Length: > 0 })
                 {
-                    var jpeg = EncodeBgraToJpeg(
+                    // An unchanged frame skips the encode and returns the previous JPEG memory, which
+                    // is what lets the handler recognise it and not re-send it (P1-13).
+                    var jpeg = _wgcJpegCache.GetOrEncode(
                         wgcRaw,
                         CaptureScaling.ScaledEven(_wgc.Width, scale),
                         CaptureScaling.ScaledEven(_wgc.Height, scale),
-                        quality);
+                        quality,
+                        EncodeBgraToJpeg);
                     if (jpeg is { Length: > 0 })
                     {
                         LastCaptureFailureReason = null;

@@ -270,10 +270,12 @@ public partial class App : Application
 
             // Wire the embedded host's pairing service so the desktop UI can display
             // the PIN that the user's phone is asking for.
+            var embeddedPairingAttached = false;
             if (EmbeddedHostServices?.GetService(typeof(Remex.Core.Services.Security.IPairingService))
                 is Remex.Core.Services.Security.IPairingService pairingService)
             {
                 viewModel.Connection.AttachEmbeddedPairingService(pairingService);
+                embeddedPairingAttached = true;
             }
 
             // Wire the embedded host's file-trust service so this (serving) PC raises a consent dialog when
@@ -294,8 +296,14 @@ public partial class App : Application
                 if (pairingPinQueryService != null)
                 {
                     viewModel.Connection.AttachStandalonePairingPinQueryService(pairingPinQueryService);
-                    await viewModel.Connection.RefreshStandalonePairingPinAsync();
-                    viewModel.Connection.StartStandalonePairingPinPolling();
+
+                    // Embedded pairing already pushes PIN state via PinDisplayed/PinCleared events;
+                    // the standalone poll exists only as a fallback for when no embedded host is present.
+                    if (!embeddedPairingAttached)
+                    {
+                        await viewModel.Connection.RefreshStandalonePairingPinAsync();
+                        viewModel.Connection.StartStandalonePairingPinPolling();
+                    }
                 }
             }
 
@@ -329,14 +337,19 @@ public partial class App : Application
             {
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    if (desktop.MainWindow == null)
-                    {
-                        desktop.MainWindow = new MainWindow { DataContext = viewModel };
-                    }
-                    
                     bool startMinimized = desktop.Args != null && Array.Exists(desktop.Args, arg => arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+
+                    // P1-29: a logon-task --minimized start used to build MainWindow (and the whole
+                    // ShellView tree - theme apply, wallpaper decode) unconditionally, only skipping
+                    // Show(). Deferred entirely for a minimized start: BringMainWindowToFront()
+                    // already does `desktop.MainWindow ??= new MainWindow {...}`
+                    // (docs/REGRESSION-GUARDS.md RG:1032-1049) and every consumer that can surface
+                    // the window later - the tray "Show" entry, and the Desktop-route file-consent
+                    // dialog that guard exists for - already goes through that helper, so nothing
+                    // here needs to duplicate the construction responsibility.
                     if (!startMinimized)
                     {
+                        desktop.MainWindow ??= new MainWindow { DataContext = viewModel };
                         desktop.MainWindow.Show();
                     }
                 }
@@ -351,11 +364,18 @@ public partial class App : Application
             // install exists. Offer to restore everything from it, no restart required.
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime restoreDesktop
                 && profileFileWasMissing
-                && savefileService.TryGetLatestSnapshotPath() is { } snapshotPath
-                && restoreDesktop.MainWindow is { } mainWindow)
+                && savefileService.TryGetLatestSnapshotPath() is { } snapshotPath)
             {
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                 {
+                    // P1-29 review round 1 HIGH: a '--minimized' logon start defers MainWindow's
+                    // construction, so `restoreDesktop.MainWindow is { } mainWindow` used to gate
+                    // this whole block would have been null and silently skipped the offer -
+                    // permanently, since the profile gets written on the user's next settings
+                    // change regardless, and profileFileWasMissing only ever fires once per launch.
+                    // This prompt genuinely needs a visible window (it is the whole point), so build
+                    // one lazily here rather than requiring one to already exist.
+                    var mainWindow = restoreDesktop.MainWindow ??= new MainWindow { DataContext = viewModel };
                     if (!mainWindow.IsVisible)
                     {
                         mainWindow.Show();
@@ -410,19 +430,28 @@ public partial class App : Application
             var vm = new FileConsentDialogViewModel(prompt.Request);
 
             Remex.Core.Services.FileTransfer.FileConsentDecision decision;
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is { } owner)
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 // SURFACE THE OWNER FIRST, OR THERE IS NO DIALOG (RemEx-6bfyt). Avalonia's ShowDialog
                 // throws "Cannot show window with non-visible parent", and not-visible is RemEx's
                 // NORMAL state rather than an edge case: the logon task starts it '--minimized'
-                // (scripts/autostart-remex.ps1) so MainWindow is constructed and never shown, and
-                // hide-to-tray returns it there. The throw lands in the catch below, which denies
-                // fail-closed with no reason code - byte-identical to the user tapping Deny. So the
-                // prompt nobody could see becomes a refusal nobody can explain.
+                // (scripts/autostart-remex.ps1), and hide-to-tray returns it there. The throw lands
+                // in the catch below, which denies fail-closed with no reason code - byte-identical
+                // to the user tapping Deny. So the prompt nobody could see becomes a refusal nobody
+                // can explain.
                 //
                 // This was latent while the desktop route only served phones too old to render the
                 // prompt. Routing full browse here by kind made it the ONLY path for that grant, so
                 // the guard stops being optional.
+                //
+                // CALLED UNCONDITIONALLY, BEFORE READING MainWindow (P1-29 review round 1 HIGH). A
+                // '--minimized' logon start now defers MainWindow's construction entirely, so
+                // `desktop.MainWindow is { } owner` here would have been null and silently fallen to
+                // the ownerless branch below - exactly the "prompt nobody could see" failure this
+                // whole guard exists to prevent, just via a route the guard's own text didn't
+                // anticipate. BringMainWindowToFront() already does `desktop.MainWindow ??= new
+                // MainWindow {...}`, so calling it first guarantees a non-null, surfaced owner
+                // regardless of how the window got to this point.
                 //
                 // THROUGH THE HELPER, NOT A LOCAL Show()/Activate() PAIR (RemEx-b3bi). All three of
                 // its steps are load-bearing and none implies another - in particular a MINIMIZED
@@ -433,7 +462,7 @@ public partial class App : Application
                 // that class of bug has one place to be fixed.
                 BringMainWindowToFront();
 
-                decision = await MaterialDialogs.FileConsentAsync(owner, vm);
+                decision = await MaterialDialogs.FileConsentAsync(desktop.MainWindow, vm);
             }
             else
             {

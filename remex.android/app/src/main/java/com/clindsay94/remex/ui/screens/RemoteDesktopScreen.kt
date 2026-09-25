@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.content.pm.ActivityInfo
 import android.view.HapticFeedbackConstants
 import android.content.Context
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.LocalActivity
@@ -1347,6 +1348,8 @@ fun RemoteDesktopScreenContent(
                                                                         0L // for move throttling
                                                                 var scrollAccumX = 0f
                                                                 var scrollAccumY = 0f
+                                                                var lastScrollSendTime =
+                                                                        0L // P1-17: throttle wheel-scroll sends
 
                                                                 // Two-finger gesture state
                                                                 var twoFingerIntent: String? =
@@ -1381,12 +1384,31 @@ fun RemoteDesktopScreenContent(
                                                                 }
 
                                                                 fun resetTwoFingerState() {
+                                                                        // Review fix (P1-17): flush
+                                                                        // whatever whole-unit scroll
+                                                                        // is still sitting in the
+                                                                        // accumulator before wiping it
+                                                                        // - without this, a gesture
+                                                                        // ending inside the throttle
+                                                                        // window (up to ~33ms of
+                                                                        // motion) was silently
+                                                                        // dropped instead of coalesced
+                                                                        // into a final send.
+                                                                        val sx = scrollAccumX.toInt()
+                                                                        val sy = scrollAccumY.toInt()
+                                                                        if (sx != 0 || sy != 0) {
+                                                                                onSendMouseScroll(
+                                                                                        -sx,
+                                                                                        -sy
+                                                                                )
+                                                                        }
                                                                         twoFingerIntent = null
                                                                         prevTwoFingerDist = 0f
                                                                         prevTwoFingerCenter =
                                                                                 Offset.Zero
                                                                         scrollAccumX = 0f
                                                                         scrollAccumY = 0f
+                                                                        lastScrollSendTime = 0L
                                                                 }
 
                                                                 fun cancelDrag() {
@@ -1627,14 +1649,36 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                 sy !=
                                                                                                                                                         0
                                                                                                                                 ) {
-                                                                                                                                        onSendMouseScroll(
-                                                                                                                                                -sx,
-                                                                                                                                                -sy
-                                                                                                                                        )
-                                                                                                                                        scrollAccumX -=
-                                                                                                                                                sx
-                                                                                                                                        scrollAccumY -=
-                                                                                                                                                sy
+                                                                                                                                        // P1-17: throttle wheel-scroll
+                                                                                                                                        // sends to ~30Hz like every
+                                                                                                                                        // other pointer send here; the
+                                                                                                                                        // accumulator keeps summing
+                                                                                                                                        // every sample regardless, so
+                                                                                                                                        // no motion is lost, only
+                                                                                                                                        // coalesced across sends.
+                                                                                                                                        // Review fix: uptimeMillis, not
+                                                                                                                                        // currentTimeMillis - a wall-clock
+                                                                                                                                        // adjustment mid-gesture could
+                                                                                                                                        // otherwise go negative and
+                                                                                                                                        // freeze scrolling.
+                                                                                                                                        val scrollNow =
+                                                                                                                                                SystemClock
+                                                                                                                                                        .uptimeMillis()
+                                                                                                                                        if (scrollNow -
+                                                                                                                                                        lastScrollSendTime >=
+                                                                                                                                                        MOVE_THROTTLE_MS
+                                                                                                                                        ) {
+                                                                                                                                                lastScrollSendTime =
+                                                                                                                                                        scrollNow
+                                                                                                                                                onSendMouseScroll(
+                                                                                                                                                        -sx,
+                                                                                                                                                        -sy
+                                                                                                                                                )
+                                                                                                                                                scrollAccumX -=
+                                                                                                                                                        sx
+                                                                                                                                                scrollAccumY -=
+                                                                                                                                                        sy
+                                                                                                                                        }
                                                                                                                                 }
                                                                                                                         }
                                                                                                                 }

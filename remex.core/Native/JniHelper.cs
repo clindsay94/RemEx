@@ -350,8 +350,28 @@ public static unsafe class JniHelper
         return detachCurrentThread(vmPtr);
     }
 
+    /// <summary>Android log priorities for <see cref="AndroidLogE"/> (see <c>android/log.h</c>).</summary>
+    public const int LogPriorityDebug = 3;
+    public const int LogPriorityInfo = 4;
+    public const int LogPriorityWarn = 5;
+    public const int LogPriorityError = 6;
+
     [DllImport("log", EntryPoint = "__android_log_print", CallingConvention = CallingConvention.Cdecl)]
     private static extern int __android_log_print(int prio, string tag, string fmt, string msg);
+
+    /// <summary>
+    /// True when a message at <paramref name="prio"/> would actually be written (see
+    /// <c>android/log.h</c>). Available since API 30; this repo's minSdk is 34, so it is always
+    /// present on-device.
+    /// </summary>
+    /// <remarks>
+    /// P1-22: <see cref="__android_log_print"/> writes to logd UNCONDITIONALLY regardless of the
+    /// priority passed to it - retagging a message's priority alone does not reduce its write cost,
+    /// only what a human sees when filtering logcat by level. This check is what actually skips the
+    /// write (and its native-transition cost) for a level nobody has enabled.
+    /// </remarks>
+    [DllImport("log", EntryPoint = "__android_log_is_loggable", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int __android_log_is_loggable(int prio, string tag, int defaultPrio);
 
     /// <summary>Writes an error to logcat directly, bypassing JNI entirely.</summary>
     /// <remarks>
@@ -365,12 +385,33 @@ public static unsafe class JniHelper
     /// tested. On Android liblog is always present and nothing changes. (perf audit P0-12)
     /// </para>
     /// </remarks>
-    public static void AndroidLogE(string tag, string message)
+    /// <param name="priority">
+    /// An <c>ANDROID_LOG_*</c> priority (see the <c>LogPriority*</c> constants above). Defaults to
+    /// ERROR to preserve every existing call site's behavior. P1-22: a routine connect step run on
+    /// every attempt and repeated by the offline heartbeat's retries was logging 5-10 lines at ERROR
+    /// each time, multiplying log-write cost with every retry for events that were not failures.
+    /// Below-INFO priorities are gated on <see cref="__android_log_is_loggable"/> so the write itself
+    /// is skipped on a device with no <c>log.tag.*</c> property set, not just relabeled.
+    /// </param>
+    public static void AndroidLogE(string tag, string message, int priority = LogPriorityError)
     {
         if (_androidLogUnavailable) return;
         try
         {
-            __android_log_print(6, tag, "%s", message);
+            if (priority < LogPriorityInfo)
+            {
+                try
+                {
+                    if (__android_log_is_loggable(priority, tag, LogPriorityInfo) == 0) return;
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // Older liblog without this symbol: fall through and log anyway rather than
+                    // silently dropping a message we have no way to check.
+                }
+            }
+
+            __android_log_print(priority, tag, "%s", message);
         }
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
         {

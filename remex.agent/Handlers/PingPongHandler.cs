@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
@@ -199,6 +200,57 @@ public sealed class PingPongHandler(
         // because the two have unrelated cadences — telemetry ticks every second by construction while
         // this sends only when the reading actually changes, which on a quiet machine is never.
         var mediaTask = isLoopback ? Task.CompletedTask : StreamMediaStateAsync(webSocket, streamCts.Token);
+
+        // Input runs on its own dedicated thread, off the receive loop (perf audit P1-4, Linux-only
+        // in practice: xdotool is the one input backend that can hang). DispatchInput used to run
+        // INLINE in the switch below — a hung tool call inside it stalled `ReceiveAsync` for every
+        // message after it: input, pings, file-transfer control, everything on this connection. A
+        // single-consumer BlockingCollection keeps input strictly ordered (one thread, FIFO), the
+        // same pattern RemoteDesktopHandler already uses for its own input queue — including its
+        // teardown-race handling below (RemEx-q4wm): the finally's 2s wait can expire while this
+        // thread is still mid-dispatch, `inputQueue` then disposes under it, and the next
+        // `MoveNext` throws `ObjectDisposedException` — filtered here the same way, not logged as a
+        // session failure.
+        using var inputQueue = new BlockingCollection<InputEvent>(1000);
+        var disposingInputQueue = false;
+        var inputProcessingTask = Task.Factory.StartNew(() =>
+        {
+            try
+            {
+                foreach (var queuedInput in inputQueue.GetConsumingEnumerable())
+                {
+                    try
+                    {
+                        DispatchInput(queuedInput);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Belt as well as braces: DispatchInput has its own catch-all, so this only
+                        // fires for a throw from inside one of ITS catch arms.
+                        logger.LogWarning(ex, "Unhandled error dispatching a queued input event.");
+                    }
+                }
+            }
+            catch (ObjectDisposedException ex) when (disposingInputQueue)
+            {
+                // Teardown racing the consumer, not a failure — see the remark above.
+                logger.LogDebug(ex, "Input queue disposed while the consumer was still draining it.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                // ObjectDisposedException derives from this, so an UNFILTERED one (teardown not yet
+                // marked) lands here too — still not worth more than a warning, since ending this
+                // loop only means input for THIS connection stops, not that the connection itself is
+                // unhealthy.
+                logger.LogWarning(ex, "Input processing thread ended (collection was modified).");
+            }
+            catch (Exception ex)
+            {
+                // Last resort: both guards above failed to catch it. The inner try already covers
+                // an ordinary DispatchInput failure, so reaching here means the loop itself is gone.
+                logger.LogError(ex, "Input processing thread faulted unexpectedly; input for this connection stopped.");
+            }
+        }, TaskCreationOptions.LongRunning);
 
         try
         {
@@ -480,7 +532,11 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.DesktopInput when message.InputEvent is not null:
-                        DispatchInput(message.InputEvent);
+                        if (!inputQueue.TryAdd(message.InputEvent))
+                        {
+                            logger.LogWarning("Input queue full ({Capacity} items) — dropping {Type} event.",
+                                inputQueue.BoundedCapacity, message.InputEvent.EventType);
+                        }
                         break;
 
                     // PULL, NOT PUSH — see MediaArtworkRequest's own remarks. An unknown or evicted id
@@ -983,6 +1039,29 @@ public sealed class PingPongHandler(
             {
                 pairingHandler.CancelActivePairing();
                 logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
+            }
+
+            // Stop accepting new input and let the consumer thread drain what's already queued.
+            // CompleteAdding lets GetConsumingEnumerable() return once the queue empties; the 2s cap
+            // matches RemoteDesktopHandler's own input-drain wait so one held key or a still-running
+            // tool call cannot hang the connection's teardown indefinitely. Set BEFORE CompleteAdding,
+            // not after: the consumer's next MoveNext can throw ObjectDisposedException as soon as
+            // `using var inputQueue` disposes it below, and that race needs the flag already up.
+            disposingInputQueue = true;
+            inputQueue.CompleteAdding();
+            try
+            {
+                await inputProcessingTask.WaitAsync(TimeSpan.FromSeconds(2), CancellationToken.None);
+            }
+            catch (TimeoutException)
+            {
+                // The consumer may still be mid-dispatch (a still-running tool call, most plausibly on
+                // Linux). Held keys tracked by _heldKeys are released in Dispose(), which the caller's
+                // `using` runs after this method returns — if a queued KeyDown lands after that
+                // release, the key stays held until this HeldKeyTracker is itself disposed, same as
+                // RemoteDesktopHandler's own documented teardown race (RemEx-e2p4). Not silent either
+                // way.
+                logger.LogWarning("Input queue did not drain within 2s on disconnect; keys held by the client may not be released.");
             }
 
             // Cancel background streams
@@ -1790,9 +1869,11 @@ public sealed class PingPongHandler(
     /// strand the rest, which for modifiers is the difference between a stuck Ctrl and a stuck
     /// Ctrl+Shift+Alt.
     ///
-    /// Unlike the Remote Desktop handler there is no input queue to drain first — this path
-    /// dispatches inline on the receive loop, so by the time the connection is being disposed no
-    /// further input can arrive.
+    /// LIKE THE REMOTE DESKTOP HANDLER (perf audit P1-4), input now runs off the receive loop on
+    /// its own queue, and <c>HandleAsync</c>'s own <c>finally</c> already waits up to 2s for it to
+    /// drain before this runs. That bounds, but does not eliminate, the race: a still-running tool
+    /// call can outlive the wait, so a queued KeyDown can still land after this release and re-hold
+    /// a key no longer tracked here (RemEx-e2p4's class of race, not a new one).
     /// </remarks>
     public void Dispose()
     {

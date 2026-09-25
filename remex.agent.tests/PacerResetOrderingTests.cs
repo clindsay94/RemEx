@@ -120,4 +120,26 @@ public class PacerResetOrderingTests
         Assert.True(resets > 0, "found no pacer.Reset() at all — this scan has gone blind");
         Assert.Equal(resets, correct.Count);
     }
+
+    [Fact]
+    public void TheCursorLoopSharesTheDisplayOffPause_WithResetAfterTheDelay()
+    {
+        // P1-11: the cursor loop used to keep spinning its own 90 Hz pacer while the capture loop sat
+        // paused on a powered-off display. The file-wide counts above would still pass if that pause
+        // were deleted again (both totals drop together), so pin it to this method specifically.
+        var source = HandlerSourceWithoutComments();
+
+        var start = source.IndexOf("Task StreamCursorPositionAsync(", StringComparison.Ordinal);
+        Assert.True(start >= 0, "found no StreamCursorPositionAsync — this scan has gone blind");
+        var end = source.IndexOf("Task ReceiveInputLoopAsync(", start, StringComparison.Ordinal);
+        Assert.True(end > start, "could not find the end of StreamCursorPositionAsync");
+        var cursorLoop = source[start..end];
+
+        Assert.Matches(
+            new Regex(
+                @"if\s*\(\s*_screenCapture\.IsDisplayPoweredOff\s*\)\s*\{\s*"
+                + @"try\s*\{\s*await\s+Task\.Delay\(500,\s*ct\);\s*\}\s*catch\s*\(OperationCanceledException\)\s*\{\s*break;\s*\}\s*"
+                + Regex.Escape(ResetToken)),
+            cursorLoop);
+    }
 }

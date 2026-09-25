@@ -509,6 +509,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             ActualFps = 0;
             ResetRemoteCursorOverlay();
             ClearCursorShapeCache();
+            // P1-28: the last decoded frame otherwise stayed resident (full display resolution,
+            // held by CurrentFrame) for as long as the view stayed open after a manual stop.
+            ClearCurrentFrame();
         }
     }
 
@@ -1145,6 +1148,10 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             ActualFps = 0;
             ResetRemoteCursorOverlay();
             ClearCursorShapeCache();
+            // P1-28: same reason as StopStreamAsync's finally - an unexpected disconnect (network
+            // drop, host closing) must release the last decoded frame just as reliably as a manual
+            // stop does, or it stays resident until the next successful stream start overwrites it.
+            ClearCurrentFrame();
         });
     }
 

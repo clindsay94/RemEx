@@ -524,6 +524,23 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
+    // P1-16: mirrors TaskManagerViewModel.setAutoRefreshEnabled's role - a screen-driven flag, not a
+    // repeatOnLifecycle inside the VM (a VM has no Lifecycle to key one on).
+    private val _isDashboardVisible = MutableStateFlow(false)
+
+    fun setVisible(visible: Boolean) {
+        // Review fix (P1-16): the sparkline history kept filling in real time before this row, so a
+        // gap while off-screen (e.g. minutes on another tab) used to be invisible - the history was
+        // simply denser for that period. Now the collector is gated and history freezes at the last
+        // on-screen sample, so resuming without a reset would stitch a real multi-minute swing onto
+        // one 1s-wide slot on the chart, reading as a snap that never happened. Clearing on the
+        // false->true edge trades that visual lie for an honest "history restarts" gap instead.
+        if (visible && !_isDashboardVisible.value) {
+            _telemetryHistory.value = emptyMap()
+        }
+        _isDashboardVisible.value = visible
+    }
+
     init {
         loadSavedHomeLayout()
 
@@ -536,6 +553,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->
+                // P1-16: this collector used to parse every tick regardless of whether the dashboard
+                // was on screen, since viewModelScope survives for as long as this VM's nav back-stack
+                // entry does (the whole pager session, not just while composed - the pager's
+                // beyondViewportPageCount doesn't stop it). Skip the parse entirely while off-screen;
+                // setVisible is driven by the same pager isVisible signal TaskManagerScreen already
+                // uses for its own poll (P0-1).
+                if (!_isDashboardVisible.value) return@collect
                 // PARSED OFF THE MAIN THREAD, IN ONE PASS (RemEx-cite). Every tick this deserialises
                 // the whole sensor payload and derives everything the screen needs from it, at 1 Hz,
                 // for as many sensors as the PC reports. It used to walk the array four times - once

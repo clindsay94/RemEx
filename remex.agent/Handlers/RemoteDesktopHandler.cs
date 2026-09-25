@@ -308,9 +308,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                         _screenCapture.WarmUpCapture();
                         await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
 
-                        // Keep the signed-in session usable (unlocked) for the life of this stream when
+                        // Keep the signed-in session from idle-locking for the life of this stream when
                         // the user has opted in (off by default). Engages only while actively streaming;
-                        // the guard ref-counts across clients and re-locks when the last one disconnects.
+                        // the guard ref-counts across clients and releases the keep-awake hold (it never
+                        // changes lock state itself) when the last one disconnects.
                         bool sessionGuardEngaged = false;
                         if (Remex.Agent.Services.Session.SessionGuardSettings.IsKeepUnlockedEnabled())
                         {
@@ -456,6 +457,12 @@ public sealed class RemoteDesktopHandler : IDisposable
         // (RemEx-lq6h)
         const double h264RetryCooldownMs = 3000;
         double nextH264RetryMs = 0;
+
+        // MJPEG dirty-frame skip (P1-13): a static screen stops re-publishing the identical JPEG every
+        // tick, with a forced re-send every MjpegResendGate.ForcedRefreshIntervalMs. Per stream loop on
+        // purpose — see MjpegResendGate. Only trusted when the backend promises buffer identity.
+        var mjpegResendGate = new MjpegResendGate();
+        var mjpegSkipUnchanged = _screenCapture.UnchangedFramesShareBuffer;
 
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
@@ -699,6 +706,17 @@ public sealed class RemoteDesktopHandler : IDisposable
                         {
                             frameBytes = jpegResult.Pixels;
                             captureSucceeded = !frameBytes.IsEmpty;
+
+                            // Unchanged since this stream's last published frame: healthy capture, nothing
+                            // to send (P1-13). Still captureSucceeded, so it is never a failure; and never
+                            // skipped while recovering from failures, so the first good frame clears them.
+                            if (captureSucceeded && mjpegSkipUnchanged &&
+                                !mjpegResendGate.ShouldPublish(
+                                    frameBytes, captureSerial, rebuildClock.Elapsed.TotalMilliseconds,
+                                    force: consecutiveFailures > 0))
+                            {
+                                frameBytes = ReadOnlyMemory<byte>.Empty;
+                            }
                         }
                         // else: stale cached replay (IsLive == false) — leave frameBytes null and
                         // captureSucceeded false so a sustained freeze advances consecutiveFailures and
@@ -719,6 +737,11 @@ public sealed class RemoteDesktopHandler : IDisposable
                         // send site instead would silently exclude every frame the latest-frame
                         // buffer overwrites, which is exactly the loss a quality meter is for.
                         throughput.Add(frameBytes.Length);
+
+                        // An H.264 frame replaces the client's picture, so the next MJPEG frame (the
+                        // encoder-down self-healing window) must go out even if it matches the last one.
+                        if (frameCodec != DesktopCodecKind.Mjpeg)
+                            mjpegResendGate.Reset();
 
                         // Store the latest frame with thread-safe overwrite (latest-frame semantics)
                         var capturedFrame = new CapturedFrame
@@ -1045,30 +1068,52 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     /// <summary>
     /// Periodically sends cursor position updates to the client (for trackpad mode).
-    /// Updates every 100ms to provide smooth cursor tracking without excessive overhead.
+    /// Ticks at ~90 Hz while the cursor is live and ~30 Hz once it idles (<see cref="CursorPollCadence"/>),
+    /// and pauses entirely while the display is powered off, like the capture loop.
     /// </summary>
     private async Task StreamCursorPositionAsync(WebSocket webSocket, DesktopSessionState sessionState, SemaphoreSlim sendLock, CancellationToken ct)
     {
         var (lastX, lastY) = _inputSimulation.GetCursorPosition();
         var lastShapeSerial = sessionState.GetCurrentCursorShape()?.ShapeSerial ?? 0;
         var lastCursorHandle = IntPtr.Zero;
-        var tick = 0;
         // ~90 Hz cursor pacing via the shared precision pacer. Task.Delay(11) rounds up to the
         // ~15.6 ms OS timer floor (~64 Hz, missing the 90 Hz target) — see PrecisionPacer. (RD-A)
         // Disposed with the loop: it owns a native waitable-timer handle (RemEx-ccen).
         using var pacer = new PrecisionPacer();
-        const double cursorIntervalMs = 1000.0 / 90.0;
+        // Drops to ~30 Hz after ~0.5 s without activity and snaps back to 90 Hz on the next
+        // movement: the pacer's ~2 ms spin tail per tick is the loop's real cost, so only fewer
+        // ticks save anything (P1-11). No Reset() on a rate change — see CursorPollCadence.
+        var cadence = new CursorPollCadence();
+        var clock = Stopwatch.StartNew();
 
         try
         {
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
+                // Display powered off (monitor sleep): the capture loop is already paused (RemEx-960),
+                // so position/shape updates have no frame to land on. Idle on the same 500 ms cadence
+                // instead of spinning the pacer at 90 Hz against a dark screen (P1-11).
+                if (_screenCapture.IsDisplayPoweredOff)
+                {
+                    try { await Task.Delay(500, ct); }
+                    catch (OperationCanceledException) { break; }
+                    // AFTER the delay, never before it: Reset() anchors the pacer's absolute
+                    // timeline to "now", so resetting first would leave it 500 ms in the past and
+                    // burst up to ~45 zero-wait ticks on resume (PrecisionPacer guard in
+                    // docs/REGRESSION-GUARDS.md; pinned by PacerResetOrderingTests).
+                    pacer.Reset();
+                    // Windows may have released the ClipCursor across the power transition.
+                    cadence.ForceSlowTick();
+                    continue;
+                }
+
                 var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+                var activity = false;
 
                 // Cursor POSITION streams at ~90 Hz for smooth on-screen tracking; the ClipCursor
-                // confinement changes rarely, so re-apply that only at ~10 Hz (every 9th tick) to
-                // avoid hammering the OS at the higher position rate.
-                var slowTick = tick % 9 == 0;
+                // confinement changes rarely, so re-apply that only at ~10 Hz (wall-clock, so it
+                // holds at the idle tick rate too) to avoid hammering the OS at the position rate.
+                var slowTick = cadence.TryConsumeSlowTick(clock.Elapsed.TotalMilliseconds);
 
                 if (slowTick)
                 {
@@ -1096,12 +1141,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                         currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
                         lastCursorHandle = cursorHandle;
                     }
+                    activity = handleChanged;
                 }
 
                 // Only send update if cursor moved (reduce network traffic)
                 var currentShapeSerial = currentShape?.ShapeSerial ?? 0;
                 if (cursorX != lastX || cursorY != lastY || currentShapeSerial != lastShapeSerial)
                 {
+                    activity = true;
                     try
                     {
                         // Route through SendCursorUpdateAsync so it honors client capabilities:
@@ -1119,10 +1166,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                     }
                 }
 
-                tick++;
-                // ~90 Hz cursor position for smooth tracking (shape + clip throttled to ~10 Hz above).
-                // Precise pacing (not Task.Delay) — Task.Delay(11) oversleeps to ~15.6 ms / ~64 Hz.
-                if (!await pacer.WaitForNextTickAsync(cursorIntervalMs, ct)) break;
+                // ~90 Hz cursor position for smooth tracking, ~30 Hz once idle (shape + clip throttled
+                // to ~10 Hz above). Precise pacing (not Task.Delay) — Task.Delay(11) oversleeps to
+                // ~15.6 ms / ~64 Hz.
+                if (!await pacer.WaitForNextTickAsync(cadence.NextIntervalMs(activity), ct)) break;
             }
         }
         catch (OperationCanceledException) { /* graceful shutdown */ }

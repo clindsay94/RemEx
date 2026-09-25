@@ -1246,7 +1246,15 @@
                      Padding (PersonalizationPanelView is a UserControl, a ContentControl) sits inside
                      it and is measured as part of what MaxHeight clamps. -->
                 <material:SideSheet.SideSheetContent>
-                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVm}" Padding="20">
+                    <!-- CustomizationVmForSheetBinding, NOT CustomizationVm (P1-30): the latter is a
+                         BUILDING getter, and this content is always present in the visual tree
+                         (slides off-screen when closed, RemEx-zrlze) - binding it directly forced
+                         the whole Personalize VM (font enumeration, HctColorWheel's tone discs) to
+                         construct at shell load for every session, whether or not the sheet is ever
+                         opened. The non-building property starts null and is populated via its own
+                         change notification once ToggleSettingsPanel/NavigateToCustomization
+                         actually build the VM on first open. -->
+                    <views:PersonalizationPanelView DataContext="{Binding CustomizationVmForSheetBinding}" Padding="20">
                         <views:PersonalizationPanelView.MaxHeight>
                             <MultiBinding Converter="{x:Static conv:SubtractHeightConverter.Instance}" ConverterParameter="5">
                                 <Binding ElementName="SettingsSideSheet" Path="Bounds.Height"/>

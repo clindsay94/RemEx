@@ -131,38 +131,70 @@ class TransferQueueStore(private val dir: File) {
         }
     }
 
-    /** Inserts or replaces [transfer] by id, preserving queue order (new ids append at the tail). */
-    fun upsert(transfer: QueuedTransfer): List<QueuedTransfer> =
+    /**
+     * Inserts or replaces [transfer] by id into [current], preserving queue order (new ids append
+     * at the tail), and persists. [current] is the caller's already-in-memory queue - perf audit
+     * P1-32: every mutation used to `load()` from disk first even though the caller (the engine's
+     * StateFlow) already held the up-to-date list, doubling I/O on every state transition.
+     */
+    fun upsert(current: List<QueuedTransfer>, transfer: QueuedTransfer): List<QueuedTransfer> =
         synchronized(lock) {
-            val current = load().toMutableList()
-            val idx = current.indexOfFirst { it.id == transfer.id }
-            if (idx >= 0) current[idx] = transfer else current.add(transfer)
-            save(current)
-            current
+            val updated = current.toMutableList()
+            val idx = updated.indexOfFirst { it.id == transfer.id }
+            if (idx >= 0) updated[idx] = transfer else updated.add(transfer)
+            save(updated)
+            updated
         }
 
-    fun remove(id: String): List<QueuedTransfer> =
+    /** Removes the entry with [id] from [current] and persists. See [upsert] for why [current] is passed in. */
+    fun remove(current: List<QueuedTransfer>, id: String): List<QueuedTransfer> =
         synchronized(lock) {
-            val current = load().filterNot { it.id == id }
-            save(current)
-            current
+            val updated = current.filterNot { it.id == id }
+            save(updated)
+            updated
         }
 
-    /** Removes finished entries (Done/Cancelled/Failed) so the queue file does not grow unbounded. */
-    fun pruneFinished(): List<QueuedTransfer> =
+    /** Removes finished entries (Done/Cancelled/Failed) from [current] so the queue file does not grow unbounded. */
+    fun pruneFinished(current: List<QueuedTransfer>): List<QueuedTransfer> =
         synchronized(lock) {
-            val current =
-                load().filterNot {
+            val updated =
+                current.filterNot {
                     it.state == TransferState.Done ||
                         it.state == TransferState.Cancelled ||
                         it.state == TransferState.Failed
                 }
-            save(current)
-            current
+            save(updated)
+            updated
+        }
+
+    /**
+     * Drops Done/Cancelled/Failed entries older than [maxAgeMs] (default 7 days). Perf audit P1-32:
+     * unlike the host (which removes Done/Cancelled the instant they land, RG:546), Android's
+     * queue panel keeps finished entries visible until the user taps "clear finished"
+     * ([FileManagerQueuePanel]), so pruning on every terminal transition would make completed
+     * transfers vanish before the user ever saw them. Age-based pruning at startup instead bounds
+     * `transfer_queue.json` for an app the user never opens, without touching that UX. FAILED is
+     * pruned too here (unlike [pruneFinished]'s "clear finished" button semantics) because a
+     * failure this stale is no longer something a resumed session should surface unprompted.
+     */
+    fun pruneStale(maxAgeMs: Long = SEVEN_DAYS_MS): List<QueuedTransfer> =
+        synchronized(lock) {
+            val cutoff = System.currentTimeMillis() - maxAgeMs
+            val loaded = load()
+            val updated =
+                loaded.filterNot {
+                    (it.state == TransferState.Done ||
+                        it.state == TransferState.Cancelled ||
+                        it.state == TransferState.Failed) &&
+                        it.createdAtMs < cutoff
+                }
+            if (updated.size != loaded.size) save(updated)
+            updated
         }
 
     companion object {
         const val FILE_NAME = "transfer_queue.json"
+        const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
     }
 }
 

@@ -149,8 +149,8 @@ fun AppNavigation() {
                 onQrScanned = { host, port, pin ->
                         connectionViewModel.applyQrResultAndConnect(host, port, pin)
                 },
-                dashboardScreenContent = { onNav ->
-                        DashboardScreen(onNavigateToConnection = onNav)
+                dashboardScreenContent = { onNav, isVisible ->
+                        DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
                 },
                 remoteControlScreenContent = { onNav ->
                         RemoteControlScreen(onNavigateToConnection = onNav)
@@ -187,7 +187,7 @@ private fun AppNavigationContent(
         isConnected: Boolean,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
-        dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -795,6 +795,23 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
+/**
+ * Per-process "has the brand splash already played" flag (perf audit P1-9, ui-10). The splash is
+ * a deliberate, tap-skippable ~3s brand moment on a genuine cold start — that policy is untouched
+ * here. What this fixes is a warm start: MainActivity destroyed without saved state and relaunched
+ * while the process is still alive (e.g. removed from recents, or finished, with the process cached)
+ * — NOT rotation, which this app blocks from recreating the Activity at all (see MainActivity's
+ * `android:configChanges` in AndroidManifest.xml), and not the other config-change recreations
+ * `rememberNavController` already survives (Splash is long popped off the back stack by then).
+ * NavHost always starts at [Screen.Splash] (see the composable below), and until now nothing
+ * remembered that the splash had already run in this process, so a warm start paid the full
+ * multi-second choreography again. Resets naturally on process death, which is exactly the "cold
+ * start" case this must not affect.
+ */
+private object SplashGate {
+        var shown = false
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RemexNavHost(
@@ -802,7 +819,7 @@ private fun RemexNavHost(
         hasCompletedOnboarding: Boolean,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
-        dashboardScreenContent: @Composable (() -> Unit) -> Unit,
+        dashboardScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (() -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
@@ -824,7 +841,9 @@ private fun RemexNavHost(
         val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         NavHost(
                 navController = navController,
-                // Always start at splash — it immediately navigates onward if already shown.
+                // Always start at splash. On a genuine cold start it plays in full; on an
+                // in-process Activity recreation (SplashGate.shown already true) the composable
+                // below skips straight onward instead of replaying it (RemEx-4j8ls P1-9).
                 startDestination = Screen.Splash,
                 modifier = modifier,
                 // M3 Expressive: container-transform-style enter (grow + fade in)
@@ -857,19 +876,34 @@ private fun RemexNavHost(
                         enterTransition = { fadeIn(enterFadeSpec) },
                         exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
-                        SplashScreen(
-                                splashStyle = splashStyle,
-                                onFinished = {
-                                        onSelectPrimaryPage(0)
-                                        navController.navigate(
-                                                if (hasCompletedOnboarding) PrimaryNav
-                                                else Screen.Tutorial as Any
-                                        ) {
-                                                popUpTo(Screen.Splash) { inclusive = true }
-                                                launchSingleTop = true
-                                        }
-                                },
-                        )
+                        fun goPastSplash() {
+                                onSelectPrimaryPage(0)
+                                navController.navigate(
+                                        if (hasCompletedOnboarding) PrimaryNav
+                                        else Screen.Tutorial as Any
+                                ) {
+                                        popUpTo(Screen.Splash) { inclusive = true }
+                                        launchSingleTop = true
+                                }
+                        }
+                        // Snapshotted once per entry, not read live: SplashScreen's onFinished flips
+                        // SplashGate.shown to true while this entry is still composed (mid fadeOut),
+                        // and re-reading the mutable global on a recomposition during that exit would
+                        // flip this branch and re-run goPastSplash() a second time mid-animation.
+                        val skipSplash = remember { SplashGate.shown }
+                        if (skipSplash) {
+                                // In-process recreation: the brand moment already played this
+                                // process, skip straight onward instead of replaying it.
+                                LaunchedEffect(Unit) { goPastSplash() }
+                        } else {
+                                SplashScreen(
+                                        splashStyle = splashStyle,
+                                        onFinished = {
+                                                SplashGate.shown = true
+                                                goPastSplash()
+                                        },
+                                )
+                        }
                 }
 
                 composable<Screen.Tutorial>(
@@ -899,7 +933,9 @@ private fun RemexNavHost(
                                         modifier = Modifier.fillMaxSize(),
                                 )
                         } else {
-                                dashboardScreenContent { onNavigateToConnection() }
+                                // No pager here (single-pane fallback) - dashboard is the only content
+                                // on screen, so it is always visible.
+                                dashboardScreenContent({ onNavigateToConnection() }, true)
                         }
                 }
 
@@ -1014,7 +1050,7 @@ private fun RemexNavHost(
 @Composable
 private fun PrimaryDestinationsPager(
         pagerState: androidx.compose.foundation.pager.PagerState,
-        dashboardScreenContent: @Composable (() -> Unit) -> Unit,
+        dashboardScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
         taskManagerScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
@@ -1038,7 +1074,11 @@ private fun PrimaryDestinationsPager(
                 fun renderPage(destination: PrimaryDestination): Unit =
                         when (destination) {
                                 Screen.Dashboard ->
-                                        dashboardScreenContent { onNavigateToConnection() }
+                                        dashboardScreenContent(
+                                                { onNavigateToConnection() },
+                                                page == pagerState.currentPage &&
+                                                        !pagerState.isScrollInProgress,
+                                        )
                                 Screen.RemoteControl ->
                                         remoteControlScreenContent { onNavigateToConnection() }
                                 Screen.AppLauncher ->
@@ -1066,7 +1106,7 @@ private fun AppNavigationPreview() {
                         isConnected = true,
                         splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
-                        dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
+                        dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -1086,7 +1126,7 @@ private fun AppNavigationDisconnectedPreview() {
                         isConnected = false,
                         splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
-                        dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
+                        dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },

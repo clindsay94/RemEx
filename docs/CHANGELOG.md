@@ -70,6 +70,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   theme or rewrites the splash sidecar, so a normal launch applies the theme once instead of twice.
   (perf audit P0-15 through P0-18)
 
+- A second round of idle/leak fixes across both apps: the Android file browser's thumbnail decode
+  and the PC's firewall-rule check are now cached instead of re-done on every request; the phone's
+  MJPEG stream skips re-sending an unchanged frame and the cursor-position poll adapts its rate to
+  activity instead of running fixed at its busiest cadence; both file-transfer queues avoid holding
+  a stale in-memory copy and the PC one debounces its splash-sidecar write; Remote Desktop's staging
+  drawer and the Personalize sheet's sensor list are properly virtualized instead of realizing every
+  row; a minimized logon start no longer builds the whole desktop window it isn't going to show; the
+  wallpaper bitmap and the last decoded Remote Desktop frame are released instead of staying resident
+  after you leave; the pairing-PIN poll no longer runs redundantly once the embedded pairing service
+  is already pushing PIN updates; and WebSocket compression is on for `/ws` with per-message context
+  reset, closing a theoretical compression-oracle gap on that socket. (perf audit P1-1 through P1-32)
+
 - Connection resilience: both the phone's and the PC's native control sockets now send a keepalive
   and abort a send that stalls instead of hanging indefinitely, and a Close frame from the peer is
   handled without risking a self-deadlock; the phone's JNI callback delivery splits video frames

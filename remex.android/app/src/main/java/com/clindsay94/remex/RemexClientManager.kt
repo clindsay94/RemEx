@@ -487,6 +487,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 val currentMac = currentPreferences.macAddress
                                 val currentBroadcast = currentPreferences.broadcastIp
                                 val currentSubnet = currentPreferences.subnetMask
+                                // Read before the save below overwrites it (perf audit P1-1).
+                                val savedPort = settings.portFlow.first()
 
                                 Log.i("RemexManager", "Discovered host is verified and trusted. Updating saved address to: ${discovered.host}:${discovered.port}")
                                 settings.saveConnectionSettings(
@@ -496,8 +498,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                     broadcast = currentBroadcast,
                                     subnetMask = currentSubnet
                                 )
-                                // Address updated; reset failures and proceed to connect immediately
-                                consecutiveFailures = 0
+                                // Perf audit P1-1: reset failures and connect immediately only when the
+                                // address actually changed. The same address means the PC answers mDNS
+                                // but refuses the connection, so the backoff keeps climbing instead.
+                                if (ReconnectGate.selfHealFoundNewAddress(host, savedPort, discovered.host, discovered.port)) {
+                                    consecutiveFailures = 0
+                                } else {
+                                    Log.d("RemexManager", "Self-healing found the already-saved address; keeping backoff.")
+                                }
                             } else {
                                 Log.w("RemexManager", "Discovered host '${discovered.serviceName}' is not verified, skipping auto-update.")
                             }

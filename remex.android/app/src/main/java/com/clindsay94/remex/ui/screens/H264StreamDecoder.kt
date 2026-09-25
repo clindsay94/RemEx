@@ -116,6 +116,15 @@ class H264StreamDecoder(
     // change (the host rebuilt its encoder at a new capture scale) so we can reconfigure. Decode-thread only.
     private var configuredCsd0: ByteArray? = null
 
+    // Count of access units fed to the codec (queueInputBuffer succeeded) whose decoded output hasn't
+    // been drained yet. Decode-thread only. Used to pick the input-poll timeout each iteration: while
+    // anything is in flight, output can complete asynchronously between iterations, so we must not sit
+    // in a long blocking poll on the input queue instead of checking for it (RemEx-4j8ls round 2 —
+    // round 1's fixed drain-before-poll call ran microseconds after the prior iteration's after-feed
+    // drain and could never catch a frame that finished decoding in between). Reset to 0 whenever the
+    // codec is stopped/reconfigured, since any in-flight buffers are discarded with it.
+    private var inFlight = 0
+
     init {
         decodeThread.start()
     }
@@ -143,6 +152,40 @@ class H264StreamDecoder(
             codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
             Log.i(TAG, "MediaCodec H.264 decoder created (sync); awaiting SPS/PPS to configure (hint ${width}x$height).")
             val info = MediaCodec.BufferInfo()
+            // Drain all currently-available decoded output to the surface (non-blocking,
+            // timeoutUs=0). Called once per iteration, right after feeding input — see the
+            // poll-timeout comment below for why a separate pre-poll drain isn't needed.
+            fun drainOutput(codec: MediaCodec) {
+                var outIndex = codec.dequeueOutputBuffer(info, 0)
+                while (outIndex >= 0) {
+                    val render = (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0
+                    codec.releaseOutputBuffer(outIndex, render)
+                    if (render) {
+                        if (renderedFrames == 0) {
+                            Log.i(TAG, "First decoded frame rendered to surface — decode pipeline is live.")
+                        }
+                        renderedFrames++
+                        if (inFlight > 0) inFlight--
+                    }
+                    outIndex = codec.dequeueOutputBuffer(info, 0)
+                }
+                // outIndex < 0 is INFO_TRY_AGAIN_LATER / INFO_OUTPUT_FORMAT_CHANGED / buffers-changed —
+                // rendering goes straight to the Surface. Instrument the format change: the codec's
+                // output format is the AUTHORITATIVE decoded geometry (coded size + crop). Logging it on
+                // every change lets us compare against the host's desktop_meta dims and the Compose
+                // contentRect to pin down the mid-session zoom/black geometry mismatch. (RemEx-x3eb diag)
+                if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    val of = codec.outputFormat
+                    fun geti(k: String) = if (of.containsKey(k)) of.getInteger(k) else -1
+                    val cw = geti(MediaFormat.KEY_WIDTH)
+                    val ch = geti(MediaFormat.KEY_HEIGHT)
+                    val cl = geti("crop-left"); val cr = geti("crop-right")
+                    val ct = geti("crop-top"); val cb = geti("crop-bottom")
+                    val dispW = if (cr >= cl && cl >= 0) cr - cl + 1 else cw
+                    val dispH = if (cb >= ct && ct >= 0) cb - ct + 1 else ch
+                    Log.i(TAG, "OUTPUT_FORMAT_CHANGED: coded=${cw}x$ch crop=[$cl,$ct..$cr,$cb] display=${dispW}x$dispH")
+                }
+            }
             var configured = false
             // When we last asked the host for an on-demand IDR while waiting to configure. A decoder
             // created mid-GOP (e.g. an imageSize-driven SurfaceView rebuild) would otherwise sit
@@ -185,7 +228,25 @@ class H264StreamDecoder(
                 }
 
                 // Feed at most one input per iteration (block briefly so we don't spin when idle).
-                val au = frameQueue.pollFirst(2, TimeUnit.MILLISECONDS)
+                // The poll timeout depends on whether anything fed is still awaiting output:
+                //
+                // - inFlight > 0: at least one access unit is mid-decode and its output can complete
+                //   asynchronously at any time (MediaCodec decode is async even in this sync-polling
+                //   driver — nvenc's `-tune ll` and libx264's `zerolatency` reliably disable B-frames,
+                //   but vaapi/amf (and possibly qsv) do not set `-bf 0` and can reorder — see
+                //   docs/PERF-TRACKER.md's P1-8 row). Keep the original short 2ms timeout so a frame
+                //   that finishes decoding between iterations is drained promptly instead of sitting
+                //   behind a long poll.
+                // - inFlight == 0: nothing is pending, so there is nothing for a shorter timeout to
+                //   catch sooner. Use the longer 20ms timeout here to cut idle wakeups (500/sec at 2ms
+                //   down to 50/sec at 20ms, a 10x reduction) with no latency cost, since there is no
+                //   in-flight frame it could be delaying.
+                //
+                // (Simpler, lower-risk alternative to a full output-wait redesign — see RemEx-4j8ls
+                // round 2 review: a fixed drain-before-poll call cannot work because it runs
+                // microseconds after the prior iteration's own after-feed drain.)
+                val pollTimeoutMs = if (inFlight > 0) 2L else 20L
+                val au = frameQueue.pollFirst(pollTimeoutMs, TimeUnit.MILLISECONDS)
                 if (au != null) {
                     // A mid-stream SPS change means the host rebuilt its encoder at a new capture scale.
                     // Reconfigure so the decoder adopts the new resolution; otherwise a larger scale-up
@@ -195,35 +256,8 @@ class H264StreamDecoder(
                     }
                 }
 
-                // Drain all currently-available decoded output to the surface.
-                var outIndex = codec.dequeueOutputBuffer(info, 0)
-                while (outIndex >= 0) {
-                    val render = (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0
-                    codec.releaseOutputBuffer(outIndex, render)
-                    if (render) {
-                        if (renderedFrames == 0) {
-                            Log.i(TAG, "First decoded frame rendered to surface — decode pipeline is live.")
-                        }
-                        renderedFrames++
-                    }
-                    outIndex = codec.dequeueOutputBuffer(info, 0)
-                }
-                // outIndex < 0 is INFO_TRY_AGAIN_LATER / INFO_OUTPUT_FORMAT_CHANGED / buffers-changed —
-                // rendering goes straight to the Surface. Instrument the format change: the codec's
-                // output format is the AUTHORITATIVE decoded geometry (coded size + crop). Logging it on
-                // every change lets us compare against the host's desktop_meta dims and the Compose
-                // contentRect to pin down the mid-session zoom/black geometry mismatch. (RemEx-x3eb diag)
-                if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                    val of = codec.outputFormat
-                    fun geti(k: String) = if (of.containsKey(k)) of.getInteger(k) else -1
-                    val cw = geti(MediaFormat.KEY_WIDTH)
-                    val ch = geti(MediaFormat.KEY_HEIGHT)
-                    val cl = geti("crop-left"); val cr = geti("crop-right")
-                    val ct = geti("crop-top"); val cb = geti("crop-bottom")
-                    val dispW = if (cr >= cl && cl >= 0) cr - cl + 1 else cw
-                    val dispH = if (cb >= ct && ct >= 0) cb - ct + 1 else ch
-                    Log.i(TAG, "OUTPUT_FORMAT_CHANGED: coded=${cw}x$ch crop=[$cl,$ct..$cr,$cb] display=${dispW}x$dispH")
-                }
+                // Drain again after feeding — covers output produced by the AU just fed.
+                drainOutput(codec)
             }
         } catch (e: InterruptedException) {
             // release() interrupted us — normal shutdown.
@@ -261,6 +295,7 @@ class H264StreamDecoder(
                             MediaCodec.BUFFER_FLAG_KEY_FRAME
                     else 0
             codec.queueInputBuffer(inIndex, 0, au.length, System.nanoTime() / 1000, flags)
+            inFlight++
         } catch (e: RuntimeException) {
             // IllegalStateException (codec released) or BufferOverflowException (AU > input buffer,
             // guarded by KEY_MAX_INPUT_SIZE but stay defensive) — drop and recover.
@@ -314,6 +349,7 @@ class H264StreamDecoder(
         val csd1 = au.copyOfRange(pps.start, pps.end)
         Log.i(TAG, "SPS changed mid-stream (csd0 ${configuredCsd0?.size}B -> ${newCsd0.size}B); reconfiguring decoder.")
         codec.stop()
+        inFlight = 0 // stop() discards any buffers that were mid-decode
         applyFormatAndStart(codec, newCsd0, csd1)
         feedInput(codec, queued)
         return true

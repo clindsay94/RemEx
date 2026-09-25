@@ -9,6 +9,7 @@ using Remex.Core.Models;
 using Remex.Core.Theming;
 using Remex.Core.Theming.Mcu;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Remex.Desktop.Services;
 
@@ -268,12 +269,32 @@ public class ThemeService : IDisposable
         ApplyBaseThemeInternal(theme);
     }
 
+    /// <summary>
+    /// One post per dispatcher tick, not one per call (perf audit P1-3). A Personalize slider drag
+    /// calls this on every tick — dozens before the dispatcher runs even one. Each used to post its
+    /// own closure, so the queue backed up with full applies of settings already superseded by the
+    /// time they ran. Now a call while a post is already queued just updates <see cref="_userSettings"/>
+    /// and returns; the queued post reads it fresh when it runs, so a drag applies at most once per
+    /// dispatcher tick and always lands on the latest value.
+    /// </summary>
+    private int _applyPostPending;
+
     public void ApplyCustomization(CustomizationSettings settings)
     {
         // Recorded BEFORE the post, synchronously: this is what a hardware override restores to,
         // and it must be the caller's own settings, never something this class computed.
         _userSettings = settings;
-        PostToUiThread(() => ApplyCustomizationCore(WithHardwareAccentOverride(settings)));
+
+        if (Interlocked.Exchange(ref _applyPostPending, 1) != 0) return;
+        PostToUiThread(() =>
+        {
+            // Reset before reading, not after: a settings change that lands while this callback is
+            // already running must queue its own post rather than being silently absorbed by one
+            // that already captured an older value.
+            Interlocked.Exchange(ref _applyPostPending, 0);
+            if (_userSettings is not { } latest) return;
+            ApplyCustomizationCore(WithHardwareAccentOverride(latest));
+        });
     }
 
     /// <summary>

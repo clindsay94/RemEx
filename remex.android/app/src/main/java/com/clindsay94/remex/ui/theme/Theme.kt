@@ -200,6 +200,25 @@ class MorphPolygonShape(
 ) : Shape {
     private val matrix = Matrix()
 
+    // P1-20: cardShape() returns a fresh instance on every call (morphCache dedupes the Morph
+    // itself, not this wrapper), so without equals/hashCode every recomposition looked like a
+    // genuinely different Shape to Compose's change-detection - forcing an outline rebuild
+    // (createOutline below walks every cubic in the morph) even when morph/progress were
+    // identical. morph is reference-compared: it's always the SAME cached instance for a given
+    // index pair (see morphCache), so reference equality here is correct and avoids a structural
+    // Morph comparison this class has no reason to implement.
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MorphPolygonShape) return false
+        return morph === other.morph && progress == other.progress
+    }
+
+    override fun hashCode(): Int {
+        var result = System.identityHashCode(morph)
+        result = 31 * result + progress.hashCode()
+        return result
+    }
+
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,

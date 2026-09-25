@@ -125,8 +125,33 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         _webSocket = new ClientWebSocket();
         // A half-open link must become a detected drop, not a parked receive loop (perf audit P0-12).
         SocketLiveness.ApplyKeepAlive(_webSocket.Options);
+        // P1-24: this is the telemetry/control socket - repetitive JSON (the same field names, and
+        // often similar values, on every tick) compresses well with no payload-shape change. NOT
+        // applied to /ws/desktop (RemexDesktopClient): that channel carries already-compressed H.264
+        // /MJPEG frames, where deflate would spend CPU for no size win.
+        //
+        // CONTEXT TAKEOVER IS EXPLICITLY DISABLED IN BOTH DIRECTIONS - do not "simplify" this back to
+        // `new WebSocketDeflateOptions()`. SPKI pinning (VULN-5) blocks an ACTIVE MITM from injecting
+        // content, but it does not block a PASSIVE observer on the same network from seeing TLS
+        // record lengths, and this stream legitimately carries attacker-reachable content alongside
+        // secrets: PingPongHandler pushes MediaState (title/artist an attacker's browser tab can set
+        // via the OS media-session API) and ClipboardContent (which can hold a password-manager
+        // secret) on the SAME connection. With context takeover ON, a compression dictionary persists
+        // across messages, so a secret sent in one message stays in the deflate window and a later
+        // attacker-chosen title compresses against it - the classic CRIME/BREACH oracle. With context
+        // takeover OFF, each message compresses independently: no message's compressed size can leak
+        // information about a DIFFERENT message's content, closing that oracle while still shrinking
+        // the repeated field names within any single message.
+        _webSocket.Options.DangerousDeflateOptions = new WebSocketDeflateOptions
+        {
+            ClientContextTakeover = false,
+            ServerContextTakeover = false,
+        };
 
-        JniHelper.AndroidLogE("RemexNative", $"Attempting connection to {wsUri}");
+        // P1-22: routine connect steps at DEBUG/INFO, not ERROR - this whole block runs on every
+        // connect attempt and is repeated by the offline heartbeat's retries, so every line here
+        // multiplied with every retry. Only genuine validation failures below stay at ERROR.
+        JniHelper.AndroidLogE("RemexNative", $"Attempting connection to {wsUri}", JniHelper.LogPriorityDebug);
 
         // Defense in depth: ALWAYS install the validation callback (never leave the socket to fall
         // through to the OS trust manager), and reject outright if somehow reached with no pin
@@ -142,7 +167,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                     return false;
                 }
 
-                JniHelper.AndroidLogE("RemexNative", $"SSL Validation Callback triggered. Errors: {errors}");
+                JniHelper.AndroidLogE("RemexNative", $"SSL Validation Callback triggered. Errors: {errors}", JniHelper.LogPriorityDebug);
 
                 if (cert == null)
                 {
@@ -151,8 +176,8 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 }
 
                 // Log cert info
-                JniHelper.AndroidLogE("RemexNative", $"Cert Subject: {cert.Subject}");
-                JniHelper.AndroidLogE("RemexNative", $"Cert Issuer: {cert.Issuer}");
+                JniHelper.AndroidLogE("RemexNative", $"Cert Subject: {cert.Subject}", JniHelper.LogPriorityDebug);
+                JniHelper.AndroidLogE("RemexNative", $"Cert Issuer: {cert.Issuer}", JniHelper.LogPriorityDebug);
 
                 // Use the raw data to avoid potential PAL object mapping issues
                 byte[] rawData = cert.Export(X509ContentType.Cert);
@@ -166,16 +191,22 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 var spkiInfo = cert2.PublicKey.ExportSubjectPublicKeyInfo();
                 var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(spkiInfo));
 
-                JniHelper.AndroidLogE("RemexNative", $"Actual SPKI Hash: {actualHash}");
-                JniHelper.AndroidLogE("RemexNative", $"Expected SPKI Hash: {spkiHash}");
+                JniHelper.AndroidLogE("RemexNative", $"Actual SPKI Hash: {actualHash}", JniHelper.LogPriorityDebug);
+                JniHelper.AndroidLogE("RemexNative", $"Expected SPKI Hash: {spkiHash}", JniHelper.LogPriorityDebug);
 
                 if (actualHash == spkiHash)
                 {
-                    JniHelper.AndroidLogE("RemexNative", "Certificate hash matches! Validation successful.");
+                    JniHelper.AndroidLogE("RemexNative", "Certificate hash matches! Validation successful.", JniHelper.LogPriorityDebug);
                     return true;
                 }
 
-                JniHelper.AndroidLogE("RemexNative", "Certificate mismatch! Rejecting connection.");
+                // Review fix (P1-22): the hash values themselves stay in the ERROR line, not just
+                // the DEBUG ones above - is_loggable now genuinely drops DEBUG on-device, so a
+                // stale-pin mismatch would otherwise log only "Rejecting connection" with no way to
+                // diagnose it short of `setprop log.tag.RemexNative DEBUG` on the device.
+                JniHelper.AndroidLogE(
+                    "RemexNative",
+                    $"Certificate mismatch! Rejecting connection. Actual SPKI Hash: {actualHash}, Expected SPKI Hash: {spkiHash}");
                 return false;
             }
             catch (Exception ex)
@@ -189,7 +220,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         try
         {
             await _webSocket.ConnectAsync(wsUri, linkedCts.Token);
-            JniHelper.AndroidLogE("RemexNative", "Successfully connected to remote server");
+            JniHelper.AndroidLogE("RemexNative", "Successfully connected to remote server", JniHelper.LogPriorityInfo);
             ConnectionStateChanged?.Invoke(true);
             _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_connectionCts.Token));
 
@@ -208,11 +239,11 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                     await SendMessageAsync(
                         new RemexMessage { Type = MessageTypes.Ping, Timestamp = DateTime.UtcNow.Ticks },
                         linkedCts.Token);
-                    JniHelper.AndroidLogE("RemexNative", "Sent post-connect kickoff ping (pairing handshake nudge).");
+                    JniHelper.AndroidLogE("RemexNative", "Sent post-connect kickoff ping (pairing handshake nudge).", JniHelper.LogPriorityDebug);
                 }
                 catch (Exception pingEx)
                 {
-                    JniHelper.AndroidLogE("RemexNative", $"Kickoff ping failed (non-fatal): {pingEx.Message}");
+                    JniHelper.AndroidLogE("RemexNative", $"Kickoff ping failed (non-fatal): {pingEx.Message}", JniHelper.LogPriorityWarn);
                 }
             }
         }

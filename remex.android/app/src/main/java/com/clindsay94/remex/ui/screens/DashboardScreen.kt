@@ -96,6 +96,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius as GeoCornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size as GeoSize
@@ -119,6 +120,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -162,8 +164,18 @@ private fun defaultCardSizeFor(id: String): CardSizeDp {
 @Composable
 fun DashboardScreen(
         viewModel: DashboardViewModel = viewModel(),
-        onNavigateToConnection: () -> Unit = {}
+        onNavigateToConnection: () -> Unit = {},
+        isVisible: Boolean = true,
 ) {
+        // P1-16: mirrors TaskManagerScreen's own LifecycleStartEffect (P0-1) - isVisible is pager-only
+        // (current page, not mid-scroll) and never reflects the app backgrounding; LifecycleStartEffect
+        // is a lifecycle OBSERVER rather than a recomposition, so it still fires onStopOrDispose on
+        // ON_STOP even though Compose pauses the frame clock there.
+        LifecycleStartEffect(viewModel, isVisible) {
+                viewModel.setVisible(isVisible)
+                onStopOrDispose { viewModel.setVisible(false) }
+        }
+
         val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
         val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
         val telemetrySensors by viewModel.telemetrySensors.collectAsStateWithLifecycle()
@@ -1775,29 +1787,33 @@ private fun ConnectionOrbCard(
                         // is the named token below. Under reduce motion the pulse is skipped
                         // entirely and the glow holds at its midpoint (RemEx-bspj).
                         val reducedMotion = LocalReducedMotion.current
-                        val glowAlpha =
+                        // P1-19: the glow's State<Float> is kept unread here - only its holder
+                        // (glowAlphaState) is captured, and .value is read inside drawBehind below
+                        // instead. A plain `val glowAlpha = ...animateFloat(...).value` reads the
+                        // animated value in COMPOSITION, so every tick of this continuous infinite
+                        // pulse recomposed the whole card; reading it in the draw phase instead only
+                        // triggers a redraw, which is all a background-color pulse actually needs.
+                        val glowAlphaState =
                                 if ((isConnected || isConnecting) && !reducedMotion) {
                                         val infiniteTransition =
                                                 rememberInfiniteTransition(label = "glow")
-                                        infiniteTransition
-                                                .animateFloat(
-                                                        initialValue = 0.3f,
-                                                        targetValue = 0.8f,
-                                                        animationSpec =
-                                                                infiniteRepeatable(
-                                                                        animation =
-                                                                                tween(
-                                                                                        CONNECTION_GLOW_PULSE_MS,
-                                                                                        easing =
-                                                                                                LinearEasing
-                                                                                ),
-                                                                        repeatMode =
-                                                                                RepeatMode.Reverse
-                                                                ),
-                                                        label = "glow_alpha"
-                                                )
-                                                .value
-                                } else if (isConnected || isConnecting) {
+                                        infiniteTransition.animateFloat(
+                                                initialValue = 0.3f,
+                                                targetValue = 0.8f,
+                                                animationSpec =
+                                                        infiniteRepeatable(
+                                                                animation =
+                                                                        tween(
+                                                                                CONNECTION_GLOW_PULSE_MS,
+                                                                                easing = LinearEasing
+                                                                        ),
+                                                                repeatMode = RepeatMode.Reverse
+                                                        ),
+                                                label = "glow_alpha"
+                                        )
+                                } else null
+                        val staticGlowAlpha =
+                                if (isConnected || isConnecting) {
                                         0.55f // steady midpoint of the 0.3–0.8 pulse
                                 } else 1f
 
@@ -1805,7 +1821,12 @@ private fun ConnectionOrbCard(
                                 modifier =
                                         Modifier.size(72.dp)
                                                 .clip(cardShape(animatedShapePreset, cornerRadius))
-                                                .background(orbColor.copy(alpha = glowAlpha)),
+                                                .drawBehind {
+                                                        val alpha =
+                                                                glowAlphaState?.value
+                                                                        ?: staticGlowAlpha
+                                                        drawRect(orbColor.copy(alpha = alpha))
+                                                },
                                 contentAlignment = Alignment.Center
                         ) {}
 

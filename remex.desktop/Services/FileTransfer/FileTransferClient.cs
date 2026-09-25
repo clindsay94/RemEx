@@ -92,6 +92,32 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _metadataWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _thumbnailWaiters = new();
 
+    // ── Uploads over the binary /ws/files channel (perf audit P1-5) ──
+    private readonly IFileChannelConnector? _fileChannelConnector;
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _readyWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _resultWaiters = new();
+
+    /// <summary>
+    /// Ids of the host's configured shared roots, from the most recent listing.
+    /// </summary>
+    /// <remarks>
+    /// An upload goes over the binary channel only into one of these. The host's v3 receive path
+    /// resolves its destination with <c>GetConfiguredRoot</c> alone, while the legacy path also
+    /// re-maps a full-device-browse volume target that falls inside a pinned root (RemEx-hb1t.3). No
+    /// UI uploads into a volume today, but if one ever does it must keep the path that accepts it,
+    /// not fail at promotion after every byte has been sent.
+    /// </remarks>
+    private volatile IReadOnlySet<string> _sharedRootIds = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Outstanding unacked bytes an upload allows before it waits for the host. Internal and settable
+    /// only so a test can reach the backpressure branch without streaming megabytes through a fake;
+    /// against the real host it MUST exceed the host's ack interval
+    /// (<see cref="FileTransferLimits.AckIntervalBytes"/>), or the sender waits for an ack the host
+    /// has no reason to send yet.
+    /// </summary>
+    internal long UploadMaxUnackedBytes { get; set; } = FileTransferLimits.MaxUnackedBytes;
+
     /// <summary>
     /// v3 file-transfer capabilities advertised by the connected host in the most recent
     /// <c>file_roots_response</c>. Null for a v2 host (or before roots are first fetched). The UI gates
@@ -122,9 +148,29 @@ public sealed class FileTransferClient : IDisposable
         _transferEndWaiters.Count + _progressReporters.Count +
         _downloadChannels.Count + _downloadBacklogBytes.Count + _downloadHashers.Count;
 
+    /// <summary>
+    /// Entries a binary-channel upload registers per transfer: its ready and result waiters. The
+    /// watchdog lease is counted separately by <see cref="ActiveTransferCount"/>.
+    /// </summary>
+    internal int PendingUploadRegistrationCount => _readyWaiters.Count + _resultWaiters.Count;
+
     public FileTransferClient(IFileTransferConnection connection)
         : this(connection, downloadFileOpener: null)
     {
+    }
+
+    /// <summary>
+    /// Uploads to a local host go over the binary <c>/ws/files</c> channel that
+    /// <paramref name="fileChannelConnector"/> supplies (perf audit P1-5); anything it cannot serve
+    /// falls back to the legacy Base64 path. The client owns the connector and disposes it.
+    /// </summary>
+    internal FileTransferClient(
+        IFileTransferConnection connection,
+        IFileChannelConnector? fileChannelConnector,
+        DownloadFileOpener? downloadFileOpener = null)
+        : this(connection, downloadFileOpener)
+    {
+        _fileChannelConnector = fileChannelConnector;
     }
 
     /// <summary>
@@ -205,7 +251,14 @@ public sealed class FileTransferClient : IDisposable
         if (response.FileRootsResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw FileTransferHostException.ForHostError(err, $"Root listing error: {err}");
 
-        return response.FileRootsResponse?.Roots ?? [];
+        return RememberSharedRoots(response.FileRootsResponse?.Roots ?? []);
+    }
+
+    /// <summary>Records the host's configured root ids for <see cref="_sharedRootIds"/>.</summary>
+    private IReadOnlyList<FileSharedRoot> RememberSharedRoots(IReadOnlyList<FileSharedRoot> roots)
+    {
+        _sharedRootIds = roots.Select(root => root.RootId).ToHashSet(StringComparer.Ordinal);
+        return roots;
     }
 
     /// <summary>True when the connected host advertises the v3 file-manager protocol (copy/move/mkdir/
@@ -717,7 +770,7 @@ public sealed class FileTransferClient : IDisposable
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw FileTransferHostException.ForHostError(err, "Add root failed with an empty host message.");
 
-        return response.FileRootManageResponse?.Roots ?? [];
+        return RememberSharedRoots(response.FileRootManageResponse?.Roots ?? []);
     }
 
     public async Task<IReadOnlyList<FileSharedRoot>> RemoveRemoteRootAsync(string rootId, CancellationToken ct)
@@ -741,10 +794,354 @@ public sealed class FileTransferClient : IDisposable
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw FileTransferHostException.ForHostError(err, "Remove root failed with an empty host message.");
 
-        return response.FileRootManageResponse?.Roots ?? [];
+        return RememberSharedRoots(response.FileRootManageResponse?.Roots ?? []);
     }
 
     public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<TransferProgress>? progress, CancellationToken ct)
+    {
+        // Decided before anything reaches the wire, so a channel that will not open costs nothing:
+        // the host has not heard of this transfer yet, and the legacy path works against every host.
+        var channel = CanUseFileChannel(remoteRootId)
+            ? await _fileChannelConnector!.TryAcquireAsync(ct)
+            : null;
+
+        if (channel is null)
+        {
+            await UploadLegacyAsync(localPath, remoteRootId, remoteRelativePath, progress, ct);
+            return;
+        }
+
+        await UploadOverFileChannelAsync(channel, localPath, remoteRootId, remoteRelativePath, progress, ct);
+    }
+
+    /// <summary>
+    /// True when this upload can use the binary channel: a connector exists, the host advertises the
+    /// v3 binary transport, and the destination is a configured shared root.
+    /// </summary>
+    private bool CanUseFileChannel(string remoteRootId) =>
+        _fileChannelConnector is not null
+        && Capabilities is { Binary: true } capabilities
+        && ProtocolVersionPolicy.SupportsBinaryFileTransfer(capabilities.Protocol)
+        && _sharedRootIds.Contains(remoteRootId);
+
+    /// <summary>
+    /// Uploads over the binary <c>/ws/files</c> channel: offer and completion on the control plane,
+    /// the bytes as raw <see cref="FileFrameEnvelope"/> frames (perf audit P1-5). The same protocol
+    /// the phone uses to push to the PC, so the host's receive side is unchanged.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// WHY: the legacy path Base64-encodes every chunk into a JSON message on the control socket — a
+    /// third more bytes on the wire, and a JSON parse of every 64 KB blob on both ends, for exactly the
+    /// bulk data the binary channel exists to carry.
+    /// </para>
+    /// <para>
+    /// ORDERING IS THE WHOLE RISK. The frames and <c>file_transfer_complete</c> travel on two
+    /// different TCP connections, and TCP orders bytes only within one. Announcing completion when
+    /// the last frame is merely SENT lets the tiny completion overtake bulk data still in flight; the
+    /// host then finalizes a short file and reports "Transfer incomplete." while the rest is still
+    /// arriving. So this waits for an ack covering every byte sent before it completes — the fourth
+    /// sender of this rule, after the three listed in <c>docs/REGRESSION-GUARDS.md</c> ("Never
+    /// announce <c>file_transfer_complete</c> before the peer has acked the data").
+    /// </para>
+    /// <para>
+    /// The drain is bounded on what was SENT, and the <c>final</c> flag comes from a one-chunk
+    /// read-ahead, both per that guard. The declared size is still reconciled before completing: it
+    /// came from the same open handle, so a mismatch means the file changed under the upload.
+    /// </para>
+    /// </remarks>
+    private async Task UploadOverFileChannelAsync(
+        IFileFrameChannel channel,
+        string localPath,
+        string remoteRootId,
+        string remoteRelativePath,
+        IProgress<TransferProgress>? progress,
+        CancellationToken ct)
+    {
+        var transferId = Guid.NewGuid().ToString("N");
+        var (destinationDirectory, fileName) = SplitRemoteFilePath(remoteRelativePath);
+
+        await using var fileStream = new FileStream(
+            localPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var totalBytes = fileStream.Length;
+
+        var readyTcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resultTcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _readyWaiters[transferId] = readyTcs;
+        _resultWaiters[transferId] = resultTcs;
+        var lastActivity = _idleWatchdog.Begin(transferId);
+        var acks = new UploadAckTracker();
+
+        // Same gate as the legacy path (RemEx-o5cz, RemEx-mubp), speaking the v3 control message:
+        // the host's receive session answers file_transfer_control, not file_transfer_cancel.
+        var cancelGate = new TransferCancelGate(this, transferId, TransferCancelGate.V3Cancel);
+
+        // The host reports on the data only through this channel: an ack when it has committed
+        // bytes, an error when it has thrown the transfer away.
+        using var subscription = channel.Subscribe(
+            transferId,
+            onFrame: envelope =>
+            {
+                switch (envelope.Kind)
+                {
+                    case FileFrameKinds.Ack when envelope.CommittedOffset is { } committed:
+                        _idleWatchdog.Mark(transferId);
+                        acks.OnAck(committed);
+                        break;
+                    case FileFrameKinds.Error:
+                        acks.Fail(FileTransferHostException.ForHostError(
+                            envelope.Error, "The host rejected the upload's data."));
+                        break;
+                }
+            },
+            onClosed: () => acks.Fail(new IOException(
+                "The binary file channel closed before the host acknowledged all data.")));
+
+        using var reg = ct.Register(() =>
+        {
+            readyTcs.TrySetCanceled(ct);
+            resultTcs.TrySetCanceled(ct);
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
+        });
+
+        // True from the host accepting the offer until it has answered the completion: the window in
+        // which it holds a staged partial for this id that only a cancel will remove.
+        var hostHoldsPartial = false;
+        try
+        {
+            // Nothing is said for an already-cancelled request - see the legacy path. (RemEx-o5cz)
+            ct.ThrowIfCancellationRequested();
+
+            await _connection.SendAsync(new RemexMessage
+            {
+                Type = MessageTypes.FileTransferOffer,
+                FileTransferOffer = new FileTransferOffer
+                {
+                    TransferId = transferId,
+                    Mode = FileTransferModes.Upload,
+                    SourcePath = localPath,
+                    DestRoot = remoteRootId,
+                    // An UPLOAD's DestRelativePath is the destination DIRECTORY; the name travels
+                    // separately (TransferSessionManager.BeginReceiveAsync, RemEx-y6x6).
+                    DestRelativePath = destinationDirectory,
+                    FileName = fileName,
+                    Size = totalBytes,
+                    ResumeRequested = false,
+                },
+            });
+
+            cancelGate.MarkStartSent();
+            if (ct.IsCancellationRequested) cancelGate.SendCancelIfHostKnowsTheTransfer();
+
+            var ready = (await _idleWatchdog.AwaitCompletionAsync(readyTcs, lastActivity, ct)).FileTransferReady;
+            if (ready is not { Accepted: true })
+            {
+                throw FileTransferHostException.ForHostError(
+                    ready?.DeclineReason, "The host declined the upload.");
+            }
+
+            hostHoldsPartial = true;
+
+            // A fresh offer never asks to resume, so the host has nothing to resume from. A non-zero
+            // offset would mean skipping bytes this side never re-hashed.
+            if (ready.StartOffset != 0)
+                throw new IOException($"The host asked to resume a fresh upload at offset {ready.StartOffset}.");
+
+            using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var sent = await SendUploadFramesAsync(
+                channel, transferId, fileStream, totalBytes, hasher, acks, lastActivity, progress, ct);
+
+            if (sent != totalBytes)
+            {
+                throw new IOException(
+                    $"'{fileName}' changed while it was being uploaded: it was {totalBytes} bytes when the " +
+                    $"upload started, and {sent} were read.");
+            }
+
+            // DRAIN BEFORE COMPLETING. See the remarks and docs/REGRESSION-GUARDS.md. The host acks
+            // the final frame unconditionally, so this is satisfied by that ack at the latest.
+            await acks.WaitForCommittedAsync(sent, _idleWatchdog, lastActivity, ct);
+
+            var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+            await _connection.SendAsync(new RemexMessage
+            {
+                Type = MessageTypes.FileTransferComplete,
+                FileTransferComplete = new FileTransferComplete { TransferId = transferId, Sha256Base64 = sha256Base64 },
+            });
+
+            var result = (await _idleWatchdog.AwaitCompletionAsync(resultTcs, lastActivity, ct)).FileTransferResult;
+            hostHoldsPartial = false;
+
+            if (result is not { Verified: true })
+            {
+                throw FileTransferHostException.ForHostError(
+                    result?.Error, $"Upload failed: {result?.Error}");
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException && hostHoldsPartial)
+        {
+            // A failure the user did not ask for still leaves a staged partial on the host, which it
+            // otherwise keeps for resume until the orphan sweep. Cancellation already sent this
+            // through the registration above; the gate makes a second one impossible.
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
+            throw;
+        }
+        finally
+        {
+            _readyWaiters.TryRemove(transferId, out _);
+            _resultWaiters.TryRemove(transferId, out _);
+            _idleWatchdog.End(transferId);
+        }
+    }
+
+    /// <summary>
+    /// Streams <paramref name="fileStream"/> as data frames, never letting unacked bytes exceed
+    /// <see cref="UploadMaxUnackedBytes"/>, and returns how many bytes were sent.
+    /// </summary>
+    /// <remarks>
+    /// The <c>final</c> flag comes from reading one chunk ahead, not from <paramref name="totalBytes"/>:
+    /// the host acks on <c>final</c> or every <see cref="FileTransferLimits.AckIntervalBytes"/>, so a
+    /// tail that is never flagged final is never acked and the drain would wait on it forever. A size
+    /// that does not match the file is caught by the caller's reconcile instead.
+    /// </remarks>
+    private async Task<long> SendUploadFramesAsync(
+        IFileFrameChannel channel,
+        string transferId,
+        FileStream fileStream,
+        long totalBytes,
+        IncrementalHash hasher,
+        UploadAckTracker acks,
+        StrongBox<long> lastActivity,
+        IProgress<TransferProgress>? progress,
+        CancellationToken ct)
+    {
+        const int frameBytes = FileTransferLimits.DataPayloadBytes;
+        var current = System.Buffers.ArrayPool<byte>.Shared.Rent(frameBytes);
+        var next = System.Buffers.ArrayPool<byte>.Shared.Rent(frameBytes);
+        try
+        {
+            long sent = 0;
+            var read = await fileStream.ReadAsync(current.AsMemory(0, frameBytes), ct);
+            while (read > 0)
+            {
+                var nextRead = await fileStream.ReadAsync(next.AsMemory(0, frameBytes), ct);
+
+                // An error frame or a dropped channel stops the loop before another frame goes out,
+                // rather than streaming the rest of the file at a host that has discarded it.
+                acks.ThrowIfFailed();
+                await acks.WaitForCommittedAsync(sent - UploadMaxUnackedBytes, _idleWatchdog, lastActivity, ct);
+
+                await channel.SendAsync(
+                    new FileFrameEnvelope
+                    {
+                        Kind = FileFrameKinds.Data,
+                        TransferId = transferId,
+                        Offset = sent,
+                        Length = read,
+                        Final = nextRead == 0,
+                    },
+                    current.AsMemory(0, read),
+                    ct);
+
+                hasher.AppendData(current, 0, read);
+                sent += read;
+
+                // Our own send is activity too, as on the legacy path: the host acks only every few
+                // megabytes, so a slow start would otherwise be measured from registration.
+                Volatile.Write(ref lastActivity.Value, Stopwatch.GetTimestamp());
+                progress?.Report(new TransferProgress(sent, totalBytes));
+
+                (current, next) = (next, current);
+                read = nextRead;
+            }
+
+            return sent;
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(current);
+            System.Buffers.ArrayPool<byte>.Shared.Return(next);
+        }
+    }
+
+    /// <summary>
+    /// Splits the full remote file path an upload is given into the destination directory and the
+    /// file name the v3 offer carries separately.
+    /// </summary>
+    internal static (string Directory, string FileName) SplitRemoteFilePath(string remoteRelativePath)
+    {
+        var normalized = remoteRelativePath.Replace('\\', '/').Trim('/');
+        var slash = normalized.LastIndexOf('/');
+        return slash < 0
+            ? (string.Empty, normalized)
+            : (normalized[..slash], normalized[(slash + 1)..]);
+    }
+
+    /// <summary>
+    /// The highest offset the host has acked for one upload, and a way to wait for it to reach a
+    /// target, or for the upload's data path to fail.
+    /// </summary>
+    /// <remarks>
+    /// Waiters wake on a pulse that every ack replaces. The pulse is read BEFORE the condition is
+    /// checked, so an ack landing between the check and the await resolves the pulse already held
+    /// rather than being missed. A failure wakes with a plain result rather than a faulted task, so
+    /// a failure nobody is waiting on never surfaces as an unobserved task exception.
+    /// </remarks>
+    private sealed class UploadAckTracker
+    {
+        private long _committed;
+        private Exception? _failure;
+        private TaskCompletionSource<bool> _pulse = NewPulse();
+
+        private static TaskCompletionSource<bool> NewPulse() =>
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void OnAck(long committed)
+        {
+            long seen;
+            while (committed > (seen = Interlocked.Read(ref _committed)))
+            {
+                if (Interlocked.CompareExchange(ref _committed, committed, seen) == seen)
+                    break;
+            }
+
+            Interlocked.Exchange(ref _pulse, NewPulse()).TrySetResult(true);
+        }
+
+        public void Fail(Exception failure)
+        {
+            if (Interlocked.CompareExchange(ref _failure, failure, null) is null)
+                Volatile.Read(ref _pulse).TrySetResult(false);
+        }
+
+        public void ThrowIfFailed()
+        {
+            if (Volatile.Read(ref _failure) is { } failure)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(failure);
+        }
+
+        public async Task WaitForCommittedAsync(
+            long target, TransferIdleWatchdog watchdog, StrongBox<long> lease, CancellationToken ct)
+        {
+            while (true)
+            {
+                var pulse = Volatile.Read(ref _pulse);
+
+                // Committed first: once the host has acked the target, the wait is satisfied and
+                // what happens to the channel afterwards is for the host's file_transfer_result to
+                // report - it answers "Unknown transfer." if the drop cost it the session.
+                if (Interlocked.Read(ref _committed) >= target)
+                    return;
+                if (Volatile.Read(ref _failure) is { } failure)
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(failure);
+
+                await watchdog.AwaitCompletionAsync(pulse, lease, ct);
+            }
+        }
+    }
+
+    private async Task UploadLegacyAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<TransferProgress>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
 
@@ -873,8 +1270,30 @@ public sealed class FileTransferClient : IDisposable
     /// the other.
     /// </para>
     /// </remarks>
-    private sealed class TransferCancelGate(FileTransferClient owner, string transferId)
+    private sealed class TransferCancelGate(
+        FileTransferClient owner,
+        string transferId,
+        Func<string, RemexMessage>? cancelMessage = null)
     {
+        /// <summary>
+        /// The cancel a v3 (binary-channel) upload sends. The host's receive session is torn down by
+        /// <c>file_transfer_control</c>; the legacy <c>file_transfer_cancel</c> only reaches the v2
+        /// handler, which has never heard of this id.
+        /// </summary>
+        public static readonly Func<string, RemexMessage> V3Cancel = id => new RemexMessage
+        {
+            Type = MessageTypes.FileTransferControl,
+            FileTransferControl = new FileTransferControl { TransferId = id, Action = FileTransferControlActions.Cancel },
+        };
+
+        private static readonly Func<string, RemexMessage> LegacyCancel = id => new RemexMessage
+        {
+            Type = MessageTypes.FileTransferCancel,
+            FileTransferCancel = new FileTransferCancel { TransferId = id },
+        };
+
+        private readonly Func<string, RemexMessage> _cancelMessage = cancelMessage ?? LegacyCancel;
+
         private const int NotStarted = 0;
         private const int StartSent = 1;
         private const int CancelSent = 2;
@@ -895,11 +1314,8 @@ public sealed class FileTransferClient : IDisposable
         {
             if (Interlocked.CompareExchange(ref _state, CancelSent, StartSent) != StartSent) return;
 
-            owner._connection.SendAsync(new RemexMessage
-            {
-                Type = MessageTypes.FileTransferCancel,
-                FileTransferCancel = new FileTransferCancel { TransferId = transferId }
-            }).FireAndForget($"send cancel for transfer {transferId}");
+            owner._connection.SendAsync(_cancelMessage(transferId))
+                .FireAndForget($"send cancel for transfer {transferId}");
         }
     }
 
@@ -1233,6 +1649,19 @@ public sealed class FileTransferClient : IDisposable
                     endTcs.TrySetResult(message);
                 break;
 
+            // ── v3 upload negotiation (perf audit P1-5). Each is proof of life for the watchdog. ──
+            case MessageTypes.FileTransferReady when message.FileTransferReady is { } ready:
+                _idleWatchdog.Mark(ready.TransferId);
+                if (_readyWaiters.TryGetValue(ready.TransferId, out var readyTcs))
+                    readyTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileTransferResult when message.FileTransferResult is { } result:
+                _idleWatchdog.Mark(result.TransferId);
+                if (_resultWaiters.TryGetValue(result.TransferId, out var resultTcs))
+                    resultTcs.TrySetResult(message);
+                break;
+
             case MessageTypes.FileManageResponse when message.FileManageResponse is { } manage:
                 if (_manageWaiters.TryGetValue(manage.RequestId, out var manageTcs))
                     manageTcs.TrySetResult(message);
@@ -1279,5 +1708,6 @@ public sealed class FileTransferClient : IDisposable
     public void Dispose()
     {
         _connection.FileTransferMessageReceived -= OnFileTransferMessage;
+        (_fileChannelConnector as IDisposable)?.Dispose();
     }
 }
