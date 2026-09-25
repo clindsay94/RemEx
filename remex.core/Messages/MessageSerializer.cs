@@ -12,7 +12,7 @@ public static class MessageSerializer
     /// Serialize a message to a UTF-8 JSON byte array.
     /// </summary>
     public static byte[] Serialize(RemexMessage message)
-        => RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
+        => RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Relaxed.RemexMessage);
 
     /// <summary>
     /// Deserialize a UTF-8 JSON byte span into a <see cref="RemexMessage"/>.

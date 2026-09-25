@@ -1304,7 +1304,7 @@ public static class AndroidNativeExports
             TelemetryPollIntervalMs = 1000,
         };
 
-        return RemexJson.Serialize(response, RemexJsonSerializerContext.Default.AndroidNativeInitializationResponse);
+        return RemexJson.Serialize(response, RemexJsonSerializerContext.Relaxed.AndroidNativeInitializationResponse);
     }
 
     private static string HandleSendWakeOnLan(string? macAddress, string? broadcastIp, int port)
@@ -1798,18 +1798,18 @@ public static class AndroidNativeExports
 
     private static void OnNativeProcessListReceived(List<ProcessInfo> processes)
     {
-        NotifyJavaSnapshot(_onProcessListSyncMethodId, RemexJson.Serialize(processes, RemexJsonSerializerContext.Default.ListProcessInfo));
+        NotifyJavaSnapshot(_onProcessListSyncMethodId, RemexJson.Serialize(processes, RemexJsonSerializerContext.Relaxed.ListProcessInfo));
     }
 
     private static void OnNativeLauncherEntriesReceived(List<AppEntry> entries)
     {
-        NotifyJavaSnapshot(_onLauncherSyncMethodId, RemexJson.Serialize(entries, RemexJsonSerializerContext.Default.ListAppEntry));
+        NotifyJavaSnapshot(_onLauncherSyncMethodId, RemexJson.Serialize(entries, RemexJsonSerializerContext.Relaxed.ListAppEntry));
     }
 
     private static void OnNativeTelemetryReceived(TelemetryPayload telemetry)
     {
         _cachedTelemetry = telemetry;
-        NotifyJavaSnapshot(_onTelemetryUpdateMethodId, RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload));
+        NotifyJavaSnapshot(_onTelemetryUpdateMethodId, RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Relaxed.TelemetryPayload));
     }
 
     private static void OnNativeConnectionStateChanged(bool isConnected)
@@ -1839,32 +1839,32 @@ public static class AndroidNativeExports
 
     private static void OnNativeMetaReceived(DesktopMeta meta)
     {
-        NotifyJavaData(_onDesktopMetaMethodId, RemexJson.Serialize(meta, RemexJsonSerializerContext.Default.DesktopMeta));
+        NotifyJavaData(_onDesktopMetaMethodId, RemexJson.Serialize(meta, RemexJsonSerializerContext.Relaxed.DesktopMeta));
     }
 
     private static void OnNativeDesktopWindowResult(DesktopWindowResult result)
     {
-        NotifyJavaData(_onDesktopWindowResultMethodId, RemexJson.Serialize(result, RemexJsonSerializerContext.Default.DesktopWindowResult));
+        NotifyJavaData(_onDesktopWindowResultMethodId, RemexJson.Serialize(result, RemexJsonSerializerContext.Relaxed.DesktopWindowResult));
     }
 
     private static void OnNativeDesktopStreamDescriptor(DesktopStreamDescriptor descriptor)
     {
-        NotifyJavaData(_onDesktopStreamDescriptorMethodId, RemexJson.Serialize(descriptor, RemexJsonSerializerContext.Default.DesktopStreamDescriptor));
+        NotifyJavaData(_onDesktopStreamDescriptorMethodId, RemexJson.Serialize(descriptor, RemexJsonSerializerContext.Relaxed.DesktopStreamDescriptor));
     }
 
     private static void OnNativeDisplayCatalogReceived(DesktopDisplayCatalog catalog)
     {
-        NotifyJavaData(_onDesktopDisplayCatalogMethodId, RemexJson.Serialize(catalog, RemexJsonSerializerContext.Default.DesktopDisplayCatalog));
+        NotifyJavaData(_onDesktopDisplayCatalogMethodId, RemexJson.Serialize(catalog, RemexJsonSerializerContext.Relaxed.DesktopDisplayCatalog));
     }
 
     private static void OnNativeCursorStateReceived(DesktopCursorState state)
     {
-        NotifyJavaData(_onDesktopCursorStateMethodId, RemexJson.Serialize(state, RemexJsonSerializerContext.Default.DesktopCursorState));
+        NotifyJavaData(_onDesktopCursorStateMethodId, RemexJson.Serialize(state, RemexJsonSerializerContext.Relaxed.DesktopCursorState));
     }
 
     private static void OnNativeCursorShapeReceived(DesktopCursorShape shape)
     {
-        NotifyJavaData(_onDesktopCursorShapeMethodId, RemexJson.Serialize(shape, RemexJsonSerializerContext.Default.DesktopCursorShape));
+        NotifyJavaData(_onDesktopCursorShapeMethodId, RemexJson.Serialize(shape, RemexJsonSerializerContext.Relaxed.DesktopCursorShape));
     }
 
     private static void NotifyJavaFrame(byte[] frame)
@@ -1925,9 +1925,10 @@ public static class AndroidNativeExports
         }
 
         // The captured `data` is a fresh per-message array (RemexDesktopClient raises FrameReceived /
-        // CursorBinaryReceived with ms.ToArray()), so holding the reference across the async hand-off is
-        // safe. INVARIANT: if that producer is ever changed to pool/reuse buffers, this MUST copy before
-        // enqueuing or the Java side will read torn data.
+        // CursorBinaryReceived with a per-message copy - a direct Array.Copy for a single-fragment
+        // message, ms.ToArray() for a multi-fragment one, perf audit P3-1), so holding the reference
+        // across the async hand-off is safe. INVARIANT: if that producer is ever changed to pool/reuse
+        // buffers, this MUST copy before enqueuing or the Java side will read torn data.
         return TryPostFrameToJavaThread(env =>
         {
             // Re-read the global ref under lock at execution time: it may have been replaced (and the old
@@ -1972,7 +1973,7 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onHostInfoUpdateMethodId,
-                RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
+                RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Relaxed.HostCapabilities));
         }
 
         // Forward the ENTIRE file-transfer control family (every "file_*" message) to the Kotlin file
@@ -1990,7 +1991,7 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onFileTransferMessageMethodId,
-                RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 
         // THE WHOLE clipboard_ FAMILY, BY PREFIX, FOR THE REASON WRITTEN ABOVE (RemEx-ci98m). Without
@@ -2006,7 +2007,7 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onClipboardMessageMethodId,
-                RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 
         // WHAT THE PC IS PLAYING (RemEx-xx6xf). A SINGLE TYPE, SO NEITHER FAMILY FORWARD ABOVE CARRIES
@@ -2022,7 +2023,7 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onMediaStateMethodId,
-                RemexJson.Serialize(msg.MediaState, RemexJsonSerializerContext.Default.MediaPlaybackState));
+                RemexJson.Serialize(msg.MediaState, RemexJsonSerializerContext.Relaxed.MediaPlaybackState));
         }
 
         // THE COVER IMAGE THE PHONE ASKED FOR (RemEx-vtorl). Unprefixed like media_state above, so
@@ -2037,7 +2038,7 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onMediaArtworkMethodId,
-                RemexJson.Serialize(msg.MediaArtwork, RemexJsonSerializerContext.Default.MediaArtwork));
+                RemexJson.Serialize(msg.MediaArtwork, RemexJsonSerializerContext.Relaxed.MediaArtwork));
         }
     }
 
@@ -2242,19 +2243,19 @@ public static class AndroidNativeExports
     }
 
     private static string SerializeOperationSuccess(string message)
-        => RemexJson.Serialize(new AndroidNativeOperationResponse { Success = true, Message = message }, RemexJsonSerializerContext.Default.AndroidNativeOperationResponse);
+        => RemexJson.Serialize(new AndroidNativeOperationResponse { Success = true, Message = message }, RemexJsonSerializerContext.Relaxed.AndroidNativeOperationResponse);
 
     private static string SerializeOperationFailure(string message, string? error = null)
-        => RemexJson.Serialize(new AndroidNativeOperationResponse { Success = false, Message = message, Error = error }, RemexJsonSerializerContext.Default.AndroidNativeOperationResponse);
+        => RemexJson.Serialize(new AndroidNativeOperationResponse { Success = false, Message = message, Error = error }, RemexJsonSerializerContext.Relaxed.AndroidNativeOperationResponse);
 
     private static string SerializeTelemetrySuccess(TelemetryPayload telemetry)
-        => RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload);
+        => RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Relaxed.TelemetryPayload);
 
     private static string SerializeTelemetryFailure(string message, string? error = null)
         => SerializeOperationFailure(message, error);
 
     private static string SerializeCommandResponse(CommandResponse response)
-        => RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
+        => RemexJson.Serialize(response, RemexJsonSerializerContext.Relaxed.CommandResponse);
 
 
 }

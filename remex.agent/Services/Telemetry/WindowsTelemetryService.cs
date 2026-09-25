@@ -264,11 +264,14 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     /// </remarks>
     internal WindowsTelemetryService(
         ILogger<WindowsTelemetryService> logger, string sharedMemoryName, long staleAfterMs,
-        Task? countersReady = null, TimeSpan? fallbackTimeout = null)
+        Task? countersReady = null, TimeSpan? fallbackTimeout = null, long missRetryMs = 30_000,
+        Func<long>? missBackoffClockMs = null)
         : this(logger, countersReady, fallbackTimeout)
     {
         _sharedMemoryName = sharedMemoryName;
         HwInfoStaleAfterMs = staleAfterMs;
+        HwInfoMissRetryMs = missRetryMs;
+        if (missBackoffClockMs is not null) HwInfoMissBackoffClockMs = missBackoffClockMs;
     }
 
     private readonly string _sharedMemoryName = HwInfoSharedMemoryName;
@@ -644,18 +647,40 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     {
         if (_hwInfoAccessor is not null) return true;
 
+        // BACKED OFF AFTER A MISS (perf audit P3-45). On a machine without HWiNFO, OpenExisting threw
+        // and this caught a FileNotFoundException on EVERY telemetry tick (1 Hz) for the life of the
+        // process — the outer _hwinfoAvailable latch never flips, because the exception is swallowed
+        // here. HWiNFO being started later is still picked up, just within HwInfoMissRetryMs rather
+        // than within a second. Only a MISS arms this: a mapping dropped for staleness or a parse
+        // failure reopens on the next tick as before.
+        if (_hwInfoNextProbeAtMs != 0 && HwInfoMissBackoffClockMs() < _hwInfoNextProbeAtMs) return false;
+
         try
         {
             _hwInfoMmf = MemoryMappedFile.OpenExisting(_sharedMemoryName, MemoryMappedFileRights.Read);
             _hwInfoAccessor = _hwInfoMmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+            _hwInfoNextProbeAtMs = 0;
             return true;
         }
         catch (FileNotFoundException)
         {
-            InvalidateHwInfoCache();   // HWiNFO not running; try again next tick.
+            InvalidateHwInfoCache();   // HWiNFO not running; probe again after the back-off.
+            _hwInfoNextProbeAtMs = HwInfoMissBackoffClockMs() + HwInfoMissRetryMs;
             return false;
         }
     }
+
+    /// <summary>
+    /// Clock for the miss back-off only, in milliseconds. Injectable so the back-off test drives it
+    /// instead of sleeping across a short real window, which flaked under load (RemEx-w7ei pattern).
+    /// </summary>
+    private Func<long> HwInfoMissBackoffClockMs { get; init; } = static () => Environment.TickCount64;
+
+    // When TryEnsureHwInfoOpen may next try OpenExisting after a miss; 0 = no back-off pending.
+    private long _hwInfoNextProbeAtMs;
+
+    /// <summary>How long a "HWiNFO is not running" miss suppresses re-probing (P3-45).</summary>
+    private long HwInfoMissRetryMs { get; init; } = 30_000;
 
     /// <summary>
     /// Drops the cached mapping and templates. Called on ANY failure, because a view that has gone

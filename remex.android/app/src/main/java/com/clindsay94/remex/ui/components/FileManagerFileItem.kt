@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.components
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.LruCache
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -40,12 +41,13 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -59,19 +61,61 @@ import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemoteFileEntry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/** Decodes a base64 JPEG thumbnail to an [ImageBitmap], memoised on the encoded string. */
+/**
+ * Decoded thumbnails, keyed by the base64 string they came from (perf audit P3-13).
+ *
+ * `remember(base64)` alone only survived recomposition: a lazy-list row scrolled off screen leaves
+ * composition, so scrolling back decoded the same JPEG again, on the main thread, mid-fling. This
+ * cache outlives the row. Bounded by decoded bytes rather than entry count, so a folder of larger
+ * thumbnails cannot grow it past [MAX_BYTES]; the encoded base64 map in FileTransferViewModel keeps its
+ * own separate entry cap (P0-21).
+ */
+private object ThumbnailBitmapCache {
+    private const val MAX_BYTES = 8 * 1024 * 1024
+
+    private val cache = object : LruCache<String, ImageBitmap>(MAX_BYTES) {
+        override fun sizeOf(key: String, value: ImageBitmap): Int =
+            value.asAndroidBitmap().allocationByteCount
+    }
+
+    fun get(base64: String): ImageBitmap? = cache.get(base64)
+
+    fun put(base64: String, bitmap: ImageBitmap) {
+        cache.put(base64, bitmap)
+    }
+}
+
+private fun decodeThumbnail(base64: String): ImageBitmap? =
+    try {
+        val bytes = Base64.decode(base64, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+    } catch (e: Exception) {
+        null
+    }
+
+/** The result of one off-main decode, tagged with the key it was decoded from. */
+private class DecodedThumbnail(val base64: String, val bitmap: ImageBitmap?)
+
+/**
+ * Decodes a base64 JPEG thumbnail to an [ImageBitmap]. A cache hit returns synchronously (no
+ * placeholder flash on scroll-back); a miss decodes on [Dispatchers.Default], never on the main
+ * thread during composition, and shows the caller's placeholder until it lands.
+ */
 @Composable
 internal fun rememberThumbnail(base64: String?): ImageBitmap? {
-    return remember(base64) {
-        if (base64.isNullOrBlank()) null
-        else try {
-            val bytes = Base64.decode(base64, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-        } catch (e: Exception) {
-            null
-        }
+    if (base64.isNullOrBlank()) return null
+    ThumbnailBitmapCache.get(base64)?.let { return it }
+    val decoded by produceState<DecodedThumbnail?>(initialValue = null, base64) {
+        val bitmap = withContext(Dispatchers.Default) { decodeThumbnail(base64) }
+        if (bitmap != null) ThumbnailBitmapCache.put(base64, bitmap)
+        value = DecodedThumbnail(base64, bitmap)
     }
+    // produceState keeps its previous value until the restarted producer writes, so a row whose
+    // thumbnail just changed must not show the OLD key's bitmap for that window.
+    return decoded?.takeIf { it.base64 == base64 }?.bitmap
 }
 
 private fun subtitleFor(entry: RemoteFileEntry): String =

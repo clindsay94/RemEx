@@ -201,6 +201,54 @@ public sealed class AdaptiveScaleControllerTests
         Assert.Equal(0.65, afterHold!.Scale);
     }
 
+    [Theory]
+    [InlineData(6, true)]      // step-down right after the cooldown: the step-up failed -> hold
+    [InlineData(1800, false)]  // step-down 30 min later: the step-up held fine -> no hold
+    public void FailedStepUpHold_OnlyAppliesWhenTheStepDownFollowsTheStepUpClosely(int stepDownAfterSeconds, bool expectHold)
+    {
+        var controller = new AdaptiveScaleController(startingScale: 0.5);
+        var t = T0;
+
+        // Step up to 0.65 after 5 stable windows.
+        for (int i = 0; i < 5; i++)
+        {
+            t += Window;
+            controller.Report(90, 90, false, t);
+        }
+        Assert.Equal(0.65, controller.CurrentScale);
+        var steppedUpAt = t;
+
+        // Middling windows (neither low nor stable) until just before the step-down, so nothing
+        // else changes rung in between.
+        t = steppedUpAt + TimeSpan.FromSeconds(stepDownAfterSeconds) - Window;
+        Assert.Null(controller.Report(90, 85, false, t));
+
+        // Overflow -> step down to 0.5.
+        t += Window;
+        var stepDown = controller.Report(90, 90, outputOverflowed: true, t);
+        Assert.NotNull(stepDown);
+        Assert.Equal(0.5, stepDown!.Scale);
+
+        // Five stable windows: past the 5 s cooldown, well inside a 60 s hold.
+        AdaptiveScaleDecision? next = null;
+        for (int i = 0; i < 5; i++)
+        {
+            t += Window;
+            next ??= controller.Report(90, 90, false, t);
+        }
+
+        if (expectHold)
+        {
+            Assert.Null(next);
+            Assert.Equal(0.5, controller.CurrentScale);
+        }
+        else
+        {
+            Assert.NotNull(next);
+            Assert.Equal(0.65, next!.Scale);
+        }
+    }
+
     [Fact]
     public void NonPositiveTargetFps_ReturnsNullWithoutThrowing()
     {

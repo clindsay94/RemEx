@@ -140,11 +140,17 @@ private const val DOUBLE_TAP_RADIUS_DP = 24f
 // Inertia parameters
 private const val INERTIA_MIN_VELOCITY = 2f // dp/frame minimum to start inertia
 private const val INERTIA_STOP_VELOCITY = 0.5f // dp/frame to stop
-private const val INERTIA_DECAY = 0.93f // velocity multiplier per frame
-private const val INERTIA_FRAME_MS = 16L // ~60fps
+private const val INERTIA_DECAY = 0.93f // velocity multiplier per simulated ~16ms frame
 
 // Throttle interval for move events
 private const val MOVE_THROTTLE_MS = 33L // ~30Hz
+
+// Perf audit P3-14: inertia used to SEND a move every 16 ms - twice the rate live trackpad motion is
+// throttled to. It now sends on the same 33 ms cadence and folds the ~16 ms physics frames that fall
+// inside each send into one coalesced delta, so the glide's total distance and its duration are what
+// they were; only the number of packets on the wire halves.
+private const val INERTIA_FRAME_MS = MOVE_THROTTLE_MS
+private const val INERTIA_SUBFRAMES_PER_SEND = 2 // physics frames (~16ms each) per inertia send
 
 /**
  * The four inputs pan-follow reacts to, combined so ONE collector can watch them all.
@@ -1425,14 +1431,25 @@ fun RemoteDesktopScreenContent(
                                                                         while (true) {
                                                                                 val event =
                                                                                         awaitPointerEvent()
-                                                                                val activePointers =
-                                                                                        event.changes
-                                                                                                .filter {
-                                                                                                        it.pressed
-                                                                                                }
-                                                                                val pointerCount =
-                                                                                        activePointers
-                                                                                                .size
+                                                                                // P3-15: count pressed pointers with an
+                                                                                // index loop instead of allocating a
+                                                                                // filtered list on every touch event. Only
+                                                                                // the first two pressed positions are ever
+                                                                                // read (the two-finger path below), in the
+                                                                                // same order the filter produced them.
+                                                                                val changes = event.changes
+                                                                                var pointerCount = 0
+                                                                                var firstPressedPos = Offset.Zero
+                                                                                var secondPressedPos = Offset.Zero
+                                                                                for (ci in changes.indices) {
+                                                                                        val c = changes[ci]
+                                                                                        if (!c.pressed) continue
+                                                                                        when (pointerCount) {
+                                                                                                0 -> firstPressedPos = c.position
+                                                                                                1 -> secondPressedPos = c.position
+                                                                                        }
+                                                                                        pointerCount++
+                                                                                }
 
                                                                                 // Cancel inertia on
                                                                                 // any new touch
@@ -1467,13 +1484,9 @@ fun RemoteDesktopScreenContent(
                                                                                                         2
                                                                                         ) {
                                                                                                 val p1 =
-                                                                                                        activePointers[
-                                                                                                                        0]
-                                                                                                                .position
+                                                                                                        firstPressedPos
                                                                                                 val p2 =
-                                                                                                        activePointers[
-                                                                                                                        1]
-                                                                                                                .position
+                                                                                                        secondPressedPos
                                                                                                 val dist =
                                                                                                         sqrt(
                                                                                                                 (p1.x -
@@ -2172,14 +2185,25 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                                         vy
                                                                                                                                                 ) >
                                                                                                                                                         inertiaStopVelPx) {
+                                                                                                                                                        // P3-14: one send per 33ms tick, carrying
+                                                                                                                                                        // the summed displacement of the physics
+                                                                                                                                                        // frames it spans. A sub-frame already
+                                                                                                                                                        // under the stop velocity contributes
+                                                                                                                                                        // nothing, exactly as the old per-frame
+                                                                                                                                                        // loop would have exited before it.
+                                                                                                                                                        var sendX = 0f
+                                                                                                                                                        var sendY = 0f
+                                                                                                                                                        for (sub in 0 until INERTIA_SUBFRAMES_PER_SEND) {
+                                                                                                                                                                if (sqrt(vx * vx + vy * vy) <= inertiaStopVelPx) break
+                                                                                                                                                                sendX += vx
+                                                                                                                                                                sendY += vy
+                                                                                                                                                                vx *= INERTIA_DECAY
+                                                                                                                                                                vy *= INERTIA_DECAY
+                                                                                                                                                        }
                                                                                                                                                         onSendMouseMove(
-                                                                                                                                                                vx,
-                                                                                                                                                                vy
+                                                                                                                                                                sendX,
+                                                                                                                                                                sendY
                                                                                                                                                         )
-                                                                                                                                                        vx *=
-                                                                                                                                                                INERTIA_DECAY
-                                                                                                                                                        vy *=
-                                                                                                                                                                INERTIA_DECAY
                                                                                                                                                         delay(
                                                                                                                                                                 INERTIA_FRAME_MS
                                                                                                                                                         )

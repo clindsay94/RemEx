@@ -6,7 +6,7 @@ namespace Remex.Desktop.Tests.ViewModels;
 
 /// <summary>
 /// Guards the What's-New parser against the RemEx-xtc2 regression: an empty (or unreleased-only)
-/// leading CHANGELOG section made <see cref="AboutViewModel.ParseChangelog"/> return 0 items, so the
+/// leading CHANGELOG section made <see cref="AboutViewModel.ParseChangelog(string, int)"/> return 0 items, so the
 /// About page silently fell back to stale hardcoded 2.0-era highlights for four releases.
 /// </summary>
 public class AboutViewModelChangelogTests
@@ -113,6 +113,50 @@ public class AboutViewModelChangelogTests
             lines.Skip(releasedHeading).Take((nextHeading < 0 ? lines.Length : nextHeading) - releasedHeading));
 
         Assert.Contains($"**{items[0].Version}", releasedSection, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Perf audit P3-28: the bundled CHANGELOG is ~1.3 MB and the page only shows the newest released
+    /// section, so the streaming overload must stop reading once that section is done instead of
+    /// materialising and splitting the whole file.
+    /// </summary>
+    [Fact]
+    public void ParseChangelog_FromReader_StopsAfterNewestReleasedSection()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("## [Unreleased]\n\n- **Unshipped.** No.\n\n## [2.4.0] - 2026-07-22\n\n- **Shipped.** Yes.\n\n");
+        for (var n = 0; n < 5000; n++)
+            sb.Append("## [1.").Append(n).Append(".0]\n\n- **Old.** Ancient.\n\n");
+        var reader = new LineCountingReader(sb.ToString());
+
+        var items = AboutViewModel.ParseChangelog(reader, maxItems: 12);
+
+        var item = Assert.Single(items);
+        Assert.Equal("Shipped", item.Version);
+        Assert.True(reader.LinesRead < 20, $"read {reader.LinesRead} lines; expected to stop at the next heading");
+    }
+
+    [Fact]
+    public void ParseChangelog_FromReader_MatchesStringOverloadOnRealChangelog()
+    {
+        var markdown = File.ReadAllText(FindRepoChangelog());
+
+        var fromString = AboutViewModel.ParseChangelog(markdown, maxItems: 12);
+        var fromReader = AboutViewModel.ParseChangelog(new StringReader(markdown), maxItems: 12);
+
+        Assert.Equal(fromString, fromReader);
+    }
+
+    private sealed class LineCountingReader(string text) : StringReader(text)
+    {
+        public int LinesRead { get; private set; }
+
+        public override string? ReadLine()
+        {
+            var line = base.ReadLine();
+            if (line != null) LinesRead++;
+            return line;
+        }
     }
 
     /// <summary>Resolves the repo's docs/CHANGELOG.md (the bundled asset's source).</summary>

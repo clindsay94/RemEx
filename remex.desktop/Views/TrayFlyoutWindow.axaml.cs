@@ -269,6 +269,19 @@ public partial class TrayFlyoutWindow : Window
         });
     }
 
+    /// <summary>
+    /// Every hide path (click-away, a tile, the close button) goes through <see cref="Window.Hide"/>,
+    /// which clears <see cref="Visual.IsVisible"/>. That is where the tiles let go of their live
+    /// sensors (perf audit P3-66); <see cref="ShowAtTray"/>'s Refresh binds them again.
+    /// </summary>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == IsVisibleProperty && change.GetNewValue<bool>() == false)
+            ViewModel?.OnHidden();
+    }
+
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);

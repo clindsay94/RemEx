@@ -885,10 +885,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// concurrent writers, in this process or another, never touch the same temp file at all.
     /// </para>
     /// </remarks>
-    private async Task WriteProfileAtomicallyAsync(string filePath, DashboardProfile profile)
+    private async Task WriteProfileAtomicallyAsync(string filePath, string json)
     {
         var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        var json = JsonSerializer.Serialize(profile, JsonOptions);
 
         for (var attempt = 1; ; attempt++)
         {
@@ -923,10 +922,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     }
 
     /// <summary>Synchronous twin of <see cref="WriteProfileAtomicallyAsync"/>, for <see cref="Dispose"/> — which cannot await.</summary>
-    private void WriteProfileAtomically(string filePath, DashboardProfile profile)
+    private void WriteProfileAtomically(string filePath, string json)
     {
         var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        var json = JsonSerializer.Serialize(profile, JsonOptions);
 
         for (var attempt = 1; ; attempt++)
         {
@@ -1020,6 +1018,42 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         }
     }
 
+    /// <summary>The JSON this instance last wrote, and the file's write stamp right after it (P3-52).</summary>
+    private string? _lastWrittenJson;
+    private DateTime _lastWrittenStampUtc;
+
+    /// <summary>
+    /// True only when <paramref name="json"/> matches this instance's last write AND the file still
+    /// carries that write's stamp. A restore, another instance, a hand edit or a delete all move the
+    /// stamp, so the next save goes to disk even if its content matches what we wrote earlier.
+    /// </summary>
+    private bool IsUnchangedOnDisk(string json)
+    {
+        if (_lastWrittenJson is null || !string.Equals(json, _lastWrittenJson, StringComparison.Ordinal))
+            return false;
+        try
+        {
+            return File.GetLastWriteTimeUtc(_filePath) == _lastWrittenStampUtc;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private void RecordWrite(string json)
+    {
+        try
+        {
+            _lastWrittenStampUtc = File.GetLastWriteTimeUtc(_filePath);
+            _lastWrittenJson = json;
+        }
+        catch (Exception)
+        {
+            _lastWrittenJson = null;
+        }
+    }
+
     private async Task SaveInternalAsync(DashboardProfile profile, long? generation)
     {
         // THE WAIT IS INSIDE THE TRY. It was outside, so an ObjectDisposedException from a gate
@@ -1055,7 +1089,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // so two correctly sequenced waiters can still land out of order.
             if (IsSuperseded(generation, Volatile.Read(ref _saveGeneration))) return;
 
-            await WriteProfileAtomicallyAsync(_filePath, profile);
+            var json = JsonSerializer.Serialize(profile, JsonOptions);
+
+            // UNCHANGED CONTENT IS NOT WRITTEN - DEBOUNCED PATH ONLY (perf audit P3-52). Slider settles
+            // and card nudges that land back on the same values used to rewrite, fsync and rename the
+            // file for nothing, and raise ProfileSaved, which arms the savefile snapshot. SaveAsync
+            // (generation: null) always writes: its import caller reloads straight after.
+            if (generation is not null && IsUnchangedOnDisk(json)) return;
+
+            await WriteProfileAtomicallyAsync(_filePath, json);
+            RecordWrite(json);
 
             ProfileSaved?.Invoke();
         }
@@ -1132,7 +1175,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                     // ATOMIC HERE TOO (RemEx-8y3qy round 2) - see WriteProfileAtomically. A reader
                     // racing process shutdown deserves the same guarantee a normal debounced save gives
                     // it.
-                    WriteProfileAtomically(_filePath, dropped);
+                    var json = JsonSerializer.Serialize(dropped, JsonOptions);
+                    if (!IsUnchangedOnDisk(json))
+                        WriteProfileAtomically(_filePath, json);
                 }
                 catch (Exception ex)
                 {

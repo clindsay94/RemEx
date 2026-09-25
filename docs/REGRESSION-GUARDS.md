@@ -247,7 +247,7 @@ the RemEx-892l review 2026-07-25)
 ### Synchronous mode only — never async `setCallback` (INVARIANT)
 
 The decoder is driven by a single dedicated thread,
-`Thread({ runDecodeLoop() }, "H264DecodeLoop")` (`:94`, started at `:120`), which polls
+`Thread({ runDecodeLoop() }, "H264DecodeLoop")` (`:89`, started at `:124`), which polls
 `dequeueInputBuffer` / `dequeueOutputBuffer` itself (`:245`, `:199`).
 
 Async mode (`MediaCodec.setCallback`) is **deliberately not used and must not be reintroduced.** On
@@ -279,7 +279,7 @@ an IDR every 60 frames on its own, so `onKeyframeNeeded` is not flooded during s
 ### Mid-stream SPS reconfigure
 
 When a later access unit carries an SPS whose raw bytes differ from the configured `csd-0` (a cheap
-`containsNalType` pre-check keeps P-frames on the fast path), the decoder does
+`scanNalTypes` pre-check keeps P-frames on the fast path), the decoder does
 `stop()` / `configure()` / `start()` for the new resolution. This is the fix for the scale-up black
 screen. (RemEx-aep)
 

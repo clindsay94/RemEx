@@ -1091,7 +1091,9 @@
             </material:NavigationDrawer>
 
             <!-- ═══ FULLSCREEN REMOTE DESKTOP (bypasses sidebar) ═══ -->
-            <TransitioningContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsShellChromeHidden}" Name="ImmersiveHost">
+            <!-- ImmersiveView, not CurrentView (perf audit P3-65): null outside fullscreen, so the hidden
+                 host does not keep a duplicate live RemoteDesktopView once fullscreen has been used. -->
+            <TransitioningContentControl Content="{Binding ImmersiveView}" IsVisible="{Binding IsShellChromeHidden}" Name="ImmersiveHost">
                 <TransitioningContentControl.DataTemplates>
                     <DataTemplate DataType="vm:RemoteDesktopViewModel">
                         <views:RemoteDesktopView />

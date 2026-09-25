@@ -357,9 +357,11 @@ private fun GroupSelectDemo(modifier: Modifier = Modifier) {
         val groupDrag = 24.dp
 
         // Card A (left) and Card B (right) — both ride the shared lift + drag; each shows its own
-        // selection ring fading in.
-        MiniSelectCard(cardW, cardH, -halfSpread, selA.value, lift.value, dragX.value * 1f, groupDrag)
-        MiniSelectCard(cardW, cardH, halfSpread, selB.value, lift.value, dragX.value * 1f, groupDrag)
+        // selection ring fading in. The Animatables are passed through (not `.value`, P3-20) so
+        // this composable's own body never reads a per-frame value — only the graphicsLayer
+        // lambdas inside MiniSelectCard do, which redraw without recomposing.
+        MiniSelectCard(cardW, cardH, -halfSpread, selA, lift, dragX, groupDrag)
+        MiniSelectCard(cardW, cardH, halfSpread, selB, lift, dragX, groupDrag)
 
         // The finger, sliding from card A to card B and tapping each.
         Icon(
@@ -381,15 +383,21 @@ private fun GroupSelectDemo(modifier: Modifier = Modifier) {
 
 /** One selectable mini-card for [GroupSelectDemo]: positioned by [centreOffsetX] from the box centre,
  *  scaling with the shared [lift], sliding with the shared [dragFraction], and fading in a selection
- *  ring by [selected] (0..1). */
+ *  ring by [selected] (0..1).
+ *
+ *  P3-20: [selected]/[lift]/[dragFraction] are the raw [Animatable]s, not `.value` — a `Modifier`
+ *  chain's arguments (e.g. `border`'s `color`) are evaluated at composition time, so feeding an
+ *  Animatable's `.value` straight into `.border()` recomposed this whole card every animation
+ *  frame. The selection ring is now its own layer whose `graphicsLayer { alpha = ... }` reads
+ *  [selected] at draw time instead, leaving the base card's Modifier chain untouched by it. */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
     width: androidx.compose.ui.unit.Dp,
     height: androidx.compose.ui.unit.Dp,
     centreOffsetX: androidx.compose.ui.unit.Dp,
-    selected: Float,
-    lift: Float,
-    dragFraction: Float,
+    selected: Animatable<Float, *>,
+    lift: Animatable<Float, *>,
+    dragFraction: Animatable<Float, *>,
     dragDistance: androidx.compose.ui.unit.Dp,
 ) {
     val cardShape = MaterialTheme.shapes.large
@@ -398,21 +406,34 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
             .align(Alignment.Center)
             .offset(x = centreOffsetX)
             .size(width, height)
-            .graphicsLayer {
-                val s = 1f + lift * 0.12f
-                scaleX = s; scaleY = s
-                translationX = dragFraction * dragDistance.toPx()
-                shadowElevation = lift * 20f
-                shape = cardShape
-                clip = true
-            }
-            .background(MaterialTheme.colorScheme.primaryContainer, cardShape)
-            .border(
-                width = 3.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = selected),
-                shape = cardShape,
-            ),
-    )
+    ) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    val s = 1f + lift.value * 0.12f
+                    scaleX = s; scaleY = s
+                    translationX = dragFraction.value * dragDistance.toPx()
+                    shadowElevation = lift.value * 20f
+                    shape = cardShape
+                    clip = true
+                }
+                .background(MaterialTheme.colorScheme.primaryContainer, cardShape),
+        )
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    val s = 1f + lift.value * 0.12f
+                    scaleX = s; scaleY = s
+                    translationX = dragFraction.value * dragDistance.toPx()
+                    alpha = selected.value
+                    shape = cardShape
+                    clip = true
+                }
+                .border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = cardShape),
+        )
+    }
 }
 
 /**
@@ -449,26 +470,41 @@ private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
     }
 
     Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
-        // Selected sample card (upper).
+        // Selected sample card (upper). The selection ring is a separate layer so its animated
+        // alpha (`sel.value`) is only read inside a graphicsLayer lambda (draw time), not fed into
+        // `.border()`'s `color` argument, which would evaluate at composition time and recompose
+        // this whole card every animation frame (P3-20).
         val selectedCardShape = MaterialTheme.shapes.large
         Box(
             Modifier
                 .align(Alignment.Center)
                 .offset(y = (-42).dp)
                 .size(120.dp, 74.dp)
-                .graphicsLayer {
-                    val s = 1f + sel.value * 0.06f
-                    scaleX = s; scaleY = s
-                    shape = selectedCardShape
-                    clip = true
-                }
-                .background(MaterialTheme.colorScheme.primaryContainer, selectedCardShape)
-                .border(
-                    width = 3.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = sel.value),
-                    shape = selectedCardShape,
-                ),
-        )
+        ) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        val s = 1f + sel.value * 0.06f
+                        scaleX = s; scaleY = s
+                        shape = selectedCardShape
+                        clip = true
+                    }
+                    .background(MaterialTheme.colorScheme.primaryContainer, selectedCardShape),
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        val s = 1f + sel.value * 0.06f
+                        scaleX = s; scaleY = s
+                        alpha = sel.value
+                        shape = selectedCardShape
+                        clip = true
+                    }
+                    .border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = selectedCardShape),
+            )
+        }
 
         // Finger holding the card.
         Icon(

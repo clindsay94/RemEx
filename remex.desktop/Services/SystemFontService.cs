@@ -43,21 +43,59 @@ public static class SystemFontService
         return fonts;
     }
 
-    private static IEnumerable<string> GetSystemFontNames()
+    /// <summary>
+    /// The sorted installed-font names, enumerated once per process (perf audit P3-58). Avalonia's
+    /// <c>SystemFontCollection</c> snapshots the installed family names when it is created, so a
+    /// re-enumeration per Personalize build could never pick up a font installed mid-session anyway -
+    /// it only re-sorted the same few hundred names. A FAILED enumeration is not cached: it is the
+    /// "platform not ready" shape, and pinning it would hide every system font until a restart.
+    /// </summary>
+    private static IReadOnlyList<string>? s_systemFontNames;
+
+    private static IReadOnlyList<string> GetSystemFontNames()
     {
+        if (s_systemFontNames is { } cached) return cached;
         try
         {
-            return FontManager.Current.SystemFonts
+            var names = FontManager.Current.SystemFonts
                 .Select(f => f.Name)
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            s_systemFontNames = names;
+            return names;
         }
         catch
         {
             // Font enumeration is best-effort; fall back to the bundled fonts only.
             return Array.Empty<string>();
+        }
+    }
+
+    /// <summary>Probe answers per font string (perf audit P3-64) - see <see cref="FontResolutionCache"/>.</summary>
+    private static readonly FontResolutionCache s_resolved = new(ProbeFont);
+
+    /// <summary>
+    /// The real probe. <see cref="FontManager.Current"/> is read OUTSIDE the try on purpose: before the
+    /// platform is initialised it throws, and that must propagate so the cache does not record it.
+    /// </summary>
+    private static FontFamily? ProbeFont(string value)
+    {
+        var fontManager = FontManager.Current;
+        try
+        {
+            var candidate = new FontFamily(value);
+            // Probe the actual glyph typeface. This is the same resolution the renderer performs, so if
+            // it can be resolved here without throwing, rendering with it is safe too.
+            return fontManager.TryGetGlyphTypeface(new Typeface(candidate), out var glyph) && glyph is not null
+                ? candidate
+                : null;
+        }
+        catch
+        {
+            // Malformed URI, missing embedded asset, or a font the platform can't load — reject it.
+            return null;
         }
     }
 
@@ -68,26 +106,18 @@ public static class SystemFontService
     /// with no usable font) fails here — returning <c>false</c> — instead of throwing during rendering,
     /// which freezes the UI thread. Returns <c>true</c> and the family only when it materializes.
     /// </summary>
+    /// <remarks>The probe runs once per distinct value per process; later calls reuse its answer and
+    /// the same <see cref="FontFamily"/> instance (perf audit P3-64).</remarks>
     public static bool TryResolveFont(string? value, out FontFamily family)
     {
-        family = FontFamily.Default;
-        if (string.IsNullOrWhiteSpace(value))
-            return false;
-
         try
         {
-            var candidate = new FontFamily(value);
-            // Probe the actual glyph typeface. This is the same resolution the renderer performs, so if
-            // it can be resolved here without throwing, rendering with it is safe too.
-            if (!FontManager.Current.TryGetGlyphTypeface(new Typeface(candidate), out var glyph) || glyph is null)
-                return false;
-
-            family = candidate;
-            return true;
+            return s_resolved.TryResolve(value, out family);
         }
         catch
         {
-            // Malformed URI, missing embedded asset, or a font the platform can't load — reject it.
+            // No font platform yet (see ProbeFont) — reject for now, uncached, so a later call retries.
+            family = FontFamily.Default;
             return false;
         }
     }
@@ -104,5 +134,38 @@ public static class SystemFontService
         if (TryResolveFont(fallbackUri, out var fallback))
             return fallback;
         return FontFamily.Default;
+    }
+}
+
+/// <summary>
+/// Remembers a font probe's answer per value string (perf audit P3-64). Each theme apply resolves three
+/// typography fonts, and every one used to force a glyph-typeface load - the bundled Nabla asset is
+/// 1.6 MB. Both answers are kept: a resolved family (the same instance every time) and "unresolvable"
+/// (null). A probe that THROWS is not an answer and is never cached; the exception propagates.
+/// </summary>
+internal sealed class FontResolutionCache
+{
+    private readonly Func<string, FontFamily?> _probe;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, FontFamily?> _answers =
+        new(StringComparer.Ordinal);
+
+    public FontResolutionCache(Func<string, FontFamily?> probe) => _probe = probe;
+
+    public bool TryResolve(string? value, out FontFamily family)
+    {
+        family = FontFamily.Default;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        if (!_answers.TryGetValue(value, out var answer))
+        {
+            answer = _probe(value);
+            _answers[value] = answer;
+        }
+
+        if (answer is null)
+            return false;
+        family = answer;
+        return true;
     }
 }

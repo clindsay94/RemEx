@@ -21,8 +21,18 @@ public class MdnsAdvertisingService : BackgroundService
     // advertise or a concurrent re-advertise.
     private readonly object _advertiseLock = new();
     private ServiceProfile? _currentProfile;
+    private IPAddress[] _currentAddresses = [];
     private string _instanceName = string.Empty;
     private int _port;
+
+    // NetworkAddressChanged arrives in BURSTS (one per interface/address step of a DHCP renew, a VPN
+    // coming up, a NIC switch) and often for changes that leave every advertisable address as it was.
+    // Each one used to send a goodbye for the whole profile and re-register it — telling every client
+    // to drop this host, several times in a row, for nothing (perf audit P3-46). The handler now only
+    // (re)arms this timer; the re-advertise runs once the burst has been quiet this long, and is
+    // skipped when the advertisable address set did not change.
+    internal static readonly TimeSpan ReadvertiseDebounce = TimeSpan.FromMilliseconds(1500);
+    private Timer? _readvertiseTimer;
 
     public MdnsAdvertisingService(ILogger<MdnsAdvertisingService> logger, IConfiguration configuration)
     {
@@ -40,6 +50,7 @@ public class MdnsAdvertisingService : BackgroundService
         _logger.LogInformation("Starting mDNS advertising for {InstanceName} (_remex._tcp) on port {Port}", _instanceName, _port);
 
         _serviceDiscovery = new ServiceDiscovery();
+        _readvertiseTimer = new Timer(_ => OnReadvertiseDebounceElapsed());
 
         // Re-advertise whenever an interface address changes (DHCP renew, NIC switch,
         // VPN up/down) so the host stays discoverable on the segment the client is on.
@@ -63,18 +74,36 @@ public class MdnsAdvertisingService : BackgroundService
         finally
         {
             NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
-            _serviceDiscovery?.Dispose();
-            _serviceDiscovery = null;
-            _currentProfile = null;
+            _readvertiseTimer?.Dispose();
+            _readvertiseTimer = null;
+            lock (_advertiseLock)
+            {
+                _serviceDiscovery?.Dispose();
+                _serviceDiscovery = null;
+                _currentProfile = null;
+                _currentAddresses = [];
+            }
         }
     }
 
     private void OnNetworkAddressChanged(object? sender, EventArgs e)
     {
+        // Trailing-edge debounce: every event in a burst pushes the deadline out (P3-46).
         try
         {
-            _logger.LogInformation("Network address change detected; re-advertising RemEx mDNS.");
-            ReadvertiseFromCurrentAddresses();
+            _readvertiseTimer?.Change(ReadvertiseDebounce, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Stopping: the timer went away between the null check and the call. Nothing to do.
+        }
+    }
+
+    private void OnReadvertiseDebounceElapsed()
+    {
+        try
+        {
+            ReadvertiseFromCurrentAddresses(skipIfUnchanged: true);
         }
         catch (Exception ex)
         {
@@ -82,7 +111,13 @@ public class MdnsAdvertisingService : BackgroundService
         }
     }
 
-    private void ReadvertiseFromCurrentAddresses()
+    /// <summary>
+    /// Whether two advertisable address sets are the same set, ignoring order (P3-46).
+    /// </summary>
+    internal static bool SameAddressSet(IReadOnlyCollection<IPAddress> previous, IReadOnlyCollection<IPAddress> current)
+        => previous.Count == current.Count && new HashSet<IPAddress>(previous).SetEquals(current);
+
+    private void ReadvertiseFromCurrentAddresses(bool skipIfUnchanged = false)
     {
         var addresses = GetAdvertisableAddresses().ToArray();
 
@@ -92,6 +127,17 @@ public class MdnsAdvertisingService : BackgroundService
             if (serviceDiscovery is null)
             {
                 return;
+            }
+
+            if (skipIfUnchanged && _currentProfile is not null && SameAddressSet(_currentAddresses, addresses))
+            {
+                _logger.LogDebug("Network address change left the advertisable addresses unchanged; keeping the mDNS profile.");
+                return;
+            }
+
+            if (skipIfUnchanged)
+            {
+                _logger.LogInformation("Network address change detected; re-advertising RemEx mDNS.");
             }
 
             // Send a goodbye for the previous profile before announcing the rebuilt set.
@@ -122,12 +168,15 @@ public class MdnsAdvertisingService : BackgroundService
 
             serviceDiscovery.Advertise(profile);
             _currentProfile = profile;
+            _currentAddresses = addresses;
         }
     }
 
     public override void Dispose()
     {
         NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
+        _readvertiseTimer?.Dispose();
+        _readvertiseTimer = null;
         _serviceDiscovery?.Dispose();
         _serviceDiscovery = null;
         _currentProfile = null;

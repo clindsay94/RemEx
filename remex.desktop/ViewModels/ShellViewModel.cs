@@ -110,6 +110,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isShellChromeHidden;
 
+    /// <summary>
+    /// What the fullscreen <c>ImmersiveHost</c> shows: <see cref="CurrentView"/> while the chrome is
+    /// hidden, otherwise nothing (perf audit P3-65). It used to bind <see cref="CurrentView"/> directly,
+    /// so once fullscreen had been used the hidden host kept a second, live RemoteDesktopView - attached,
+    /// subscribed to the view model's PropertyChanged, reacting to every frame - for the rest of the
+    /// session. Clearing it outside immersive mode lets that duplicate detach.
+    /// </summary>
+    public ObservableObject? ImmersiveView => IsShellChromeHidden ? CurrentView : null;
+
+    partial void OnCurrentViewChanged(ObservableObject? value) => OnPropertyChanged(nameof(ImmersiveView));
+
+    partial void OnIsShellChromeHiddenChanged(bool value) => OnPropertyChanged(nameof(ImmersiveView));
+
     /// <summary>Whether the side navigation drawer is expanded.</summary>
     [ObservableProperty]
     private bool _isDrawerOpen;
@@ -1425,6 +1438,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // Clear app launcher search when navigating away
         if (CurrentView is AppLauncherViewModel alvm && viewModel != alvm)
             alvm.SearchText = string.Empty;
+
+        // The Logs page stops following the live log while it is not shown and replays on return
+        // (perf audit P3-63); the shell keeps its one instance for the whole session.
+        if (CurrentView is DiagnosticLogsViewModel leavingLogs && viewModel != leavingLogs)
+            leavingLogs.Suspend();
+        if (viewModel is DiagnosticLogsViewModel arrivingLogs)
+            arrivingLogs.Resume();
 
         // The only thing the view needs to know: which way along the sidebar the user moved. The
         // shell used to pick one of four transitions at random per navigation, which meant the same

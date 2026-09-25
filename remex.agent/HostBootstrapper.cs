@@ -377,9 +377,19 @@ public static class HostBootstrapper
         // (acceptable: startup path, no active sync context), then register the live
         // instance as the ICertificateService singleton so DI resolves the same object
         // that Kestrel was configured with.
+        //
+        // NO CONSOLE PROVIDER ON WINDOWS (perf audit P3-50). The agent is a WinExe: its stdout goes
+        // nowhere (only --doctor attaches to a parent console, and that exits before this runs), yet
+        // AddConsole starts a dedicated console-processor thread that this never-disposed factory
+        // keeps parked for the whole process lifetime. The factory cannot simply be disposed after
+        // setup instead — certService keeps its logger and logs from it later. Linux keeps the
+        // console, where running the host from a terminal is a real workflow.
         var certLoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(b =>
         {
-            b.AddConsole();
+            if (!OperatingSystem.IsWindows())
+            {
+                b.AddConsole();
+            }
             b.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());
         });
         var certService = new CertificateService(certLoggerFactory.CreateLogger<CertificateService>());
@@ -710,7 +720,9 @@ public static class HostBootstrapper
                     }
                 }
 
-                using var handler = new RemoteDesktopHandler(
+                // AWAIT using: teardown waits up to 2 s for the input thread to drain, and that wait
+                // should not park a request thread (perf audit P3-40).
+                await using var handler = new RemoteDesktopHandler(
                     context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
                     context.RequestServices.GetRequiredService<IScreenCaptureService>(),
                     context.RequestServices.GetRequiredService<IInputSimulationService>(),

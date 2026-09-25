@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.LruCache
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -454,24 +455,54 @@ private fun RecentAppCarousel(
 private enum class AppLauncherBody { Disconnected, Empty, Apps }
 
 /**
+ * Decoded app icons, keyed by the base64 string they came from (perf audit P3-17).
+ *
+ * The "Recent" carousel and the full grid both render the same [AppEntry] (a recently-launched
+ * app shows in both), and each is its own `rememberAppIconBitmap` call site — without a shared
+ * cache the identical icon payload was decoded twice, and again on every screen re-entry since
+ * `produceState` alone doesn't survive leaving composition. Bounded by decoded bytes, same
+ * pattern as `FileManagerFileItem`'s `ThumbnailBitmapCache` (P3-13).
+ */
+private object AppIconBitmapCache {
+    private const val MAX_BYTES = 4 * 1024 * 1024
+
+    private val cache = object : LruCache<String, Bitmap>(MAX_BYTES) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount
+    }
+
+    fun get(base64: String): Bitmap? = cache.get(base64)
+
+    fun put(base64: String, bitmap: Bitmap) {
+        cache.put(base64, bitmap)
+    }
+}
+
+/** The result of one off-main decode, tagged with the key it was decoded from. */
+private class DecodedAppIcon(val base64: String, val bitmap: Bitmap?)
+
+/**
  * Decodes an app icon's base64 payload off the main thread, returning `null` (and thus the
  * fallback launch icon) for a missing or corrupt icon rather than crashing or leaving a blank tile.
+ * A cache hit returns synchronously so the grid tile and the carousel tile for the same app share
+ * one decoded [Bitmap] instead of each decoding it independently.
  */
 @Composable
 private fun rememberAppIconBitmap(iconBase64: String?): Bitmap? {
-    val state = produceState<Bitmap?>(initialValue = null, key1 = iconBase64) {
-        value = if (iconBase64 == null) {
-            null
-        } else {
-            withContext(Dispatchers.Default) {
-                try {
-                    val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                } catch (_: Exception) {
-                    null
-                }
+    if (iconBase64 == null) return null
+    AppIconBitmapCache.get(iconBase64)?.let { return it }
+    val decoded by produceState<DecodedAppIcon?>(initialValue = null, key1 = iconBase64) {
+        val bitmap = withContext(Dispatchers.Default) {
+            try {
+                val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } catch (_: Exception) {
+                null
             }
         }
+        if (bitmap != null) AppIconBitmapCache.put(iconBase64, bitmap)
+        value = DecodedAppIcon(iconBase64, bitmap)
     }
-    return state.value
+    // produceState keeps its previous value until the restarted producer writes, so an icon that
+    // just changed key must not show the OLD key's bitmap for that window.
+    return decoded?.takeIf { it.base64 == iconBase64 }?.bitmap
 }

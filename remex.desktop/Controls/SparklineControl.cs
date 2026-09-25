@@ -130,7 +130,75 @@ public class SparklineControl : Control
     private ISolidColorBrush? _accentBrush;
     private ISolidColorBrush? _areaFillBrush;
     private ISolidColorBrush? _glowBrush;
-    private Pen? _linePen;
+    private IPen? _linePen;
+
+    // ─── Per-paint allocation caches (perf audit P3-61) ───────────────────────────────────────
+    // Render used to allocate a fresh point list, and fresh pens and brushes, on every paint of every
+    // tile - once per sensor tick. Brushes and pens are now immutable and looked up by the inputs
+    // that actually determine them (colour, thickness, cap), and the point list is one reused buffer.
+    // The two dictionaries are capped because the glow-area colour is value-reactive (it lerps toward
+    // the hot colour), so its set of keys is open-ended; clearing at the cap keeps them tiny.
+    private const int ResourceCacheCap = 32;
+
+    private static readonly ImmutableSolidColorBrush DefaultTrackBrush =
+        new(new Color(TrackAlpha, 128, 128, 128));
+
+    private readonly List<Point> _points = new();
+    private readonly Dictionary<Color, ImmutableSolidColorBrush> _brushCache = new();
+    private readonly Dictionary<(Color Color, double Thickness, PenLineCap Cap), ImmutablePen> _penCache = new();
+    private Color? _glowGradientColor;
+    private LinearGradientBrush? _glowGradient;
+
+    private ImmutableSolidColorBrush BrushFor(Color color)
+    {
+        if (!_brushCache.TryGetValue(color, out var brush))
+        {
+            if (_brushCache.Count >= ResourceCacheCap) _brushCache.Clear();
+            brush = new ImmutableSolidColorBrush(color);
+            _brushCache[color] = brush;
+        }
+        return brush;
+    }
+
+    private ImmutablePen PenFor(Color color, double thickness, PenLineCap cap = PenLineCap.Flat)
+    {
+        var key = (color, thickness, cap);
+        if (!_penCache.TryGetValue(key, out var pen))
+        {
+            if (_penCache.Count >= ResourceCacheCap) _penCache.Clear();
+            pen = new ImmutablePen(BrushFor(color), thickness, lineCap: cap);
+            _penCache[key] = pen;
+        }
+        return pen;
+    }
+
+    /// <summary>
+    /// A pen for the track brush. A plain opaque solid brush (the theme resource, or the default grey)
+    /// goes through the cache by colour; anything else keeps the old per-paint pen, because a colour
+    /// key would drop its opacity or gradient.
+    /// </summary>
+    private IPen TrackPenFor(double thickness) => TrackBrush switch
+    {
+        null => PenFor(DefaultTrackBrush.Color, thickness),
+        ISolidColorBrush { Opacity: 1.0, Transform: null } solid => PenFor(solid.Color, thickness),
+        var other => new Pen(other, thickness),
+    };
+
+    /// <summary>Fills the reused point buffer from a normalized (0-1) series.</summary>
+    private List<Point> PointsFor(IList<double> data, Rect bounds)
+    {
+        var points = _points;
+        points.Clear();
+        int count = data.Count;
+        double maxHeight = bounds.Height;
+        double stepX = bounds.Width / Math.Max(count - 1, 1);
+        for (int i = 0; i < count; i++)
+        {
+            double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
+            points.Add(new Point(i * stepX, bounds.Height - h));
+        }
+        return points;
+    }
 
     public IList<double>? History
     {
@@ -251,7 +319,7 @@ public class SparklineControl : Control
         _accentBrush = new ImmutableSolidColorBrush(accent);
         _areaFillBrush = new ImmutableSolidColorBrush(new Color(AreaFillAlpha, accent.R, accent.G, accent.B));
         _glowBrush = new ImmutableSolidColorBrush(new Color(GlowAlpha, accent.R, accent.G, accent.B));
-        _linePen = new Pen(_accentBrush, 1.5);
+        _linePen = PenFor(accent, 1.5);
     }
 
     private void OnHistoryCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -316,8 +384,8 @@ public class SparklineControl : Control
         double radius = (size - strokeWidth) / 2 - 1;
         if (radius <= 0) return;
 
-        var trackPen = new Pen(TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128)), strokeWidth);
-        var accentPen = new Pen(_accentBrush!, strokeWidth, lineCap: PenLineCap.Round);
+        var trackPen = TrackPenFor(strokeWidth);
+        var accentPen = PenFor(AccentColor, strokeWidth, PenLineCap.Round);
 
         // Full track ring.
         context.DrawEllipse(null, trackPen, new Point(centerX, centerY), radius, radius);
@@ -368,8 +436,8 @@ public class SparklineControl : Control
         double y = (bounds.Height - barH) / 2;
 
         int litCount = (int)Math.Round(fraction * segments);
-        var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
-        var hotBrush = new ImmutableSolidColorBrush(HotColor);
+        var trackBrush = TrackBrush ?? DefaultTrackBrush;
+        var hotBrush = BrushFor(HotColor);
 
         for (int i = 0; i < segments; i++)
         {
@@ -396,18 +464,8 @@ public class SparklineControl : Control
         double range = MaxSeen - MinSeen;
         double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
         var accent = LerpColor(AccentColor, HotColor, fraction * 0.8);
-        var accentBrush = new ImmutableSolidColorBrush(accent);
 
-        int count = data.Count;
-        double maxHeight = bounds.Height;
-        double stepX = bounds.Width / Math.Max(count - 1, 1);
-
-        var points = new List<Point>(count);
-        for (int i = 0; i < count; i++)
-        {
-            double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
-            points.Add(new Point(i * stepX, bounds.Height - h));
-        }
+        var points = PointsFor(data, bounds);
 
         // Vertical gradient fill under the curve.
         var geometry = new StreamGeometry();
@@ -419,21 +477,26 @@ public class SparklineControl : Control
             ctx.EndFigure(true);
         }
 
-        var gradient = new LinearGradientBrush
+        // Rebuilt only when the value-reactive accent actually moves, not on every paint.
+        if (_glowGradient is null || _glowGradientColor != accent)
         {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-            GradientStops =
+            _glowGradient = new LinearGradientBrush
             {
-                new GradientStop(new Color(150, accent.R, accent.G, accent.B), 0),
-                new GradientStop(new Color(10, accent.R, accent.G, accent.B), 1),
-            },
-        };
-        context.DrawGeometry(gradient, null, geometry);
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(new Color(150, accent.R, accent.G, accent.B), 0),
+                    new GradientStop(new Color(10, accent.R, accent.G, accent.B), 1),
+                },
+            };
+            _glowGradientColor = accent;
+        }
+        context.DrawGeometry(_glowGradient, null, geometry);
 
         // Neon top edge: a thick low-alpha glow pass under a thin crisp line (both value-reactive).
-        var glowPen = new Pen(new ImmutableSolidColorBrush(new Color(90, accent.R, accent.G, accent.B)), 4);
-        var crispPen = new Pen(accentBrush, 1.5);
+        var glowPen = PenFor(new Color(90, accent.R, accent.G, accent.B), 4);
+        var crispPen = PenFor(accent, 1.5);
         for (int i = 1; i < points.Count; i++)
             context.DrawLine(glowPen, points[i - 1], points[i]);
         for (int i = 1; i < points.Count; i++)
@@ -449,7 +512,7 @@ public class SparklineControl : Control
         if (primary == null || primary.Count < 2) return;
         if (_accentBrush == null) UpdateBrushes();
 
-        DrawSeriesLine(context, bounds, primary, _accentBrush!, filledAlpha: 40);
+        DrawSeriesLine(context, bounds, primary, AccentColor, filledAlpha: 40);
 
         var secondary = SecondaryHistory;
         if (secondary != null && secondary.Count >= 2)
@@ -467,8 +530,7 @@ public class SparklineControl : Control
                     secAccent.R, secAccent.G, secAccent.B);
             }
 
-            var secBrush = new ImmutableSolidColorBrush(secAccent);
-            DrawSeriesLine(context, bounds, secondary, secBrush, filledAlpha: 0);
+            DrawSeriesLine(context, bounds, secondary, secAccent, filledAlpha: 0);
         }
     }
 
@@ -517,21 +579,14 @@ public class SparklineControl : Control
     }
 
     /// <summary>Draws a normalized (0–1) series as a line, optionally with a faint area fill.</summary>
-    private static void DrawSeriesLine(DrawingContext context, Rect bounds, IList<double> data,
-        ISolidColorBrush brush, byte filledAlpha)
+    private void DrawSeriesLine(DrawingContext context, Rect bounds, IList<double> data,
+        Color color, byte filledAlpha)
     {
-        int count = data.Count;
-        double stepX = bounds.Width / Math.Max(count - 1, 1);
-        var points = new List<Point>(count);
-        for (int i = 0; i < count; i++)
-        {
-            double h = Math.Clamp(data[i] * bounds.Height, 0, bounds.Height);
-            points.Add(new Point(i * stepX, bounds.Height - h));
-        }
+        var points = PointsFor(data, bounds);
 
         if (filledAlpha > 0)
         {
-            var c = brush.Color;
+            var c = color;
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
@@ -540,10 +595,10 @@ public class SparklineControl : Control
                 ctx.LineTo(new Point(points[^1].X, bounds.Height));
                 ctx.EndFigure(true);
             }
-            context.DrawGeometry(new ImmutableSolidColorBrush(new Color(filledAlpha, c.R, c.G, c.B)), null, geometry);
+            context.DrawGeometry(BrushFor(new Color(filledAlpha, c.R, c.G, c.B)), null, geometry);
         }
 
-        var pen = new Pen(brush, 1.5);
+        var pen = PenFor(color, 1.5);
         for (int i = 1; i < points.Count; i++)
             context.DrawLine(pen, points[i - 1], points[i]);
     }
@@ -591,18 +646,7 @@ public class SparklineControl : Control
 
         if (_accentBrush == null) UpdateBrushes();
 
-        int count = data.Count;
-        double maxHeight = bounds.Height;
-        double stepX = bounds.Width / Math.Max(count - 1, 1);
-
-        var points = new List<Point>(count);
-        for (int i = 0; i < count; i++)
-        {
-            double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
-            double x = i * stepX;
-            double y = bounds.Height - h;
-            points.Add(new Point(x, y));
-        }
+        var points = PointsFor(data, bounds);
 
         if (filled && points.Count >= 2)
         {
@@ -642,7 +686,7 @@ public class SparklineControl : Control
 
         // Background track
         var bgRect = new Rect(0, bounds.Height * 0.35, bounds.Width, bounds.Height * 0.3);
-        var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
+        var trackBrush = TrackBrush ?? DefaultTrackBrush;
         context.DrawRectangle(trackBrush, null, new RoundedRect(bgRect, 3));
 
         // Fill bar

@@ -161,6 +161,41 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(PhoneThemeSnapshot))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
+    /// <summary>
+    /// Perf audit P3-3: <see cref="JsonSourceGenerationOptionsAttribute"/> has no way to set
+    /// <see cref="JsonSerializerOptions.Encoder"/> - it isn't a compile-time constant an attribute
+    /// argument can carry - so a relaxed encoder can't be applied to <see cref="Default"/> itself.
+    /// This is a second generated-context instance, options-compatible with <see cref="Default"/> in
+    /// every other respect, that every serialize call site should use instead: the DEFAULT encoder
+    /// escapes every non-ASCII character and several ASCII punctuation marks (including base64's
+    /// '+') as \uXXXX on every message this app sends, paid on every telemetry tick and input event.
+    /// UnsafeRelaxedJsonEscaping is safe here specifically because this JSON is a wire protocol
+    /// between two JSON parsers (System.Text.Json on .NET, org.json on Android), never embedded into
+    /// HTML/JS - the "unsafe" in its name is about HTML-injection contexts this protocol never
+    /// touches. Same decoded VALUE either way (a standard JSON parser treats a literal UTF-8
+    /// character and its \uXXXX escape identically), so RG:396's protocolVersion-bump rule for a
+    /// wire-format change is not triggered. Safe to use for DESERIALIZE too (encoding only affects
+    /// writing) - one context for everything avoids a second parallel one to keep in sync.
+    ///
+    /// LAZY VIA A NESTED HOLDER, NOT A FIELD INITIALIZER ON THIS CLASS: this class is `partial` and
+    /// the source generator emits <see cref="Default"/>'s own initializer in a SEPARATE file.
+    /// Partial-class static field initializers merge into one static constructor in an order this
+    /// file does not control, and a field initializer here referencing <see cref="Default"/> threw a
+    /// NullReferenceException at type-init time when the generated initializer happened to run
+    /// second. A nested static holder class's own static initializer only runs on first access to
+    /// something inside it (CLR beforefieldinit), which happens well after both partials' static
+    /// state is guaranteed to exist - and unlike a `??=`-guarded nullable field, this needs no
+    /// null-forgiving suppressions to read it back (review round 1).
+    /// </summary>
+    public static RemexJsonSerializerContext Relaxed => RelaxedHolder.Instance;
+
+    private static class RelaxedHolder
+    {
+        internal static readonly RemexJsonSerializerContext Instance = new(new JsonSerializerOptions(Default.Options)
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        });
+    }
 }
 
 public static class RemexJson
@@ -176,7 +211,11 @@ public static class RemexJson
     public static string SerializeIndented<T>(T value, JsonTypeInfo<T> typeInfo)
     {
         using var stream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        // Review round 1 LOW: Utf8JsonWriter's OWN JsonWriterOptions.Encoder decides escaping here,
+        // NOT typeInfo.Options.Encoder - a caller passing RemexJsonSerializerContext.Relaxed for a
+        // relaxed encoding would otherwise get Default's escaping anyway, silently. Threading it
+        // through is what makes the swap at DashboardProfileStorageService.cs actually do something.
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = typeInfo.Options.Encoder });
         JsonSerializer.Serialize(writer, value, typeInfo);
         writer.Flush();
         return Encoding.UTF8.GetString(stream.ToArray());
@@ -187,7 +226,7 @@ public static class RemexJson
 
     public static async Task SerializeIndentedAsync<T>(Stream stream, T value, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = typeInfo.Options.Encoder });
         JsonSerializer.Serialize(writer, value, typeInfo);
         await writer.FlushAsync(cancellationToken);
     }

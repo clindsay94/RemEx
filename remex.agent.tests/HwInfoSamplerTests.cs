@@ -173,6 +173,40 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Equal(2, after.Sensors.Count);
     }
 
+    /// <summary>
+    /// A host without HWiNFO must not re-probe (and throw-and-catch FileNotFoundException) on every
+    /// tick; it backs off after a miss, and still picks HWiNFO up once the back-off expires (P3-45).
+    /// </summary>
+    [WindowsOnlyFact(WindowsOnlyBecause)]
+    public void AMissBacksOffTheReprobe_ThenAFreshlyStartedProducerIsPickedUp()
+    {
+        // The back-off runs on an injected clock, so neither assertion depends on how long the
+        // steps below take on a loaded machine.
+        const long missRetryMs = 30_000;
+        long nowMs = 1_000_000;
+        var name = SyntheticHwInfoRegion.NewUniqueName();
+        var sampler = new WindowsTelemetryService(
+            NullLogger<WindowsTelemetryService>.Instance, name, StaleAfterMs,
+            missRetryMs: missRetryMs, missBackoffClockMs: () => nowMs);
+
+        // HWiNFO is not running: a miss, which arms the back-off.
+        Assert.False(sampler.TryReadHwInfo(EmptyPayload(), out _));
+
+        // HWiNFO starts. Inside the back-off the sampler does not even look, so it still misses.
+        using var late = new SyntheticHwInfoRegion(name);
+        late.Write(("Core 0", "°C", 42.0));
+        Assert.False(sampler.TryReadHwInfo(EmptyPayload(), out _));
+
+        // One millisecond short of the back-off: still not looking.
+        nowMs += missRetryMs - 1;
+        Assert.False(sampler.TryReadHwInfo(EmptyPayload(), out _));
+
+        // After the back-off the next tick opens the region.
+        nowMs += 1;
+        Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var found));
+        Assert.Single(found.Sensors);
+    }
+
     [WindowsOnlyFact(WindowsOnlyBecause)]
     public void BadSignatureIsRejected()
     {

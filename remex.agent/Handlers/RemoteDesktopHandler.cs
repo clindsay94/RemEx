@@ -18,7 +18,7 @@ using Remex.Agent.Services.ScreenCapture;
 
 namespace Remex.Agent.Handlers;
 
-public sealed class RemoteDesktopHandler : IDisposable
+public sealed class RemoteDesktopHandler : IDisposable, IAsyncDisposable
 {
     private readonly ILogger<RemoteDesktopHandler> _logger;
     private readonly IScreenCaptureService _screenCapture;
@@ -417,12 +417,21 @@ public sealed class RemoteDesktopHandler : IDisposable
         long encoderSerial = -1;
         int encoderConfigVersion = -1;
 
-        // Phase 5 adaptive capture scale (RemEx-eo0f): the controller's lifetime is tied to the
-        // active H.264 encoder INSTANCE, not the stream — a rebuild (target switch, config change, or
-        // an adaptive step itself) creates a fresh encoder whose Accepted/DroppedAccessUnit counters
-        // start at 0, so re-seeding the controller and the sampling baselines together on every
-        // instance swap keeps "achieved FPS" measured cleanly within one encoder's lifetime.
+        // Phase 5 adaptive capture scale (RemEx-eo0f): the SAMPLING BASELINES are tied to the active
+        // H.264 encoder INSTANCE — a rebuild (target switch, config change, or an adaptive step
+        // itself) creates a fresh encoder whose Accepted/DroppedAccessUnit counters start at 0, so the
+        // baselines reset on every instance swap and "achieved FPS" stays measured within one
+        // encoder's lifetime.
+        //
+        // THE CONTROLLER ITSELF OUTLIVES THE ENCODER (perf audit P3-38). It used to be recreated on
+        // every swap too, and since its own step triggers a rebuild, every decision wiped the state
+        // that decision had just set: the 5 s change cooldown and, worse, the 60 s hold after a failed
+        // step-up — so a host that could not sustain a rung oscillated up and down it indefinitely,
+        // paying an encoder rebuild (and on Android a SurfaceView rebuild) each way. It is now
+        // re-seeded only when the scale moved under it from outside (a preset/config change from the
+        // client), detected by comparing _scale against the scale it last produced or was seeded at.
         AdaptiveScaleController? adaptiveController = null;
+        double adaptiveSeededScale = double.NaN;
         IH264Encoder? adaptiveTrackedEncoder = null;
         var adaptiveWindowStopwatch = Stopwatch.StartNew();
         long adaptiveBaselineAccepted = 0;
@@ -610,10 +619,15 @@ public sealed class RemoteDesktopHandler : IDisposable
                         if (!ReferenceEquals(h264Encoder, adaptiveTrackedEncoder))
                         {
                             // New encoder instance (rebuild for any reason): its counters start at 0, so
-                            // re-seed the controller from the scale that produced this instance and reset
-                            // the sampling baselines to match.
+                            // reset the sampling baselines to match. Keep the controller across the
+                            // rebuild unless the scale was changed from outside it (P3-38).
                             adaptiveTrackedEncoder = h264Encoder;
-                            adaptiveController = new AdaptiveScaleController(_scale);
+                            var currentScale = _scale;
+                            if (ShouldReseedAdaptiveController(adaptiveController, adaptiveSeededScale, currentScale))
+                            {
+                                adaptiveController = new AdaptiveScaleController(currentScale);
+                                adaptiveSeededScale = currentScale;
+                            }
                             adaptiveBaselineAccepted = h264Encoder.AcceptedInputFrameCount;
                             adaptiveBaselineDropped = h264Encoder.DroppedAccessUnitCount;
                             adaptiveWindowStopwatch.Restart();
@@ -637,6 +651,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                                     "Adaptive scale: {Old:F4} -> {New:F4} ({Reason}); achieved {Fps:F0}/{Target} fps.",
                                     _scale, decision.Scale, decision.Reason, achievedFps, _targetFps);
                                 _scale = decision.Scale;
+                                // The controller's own step: the rebuild it triggers must NOT re-seed it.
+                                adaptiveSeededScale = decision.Scale;
                                 Interlocked.Increment(ref _encoderConfigVersion);
                             }
                         }
@@ -646,6 +662,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         // Adaptive scale turned off or codec left H.264: drop tracking so a later
                         // re-enable starts a fresh controller instead of resuming stale state.
                         adaptiveController = null;
+                        adaptiveSeededScale = double.NaN;
                         adaptiveTrackedEncoder = null;
                     }
 
@@ -2167,15 +2184,70 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Whether the capture loop must build a fresh <see cref="AdaptiveScaleController"/> on an encoder
+    /// swap rather than keep the one it has (perf audit P3-38).
+    /// </summary>
+    /// <remarks>
+    /// Only when there is none yet, or the scale was changed from OUTSIDE it — a client preset or
+    /// config change. The controller's own step sets <paramref name="seededScale"/> to the scale it
+    /// chose, so the rebuild that step triggers keeps the controller, and with it the cooldown and
+    /// failed-step-up hold that stop it oscillating. Exact comparison is intended: the loop assigns
+    /// both sides from the same double.
+    /// </remarks>
+    internal static bool ShouldReseedAdaptiveController(
+        AdaptiveScaleController? controller, double seededScale, double currentScale)
+        => controller is null || !seededScale.Equals(currentScale);
+
+    private static readonly TimeSpan InputDrainTimeout = TimeSpan.FromSeconds(2);
+
+    // Set by whichever of Dispose / DisposeAsync runs first; the second becomes a no-op rather than
+    // throwing from CompleteAdding on a disposed queue.
+    private int _teardownStarted;
+
+    /// <summary>
+    /// The teardown the <c>/ws/desktop</c> endpoint uses (<c>await using</c>): the same steps as
+    /// <see cref="Dispose"/>, but the input-drain wait is awaited instead of blocking a request thread
+    /// for up to two seconds (perf audit P3-40).
+    /// </summary>
+    public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _teardownStarted, 1) != 0) return;
+
         _disposing = true;
         _inputQueue.CompleteAdding();
         bool inputDrained = false;
-        AggregateException? inputThreadFault = null;
+        Exception? inputThreadFault = null;
         try
         {
-            inputDrained = _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
+            await _inputProcessingTask.WaitAsync(InputDrainTimeout);
+            inputDrained = true;
+        }
+        catch (TimeoutException)
+        {
+            // Not drained in time: reported by CompleteTeardown's timeout branch.
+        }
+        catch (Exception ex)
+        {
+            // WaitAsync rethrows the task's own fault (not an AggregateException); same meaning as
+            // the AggregateException arm in Dispose (RemEx-q4wm).
+            inputThreadFault = ex;
+        }
+
+        CompleteTeardown(inputDrained, inputThreadFault);
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _teardownStarted, 1) != 0) return;
+
+        _disposing = true;
+        _inputQueue.CompleteAdding();
+        bool inputDrained = false;
+        Exception? inputThreadFault = null;
+        try
+        {
+            inputDrained = _inputProcessingTask.Wait(InputDrainTimeout);
         }
         catch (AggregateException ex)
         {
@@ -2193,6 +2265,12 @@ public sealed class RemoteDesktopHandler : IDisposable
             inputThreadFault = ex;
         }
 
+        CompleteTeardown(inputDrained, inputThreadFault);
+    }
+
+    // Shared tail of Dispose / DisposeAsync: report how the input thread ended, then release held keys.
+    private void CompleteTeardown(bool inputDrained, Exception? inputThreadFault)
+    {
         // Checked BEFORE the drain result, because a thread that caught its way out reports a
         // perfectly successful Wait. That is the shape this bead's containment creates and it would
         // otherwise be the quietest failure of the three: the loop caught, logged, and returned, so

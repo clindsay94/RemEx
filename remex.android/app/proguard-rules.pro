@@ -35,3 +35,15 @@
 -keepclassmembers class com.clindsay94.remex.RemexCoreClient$RemexCallback {
     <methods>;
 }
+
+# Perf audit P3-9: Log.d/Log.v calls survived into the release APK, including frame-sampled debug
+# logging that fires several times a second while streaming. R8 strips the ENTIRE call (including
+# evaluating its arguments) when a method is declared to have no side effects, so a call built from
+# an interpolated string still costs nothing once this is in effect - not just "the log line is
+# silent", the string concatenation itself never runs. Deliberately excludes Log.i/w/e: those are
+# genuine diagnostics that should survive into a release build (e.g. reachable in a bug report),
+# only the two verbosity levels nobody reads outside active development are stripped.
+-assumenosideeffects class android.util.Log {
+    public static int d(...);
+    public static int v(...);
+}

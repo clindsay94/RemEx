@@ -1,4 +1,5 @@
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 // Avalonia 12 moved SetTextAsync off IClipboard onto ClipboardExtensions in this namespace
 // (RemEx-jcma3). The interface now speaks IDataTransfer; the text convenience is an extension.
@@ -58,6 +59,28 @@ public partial class DiagnosticLogsView : UserControl
         // follow tail starts ON, so the first paint should already agree with it.
         if (vm.IsFollowingTail)
             Dispatcher.UIThread.Post(ScrollLogListToEnd);
+    }
+
+    /// <summary>
+    /// Re-wires on re-attach and unwires on detach (perf audit P3-63). The shell keeps ONE view model
+    /// for the session but builds a new view per visit, and a detached view kept its
+    /// <c>ScrollToEndRequested</c> handler: every visit left one more dead view rooted by the view
+    /// model, each posting a scroll per live log line.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ConfigureViewModel();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_wiredVm is not null)
+        {
+            _wiredVm.ScrollToEndRequested -= OnScrollToEndRequested;
+            _wiredVm = null;
+        }
     }
 
     private void OnScrollToEndRequested() => Dispatcher.UIThread.Post(ScrollLogListToEnd);

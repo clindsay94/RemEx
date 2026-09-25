@@ -48,7 +48,13 @@ object AndroidFileTransferHost {
     private const val MAX_UPLOAD_BYTES = 5_000_000_000L
     private const val ORPHAN_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
 
-    private var job: Job? = null
+    // Perf audit P3-10: start() launches four coroutines (the message collector, two DataStore
+    // config-flow collectors, and an orphan-sweep), but only the message collector was ever
+    // assigned anywhere stop() could reach it - the other three ran forever, uncancelled, and every
+    // service re-creation (start() called again) launched three MORE on top, leaking two DataStore
+    // collectors and their upstream Flow machinery per restart. Tracking every launched Job, not
+    // just one, is what makes stop() actually stop everything start() started.
+    private val jobs = mutableListOf<Job>()
     private lateinit var settingsManager: SettingsManager
     private lateinit var context: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -86,30 +92,35 @@ object AndroidFileTransferHost {
     private val activeTransfers = ConcurrentHashMap<String, TransferState>()
 
     fun start(ctx: Context) {
+        // Cancel whatever a PRIOR start() left running before launching a fresh set - a re-creation
+        // (service restarted without an intervening stop(), or stop() itself missing some of these
+        // before this fix) must not compound into more and more live collectors.
+        jobs.forEach { it.cancel() }
+        jobs.clear()
+
         context = ctx.applicationContext
         settingsManager = SettingsManager(context)
         // Wire the serving-side consent flow before any inbound request can raise a prompt (plan WP9).
         FileConsentManager.start(context)
         hostHandler = buildHostHandler()
 
-        job?.cancel()
-        job = scope.launch {
+        jobs += scope.launch {
             RemexClientManager.fileTransferMessages.collect { json ->
                 handleMessage(json)
             }
         }
         // Keep the served-device configuration snapshots fresh.
-        scope.launch { settingsManager.sharedFolderUrisFlow.collect { sharedFolderUris = it } }
-        scope.launch { settingsManager.fullBrowseRootUriFlow.collect { fullBrowseRootUri = it } }
+        jobs += scope.launch { settingsManager.sharedFolderUrisFlow.collect { sharedFolderUris = it } }
+        jobs += scope.launch { settingsManager.fullBrowseRootUriFlow.collect { fullBrowseRootUri = it } }
         // Sweep any staging partials orphaned by a prior crash (plan §1.3).
-        scope.launch {
+        jobs += scope.launch {
             runCatching { hostHandler?.cleanupOrphans(ORPHAN_MAX_AGE_MS) }
         }
     }
 
     fun stop() {
-        job?.cancel()
-        job = null
+        jobs.forEach { it.cancel() }
+        jobs.clear()
         activeTransfers.values.forEach { it.cleanup() }
         activeTransfers.clear()
     }

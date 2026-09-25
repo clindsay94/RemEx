@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
@@ -161,6 +162,58 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
         _tray.FlyoutSensors.Should().HaveCount(2);
         _tray.FlyoutSensors.Should().Contain(pinnedLater);
         _tray.FlyoutSensors.Should().NotContain(hidden);
+    }
+
+    /// <summary>
+    /// Pins real sensors the way the app does: the canvas knows them (staged from a telemetry reading)
+    /// and the profile lists their ids, so <c>HomeViewModel.RefreshPinnedSensors</c> - which every
+    /// flyout show runs - resolves them instead of clearing hand-added ones.
+    /// </summary>
+    private void PinRealSensors(params string[] names)
+    {
+        var canvas = _shell.CanvasViewModel;
+        canvas.Should().NotBeNull("the shell builds its canvas up front");
+        canvas!.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = names.Select(n => new SensorReading { Id = n, Name = n, Value = 1, Unit = "°C" }).ToList(),
+        });
+        _shell.LayoutService.RequestSave(_shell.LayoutService.CurrentProfile! with { PinnedSensorIds = names.ToList() });
+    }
+
+    [Fact]
+    public void AHiddenFlyoutDropsItsSensorTilesAndTheNextShowRebindsThem()
+    {
+        // Perf audit P3-66: a hidden flyout must not stay bound to live, ticking SensorViewModels.
+        PinRealSensors("GPU Temp");
+        _tray.Refresh();
+        _tray.FlyoutSensors.Should().ContainSingle();
+
+        _tray.OnHidden();
+        _tray.FlyoutSensors.Should().BeEmpty();
+
+        _home.PinnedSensors.Add(new SensorViewModel { Name = "Fan RPM" });
+        _tray.FlyoutSensors.Should().BeEmpty("a pin change while hidden must not rebind the tiles");
+
+        PinRealSensors("GPU Temp", "Fan RPM");
+        _tray.Refresh();
+        _tray.FlyoutSensors.Select(s => s.Name).Should().Equal("GPU Temp", "Fan RPM");
+    }
+
+    [Fact]
+    public void AnUnchangedShowLeavesTheRealizedTilesAlone()
+    {
+        // Perf audit P3-67: every show used to Clear and re-Add the whole row even when nothing moved.
+        PinRealSensors("GPU Temp", "CPU Temp");
+        _tray.Refresh();
+        _tray.FlyoutSensors.Should().HaveCount(2);
+        var changes = 0;
+        _tray.FlyoutSensors.CollectionChanged += (_, _) => changes++;
+
+        _tray.Refresh();
+        _tray.Refresh();
+
+        changes.Should().Be(0);
+        _tray.FlyoutSensors.Should().HaveCount(2);
     }
 
     [Fact]

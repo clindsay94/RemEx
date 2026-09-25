@@ -232,7 +232,21 @@ public class ThemeService : IDisposable
     }
 
     private void OnOsColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
+        => HandleOsThemeVariant(e.ThemeVariant == Avalonia.Platform.PlatformThemeVariant.Light);
+
+    /// <summary>
+    /// Whether the last apply painted light, or null before the first apply. Compared against the
+    /// OS's answer so an OS colour event that did not flip light/dark (accent colour, contrast,
+    /// transparency toggles all raise the same event) skips the full apply (perf audit P3-51).
+    /// </summary>
+    private bool? _lastAppliedIsLight;
+
+    /// <summary>The OS-colour-change path, split out of the event handler so a test can drive it.</summary>
+    internal void HandleOsThemeVariant(bool osIsLight)
     {
+        // Nothing the palette reads changed: the painted variant already matches the OS.
+        if (_lastAppliedIsLight == osIsLight) return;
+
         // Re-run the whole apply rather than flipping the variant in place: the palette solve, the
         // theme variant, and every override key have to move together or the window paints a light
         // chrome under dark text. The settings guard means a listener that outlives a mode change
@@ -361,6 +375,7 @@ public class ThemeService : IDisposable
         var isLightTheme = ResolveIsLight(settings, preset, TryGetOsIsLight());
 
         _lastApplied = settings;
+        _lastAppliedIsLight = isLightTheme;
         if (settings.ThemeMode is ThemeModes.System) AttachOsThemeListener();
         else DetachOsThemeListener();
 

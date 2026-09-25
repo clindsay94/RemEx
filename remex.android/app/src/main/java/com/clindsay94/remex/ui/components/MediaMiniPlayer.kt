@@ -90,18 +90,6 @@ fun MediaMiniPlayer(
                     } + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
             modifier = modifier
     ) {
-        // Ticks once a second while PLAYING, entirely on the phone's monotonic clock like
-        // MediaPlaybackSnapshot.positionAt itself - never compared against a host timestamp.
-        var progress by remember(playback) {
-            mutableStateOf(playback.progressAt(SystemClock.elapsedRealtime()))
-        }
-        LaunchedEffect(playback) {
-            while (playback.status == MediaPlaybackStatus.PLAYING) {
-                delay(1_000L)
-                progress = playback.progressAt(SystemClock.elapsedRealtime())
-            }
-        }
-
         Surface(
                 modifier = Modifier.fillMaxWidth().height(MiniPlayerHeight),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -188,24 +176,50 @@ fun MediaMiniPlayer(
                 }
 
                 if (playback.hasTimeline) {
-                    RemexLinearWavyProgress(
-                            progress = progress ?: 0f,
+                    MiniPlayerWavyProgress(
+                            playback = playback,
                             modifier =
                                     Modifier.fillMaxWidth()
-                                            .align(Alignment.BottomCenter),
-                            // M3 Expressive spec 4.3: flatten the wave while paused.
-                            amplitude = {
-                                if (playback.status == MediaPlaybackStatus.PLAYING) {
-                                    WavyProgressIndicatorDefaults.indicatorAmplitude(it)
-                                } else {
-                                    0f
-                                }
-                            }
+                                            .align(Alignment.BottomCenter)
                     )
                 }
             }
         }
     }
+}
+
+/**
+ * The wavy progress bar, isolated into its own composable (P3-18) so its once-a-second tick only
+ * recomposes this leaf — not the whole [MediaMiniPlayer] body (artwork, title/artist, play/pause
+ * button) it used to share a recompose scope with when `progress` lived directly in that
+ * function's body.
+ */
+@Composable
+private fun MiniPlayerWavyProgress(playback: MediaPlaybackSnapshot, modifier: Modifier = Modifier) {
+    // Ticks once a second while PLAYING, entirely on the phone's monotonic clock like
+    // MediaPlaybackSnapshot.positionAt itself - never compared against a host timestamp.
+    var progress by remember(playback) {
+        mutableStateOf(playback.progressAt(SystemClock.elapsedRealtime()))
+    }
+    LaunchedEffect(playback) {
+        while (playback.status == MediaPlaybackStatus.PLAYING) {
+            delay(1_000L)
+            progress = playback.progressAt(SystemClock.elapsedRealtime())
+        }
+    }
+
+    RemexLinearWavyProgress(
+            progress = progress ?: 0f,
+            modifier = modifier,
+            // M3 Expressive spec 4.3: flatten the wave while paused.
+            amplitude = {
+                if (playback.status == MediaPlaybackStatus.PLAYING) {
+                    WavyProgressIndicatorDefaults.indicatorAmplitude(it)
+                } else {
+                    0f
+                }
+            }
+    )
 }
 
 /** The status word shown when there is no track title to lead with. Mirrors NowPlayingLine. */

@@ -78,16 +78,11 @@ class H264StreamDecoder(
      * header be skipped without copying the whole frame a second time (RemEx-t8ku). Safe to retain
      * across threads because the JNI layer allocates a fresh array per frame and never reuses it.
      *
-     * [materialize] exists for the two paths that need a standalone array — initial configure and a
-     * mid-stream SPS change — because those run the NAL index scan, whose start/end offsets are
-     * relative to the array. Both happen on IDRs at most, so the copy is rare; the per-frame path
-     * ([feedInput]) never copies.
+     * No path copies the whole access unit any more (perf audit P3-16): [findNalUnits] works on the
+     * range directly and returns absolute indices into [bytes], so the initial configure and a
+     * mid-stream SPS change copy out only the SPS and PPS NALs they hand to the codec as csd.
      */
-    private data class AccessUnit(val bytes: ByteArray, val offset: Int, val length: Int) {
-        fun materialize(): ByteArray =
-                if (offset == 0 && length == bytes.size) bytes
-                else bytes.copyOfRange(offset, offset + length)
-    }
+    private data class AccessUnit(val bytes: ByteArray, val offset: Int, val length: Int)
 
     private val frameQueue = LinkedBlockingDeque<AccessUnit>()
 
@@ -199,9 +194,9 @@ class H264StreamDecoder(
                     // Wait (briefly, interruptibly) for the next access unit; configure on the first one
                     // that carries SPS + PPS. Drop everything before that (no reference to decode).
                     val queued = frameQueue.pollFirst(50, TimeUnit.MILLISECONDS) ?: continue
-                    // Rare path (pre-configure): needs a standalone array for the NAL index scan.
-                    val au = queued.materialize()
-                    val nals = findNalUnits(au)
+                    // Rare path (pre-configure): full NAL index scan over the AU's range, in place.
+                    val au = queued.bytes
+                    val nals = findNalUnits(au, queued.offset, queued.length)
                     val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS }
                     val pps = nals.firstOrNull { it.type == NAL_TYPE_PPS }
                     if (sps == null || pps == null) {
@@ -223,7 +218,7 @@ class H264StreamDecoder(
                     applyFormatAndStart(codec, csd0, csd1)
                     configured = true
                     Log.i(TAG, "MediaCodec H.264 decoder configured+started (sync) from SPS/PPS (hint ${width}x$height, csd0=${csd0.size}B, csd1=${csd1.size}B; adaptive max ${maxWidth}x$maxHeight)")
-                    feedInput(codec, queued)
+                    feedInput(codec, queued, isKeyFrame = nals.any { it.type == NAL_TYPE_IDR })
                     continue
                 }
 
@@ -248,11 +243,20 @@ class H264StreamDecoder(
                 val pollTimeoutMs = if (inFlight > 0) 2L else 20L
                 val au = frameQueue.pollFirst(pollTimeoutMs, TimeUnit.MILLISECONDS)
                 if (au != null) {
+                    // ONE scan answers both per-frame questions — does this AU carry an SPS (reconfigure
+                    // check) and an IDR slice (key-frame flag) — where there used to be two full scans
+                    // of every P-frame, since a P-frame contains neither and so never exited either
+                    // scan early (perf audit P3-16). It still stops as soon as both have been seen, so
+                    // an IDR (SPS first, IDR slice a few NALs later) is only scanned a few bytes deep.
+                    val nalTypes = scanNalTypes(au.bytes, au.offset, au.length, stopWhenSeen = SPS_AND_IDR_BITS)
+                    val isKeyFrame = nalTypes.hasNalType(NAL_TYPE_IDR)
                     // A mid-stream SPS change means the host rebuilt its encoder at a new capture scale.
                     // Reconfigure so the decoder adopts the new resolution; otherwise a larger scale-up
                     // IDR no longer fits the input buffer / layout and the stream goes black or garbage.
-                    if (!maybeReconfigureForNewSps(codec, au)) {
-                        feedInput(codec, au)
+                    if (!nalTypes.hasNalType(NAL_TYPE_SPS) ||
+                        !maybeReconfigureForNewSps(codec, au, isKeyFrame)
+                    ) {
+                        feedInput(codec, au, isKeyFrame)
                     }
                 }
 
@@ -273,8 +277,12 @@ class H264StreamDecoder(
         }
     }
 
-    /** Dequeues an input buffer (short wait) and queues [au] into it. Runs on the decode thread. */
-    private fun feedInput(codec: MediaCodec, au: AccessUnit) {
+    /**
+     * Dequeues an input buffer (short wait) and queues [au] into it, flagged
+     * [MediaCodec.BUFFER_FLAG_KEY_FRAME] when [isKeyFrame] (the AU carries an IDR slice — the caller
+     * has already scanned it). Runs on the decode thread.
+     */
+    private fun feedInput(codec: MediaCodec, au: AccessUnit, isKeyFrame: Boolean) {
         val inIndex = try {
             codec.dequeueInputBuffer(10_000) // 10 ms
         } catch (e: IllegalStateException) {
@@ -290,10 +298,7 @@ class H264StreamDecoder(
             val inputBuffer = codec.getInputBuffer(inIndex) ?: return
             inputBuffer.clear()
             inputBuffer.put(au.bytes, au.offset, au.length)
-            val flags =
-                    if (containsNalType(au.bytes, au.offset, au.length, NAL_TYPE_IDR))
-                            MediaCodec.BUFFER_FLAG_KEY_FRAME
-                    else 0
+            val flags = if (isKeyFrame) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
             codec.queueInputBuffer(inIndex, 0, au.length, System.nanoTime() / 1000, flags)
             inFlight++
         } catch (e: RuntimeException) {
@@ -331,17 +336,16 @@ class H264StreamDecoder(
      * If [au] carries an SPS whose bytes differ from the currently-configured csd-0, reconfigures the
      * codec (stop → configure → start) for the new resolution, feeds [au] (an IDR) into the fresh codec,
      * and returns true. Returns false when there is no SPS or it is unchanged, so the caller feeds [au]
-     * normally. Comparing raw SPS NAL bytes avoids fragile Exp-Golomb parsing; the cheap
-     * [containsNalType] pre-check keeps P-frames on the fast path. On the host, a rebuilt encoder emits
-     * a fresh SPS/PPS + IDR, so the stream's own SPS is authoritative — no separate dimension protocol
-     * is needed. A stop/configure/start failure propagates to the decode loop's catch, which signals
+     * normally. Comparing raw SPS NAL bytes avoids fragile Exp-Golomb parsing. Only called for an AU
+     * the caller's cheap [scanNalTypes] pre-check found an SPS in, which keeps P-frames on the fast
+     * path. On the host, a rebuilt encoder emits a fresh SPS/PPS + IDR, so the stream's own SPS is
+     * authoritative — no separate dimension protocol is needed. A stop/configure/start failure propagates to the decode loop's catch, which signals
      * onInitFailure so the owner reconnects. (RemEx-aep Phase 5)
      */
-    private fun maybeReconfigureForNewSps(codec: MediaCodec, queued: AccessUnit): Boolean {
-        // Fast path on the RANGE: P-frames carry no SPS and leave without materializing anything.
-        if (!containsNalType(queued.bytes, queued.offset, queued.length, NAL_TYPE_SPS)) return false
-        val au = queued.materialize()
-        val nals = findNalUnits(au)
+    private fun maybeReconfigureForNewSps(codec: MediaCodec, queued: AccessUnit, isKeyFrame: Boolean): Boolean {
+        // In place on the RANGE (P3-16): absolute indices into queued.bytes, no whole-AU copy.
+        val au = queued.bytes
+        val nals = findNalUnits(au, queued.offset, queued.length)
         val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS } ?: return false
         val newCsd0 = au.copyOfRange(sps.start, sps.end)
         if (newCsd0.contentEquals(configuredCsd0)) return false // same SPS — no resolution change
@@ -351,7 +355,7 @@ class H264StreamDecoder(
         codec.stop()
         inFlight = 0 // stop() discards any buffers that were mid-decode
         applyFormatAndStart(codec, newCsd0, csd1)
-        feedInput(codec, queued)
+        feedInput(codec, queued, isKeyFrame)
         return true
     }
 
@@ -361,62 +365,82 @@ class H264StreamDecoder(
         decodeThread.interrupt()
         // The decode loop's finally block stops + releases the codec on its own thread.
     }
+}
 
-    // --- Annex B NAL parsing -------------------------------------------------------------------
+// --- Annex B NAL parsing -----------------------------------------------------------------------
+// Top-level and internal (not private to the class) so the JVM unit tests can drive them directly;
+// they touch no Android API.
 
-    /** A NAL unit located within an access unit. [start] is the index of its start-code first byte. */
-    private class NalUnit(val start: Int, val end: Int, val type: Int)
+private const val SPS_AND_IDR_BITS = (1 shl NAL_TYPE_SPS) or (1 shl NAL_TYPE_IDR)
 
-    /**
-     * Splits an Annex B buffer into NAL units on 3- or 4-byte start codes (00 00 01 / 00 00 00 01).
-     * Each unit's [NalUnit.start] is the index of the start code so a slice [start, end) is a
-     * self-contained, start-code-prefixed NAL suitable for csd-0/csd-1.
-     */
-    private fun findNalUnits(b: ByteArray): List<NalUnit> {
-        val starts = ArrayList<Int>(8)
-        val headers = ArrayList<Int>(8)
-        val n = b.size
-        var i = 0
-        while (i + 2 < n) {
-            if ((b[i].toInt() and 0xFF) == 0 &&
-                (b[i + 1].toInt() and 0xFF) == 0 &&
-                (b[i + 2].toInt() and 0xFF) == 1
-            ) {
-                // Start code core is 00 00 01 at i. Include a preceding 0x00 (4-byte code) in the unit.
-                val scStart = if (i > 0 && (b[i - 1].toInt() and 0xFF) == 0) i - 1 else i
-                starts.add(scStart)
-                headers.add(i + 3)
-                i += 3
-            } else {
-                i++
-            }
+/** True if the [scanNalTypes] bitmask has [type]'s bit set. */
+internal fun Int.hasNalType(type: Int): Boolean = (this and (1 shl type)) != 0
+
+/**
+ * A NAL unit located within an access unit. [start] is the index of its start-code first byte and
+ * [end] is exclusive; both are ABSOLUTE indices into the array that was scanned, not relative to the
+ * scanned range's offset.
+ */
+internal class NalUnit(val start: Int, val end: Int, val type: Int)
+
+/**
+ * Splits the Annex B range `b[offset, offset + length)` into NAL units on 3- or 4-byte start codes
+ * (00 00 01 / 00 00 00 01). Each unit's [NalUnit.start] is the index of the start code so a slice
+ * [start, end) is a self-contained, start-code-prefixed NAL suitable for csd-0/csd-1. Nothing before
+ * [offset] is ever read (a 4-byte code's leading 0x00 is only looked for inside the range), so bytes
+ * ahead of the AU — the frame envelope header — cannot leak into a NAL.
+ */
+internal fun findNalUnits(b: ByteArray, offset: Int, length: Int): List<NalUnit> {
+    val starts = ArrayList<Int>(8)
+    val headers = ArrayList<Int>(8)
+    val n = offset + length
+    var i = offset
+    while (i + 2 < n) {
+        if ((b[i].toInt() and 0xFF) == 0 &&
+            (b[i + 1].toInt() and 0xFF) == 0 &&
+            (b[i + 2].toInt() and 0xFF) == 1
+        ) {
+            // Start code core is 00 00 01 at i. Include a preceding 0x00 (4-byte code) in the unit.
+            val scStart = if (i > offset && (b[i - 1].toInt() and 0xFF) == 0) i - 1 else i
+            starts.add(scStart)
+            headers.add(i + 3)
+            i += 3
+        } else {
+            i++
         }
-        val result = ArrayList<NalUnit>(starts.size)
-        for (k in starts.indices) {
-            val headerIdx = headers[k]
-            if (headerIdx >= n) continue
-            val end = if (k + 1 < starts.size) starts[k + 1] else n
-            val type = b[headerIdx].toInt() and 0x1F
-            result.add(NalUnit(starts[k], end, type))
-        }
-        return result
     }
-
-    /** True if [b] contains at least one NAL unit of [type]. */
-    private fun containsNalType(b: ByteArray, offset: Int, length: Int, type: Int): Boolean {
-        val n = offset + length
-        var i = offset
-        while (i + 3 < n) {
-            if ((b[i].toInt() and 0xFF) == 0 &&
-                (b[i + 1].toInt() and 0xFF) == 0 &&
-                (b[i + 2].toInt() and 0xFF) == 1
-            ) {
-                if ((b[i + 3].toInt() and 0x1F) == type) return true
-                i += 3
-            } else {
-                i++
-            }
-        }
-        return false
+    val result = ArrayList<NalUnit>(starts.size)
+    for (k in starts.indices) {
+        val headerIdx = headers[k]
+        if (headerIdx >= n) continue
+        val end = if (k + 1 < starts.size) starts[k + 1] else n
+        val type = b[headerIdx].toInt() and 0x1F
+        result.add(NalUnit(starts[k], end, type))
     }
+    return result
+}
+
+/**
+ * The NAL unit types present in `b[offset, offset + length)`, as a bitmask (bit `t` set = at least one
+ * NAL of type `t`; test with [hasNalType]). Stops as soon as every bit in [stopWhenSeen] has been
+ * seen. For each type it answers exactly what the old per-type `containsNalType` scan answered — same
+ * start-code walk, same header-byte bound — but one pass serves every type the caller asks about.
+ */
+internal fun scanNalTypes(b: ByteArray, offset: Int, length: Int, stopWhenSeen: Int): Int {
+    val n = offset + length
+    var seen = 0
+    var i = offset
+    while (i + 3 < n) {
+        if ((b[i].toInt() and 0xFF) == 0 &&
+            (b[i + 1].toInt() and 0xFF) == 0 &&
+            (b[i + 2].toInt() and 0xFF) == 1
+        ) {
+            seen = seen or (1 shl (b[i + 3].toInt() and 0x1F))
+            if ((seen and stopWhenSeen) == stopWhenSeen) return seen
+            i += 3
+        } else {
+            i++
+        }
+    }
+    return seen
 }

@@ -55,9 +55,26 @@ val APP_NAME_PARAM = ActionParameters.Key<String>("app_name")
 data class WidgetAppEntry(
     val name: String,
     val path: String,
-    val icon: Bitmap?,
+    private val iconBase64: String,
     val order: Int = 0
-)
+) {
+    /**
+     * Decoded on first access, not at parse time (perf audit P3-12): the host sends the WHOLE
+     * launcher list, but the widget only draws the apps the user selected for it and only as many as
+     * fit its current size. Decoding every icon up front paid a base64 + bitmap decode for entries
+     * that were filtered out immediately afterwards. Lazy also caches the bitmap across Glance
+     * recompositions of the same session, since the parsed list is captured once in provideGlance.
+     */
+    val icon: Bitmap? by lazy {
+        if (iconBase64.isBlank()) return@lazy null
+        try {
+            val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (_: Exception) {
+            null
+        }
+    }
+}
 
 class AppLauncherWidget : GlanceAppWidget() {
 
@@ -80,19 +97,10 @@ class AppLauncherWidget : GlanceAppWidget() {
             val array = JSONArray(json)
             List(array.length()) { i ->
                 val obj = array.getJSONObject(i)
-                val iconBase64 = obj.optString("iconBase64", "")
-                val bitmap = if (iconBase64.isNotBlank()) {
-                    try {
-                        val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    } catch (_: Exception) {
-                        null
-                    }
-                } else null
                 WidgetAppEntry(
                     name = obj.optString("displayName", "App"),
                     path = obj.optString("targetPath", ""),
-                    icon = bitmap,
+                    iconBase64 = obj.optString("iconBase64", ""),
                     order = obj.optInt("order", 0)
                 )
             }
@@ -189,9 +197,11 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (app.icon != null) {
+                            // Only visibleApps ever reach this read, so only their icons decode.
+                            val icon = app.icon
+                            if (icon != null) {
                                 Image(
-                                    provider = ImageProvider(app.icon),
+                                    provider = ImageProvider(icon),
                                     contentDescription = app.name,
                                     modifier = GlanceModifier.size(iconSize).cornerRadius(10.dp),
                                     contentScale = ContentScale.Fit

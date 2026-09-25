@@ -115,4 +115,35 @@ public class HeldKeyReleaseOnDisconnectTests
 
         Assert.Empty(recorder.Events);
     }
+
+    [Fact]
+    public async Task TheAsyncTeardownReleasesHeldKeysToo()
+    {
+        // The /ws/desktop endpoint now disposes with `await using` (perf audit P3-40), so the release
+        // has to be wired into DisposeAsync as well — deleting it there would leave this test red
+        // while the sync tests above stayed green.
+        var recorder = new Recorder();
+        var handler = NewHandler(recorder);
+
+        handler.DispatchInput(Key(InputEventTypes.KeyDown, VkControl));
+
+        await handler.DisposeAsync();
+
+        Assert.Contains((("up"), VkControl), recorder.Events);
+    }
+
+    [Fact]
+    public async Task DisposingTwiceIsANoOpRatherThanAThrow()
+    {
+        // `await using` plus any explicit Dispose must not throw from CompleteAdding on a disposed
+        // queue, nor release the same keys twice.
+        var recorder = new Recorder();
+        var handler = NewHandler(recorder);
+        handler.DispatchInput(Key(InputEventTypes.KeyDown, VkShift));
+
+        await handler.DisposeAsync();
+        handler.Dispose();
+
+        Assert.Single(recorder.Events.FindAll(e => e.Action == "up"));
+    }
 }

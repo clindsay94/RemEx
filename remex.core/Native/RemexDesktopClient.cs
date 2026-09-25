@@ -687,7 +687,7 @@ public sealed class RemexDesktopClient : IDisposable
             return;
         }
 
-        var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
+        var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Relaxed.RemexMessage);
 
         await _sendGate.WaitAsync(ct);
         try
@@ -809,7 +809,7 @@ public sealed class RemexDesktopClient : IDisposable
                         ProofHmacBase64 = Convert.ToBase64String(proof),
                     },
                 };
-                var bytes = RemexJson.SerializeToUtf8Bytes(reply, RemexJsonSerializerContext.Default.RemexMessage);
+                var bytes = RemexJson.SerializeToUtf8Bytes(reply, RemexJsonSerializerContext.Relaxed.RemexMessage);
                 await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, linked.Token);
             }
             finally
@@ -830,22 +830,55 @@ public sealed class RemexDesktopClient : IDisposable
         {
             while (!ct.IsCancellationRequested && _webSocket?.State == WebSocketState.Open)
             {
-                using var ms = new System.IO.MemoryStream();
-                WebSocketReceiveResult result;
-                do
+                // Perf audit P3-1: a fresh, uncapped MemoryStream per message meant every H.264
+                // frame (tens of KB, well past MemoryStream's default small initial buffer) paid
+                // several internal doubling-reallocation copies during Write, THEN a further full
+                // copy in ToArray(). The overwhelming common case is ONE WebSocket fragment per
+                // message (H.264 frames, cursor packets, JSON control messages under 256KB all fit
+                // in the single receive buffer below) - for that case, copy the buffer straight into
+                // a right-sized array once and skip MemoryStream entirely. A byte[] copy is still
+                // required either way: `buffer` is a single ArrayPool rental reused by the NEXT
+                // ReceiveAsync call, and NotifyJavaByteArray (AndroidNativeExports.cs:1927-1930) needs `bytes` to be an
+                // independently-owned array that outlives this iteration.
+                var first = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                if (first.MessageType == WebSocketMessageType.Close)
                 {
-                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        _isStreaming = false;
-                        return;
-                    }
-                    ms.Write(buffer, 0, result.Count);
-                } while (!result.EndOfMessage);
+                    _isStreaming = false;
+                    return;
+                }
 
-                if (result.MessageType == WebSocketMessageType.Binary)
+                byte[] bytes;
+                WebSocketMessageType messageType = first.MessageType;
+                if (first.EndOfMessage)
                 {
-                    var bytes = ms.ToArray();
+                    bytes = new byte[first.Count];
+                    Array.Copy(buffer, 0, bytes, 0, first.Count);
+                }
+                else
+                {
+                    // Genuinely multi-fragment: size the accumulator from the first fragment rather
+                    // than MemoryStream's default, so the common "one more fragment or two" case
+                    // grows without repeated doubling.
+                    using var ms = new System.IO.MemoryStream(Math.Max(first.Count * 2, 1024));
+                    ms.Write(buffer, 0, first.Count);
+
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _isStreaming = false;
+                            return;
+                        }
+                        ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    bytes = ms.ToArray();
+                }
+
+                if (messageType == WebSocketMessageType.Binary)
+                {
                     // RD-E: cursor-position packets ("RDXC") share the binary channel with H.264 frames.
                     // Demux by magic — H.264 (raw NAL 00 00 00 01 or the "RDXF" frame envelope) never starts
                     // with "RDXC", so this is unambiguous regardless of frame-envelope use.
@@ -858,9 +891,9 @@ public sealed class RemexDesktopClient : IDisposable
                         FrameReceived?.Invoke(bytes);
                     }
                 }
-                else if (result.MessageType == WebSocketMessageType.Text)
+                else if (messageType == WebSocketMessageType.Text)
                 {
-                    var msg = RemexJson.Deserialize(ms.ToArray(), RemexJsonSerializerContext.Default.RemexMessage);
+                    var msg = RemexJson.Deserialize(bytes, RemexJsonSerializerContext.Default.RemexMessage);
                     if (msg?.Type == MessageTypes.DesktopMeta && msg.DesktopMeta != null)
                     {
                         MetaReceived?.Invoke(msg.DesktopMeta);

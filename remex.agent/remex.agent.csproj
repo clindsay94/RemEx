@@ -159,6 +159,20 @@
   </PropertyGroup>
 
   <!--
+    Keep the CsWinRT projection out of ReadyToRun (perf audit P3-25). Microsoft.Windows.SDK.NET.dll
+    is the whole Windows SDK projected as IL, ~26 MB, and crossgen more than doubles it (55.3 MB in the
+    installed publish) - the single largest file the R2R trade above pays for. This is exactly the
+    "assembly never touched at startup" narrowing that block calls defensible: its only consumers are
+    WGC capture (a stream is running) and the SMTC media reader (a client asked for media), and a
+    projection method is a thin ABI thunk, so JITting the handful actually called costs microseconds
+    on first use, not a cold-start penalty. Excluding it changes codegen only - the IL still ships and
+    runs - so nothing here can break at runtime. Windows TFM only; the assembly does not exist on Linux.
+  -->
+  <ItemGroup Condition="$(TargetFramework.Contains('windows'))">
+    <PublishReadyToRunExclude Include="Microsoft.Windows.SDK.NET.dll" />
+  </ItemGroup>
+
+  <!--
     The SMTC media reader and its app-icon resolver are the only files in this project that consume
     WinRT projections (Windows.Media.Control, Windows.Storage.Streams, Windows.Management.Deployment).
     Those namespaces exist only under the windows-versioned TFM selected above, so on Linux — where the
@@ -187,7 +201,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\scripts\**" Link="scripts\%(RecursiveDir)%(FileName)%(Extension)">
+    <!-- Only the autostart script ships: RemEx.iss runs it from {app}\scripts\ at install and
+         uninstall. The rest of scripts\ is dev tooling (verify, localization, .remember session
+         state) and was being copied into every publish and Program Files (perf audit P3-32). -->
+    <None Include="..\scripts\autostart-remex.ps1" Link="scripts\autostart-remex.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

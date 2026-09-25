@@ -97,6 +97,41 @@ public sealed class PairedDeviceActivityStoreTests : IDisposable
     }
 
     [Fact]
+    public void AReconnectInsideTheGranularityWindowDoesNotRewriteTheFile()
+    {
+        // P3-49: every authenticated connect used to rewrite the whole store. Deleting the file after
+        // the first write makes a second write observable: it would recreate it.
+        var first = new DateTimeOffset(2026, 8, 9, 10, 0, 0, TimeSpan.Zero);
+        var store = NewStore();
+        store.RecordSeen("phone-a", first);
+        Assert.True(File.Exists(StorePath));
+        File.Delete(StorePath);
+
+        store.RecordSeen("phone-a", first.AddSeconds(20));
+
+        Assert.False(File.Exists(StorePath));
+        Assert.Equal(first, store.Resolve("phone-a")!.LastSeenUtc);
+    }
+
+    [Fact]
+    public void FrequentReconnectsStillAdvanceLastSeenOncePerWindow()
+    {
+        // Measured from the RECORDED time: a device reconnecting every 20 s must not be pinned at its
+        // first sighting forever.
+        var start = new DateTimeOffset(2026, 8, 9, 10, 0, 0, TimeSpan.Zero);
+        var store = NewStore();
+        store.RecordSeen("phone-a", start);
+
+        for (var s = 20; s <= 80; s += 20)
+        {
+            store.RecordSeen("phone-a", start.AddSeconds(s));
+        }
+
+        Assert.Equal(start.AddSeconds(60), store.Resolve("phone-a")!.LastSeenUtc);
+        Assert.Equal(start.AddSeconds(60), NewStore().Resolve("phone-a")!.LastSeenUtc);
+    }
+
+    [Fact]
     public void AnUnknownDeviceResolvesToNullRatherThanSomethingInvented()
         => Assert.Null(NewStore().Resolve("never-paired"));
 

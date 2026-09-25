@@ -46,6 +46,9 @@ private const val SplashPersonalizationTimeoutMs = 250L
  * than sitting over content forever (RemEx-alwfa.1 review, HIGH-3). */
 private const val SplashExitFallbackRemovalMs = SplashExitCrossfadeMs * 2 + 200
 
+/** What the root theme renders with until DataStore's first personalization emission lands. */
+private val DefaultPersonalization = SettingsManager.PersonalizationPreferences()
+
 class MainActivity : ComponentActivity() {
 
     // Same ViewModelStoreOwner (this Activity) as the `viewModel()` call inside setContent below,
@@ -85,31 +88,31 @@ class MainActivity : ComponentActivity() {
         setContent {
             val personalizationViewModel: PersonalizationViewModel = viewModel()
             val personalization by personalizationViewModel.personalization.collectAsStateWithLifecycle()
-            
-            val prefs = personalization
-            if (prefs != null) {
-                RemExTheme(
-                    themeMode = prefs.themeMode,
-                    themePalette = prefs.themePalette,
-                    themeStyle = prefs.themeStyle,
-                    themeSeedColor = prefs.themeSeedColor,
-                    themeSeedChroma = prefs.themeSeedChroma,
-                    themeContrast = prefs.themeContrast,
-                    fontFamilyKey = prefs.fontFamily,
-                    fontScale = prefs.fontScale,
-                    dynamicColor = prefs.dynamicColor
-                ) {
-                    AppNavigation()
-                    // App-root overlay: mirrors an active file-sharing consent prompt as a dialog
-                    // while the app is foregrounded (the notification is the background channel).
-                    FileConsentDialogHost()
-                }
-            } else {
-                // Fallback to default theme until prefs are loaded
-                RemExTheme {
-                    AppNavigation()
-                    FileConsentDialogHost()
-                }
+
+            // Perf audit P3-11: ONE RemExTheme call site for both the pre-load and loaded states.
+            // The first composition runs before DataStore's first emission lands (personalization
+            // is still null), and the old if/else put AppNavigation under two different call sites,
+            // so that first emission tore the whole navigation tree down and rebuilt it from
+            // scratch. With a single call site the arrival of real prefs is an ordinary
+            // recomposition with new theme values; the tree and its state survive. The defaults
+            // (PersonalizationPreferences()) are exactly RemExTheme's own parameter defaults, which
+            // is what the old fallback branch rendered.
+            val prefs = personalization ?: DefaultPersonalization
+            RemExTheme(
+                themeMode = prefs.themeMode,
+                themePalette = prefs.themePalette,
+                themeStyle = prefs.themeStyle,
+                themeSeedColor = prefs.themeSeedColor,
+                themeSeedChroma = prefs.themeSeedChroma,
+                themeContrast = prefs.themeContrast,
+                fontFamilyKey = prefs.fontFamily,
+                fontScale = prefs.fontScale,
+                dynamicColor = prefs.dynamicColor
+            ) {
+                AppNavigation()
+                // App-root overlay: mirrors an active file-sharing consent prompt as a dialog
+                // while the app is foregrounded (the notification is the background channel).
+                FileConsentDialogHost()
             }
         }
     }

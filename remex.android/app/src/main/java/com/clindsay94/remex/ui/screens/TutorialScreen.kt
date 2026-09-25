@@ -214,12 +214,16 @@ fun TutorialScreenContent(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            val pageOffset =
-                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
             TutorialPageContent(
                 page = tutorialPages[page],
                 isFirst = page == 0,
+                // P3-19: currentPageOffsetFraction changes on every scroll frame. Reading it here
+                // in the page lambda's composition body (instead of inside graphicsLayer) forced a
+                // full recomposition of TutorialPageContent per frame while swiping; graphicsLayer's
+                // lambda runs at draw time, not composition, so the read moves there instead.
                 modifier = Modifier.graphicsLayer {
+                    val pageOffset =
+                        (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                     val t = 1f - abs(pageOffset).coerceIn(0f, 1f)
                     val scale = lerp(0.88f, 1f, t)
                     scaleX = scale

@@ -145,6 +145,63 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     /// <see cref="EtaText"/> together, so the three never disagree about how far along the transfer
     /// is (RemEx-4lcq).
     /// </summary>
+    /// <summary>The shortest gap between two progress applies on the UI thread (10 Hz; perf audit P3-53).</summary>
+    internal const long ProgressApplyIntervalMs = 100;
+
+    private readonly object _progressGate = new();
+    private TransferProgress _pendingProgress;
+    private bool _hasPendingProgress;
+    private bool _progressPostQueued;
+    private long? _lastProgressPostAt;
+
+    /// <summary>
+    /// The transfer's <see cref="IProgress{T}"/> sink, callable from any thread (perf audit P3-53).
+    /// </summary>
+    /// <remarks>
+    /// COALESCED TO 10 Hz. A fast link reports 50-170 times a second; each report used to go through
+    /// <see cref="Progress{T}"/> (one post to the captured context) and then the queue's own post (a
+    /// second), and every one re-formatted the rate and ETA text. Now the newest value is stored, and
+    /// a UI post is queued only when none is already queued AND the last one was at least
+    /// <see cref="ProgressApplyIntervalMs"/> ago. The post applies whatever is newest when it RUNS, so
+    /// nothing is shown out of order. A value held back by the window is applied by the queue's
+    /// once-a-second refresh tick (<see cref="ApplyPendingProgress"/>) if no later report arrives.
+    /// </remarks>
+    internal void ReportProgress(TransferProgress progress, Action<Action> post)
+    {
+        lock (_progressGate)
+        {
+            _pendingProgress = progress;
+            _hasPendingProgress = true;
+            if (_progressPostQueued)
+                return;
+
+            var now = _nowMillis();
+            if (_lastProgressPostAt is { } last && now - last < ProgressApplyIntervalMs)
+                return;
+
+            _progressPostQueued = true;
+            _lastProgressPostAt = now;
+        }
+
+        post(ApplyPendingProgress);
+    }
+
+    /// <summary>Applies the newest reported progress, if any is waiting. UI thread.</summary>
+    internal void ApplyPendingProgress()
+    {
+        TransferProgress progress;
+        lock (_progressGate)
+        {
+            _progressPostQueued = false;
+            if (!_hasPendingProgress)
+                return;
+            progress = _pendingProgress;
+            _hasPendingProgress = false;
+        }
+
+        ApplyProgress(progress);
+    }
+
     internal void ApplyProgress(TransferProgress progress)
     {
         Progress = Math.Clamp(progress.Fraction * 100.0, 0.0, 100.0);
@@ -373,7 +430,11 @@ public sealed class FileTransferQueue : IDisposable
         foreach (var item in Items)
         {
             if (item.IsActive)
+            {
+                // A value the 10 Hz coalescing held back lands here if nothing newer arrived (P3-53).
+                item.ApplyPendingProgress();
                 item.RefreshRateAndEtaNow();
+            }
         }
     });
 
@@ -520,6 +581,12 @@ public sealed class FileTransferQueue : IDisposable
         }
     }
 
+    /// <summary>The <see cref="IProgress{T}"/> a transfer reports into; see <see cref="FileTransferQueueItem.ReportProgress"/>.</summary>
+    private sealed class QueueItemProgress(FileTransferQueueItem item, Action<Action> post) : IProgress<TransferProgress>
+    {
+        public void Report(TransferProgress value) => item.ReportProgress(value, post);
+    }
+
     private async Task RunItemAsync(FileTransferQueueItem item)
     {
         // Cancelled while still queued → never touch the wire.
@@ -532,7 +599,9 @@ public sealed class FileTransferQueue : IDisposable
         }
 
         SetState(item, TransferState.Active);
-        var progress = new Progress<TransferProgress>(p => _post(() => item.ApplyProgress(p)));
+        // Not Progress<T>: that posts every report to the captured context, and the queue's own post
+        // then hopped again. The item coalesces to 10 Hz with a single hop (perf audit P3-53).
+        var progress = new QueueItemProgress(item, _post);
 
         try
         {

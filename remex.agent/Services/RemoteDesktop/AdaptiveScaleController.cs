@@ -58,6 +58,11 @@ public sealed class AdaptiveScaleController
 
     private static readonly TimeSpan MinChangeInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan FailedStepUpHold = TimeSpan.FromSeconds(60);
+    // A step-down only counts as the previous step-up having failed if it lands this soon after it.
+    // The earliest possible step-down is MinChangeInterval (5 s) after the step-up; 15 s leaves room
+    // for a few more evaluation windows. Without the bound, a step-down half an hour after a
+    // perfectly sustained step-up would still trigger the 60 s hold.
+    private static readonly TimeSpan FailedStepUpWindow = TimeSpan.FromSeconds(15);
 
     private const int StepDownAfterConsecutiveLowWindows = 2;
     private const int StepUpAfterConsecutiveStableWindows = 5;
@@ -71,6 +76,7 @@ public sealed class AdaptiveScaleController
     private DateTime _nextChangeAllowedUtc = DateTime.MinValue;
     private DateTime _stepUpHoldUntilUtc = DateTime.MinValue;
     private bool _lastChangeWasStepUp;
+    private DateTime _lastStepUpUtc = DateTime.MinValue;
 
     /// <param name="startingScale">The preset's configured scale — the initial rung (nearest ladder value).</param>
     /// <param name="floorScale">Lowest scale the controller may step down to. Clamped into the ladder's range.</param>
@@ -111,7 +117,7 @@ public sealed class AdaptiveScaleController
 
         if (wantsStepDown)
         {
-            bool wasFailedStepUp = _lastChangeWasStepUp;
+            bool wasFailedStepUp = _lastChangeWasStepUp && nowUtc - _lastStepUpUtc <= FailedStepUpWindow;
             _rungIndex--;
             _consecutiveLowWindows = 0;
             _consecutiveStableWindows = 0;
@@ -134,6 +140,7 @@ public sealed class AdaptiveScaleController
             _consecutiveStableWindows = 0;
             _nextChangeAllowedUtc = nowUtc + MinChangeInterval;
             _lastChangeWasStepUp = true;
+            _lastStepUpUtc = nowUtc;
             return new AdaptiveScaleDecision(CurrentScale, "fps-stable");
         }
 

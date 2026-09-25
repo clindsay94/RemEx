@@ -232,12 +232,42 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     /// <summary>Refreshes everything the flyout shows. Called each time it is about to be shown.</summary>
     public void Refresh()
     {
-        _home.RefreshPinnedSensors();
+        _isShown = true;
+
+        // ONE tile rebuild per show, not N+1 (perf audit P3-67): a pin change found here arrives as
+        // Clear plus one Add per pin on HomeViewModel.PinnedSensors, and each of those used to rebuild
+        // this row; the explicit rebuild below covers all of them at once.
+        _suppressPinnedRebuild = true;
+        try
+        {
+            _home.RefreshPinnedSensors();
+        }
+        finally
+        {
+            _suppressPinnedRebuild = false;
+        }
         Presence.Refresh();
         RebuildToolbar();
         RebuildFlyoutSensors();
         _ = ReloadLauncherEntriesAsync();
     }
+
+    /// <summary>
+    /// Called by the window when it hides (perf audit P3-66). Drops the pinned-sensor tiles so a hidden
+    /// flyout is not bound to live SensorViewModels that tick every telemetry update; the next
+    /// <see cref="Refresh"/> (every show calls it) rebuilds them. A pinned flyout is never hidden by
+    /// click-away, so it keeps its live tiles.
+    /// </summary>
+    public void OnHidden()
+    {
+        _isShown = false;
+        if (FlyoutSensors.Count > 0)
+            FlyoutSensors.Clear();
+    }
+
+    /// <summary>False between <see cref="OnHidden"/> and the next <see cref="Refresh"/>.</summary>
+    private bool _isShown = true;
+    private bool _suppressPinnedRebuild;
 
     /// <summary>
     /// Detaches every subscription above. This view model is registered with
@@ -319,8 +349,11 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         RebuildFlyoutSensors();
     }
 
-    private void OnPinnedSensorsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+    private void OnPinnedSensorsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_suppressPinnedRebuild) return;
         RebuildFlyoutSensors();
+    }
 
     /// <summary>
     /// Rebuilds <see cref="FlyoutSensors"/> from <c>HomeViewModel.PinnedSensors</c>, minus
@@ -337,16 +370,32 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         // script-generated profile that already claims the current schema (bypassing every arm) can
         // still reach here with a null list, and hidden.Count on null is a NullReferenceException
         // that would take the whole flyout down over a settings file, not a code bug.
+        // Hidden: stay unbound until the next show (P3-66).
+        if (!_isShown)
+        {
+            if (FlyoutSensors.Count > 0) FlyoutSensors.Clear();
+            return;
+        }
+
         var hidden = _shell.Customization.FlyoutHiddenSensorIds ?? [];
 
-        FlyoutSensors.Clear();
+        var next = new List<SensorViewModel>(_home.PinnedSensors.Count);
         foreach (var sensor in _home.PinnedSensors)
         {
             if (hidden.Count > 0 && hidden.Contains(sensor.Name, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            FlyoutSensors.Add(sensor);
+            next.Add(sensor);
         }
+
+        // Same tiles in the same order: leave the realized row alone rather than tearing it down and
+        // re-creating every tile (perf audit P3-67).
+        if (FlyoutSensors.SequenceEqual(next, ReferenceEqualityComparer.Instance))
+            return;
+
+        FlyoutSensors.Clear();
+        foreach (var sensor in next)
+            FlyoutSensors.Add(sensor);
     }
 
     /// <summary>

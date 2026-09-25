@@ -208,6 +208,14 @@ android {
             useLegacyPackaging = false
         }
     }
+    // Keep only the locales the app itself ships (perf audit P3-30). Without this, resources.arsc
+    // carries every library translation (~87 locales) for 9 app locales. Keep this list in sync
+    // with the res/values-* folders and res/xml/locales_config.xml. Indonesian is "in" on disk
+    // (legacy code) but "id" in locales_config, so both are listed. "pt" keeps library strings
+    // that only ship values-pt, which a pt-BR device falls back to.
+    androidResources {
+        localeFilters += listOf("en", "es", "fr", "hi", "in", "id", "pl", "pt", "pt-rBR", "tr", "uk")
+    }
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
@@ -1033,7 +1041,11 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    // ui-tooling must be implementation (not debugImplementation) for Preview classloading in this environment
+    // ui-tooling must be implementation (not debugImplementation) for Preview classloading in this
+    // environment: the workflow is release-only, and debugImplementation drops it from the release
+    // classpath the Preview pane renders against. Its exported PreviewActivity is stripped from the
+    // RELEASE manifest instead (src/release/AndroidManifest.xml, perf audit P3-29), which lets R8
+    // drop the tooling classes from the shipped APK while static Preview keeps working.
     implementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

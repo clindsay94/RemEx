@@ -85,24 +85,110 @@ internal static class MediaArtworkFallback
     /// from a broken one. Comparing against the constant is exact, costs nothing, and is why
     /// <c>FallbackBase64Icon</c> is <c>internal</c> rather than <c>private</c>.
     /// </para>
+    /// <para>
+    /// CACHED PER PATH AND FILE TIMESTAMP (perf audit P3-47). This rung runs on every track change of
+    /// a player whose session has no art, and each run re-extracted the same icon through the shell
+    /// image list and re-encoded it as PNG — then base64, then back to bytes. The executable does not
+    /// change between tracks, so the result is kept, keyed on the path AND its last-write time so an
+    /// app update that ships a new icon is picked up. A miss (placeholder) is cached too, but only for
+    /// <see cref="ExtractedIconCache.DefaultMissTtl"/>: the extractor swallows its own failures and
+    /// returns the same placeholder for "this file has no icon" and "the shell was not ready yet"
+    /// (explorer still starting at logon), so a miss cached until the next app update could pin a
+    /// transient failure for weeks. An exception that escapes extraction is not cached at all.
+    /// </para>
+    /// <para>
+    /// The returned array is shared between callers; the artwork path only reads it.
+    /// </para>
     /// </remarks>
     internal static byte[]? ExtractedIconBytes(string path)
     {
+        DateTime stamp;
         try
         {
-            var base64 = new DesktopIconExtractionService().ExtractIconAsBase64(path);
-
-            if (string.IsNullOrEmpty(base64)
-                || string.Equals(base64, DesktopIconExtractionService.FallbackBase64Icon, StringComparison.Ordinal))
-            {
-                return null;
-            }
-
-            return Convert.FromBase64String(base64);
+            // A missing file reports the 1601 sentinel rather than throwing; that is still a stable key.
+            stamp = File.GetLastWriteTimeUtc(path);
         }
         catch (Exception)
         {
+            stamp = default;
+        }
+
+        try
+        {
+            return IconCache.GetOrAdd(path, stamp, ExtractUncached);
+        }
+        catch (Exception)
+        {
+            // Thrown out of the extractor, so GetOrAdd cached nothing: the next track change retries.
             return null;
         }
+    }
+
+    private static readonly ExtractedIconCache IconCache = new(capacity: 32);
+
+    // Deliberately lets exceptions escape: ExtractedIconCache does not cache a throw, which is what
+    // keeps a transient failure from sticking.
+    private static byte[]? ExtractUncached(string path)
+    {
+        var base64 = new DesktopIconExtractionService().ExtractIconAsBase64(path);
+
+        if (string.IsNullOrEmpty(base64)
+            || string.Equals(base64, DesktopIconExtractionService.FallbackBase64Icon, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return Convert.FromBase64String(base64);
+    }
+}
+
+/// <summary>
+/// Small bounded cache of extracted app-icon bytes keyed on (path, last-write time) (P3-47).
+/// </summary>
+/// <remarks>
+/// Bounded by clearing when full rather than by LRU order: the working set is "the handful of media
+/// apps this user runs", far under the cap, so the clear is a leak guard, not a hot path.
+/// A hit is kept until the key changes; a miss (null) only for <c>missTtl</c>, because a miss can be
+/// a transient failure the extractor reports the same way as "no icon". An exception thrown by the
+/// extractor propagates and caches nothing.
+/// </remarks>
+internal sealed class ExtractedIconCache(int capacity, TimeSpan? missTtl = null, Func<DateTime>? utcNow = null)
+{
+    internal static readonly TimeSpan DefaultMissTtl = TimeSpan.FromMinutes(5);
+
+    private readonly TimeSpan _missTtl = missTtl ?? DefaultMissTtl;
+    private readonly Func<DateTime> _utcNow = utcNow ?? (() => DateTime.UtcNow);
+    private readonly Dictionary<(string Path, DateTime Stamp), (byte[]? Bytes, DateTime CachedAtUtc)> _entries = new();
+    private readonly object _gate = new();
+
+    public int Count
+    {
+        get { lock (_gate) return _entries.Count; }
+    }
+
+    public byte[]? GetOrAdd(string path, DateTime stamp, Func<string, byte[]?> extract)
+    {
+        var key = (path, stamp);
+        lock (_gate)
+        {
+            if (_entries.TryGetValue(key, out var cached)
+                && (cached.Bytes is not null || _utcNow() - cached.CachedAtUtc < _missTtl))
+            {
+                return cached.Bytes;
+            }
+        }
+
+        // Outside the lock: extraction is slow (shell + PNG encode). Two racing callers for the same
+        // new key both extract once and the second write wins with an equivalent value. A throw
+        // leaves the cache untouched.
+        var bytes = extract(path);
+
+        lock (_gate)
+        {
+            if (_entries.Count >= capacity && !_entries.ContainsKey(key)) _entries.Clear();
+            _entries[key] = (bytes, _utcNow());
+        }
+
+        return bytes;
     }
 }

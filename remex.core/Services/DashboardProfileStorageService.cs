@@ -72,7 +72,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
         {
             var existing = await LoadProfileAsync();
             profile = profile with { Cards = CardThemeMerge.PreserveThemes(profile.Cards, existing.Cards) };
-            var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
+            var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Relaxed.DashboardProfile);
             // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
             await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);
         }

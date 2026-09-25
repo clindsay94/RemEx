@@ -181,6 +181,7 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
         // registered it" from "a host that has no sessions", and only the first is a PC fault.
         if (source is null)
         {
+            _lastPublished = null;
             IsPhoneAttached = false;
             State = ShellConnectionState.HostDown;
             DeviceName = null;
@@ -198,6 +199,17 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
         var status = PhonePresence.Evaluate(source.Snapshot());
         var (key, argument) = PhonePresence.Describe(status);
         var template = LocalizationService.Instance[key];
+
+        // NOTHING CHANGED, NOTHING TO FORMAT (perf audit P3-54). The 3 s poll keeps running while the
+        // window is hidden on purpose - the tray tooltip and tray menu header read PresenceText then -
+        // but a tick that sees the same phones under the same language and template now returns before
+        // the two string.Format calls instead of rebuilding identical text every time.
+        var culture = CultureInfo.CurrentCulture;
+        if (_lastPublished is { } last
+            && last.Status == status
+            && ReferenceEquals(last.Culture, culture)
+            && string.Equals(last.Template, template, StringComparison.Ordinal))
+            return;
 
         var attached = status.State != PhonePresenceState.NoPhone;
         IsPhoneAttached = attached;
@@ -220,7 +232,12 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
                 LocalizationService.Instance["Shell_StatusTooltipAddressLine"],
                 PresenceText,
                 RemoteAddress);
+
+        _lastPublished = (status, template, culture);
     }
+
+    /// <summary>What the last full publish was computed from; null forces the next one (P3-54).</summary>
+    private (PhonePresenceStatus Status, string Template, CultureInfo Culture)? _lastPublished;
 
     private void StartPolling()
     {
@@ -258,6 +275,11 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
 
     private void OnTick(object? sender, EventArgs e) => Refresh();
 
-    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => Refresh();
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // A language switch changes the a11y name and tooltip template as well as the main one.
+        _lastPublished = null;
+        Refresh();
+    }
 
 }

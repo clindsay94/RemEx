@@ -782,9 +782,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val connectionError = _connectionError.asSharedFlow()
 
+    // Perf audit P3-6: capacity 8 was an unexamined default, not a deliberate choice like the
+    // latest-value flows above. Unlike cursor position or connection status, a file-control message
+    // (offer/accept/progress/complete) is a discrete event that isn't safe to conflate - dropping one
+    // can hang a transfer with no error, since the four collectors below (AndroidFileTransferHost,
+    // FileTransferEngine, FileTransferViewModel, ShareToPcViewModel) all read the same broadcast and a
+    // burst from concurrent transfers could outrun a slow one before all four drain it. This callback
+    // is invoked from JNI (RemexCallback), so tryEmit is the only option - raised to 64 instead of
+    // switching to SUSPEND, which a native callback thread cannot honor anyway.
     private val _fileTransferMessages =
             MutableSharedFlow<String>(
-                    extraBufferCapacity = 8,
+                    extraBufferCapacity = 64,
                     onBufferOverflow = BufferOverflow.DROP_OLDEST
             )
     val fileTransferMessages = _fileTransferMessages.asSharedFlow()
@@ -1194,8 +1202,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         ?: return
         // One line per envelope, on purpose: the host gate is meant to make these rare (a seek, a
         // pause, a track change), and a stream of them once a second is the per-second broadcast
-        // spec 1.3 guards against. Counting this tag in logcat is how that is checked on a device.
-        Log.d(
+        // spec 1.3 guards against. Counting this tag in logcat is how that is checked on a device -
+        // Log.i, not Log.d/v (perf audit P3-9's release strip rule strips those two, and this is
+        // checked against a release install, not a debug one).
+        Log.i(
                 "RemexManager",
                 "media_state: status=${snapshot.status} title=${snapshot.title} pos=${snapshot.positionMs} dur=${snapshot.durationMs} art=${snapshot.artworkId}"
         )

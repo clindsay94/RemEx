@@ -156,7 +156,7 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         // Use the profile as the source of truth for which sensors are pinned
         var pinnedIds = _shell.LayoutService.CurrentProfile?.PinnedSensorIds ?? new List<string>();
 
-        PinnedSensors.Clear();
+        var resolved = new List<SensorViewModel>(pinnedIds.Count);
 
         // Strategy: find a SensorViewModel for every ID in the pinned list.
         // We look in placed cards first, then in staged (discovered) templates.
@@ -173,9 +173,19 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
             if (sensorVm != null)
             {
-                PinnedSensors.Add(sensorVm);
+                resolved.Add(sensorVm);
             }
         }
+
+        // UNCHANGED PINS RAISE NOTHING (perf audit P3-67). Every tray-flyout show calls this, and the
+        // Clear-plus-Add below raises N+1 CollectionChanged events, each of which made the flyout
+        // rebuild its whole tile row. Same sensors in the same order is the ordinary case.
+        if (PinnedSensors.SequenceEqual(resolved, ReferenceEqualityComparer.Instance))
+            return;
+
+        PinnedSensors.Clear();
+        foreach (var sensorVm in resolved)
+            PinnedSensors.Add(sensorVm);
     }
 
     // ═══════════════ Navigation ═══════════════

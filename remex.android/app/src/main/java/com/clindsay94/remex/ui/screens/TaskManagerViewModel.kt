@@ -302,7 +302,11 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                 viewModelScope.launch {
                     while (isActive) {
                         delay(4000)
-                        refreshProcesses()
+                        // P3-21: the steady-state background poll must not drive the visible
+                        // pull-to-refresh spinner every 4s while the user is just looking at an
+                        // already-populated list. showSpinner stays true for the initial load
+                        // (LOADING empty-state) and any user-initiated refresh.
+                        refreshProcesses(showSpinner = false)
                     }
                 }
     }
@@ -320,28 +324,35 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         super.onCleared()
     }
 
-    fun refreshProcesses() {
+    /**
+     * @param showSpinner Whether this refresh should drive the visible pull-to-refresh spinner.
+     * True for the initial load and any user-initiated refresh (pull gesture, retry button).
+     * False for the steady-state 4s background poll (P3-21) — that poll still runs and still
+     * updates [consecutiveTimeouts]/[loadError], it just never touches [_isRefreshing], so it
+     * can't animate the indicator while the user isn't asking for a refresh.
+     */
+    fun refreshProcesses(showSpinner: Boolean = true) {
         viewModelScope.launch {
             if (!RemexClientManager.isConnected.value || !RemexCoreClient.isLibraryLoaded) {
-                _isRefreshing.value = false
+                if (showSpinner) _isRefreshing.value = false
                 return@launch
             }
 
             // If the host has been silent for several rounds, stop hammering it. The user
             // re-tries via clearLoadError() / pull-to-refresh — see ConnectionScreen.
             if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
-                _isRefreshing.value = false
+                if (showSpinner) _isRefreshing.value = false
                 return@launch
             }
 
             val sentAt = System.currentTimeMillis()
-            _isRefreshing.value = true
+            if (showSpinner) _isRefreshing.value = true
             val request = JSONObject().apply { put("type", "process_list_request") }
             RemexCoreClient.SendMessage(request.toString()).getOrNull()
             // Spinner cleared by processList collector when data arrives.
             // Safety net: clear after 5s in case host doesn't respond.
             delay(5000)
-            _isRefreshing.value = false
+            if (showSpinner) _isRefreshing.value = false
 
             // If no response arrived in this window, count it as a timeout. After
             // MAX_CONSECUTIVE_TIMEOUTS rounds without a single response we surface a

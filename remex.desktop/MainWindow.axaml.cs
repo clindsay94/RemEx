@@ -22,6 +22,10 @@ public partial class MainWindow : Window
     private bool _micaPending;
     private string? _previousBackgroundMaterial;
 
+    // The light/dark answer the Mica backdrop was last successfully requested with, or null when
+    // Mica is not the applied material or no request has landed yet (perf audit P3-68).
+    private bool? _micaAppliedDark;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -65,7 +69,9 @@ public partial class MainWindow : Window
             if (_micaPending && OperatingSystem.IsWindows())
             {
                 _micaPending = false;
-                MicaBackdrop.TryApply(this, ActualThemeVariant == ThemeVariant.Dark);
+                var dark = ActualThemeVariant == ThemeVariant.Dark;
+                if (MicaBackdrop.TryApply(this, dark))
+                    _micaAppliedDark = dark;
             }
         };
 
@@ -160,10 +166,24 @@ public partial class MainWindow : Window
             // Windows build below 22H2 takes the Acrylic-less fallback path and must not queue a
             // Clear that DWM would reject (review LOW).
             var wasMica = _previousBackgroundMaterial == "Mica";
+            var previousMaterial = _previousBackgroundMaterial;
             _previousBackgroundMaterial = settings.BackgroundMaterial == "Mica" && !(OperatingSystem.IsWindows() && MicaBackdrop.IsSupported)
                 ? null
                 : settings.BackgroundMaterial;
             _micaPending = false;
+
+            // RE-REQUEST THE BACKDROP ONLY WHEN THE EFFECTIVE MODE CHANGED (perf audit P3-68). This
+            // handler runs for every apply - every slider settle - and each one assigned a NEW hint
+            // array (a changed property to Avalonia, so a fresh transparency request) and, in Mica,
+            // repeated both DWM calls. The hint now moves only when the material does, and the DWM
+            // call only when Mica is newly selected, the light/dark answer flipped, or an earlier
+            // attempt found no handle. The null recorded for unsupported Mica always reads as changed,
+            // which is the old behaviour for that path. The rest of each branch (Background, Opacity,
+            // the fallback brush) still runs every time: those follow the palette and the sliders.
+            var materialChanged = previousMaterial is null
+                || !string.Equals(previousMaterial, _previousBackgroundMaterial, StringComparison.Ordinal);
+            if (_previousBackgroundMaterial != "Mica")
+                _micaAppliedDark = null;
 
             if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica" && MicaBackdrop.IsSupported)
             {
@@ -173,20 +193,29 @@ public partial class MainWindow : Window
                 // flat layer instead (docs/REGRESSION-GUARDS.md, "Mica is requested as Transparent
                 // + our own DWM call"). Transparent gets a real compositor surface; MicaBackdrop.
                 // TryApply below is what actually asks DWM to paint Mica onto it.
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
+                if (materialChanged)
+                    TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
                 Opacity = 1.0;
 
                 var dark = ActualThemeVariant == ThemeVariant.Dark;
-                if (!MicaBackdrop.TryApply(this, dark))
+                if (_micaAppliedDark != dark)
                 {
-                    // No handle yet (startup, before Opened) — retried once Opened fires.
-                    _micaPending = true;
+                    if (MicaBackdrop.TryApply(this, dark))
+                    {
+                        _micaAppliedDark = dark;
+                    }
+                    else
+                    {
+                        // No handle yet (startup, before Opened) — retried once Opened fires.
+                        _micaPending = true;
+                    }
                 }
             }
             else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
+                if (materialChanged)
+                    TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
                 Opacity = 1.0;
                 if (wasMica && OperatingSystem.IsWindows()) MicaBackdrop.Clear(this);
@@ -195,7 +224,8 @@ public partial class MainWindow : Window
             {
                 // Glass mode: request compositor-level transparency so the desktop is visible
                 // behind the window. AppWindowOpacity further controls how much shows through.
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
+                if (materialChanged)
+                    TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
                 Opacity = Math.Clamp(settings.AppWindowOpacity, 0.1, 1.0);
                 if (wasMica && OperatingSystem.IsWindows()) MicaBackdrop.Clear(this);
@@ -203,7 +233,8 @@ public partial class MainWindow : Window
             else
             {
                 // Gradient, Wallpaper, Solid, and all non-transparent modes.
-                TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
+                if (materialChanged)
+                    TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
                 // Follows the theme's own base (ThemeService overrides GlassBaseDark with
                 // palette.Surface) rather than one hardcoded near-black, which was the same
                 // window colour on every seed (RemEx-fy0a).

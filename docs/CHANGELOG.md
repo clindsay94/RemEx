@@ -52,6 +52,15 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   Additive, so no `protocolVersion` bump; PC-only, since icon re-extraction is a Windows-only
   concept and the phone's own launcher-entry model never sends entries back. (perf audit P2-18)
 
+- A broad round of smaller efficiency fixes on both apps and the PC host: fewer copies and
+  allocations on the stream and socket receive paths, JSON no longer escapes base64 and non-ASCII
+  text, a smaller Android APK (unused library locales dropped, the tooling preview screen no longer
+  in release builds), a smaller desktop app and install (unused tile images and dev scripts no
+  longer shipped), less redundant theme, profile and activity-file work on the PC, lighter tray
+  flyout, Logs page and sparklines, sensor alerts that no longer flicker at their threshold, and
+  host-side caching and debouncing for monitor lookups, mDNS, HWiNFO, media artwork and paired-device
+  activity. No protocol change. (perf audit P3)
+
 - A round of idle/background battery fixes across both apps: the phone's Task Manager, Remote
   Desktop stream, secondary file/catalog sockets, file-transfer queue drain, and reconnect heartbeat
   now pause when there's nothing to show or nowhere to send, instead of polling on a fixed timer

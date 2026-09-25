@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -382,11 +381,14 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                     var buffer = new byte[length];
                     await stream.ReadExactlyAsync(buffer, 0, length, readCts.Token);
 
-                    var json = Encoding.UTF8.GetString(buffer);
+                    // Perf audit P3-4: deserializing from the UTF-8 bytes ReadExactlyAsync already
+                    // produced, instead of decoding to a string first, skips an allocation-and-copy
+                    // that bought nothing - System.Text.Json's own string-based Deserialize overload
+                    // re-encodes back to UTF-8 internally before parsing anyway.
                     CommandRequest? request = null;
                     try
                     {
-                        request = RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.CommandRequest);
+                        request = RemexJson.Deserialize(buffer.AsSpan(), RemexJsonSerializerContext.Relaxed.CommandRequest);
                     }
                     catch (JsonException ex)
                     {
@@ -418,8 +420,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                             "Command rejected: the client is not paired. Complete PIN-based pairing before issuing commands.");
 
                         // Send the rejection, then close the connection (do not dispatch).
-                        var unauthorizedJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
-                        var unauthorizedBytes = Encoding.UTF8.GetBytes(unauthorizedJson);
+                        var unauthorizedBytes = RemexJson.SerializeToUtf8Bytes(response, RemexJsonSerializerContext.Relaxed.CommandResponse);
                         var unauthorizedLengthBuffer = new byte[4];
                         BinaryPrimitives.WriteInt32BigEndian(unauthorizedLengthBuffer, unauthorizedBytes.Length);
                         await stream.WriteAsync(unauthorizedLengthBuffer, token);
@@ -432,8 +433,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                     }
 
                     // 4. Send length-prefixed response
-                    var responseJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
-                    var responseBytes = Encoding.UTF8.GetBytes(responseJson);
+                    var responseBytes = RemexJson.SerializeToUtf8Bytes(response, RemexJsonSerializerContext.Relaxed.CommandResponse);
                     var responseLengthBuffer = new byte[4];
                     BinaryPrimitives.WriteInt32BigEndian(responseLengthBuffer, responseBytes.Length);
 

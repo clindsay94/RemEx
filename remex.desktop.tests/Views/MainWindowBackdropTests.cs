@@ -38,6 +38,26 @@ public class MainWindowBackdropTests
             "the branch must actually call into MicaBackdrop, not just request Transparent");
     }
 
+    /// <summary>
+    /// Perf audit P3-68: every apply (every slider settle) used to hand Avalonia a new hint array and,
+    /// in Mica, repeat both DWM calls. Each hint assignment is now behind the material-changed check,
+    /// and the DWM request behind the light/dark it last landed with.
+    /// </summary>
+    [Fact]
+    public void TheBackdropIsReRequestedOnlyWhenTheEffectiveModeChanged()
+    {
+        var source = Source();
+
+        var hintAssignments = System.Text.RegularExpressions.Regex.Matches(
+            source, @"(?<guard>if \(materialChanged\)\s*)?TransparencyLevelHint = new\[\]");
+        hintAssignments.Count.Should().Be(4, "one hint per material branch");
+        hintAssignments.Should().OnlyContain(m => m.Groups["guard"].Success,
+            "an unguarded hint assignment re-requests the backdrop on every apply");
+
+        source.Should().Contain("if (_micaAppliedDark != dark)",
+            "the Mica DWM call must only repeat when the light/dark answer changed or it has not landed yet");
+    }
+
     [Fact]
     public void LeavingMica_ClearsTheDwmBackdrop()
     {

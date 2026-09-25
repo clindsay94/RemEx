@@ -264,8 +264,14 @@ public sealed class PingPongHandler(
                     break;
                 }
 
-                logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
-                    message.Type, message.ProtocolVersion);
+                // GUARDED (perf audit P3-48): this runs for EVERY message on every /ws connection, and
+                // the LogDebug extension builds its argument array — boxing ProtocolVersion — before any
+                // provider gets to say Debug is off, which it is in production.
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
+                        message.Type, message.ProtocolVersion);
+                }
 
                 // LOOPBACK IS EXCLUDED BECAUSE IT NEVER REACHES A FREEZE POINT (RemEx-4215). It is
                 // authenticated by construction — the PC talking to itself — and has no pairing to
@@ -450,7 +456,7 @@ public sealed class PingPongHandler(
                             Timestamp = message.Timestamp  // Echo back sender's timestamp.
                         };
                         await MessageSerializer.SendAsync(webSocket, pong, ct);
-                        logger.LogDebug("Sent pong.");
+                        if (logger.IsEnabled(LogLevel.Debug)) logger.LogDebug("Sent pong.");
                         break;
 
                     case MessageTypes.Command when message.CommandAction is not null:
@@ -459,7 +465,8 @@ public sealed class PingPongHandler(
                         if (message.CorrelationId is not null)
                             cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
                         await MessageSerializer.SendAsync(webSocket, cmdResponse, ct);
-                        logger.LogDebug("Sent command response for {Action}.", message.CommandAction);
+                        if (logger.IsEnabled(LogLevel.Debug))
+                            logger.LogDebug("Sent command response for {Action}.", message.CommandAction);
                         // Surface a phone-initiated command in the Home "Recent activity" feed. Skip
                         // loopback: the PC UI's own commands travel over its self-connection into this same
                         // handler and are already recorded desktop-side, so recording them here too would

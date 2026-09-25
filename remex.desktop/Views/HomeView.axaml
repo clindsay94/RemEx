@@ -480,9 +480,17 @@
                 </Grid>
 
                 <!-- Populated feed -->
+                <!-- ScrollViewer + MaxHeight + VirtualizingStackPanel, all three load-bearing (perf audit
+                     P3-60): the section sits in a StackPanel, so without the MaxHeight the panel is measured
+                     with infinite height and realizes all 60 stored rows anyway. HomeRecentActivityVirtualizationTests. -->
                 <material:Card Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
                     <ScrollViewer MaxHeight="300" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding RecentActivity}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="services:ActivityEntry">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,9">

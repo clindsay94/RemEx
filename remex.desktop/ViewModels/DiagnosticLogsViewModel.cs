@@ -332,6 +332,48 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     private void OnLogAdded(LogEntry entry) =>
         Avalonia.Threading.Dispatcher.UIThread.Post(() => ProcessIncomingEntry(entry));
 
+    /// <summary>Whether this view model is currently following the live log (perf audit P3-63).</summary>
+    private bool _live = true;
+    private HashSet<LogEntry>? _resumeOverlap;
+    private const int ResumeOverlapWindow = 64;
+
+    internal bool IsLive => _live;
+
+    /// <summary>
+    /// Stops following the live log while the page is not shown (perf audit P3-63). The shell keeps
+    /// one instance for the session, so without this every log line anywhere in the app still cost a
+    /// dispatcher post, a list shift and a collection change on a page nobody was looking at.
+    /// </summary>
+    public void Suspend()
+    {
+        if (!_live) return;
+        InMemoryLogSink.LogAdded -= OnLogAdded;
+        _live = false;
+    }
+
+    /// <summary>
+    /// Resumes following on return and replays what arrived meanwhile from the sink's own buffer, the
+    /// same source <see cref="RefreshLogs"/> reads. Subscribes BEFORE taking the snapshot so nothing
+    /// logged in between is lost; the few entries that land in both are skipped on arrival.
+    /// </summary>
+    public void Resume()
+    {
+        if (_live) return;
+        InMemoryLogSink.LogAdded += OnLogAdded;
+        _live = true;
+
+        var snapshot = InMemoryLogSink.GetEntries();
+        _all.Clear();
+        _all.AddRange(snapshot);
+        // By reference: LogEntry is a record, and two genuinely separate identical lines must both show.
+        _resumeOverlap = new HashSet<LogEntry>(
+            snapshot.Skip(Math.Max(0, snapshot.Count - ResumeOverlapWindow)), ReferenceEqualityComparer.Instance);
+        RebuildVisible();
+
+        if (IsFollowingTail)
+            ScrollToEndRequested?.Invoke();
+    }
+
     /// <summary>
     /// The synchronous half of a live arrival, factored out of the dispatcher-posted lambda above so
     /// a test can drive it directly — nothing pumps <c>Dispatcher.UIThread</c> in the test assembly
@@ -340,12 +382,23 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// </summary>
     internal void ProcessIncomingEntry(LogEntry entry)
     {
+        // Arrivals that raced Resume's subscribe-then-snapshot are already in the snapshot; they come
+        // first (the dispatcher posts FIFO), so the first arrival NOT in the overlap ends the window.
+        if (_resumeOverlap is not null)
+        {
+            if (_resumeOverlap.Contains(entry)) return;
+            _resumeOverlap = null;
+        }
+
         _all.Add(entry);
         if (_all.Count > MaxTrackedEntries)
         {
             var removed = _all[0];
             _all.RemoveAt(0);
-            VisibleEntries.Remove(removed);
+            // VisibleEntries is an in-order subsequence of _all, so the oldest tracked entry, when it
+            // is visible at all, is VisibleEntries[0]: no linear search per line (perf audit P3-63).
+            if (VisibleEntries.Count > 0 && ReferenceEquals(VisibleEntries[0], removed))
+                VisibleEntries.RemoveAt(0);
         }
 
         if (PassesDisplay(entry))

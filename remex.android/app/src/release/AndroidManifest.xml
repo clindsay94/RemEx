@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Release-only manifest overlay (perf audit P3-29).
+
+    compose ui-tooling stays an `implementation` dependency because the workflow is release-only and
+    the Preview pane renders against the release classpath (see app/build.gradle.kts). Its library
+    manifest contributes an EXPORTED androidx.compose.ui.tooling.PreviewActivity, which is a dev-only
+    entry point that has no business in the shipped app and keeps the tooling classes alive through R8.
+    Removing it here drops both. Static @Preview rendering does not use this activity.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            tools:node="remove" />
+    </application>
+</manifest>

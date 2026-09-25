@@ -400,7 +400,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
         var outgoing = StampOutbound(message, _clientId);
 
-        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
+        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Relaxed.RemexMessage);
 
         await _sendGate.WaitAsync(ct);
         try
@@ -434,7 +434,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
         var outgoing = StampOutbound(message, _clientId);
 
-        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
+        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Relaxed.RemexMessage);
 
         await _sendGate.WaitAsync(ct);
         try
@@ -452,54 +452,75 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(1024 * 32);
+        // Perf audit P3-2: created only when a message actually spans more than one frame - nearly
+        // all do not, and those are parsed straight out of the rented buffer (RemEx-tfi6) - but ONE
+        // instance is now reused across every multi-fragment message in this loop's lifetime instead
+        // of a fresh MemoryStream (and LOH allocation, past ~85KB) per occurrence. Safe to reuse
+        // because RemexJson.Deserialize below is synchronous and fully materializes its parsed
+        // result before the next iteration ever touches this stream again - nothing raw from it
+        // escapes the iteration the way P3-1's desktop-frame bytes do (those cross an async JNI
+        // hand-off and must stay independently owned; this one never leaves managed, synchronous
+        // code). Disposed once, in the outer finally, not per iteration.
+        System.IO.MemoryStream? accumulator = null;
         try
         {
             while (!ct.IsCancellationRequested && _webSocket?.State == WebSocketState.Open)
             {
-                // Created only when a message actually spans more than one frame. Nearly all do not,
-                // and those are parsed straight out of the rented buffer (RemEx-tfi6).
-                System.IO.MemoryStream? accumulator = null;
+                // Per-ITERATION signal for "did this particular message span more than one
+                // fragment" - accumulator itself now persists (reset, not recreated) across
+                // iterations, so its nullness can no longer answer that question the way it used to.
+                var usedAccumulator = false;
                 WebSocketReceiveResult result;
-                try
+                do
                 {
-                    do
+                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                    if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                        if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            // The host closed the connection: report the drop and leave. NOT
-                            // DisconnectAsync — it awaits _receiveLoopTask, which is this very loop,
-                            // so calling it from here awaited itself forever: false never fired, and
-                            // every later ConnectAsync hung on the same stuck task. Teardown of the
-                            // socket happens in the next ConnectAsync/DisconnectAsync, called from
-                            // outside the loop, where awaiting the (now finished) task is correct.
-                            JniHelper.AndroidLogE("RemexNative", $"Host closed the connection ({result.CloseStatus}); reporting disconnect.");
-                            ConnectionStateChanged?.Invoke(false);
-                            return;
-                        }
-
-                        if (result.EndOfMessage && accumulator is null)
-                            break;
-
-                        accumulator ??= new System.IO.MemoryStream(buffer.Length * 2);
-                        accumulator.Write(buffer, 0, result.Count);
-                    } while (!result.EndOfMessage);
-
-                    if (result.MessageType == WebSocketMessageType.Text)
-                    {
-                        // GetBuffer rather than ToArray: the accumulator already holds exactly these
-                        // bytes contiguously, and the copy was pure waste. Both spans stay valid for
-                        // the whole of Deserialize, which is synchronous and materializes its result.
-                        var utf8 = accumulator is null
-                            ? new ReadOnlySpan<byte>(buffer, 0, result.Count)
-                            : new ReadOnlySpan<byte>(accumulator.GetBuffer(), 0, (int)accumulator.Length);
-                        var msg = RemexJson.Deserialize(utf8, RemexJsonSerializerContext.Default.RemexMessage);
-                        if (msg != null) HandleMessage(msg);
+                        // The host closed the connection: report the drop and leave. NOT
+                        // DisconnectAsync — it awaits _receiveLoopTask, which is this very loop,
+                        // so calling it from here awaited itself forever: false never fired, and
+                        // every later ConnectAsync hung on the same stuck task. Teardown of the
+                        // socket happens in the next ConnectAsync/DisconnectAsync, called from
+                        // outside the loop, where awaiting the (now finished) task is correct.
+                        JniHelper.AndroidLogE("RemexNative", $"Host closed the connection ({result.CloseStatus}); reporting disconnect.");
+                        ConnectionStateChanged?.Invoke(false);
+                        return;
                     }
-                }
-                finally
+
+                    if (result.EndOfMessage && !usedAccumulator)
+                        break;
+
+                    if (!usedAccumulator)
+                    {
+                        accumulator ??= new System.IO.MemoryStream(buffer.Length * 2);
+                        accumulator.SetLength(0);
+                        usedAccumulator = true;
+                    }
+                    accumulator!.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+
+                if (result.MessageType == WebSocketMessageType.Text)
                 {
-                    accumulator?.Dispose();
+                    // GetBuffer rather than ToArray: the accumulator already holds exactly these
+                    // bytes contiguously, and the copy was pure waste. Both spans stay valid for
+                    // the whole of Deserialize, which is synchronous and materializes its result.
+                    var utf8 = !usedAccumulator
+                        ? new ReadOnlySpan<byte>(buffer, 0, result.Count)
+                        : new ReadOnlySpan<byte>(accumulator!.GetBuffer(), 0, (int)accumulator.Length);
+                    var msg = RemexJson.Deserialize(utf8, RemexJsonSerializerContext.Default.RemexMessage);
+                    if (msg != null) HandleMessage(msg);
+                }
+
+                // Review round 1 MEDIUM: reusing the accumulator means an unusually large message
+                // (media artwork base64, a big launcher-icon sync) leaves its capacity resident for
+                // the rest of the connection instead of being freed per-message like before this fix.
+                // Drop it and let the next multi-fragment message rebuild one at its own size, rather
+                // than trading "an allocation per large message" for "one allocation held forever".
+                const int MaxRetainedAccumulatorCapacity = 1024 * 1024;
+                if (usedAccumulator && accumulator!.Capacity > MaxRetainedAccumulatorCapacity)
+                {
+                    accumulator.Dispose();
+                    accumulator = null;
                 }
             }
 
@@ -529,6 +550,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
             // Cleared, not just released: this buffer carries pairing material and file bytes, and
             // ArrayPool.Shared is process-wide, so an uncleared return hands those to the next renter.
             ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+            accumulator?.Dispose();
         }
     }
 

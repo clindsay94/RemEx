@@ -33,9 +33,15 @@ public static class WallpaperImageStore
             var width = Math.Max(1, (int)Math.Round(decoded.Width * scale));
             var height = Math.Max(1, (int)Math.Round(decoded.Height * scale));
 
-            using var sized = scale < 1.0
-                ? decoded.Resize(new SKImageInfo(width, height), SKSamplingOptions.Default) ?? decoded.Copy()
-                : decoded.Copy();
+            // NO SECOND FULL-SIZE COPY (perf audit P3-55). At scale 1.0 - or when Resize fails - the
+            // decoded bitmap is encoded directly; it was being Copy()'d first, doubling peak memory
+            // for a pick that is already at or under MaxEdge. Only a real resize owns a new bitmap.
+            using var resized = scale < 1.0
+                ? decoded.Resize(new SKImageInfo(width, height), SKSamplingOptions.Default)
+                : null;
+            var sized = resized ?? decoded;
+            // Immutable lets FromBitmap share the pixels instead of copying them once more.
+            sized.SetImmutable();
             using var image = SKImage.FromBitmap(sized);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
             if (data is null) return false;

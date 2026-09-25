@@ -20,6 +20,9 @@ public sealed class DesktopSessionRegistry
     // Maps clientId → the CTS that is currently active for that client.
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeSessions = new();
 
+    // Prefix of the synthetic key a loopback (empty clientId) session is registered under.
+    private const string LoopbackKeyPrefix = "__loopback__:";
+
     // Maps CTS → its drain signal. Keyed by CTS reference so MarkDrained can fire
     // the signal for a superseded session even after it has been evicted from _activeSessions.
     private readonly ConditionalWeakTable<CancellationTokenSource, TaskCompletionSource> _drainSignals = new();
@@ -47,7 +50,7 @@ public sealed class DesktopSessionRegistry
         // Empty clientId arises from loopback/in-process connections. Assign a unique
         // synthetic key so multiple concurrent loopback sessions don't cancel each other.
         var registryKey = string.IsNullOrEmpty(clientId)
-            ? $"__loopback__:{Guid.NewGuid()}"
+            ? $"{LoopbackKeyPrefix}{Guid.NewGuid()}"
             : clientId;
 
         var newCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -157,25 +160,36 @@ public sealed class DesktopSessionRegistry
             signal.TrySetResult();
 
         // Remove from the active map only if this CTS is still the registered one.
-        // A newer TakeOver may have already replaced it.
-        var registryKey = string.IsNullOrEmpty(clientId)
-            ? null
-            : clientId;
-
-        if (registryKey is not null &&
-            _activeSessions.TryGetValue(registryKey, out var current) &&
-            ReferenceEquals(current, ownedCts))
+        // A newer TakeOver may have already replaced it. The key+value TryRemove makes that
+        // check-and-remove one atomic step (CTS does not override Equals, so the value match is by
+        // reference).
+        if (!string.IsNullOrEmpty(clientId))
         {
-            _activeSessions.TryRemove(registryKey, out _);
+            _activeSessions.TryRemove(new KeyValuePair<string, CancellationTokenSource>(clientId, ownedCts));
+            return;
         }
-        // For loopback sessions, the synthetic key is unknown at call-site, so we
-        // skip the removal. The ConditionalWeakTable entry is GC'd when the CTS is
-        // collected (after the caller disposes it in the using block).
+
+        // Loopback: the synthetic key is not known at the call site, so find this CTS's own entry.
+        // This used to be skipped, which left every loopback session's entry — and the CTS it
+        // references — in the map for the life of the process (perf audit P3-41). Loopback sessions
+        // are rare and the map holds one entry per live session, so the scan is trivial.
+        foreach (var entry in _activeSessions)
+        {
+            if (ReferenceEquals(entry.Value, ownedCts) &&
+                entry.Key.StartsWith(LoopbackKeyPrefix, StringComparison.Ordinal))
+            {
+                _activeSessions.TryRemove(entry);
+                return;
+            }
+        }
     }
+
+    /// <summary>Number of registered sessions; for tests (P3-41).</summary>
+    internal int ActiveSessionCount => _activeSessions.Count;
 
     private static string RedactKey(string key)
     {
-        if (key.StartsWith("__loopback__:", StringComparison.Ordinal))
+        if (key.StartsWith(LoopbackKeyPrefix, StringComparison.Ordinal))
             return "<loopback>";
         return key.Length > 8 ? key[..8] + "..." : key;
     }

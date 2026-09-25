@@ -187,25 +187,39 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             ApplyUpdateResult(_updateService.LastResult);
     }
     
-    private void LoadWhatsNew()
+    /// <summary>
+    /// The bundled CHANGELOG's highlights, parsed once per process. The changelog is English-only and
+    /// fixed for the build, so a language switch or a new About instance has nothing to re-read
+    /// (perf audit P3-28). An unreadable asset caches as empty and the static highlights take over.
+    /// </summary>
+    private static readonly Lazy<IReadOnlyList<WhatsNewItem>> s_bundledChangelog = new(LoadBundledChangelog);
+
+    private static IReadOnlyList<WhatsNewItem> LoadBundledChangelog()
     {
         // Pull the highlights straight from the bundled CHANGELOG so this stays current every release.
         try
         {
             using var stream = Avalonia.Platform.AssetLoader.Open(new Uri("avares://Remex.Desktop/Assets/CHANGELOG.md"));
             using var reader = new StreamReader(stream);
-            foreach (var entry in ParseChangelog(reader.ReadToEnd(), maxItems: 12))
-                WhatsNewItems.Add(entry);
-            if (WhatsNewItems.Count > 0)
-                return;
+            return ParseChangelog(reader, maxItems: 12);
         }
         catch (Exception ex)
         {
-            // Benign - the static highlights below are a real fallback - but recorded anyway, because
+            // Benign - the static highlights are a real fallback - but recorded anyway, because
             // "the About page shows the wrong release notes" is otherwise unexplainable from a log.
             InMemoryLogSink.Append(LogLevel.Debug, "About",
                 "Could not read the bundled changelog; falling back to static highlights", ex);
+            return Array.Empty<WhatsNewItem>();
         }
+    }
+
+    private void LoadWhatsNew()
+    {
+        var bundled = s_bundledChangelog.Value;
+        foreach (var entry in bundled)
+            WhatsNewItems.Add(entry);
+        if (WhatsNewItems.Count > 0)
+            return;
 
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Features"],
@@ -231,23 +245,30 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     /// silently falls back to stale hardcoded highlights (RemEx-xtc2). Internal for unit testing.
     /// </summary>
     internal static List<WhatsNewItem> ParseChangelog(string markdown, int maxItems)
+        => ParseChangelog(new StringReader(markdown), maxItems);
+
+    /// <summary>
+    /// Streaming form of <see cref="ParseChangelog(string, int)"/>: reads line by line and stops as soon
+    /// as the newest non-empty released section is done, so the ~1.3 MB bundled changelog is never
+    /// materialised or split whole (perf audit P3-28). Same rules as the string overload.
+    /// </summary>
+    internal static List<WhatsNewItem> ParseChangelog(TextReader reader, int maxItems)
     {
         var items = new List<WhatsNewItem>();
-        var lines = markdown.Replace("\r\n", "\n").Split('\n');
-        int i = 0;
-        while (i < lines.Length)
+        var line = reader.ReadLine();
+        while (line != null)
         {
-            while (i < lines.Length && !lines[i].StartsWith("## [", StringComparison.Ordinal)) i++;
-            if (i >= lines.Length) break;
-            var isUnreleased = lines[i].Contains("[Unreleased]", StringComparison.OrdinalIgnoreCase);
-            i++;
-            for (; i < lines.Length && items.Count < maxItems; i++)
+            while (line != null && !line.StartsWith("## [", StringComparison.Ordinal)) line = reader.ReadLine();
+            if (line == null) break;
+            var isUnreleased = line.Contains("[Unreleased]", StringComparison.OrdinalIgnoreCase);
+            line = reader.ReadLine();
+            for (; line != null && items.Count < maxItems; line = reader.ReadLine())
             {
-                if (lines[i].StartsWith("## [", StringComparison.Ordinal))
+                if (line.StartsWith("## [", StringComparison.Ordinal))
                     break; // section over — decide below whether it produced anything
                 if (isUnreleased)
                     continue;
-                var trimmed = lines[i].TrimStart();
+                var trimmed = line.TrimStart();
                 if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
                     continue;
                 var (title, description) = ParseBullet(trimmed.Substring(2));

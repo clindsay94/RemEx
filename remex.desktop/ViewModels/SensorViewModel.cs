@@ -441,9 +441,19 @@ public partial class SensorViewModel : ObservableObject
             return;
         }
 
-        bool triggered = _alert.Direction == AlertDirection.Above
-            ? Value > _alert.Threshold
-            : Value < _alert.Threshold;
+        // The clear-band only applies to the threshold that actually tripped; after the user edits the
+        // threshold or direction, re-evaluate as if not live so a value that never crossed the new
+        // threshold does not stay latched inside the old band.
+        bool sameTrip = IsAlertActive
+            && _trippedDirection == _alert.Direction
+            && _trippedThreshold.Equals(_alert.Threshold);
+        bool triggered = IsAlertLive(_alert.Direction, _alert.Threshold, Value, sameTrip);
+
+        if (triggered)
+        {
+            _trippedDirection = _alert.Direction;
+            _trippedThreshold = _alert.Threshold;
+        }
 
         if (triggered && !IsAlertActive)
         {
@@ -454,6 +464,27 @@ public partial class SensorViewModel : ObservableObject
         {
             IsAlertActive = false;
         }
+    }
+
+    private AlertDirection _trippedDirection;
+    private double _trippedThreshold = double.NaN;
+
+    /// <summary>Fraction of |threshold| a value must retreat past it before a live alert re-arms.</summary>
+    internal const double AlertClearDeadbandFraction = 0.02;
+
+    /// <summary>
+    /// HYSTERESIS (perf audit P3-57). Crossing the threshold goes live exactly as before; clearing
+    /// needs the value to retreat <see cref="AlertClearDeadbandFraction"/> of the threshold past it.
+    /// Without the deadband a sensor sitting on its threshold flipped live/clear every other tick, and
+    /// every flip back to live re-ran the tracker's Trip and the canvas's card walk. Relative, not
+    /// absolute, because thresholds span volts to RPM; a zero threshold has no band and behaves as before.
+    /// </summary>
+    internal static bool IsAlertLive(AlertDirection direction, double threshold, double value, bool wasLive)
+    {
+        var band = wasLive ? Math.Abs(threshold) * AlertClearDeadbandFraction : 0;
+        return direction == AlertDirection.Above
+            ? value > threshold - band
+            : value < threshold + band;
     }
 
     // ═══════════════ Auto Resolution ═══════════════

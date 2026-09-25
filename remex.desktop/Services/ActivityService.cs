@@ -132,11 +132,54 @@ public sealed class ActivityService
     /// <summary>The file this instance actually resolved, so a test can pin the constructor.</summary>
     internal string FilePathForTests => _filePath;
 
+    /// <summary>
+    /// UI-thread state for the async load (perf audit P3-59). Until the stored feed has been merged,
+    /// a save would overwrite the file with only the events recorded since launch, so it is deferred.
+    /// </summary>
+    private bool _loaded;
+    private bool _saveRequestedBeforeLoad;
+    private bool _clearedBeforeLoad;
+
     private ActivityService()
     {
         _filePath = DefaultFilePath;
-        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-        Load();
+
+        // THE FILE IS READ ON THE THREAD POOL, NOT ON THE FIRST CALLER'S THREAD (perf audit P3-59).
+        // The first caller can be an agent socket thread (PingPongHandler, TransferSessionManager), and
+        // this used to do the directory create and the read right there - and then fill Recent, a
+        // UI-bound collection, from that thread too. Now the read happens off every caller's thread and
+        // the merge is posted to the UI thread, where Recent is always mutated. App also touches
+        // Instance at startup so the read starts before the first event rather than on it.
+        _ = Task.Run(ReadStored).ContinueWith(
+            t => Post(() => ApplyLoaded(t.Result)),
+            CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    /// <summary>Starts the singleton (and so its background load) from a known thread.</summary>
+    public static void Warm() => _ = Instance;
+
+    private void ApplyLoaded(IReadOnlyList<ActivityEntry> stored)
+    {
+        MergeLoaded(Recent, stored, _clearedBeforeLoad, MaxStored);
+        _loaded = true;
+        if (_saveRequestedBeforeLoad)
+            RequestSave();
+    }
+
+    /// <summary>
+    /// Appends the stored (older) feed after whatever was recorded while it loaded (newer, already at
+    /// the head), capped - unless the feed was cleared in that window, in which case the stored history
+    /// is what the user just cleared. Internal and static so the ordering is pinned by a test.
+    /// </summary>
+    internal static void MergeLoaded(IList<ActivityEntry> recent, IReadOnlyList<ActivityEntry> stored,
+        bool clearedBeforeLoad, int max)
+    {
+        if (clearedBeforeLoad) return;
+        foreach (var ev in stored)
+        {
+            if (recent.Count >= max) break;
+            recent.Add(ev);
+        }
     }
 
     /// <summary>Records a new event at the head of the feed. Safe to call from any thread.</summary>
@@ -163,35 +206,41 @@ public sealed class ActivityService
     {
         Post(() =>
         {
+            if (!_loaded) _clearedBeforeLoad = true;
             Recent.Clear();
             RequestSave();
         });
     }
 
-    private void Load()
+    /// <summary>Reads the persisted feed (newest-first). Runs on the thread pool; never throws.</summary>
+    private IReadOnlyList<ActivityEntry> ReadStored()
     {
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
             if (!File.Exists(_filePath))
-                return;
+                return Array.Empty<ActivityEntry>();
 
             var json = File.ReadAllText(_filePath);
             var stored = JsonSerializer.Deserialize<List<ActivityEntry>>(json, JsonOptions);
-            if (stored is null)
-                return;
-
-            // Persisted newest-first; seed the collection in the same order, capped.
-            foreach (var ev in stored.Take(MaxStored))
-                Recent.Add(ev);
+            return stored is null ? Array.Empty<ActivityEntry>() : stored.Take(MaxStored).ToList();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[RemexActivity] Failed to load '{_filePath}': {ex.Message}");
+            return Array.Empty<ActivityEntry>();
         }
     }
 
     private void RequestSave()
     {
+        if (!_loaded)
+        {
+            // Saving now would replace the stored history with only this session's events.
+            _saveRequestedBeforeLoad = true;
+            return;
+        }
+
         // Snapshot on the UI thread (where Recent is mutated); the timer thread only reads it.
         _pendingSnapshot = Recent.ToList();
         _debounceTimer?.Dispose();

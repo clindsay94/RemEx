@@ -55,6 +55,56 @@ public sealed class CanvasAlertStateTests
             "the old 2-second flash held the card hot after recovery; the live mirror must not");
     }
 
+    [Theory]
+    [InlineData(AlertDirection.Above, 90, 91, 89, 87)]
+    [InlineData(AlertDirection.Below, 20, 19, 20.3, 21)]
+    public void ASensorHoveringAtItsThresholdDoesNotRetripEveryTick(
+        AlertDirection direction, double threshold, double over, double justBack, double clearlyBack)
+    {
+        // Perf audit P3-57: the live flag used to clear the instant the value crossed back, so a
+        // sensor sitting on its threshold re-fired AlertTriggered (a full Trip + card walk) every
+        // other tick. It now clears only once the value retreats 2% of the threshold past it.
+        var vm = NewDashboard();
+        vm.ApplyTelemetry(Reading("hover-0", clearlyBack));
+        var card = vm.StagedCards.Single();
+        card.Sensor!.Alert = new SensorAlert { SensorName = "hover-0", Threshold = threshold, Direction = direction };
+        var fired = 0;
+        card.Sensor.AlertTriggered += (_, _) => fired++;
+
+        for (var i = 0; i < 5; i++)
+        {
+            vm.ApplyTelemetry(Reading("hover-0", over));
+            vm.ApplyTelemetry(Reading("hover-0", justBack));
+        }
+        fired.Should().Be(1, "hovering inside the deadband is one crossing, not five");
+        card.IsAlertActive.Should().BeTrue("the value has not left the deadband yet");
+
+        vm.ApplyTelemetry(Reading("hover-0", clearlyBack));
+        card.IsAlertActive.Should().BeFalse("past the deadband the alert re-arms");
+
+        vm.ApplyTelemetry(Reading("hover-0", over));
+        fired.Should().Be(2, "a crossing after re-arming fires again");
+    }
+
+    [Fact]
+    public void EditingTheThresholdDropsTheOldDeadband()
+    {
+        // The clear-band belongs to the threshold that tripped. Live at "above 80" and sitting at
+        // 79.5 inside its band, then raised to 81: 79.5 never crossed 81, so the alert must clear.
+        var vm = NewDashboard();
+        vm.ApplyTelemetry(Reading("edit-0", 70));
+        var card = vm.StagedCards.Single();
+        card.Sensor!.Alert = new SensorAlert { SensorName = "edit-0", Threshold = 80, Direction = AlertDirection.Above };
+
+        vm.ApplyTelemetry(Reading("edit-0", 85));
+        vm.ApplyTelemetry(Reading("edit-0", 79.5));
+        card.IsAlertActive.Should().BeTrue("79.5 is inside the 2% band of the tripped threshold");
+
+        card.Sensor.Alert = new SensorAlert { SensorName = "edit-0", Threshold = 81, Direction = AlertDirection.Above };
+        vm.ApplyTelemetry(Reading("edit-0", 79.5));
+        card.IsAlertActive.Should().BeFalse("the value never crossed the new threshold");
+    }
+
     [Fact]
     public void ATripMarksMatchingCardsTrippedUntilAcknowledged()
     {

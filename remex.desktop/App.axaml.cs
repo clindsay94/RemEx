@@ -199,6 +199,10 @@ public partial class App : Application
     {
         try
         {
+            // Start the activity feed's background load now, not on whichever agent thread records the
+            // first event (perf audit P3-59).
+            ActivityService.Warm();
+
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
             var savefileService = Services.GetRequiredService<RemexSavefileService>();
             // ReloadAsync (RemEx-waqb4 review): the very first load genuinely replaces the
@@ -209,9 +213,11 @@ public partial class App : Application
 
             // Auto-check for a newer GitHub release on startup unless the user opted out. Fire-and-forget
             // so a slow/absent network never delays the window; the About page reads the cached result.
+            // CheckOnStartupAsync reuses a successful answer from the last 24 h instead of calling
+            // GitHub on every launch, minimized logon starts included (perf audit P3-56).
             if (profile == null || profile.CheckForUpdatesAutomatically)
             {
-                _ = Services.GetService<UpdateCheckService>()?.CheckAsync();
+                _ = Services.GetService<UpdateCheckService>()?.CheckOnStartupAsync();
             }
 
             // Silent rolling auto-snapshot: restart the debounce timer every time the dashboard

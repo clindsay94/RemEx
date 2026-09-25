@@ -36,6 +36,9 @@ public sealed class PairedDeviceActivityStore
     private readonly object _persistenceGate = new();
     private readonly string _storePath;
 
+    /// <summary>How close together two sightings may be before the later one is not recorded (P3-49).</summary>
+    internal static readonly TimeSpan LastSeenGranularity = TimeSpan.FromMinutes(1);
+
     public PairedDeviceActivityStore(ILogger<PairedDeviceActivityStore> logger)
         : this(logger, null)
     {
@@ -87,6 +90,18 @@ public sealed class PairedDeviceActivityStore
     public void RecordSeen(string? clientId, DateTimeOffset nowUtc)
     {
         if (string.IsNullOrWhiteSpace(clientId)) return;
+
+        // MINUTE GRANULARITY, NOT A DISK WRITE PER CONNECT (perf audit P3-49). This runs on every
+        // authenticated connection, and each call used to re-serialise the whole store, write it
+        // atomically and re-apply its ACL — for a timestamp a person reads as "last seen 3 min ago".
+        // A reconnect inside the window leaves the recorded time (memory and disk) as it is; the
+        // window is measured from the RECORDED time, so a device that reconnects every few seconds
+        // still advances once per window rather than never. A clock that moved backwards writes.
+        if (_activity.TryGetValue(clientId, out var existing))
+        {
+            var sinceRecorded = nowUtc - existing.LastSeenUtc;
+            if (sinceRecorded >= TimeSpan.Zero && sinceRecorded < LastSeenGranularity) return;
+        }
 
         _activity.AddOrUpdate(
             clientId,

@@ -65,7 +65,7 @@ public static class FileFrameCodec
     public static byte[] SerializeHeader(FileFrameEnvelope envelope)
     {
         ArgumentNullException.ThrowIfNull(envelope);
-        return RemexJson.SerializeToUtf8Bytes(envelope, RemexJsonSerializerContext.Default.FileFrameEnvelope);
+        return RemexJson.SerializeToUtf8Bytes(envelope, RemexJsonSerializerContext.Relaxed.FileFrameEnvelope);
     }
 
     /// <summary>

@@ -75,4 +75,33 @@ public class ThemeModeResolutionTests
         ThemeService.ResolveIsLight(future, DarkPreset, osIsLight: false).Should().BeTrue(
             "an unknown mode must fall back to the explicit legacy bool, not crash or pin dark");
     }
+
+    [Fact]
+    public void AnOsColourChangeThatKeepsTheSameVariantDoesNotReapply()
+    {
+        // Perf audit P3-51: ColorValuesChanged also fires for accent and contrast changes, which the
+        // palette does not read. Only a real light/dark flip is worth the full ~56-resource apply.
+        var posts = 0;
+        var theme = new ThemeService { PostToUiThread = action => { posts++; action(); } };
+        theme.ApplyCustomizationCore(new CustomizationSettings { ThemeId = "CyberNOC", ThemeMode = ThemeModes.System });
+        // No platform in a unit test, so System resolved dark.
+
+        theme.HandleOsThemeVariant(osIsLight: false);
+        posts.Should().Be(0, "the OS is still dark, which is what was painted");
+
+        theme.HandleOsThemeVariant(osIsLight: true);
+        posts.Should().Be(1, "a real dark-to-light flip re-applies");
+    }
+
+    [Fact]
+    public void AnOsColourChangeUnderAPinnedModeNeverReapplies()
+    {
+        var posts = 0;
+        var theme = new ThemeService { PostToUiThread = action => { posts++; action(); } };
+        theme.ApplyCustomizationCore(new CustomizationSettings { ThemeId = "CyberNOC", ThemeMode = ThemeModes.Dark });
+
+        theme.HandleOsThemeVariant(osIsLight: true);
+
+        posts.Should().Be(0);
+    }
 }

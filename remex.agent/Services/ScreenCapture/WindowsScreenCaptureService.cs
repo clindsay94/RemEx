@@ -32,6 +32,23 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     private DesktopCaptureTarget _activeTarget = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
     private int _displayListVersion = 1;
 
+    // The active per-monitor target resolved against _displays, or null in virtual-desktop mode or when
+    // the target's display is gone (perf audit P3-34). Recomputed under _displayLock wherever _displays
+    // or _activeTarget change (UpdateActiveMonitorDisplay), and read lock-free by the per-frame backend
+    // selection — which used to take the lock and run a capturing-lambda FirstOrDefault two or three
+    // times per captured frame to re-derive this same answer. DisplayDefinition is an immutable record,
+    // so a reader always sees one consistent snapshot.
+    private volatile DisplayDefinition? _activeMonitorDisplay;
+
+    // GetActiveBounds used to re-enumerate every monitor on EVERY call, and on the GDI tier it runs per
+    // captured frame plus from GetScreenSize on the cursor loop's slow tick (perf audit P3-37). The
+    // enumeration is now reused for this long. A target switch or catalog request still refreshes
+    // immediately (TrySetCaptureTarget / GetDisplayCatalog call RefreshDisplays directly), so the only
+    // thing the window delays is noticing a hot-plug or mode change, by at most this much — and the
+    // H.264 raw-size self-heal in RemoteDesktopHandler already covers a frame captured at stale bounds.
+    private const long DisplayRefreshIntervalMs = 1000;
+    private long _displaysRefreshedAtMs;
+
     // Throttle for capture-failure error logs. Without this, a sustained outage (locked desktop,
     // disconnected session) logs one error + stack trace per frame at the target FPS, flooding logs.
     private DateTime _lastCaptureErrorLogUtc = DateTime.MinValue;
@@ -90,6 +107,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 CaptureMode = DesktopCaptureMode.Monitor,
                 DisplayId = primaryDisplay.DisplayId,
             };
+            UpdateActiveMonitorDisplay();
         }
     }
 
@@ -107,17 +125,28 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     // mode or an unresolved display. WGC and DXGI both capture per-monitor; virtual-desktop stays on GDI.
     private string? ActiveMonitorDeviceName()
     {
-        lock (_displayLock)
-        {
-            if (_activeTarget.CaptureMode != DesktopCaptureMode.Monitor || string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
-            {
-                return null;
-            }
+        var display = _activeMonitorDisplay;
+        return string.IsNullOrWhiteSpace(display?.DeviceName) ? null : display.DeviceName;
+    }
 
-            var display = _displays.FirstOrDefault(candidate =>
-                string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
-            return string.IsNullOrWhiteSpace(display?.DeviceName) ? null : display.DeviceName;
+    // Must be called under _displayLock, after any assignment to _displays or _activeTarget. Same match
+    // the hot-path helpers used to perform inline: Monitor mode, a display id, and that id still present.
+    private void UpdateActiveMonitorDisplay()
+    {
+        DisplayDefinition? resolved = null;
+        if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor && !string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+        {
+            foreach (var display in _displays)
+            {
+                if (string.Equals(display.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal))
+                {
+                    resolved = display;
+                    break;
+                }
+            }
         }
+
+        _activeMonitorDisplay = resolved;
     }
 
     // Pure capability check (no side effects) — safe to call from the BackendName getter and the hot path.
@@ -238,6 +267,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             if (target.CaptureMode == DesktopCaptureMode.VirtualDesktop)
             {
                 _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                UpdateActiveMonitorDisplay();
                 error = null;
                 return true;
             }
@@ -261,6 +291,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 CaptureMode = DesktopCaptureMode.Monitor,
                 DisplayId = selectedDisplay.DisplayId,
             };
+            UpdateActiveMonitorDisplay();
 
             error = null;
             return true;
@@ -532,20 +563,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     {
         lock (_displayLock)
         {
-            RefreshDisplays();
-
-            if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor &&
-                !string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+            // Throttled re-enumeration, not per call (P3-37) — see DisplayRefreshIntervalMs.
+            if (Environment.TickCount64 - _displaysRefreshedAtMs >= DisplayRefreshIntervalMs)
             {
-                var display = _displays.FirstOrDefault(candidate =>
-                    string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
-                if (display is not null)
-                {
-                    return display.Bounds;
-                }
+                RefreshDisplays();
             }
 
-            return GetVirtualDesktopBounds();
+            return _activeMonitorDisplay?.Bounds ?? GetVirtualDesktopBounds();
         }
     }
 
@@ -556,18 +580,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             return false;
         }
 
-        lock (_displayLock)
-        {
-            if (_activeTarget.CaptureMode != DesktopCaptureMode.Monitor || string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
-            {
-                return false;
-            }
-
-            var display = _displays.FirstOrDefault(candidate =>
-                string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
-            return display is not null &&
-                   string.Equals(display.DeviceName, _dxgi.OutputDeviceName, StringComparison.OrdinalIgnoreCase);
-        }
+        // Lock-free read of the cached resolution (P3-34); null covers virtual-desktop mode and a
+        // target whose display has gone, exactly as the inline lookup did.
+        var display = _activeMonitorDisplay;
+        return display is not null &&
+               string.Equals(display.DeviceName, _dxgi.OutputDeviceName, StringComparison.OrdinalIgnoreCase);
     }
 
     private Bitmap CaptureBitmap(Rectangle bounds, bool drawCursor)
@@ -637,6 +654,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 ? new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop }
                 : new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.Monitor, DisplayId = primaryDisplay.DisplayId };
         }
+
+        UpdateActiveMonitorDisplay();
+        _displaysRefreshedAtMs = Environment.TickCount64;
     }
 
     private static List<DisplayDefinition> EnumerateDisplays()

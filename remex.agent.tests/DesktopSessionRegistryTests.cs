@@ -135,4 +135,48 @@ public class DesktopSessionRegistryTests
 
         registry.MarkDrained("client-e", secondCts);
     }
+
+    // ── Loopback sessions are removed on drain (perf audit P3-41) ────────
+
+    [Fact]
+    public async Task MarkDrained_LoopbackSession_IsRemovedFromTheRegistry()
+    {
+        // Loopback connections have no clientId and are keyed synthetically, so MarkDrained could not
+        // find them by key and every one of them stayed in the map (holding its CTS) for the life of
+        // the process.
+        var registry = MakeRegistry();
+
+        using var first = await registry.TakeOverAsync("", TimeSpan.FromSeconds(1), CancellationToken.None);
+        using var second = await registry.TakeOverAsync("", TimeSpan.FromSeconds(1), CancellationToken.None);
+        Assert.Equal(2, registry.ActiveSessionCount);
+
+        registry.MarkDrained("", first);
+        Assert.Equal(1, registry.ActiveSessionCount);
+
+        // Only the session that drained goes: the other loopback session is untouched and live.
+        Assert.False(second.Token.IsCancellationRequested);
+
+        registry.MarkDrained("", second);
+        Assert.Equal(0, registry.ActiveSessionCount);
+    }
+
+    [Fact]
+    public async Task MarkDrained_Loopback_DoesNotRemoveANamedClientsSession()
+    {
+        var registry = MakeRegistry();
+
+        using var named = await registry.TakeOverAsync("client-f", TimeSpan.FromSeconds(1), CancellationToken.None);
+        using var loopback = await registry.TakeOverAsync("", TimeSpan.FromSeconds(1), CancellationToken.None);
+
+        // A loopback drain passing a CTS that is not registered at all must remove nothing.
+        using var stranger = new CancellationTokenSource();
+        registry.MarkDrained("", stranger);
+        Assert.Equal(2, registry.ActiveSessionCount);
+
+        registry.MarkDrained("", loopback);
+        Assert.Equal(1, registry.ActiveSessionCount);
+
+        registry.MarkDrained("client-f", named);
+        Assert.Equal(0, registry.ActiveSessionCount);
+    }
 }

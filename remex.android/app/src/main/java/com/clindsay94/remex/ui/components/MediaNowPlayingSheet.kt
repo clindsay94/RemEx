@@ -47,6 +47,85 @@ import com.clindsay94.remex.data.MediaPlaybackStatus
 import kotlinx.coroutines.delay
 
 /**
+ * The seek Slider plus its elapsed/remaining labels, isolated into its own composable (P3-18) so
+ * the once-a-second clock tick only recomposes this leaf — not the whole [MediaNowPlayingSheet]
+ * body (artwork, title, artist marquee, [MediaControlSection]) it used to share a recompose scope
+ * with when `nowElapsedMs` lived directly in that function's body.
+ *
+ * Defined ahead of [MediaNowPlayingSheet] (rather than after, where it was first extracted to) so
+ * this Slider's declaration still textually precedes the [MediaControlSection] call site, which
+ * `MediaMiniPlayerGuardTest`'s existing "seek slider is disabled" guard depends on.
+ */
+@Composable
+private fun SeekSection(
+        playback: MediaPlaybackSnapshot,
+        connected: Boolean,
+        inputSupported: Boolean,
+        onSeek: (Long) -> Unit
+) {
+    // Ticks once a second while PLAYING, same rule as MediaMiniPlayer: entirely on the
+    // phone's own monotonic clock, never compared against a host timestamp.
+    var nowElapsedMs by remember(playback) {
+        mutableLongStateOf(SystemClock.elapsedRealtime())
+    }
+    LaunchedEffect(playback) {
+        while (playback.status == MediaPlaybackStatus.PLAYING) {
+            delay(1_000L)
+            nowElapsedMs = SystemClock.elapsedRealtime()
+        }
+    }
+    val durationMs = playback.durationMs ?: 0L
+    // Non-null only while the user has a finger on the thumb; the drag value wins over
+    // the extrapolated one so the label and thumb follow the gesture instead of fighting
+    // the ticking clock above. Deliberately NOT keyed on `playback`: an unrelated
+    // media_state arriving mid-gesture must not wipe an in-flight drag (RemEx-vtorl
+    // review) — it is already cleared explicitly in onValueChangeFinished below.
+    var dragProgress by remember { mutableStateOf<Float?>(null) }
+    val sliderProgress = dragProgress ?: (playback.progressAt(nowElapsedMs) ?: 0f)
+    val positionMs =
+            dragProgress?.let { (it * durationMs).toLong() }
+                    ?: playback.positionAt(nowElapsedMs) ?: 0L
+    val seekDescription = stringResource(R.string.rc_media_seek)
+
+    Slider(
+            value = sliderProgress,
+            onValueChange = { dragProgress = it },
+            onValueChangeFinished = {
+                val target = dragProgress
+                dragProgress = null
+                if (target != null) {
+                    onSeek((target * durationMs).toLong())
+                }
+            },
+            valueRange = 0f..1f,
+            // DISABLED, NOT HIDDEN, WHEN THE SESSION WILL NOT SEEK. It is still the
+            // progress readout for a track that is playing perfectly well; taking it
+            // away would remove information to communicate the loss of an action. A
+            // greyed thumb says "this bar does not drag" without the bar jumping to the
+            // user's finger and snapping back 2.5 s later, which is what happened before
+            // canSeek existed.
+            enabled = connected && inputSupported && playback.canSeek,
+            modifier =
+                    Modifier.fillMaxWidth().semantics {
+                        contentDescription = seekDescription
+                    }
+    )
+    Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+                text = formatElapsed(positionMs),
+                style = MaterialTheme.typography.labelMedium
+        )
+        Text(
+                text = formatRemaining((durationMs - positionMs).coerceAtLeast(0L)),
+                style = MaterialTheme.typography.labelMedium
+        )
+    }
+}
+
+/**
  * Full media controls, opened by tapping [MediaMiniPlayer] (spec 4.4).
  *
  * Large artwork up top, the title and artist directly below it, then the existing
@@ -168,66 +247,12 @@ fun MediaNowPlayingSheet(
             }
 
             if (playback.hasTimeline) {
-                // Ticks once a second while PLAYING, same rule as MediaMiniPlayer: entirely on the
-                // phone's own monotonic clock, never compared against a host timestamp.
-                var nowElapsedMs by remember(playback) {
-                    mutableLongStateOf(SystemClock.elapsedRealtime())
-                }
-                LaunchedEffect(playback) {
-                    while (playback.status == MediaPlaybackStatus.PLAYING) {
-                        delay(1_000L)
-                        nowElapsedMs = SystemClock.elapsedRealtime()
-                    }
-                }
-                val durationMs = playback.durationMs ?: 0L
-                // Non-null only while the user has a finger on the thumb; the drag value wins over
-                // the extrapolated one so the label and thumb follow the gesture instead of fighting
-                // the ticking clock above. Deliberately NOT keyed on `playback`: an unrelated
-                // media_state arriving mid-gesture must not wipe an in-flight drag (RemEx-vtorl
-                // review) — it is already cleared explicitly in onValueChangeFinished below.
-                var dragProgress by remember { mutableStateOf<Float?>(null) }
-                val sliderProgress = dragProgress ?: (playback.progressAt(nowElapsedMs) ?: 0f)
-                val positionMs =
-                        dragProgress?.let { (it * durationMs).toLong() }
-                                ?: playback.positionAt(nowElapsedMs) ?: 0L
-                val seekDescription = stringResource(R.string.rc_media_seek)
-
-                Slider(
-                        value = sliderProgress,
-                        onValueChange = { dragProgress = it },
-                        onValueChangeFinished = {
-                            val target = dragProgress
-                            dragProgress = null
-                            if (target != null) {
-                                onSeek((target * durationMs).toLong())
-                            }
-                        },
-                        valueRange = 0f..1f,
-                        // DISABLED, NOT HIDDEN, WHEN THE SESSION WILL NOT SEEK. It is still the
-                        // progress readout for a track that is playing perfectly well; taking it
-                        // away would remove information to communicate the loss of an action. A
-                        // greyed thumb says "this bar does not drag" without the bar jumping to the
-                        // user's finger and snapping back 2.5 s later, which is what happened before
-                        // canSeek existed.
-                        enabled = connected && inputSupported && playback.canSeek,
-                        modifier =
-                                Modifier.fillMaxWidth().semantics {
-                                    contentDescription = seekDescription
-                                }
+                SeekSection(
+                        playback = playback,
+                        connected = connected,
+                        inputSupported = inputSupported,
+                        onSeek = onSeek
                 )
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                            text = formatElapsed(positionMs),
-                            style = MaterialTheme.typography.labelMedium
-                    )
-                    Text(
-                            text = formatRemaining((durationMs - positionMs).coerceAtLeast(0L)),
-                            style = MaterialTheme.typography.labelMedium
-                    )
-                }
             }
 
             MediaControlSection(

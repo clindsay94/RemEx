@@ -489,15 +489,16 @@ object RemexCoreClient {
             try {
                 // The client name is NOT logged. It used to be the constant "Android Client";
                 // since RemEx-8m3r it is the name the user gave their phone, which is very often
-                // their real name — and minify is on but no assumenosideeffects rule strips
-                // android.util.Log, so this line survives into release builds and any bug report
-                // taken from one. Its length is enough to debug an ArgMissing rejection.
-                Log.d(
+                // their real name. Log.i, NOT Log.d/v (perf audit P3-9 added an assumenosideeffects
+                // strip rule for those two levels only) — this line must survive into release builds
+                // and any bug report taken from one. Its length is enough to debug an ArgMissing
+                // rejection.
+                Log.i(
                         TAG,
                         "StartPairing → native (host=$hostUrl, clientNameLength=${clientName.length} v$clientVersion)"
                 )
                 val result = abandonablePairing("start") { id -> StartPairingNative(hostUrl, clientName, clientVersion, clientId, id) }
-                Log.d(TAG, "StartPairing ← native result: $result")
+                Log.i(TAG, "StartPairing ← native result: $result")
                 Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartPairingNative not loaded", e)
@@ -573,11 +574,13 @@ object RemexCoreClient {
     suspend fun SubmitPairingPin(pin: String): Result<String> = withContext(Dispatchers.IO) {
         if (isLibraryLoaded) {
             try {
-                Log.d(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
+                // Log.i, not Log.d/v (perf audit P3-9's release strip rule) - a pairing bug report
+                // taken from a release build needs this trace.
+                Log.i(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
                 val result = abandonablePairing("submit-pin") { id -> SubmitPairingPinNative(pin, id) }
                 // Don't log the raw OK result — it contains hostId and SPKI hash. Just log shape.
                 val redacted = if (result.startsWith("OK:")) "OK:<hostId>|<spkiHash>" else result
-                Log.d(TAG, "SubmitPairingPin ← native result: $redacted")
+                Log.i(TAG, "SubmitPairingPin ← native result: $redacted")
                 Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SubmitPairingPinNative not loaded", e)
@@ -617,11 +620,13 @@ object RemexCoreClient {
     suspend fun FetchPairingPin(): Result<String> = withContext(Dispatchers.IO) {
         if (isLibraryLoaded) {
             try {
-                Log.d(TAG, "FetchPairingPin → native")
+                // Log.i, not Log.d/v (perf audit P3-9's release strip rule) - a pairing bug report
+                // taken from a release build needs this trace.
+                Log.i(TAG, "FetchPairingPin → native")
                 val result = abandonablePairing("fetch-pin") { id -> FetchPairingPinNative(id) }
                 // Never log the raw PIN — log only the response shape.
                 val redacted = if (result.startsWith("OK:")) "OK:<pin>|<expiry>" else result
-                Log.d(TAG, "FetchPairingPin ← native result: $redacted")
+                Log.i(TAG, "FetchPairingPin ← native result: $redacted")
                 Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "FetchPairingPinNative not loaded", e)

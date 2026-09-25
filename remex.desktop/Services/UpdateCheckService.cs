@@ -1,7 +1,13 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.Services;
+
+/// <summary>The last successful update check, persisted so a relaunch can reuse it (perf audit P3-56).</summary>
+internal sealed record UpdateCheckCache(DateTimeOffset CheckedAtUtc, string LatestVersion, string DownloadUrl);
 
 /// <summary>Outcome of an update check.</summary>
 public enum UpdateCheckStatus
@@ -107,9 +113,99 @@ public sealed class UpdateCheckService
             result = new UpdateCheckResult(UpdateCheckStatus.Failed, CurrentVersion, null, ReleasesPageUrl);
         }
 
+        // Only a real answer is remembered: a failed check must not suppress the next launch's retry.
+        if (result.Status != UpdateCheckStatus.Failed && result.LatestVersion is { } latestVersion)
+            TryWriteCache(_cachePath, new UpdateCheckCache(_time.GetUtcNow(), latestVersion, result.DownloadUrl));
+
         LastResult = result;
         ResultChanged?.Invoke(this, EventArgs.Empty);
         return result;
+    }
+
+    /// <summary>How long a successful startup answer is reused before the next launch asks again.</summary>
+    internal static readonly TimeSpan StartupCheckInterval = TimeSpan.FromHours(24);
+
+    private readonly TimeProvider _time;
+    private readonly string _cachePath;
+
+    public UpdateCheckService()
+        : this(TimeProvider.System, Path.Combine(RemexDataPaths.PerUserDirectory, "update_check.json"))
+    {
+    }
+
+    internal UpdateCheckService(TimeProvider time, string cachePath)
+    {
+        _time = time;
+        _cachePath = cachePath;
+    }
+
+    /// <summary>
+    /// The startup path (perf audit P3-56). Reuses a successful answer younger than
+    /// <see cref="StartupCheckInterval"/> instead of calling GitHub on every launch - every minimized
+    /// logon start included - and falls through to <see cref="CheckAsync"/> otherwise. The About page's
+    /// "check now" still calls <see cref="CheckAsync"/> directly, so a user who asks always gets a live
+    /// answer.
+    /// </summary>
+    public Task<UpdateCheckResult> CheckOnStartupAsync(CancellationToken cancellationToken = default)
+    {
+        if (TryReadCache(_cachePath) is { } cache
+            && FromCache(cache, _time.GetUtcNow(), CurrentVersion) is { } cached)
+        {
+            LastResult = cached;
+            ResultChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(cached);
+        }
+        return CheckAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// A cached answer re-judged against the RUNNING build, or null when it is stale, from the future
+    /// (a clock that jumped back), or unparseable. Re-judging matters: a cache that said "2.6.0 is out"
+    /// must read as up to date once 2.6.0 is what is installed.
+    /// </summary>
+    internal static UpdateCheckResult? FromCache(UpdateCheckCache cache, DateTimeOffset now, string currentVersion)
+    {
+        var age = now - cache.CheckedAtUtc;
+        if (age < TimeSpan.Zero || age > StartupCheckInterval) return null;
+        if (!TryParseVersion(cache.LatestVersion, out var latest) || !TryParseVersion(currentVersion, out var current))
+            return null;
+
+        var status = Normalize(latest) > Normalize(current)
+            ? UpdateCheckStatus.UpdateAvailable
+            : UpdateCheckStatus.UpToDate;
+        var url = string.IsNullOrWhiteSpace(cache.DownloadUrl) ? ReleasesPageUrl : cache.DownloadUrl;
+        return new UpdateCheckResult(status, currentVersion, TrimTag(cache.LatestVersion), url);
+    }
+
+    /// <summary>Reads the cache file; missing, unreadable or malformed all read as "no cache".</summary>
+    internal static UpdateCheckCache? TryReadCache(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return null;
+            return JsonSerializer.Deserialize<UpdateCheckCache>(File.ReadAllText(path));
+        }
+        catch (Exception ex)
+        {
+            InMemoryLogSink.Append(LogLevel.Debug, "UpdateCheck", "Update-check cache unreadable; checking online", ex);
+            return null;
+        }
+    }
+
+    /// <summary>Best-effort write; a failure only costs the next launch one extra request.</summary>
+    internal static void TryWriteCache(string path, UpdateCheckCache cache)
+    {
+        try
+        {
+            if (Path.GetDirectoryName(path) is { Length: > 0 } directory)
+                Directory.CreateDirectory(directory);
+            File.WriteAllText(path, JsonSerializer.Serialize(cache));
+        }
+        catch (Exception ex)
+        {
+            // Best-effort - see the summary. Logged so a permanently unwritable cache is diagnosable.
+            InMemoryLogSink.Append(LogLevel.Debug, "UpdateCheck", "Update-check cache could not be written", ex);
+        }
     }
 
     /// <summary>Strips a leading "v"/"V" from a release tag (e.g. "v2.3.0" → "2.3.0").</summary>

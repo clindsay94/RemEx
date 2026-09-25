@@ -1070,48 +1070,64 @@ internal sealed class DxgiDesktopCapture : IDisposable
             return;
         }
 
-        IntPtr shapeBufferPtr = Marshal.AllocHGlobal((int)frameInfo.PointerShapeBufferSize);
-        try
+        // The driver writes the shape straight into a reused managed buffer on the pinned object heap,
+        // and the decoder reads it from there into the snapshot's own array (perf audit P3-44). This
+        // used to be three copies per shape change: into a fresh AllocHGlobal block, Marshal.Copy into
+        // a fresh managed array, then the decode. The scratch never escapes this method — TryDecode
+        // and the snapshot copy out of it — and every caller holds _lock, so reuse cannot race.
+        var shapeBuffer = EnsurePointerShapeScratch((int)frameInfo.PointerShapeBufferSize);
+        var hr = GetSlot<GetFramePointerShapeFn>(_duplOutput, 11)(
+            _duplOutput,
+            frameInfo.PointerShapeBufferSize,
+            Marshal.UnsafeAddrOfPinnedArrayElement(shapeBuffer, 0),
+            out var requiredBufferSize,
+            out var pointerShapeInfo);
+
+        if (hr != S_OK || requiredBufferSize == 0)
         {
-            var hr = GetSlot<GetFramePointerShapeFn>(_duplOutput, 11)(
-                _duplOutput,
-                frameInfo.PointerShapeBufferSize,
-                shapeBufferPtr,
-                out var requiredBufferSize,
-                out var pointerShapeInfo);
-
-            if (hr != S_OK || requiredBufferSize == 0)
-            {
-                _logger.LogDebug("GetFramePointerShape hr=0x{Hr:X8}, required={Required}", hr, requiredBufferSize);
-                return;
-            }
-
-            var rawShapeBytes = new byte[requiredBufferSize];
-            Marshal.Copy(shapeBufferPtr, rawShapeBytes, 0, (int)requiredBufferSize);
-
-            var shapeInfo = new DxgiPointerShapeDecoder.PointerShapeInfo(
-                pointerShapeInfo.Type,
-                (int)pointerShapeInfo.Width,
-                (int)pointerShapeInfo.Height,
-                (int)pointerShapeInfo.Pitch,
-                pointerShapeInfo.HotSpot.X,
-                pointerShapeInfo.HotSpot.Y);
-
-            if (DxgiPointerShapeDecoder.TryDecode(shapeInfo, rawShapeBytes, out var snapshot))
-            {
-                Volatile.Write(ref _lastPointerShape, snapshot);
-                return;
-            }
-
-            if (WindowsCursorShapeCapture.TryCaptureCurrentShape(out var fallbackSnapshot) && fallbackSnapshot is not null)
-            {
-                Volatile.Write(ref _lastPointerShape, fallbackSnapshot);
-            }
+            _logger.LogDebug("GetFramePointerShape hr=0x{Hr:X8}, required={Required}", hr, requiredBufferSize);
+            return;
         }
-        finally
+
+        // Never trust the reported size past what we handed over.
+        var rawShapeBytes = new ReadOnlySpan<byte>(
+            shapeBuffer, 0, (int)Math.Min(requiredBufferSize, frameInfo.PointerShapeBufferSize));
+
+        var shapeInfo = new DxgiPointerShapeDecoder.PointerShapeInfo(
+            pointerShapeInfo.Type,
+            (int)pointerShapeInfo.Width,
+            (int)pointerShapeInfo.Height,
+            (int)pointerShapeInfo.Pitch,
+            pointerShapeInfo.HotSpot.X,
+            pointerShapeInfo.HotSpot.Y);
+
+        if (DxgiPointerShapeDecoder.TryDecode(shapeInfo, rawShapeBytes, out var snapshot))
         {
-            Marshal.FreeHGlobal(shapeBufferPtr);
+            Volatile.Write(ref _lastPointerShape, snapshot);
+            return;
         }
+
+        // Monochrome/masked-colour shapes with INVERT pixels are declined by the decoder on purpose
+        // and rendered here by GDI instead, which composes the inversion against black and white.
+        if (WindowsCursorShapeCapture.TryCaptureCurrentShape(out var fallbackSnapshot) && fallbackSnapshot is not null)
+        {
+            Volatile.Write(ref _lastPointerShape, fallbackSnapshot);
+        }
+    }
+
+    // Pointer-shape scratch (P3-44): allocated pinned so its address can be handed to
+    // GetFramePointerShape without unsafe code or a per-call GCHandle, and grown only when a larger
+    // shape arrives (cursor shapes are small, so in practice it is allocated once). Guarded by _lock.
+    private byte[]? _pointerShapeScratch;
+
+    private byte[] EnsurePointerShapeScratch(int size)
+    {
+        if (_pointerShapeScratch is null || _pointerShapeScratch.Length < size)
+        {
+            _pointerShapeScratch = GC.AllocateUninitializedArray<byte>(size, pinned: true);
+        }
+
+        return _pointerShapeScratch;
     }
 
     // ── Cursor drawing ────────────────────────────────────────────────────────

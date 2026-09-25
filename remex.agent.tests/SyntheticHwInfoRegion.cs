@@ -40,15 +40,22 @@ internal sealed class SyntheticHwInfoRegion : IDisposable
     private readonly MemoryMappedFile _mmf;
     private readonly MemoryMappedViewAccessor _writer;
 
-    public SyntheticHwInfoRegion()
+    /// <param name="name">
+    /// A specific map name, for a test that must point the sampler at the name BEFORE the region
+    /// exists (the P3-45 miss back-off). Null picks a fresh unique one.
+    /// </param>
+    public SyntheticHwInfoRegion(string? name = null)
     {
-        Name = "Local\\RemExHwInfoTest-" + Guid.NewGuid().ToString("N");
+        Name = name ?? NewUniqueName();
         _mmf = MemoryMappedFile.CreateNew(Name, 1 << 20);
         _writer = _mmf.CreateViewAccessor();
     }
 
     /// <summary>The named map's name, to hand to the service under test.</summary>
     public string Name { get; }
+
+    /// <summary>A map name no region uses yet.</summary>
+    public static string NewUniqueName() => "Local\\RemExHwInfoTest-" + Guid.NewGuid().ToString("N");
 
     /// <summary>
     /// The region's <c>poll_time</c>, which the sampler compares against its staleness window. Settable
