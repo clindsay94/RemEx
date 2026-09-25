@@ -18,6 +18,14 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     private readonly WindowsDisplayPowerMonitor _displayPower;
     private readonly object _displayLock = new();
 
+    // GDI tier scratch bitmaps (perf audit P4-11), reused across ticks instead of two fresh
+    // full-screen Bitmaps per frame. The service is shared by every viewer and the screenshot path,
+    // so _gdiLock covers the whole GDI capture-and-copy-out; the pixels leave in a fresh array or
+    // stream, never in these bitmaps (see ReusableBitmap).
+    private readonly object _gdiLock = new();
+    private readonly ReusableBitmap _gdiScreenBitmap = new();
+    private readonly ReusableBitmap _gdiScaledBitmap = new();
+
     // WGC (Windows.Graphics.Capture) is the preferred backend when present. Injected as an optional
     // dependency: null on Linux (the Windows-only capture project isn't referenced) or when WGC init
     // failed — in which case capture falls through to the existing DXGI → GDI tiers unchanged. The
@@ -360,24 +368,28 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         try
         {
             var bounds = GetActiveBounds();
-            using var screenBitmap = CaptureBitmap(bounds, drawCursor);
-            using var outputBitmap = ScaleBitmap(screenBitmap, scale);
-            var bitmap = outputBitmap ?? screenBitmap;
+            lock (_gdiLock)
+            {
+                // Reused scratch bitmaps (P4-11): not disposed here, and the frame leaves in the
+                // fresh array below, never in them.
+                var screenBitmap = CaptureBitmap(bounds, drawCursor);
+                var bitmap = ScaleBitmap(screenBitmap, scale) ?? screenBitmap;
 
-            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-            var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            try
-            {
-                var bytesCount = Math.Abs(bmpData.Stride) * bitmap.Height;
-                byte[] bgraValues = new byte[bytesCount];
-                Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
-                LastCaptureFailureReason = null;
-                // GDI BitBlt produces a fresh frame whenever it succeeds.
-                return new ScreenCaptureResult(bgraValues, isLive: true);
-            }
-            finally
-            {
-                bitmap.UnlockBits(bmpData);
+                var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+                var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                try
+                {
+                    var bytesCount = Math.Abs(bmpData.Stride) * bitmap.Height;
+                    byte[] bgraValues = new byte[bytesCount];
+                    Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
+                    LastCaptureFailureReason = null;
+                    // GDI BitBlt produces a fresh frame whenever it succeeds.
+                    return new ScreenCaptureResult(bgraValues, isLive: true);
+                }
+                finally
+                {
+                    bitmap.UnlockBits(bmpData);
+                }
             }
         }
         catch (Exception ex)
@@ -445,15 +457,17 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         try
         {
             var bounds = GetActiveBounds();
-            using var screenBitmap = CaptureBitmap(bounds, drawCursor);
-            using var outputBitmap = ScaleBitmap(screenBitmap, scale);
-            var bitmap = outputBitmap ?? screenBitmap;
-
             using var ms = new MemoryStream();
             var jpegEncoder = GetJpegEncoder();
             var encoderParams = new EncoderParameters(1);
             encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
-            bitmap.Save(ms, jpegEncoder, encoderParams);
+            lock (_gdiLock)
+            {
+                // Reused scratch bitmaps (P4-11); the JPEG is written into the fresh stream above.
+                var screenBitmap = CaptureBitmap(bounds, drawCursor);
+                var bitmap = ScaleBitmap(screenBitmap, scale) ?? screenBitmap;
+                bitmap.Save(ms, jpegEncoder, encoderParams);
+            }
             LastCaptureFailureReason = null;
             // GDI BitBlt produces a fresh frame whenever it succeeds.
             // GetBuffer, not ToArray: ToArray allocates a second array the size of the frame and
@@ -557,6 +571,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         _displayPower.Dispose();
         _dxgi.Dispose();
         _wgc?.Dispose();
+        lock (_gdiLock)
+        {
+            _gdiScreenBitmap.Dispose();
+            _gdiScaledBitmap.Dispose();
+        }
     }
 
     private Rectangle GetActiveBounds()
@@ -587,9 +606,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                string.Equals(display.DeviceName, _dxgi.OutputDeviceName, StringComparison.OrdinalIgnoreCase);
     }
 
+    // Caller holds _gdiLock. Returns the reused scratch bitmap (P4-11): do not dispose it. SourceCopy
+    // over the full bounds overwrites every pixel, so nothing from the previous frame survives.
     private Bitmap CaptureBitmap(Rectangle bounds, bool drawCursor)
     {
-        var bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
+        var bitmap = _gdiScreenBitmap.Get(bounds.Width, bounds.Height);
         using var graphics = Graphics.FromImage(bitmap);
         graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
 
@@ -601,7 +622,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         return bitmap;
     }
 
-    private static Bitmap? ScaleBitmap(Bitmap sourceBitmap, double scale)
+    // Caller holds _gdiLock. The result is the reused scaled scratch bitmap (P4-11): do not dispose
+    // it. DrawImage with SourceCopy over the whole target replaces every pixel.
+    private Bitmap? ScaleBitmap(Bitmap sourceBitmap, double scale)
     {
         // Even-aligned target size — MUST match CaptureScaling.ScaledEven so the delivered frame size
         // equals what the H.264 encoder was started with. Returning null means "source is already the
@@ -614,7 +637,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             return null;
         }
 
-        var outputBitmap = new Bitmap(captureWidth, captureHeight);
+        var outputBitmap = _gdiScaledBitmap.Get(captureWidth, captureHeight);
         using var graphics = Graphics.FromImage(outputBitmap);
         graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
         // SourceCopy so the alpha-0 GDI-drawn cursor pixels survive scaling instead of being dropped

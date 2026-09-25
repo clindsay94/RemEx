@@ -83,13 +83,15 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
     /// <summary>
     /// Waits for the next frame up to <paramref name="timeoutMs"/> milliseconds.
     /// </summary>
-    public async Task<LinuxFrameSnapshot?> WaitForNextFrameAsync(
+    public Task<LinuxFrameSnapshot?> WaitForNextFrameAsync(
         int timeoutMs = 100,
         CancellationToken ct = default)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(timeoutMs);
-        return await _frameChannel.ReadAsync(cts.Token);
+        // Perf audit P4-15: the timeout goes straight to the semaphore wait. This used to build a
+        // linked CTS plus a CancelAfter timer every capture tick and report "no new frame" - the
+        // normal case on a static, damage-driven PipeWire screen - by throwing and catching an
+        // OperationCanceledException.
+        return _frameChannel.ReadAsync(timeoutMs, ct);
     }
 
     public async ValueTask DisposeAsync()
@@ -111,7 +113,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         await _portal.DisposeAsync();
     }
 
-    private sealed class LinuxFrameChannel : IDisposable
+    internal sealed class LinuxFrameChannel : IDisposable
     {
         private readonly object _lock = new();
         private LinuxFrameSnapshot? _slot;
@@ -162,11 +164,13 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
             }
         }
 
-        public async Task<LinuxFrameSnapshot?> ReadAsync(CancellationToken ct)
+        // Null on timeout (reported by the bool, no exception) or on caller cancellation (as before).
+        public async Task<LinuxFrameSnapshot?> ReadAsync(int timeoutMs, CancellationToken ct)
         {
             try
             {
-                await _semaphore.WaitAsync(ct);
+                if (!await _semaphore.WaitAsync(timeoutMs, ct))
+                    return null;
             }
             catch (OperationCanceledException)
             {

@@ -53,11 +53,12 @@ public class MediaArtworkRequestStaysNarrowTests
         var body = HandlerBody("HandleRequestMediaArtwork");
 
         Assert.Contains("MessageTypes.MediaArtworkRequest", body);
-        Assert.Contains("OutboundMessageQueue", body);
+        // EnqueueOutbound is the only way onto OutboundMessageQueue (it keeps the P4-4 depth).
+        Assert.Contains("EnqueueOutbound", body);
 
-        // Exactly one write. A second TryWrite here would be a retry or a companion message, and
+        // Exactly one write. A second enqueue here would be a retry or a companion message, and
         // either turns one phone tap into two envelopes on a socket that is also carrying input.
-        Assert.Single(Regex.Matches(body, @"OutboundMessageQueue\.Writer\.TryWrite"));
+        Assert.Single(Regex.Matches(body, @"EnqueueOutbound\("));
 
         // And it is not the Remote Desktop path. This export exists on the control socket precisely
         // so that asking for a cover cannot start a screen capture, which is the mistake RemEx-035d6

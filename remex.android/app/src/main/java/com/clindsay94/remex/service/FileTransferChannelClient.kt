@@ -28,7 +28,6 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
-import okio.ByteString.Companion.toByteString
 import org.json.JSONObject
 
 /** A registered receiver of decoded binary frames for one transferId on the shared `/ws/files` socket. */
@@ -334,8 +333,7 @@ object FileTransferChannelClient : FileFrameChannel {
     override fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray): Boolean {
         val ws = webSocket ?: return false
         if (!openState) return false
-        val frame = FileFrameCodec.wrap(envelope, payload)
-        return ws.send(frame.toByteString(0, frame.size))
+        return ws.send(FileFrameCodec.wrapToByteString(envelope, payload, 0, payload.size))
     }
 
     /** Sends a data frame without an extra payload copy. */
@@ -356,8 +354,8 @@ object FileTransferChannelClient : FileFrameChannel {
                 length = count,
                 final = final,
             )
-        val frame = FileFrameCodec.wrap(env, buffer, 0, count)
-        return ws.send(frame.toByteString(0, frame.size))
+        // P4-5: one payload copy into okio segments, not wrap()'s array plus toByteString's copy of it.
+        return ws.send(FileFrameCodec.wrapToByteString(env, buffer, 0, count))
     }
 
     fun sendAck(transferId: String, committedOffset: Long): Boolean =
@@ -521,7 +519,9 @@ object FileTransferChannelClient : FileFrameChannel {
                 }
 
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    dispatch(bytes.toByteArray())
+                    // P4-5: decoded from the ByteString itself; the payload is copied once, not
+                    // flattened into a whole-frame array and then copied out of it again.
+                    dispatch(bytes)
                 }
 
                 override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -564,7 +564,7 @@ object FileTransferChannelClient : FileFrameChannel {
         }
     }
 
-    private fun dispatch(frameBytes: ByteArray) {
+    private fun dispatch(frameBytes: ByteString) {
         val decoded = FileFrameCodec.tryRead(frameBytes) ?: run {
             Log.w(TAG, "Discarding malformed /ws/files frame (${frameBytes.size} bytes)")
             return

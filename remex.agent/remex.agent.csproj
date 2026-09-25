@@ -129,6 +129,66 @@
   </ItemGroup>
 
   <!--
+    Keep the Linux and macOS Avalonia backends out of a WINDOWS publish (perf audit P4-9): Avalonia.X11
+    and its exclusive dependencies (Avalonia.FreeDesktop, Avalonia.FreeDesktop.AtSpi) plus
+    Avalonia.Native, ~3.9 MB of ReadyToRun images a Windows install can never execute.
+    Tmds.DBus.Protocol still ships: remex.agent references it directly (MPRIS/portal code compiles
+    on every TFM).
+
+    WHY THIS IS SAFE AT RUNTIME: nothing in RemEx names an X11 or Native type, and the only assembly
+    that references them is Avalonia.Desktop, whose UsePlatformDetect() reaches each backend through
+    its own private LoadX11()/LoadAvaloniaNative() helper behind OperatingSystem.IsLinux()/IsMacOS().
+    On Windows those helpers are never called, so the assemblies are never resolved.
+
+    WHY Publish="false" AND NOT A POST-PUBLISH DELETE: it is the SDK's own exclusion. The package is
+    dropped from the published files AND from the published deps.json together, and hostpolicy refuses
+    to start an app whose deps.json lists a file that is not there. Build output is untouched.
+
+    CONDITIONED ON THE RID, NOT THE TFM OR THE HOST OS: the TFM is windows-versioned on any Windows
+    box, including when cross-publishing linux-x64 from one, and that publish must still carry X11
+    (CachyOS). A RID-less build restores without these four references at all.
+  -->
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+    <PackageReference Include="Avalonia.X11" Publish="false" />
+    <!-- Publish="false" does not follow dependencies: X11's own two must be named or they still ship. -->
+    <PackageReference Include="Avalonia.FreeDesktop" Publish="false" />
+    <PackageReference Include="Avalonia.FreeDesktop.AtSpi" Publish="false" />
+    <PackageReference Include="Avalonia.Native" Publish="false" />
+  </ItemGroup>
+
+  <!--
+    Keep ASP.NET Core MVC/Razor/Blazor/SignalR and Microsoft.VisualBasic out of a self-contained publish
+    (perf audit P4-8, ~9.7 MB of ReadyToRun images). The host is minimal APIs + WebSockets on Kestrel
+    and never registers MVC, Razor, Components or SignalR; VisualBasic is only named by CodeDom's VB
+    generator and System.Management's strongly-typed-class codegen, neither of which RemEx calls.
+
+    PROVEN, NOT ASSUMED: a metadata scan of the published folder with these assemblies removed found no
+    AssemblyRef to any of them from any remaining assembly, and no string literal or attribute naming
+    them as a load target (only InternalsVisibleTo entries and type names that live elsewhere).
+    If the host ever adds AddControllers/AddSignalR/MapRazorComponents, delete the matching line below
+    - otherwise it compiles fine and fails at runtime with FileNotFoundException.
+
+    Removed from RuntimePackAsset straight after the SDK resolves it, so the copy-local list, both
+    deps.json files and the ReadyToRun compile list all see the same set; a file removed here is never
+    listed in deps.json. Self-contained only: a framework-dependent app gets these from the shared
+    framework and copies none of them.
+  -->
+  <Target Name="RemexExcludeUnusedRuntimePackAssets"
+          AfterTargets="ResolveRuntimePackAssets"
+          Condition="'$(SelfContained)' == 'true' and '$(RuntimeIdentifier)' != ''">
+    <ItemGroup>
+      <_RemexUnusedRuntimePackAsset Include="@(RuntimePackAsset)"
+                                    Condition="$([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.Mvc'))
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.Razor'))
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.Components'))
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.SignalR'))
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.VisualBasic'))" />
+      <RuntimePackAsset Remove="@(_RemexUnusedRuntimePackAsset)" />
+      <ReferenceCopyLocalPaths Remove="@(_RemexUnusedRuntimePackAsset)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
     Windows.Graphics.Capture (WGC) backend. The capture project targets a Windows-versioned TFM
     (net10.0-windows10.0.19041.0) for the CsWinRT projections, so it is referenced ONLY on Windows —
     a net*-windows TFM cannot build on Linux. The WGC_CAPTURE constant gates the matching DI

@@ -525,6 +525,11 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.ProcessListRequest:
                         var procs = await processMonitorService.GetProcessesAsync();
+                        // Perf audit P4-10: the phone opts in; the PC desktop and older phones do not
+                        // send the flag and keep getting every field. A new list, never the
+                        // monitor's own - that may be shared with other callers.
+                        if (message.ProcessListSlim == true)
+                            procs = procs.ConvertAll(static p => p.ToSlim());
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
                         break;
                     case MessageTypes.LayoutUpdate when message.DashboardProfile is not null:
@@ -557,18 +562,20 @@ public sealed class PingPongHandler(
                         var artworkBytes = string.IsNullOrWhiteSpace(requestedArtworkId)
                             ? null
                             : mediaSessionMonitor.TryGetArtwork(requestedArtworkId);
-                        await MessageSerializer.SendAsync(
-                            webSocket,
-                            new RemexMessage
-                            {
-                                Type = MessageTypes.MediaArtwork,
-                                MediaArtwork = new Remex.Core.Models.MediaArtwork
-                                {
-                                    ArtworkId = requestedArtworkId,
-                                    PngBase64 = artworkBytes is null ? null : Convert.ToBase64String(artworkBytes),
-                                },
-                            },
-                            ct);
+                        if (artworkBytes is null)
+                        {
+                            await MessageSerializer.SendAsync(
+                                webSocket, Remex.Agent.Services.Media.MediaArtworkReplyCache.Build(requestedArtworkId, null), ct);
+                        }
+                        else
+                        {
+                            // P4-24: the base64/JSON reply is built once per artwork and shared by
+                            // every request and every client until the art changes.
+                            await MessageSerializer.SendRawAsync(
+                                webSocket,
+                                Remex.Agent.Services.Media.MediaArtworkReplyCache.Shared.GetOrCreate(requestedArtworkId, artworkBytes),
+                                ct);
+                        }
                         break;
 
                     // NOTHING IS SENT BACK, AND THE PUBLISH IS THE REPLY (RemEx-vtorl). The seek is

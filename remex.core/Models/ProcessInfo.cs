@@ -57,4 +57,23 @@ public record ProcessInfo
     /// </remarks>
     [JsonPropertyName("startTimeUnixMs")]
     public long? StartTimeUnixMs { get; init; }
+
+    /// <summary>
+    /// This process without the fields the Android Task Manager never reads (perf audit P4-10): the
+    /// answer to a <c>process_list_request</c> that set <c>processListSlim</c>.
+    /// </summary>
+    /// <remarks>
+    /// Keeps id, name, CPU, memory and <see cref="StartTimeUnixMs"/> — the last is load-bearing, it is
+    /// the kill-time identity check. The four strings become empty rather than null so the type's
+    /// non-null contract holds for anyone who deserializes a slim list; <see cref="InstallDate"/>
+    /// becomes null, which the wire's WhenWritingNull drops entirely.
+    /// </remarks>
+    public ProcessInfo ToSlim() => this with
+    {
+        UserName = string.Empty,
+        FilePath = string.Empty,
+        Version = string.Empty,
+        Publisher = string.Empty,
+        InstallDate = null,
+    };
 }

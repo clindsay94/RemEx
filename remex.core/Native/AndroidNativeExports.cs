@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Threading.Channels;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
@@ -266,16 +265,19 @@ public static class AndroidNativeExports
 
     private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
 
-    // DELIBERATELY UNBOUNDED (perf audit P0-12). The legacy v2 upload path
-    // (FileTransferViewModel.legacyUpload) pushes every file_transfer_chunk through this queue with no
-    // backpressure and no retry, so a bounded drop-on-full queue would silently punch holes in an
-    // upload. The stall the audit found is fixed at the other end instead: each send is bounded
+    // DELIBERATELY UNBOUNDED (perf audit P0-12). The legacy v2 base64 paths
+    // (FileTransferViewModel.legacyUpload, AndroidFileTransferHost's v2 download serve) push every
+    // file_transfer_chunk through this queue with no retry, so a bounded drop-on-full queue would
+    // silently punch holes in a transfer. They pace themselves on GetOutboundQueueDepth instead
+    // (perf audit P4-4), which keeps the backlog small without the queue ever refusing a message. The stall the audit found is fixed at the other end instead: each send is bounded
     // (SocketLiveness.SendOrAbortAsync) and a dead socket is aborted, after which SendMessageAsync
     // returns at once without sending for anything still queued. Those messages are DISCARDED, not
     // delivered later: the queue empties instead of parking, and an interrupted legacy upload has to
     // be restarted after the reconnect.
-    private static readonly Channel<RemexMessage> OutboundMessageQueue = Channel.CreateUnbounded<RemexMessage>(
-        new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    // The depth P4-4 reads is counted by CountedOutboundQueue, NOT ChannelReader.Count: a
+    // SingleReader unbounded channel cannot count and throws. Write only through EnqueueOutbound.
+    private static readonly CountedOutboundQueue<RemexMessage> OutboundMessageQueue = new();
+    private static int _outboundDepthReadFailureLogged;
     private static int _outboundSendLoopStarted;
 
     static AndroidNativeExports()
@@ -600,6 +602,37 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessageNative")]
     public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
         => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
+
+    /// <summary>
+    /// How many messages <see cref="SendMessage"/> has queued that the send loop has not yet taken
+    /// (perf audit P4-4).
+    /// </summary>
+    /// <remarks>
+    /// Lets the legacy v2 base64 transfer loops pace themselves instead of pushing a whole file into
+    /// <see cref="OutboundMessageQueue"/>, which stays unbounded for the reasons written there. The
+    /// depth is a hand-kept counter (<see cref="CountedOutboundQueue{T}"/>), because the channel's own
+    /// <c>Reader.Count</c> throws on a single-reader unbounded channel — which a silent catch here once
+    /// turned into a permanent 0 and a pacing loop that never paced. The catch remains only because
+    /// nothing may throw out of an <c>[UnmanagedCallersOnly]</c> method; it logs the first failure so a
+    /// regression cannot hide the same way again, and 0 degrades a caller to unpaced.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetOutboundQueueDepthNative")]
+    public static int GetOutboundQueueDepth(IntPtr env, IntPtr thiz)
+    {
+        try
+        {
+            return OutboundMessageQueue.Depth;
+        }
+        catch (Exception ex)
+        {
+            if (Interlocked.Exchange(ref _outboundDepthReadFailureLogged, 1) == 0)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"Outbound queue depth read failed; legacy transfers will run unpaced: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            return 0;
+        }
+    }
 
     /// <summary>
     /// Sends one input event on the control socket, for screens that have no Remote Desktop stream
@@ -1416,8 +1449,7 @@ public static class AndroidNativeExports
             return SerializeOperationSuccess($"{message.Type} dispatched.");
         }
 
-        EnsureOutboundSendLoopStarted();
-        if (!OutboundMessageQueue.Writer.TryWrite(message))
+        if (!EnqueueOutbound(message))
         {
             return SerializeOperationFailure($"Failed to queue message '{message.Type}'.");
         }
@@ -1492,8 +1524,7 @@ public static class AndroidNativeExports
             return SerializeOperationFailure("Failed to deserialize input event.");
         }
 
-        EnsureOutboundSendLoopStarted();
-        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        if (!EnqueueOutbound(new RemexMessage
         {
             Type = MessageTypes.DesktopInput,
             InputEvent = input,
@@ -1530,8 +1561,7 @@ public static class AndroidNativeExports
             return SerializeOperationFailure("Artwork id is required.");
         }
 
-        EnsureOutboundSendLoopStarted();
-        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        if (!EnqueueOutbound(new RemexMessage
         {
             Type = MessageTypes.MediaArtworkRequest,
             MediaArtworkRequest = new MediaArtworkRequest { ArtworkId = artworkId },
@@ -1577,8 +1607,7 @@ public static class AndroidNativeExports
             return SerializeOperationFailure("Seek position must not be negative.");
         }
 
-        EnsureOutboundSendLoopStarted();
-        if (!OutboundMessageQueue.Writer.TryWrite(new RemexMessage
+        if (!EnqueueOutbound(new RemexMessage
         {
             Type = MessageTypes.MediaSeek,
             MediaSeek = new MediaSeekRequest { PositionMs = positionMs },
@@ -1646,9 +1675,21 @@ public static class AndroidNativeExports
         _ = Task.Run(ProcessOutboundMessagesAsync);
     }
 
+    /// <summary>
+    /// The one way onto <see cref="OutboundMessageQueue"/>: starts the send loop and queues
+    /// <paramref name="message"/>, counting it into the P4-4 depth.
+    /// </summary>
+    private static bool EnqueueOutbound(RemexMessage message)
+    {
+        EnsureOutboundSendLoopStarted();
+        return OutboundMessageQueue.TryEnqueue(message);
+    }
+
     private static async Task ProcessOutboundMessagesAsync()
     {
-        await foreach (var message in OutboundMessageQueue.Reader.ReadAllAsync())
+        // ReadAllAsync counts each message out as it is taken, so a dead socket (SendMessageAsync
+        // returning at once) still drains the depth back to zero instead of leaving it stuck high.
+        await foreach (var message in OutboundMessageQueue.ReadAllAsync())
         {
             try
             {

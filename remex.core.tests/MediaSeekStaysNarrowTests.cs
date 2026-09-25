@@ -49,12 +49,13 @@ public class MediaSeekStaysNarrowTests
         var body = HandlerBody("HandleSeekMedia");
 
         Assert.Contains("MessageTypes.MediaSeek", body);
-        Assert.Contains("OutboundMessageQueue", body);
+        // EnqueueOutbound is the only way onto OutboundMessageQueue (it keeps the P4-4 depth).
+        Assert.Contains("EnqueueOutbound", body);
 
-        // Exactly one write. A second TryWrite here would be a retry or a companion message, and
+        // Exactly one write. A second enqueue here would be a retry or a companion message, and
         // either turns one drag of the scrubber into two envelopes on a socket that is also carrying
         // input — while a scrubber emits one of these per gesture already.
-        Assert.Single(Regex.Matches(body, @"OutboundMessageQueue\.Writer\.TryWrite"));
+        Assert.Single(Regex.Matches(body, @"EnqueueOutbound\("));
 
         // And it is not the Remote Desktop path, for the reason RemEx-035d6 had to undo for media
         // keys: moving a progress bar must not be able to start a screen capture on the PC.

@@ -265,7 +265,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         return (null, false);
     }
 
-    private static byte[] EncodeRaw(LinuxFrameSnapshot frame, double scale, ILogger logger, int cropX, int cropY, int cropW, int cropH)
+    // allowPassthrough is a test seam only: false forces the Skia path so a test can compare both.
+    internal static byte[] EncodeRaw(LinuxFrameSnapshot frame, double scale, ILogger logger, int cropX, int cropY, int cropW, int cropH, bool allowPassthrough = true)
     {
         System.Runtime.InteropServices.GCHandle pinHandle = default;
         try
@@ -273,6 +274,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var colorType = LinuxJpegEncoder.MapFormat(frame.Format, logger, out var formatTag);
             if (colorType == SkiaSharp.SKColorType.Unknown)
                 return Array.Empty<byte>();
+
+            if (allowPassthrough && TryCopyBgraPassthrough(frame, colorType, scale, cropX, cropY, cropW, cropH, out var passthrough))
+                return passthrough;
 
             var info = new SkiaSharp.SKImageInfo(frame.Width, frame.Height, colorType, SkiaSharp.SKAlphaType.Premul);
 
@@ -372,6 +376,69 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         {
             if (pinHandle.IsAllocated) pinHandle.Free();
         }
+    }
+
+    /// <summary>
+    /// Perf audit P4-13: the common raw H.264 case - a BGRA/BGRx frame, cropped to the active monitor
+    /// and not scaled - is a plain row copy, so it skips Skia, which made 2-4 full-frame copies
+    /// (Subset, FromImage, Bytes) to produce the same bytes. Same-colour-type, same-alpha-type Skia
+    /// copies are byte-exact, so the output is identical; anything else (RGBA swizzle, scaling, a
+    /// crop Skia would reject, an odd stride) returns false and keeps the Skia path unchanged.
+    /// The result is always a fresh array (the source goes back to the ArrayPool right after).
+    /// </summary>
+    internal static bool TryCopyBgraPassthrough(
+        LinuxFrameSnapshot frame, SkiaSharp.SKColorType colorType, double scale,
+        int cropX, int cropY, int cropW, int cropH, out byte[] result)
+    {
+        result = Array.Empty<byte>();
+        if (colorType != SkiaSharp.SKColorType.Bgra8888 || frame.Width <= 0 || frame.Height <= 0)
+            return false;
+
+        int x = 0, y = 0, w = frame.Width, h = frame.Height;
+        if (cropW > 0 && cropH > 0)
+        {
+            // Skia's Subset only crops when the rect is fully inside the image; leave every other
+            // case to it rather than re-deriving its rules.
+            if (cropX < 0 || cropY < 0 || (long)cropX + cropW > frame.Width || (long)cropY + cropH > frame.Height)
+                return false;
+            x = cropX; y = cropY; w = cropW; h = cropH;
+        }
+
+        // Any size change (including the even-alignment trim at scale 1.0) is real resampling.
+        if (CaptureScaling.ScaledEven(w, scale) != w || CaptureScaling.ScaledEven(h, scale) != h)
+            return false;
+
+        long stride = frame.Stride;
+        if (stride < (long)frame.Width * 4)
+            return false;
+
+        int rowBytes = w * 4;
+        long lastRowEnd = ((long)y + h - 1) * stride + ((long)x + w) * 4;
+        var output = new byte[rowBytes * h];
+        if (frame.Data is { } data)
+        {
+            if (lastRowEnd > data.Length)
+                return false;
+            for (int row = 0; row < h; row++)
+            {
+                Buffer.BlockCopy(data, (int)((y + row) * stride + x * 4L), output, row * rowBytes, rowBytes);
+            }
+        }
+        else if (frame.RawData != IntPtr.Zero)
+        {
+            for (int row = 0; row < h; row++)
+            {
+                System.Runtime.InteropServices.Marshal.Copy(
+                    frame.RawData + (nint)((y + row) * stride + x * 4L), output, row * rowBytes, rowBytes);
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        result = output;
+        return true;
     }
 
     public async Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)

@@ -11,9 +11,23 @@ public class LinuxTelemetryService : ITelemetryService
 {
     private readonly ILogger<LinuxTelemetryService> _logger;
 
-    private readonly string _statFile = "/proc/stat";
-    private readonly string _meminfoFile = "/proc/meminfo";
-    private readonly string _uptimeFile = "/proc/uptime";
+    private readonly string _statFile;
+    private readonly string _meminfoFile;
+    private readonly string _uptimeFile;
+    private readonly string _hwmonRoot;
+    private readonly Func<long> _nowMs;
+
+    // Perf audit P4-19: the hwmon topology (directory walk, chip name, sensor labels) was re-read on
+    // every tick although it only changes on hotplug. It is scanned once and reused for this long;
+    // only the *_input value files are read per tick.
+    internal static readonly TimeSpan TopologyRefreshInterval = TimeSpan.FromSeconds(30);
+    private HwmonSensor[]? _topology;
+    private long _topologyScannedAtMs;
+
+    /// <summary>Hwmon topology scans since construction; a test seam.</summary>
+    internal int TopologyScanCount { get; private set; }
+
+    private sealed record HwmonSensor(string InputPath, string Id, string Name, bool IsFan, string Category, MetricKind Kind);
 
     private double _lastTotalCpuTime;
     private double _lastIdleCpuTime;
@@ -93,8 +107,19 @@ public class LinuxTelemetryService : ITelemetryService
     };
 
     public LinuxTelemetryService(ILogger<LinuxTelemetryService> logger)
+        : this(logger, "/sys/class/hwmon", "/proc", null)
+    {
+    }
+
+    // Test seam: a fake sysfs/procfs tree and clock.
+    internal LinuxTelemetryService(ILogger<LinuxTelemetryService> logger, string hwmonRoot, string procRoot, Func<long>? nowMs)
     {
         _logger = logger;
+        _hwmonRoot = hwmonRoot;
+        _statFile = Path.Combine(procRoot, "stat");
+        _meminfoFile = Path.Combine(procRoot, "meminfo");
+        _uptimeFile = Path.Combine(procRoot, "uptime");
+        _nowMs = nowMs ?? (static () => Environment.TickCount64);
     }
 
     public async Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
@@ -115,100 +140,61 @@ public class LinuxTelemetryService : ITelemetryService
             new() { Name = "Physical Memory Total", Value = ramResult.total, Unit = "GB", Category = "Memory", Source = "Linux", Kind = MetricKind.RamTotalGb, Id = "linux:mem:total" }
         };
 
-        // Hardware monitoring via /sys/class/hwmon
+        // Hardware monitoring via /sys/class/hwmon. The topology comes from the P4-19 cache; the value
+        // files are read here every tick.
         try
         {
-            if (Directory.Exists("/sys/class/hwmon"))
+            foreach (var sensor in await GetHwmonTopologyAsync(ct))
             {
-                foreach (var hwmonDir in Directory.GetDirectories("/sys/class/hwmon"))
+                try
                 {
-                    var rawChipName = string.Empty;
-                    var namePath = Path.Combine(hwmonDir, "name");
-                    if (File.Exists(namePath))
-                        rawChipName = (await File.ReadAllTextAsync(namePath, ct)).Trim();
+                    var inputVal = (await File.ReadAllTextAsync(sensor.InputPath, ct)).Trim();
+                    // INVARIANT, ALWAYS. sysfs and /proc emit C-locale numbers with a '.'
+                    // decimal separator regardless of the user's locale, so parsing them
+                    // under the ambient culture misreads every one of them on a de-DE or
+                    // fr-FR box — "1234.56" becomes 123456, a silent 100× error with no
+                    // exception to notice. InvariantGlobalization is set in no csproj and no
+                    // Directory.Build.props, so the ambient culture really is the user's.
+                    if (!double.TryParse(inputVal, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw))
+                        continue;
 
-                    var friendlyChip = MapChipName(rawChipName);
-                    var category = InferCategory(rawChipName);
-
-                    // Temperatures
-                    foreach (var tempInput in Directory.GetFiles(hwmonDir, "temp*_input"))
+                    if (sensor.IsFan)
                     {
-                        try
+                        if (raw > 0)
                         {
-                            var inputVal = (await File.ReadAllTextAsync(tempInput, ct)).Trim();
-                            // INVARIANT, ALWAYS. sysfs and /proc emit C-locale numbers with a '.'
-                            // decimal separator regardless of the user's locale, so parsing them
-                            // under the ambient culture misreads every one of them on a de-DE or
-                            // fr-FR box — "1234.56" becomes 123456, a silent 100× error with no
-                            // exception to notice. InvariantGlobalization is set in no csproj and no
-                            // Directory.Build.props, so the ambient culture really is the user's.
-                            if (double.TryParse(inputVal, NumberStyles.Float, CultureInfo.InvariantCulture, out var milliCelsius))
+                            sensors.Add(new SensorReading
                             {
-                                var labelPath = tempInput.Replace("_input", "_label");
-                                var rawLabel = File.Exists(labelPath)
-                                    ? (await File.ReadAllTextAsync(labelPath, ct)).Trim()
-                                    : Path.GetFileNameWithoutExtension(tempInput);
-
-                                var friendlyLabel = MapLabel(rawLabel);
-
-                                var tempC = Math.Round(milliCelsius / 1000.0, 1);
-
-                                // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
-                                // which are common placeholder values for disconnected sensors on many Linux drivers.
-                                if (tempC is > -50 and < 112)
-                                {
-                                    sensors.Add(new SensorReading
-                                    {
-                                        Name = $"{friendlyChip} {friendlyLabel}".Trim(),
-                                        Value = tempC,
-                                        Unit = "°C",
-                                        Category = category.Length > 0 ? category : "Temperature",
-                                        Source = "Linux",
-                                        Kind = category == "CPU" ? MetricKind.CpuTempC
-                                             : category == "GPU" ? MetricKind.GpuTempC
-                                             : MetricKind.TempC,
-                                        Id = $"linux:hwmon:{Path.GetFileName(hwmonDir)}:{Path.GetFileNameWithoutExtension(tempInput)}"
-                                    });
-                                }
-                            }
+                                Name = sensor.Name,
+                                Value = raw,
+                                Unit = "RPM",
+                                Category = sensor.Category,
+                                Source = "Linux",
+                                Kind = sensor.Kind,
+                                Id = sensor.Id
+                            });
                         }
-                        catch { /* Skip unreadable sensor */ }
+                        continue;
                     }
 
-                    // Fans
-                    foreach (var fanInput in Directory.GetFiles(hwmonDir, "fan*_input"))
+                    var tempC = Math.Round(raw / 1000.0, 1);
+
+                    // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C)
+                    // which are common placeholder values for disconnected sensors on many Linux drivers.
+                    if (tempC is > -50 and < 112)
                     {
-                        try
+                        sensors.Add(new SensorReading
                         {
-                            var inputVal = (await File.ReadAllTextAsync(fanInput, ct)).Trim();
-                            if (double.TryParse(inputVal, NumberStyles.Float, CultureInfo.InvariantCulture, out var rpm) && rpm > 0)
-                            {
-                                var labelPath = fanInput.Replace("_input", "_label");
-                                var rawLabel = File.Exists(labelPath)
-                                    ? (await File.ReadAllTextAsync(labelPath, ct)).Trim()
-                                    : Path.GetFileNameWithoutExtension(fanInput);
-
-                                var friendlyLabel = MapLabel(rawLabel);
-                                var idx = Path.GetFileNameWithoutExtension(fanInput).Replace("fan", "");
-                                var fanName = !string.IsNullOrWhiteSpace(friendlyLabel) && friendlyLabel != rawLabel
-                                    ? $"{friendlyChip} {friendlyLabel}"
-                                    : $"{friendlyChip} Fan {idx}";
-
-                                sensors.Add(new SensorReading
-                                {
-                                    Name = fanName.Trim(),
-                                    Value = rpm,
-                                    Unit = "RPM",
-                                    Category = "Fan",
-                                    Source = "Linux",
-                                    Kind = MetricKind.FanRpm,
-                                    Id = $"linux:hwmon:{Path.GetFileName(hwmonDir)}:{Path.GetFileNameWithoutExtension(fanInput)}"
-                                });
-                            }
-                        }
-                        catch { /* Skip unreadable sensor */ }
+                            Name = sensor.Name,
+                            Value = tempC,
+                            Unit = "°C",
+                            Category = sensor.Category,
+                            Source = "Linux",
+                            Kind = sensor.Kind,
+                            Id = sensor.Id
+                        });
                     }
                 }
+                catch { /* Skip unreadable sensor (vanished since the scan, or the driver refused the read) */ }
             }
         }
         catch (Exception ex)
@@ -221,6 +207,95 @@ public class LinuxTelemetryService : ITelemetryService
             Sensors = sensors,
             UptimeText = uptimeStr,
         };
+    }
+
+    private async Task<HwmonSensor[]> GetHwmonTopologyAsync(CancellationToken ct)
+    {
+        var now = _nowMs();
+        if (_topology is { } cached && now - _topologyScannedAtMs < (long)TopologyRefreshInterval.TotalMilliseconds)
+            return cached;
+
+        // A scan that throws (e.g. a chip's name file unreadable) is not cached: the caller logs it
+        // and skips hwmon for this tick, and the next tick scans again - the pre-cache behaviour.
+        var (sensors, complete) = await ScanHwmonTopologyAsync(ct);
+        TopologyScanCount++;
+        // A sensor whose label could not be read is left out of this scan; not caching an incomplete
+        // scan retries it next tick, as the per-tick read used to.
+        _topology = complete ? sensors : null;
+        _topologyScannedAtMs = now;
+        return sensors;
+    }
+
+    private async Task<(HwmonSensor[] Sensors, bool Complete)> ScanHwmonTopologyAsync(CancellationToken ct)
+    {
+        if (!Directory.Exists(_hwmonRoot))
+            return ([], true);
+
+        var result = new List<HwmonSensor>();
+        bool complete = true;
+        foreach (var hwmonDir in Directory.GetDirectories(_hwmonRoot))
+        {
+            var rawChipName = string.Empty;
+            var namePath = Path.Combine(hwmonDir, "name");
+            if (File.Exists(namePath))
+                rawChipName = (await File.ReadAllTextAsync(namePath, ct)).Trim();
+
+            var friendlyChip = MapChipName(rawChipName);
+            var category = InferCategory(rawChipName);
+            var chipId = Path.GetFileName(hwmonDir);
+
+            // Temperatures
+            foreach (var tempInput in Directory.GetFiles(hwmonDir, "temp*_input"))
+            {
+                try
+                {
+                    var labelPath = tempInput.Replace("_input", "_label");
+                    var rawLabel = File.Exists(labelPath)
+                        ? (await File.ReadAllTextAsync(labelPath, ct)).Trim()
+                        : Path.GetFileNameWithoutExtension(tempInput);
+
+                    result.Add(new HwmonSensor(
+                        tempInput,
+                        $"linux:hwmon:{chipId}:{Path.GetFileNameWithoutExtension(tempInput)}",
+                        $"{friendlyChip} {MapLabel(rawLabel)}".Trim(),
+                        IsFan: false,
+                        category.Length > 0 ? category : "Temperature",
+                        category == "CPU" ? MetricKind.CpuTempC
+                            : category == "GPU" ? MetricKind.GpuTempC
+                            : MetricKind.TempC));
+                }
+                catch { complete = false; }
+            }
+
+            // Fans
+            foreach (var fanInput in Directory.GetFiles(hwmonDir, "fan*_input"))
+            {
+                try
+                {
+                    var labelPath = fanInput.Replace("_input", "_label");
+                    var rawLabel = File.Exists(labelPath)
+                        ? (await File.ReadAllTextAsync(labelPath, ct)).Trim()
+                        : Path.GetFileNameWithoutExtension(fanInput);
+
+                    var friendlyLabel = MapLabel(rawLabel);
+                    var idx = Path.GetFileNameWithoutExtension(fanInput).Replace("fan", "");
+                    var fanName = !string.IsNullOrWhiteSpace(friendlyLabel) && friendlyLabel != rawLabel
+                        ? $"{friendlyChip} {friendlyLabel}"
+                        : $"{friendlyChip} Fan {idx}";
+
+                    result.Add(new HwmonSensor(
+                        fanInput,
+                        $"linux:hwmon:{chipId}:{Path.GetFileNameWithoutExtension(fanInput)}",
+                        fanName.Trim(),
+                        IsFan: true,
+                        "Fan",
+                        MetricKind.FanRpm));
+                }
+                catch { complete = false; }
+            }
+        }
+
+        return (result.ToArray(), complete);
     }
 
     private static string MapChipName(string rawChipName)
@@ -293,7 +368,20 @@ public class LinuxTelemetryService : ITelemetryService
     {
         try
         {
-            var line = (await File.ReadAllLinesAsync(_statFile, ct)).FirstOrDefault(l => l.StartsWith("cpu "));
+            // The aggregate "cpu " line comes first; stop there instead of reading every per-CPU,
+            // intr and softirq line of the file each tick (P4-19).
+            string? line = null;
+            using (var reader = new StreamReader(_statFile))
+            {
+                while (await reader.ReadLineAsync(ct) is { } candidate)
+                {
+                    if (candidate.StartsWith("cpu ", StringComparison.Ordinal))
+                    {
+                        line = candidate;
+                        break;
+                    }
+                }
+            }
             if (line == null) return 0;
 
             var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);

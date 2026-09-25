@@ -228,6 +228,30 @@ object RemexCoreClient {
     private external fun SendMessageNative(messageJson: String): String
 
     /**
+     * How many [SendMessage] messages are queued natively and not yet taken by the send loop (perf
+     * audit P4-4). The legacy v2 base64 transfer loops pace on this so a file is not pushed into the
+     * unbounded native queue faster than the socket drains it.
+     *
+     * 0 when the library is not loaded or the export is missing: a caller pacing on it then runs
+     * unpaced, which is exactly what it did before this existed.
+     */
+    @JvmStatic
+    fun outboundQueueDepth(): Int =
+        if (!isLibraryLoaded) {
+            0
+        } else {
+            try {
+                GetOutboundQueueDepthNative()
+            } catch (e: UnsatisfiedLinkError) {
+                0
+            }
+        }
+
+    @JvmStatic
+    @JvmName("GetOutboundQueueDepthNative")
+    private external fun GetOutboundQueueDepthNative(): Int
+
+    /**
      * Sends one input event on the CONTROL socket, never on `/ws/desktop` (RemEx-035d6).
      *
      * **THE ARGUMENT IS THE `inputEvent` PAYLOAD ALONE, NOT A `desktop_input` ENVELOPE**, and the

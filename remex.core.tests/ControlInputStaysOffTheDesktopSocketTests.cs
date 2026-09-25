@@ -95,7 +95,8 @@ public class ControlInputStaysOffTheDesktopSocketTests
         // needed no new message type, no protocolVersion bump and no new client-bound type for the
         // inbound router to drop.
         Assert.Contains("MessageTypes.DesktopInput", body);
-        Assert.Contains("OutboundMessageQueue", body);
+        // EnqueueOutbound is the only way onto OutboundMessageQueue (it keeps the P4-4 depth).
+        Assert.Contains("EnqueueOutbound", body);
     }
 
     [Fact]

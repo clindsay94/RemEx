@@ -8,6 +8,13 @@
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Skia" Version="12.1.1" />
+    <!-- Not new dependencies: all four already arrive through Avalonia.Desktop at this same version.
+         remex.agent names them directly only to mark them Publish="false" for Windows RIDs
+         (perf audit P4-9); keep them in lockstep with the Avalonia line above. -->
+    <PackageVersion Include="Avalonia.X11" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.FreeDesktop" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.FreeDesktop.AtSpi" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Native" Version="12.1.1" />
 
     <!-- NOT OPTIONAL, AND ITS ABSENCE IS SILENT. Up to Avalonia 11, UseSkia() implied HarfBuzz;
          in 12 it does not, and the package must be referenced and .UseHarfBuzz() called explicitly.

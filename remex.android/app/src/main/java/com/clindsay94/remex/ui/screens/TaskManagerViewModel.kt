@@ -347,7 +347,15 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
 
             val sentAt = System.currentTimeMillis()
             if (showSpinner) _isRefreshing.value = true
-            val request = JSONObject().apply { put("type", "process_list_request") }
+            // processListSlim (perf audit P4-10): this screen reads only id, name, cpuUsage,
+            // memoryUsage and startTimeUnixMs, so ask the host to leave out path, publisher,
+            // version, user and install date. An older host ignores the flag and sends them anyway,
+            // which the parse below already tolerates.
+            val request =
+                    JSONObject().apply {
+                        put("type", "process_list_request")
+                        put("processListSlim", true)
+                    }
             RemexCoreClient.SendMessage(request.toString()).getOrNull()
             // Spinner cleared by processList collector when data arrives.
             // Safety net: clear after 5s in case host doesn't respond.

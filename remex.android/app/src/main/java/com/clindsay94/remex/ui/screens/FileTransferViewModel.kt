@@ -26,6 +26,7 @@ import com.clindsay94.remex.ui.components.FileConflictPrompt
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferRateEstimator
+import com.clindsay94.remex.service.awaitLegacyOutboundRoom
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.UUID
@@ -1522,6 +1523,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                         val read = stream.read(buffer)
                         if (read <= 0) break
                         digest.update(buffer, 0, read)
+                        // P4-4: pace on the native outbound queue instead of pushing the whole
+                        // file into it as fast as storage reads.
+                        awaitLegacyOutboundRoom()
                         sendMessage(JSONObject().apply {
                             put("type", "file_transfer_chunk")
                             put("fileTransferChunk", JSONObject().apply {

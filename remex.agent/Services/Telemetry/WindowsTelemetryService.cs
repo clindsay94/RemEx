@@ -346,8 +346,10 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // has been healthy since startup and covers CPU and Memory, those categories are never read,
         // so they never enter the cache — and a later stall serves a payload missing them, which is
         // precisely the hole RemEx-c2g4 set out to close. One extra read, once per process.
+        // Computed once per tick and shared with both merges below (P4-22).
+        var hwinfoCovered = hwinfoSensors.Count > 0 ? CoveredCategories(hwinfoSensors) : NoSkippedCategories;
         var skipCategories = _fallbackCacheSeeded && hwinfoSensors.Count > 0
-            ? CoveredCategories(hwinfoSensors)
+            ? hwinfoCovered
             : NoSkippedCategories;
 
         // THE COUNTERS MUST BE BUILT AND PRIMED BEFORE ANYTHING READS THEM, which is the invariant
@@ -381,7 +383,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
             // still perform the full seeding read.
             var waiting = ComposeCachedFallback(_cachedByCategory, GetUptime());
             if (hwinfoSensors.Count > 0)
-                waiting = waiting with { Sensors = MergeHwInfoOverPerf(waiting.Sensors, hwinfoSensors) };
+                waiting = waiting with { Sensors = MergeHwInfoOverPerf(waiting.Sensors, hwinfoSensors, hwinfoCovered) };
             return EnsureRamTotal(waiting);
         }
 
@@ -413,7 +415,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // ones the merge would drop: on the timeout path `payload` is rebuilt from the per-category
         // cache, whose entries were captured on ticks whose HWiNFO coverage may have been different.
         if (hwinfoSensors.Count > 0)
-            payload = payload with { Sensors = MergeHwInfoOverPerf(payload.Sensors, hwinfoSensors) };
+            payload = payload with { Sensors = MergeHwInfoOverPerf(payload.Sensors, hwinfoSensors, hwinfoCovered) };
 
         return EnsureRamTotal(payload);
     }
@@ -490,13 +492,20 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     /// WindowsPerf ones in those categories are the only source there is.
     /// </remarks>
     internal static List<SensorReading> MergeHwInfoOverPerf(
-        IReadOnlyList<SensorReading> fallbackSensors, IReadOnlyList<SensorReading> hwinfoSensors)
+        IReadOnlyList<SensorReading> fallbackSensors, IReadOnlyList<SensorReading> hwinfoSensors,
+        IReadOnlySet<string>? hwinfoCovered = null)
     {
-        var covered = CoveredCategories(hwinfoSensors);
+        // Perf audit P4-22: the caller's tick already knows the covered set, so it is passed in
+        // rather than rebuilt; the list is sized once (+1 for EnsureRamTotal's reading) and filled
+        // with a loop instead of Where/ToList growing it.
+        var covered = hwinfoCovered ?? CoveredCategories(hwinfoSensors);
 
-        var merged = fallbackSensors
-            .Where(s => s.Source != "WindowsPerf" || !covered.Contains(s.Category))
-            .ToList();
+        var merged = new List<SensorReading>(fallbackSensors.Count + hwinfoSensors.Count + 1);
+        foreach (var s in fallbackSensors)
+        {
+            if (s.Source != "WindowsPerf" || !covered.Contains(s.Category))
+                merged.Add(s);
+        }
 
         merged.AddRange(hwinfoSensors);
         return merged;
@@ -617,7 +626,12 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
             if (sensors.Count > 0)
             {
-                fallback = fallback with { Sensors = MergeHwInfoOverPerf(fallback.Sensors, sensors) };
+                // P4-22: GetTelemetryAsync reads HWiNFO against an empty fallback, where the merge
+                // is a plain copy of this list; hand the list over instead.
+                fallback = fallback with
+                {
+                    Sensors = fallback.Sensors.Count == 0 ? sensors : MergeHwInfoOverPerf(fallback.Sensors, sensors)
+                };
             }
 
             result = fallback;

@@ -16,6 +16,24 @@ public class WindowsProcessMonitorService : IProcessMonitorService
     /// <remarks>Guarded by <see cref="_lock"/> along with everything else in a scan.</remarks>
     private readonly ExecutableMetadataCache _metadataCache = new();
 
+    /// <summary>
+    /// Processes whose MainModule was refused, keyed by (pid, creation FILETIME) so a reused PID never
+    /// inherits the entry (perf audit P4-21). Guarded by <see cref="_lock"/>; trimmed every scan.
+    /// </summary>
+    private readonly HashSet<(int Pid, long CreationFileTime)> _mainModuleDenied = new();
+
+    /// <summary>Live processes whose MainModule was refused; a test seam.</summary>
+    internal int MainModuleDeniedCount
+    {
+        get { lock (_lock) { return _mainModuleDenied.Count; } }
+    }
+
+    private const int ErrorAccessDenied = 5;
+
+    /// <summary>How old a process must be before a non-access-denied MainModule failure is taken as
+    /// permanent rather than a loader still starting up (P4-21).</summary>
+    private static readonly TimeSpan MainModuleSettleTime = TimeSpan.FromSeconds(10);
+
     /// <summary>Reads the version resource. The expensive call the cache exists to avoid.</summary>
     internal static ExecutableMetadata LoadExecutableMetadata(string path)
     {
@@ -64,14 +82,20 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             _lastScanTime = now;
             var processes = Process.GetProcesses();
 
+            var liveDeniedKeys = new HashSet<(int, long)>();
+
             foreach (var p in processes)
             {
                 activePids.Add(p.Id);
+
+                // P4-21: one limited-query handle gives both the start time and the CPU time, and a
+                // process that refuses it is reported by a bool, not two exceptions per poll.
+                bool haveTimes = WindowsProcessTimes.TryGet(p.Id, out var times);
                 var info = new ProcessInfo
                 {
                     Id = p.Id,
                     Name = p.ProcessName,
-                    StartTimeUnixMs = TryReadStartUnixMs(p)
+                    StartTimeUnixMs = haveTimes ? times.StartUnixMs : null
                 };
 
                 try
@@ -86,9 +110,9 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                     // dropping it would hide a running process from the user entirely.
                 }
 
-                try
+                if (haveTimes)
                 {
-                    var cpuTime = p.TotalProcessorTime.TotalMilliseconds;
+                    var cpuTime = times.TotalProcessorTime.TotalMilliseconds;
                     if (!_cpuTrackers.TryGetValue(p.Id, out var tracker))
                     {
                         tracker = new ProcessCpuTracker { LastCpuTime = cpuTime };
@@ -107,17 +131,20 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         info = info with { CpuUsage = usage };
                     }
                 }
-                catch (System.ComponentModel.Win32Exception)
+                // else: CPU time unreadable (a protected process, or one that exited mid-enumeration).
+
+                // P4-21: MainModule needs a stronger handle than the limited query above, so a process
+                // that refused that one refuses this too - skip it rather than throw. A process that
+                // allowed the limited query but refused MainModule is remembered by (pid, creation
+                // time), which a reused PID cannot match, and skipped on later polls.
+                var deniedKey = (p.Id, times.CreationFileTime);
+                if (!haveTimes || _mainModuleDenied.Contains(deniedKey))
                 {
-                    // As above: TotalProcessorTime is unreadable for protected processes.
-                }
-                catch (InvalidOperationException)
-                {
-                    // And InvalidOperationException is the process having exited mid-enumeration.
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogTrace(ex, "Unexpected error getting CPU time for {Pid}", p.Id);
+                    if (haveTimes)
+                        liveDeniedKeys.Add(deniedKey);
+                    results.Add(info);
+                    p.Dispose();
+                    continue;
                 }
 
                 // Attempt to get file path and publisher/version
@@ -171,10 +198,24 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         };
                     }
                 }
-                catch (System.ComponentModel.Win32Exception)
+                catch (System.ComponentModel.Win32Exception ex)
                 {
                     // MainModule is the most commonly denied of these: it is refused for every process at a
-                    // higher integrity level, which is most of the ones worth protecting.
+                    // higher integrity level, which is most of the ones worth protecting. Remembered so
+                    // the next poll does not throw for it again (P4-21).
+                    //
+                    // Access denied is a property of the process for its lifetime, so it is remembered at
+                    // once. Anything else (ERROR_PARTIAL_COPY, ERROR_NOACCESS) is also permanent for
+                    // minimal and protected processes that have no readable module list - but it is ALSO
+                    // what a process read before its loader has finished returns, and remembering that
+                    // would blank its path for its whole life. So those are remembered only once the
+                    // process is old enough that its loader is long done.
+                    if (ex.NativeErrorCode == ErrorAccessDenied
+                        || DateTime.UtcNow - DateTime.FromFileTimeUtc(times.CreationFileTime) > MainModuleSettleTime)
+                    {
+                        _mainModuleDenied.Add(deniedKey);
+                        liveDeniedKeys.Add(deniedKey);
+                    }
                 }
                 catch (InvalidOperationException)
                 {
@@ -198,6 +239,9 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             // it to executables currently running keeps it at a few hundred entries instead of every
             // binary — and every VERSION of every binary — launched since the machine booted.
             _metadataCache.RetainOnly(livePaths);
+
+            // Same bound for the MainModule-denied set: only processes still running.
+            _mainModuleDenied.IntersectWith(liveDeniedKeys);
 
             return results;
             }

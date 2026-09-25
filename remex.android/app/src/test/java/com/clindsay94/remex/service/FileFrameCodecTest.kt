@@ -1,5 +1,6 @@
 package com.clindsay94.remex.service
 
+import okio.ByteString.Companion.toByteString
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -84,6 +85,50 @@ class FileFrameCodecTest {
         val a = FileFrameCodec.wrap(env, big.copyOfRange(0, 500))
         val b = FileFrameCodec.wrap(env, big, 0, 500)
         assertArrayEquals(a, b)
+    }
+
+    // ── P4-5: the ByteString send/receive paths must stay byte-identical to the ByteArray ones ──
+
+    @Test
+    fun wrapToByteString_isByteIdenticalToWrap_smallAndSegmented() {
+        // 300 bytes stays one okio segment; 300 KiB crosses the 4 KiB segmenting threshold, so
+        // readByteString hands back a SegmentedByteString - the shape the live send path produces.
+        for (size in intArrayOf(0, 300, 300 * 1024)) {
+            val big = ByteArray(size + 20) { (it % 253).toByte() }
+            val env = FileFrameEnvelope(FileFrameKinds.DATA, "seg", offset = 7, length = size, final = true)
+            val expected = FileFrameCodec.wrap(env, big, 10, size)
+            val actual = FileFrameCodec.wrapToByteString(env, big, 10, size).toByteArray()
+            assertArrayEquals("size=$size", expected, actual)
+        }
+    }
+
+    @Test
+    fun tryReadByteString_decodesTheSameAsTheByteArrayOverload() {
+        for (size in intArrayOf(0, 300, 300 * 1024)) {
+            val payload = ByteArray(size) { (it % 249).toByte() }
+            val env = FileFrameEnvelope(FileFrameKinds.DATA, "rt", offset = 4096L, length = size, final = false)
+            // Built through the ByteString wrap so a large frame arrives SEGMENTED, as OkHttp's reader
+            // hands it over for any message past 4 KiB.
+            val frame = FileFrameCodec.wrapToByteString(env, payload, 0, size)
+            val decoded = FileFrameCodec.tryRead(frame)
+            assertNotNull("size=$size", decoded)
+            assertEquals(env, decoded!!.envelope)
+            assertArrayEquals("size=$size", payload, decoded.payload)
+            assertEquals(FileFrameCodec.tryRead(frame.toByteArray()), decoded)
+        }
+    }
+
+    @Test
+    fun tryReadByteString_malformedFrames_returnNull() {
+        assertNull(FileFrameCodec.tryRead(ByteArray(2).toByteString()))
+        assertNull(FileFrameCodec.tryRead(byteArrayOf(127, 0, 0, 0, '{'.code.toByte()).toByteString()))
+        val notJson = "nope".toByteArray()
+        val frame = ByteArray(4 + notJson.size)
+        frame[0] = notJson.size.toByte()
+        notJson.copyInto(frame, 4)
+        assertNull(FileFrameCodec.tryRead(frame.toByteString()))
+        // A negative header length (high bit set) must not throw.
+        assertNull(FileFrameCodec.tryRead(byteArrayOf(0, 0, 0, 0x80.toByte(), 1, 2).toByteString()))
     }
 
     @Test

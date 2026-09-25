@@ -19,12 +19,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
@@ -409,20 +411,18 @@ object FileTransferEngine {
         val done = CompletableDeferred<Boolean>()
         val received = java.util.concurrent.atomic.AtomicLong(startOffset)
         val lastAcked = java.util.concurrent.atomic.AtomicLong(startOffset)
-        val sink =
-            object : FileFrameSink {
-                override fun onFrame(envelope: FileFrameEnvelope, payload: ByteArray) {
-                    if (envelope.kind != FileFrameKinds.DATA) {
-                        if (envelope.kind == FileFrameKinds.ERROR) done.complete(false)
-                        return
-                    }
-                    try {
-                        synchronized(raf) {
-                            if (envelope.offset != received.get()) {
-                                FileTransferChannelClient.sendError(t.id, "Out-of-order frame.")
-                                done.complete(false)
-                                return
-                            }
+        // Perf audit P4-6: the write, hash and ack below run on this worker, NOT on the OkHttp reader
+        // thread that delivers the frame, so the socket keeps being read while a frame is on its way
+        // to disk. Still strictly serial and still ack-after-write. Sized to the sender's unacked
+        // window, so in practice the reader never blocks in offer().
+        val writer =
+            SerialFrameWorker<Pair<FileFrameEnvelope, ByteArray>>(scope, DOWNLOAD_WRITE_QUEUE_FRAMES) { (envelope, payload) ->
+                try {
+                    synchronized(raf) {
+                        if (envelope.offset != received.get()) {
+                            FileTransferChannelClient.sendError(t.id, "Out-of-order frame.")
+                            done.complete(false)
+                        } else {
                             raf.write(payload)
                             digest.update(payload)
                             val now = received.addAndGet(payload.size.toLong())
@@ -433,10 +433,22 @@ object FileTransferEngine {
                             updateProgress(t.id, now)
                             if (envelope.final) done.complete(true)
                         }
-                    } catch (e: Exception) {
-                        FileTransferChannelClient.sendError(t.id, e.message ?: "write failed")
-                        done.complete(false)
                     }
+                } catch (e: Exception) {
+                    FileTransferChannelClient.sendError(t.id, e.message ?: "write failed")
+                    done.complete(false)
+                }
+            }
+        val sink =
+            object : FileFrameSink {
+                override fun onFrame(envelope: FileFrameEnvelope, payload: ByteArray) {
+                    if (envelope.kind != FileFrameKinds.DATA) {
+                        if (envelope.kind == FileFrameKinds.ERROR) done.complete(false)
+                        return
+                    }
+                    // False only once the writer has stopped (shut down, or it died): nothing will
+                    // write this frame, so the transfer cannot finish.
+                    if (!writer.offer(envelope to payload)) done.complete(false)
                 }
 
                 override fun onChannelClosed() {
@@ -447,6 +459,10 @@ object FileTransferEngine {
         try {
             // The PC sender's file_transfer_complete carries the authoritative full-file hash.
             val streamedOk = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { done.await() } ?: false
+            // Stop the writer BEFORE raf is synced and closed below: on a failed or timed-out stream
+            // it may still be mid-write. On success it is already idle - done completes from inside
+            // the handler, after the final frame was written.
+            writer.shutdown()
             if (streamedOk) {
                 // The bar hits 100% here, but fsync + hash-wait + the full .part→SAF commit copy are
                 // still ahead — surface the same Verifying state uploads already use so big files
@@ -473,6 +489,8 @@ object FileTransferEngine {
             }
         } finally {
             FileTransferChannelClient.unregisterSink(t.id)
+            // Idempotent; here for the exception and cancellation paths, which skip the call above.
+            withContext(NonCancellable) { writer.shutdown() }
         }
     }
 
@@ -742,4 +760,9 @@ object FileTransferEngine {
 
     private const val NEGOTIATE_TIMEOUT_MS = 30_000L
     private const val TRANSFER_TIMEOUT_MS = 6L * 60 * 60 * 1000 // 6h ceiling for a single transfer
+
+    // P4-6: the sender never has more than MAX_UNACKED_BYTES in flight, so at full-size frames this
+    // many can ever be waiting for the writer.
+    private const val DOWNLOAD_WRITE_QUEUE_FRAMES =
+        FileTransferLimits.MAX_UNACKED_BYTES / FileTransferLimits.DATA_PAYLOAD_BYTES
 }

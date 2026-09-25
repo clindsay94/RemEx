@@ -109,6 +109,15 @@ public sealed record RemexMessage
     [JsonPropertyName("processList")]
     public List<Remex.Core.Models.ProcessInfo>? ProcessList { get; init; }
 
+    /// <summary>
+    /// On a <c>process_list_request</c>: true asks for each process as
+    /// <see cref="Remex.Core.Models.ProcessInfo.ToSlim"/> (perf audit P4-10). Optional and additive —
+    /// a host that predates it ignores it and sends the full list, and a request without it gets the
+    /// full list — so it needs no <c>protocolVersion</c> bump.
+    /// </summary>
+    [JsonPropertyName("processListSlim")]
+    public bool? ProcessListSlim { get; init; }
+
     /// <summary>Capability summary for the active host runtime.</summary>
     [JsonPropertyName("hostCapabilities")]
     public Remex.Core.Models.HostCapabilities? HostCapabilities { get; init; }

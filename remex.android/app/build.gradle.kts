@@ -486,6 +486,48 @@ fun getArm64PublishedSoPath(remexCoreProjectDir: File, configuration: String): F
 
 val javaSdkDirTopLevel: String? = project.findProperty("org.gradle.java.home")?.toString() ?: System.getProperty("java.home")
 
+// The .NET toolchain identity, as task inputs for the two publish tasks below. `dotnet --version` is
+// the SDK (and with it the ILCompiler pack), `dotnet workload --version` the Android workload set.
+// Either changing must rebuild the .so even when no source did. Lazy: resolved only when a publish
+// task is in the graph (~0.25 s together, measured), never at configuration time.
+val dotnetSdkVersion = providers.exec { commandLine("dotnet", "--version") }
+    .standardOutput.asText.map { it.trim() }
+val dotnetWorkloadVersion = providers.exec { commandLine("dotnet", "workload", "--version") }
+    .standardOutput.asText.map { it.trim() }
+
+// Declares what libRemexCore.so is a function of, so Gradle skips the dotnet invocation when nothing
+// changed (perf audit P4-7). Without inputs and outputs the Exec task ran on every Android build:
+// ~2 s of restore and MSBuild evaluation per build even when MSBuild then found nothing to do.
+//
+// THE FAILURE THIS MUST NEVER HAVE IS A STALE .so. A source edit Gradle does not see ships the old
+// library with no error anywhere - SyncRemexCoreSoTask's ELF check (REGRESSION-GUARDS) cannot tell
+// old from new. So the inputs are deliberately wider than the compile: the WHOLE remex.core tree
+// (every .cs incl. Native/AndroidNativeExports.cs - the JNI entry points - plus the csproj and its
+// Directory.Build.targets), the repo-root MSBuild props that reach every project (package versions,
+// warnings-as-errors, the NativeAOT settings), build/ which those props import, the exact command
+// line, and the toolchain versions above. remex.core has no ProjectReference, so nothing outside
+// these reaches the .so. The outputs are every candidate path the sync task reads, so deleting or
+// rewriting the .so (a manual dotnet build, a clean) also makes the task run again.
+// Escape hatch if this is ever doubted: `gradlew --rerun-tasks` or delete artifacts/bin/remex.core.
+fun Exec.declareRemexCoreBuildInputs(configuration: String) {
+    inputs.files(fileTree(remexCoreProjectDirLocal) { exclude("bin/**", "obj/**") })
+        .withPropertyName("remexCoreSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(
+        File(repoRootDir, "Directory.Build.props"),
+        File(repoRootDir, "Directory.Packages.props"),
+        fileTree(File(repoRootDir, "build"))
+    )
+        .withPropertyName("repoMsbuildProps")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .optional(true)
+    inputs.property("commandLine", commandLine.joinToString("\n"))
+    inputs.property("dotnetSdkVersion", dotnetSdkVersion)
+    inputs.property("dotnetWorkloadVersion", dotnetWorkloadVersion)
+    outputs.files(arm64PublishedSoCandidates(remexCoreProjectDirLocal, configuration))
+        .withPropertyName("libRemexCoreSo")
+}
+
 val publishRemexCoreAndroidDebug by project.tasks.registering(Exec::class) {
     group = "remex"
     description = "Builds and links Remex.Core Android arm64 debug native library"
@@ -503,6 +545,7 @@ val publishRemexCoreAndroidDebug by project.tasks.registering(Exec::class) {
         "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
         "-p:JavaSdkDirectory=$javaSdkDirTopLevel"
     )
+    declareRemexCoreBuildInputs("Debug")
 }
 
 val publishRemexCoreAndroidRelease by project.tasks.registering(Exec::class) {
@@ -522,6 +565,7 @@ val publishRemexCoreAndroidRelease by project.tasks.registering(Exec::class) {
         "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
         "-p:JavaSdkDirectory=$javaSdkDirTopLevel"
     )
+    declareRemexCoreBuildInputs("Release")
 }
 
 

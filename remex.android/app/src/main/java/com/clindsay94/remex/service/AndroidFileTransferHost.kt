@@ -569,6 +569,9 @@ object AndroidFileTransferHost {
                             state.bytesTransferred += read
                             state.chunkCount++
 
+                            // P4-4: pace on the native outbound queue instead of pushing the whole
+                            // file into it as fast as storage reads.
+                            awaitLegacyOutboundRoom()
                             RemexCoreClient.SendMessage(JSONObject().apply {
                                 put("type", "file_transfer_chunk")
                                 put("fileTransferChunk", JSONObject().apply {

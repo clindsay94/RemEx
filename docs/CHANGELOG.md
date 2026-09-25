@@ -61,6 +61,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   host-side caching and debouncing for monitor lookups, mDNS, HWiNFO, media artwork and paired-device
   activity. No protocol change. (perf audit P3)
 
+- A last round of efficiency fixes: phone file transfers copy each chunk half as often and do their
+  disk writes off the socket thread, legacy transfers wait for the outbound queue instead of
+  flooding it, the Android build skips the native-core publish when nothing changed, the Windows
+  install is about 14 MB smaller (unused ASP.NET and Linux/macOS UI assemblies no longer shipped),
+  and the PC host caches the launcher list, process times and artwork replies and makes fewer
+  copies on the GDI and Linux capture paths. Protocol: one optional field on
+  `process_list_request`, `processListSlim`, asking the PC to leave out process fields the phone
+  never shows. Additive, so no `protocolVersion` bump; an older PC ignores it and sends the full
+  list. (perf audit P4)
+
 - A round of idle/background battery fixes across both apps: the phone's Task Manager, Remote
   Desktop stream, secondary file/catalog sockets, file-transfer queue drain, and reconnect heartbeat
   now pause when there's nothing to show or nowhere to send, instead of polling on a fixed timer

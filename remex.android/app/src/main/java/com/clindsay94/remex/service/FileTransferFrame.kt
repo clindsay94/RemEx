@@ -1,5 +1,7 @@
 package com.clindsay94.remex.service
 
+import okio.Buffer
+import okio.ByteString
 import org.json.JSONObject
 
 /**
@@ -100,6 +102,52 @@ object FileFrameCodec {
         header.copyInto(frame, HEADER_LENGTH_PREFIX_SIZE)
         System.arraycopy(buffer, offset, frame, HEADER_LENGTH_PREFIX_SIZE + header.size, count)
         return frame
+    }
+
+    /**
+     * [wrap], built straight into the okio [ByteString] that `WebSocket.send` takes (perf audit P4-5).
+     *
+     * `ws.send(frame.toByteString(0, size))` copies the whole frame a second time, because a
+     * ByteString made from an array defensively copies it. Here the payload is copied ONCE, into okio
+     * segments, and `readByteString` hands those segments over as the ByteString without copying
+     * again (above okio's 4 KiB segmenting threshold; below it the copy is too small to matter). The
+     * bytes are identical to [wrap]'s; `FileFrameCodecTest` pins that.
+     */
+    fun wrapToByteString(envelope: FileFrameEnvelope, buffer: ByteArray, offset: Int, count: Int): ByteString {
+        val header = envelope.toJson().toString().toByteArray(Charsets.UTF_8)
+        return Buffer()
+            .writeIntLe(header.size)
+            .write(header)
+            .write(buffer, offset, count)
+            .readByteString()
+    }
+
+    /**
+     * [tryRead] over the okio [ByteString] OkHttp delivers, without first flattening the whole
+     * frame into an array (perf audit P4-5): only the small header is decoded, and the payload is
+     * copied exactly once, into the array handed to the sink. Same null-on-malformed contract.
+     */
+    fun tryRead(frame: ByteString): DecodedFileFrame? {
+        val size = frame.size
+        if (size < HEADER_LENGTH_PREFIX_SIZE) return null
+        val headerLength =
+            (frame[0].toInt() and 0xFF) or
+                ((frame[1].toInt() and 0xFF) shl 8) or
+                ((frame[2].toInt() and 0xFF) shl 16) or
+                ((frame[3].toInt() and 0xFF) shl 24)
+        if (headerLength < 0 || HEADER_LENGTH_PREFIX_SIZE + headerLength.toLong() > size) {
+            return null
+        }
+        val payloadStart = HEADER_LENGTH_PREFIX_SIZE + headerLength
+        val envelope =
+            try {
+                FileFrameEnvelope.fromJson(JSONObject(frame.substring(HEADER_LENGTH_PREFIX_SIZE, payloadStart).utf8()))
+            } catch (e: Exception) {
+                return null
+            }
+        val payload = ByteArray(size - payloadStart)
+        frame.copyInto(payloadStart, payload, 0, payload.size)
+        return DecodedFileFrame(envelope, payload)
     }
 
     /**
