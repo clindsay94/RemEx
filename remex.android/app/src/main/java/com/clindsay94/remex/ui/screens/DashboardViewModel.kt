@@ -186,6 +186,39 @@ private class PercentPicker(private val category: String, private val preferredT
     }
 }
 
+/**
+ * Perf audit P2-11: `current` used to be copied whole and every reported sensor's list rebuilt
+ * (list-concat + takeLast, two new lists) on every 1Hz tick with no key eviction, so a sensor that
+ * stopped being reported (a USB drive unplugged, a host feature toggled off) stayed in the map
+ * forever. Pulled out to a pure top-level function, same reason `parseTelemetry` above is one:
+ * `DashboardViewModel` is an `AndroidViewModel` with no Robolectric in this module, so this is the
+ * only way to exercise the logic directly rather than by source-scanning the private method.
+ *
+ * ONLY THE EVICTION HALF OF THE AUDIT'S SUGGESTED FIX IS HERE. Narrowing to only sensors bound to
+ * a visible home card was NOT implemented: `telemetryHistory` also backs the sensor detail/picker
+ * view (`DashboardScreen.kt`'s picked-sensor sparkline), which can show history for a sensor the
+ * user just tapped that has never been a home card. "Bound" is therefore not simply "on a card",
+ * and getting that union wrong would silently blank a freshly-picked sensor's sparkline with
+ * nothing here able to catch it.
+ */
+internal fun pruneAndAppendTelemetryHistory(
+    current: Map<String, List<Float>>,
+    sensors: List<TelemetrySensor>,
+): Map<String, List<Float>> =
+    // Built straight from `sensors`, which both evicts (nothing not in `sensors` is ever put) and
+    // avoids the intermediate HashSet + double map copy an explicit filterKeys().toMutableMap()
+    // pass would cost - review round 1 LOW, since this row is a perf fix and a fix that adds
+    // allocation on a stable sensor set would be the wrong trade. `this[sensor.id] ?: current[...]`
+    // (not just `current[...]`) keeps today's behaviour if two sensors ever normalize to the same
+    // id within one tick - the second one's append lands on the first one's already-updated list,
+    // same as the old sequential-mutation code did, not on the stale pre-tick value.
+    buildMap(sensors.size) {
+        for (sensor in sensors) {
+            val prior = (this[sensor.id] ?: current[sensor.id]).orEmpty()
+            put(sensor.id, (prior + sensor.value.toFloat()).takeLast(40))
+        }
+    }
+
 internal fun parseTelemetry(sensors: JSONArray?): DerivedTelemetry {
     val cpu = PercentPicker("CPU", listOf("cpu", "usage"))
     val gpu = PercentPicker("GPU", listOf("gpu", "usage"))
@@ -800,15 +833,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun updateTelemetryHistory(sensors: List<TelemetrySensor>) {
-        _telemetryHistory.update { current ->
-            val mutable = current.toMutableMap()
-            for (sensor in sensors) {
-                val prior = mutable[sensor.id].orEmpty()
-                val updated = (prior + sensor.value.toFloat()).takeLast(40)
-                mutable[sensor.id] = updated
-            }
-            mutable
-        }
+        _telemetryHistory.update { current -> pruneAndAppendTelemetryHistory(current, sensors) }
     }
 
     private fun loadSavedHomeLayout() {

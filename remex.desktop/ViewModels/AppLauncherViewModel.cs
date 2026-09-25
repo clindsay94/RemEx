@@ -90,7 +90,31 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         var entries = await _storageService.LoadEntriesAsync();
         var normalized = NormalizeEntries(entries).ToList();
 
-        var upgraded = UpgradeLowResolutionIcons(normalized, out var changed);
+        // Perf audit P2-18: UpgradeLowResolutionIcons calls into GDI+/shell icon extraction, which
+        // is synchronous native work - `await`ing LoadEntriesAsync above already resumed on the UI
+        // thread's SynchronizationContext (this is Avalonia, not a ConfigureAwait(false) codebase),
+        // so this used to run the extraction loop inline on it, every launch. Task.Run moves it off,
+        // but ONLY when there's real extraction work to do: dispatching every load - even the common
+        // case where every entry is already fixed or already-known-unfixable - would turn a
+        // previously-synchronous no-op path into a genuine thread hop for no reason, and (per
+        // DestructiveActionFailClosedTests.CreateLauncher's own comment) some fixtures rely on this
+        // load completing before the constructor returns for a fake with nothing to upgrade.
+        List<AppEntry> upgraded;
+        bool changed;
+        if (normalized.Any(e => !e.IconUpgradeUnfixable && NeedsSharperIcon(e.IconBase64)))
+        {
+            (upgraded, changed) = await Task.Run(() =>
+            {
+                var result = UpgradeLowResolutionIcons(normalized, out var didChange).ToList();
+                return (result, didChange);
+            });
+        }
+        else
+        {
+            upgraded = normalized;
+            changed = false;
+        }
+
         Launchers = new ObservableCollection<AppEntry>(upgraded);
 
         if (changed)
@@ -107,7 +131,8 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     private const int MinimumIconEdge = 64;
 
     /// <summary>
-    /// Re-extracts any stored icon that is too small for the tile it is drawn in.
+    /// Re-extracts any stored icon that is too small for the tile it is drawn in. Internal (not
+    /// private) so a test can drive it directly with a fake <see cref="IIconExtractionService"/>.
     /// </summary>
     /// <remarks>
     /// Every entry added before RemEx-u4244 carries a baked 32x32 PNG, because the old Windows
@@ -117,7 +142,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     /// whose target no longer exists, or whose re-extraction yields nothing better, keep the icon
     /// they have rather than losing it.
     /// </remarks>
-    private IEnumerable<AppEntry> UpgradeLowResolutionIcons(List<AppEntry> entries, out bool changed)
+    internal IEnumerable<AppEntry> UpgradeLowResolutionIcons(List<AppEntry> entries, out bool changed)
     {
         changed = false;
 
@@ -127,6 +152,12 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
+
+            // Perf audit P2-18: a target that already failed to produce a sharper icon has nothing
+            // that a retry would change - GDI+/shell extraction is a property of the target file,
+            // not something that fixes itself between launches. Skip the same futile work forever.
+            if (entry.IconUpgradeUnfixable)
+                continue;
 
             if (string.IsNullOrWhiteSpace(entry.TargetPath) || !File.Exists(entry.TargetPath))
                 continue;
@@ -142,15 +173,37 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
             catch
             {
                 // A launcher entry is still usable with a soft icon; it is not usable if a throwing
-                // extractor takes the whole page down on load.
+                // extractor takes the whole page down on load. Not marked unfixable: an exception
+                // (e.g. a transient file lock) is not the same claim as "this target has no sharper
+                // icon", so it deserves a real retry next launch rather than being given up on.
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(refreshed) || refreshed == entry.IconBase64)
+            // Review round 1 MEDIUM: the real Windows extractor (DesktopIconExtractionService)
+            // never actually throws - every internal failure (a locked file, a target with no
+            // icon resource, GDI+ erroring) is already caught and degrades to this exact known
+            // placeholder string instead. So the catch block above is effectively unreachable in
+            // production, and without this check a TRANSIENT failure (locked file today, fine on
+            // the next launch) would read as "confirmed no sharper icon exists" and get flagged
+            // unfixable forever, same as a genuine permanent lack of one. Treated the same as a
+            // throw: a real retry next launch, not a permanent verdict.
+            //
+            // Review round 2 MEDIUM: this compares against Remex.Core.Services.IconExtractionService's
+            // copy of the constant, not remex.agent's DesktopIconExtractionService.FallbackBase64Icon
+            // - remex.desktop cannot reference the platform-specific agent assembly (same reason
+            // MinimumIconEdge above is a duplicated literal), so the two copies are byte-identical
+            // today but nothing pins them together. If they ever drift, a locked file goes back to
+            // being permanently misflagged unfixable with nothing surfacing it - accepted as a
+            // known, documented gap rather than fixed here.
+            if (refreshed == IconExtractionService.FallbackBase64Icon)
                 continue;
 
-            if (NeedsSharperIcon(refreshed))
+            if (string.IsNullOrWhiteSpace(refreshed) || refreshed == entry.IconBase64 || NeedsSharperIcon(refreshed))
+            {
+                entries[i] = entry with { IconUpgradeUnfixable = true };
+                changed = true;
                 continue;
+            }
 
             entries[i] = entry with { IconBase64 = refreshed };
             changed = true;
@@ -275,7 +328,13 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
             targetPath,
             hexColor,
             iconBase64,
-            entry.Order);
+            entry.Order,
+            // Review round 1 HIGH: NormalizeEntry rebuilds a fresh AppEntry from individual fields,
+            // so a positional record parameter left off the constructor call here silently falls
+            // back to its default - dropping IconUpgradeUnfixable to false on every single load,
+            // which made the whole fix a no-op AND added a save on every launch (a dropped-then-
+            // rediscovered-unfixable entry sets `changed`).
+            entry.IconUpgradeUnfixable);
     }
 
     private static string NormalizeString(string? value)

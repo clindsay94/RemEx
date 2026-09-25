@@ -1665,4 +1665,90 @@ public sealed class FileTransferHandlerTests : IDisposable
         Assert.Equal(string.Empty, sent.FileThumbnailResponse!.RequestId);
         Assert.False(string.IsNullOrWhiteSpace(sent.FileThumbnailResponse!.ErrorMessage));
     }
+
+    // ── Duplicate TransferId dispose-and-replace (perf audit P2-21) ────────────
+    // _activeTransfers[start.TransferId] = state used to be a bare indexer assignment: a duplicate
+    // TransferId (client retry, or a bug) silently overwrote the map entry, orphaning the previous
+    // attempt's FileStream and SHA256 hasher with nothing left to dispose them. Proven here by
+    // checking the FIRST stream is actually Disposed (not just unreferenced) after the duplicate
+    // start, and that the SECOND attempt still completes correctly through the same TransferId.
+
+    [Fact]
+    public async Task DuplicateTransferId_DisposesThePreviousStreamInstead_OfOrphaningIt()
+    {
+        var firstStream = new MemoryStream();
+        var secondStream = new MemoryStream();
+        var fileService = new Mock<IFileTransferService>();
+        fileService
+            .Setup(s => s.ListRootsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<FileSharedRoot> { new() { RootId = "root-1", DisplayName = "Root 1", IsWritable = true } });
+        fileService
+            .SetupSequence(s => s.OpenForWriteAsync("root-1", "file.bin", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(firstStream)
+            .ReturnsAsync(secondStream);
+
+        var handler = CreateHandler(fileService.Object);
+        var ws = new FakeWebSocket();
+        var ct = CancellationToken.None;
+
+        // Review round 1 LOW: RemotePath (used as state.RemotePath for a non-FileStream, i.e. this
+        // MemoryStream-backed test) feeds directly into CleanupTransferAsync's File.Exists/File.Delete
+        // for deleteFile:true. A relative "file.bin" would touch the test process's actual working
+        // directory; a path under a fresh temp folder that is guaranteed not to exist is a real
+        // no-op there instead of an accidental filesystem dependency.
+        var remotePath = Path.Combine(Path.GetTempPath(), $"remex-test-{Guid.NewGuid():N}.bin");
+        var start = new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-duplicate",
+                Direction = "upload",
+                RemotePath = remotePath,
+                RemoteRootId = "root-1",
+                RemoteRelativePath = "file.bin",
+                FileName = "file.bin",
+                TotalBytes = 4,
+                Sha256Base64 = Convert.ToBase64String(SHA256.HashData(new byte[] { 1, 2, 3, 4 }))
+            }
+        };
+
+        await handler.HandleFileTransferStartAsync(start, ws, null, ct);
+        Assert.True(firstStream.CanWrite, "the first attempt's stream must still be open right after its own start");
+
+        // Same TransferId, a genuine duplicate - the exact case that used to orphan firstStream.
+        await handler.HandleFileTransferStartAsync(start, ws, null, ct);
+
+        Assert.Throws<ObjectDisposedException>(() => firstStream.WriteByte(0));
+
+        // The SECOND attempt must still work end-to-end through the same TransferId - dispose-and-
+        // replace, not dispose-and-abandon.
+        await handler.HandleFileTransferChunkAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferChunk,
+            FileTransferChunk = new FileTransferChunk
+            {
+                TransferId = "tx-duplicate",
+                Offset = 0,
+                DataBase64 = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+            }
+        }, ws, ct);
+
+        await handler.HandleFileTransferEndAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferEnd,
+            FileTransferEnd = new FileTransferEnd
+            {
+                TransferId = "tx-duplicate",
+                Success = true,
+                Sha256Base64 = start.FileTransferStart.Sha256Base64
+            }
+        }, ws, ct);
+
+        var endResponse = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd);
+        Assert.NotNull(endResponse?.FileTransferEnd);
+        Assert.True(endResponse!.FileTransferEnd!.Success,
+            $"Expected success but got: {endResponse.FileTransferEnd.ErrorMessage}");
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, secondStream.ToArray());
+    }
 }

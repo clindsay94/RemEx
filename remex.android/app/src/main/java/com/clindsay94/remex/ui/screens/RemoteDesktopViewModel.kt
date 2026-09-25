@@ -504,6 +504,30 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val pointerBatchQueue = Channel<String>(Channel.UNLIMITED)
     private val pointerSenderStarted = AtomicBoolean(false)
 
+    /**
+     * Perf audit P2-10: `sendInput` (mouse move/scroll/click/key) used the same per-event
+     * `viewModelScope.launch(sendDispatcher)` shape RemEx-ugvo already replaced for the stylus path
+     * above — a Job, a continuation and a dispatch per event, at mouse-move rates during a drag.
+     * Same fix, same pattern: one consumer draining an unbounded channel on the SAME sendDispatcher.
+     * UNLIMITED for the same reason as pointerBatchQueue - a bounded channel would have to drop or
+     * suspend, and dropping a mouse-move or (worse) a keyDown/keyUp half of a chord is worse than
+     * the GC pressure this exists to remove.
+     *
+     * A SEPARATE channel from pointerBatchQueue, not the same one, because the two carry different
+     * wire shapes to different JNI entry points (`SendMessage` with a `desktop_input` envelope here,
+     * `SendDesktopPointerBatch` there) - merging them would need a tagged union just to get back to
+     * where two channels already are. NOT A STRICT ORDERING GUARANTEE ACROSS THE TWO CHANNELS: each
+     * consumer drains everything already queued before yielding, so once either one wakes it can run
+     * ahead of work queued on the other in the meantime - true in both directions, and true of the
+     * pre-fix code too (the pointer consumer already had this property; this just gives the input
+     * consumer the same one). Ordering WITHIN inputQueue itself is strict FIFO, which is what
+     * RemEx-7rq3 actually needs (a keyDown must never pass its own keyUp). Nothing sends stylus and
+     * keyboard/mouse events where their order relative to EACH OTHER matters (verified against
+     * RemoteDesktopScreen.kt's stylus handler, review round 1).
+     */
+    private val inputQueue = Channel<String>(Channel.UNLIMITED)
+    private val inputSenderStarted = AtomicBoolean(false)
+
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
 
@@ -2350,17 +2374,32 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // typed text all funnel through this, so a future input kind is covered by construction
         // instead of by remembering (RemEx-q9zw).
         if (!_capabilityState.value.supportsInputSimulation) return
-        viewModelScope.launch(sendDispatcher) {
-            if (!RemexCoreClient.isLibraryLoaded) {
-                return@launch
-            }
 
-            val message =
-                    JSONObject().apply {
-                        put("type", "desktop_input")
-                        put("inputEvent", input)
-                    }
-            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        val message =
+                JSONObject().apply {
+                    put("type", "desktop_input")
+                    put("inputEvent", input)
+                }
+        startInputSenderIfNeeded()
+        // UNLIMITED, so this cannot fail or block the caller (main thread for most input sources).
+        inputQueue.trySend(message.toString())
+    }
+
+    /**
+     * Starts the single consumer that drains [inputQueue], once. Same lazy-start-on-first-send
+     * reasoning as [startPointerSenderIfNeeded] — see that function's doc.
+     */
+    private fun startInputSenderIfNeeded() {
+        if (!inputSenderStarted.compareAndSet(false, true)) return
+
+        viewModelScope.launch(sendDispatcher) {
+            for (messageJson in inputQueue) {
+                if (!RemexCoreClient.isLibraryLoaded) continue
+                // Same failure-isolation reasoning as startPointerSenderIfNeeded: one consumer means
+                // an escaping Throwable would kill input for this ViewModel's life, so it's caught
+                // per-message even though SendMessage already returns a Result.
+                runCatching { RemexCoreClient.SendMessage(messageJson).getOrNull() }
+            }
         }
     }
 

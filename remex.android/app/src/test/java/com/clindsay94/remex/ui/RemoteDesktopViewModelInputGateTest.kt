@@ -74,6 +74,51 @@ class RemoteDesktopViewModelInputGateTest {
     }
 
     @Test
+    fun `sendInput enqueues onto the single-consumer channel instead of launching per event`() {
+        // Perf audit P2-10: sendInput used to do viewModelScope.launch(sendDispatcher) { ... } on
+        // EVERY call - a Job, continuation and dispatch per mouse move/scroll/click, at touch rate.
+        // Fixed with the same pattern RemEx-ugvo already proved for the stylus path (sendPointerBatch
+        // -> pointerBatchQueue): enqueue onto an unbounded channel, one lazily-started consumer drains
+        // it on the SAME sendDispatcher. This pins that sendInput itself no longer launches directly.
+        val text = source("RemoteDesktopViewModel")
+
+        val sendInputStart = text.indexOf("private fun sendInput(")
+        val startInputSenderStart = text.indexOf("private fun startInputSenderIfNeeded(")
+        val nextFunctionStart = text.indexOf("fun requestKeyframe(")
+        assertTrue(
+                "expected to find sendInput, startInputSenderIfNeeded and requestKeyframe in order",
+                sendInputStart >= 0 && startInputSenderStart > sendInputStart && nextFunctionStart > startInputSenderStart
+        )
+
+        val sendInputOnly = text.substring(sendInputStart, startInputSenderStart)
+        val senderBody = text.substring(startInputSenderStart, nextFunctionStart)
+
+        assertTrue(
+                "sendInput should enqueue onto inputQueue rather than launching directly",
+                sendInputOnly.contains("inputQueue.trySend")
+        )
+        assertTrue(
+                "sendInput must not launch a coroutine directly per call anymore",
+                !sendInputOnly.contains("viewModelScope.launch(sendDispatcher)")
+        )
+
+        // The gate must still precede the enqueue - returning early must not even reach trySend,
+        // mirroring the batch path's existing "gate before startPointerSenderIfNeeded" contract.
+        val gateInSendInput = sendInputOnly.indexOf(gate)
+        val enqueueInSendInput = sendInputOnly.indexOf("inputQueue.trySend")
+        assertTrue("the gate should precede the enqueue in sendInput", gateInSendInput in 0 until enqueueInSendInput)
+
+        // Exactly one consumer launch, in startInputSenderIfNeeded itself - not one per sendInput
+        // call. A regression here (e.g. someone re-inlining the launch into sendInput) would reopen
+        // the exact per-event allocation this row exists to remove.
+        assertEquals(
+                "expected exactly one launch(sendDispatcher) consumer loop inside startInputSenderIfNeeded",
+                1,
+                Regex(Regex.escape("viewModelScope.launch(sendDispatcher)")).findAll(senderBody).count()
+        )
+    }
+
+    @Test
     fun `the remote mouse view model checks the capability too`() {
         val text = source("RemoteControlViewModel")
 

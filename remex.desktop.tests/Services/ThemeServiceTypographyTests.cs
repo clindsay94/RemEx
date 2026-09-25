@@ -109,8 +109,10 @@ public class ThemeServiceTypographyTests
     {
         var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "ThemeService.cs"));
 
+        // Perf audit P2-14: the direct app.Resources[key] = value assignment is now wrapped in
+        // SetOwnResourceIfChanged (skip-if-unchanged, still the same own key, same fallback font).
         source.Should().Contain(
-            @"app.Resources[""PageSubtitleFontFamily""] = SystemFontService.ResolveFontOrDefault(",
+            @"SetOwnResourceIfChanged(app.Resources, ""PageSubtitleFontFamily"", SystemFontService.ResolveFontOrDefault(",
             "PageSubtitleFontFamily must be written through the same own-key/guard mechanism as PageTitleFontFamily");
         source.Should().Contain(
             "settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily",

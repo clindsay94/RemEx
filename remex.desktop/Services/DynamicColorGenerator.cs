@@ -75,6 +75,26 @@ public static class DynamicColorGenerator
         Color BackgroundEnd,
         MaterialRoles Roles);
 
+    /// <summary>
+    /// Perf audit P2-3: SUCCESS and WARNING are constant seeds at a fixed variant (see the remark
+    /// below) — their scheme is a pure function of exactly (isDark, contrast), the same two inputs
+    /// for every seed a caller passes. <see cref="Generate"/> is called many times per single apply
+    /// (once per saved-palette tile, once per preset preview tile, once per scheme-variant strip
+    /// entry — see the 8 call sites across remex.desktop), and isDark/contrast are typically the
+    /// SAME live values across every one of those calls within one apply, so without this cache
+    /// every one of them re-ran <c>McuScheme.Build</c> twice for output that had already been
+    /// computed a moment earlier. <see cref="MaterialRoles"/> is immutable (init-only properties),
+    /// so sharing one cached instance across callers is safe. A ConcurrentDictionary rather than a
+    /// plain dictionary: this is a static, process-lifetime cache, and while every current caller
+    /// happens to run on the UI thread, nothing enforces that for a future one. NOT BOUNDED: the
+    /// contrast slider (PersonalizeColourTab.axaml) has no tick-snapping, so a drag can add one
+    /// entry per continuous value sampled, capped in practice at "a few hundred slider positions ×
+    /// 2 modes" of small immutable objects — never large enough to be worth an eviction policy.
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(bool IsDark, double Contrast), MaterialRoles> SuccessCache = new();
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(bool IsDark, double Contrast), MaterialRoles> WarningCache = new();
+
     public static M3Palette Generate(Color seed, string variant = "TonalSpot", bool isDark = true, double contrast = 0.0)
     {
         contrast = Math.Clamp(contrast, -1.0, 1.0);
@@ -86,8 +106,9 @@ public static class DynamicColorGenerator
         // but the VARIANT is always TonalSpot, matching Android (Theme.kt:109-118), regardless of the user's
         // chosen SchemeVariant (RemEx-gw3ad, gate decision 2026-09-07). Contrast now reaches these roles through
         // MCU's ContrastCurves, exactly as customColorsForScheme passes it on the phone.
-        var success = McuScheme.Build(SuccessSeed, SchemeVariant.TonalSpot, isDark, contrast);
-        var warning = McuScheme.Build(WarningSeed, SchemeVariant.TonalSpot, isDark, contrast);
+        var key = (isDark, contrast);
+        var success = SuccessCache.GetOrAdd(key, k => McuScheme.Build(SuccessSeed, SchemeVariant.TonalSpot, k.IsDark, k.Contrast));
+        var warning = WarningCache.GetOrAdd(key, k => McuScheme.Build(WarningSeed, SchemeVariant.TonalSpot, k.IsDark, k.Contrast));
 
         return new M3Palette(
             Primary:              ToColor(roles.Primary),

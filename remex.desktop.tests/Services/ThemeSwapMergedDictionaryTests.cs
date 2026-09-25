@@ -149,6 +149,44 @@ public class ThemeSwapMergedDictionaryTests
     }
 
     [Fact]
+    public void ReapplyingTheSameThemeIsANoOp()
+    {
+        // Perf audit P2-1: re-resolving to the SAME URI - a slider tick that doesn't touch AppTheme
+        // routes through ApplyBaseThemeInternal -> SwapBaseTheme every apply, not just an actual
+        // preset switch - used to remove and reinsert a brand-new ResourceInclude every single time.
+        var resources = AppResourcesShape(out _, out _, out _);
+
+        var first = ThemeService.SwapBaseTheme(
+            resources.MergedDictionaries, current: null, ThemeService.BaseThemeUri(AppTheme.CyberNOC));
+        var countAfterFirst = resources.MergedDictionaries.Count;
+
+        var second = ThemeService.SwapBaseTheme(
+            resources.MergedDictionaries, current: first, ThemeService.BaseThemeUri(AppTheme.CyberNOC));
+
+        second.Should().BeSameAs(first, "re-resolving to the same URI must return the SAME include, not a fresh one");
+        resources.MergedDictionaries.Count.Should().Be(countAfterFirst,
+            "a no-op re-apply must not touch the merged-dictionary list at all");
+        ThemeIncludes(resources).Should().ContainSingle().Which.Should().BeSameAs(first);
+    }
+
+    [Fact]
+    public void SwitchingToADifferentThemeStillSwapsNormally()
+    {
+        // Guards against the no-op check above accidentally short-circuiting a REAL switch.
+        var resources = AppResourcesShape(out _, out _, out _);
+
+        var first = ThemeService.SwapBaseTheme(
+            resources.MergedDictionaries, current: null, ThemeService.BaseThemeUri(AppTheme.CyberNOC));
+
+        var second = ThemeService.SwapBaseTheme(
+            resources.MergedDictionaries, current: first, ThemeService.BaseThemeUri(AppTheme.Monolith));
+
+        second.Should().NotBeSameAs(first);
+        ((ResourceInclude)second).Source.Should().Be(ThemeService.BaseThemeUri(AppTheme.Monolith));
+        ThemeIncludes(resources).Should().ContainSingle().Which.Should().BeSameAs(second);
+    }
+
+    [Fact]
     public void TheNewThemeGoesUnderTheOverrideDictionary_NotOverIt()
     {
         var resources = AppResourcesShape(out _, out _, out var overrides);

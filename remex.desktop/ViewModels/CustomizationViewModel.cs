@@ -905,8 +905,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // its own tail call (below, in ApplyAndSave) never runs for them. The two calls DO both
             // fire for an ApplyAndSave-driven change too (ApplyCustomization posts to the UI thread,
             // so this one lands a tick later there, or synchronously wherever PostToUiThread is
-            // wired to run inline) — a second cheap repaint, not a correctness issue, and removing
-            // either one reopens the gap the other exists to close (RemEx-8twk0.7 review LOW 2).
+            // wired to run inline) — a second call, not a correctness issue (perf audit P2-2 made
+            // RefreshSavedPaletteTiles itself a no-op when the live light/dark state hasn't actually
+            // changed since the last call, so this is no longer even a repaint in the common case),
+            // and removing either one reopens the gap the other exists to close (RemEx-8twk0.7 review LOW 2).
             RefreshSavedPaletteTiles();
         };
         _themeService.CustomizationApplied += _onCustomizationApplied;
@@ -1277,9 +1279,29 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         ApplyAndSave();
     }
 
+    /// <summary>
+    /// <see cref="_lastRefreshedSavedPaletteTilesIsLight"/> starts null so the first call always
+    /// runs the loop — every tile needs its initial paint, and there is no "unchanged" to compare
+    /// against yet.
+    /// </summary>
+    private bool? _lastRefreshedSavedPaletteTilesIsLight;
+
+    /// <summary>
+    /// Perf audit P2-2: <see cref="SavedPaletteTileViewModel.Refresh"/>'s entire output is a
+    /// function of exactly one input, the caller-computed "is the live palette light" value (a
+    /// tile's own recipe - seed, strategy, contrast - only changes via <see cref="AddSavedPalette"/>
+    /// or a rename, neither of which goes through here). <see cref="ApplyAndSave"/> calls this on
+    /// EVERY apply, including a slider tick that never touches light/dark mode, so without this
+    /// skip every saved-palette tile re-ran <c>DynamicColorGenerator.Generate</c> for no visible
+    /// change. Safe to skip even right after <see cref="AddSavedPalette"/> adds a tile: that method
+    /// already refreshes the new tile itself before this runs.
+    /// </summary>
     private void RefreshSavedPaletteTiles()
     {
         var liveIsLight = CurrentIsLightPalette();
+        if (_lastRefreshedSavedPaletteTilesIsLight == liveIsLight) return;
+
+        _lastRefreshedSavedPaletteTilesIsLight = liveIsLight;
         foreach (var tile in SavedPalettes) tile.Refresh(liveIsLight);
     }
 

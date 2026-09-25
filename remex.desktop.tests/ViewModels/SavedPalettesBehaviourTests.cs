@@ -117,6 +117,32 @@ public class SavedPalettesBehaviourTests : IDisposable
         afterColor.Should().NotBe(beforeColor, "the tile's recipe paints a different surface in light vs dark");
     }
 
+    /// <summary>
+    /// Perf audit P2-2: <c>RefreshSavedPaletteTiles</c> skips its whole loop when the live
+    /// light/dark state hasn't changed since the last call — a tile's brushes are a pure function
+    /// of that one bool. Proven by object identity, not colour equality: a colour COULD coincide
+    /// even if a fresh <c>SolidColorBrush</c> were built, so only "still the exact same brush
+    /// instance" proves <c>Refresh</c> never ran a second time.
+    /// </summary>
+    [Fact]
+    public void ChangingTheAccentWithoutFlippingModeDoesNotRepaintSavedTiles()
+    {
+        var vm = MakeVm();
+        vm.AccentColor = "#3366CC";
+        vm.NewPaletteName = "Stable";
+        vm.SaveCurrentPaletteCommand.Execute(null);
+        var tile = vm.SavedPalettes.Single();
+        var brushBefore = tile.SurfaceBrush;
+
+        // A seed change alone routes through ApplyAndSave -> RefreshSavedPaletteTiles the same as
+        // any other slider tick, without ever touching ThemeModeIndex.
+        vm.AccentColor = "#112233";
+
+        tile.SurfaceBrush.Should().BeSameAs(brushBefore,
+            "the tile's recipe doesn't depend on the live accent, and the live light/dark state " +
+            "didn't change either, so Refresh must not have run again");
+    }
+
     [Fact]
     public void SaveCurrentThenApplyReproducesTheSeedExactlyAfterTheSeedChanges()
     {

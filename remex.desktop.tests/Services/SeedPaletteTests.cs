@@ -334,6 +334,40 @@ public class SeedPaletteTests
     }
 
     [Fact]
+    public void SuccessAndWarningAreIdenticalAcrossDifferentSeedsAtTheSameIsDarkAndContrast()
+    {
+        // Perf audit P2-3: Success/Warning are cached by (isDark, contrast) since they never depend
+        // on the caller's seed or variant. Proves the seed/variant genuinely don't leak into the
+        // cached output - the sibling test below covers isDark/contrast actually discriminating.
+        var a = DynamicColorGenerator.Generate(Color.Parse("#3366CC"), "Vibrant", isDark: true, contrast: 0.4);
+        var b = DynamicColorGenerator.Generate(Color.Parse("#CC3366"), "Expressive", isDark: true, contrast: 0.4);
+
+        a.Success.Should().Be(b.Success);
+        a.OnSuccess.Should().Be(b.OnSuccess);
+        a.Warning.Should().Be(b.Warning);
+        a.OnWarning.Should().Be(b.OnWarning);
+        // But the seed-derived roles must still differ - otherwise this test would pass even if
+        // Generate accidentally ignored the seed entirely.
+        a.Primary.Should().NotBe(b.Primary);
+    }
+
+    [Fact]
+    public void SuccessAndWarningDifferByIsDarkAndByContrastDespiteTheCache()
+    {
+        // The cache is keyed on (isDark, contrast) - this proves the key actually discriminates,
+        // not just that two calls at the SAME key return the same answer (the test above).
+        var seed = Color.Parse("#3366CC");
+
+        var dark = DynamicColorGenerator.Generate(seed, "TonalSpot", isDark: true, contrast: 0.0);
+        var light = DynamicColorGenerator.Generate(seed, "TonalSpot", isDark: false, contrast: 0.0);
+        dark.Success.Should().NotBe(light.Success, "isDark must still be part of the cache key");
+
+        var lowContrast = DynamicColorGenerator.Generate(seed, "TonalSpot", isDark: true, contrast: 0.0);
+        var highContrast = DynamicColorGenerator.Generate(seed, "TonalSpot", isDark: true, contrast: 1.0);
+        lowContrast.Success.Should().NotBe(highContrast.Success, "contrast must still be part of the cache key");
+    }
+
+    [Fact]
     public void TheSuccessSeedIsStillByteIdenticalToAndroids()
     {
         // Two platforms, one idea of "success". They cannot share a constant — different languages,

@@ -242,6 +242,18 @@ public sealed class FileTransferHandler(
             if (string.IsNullOrWhiteSpace(start.RemoteRootId))
                 throw new UnauthorizedAccessException("A shared root is required for file transfer operations.");
 
+            // Perf audit P2-21, review round 1 MEDIUM: this must run BEFORE the new stream is
+            // opened below, not after. The real FileTransferService opens with FileShare.None
+            // (FileTransferService.cs:239), so opening a SECOND stream to the same path while the
+            // first is still held would fail with a sharing violation before ever reaching a
+            // cleanup step placed after it - and worse, if sharing ever allowed the second open to
+            // succeed, cleaning up the OLD entry afterward by path (deleteFile: true) would delete
+            // the file the NEW stream just opened, out from under it.
+            if (_activeTransfers.ContainsKey(start.TransferId))
+            {
+                await CleanupTransferAsync(start.TransferId, deleteFile: true);
+            }
+
             var remoteRelativePath = start.RemoteRelativePath ?? string.Empty;
             Stream stream;
             if (start.Direction == "upload")
@@ -277,6 +289,7 @@ public sealed class FileTransferHandler(
                 FileStream = stream,
                 Hasher = SHA256.Create()
             };
+
             _activeTransfers[start.TransferId] = state;
 
             if (start.Direction == "download")
@@ -1140,7 +1153,33 @@ public sealed class FileTransferHandler(
     private async Task CleanupTransferAsync(string transferId, bool deleteFile)
     {
         if (!_activeTransfers.TryRemove(transferId, out var state)) return;
+        await DisposeTransferStateAsync(state, deleteFile);
+    }
 
+    /// <summary>
+    /// Perf audit P2-21, review round 1 MEDIUM: a plain <c>CleanupTransferAsync(transferId, ...)</c>
+    /// removes and disposes WHATEVER is currently in the map under that id - which, after the
+    /// dispose-and-replace fix for a duplicate <c>file_transfer_start</c>, might no longer be the
+    /// entry the CALLER thinks it is. A duplicate download races its own two <see cref="StreamDownloadAsync"/>
+    /// background tasks: the first one's stream gets disposed out from under it mid-read, it fails
+    /// and its own <c>finally</c> then calls this - and a plain id-keyed cleanup would remove and
+    /// dispose the SECOND (genuinely still-active) attempt's state instead of a no-op, killing both
+    /// downloads through one duplicate. <see cref="ConcurrentDictionary{TKey,TValue}.TryRemove(KeyValuePair{TKey,TValue})"/>
+    /// only removes when both the key AND the value still match - <see cref="FileTransferState"/> has
+    /// no <c>Equals</c> override, so this is reference equality: "remove only if this is still MY
+    /// state", which is exactly the guarantee a caller holding its own <paramref name="expectedState"/>
+    /// needs.
+    /// </summary>
+    private async Task CleanupTransferAsync(FileTransferState expectedState, bool deleteFile)
+    {
+        var removed = _activeTransfers.TryRemove(
+            new KeyValuePair<string, FileTransferState>(expectedState.TransferId, expectedState));
+        if (!removed) return;
+        await DisposeTransferStateAsync(expectedState, deleteFile);
+    }
+
+    private async Task DisposeTransferStateAsync(FileTransferState state, bool deleteFile)
+    {
         try { await state.FileStream.DisposeAsync(); } catch { /* best-effort */ }
         state.Hasher.Dispose();
 
@@ -1236,7 +1275,7 @@ public sealed class FileTransferHandler(
         }
         finally
         {
-            await CleanupTransferAsync(state.TransferId, deleteFile: false);
+            await CleanupTransferAsync(state, deleteFile: false);
         }
     }
 }

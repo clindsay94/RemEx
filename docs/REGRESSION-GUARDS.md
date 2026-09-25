@@ -677,7 +677,7 @@ satisfy the same pairing.
 
 ### Theme switch removes only the tracked base-theme dictionary, never the whole `Themes/` folder
 
-`remex.desktop/Services/ThemeService.cs` — `ThemeDictionaryPrefix` (:643), `BaseThemeSources` (:656), `SwapBaseTheme` (:704) — RemEx-gcqw5.
+`remex.desktop/Services/ThemeService.cs` — `ThemeDictionaryPrefix` (:861), `BaseThemeSources` (:874), `SwapBaseTheme` (:922) — RemEx-gcqw5.
 
 A theme switch may remove exactly the base-theme file it is replacing (matched against the literal set
 of base-theme URIs), never anything else living under `Themes/` — that folder also holds

@@ -789,30 +789,39 @@ public class ThemeService : IDisposable
         // Guarded so a malformed/unresolvable persisted or system font string can never crash.
         if (Application.Current is { } app)
         {
+            // Perf audit P2-14: these are OWN keys on Application.Resources (see the remark just
+            // above for why they can't move into the batched override dictionary), so each
+            // unconditional assignment fired its OWN ResourcesChanged
+            // notification, on every apply, even when the value was identical to what was already
+            // there — a colour/opacity/radius-only slider tick still rewrote every font key and
+            // UiScale. SetOwnResourceIfChanged skips the write (and its notification) when the
+            // resolved value already equals what's in place.
+
             // Resolve each font through a guard that force-loads the glyph typeface and falls back to
             // the App.axaml default if it can't be materialized. A bad avares URI or a font the
             // platform can't load otherwise throws at RENDER time (outside any try/catch here), which
             // freezes the UI thread — so validation must happen now, before the resource is assigned.
-            app.Resources["PageTitleFontFamily"] = SystemFontService.ResolveFontOrDefault(
-                settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron");
+            SetOwnResourceIfChanged(app.Resources, "PageTitleFontFamily", SystemFontService.ResolveFontOrDefault(
+                settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron"));
 
             // An unset subtitle font follows the title font (RemEx-n6csl): the field is null in every
             // profile written before it existed, and page-subtitle used the title font until then.
-            app.Resources["PageSubtitleFontFamily"] = SystemFontService.ResolveFontOrDefault(
-                settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron");
+            SetOwnResourceIfChanged(app.Resources, "PageSubtitleFontFamily", SystemFontService.ResolveFontOrDefault(
+                settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron"));
 
-            app.Resources["BodyFontFamily"] = SystemFontService.ResolveFontOrDefault(
-                settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter");
+            SetOwnResourceIfChanged(app.Resources, "BodyFontFamily", SystemFontService.ResolveFontOrDefault(
+                settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter"));
 
             // MIRRORED INTO MATERIAL'S KEY (RemEx-prkot): MaterialTheme sets FontFamily on
             // Window AND on popup roots through MaterialDesignFonts, so the font picker has to
             // land there too or every tooltip, flyout and context menu stays on the previous
             // body font while the windows change — the popup half of the audit's §3 trap.
-            app.Resources["MaterialDesignFonts"] = app.Resources["BodyFontFamily"]!;
+            SetOwnResourceIfChanged(app.Resources, "MaterialDesignFonts", app.Resources["BodyFontFamily"]!);
 
             // Overall UI scale — clamped to a safe, legible range so the shell can't be shrunk into
             // illegibility or blown up past the window. Consumed by the shell's layout transform.
-            app.Resources["UiScale"] = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
+            SetOwnResourceIfChanged(app.Resources, "UiScale",
+                settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3));
         }
 
         // Personalize → Text (RemEx-jt6w5): sizes, weights, the legibility halo and the sensor-title
@@ -924,6 +933,23 @@ public class ThemeService : IDisposable
         IResourceProvider? current,
         Uri uri)
     {
+        // Perf audit P2-1: every apply used to remove-and-reinsert the base theme even when the
+        // resolved URI hadn't changed (the same preset re-applied, or a settings change that
+        // doesn't touch AppTheme at all - a slider tick still routes through here). That churns a
+        // ResourceInclude for no reason - per the remark above, the four preset files are currently
+        // byte-for-byte equivalent stubs, so the overwhelming common case swaps in an identical
+        // dictionary. Comparing against `current`'s OWN Source - not `uri` in isolation - matters:
+        // `current` is null on the very first call (App.axaml's own base theme, not one this service
+        // inserted), so that call still swaps. `dictionaries.Contains(current)` guards the skip
+        // itself: if `current` were ever dropped from the list by something other than this method,
+        // or a duplicate base theme appeared, a same-URI apply must still run the sweep below rather
+        // than leave that state in place for good - the self-healing property the sweep exists for.
+        if (current is ResourceInclude { Source: { } currentSource } && currentSource == uri
+            && dictionaries.Contains(current))
+        {
+            return current;
+        }
+
         for (var i = dictionaries.Count - 1; i >= 0; i--)
         {
             if (ReferenceEquals(dictionaries[i], current) || IsBaseTheme(dictionaries[i]))
@@ -947,6 +973,29 @@ public class ThemeService : IDisposable
     public void SetResourceOverrideInternal(string key, object value)
     {
         _overrideResources[key] = value;
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> to <paramref name="resources"/>'s OWN key only when it
+    /// differs from what's already there, skipping the write (and the <c>ResourcesChanged</c> it
+    /// would fire) otherwise. Perf audit P2-14: own keys (font family/UiScale) can't be batched
+    /// into <see cref="_overrideResources"/> the way the ~56 palette resources above are — see the
+    /// remark at <see cref="ApplyCustomizationCore"/>'s font-writing block for why a dictionary's
+    /// own keys have to be set directly — so this is the next-best thing: don't fire at all when
+    /// the apply didn't actually change this particular value. Takes the dictionary itself (not
+    /// <c>Application</c>) so it can be exercised directly against a plain <see cref="ResourceDictionary"/>
+    /// in a test — <c>ApplyCustomizationCore</c>'s own font-writing block never runs under test at
+    /// all, since it's guarded on <c>Application.Current</c>, which is null with no Avalonia.Headless
+    /// reference in this assembly.
+    /// </summary>
+    internal static void SetOwnResourceIfChanged(IResourceDictionary resources, string key, object value)
+    {
+        if (resources.TryGetValue(key, out var existing) && Equals(existing, value))
+        {
+            return;
+        }
+
+        resources[key] = value;
     }
 
     private static Color ToColor(uint argb) => Color.FromUInt32(argb);

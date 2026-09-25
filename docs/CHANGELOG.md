@@ -46,6 +46,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   `telemetry_resume`, scoped to the sending connection. Additive, so no `protocolVersion` bump; an
   older PC ignores them and keeps streaming. (perf audit P0-5)
 
+- The desktop launcher remembers when a shortcut's icon has already been re-extracted and is still
+  too small for the tile, instead of retrying the same GDI+/shell extraction on every single launch
+  forever. Protocol: one new field on the shared launcher-entry payload, `iconUpgradeUnfixable`.
+  Additive, so no `protocolVersion` bump; PC-only, since icon re-extraction is a Windows-only
+  concept and the phone's own launcher-entry model never sends entries back. (perf audit P2-18)
+
 - A round of idle/background battery fixes across both apps: the phone's Task Manager, Remote
   Desktop stream, secondary file/catalog sockets, file-transfer queue drain, and reconnect heartbeat
   now pause when there's nothing to show or nowhere to send, instead of polling on a fixed timer
