@@ -32,6 +32,39 @@ internal static class MicaBackdrop
     /// </summary>
     public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621);
 
+    /// <summary>What an apply in Mica has to ask DWM for, given what last landed.</summary>
+    internal enum Request
+    {
+        /// <summary>The backdrop already landed with this light/dark answer: no DWM call.</summary>
+        None,
+
+        /// <summary>First request since Mica was selected (or none has landed yet).</summary>
+        Apply,
+
+        /// <summary>
+        /// The light/dark answer flipped while Mica stayed selected: clear the backdrop, then
+        /// request it again (live-check B4).
+        /// </summary>
+        Reapply,
+    }
+
+    /// <summary>
+    /// Decides the DWM work for one apply. <paramref name="appliedDark"/> is the light/dark answer
+    /// the backdrop last landed with, or null when it has not landed since Mica was selected.
+    /// </summary>
+    /// <remarks>
+    /// A THEME FLIP IS A CLEAR PLUS A FRESH REQUEST, NOT A SECOND IDENTICAL REQUEST (live-check B4).
+    /// After perf P3-68 made the DWM call conditional, a Windows dark→light→dark flip issued exactly
+    /// one <see cref="TryApply"/> per flip, writing <c>DWMWA_SYSTEMBACKDROP_TYPE = MAINWINDOW</c> over
+    /// an attribute that already held MAINWINDOW, and Mica did not come back. Mica→Acrylic→Mica, which
+    /// did repaint, goes through <see cref="Clear"/> first — a real AUTO→MAINWINDOW transition. A
+    /// flip now takes that same path. Unchanged state still costs nothing, which is what P3-68 is for.
+    /// </remarks>
+    internal static Request Plan(bool? appliedDark, bool dark) =>
+        appliedDark is null ? Request.Apply
+        : appliedDark.Value == dark ? Request.None
+        : Request.Reapply;
+
     /// <summary>
     /// Sets the immersive-dark-mode flag (so the caption/frame matches <paramref name="dark"/>),
     /// then requests <c>DWMSBT_MAINWINDOW</c>. Returns true only when the backdrop call itself

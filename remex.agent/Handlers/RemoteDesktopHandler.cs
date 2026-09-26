@@ -1155,7 +1155,22 @@ public sealed class RemoteDesktopHandler : IDisposable, IAsyncDisposable
                         cursorHandle != lastCursorHandle;
                     if (handleChanged || slowTick)
                     {
+                        var serialBefore = currentShape?.ShapeSerial ?? 0;
                         currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
+
+                        // Live-check D2 diagnostic: on one display the streamed shape sometimes does not
+                        // follow an I-beam/hand/inverted change. hCursor moved but no new shape was sent —
+                        // log where the shape came from and what the DXGI refresh did. Once per handle
+                        // change at most, and Debug only, so it costs nothing unless someone is looking.
+                        if (handleChanged && (currentShape?.ShapeSerial ?? 0) == serialBefore &&
+                            _logger.IsEnabled(LogLevel.Debug) &&
+                            _screenCapture is WindowsScreenCaptureService routedCapture)
+                        {
+                            _logger.LogDebug(
+                                "Cursor handle changed 0x{Old:X} -> 0x{New:X} but no new shape was sent ({Routing}).",
+                                (long)lastCursorHandle, (long)cursorHandle, routedCapture.DescribeCursorShapeRouting());
+                        }
+
                         lastCursorHandle = cursorHandle;
                     }
                     activity = handleChanged;

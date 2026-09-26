@@ -558,13 +558,28 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     {
         snapshot = null;
 
+        // The shape SOURCE differs per display: DXGI duplication is bound to one output (normally the
+        // primary), so the cursor on that display is read from DXGI pointer-shape updates while every
+        // other display renders hCursor through GDI. Recorded for the live-check D2 diagnostic below.
         if (CanUseDxgiForCurrentTarget() && _dxgi.TryCaptureCurrentCursorShape(out snapshot, forceRefresh) && snapshot is not null)
         {
+            _lastCursorShapeSource = "dxgi";
             return true;
         }
 
+        _lastCursorShapeSource = "gdi";
         return WindowsCursorShapeCapture.TryCaptureCurrentShape(out snapshot) && snapshot is not null;
     }
+
+    private volatile string _lastCursorShapeSource = "none";
+
+    /// <summary>
+    /// Diagnostic only (live-check D2): one line naming where the last cursor shape came from and why.
+    /// Built only when the caller is about to log it at Debug, so the hot path pays nothing.
+    /// </summary>
+    internal string DescribeCursorShapeRouting() =>
+        $"source={_lastCursorShapeSource}, frameBackend={BackendName}, activeMonitor={ActiveMonitorDeviceName() ?? "<none>"}, " +
+        $"dxgiOutput={_dxgi.OutputDeviceName ?? "<none>"}, dxgiAvailable={_dxgi.IsAvailable}, dxgiRefresh={_dxgi.LastCursorRefreshOutcome}";
 
     public void Dispose()
     {

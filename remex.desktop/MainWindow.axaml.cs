@@ -199,8 +199,15 @@ public partial class MainWindow : Window
                 Opacity = 1.0;
 
                 var dark = ActualThemeVariant == ThemeVariant.Dark;
-                if (_micaAppliedDark != dark)
+                var micaRequest = MicaBackdrop.Plan(_micaAppliedDark, dark);
+                if (micaRequest != MicaBackdrop.Request.None)
                 {
+                    // A light/dark flip clears first, so DWM sees a real AUTO→MAINWINDOW transition
+                    // exactly like Mica→Acrylic→Mica does. Re-requesting MAINWINDOW over itself left
+                    // the window without Mica after a Windows dark→light→dark flip (live-check B4).
+                    if (micaRequest == MicaBackdrop.Request.Reapply)
+                        MicaBackdrop.Clear(this);
+
                     if (MicaBackdrop.TryApply(this, dark))
                     {
                         _micaAppliedDark = dark;

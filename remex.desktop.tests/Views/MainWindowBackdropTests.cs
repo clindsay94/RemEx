@@ -54,8 +54,25 @@ public class MainWindowBackdropTests
         hintAssignments.Should().OnlyContain(m => m.Groups["guard"].Success,
             "an unguarded hint assignment re-requests the backdrop on every apply");
 
-        source.Should().Contain("if (_micaAppliedDark != dark)",
+        source.Should().Contain("MicaBackdrop.Plan(_micaAppliedDark, dark)",
             "the Mica DWM call must only repeat when the light/dark answer changed or it has not landed yet");
+    }
+
+    /// <summary>
+    /// Live-check B4: a theme-variant change in Mica must clear before re-requesting, the same
+    /// AUTO→MAINWINDOW transition Mica→Acrylic→Mica goes through, or Mica does not come back.
+    /// </summary>
+    [Fact]
+    public void AThemeVariantChange_ClearsThenReappliesMica()
+    {
+        var source = Source();
+        var reapply = source.IndexOf("micaRequest == MicaBackdrop.Request.Reapply", StringComparison.Ordinal);
+        reapply.Should().BeGreaterThan(-1, "the Mica branch must handle a light/dark flip explicitly");
+
+        var clear = source.IndexOf("MicaBackdrop.Clear(this)", reapply, StringComparison.Ordinal);
+        var apply = source.IndexOf("MicaBackdrop.TryApply(this, dark)", reapply, StringComparison.Ordinal);
+        clear.Should().BeGreaterThan(reapply, "a flip must clear the DWM backdrop first");
+        apply.Should().BeGreaterThan(clear, "and only then request MAINWINDOW again");
     }
 
     [Fact]

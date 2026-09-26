@@ -992,6 +992,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         // double AcquireNextFrame on the same duplication output. (RemEx-aae)
         if (!IsAvailable || !_lock.Wait(0))
         {
+            LastCursorRefreshOutcome = IsAvailable ? "busy-cached" : "unavailable-cached";
             snapshot = Volatile.Read(ref _lastPointerShape);
             return snapshot is not null;
         }
@@ -1022,10 +1023,20 @@ internal sealed class DxgiDesktopCapture : IDisposable
         return hr;
     }
 
+    /// <summary>
+    /// Diagnostic only (live-check D2): what the last forced cursor-shape refresh actually did. Read by
+    /// <c>RemoteDesktopHandler</c>'s Debug log when an hCursor change did not produce a new shape, so a
+    /// log from the affected display says whether DXGI timed out, had no shape in the frame, lost
+    /// access, or was skipped. Written under <c>_lock</c> or on the no-lock early-out; a torn read of a
+    /// string reference cannot happen, and a slightly stale value is harmless in a log line.
+    /// </summary>
+    internal string LastCursorRefreshOutcome { get; private set; } = "none";
+
     private void TryRefreshPointerShapeSnapshot()
     {
         if (!IsAvailable)
         {
+            LastCursorRefreshOutcome = "unavailable";
             return;
         }
 
@@ -1033,12 +1044,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
         var hr = AcquireNextFrame(0, out var frameInfo, out dxgiResource);
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
         {
+            LastCursorRefreshOutcome = "timeout";
             _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
             return;
         }
 
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
         {
+            LastCursorRefreshOutcome = $"lost-0x{hr:X8}";
             _logger.LogInformation("DXGI pointer-shape refresh lost access (hr=0x{Hr:X8}) — reinitializing.", hr);
             TryReinitializeDuplication();
             return;
@@ -1046,6 +1059,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         if (hr != S_OK)
         {
+            LastCursorRefreshOutcome = $"error-0x{hr:X8}";
             _logger.LogDebug("DXGI pointer-shape refresh AcquireNextFrame hr=0x{Hr:X8}", hr);
             return;
         }
@@ -1054,7 +1068,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         try
         {
+            var before = Volatile.Read(ref _lastPointerShape);
             UpdatePointerShapeFromFrame(frameInfo);
+            LastCursorRefreshOutcome = frameInfo.PointerShapeBufferSize == 0
+                ? "frame-without-shape"
+                : ReferenceEquals(before, Volatile.Read(ref _lastPointerShape)) ? "shape-decode-failed" : "new-shape";
         }
         finally
         {

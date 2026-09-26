@@ -63,6 +63,34 @@ public class MicaBackdropTests
             "rather than pinning it to a hard NONE");
     }
 
+    /// <summary>
+    /// Live-check B4: after perf P3-68 a Windows dark→light→dark flip re-requested MAINWINDOW over
+    /// itself and Mica never came back. A theme-variant change must re-apply (clear, then request),
+    /// while an unchanged variant must still cost nothing.
+    /// </summary>
+    [Fact]
+    public void Plan_ThemeVariantChange_ReappliesMica()
+    {
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: true, dark: false)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.Reapply, "dark→light must re-apply Mica");
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: false, dark: true)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.Reapply, "light→dark must re-apply Mica");
+    }
+
+    [Fact]
+    public void Plan_FirstRequestApplies_UnchangedVariantDoesNothing()
+    {
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: null, dark: true)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.Apply);
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: null, dark: false)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.Apply);
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: true, dark: true)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.None,
+                "a slider settle with the variant unchanged must not repeat the DWM calls (P3-68)");
+        Remex.Desktop.Services.MicaBackdrop.Plan(appliedDark: false, dark: false)
+            .Should().Be(Remex.Desktop.Services.MicaBackdrop.Request.None);
+    }
+
     private static string Source() =>
         File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "MicaBackdrop.cs"));
 

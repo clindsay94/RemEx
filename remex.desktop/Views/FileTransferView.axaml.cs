@@ -14,6 +14,14 @@ public partial class FileTransferView : UserControl
         RemoteFileList.SelectionChanged += OnRemoteFileListSelectionChanged;
         DataContextChanged += (_, _) => ConfigureViewModel();
 
+        // Double-click opens a folder, in both the details list and the icon grid (live-check C5).
+        // handledEventsToo is load-bearing: ListBoxItem marks every mouse press Handled when it
+        // updates the selection, so a PointerPressed/ClickCount handler on this UserControl never
+        // saw a press on a row and folders could not be opened. DoubleTapped is raised by Gestures
+        // from the press's RouteFinished, independent of Handled, and reaches the list itself.
+        RemoteFileList.AddHandler(DoubleTappedEvent, OnRemoteEntryDoubleTapped, handledEventsToo: true);
+        RemoteIconGrid.AddHandler(DoubleTappedEvent, OnRemoteEntryDoubleTapped, handledEventsToo: true);
+
         // Accept files dragged from the OS file manager and enqueue them as uploads (plan §WP10).
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
@@ -26,17 +34,16 @@ public partial class FileTransferView : UserControl
         vm.SetSelectedEntries(selected);
     }
 
-    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    private void OnRemoteEntryDoubleTapped(object? sender, TappedEventArgs e)
     {
-        base.OnPointerPressed(e);
-        if (e.ClickCount != 2) return;
         if (DataContext is not FileTransferViewModel vm) return;
 
-        // Navigate into directories on double-click for the remote browser.
-        if (e.Source is Control { DataContext: FileEntry entry })
+        // Navigate into directories on double-click for the remote browser. NavigateRemoteEntry
+        // ignores files, so a double-click on one is a no-op rather than a failed browse.
+        if (e.Source is Control { DataContext: FileEntry entry } && vm.RemoteEntries.Contains(entry))
         {
-            if (vm.RemoteEntries.Contains(entry))
-                vm.NavigateRemoteEntryCommand.Execute(entry);
+            vm.NavigateRemoteEntryCommand.Execute(entry);
+            e.Handled = true;
         }
     }
 
