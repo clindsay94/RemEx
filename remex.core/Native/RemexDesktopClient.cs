@@ -951,6 +951,19 @@ public sealed class RemexDesktopClient : IDisposable
             // DesktopStop that is the only route to DisconnectAsync. (RemEx-krvz)
             FailPendingWindowRequests();
             ArrayPool<byte>.Shared.Return(buffer);
+
+            // Raised here, not only from DisconnectAsync (RemEx-8sf8m): SendInputAsync and
+            // SendPointerBatchAsync recover a mid-session socket drop by calling StartStreamAsync
+            // directly once they observe _isStreaming false, bypassing every explicit Reset() call
+            // site in AndroidNativeExports (DesktopStart / DesktopConfig / StopDesktopStream). Without
+            // a signal here, the recovered session inherited the old session's FrameDropKeyframeGate
+            // state — primed-or-not and any pending debt — so a stale debt from before the drop could
+            // spend the recovered session's one 5s keyframe allowance on a request unrelated to it,
+            // and the gate's hold-until-first-IDR rule would not re-apply to the new session. This
+            // fires on every loop exit, including the explicit-stop path (DisconnectAsync also invokes
+            // it below), which only means the subscriber's Reset() runs twice — harmless, since
+            // Reset() is idempotent.
+            Disconnected?.Invoke();
         }
     }
 

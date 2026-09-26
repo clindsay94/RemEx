@@ -299,6 +299,7 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.CursorStateReceived += OnNativeCursorStateReceived;
         RemexDesktopClient.Current.CursorBinaryReceived += OnNativeCursorBinaryReceived;
         RemexDesktopClient.Current.CursorShapeReceived += OnNativeCursorShapeReceived;
+        RemexDesktopClient.Current.Disconnected += OnNativeDesktopDisconnected;
 
         EnsureOutboundSendLoopStarted();
     }
@@ -1871,6 +1872,19 @@ public static class AndroidNativeExports
     private static void OnNativeDesktopError(string errorText)
     {
         NotifyJavaData(_onDesktopErrorMethodId, errorText);
+    }
+
+    /// <summary>
+    /// Forgets the frame-drop keyframe debt of whatever session just ended, on EVERY way a session
+    /// can end — not only the explicit stop already covered by <see cref="StopDesktopStreamAndResetAsync"/>
+    /// and the two message-driven restarts below. <see cref="RemexDesktopClient"/> raises
+    /// <c>Disconnected</c> from every exit of its receive loop, so this also covers the mid-session
+    /// socket-drop recovery path (<c>SendInputAsync</c> / <c>SendPointerBatchAsync</c> restarting the
+    /// stream directly) that used to leave the gate primed-or-not from the OLD session (RemEx-8sf8m).
+    /// </summary>
+    private static void OnNativeDesktopDisconnected()
+    {
+        _frameDropKeyframes.Reset();
     }
 
     private static void OnNativeConnectionFailed(string reason)
