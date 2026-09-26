@@ -898,6 +898,7 @@
     <string name="file_manager_folder_queued_truncated">Queued %1$d files, but the folder was too large to list in full — some files were left out.</string>
     <string name="file_manager_transfers_title">Transfers (%1$d)</string>
     <string name="file_manager_clear_finished">Clear finished</string>
+    <string name="file_manager_cancel_all">Cancel all</string>
     <string name="file_manager_pause">Pause</string>
     <string name="file_manager_resume">Resume</string>
     <string name="file_manager_transfer_queued">Queued</string>

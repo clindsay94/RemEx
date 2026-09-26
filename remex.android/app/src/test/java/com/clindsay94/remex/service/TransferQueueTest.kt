@@ -124,4 +124,51 @@ class TransferQueueTest {
         assertEquals(false, TransferResumeLogic.shouldRequestResume(0, 100))
         assertEquals(false, TransferResumeLogic.shouldRequestResume(100, 100))
     }
+
+    @Test
+    fun expectsDataFrames_falseForEmptyFilesAndCompletePartials() {
+        // Live-check C3: the host sends no frame at all for these, so waiting for one hangs the queue.
+        assertEquals(false, TransferResumeLogic.expectsDataFrames(0, 0))
+        assertEquals(false, TransferResumeLogic.expectsDataFrames(100, 100))
+        assertTrue(TransferResumeLogic.expectsDataFrames(0, 1))
+        assertTrue(TransferResumeLogic.expectsDataFrames(50, 100))
+    }
+
+    @Test
+    fun emptySha256Constant_isTheBase64HashOfZeroBytes() {
+        val empty = java.util.Base64.getEncoder()
+            .encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(ByteArray(0)))
+        assertEquals(empty, TransferResumeLogic.EMPTY_SHA256_B64)
+    }
+
+    @Test
+    fun downloadVerified_skippedFrameWait_requiresTheHostsCompleteToMatch() {
+        // Live-check C3 review: the empty-file shortcut trusts the listing size. A missing complete
+        // (the file grew, or the PC never confirmed) used to count as verified and commit an empty
+        // file as Done. Now only the host's hash of empty input confirms "nothing to receive".
+        val empty = TransferResumeLogic.EMPTY_SHA256_B64
+        assertEquals(false, TransferResumeLogic.downloadVerified(true, skippedFrameWait = true, expectedSha = null, actualSha = empty))
+        assertEquals(false, TransferResumeLogic.downloadVerified(true, skippedFrameWait = true, expectedSha = "grownFileHash=", actualSha = empty))
+        assertTrue(TransferResumeLogic.downloadVerified(true, skippedFrameWait = true, expectedSha = empty, actualSha = empty))
+    }
+
+    @Test
+    fun downloadVerified_streamedPath_isUnchanged() {
+        // A Final frame arrived: a late complete still passes (pre-existing behaviour), a mismatch fails.
+        assertTrue(TransferResumeLogic.downloadVerified(true, skippedFrameWait = false, expectedSha = null, actualSha = "h="))
+        assertTrue(TransferResumeLogic.downloadVerified(true, skippedFrameWait = false, expectedSha = "h=", actualSha = "h="))
+        assertEquals(false, TransferResumeLogic.downloadVerified(true, skippedFrameWait = false, expectedSha = "x=", actualSha = "h="))
+        assertEquals(false, TransferResumeLogic.downloadVerified(false, skippedFrameWait = false, expectedSha = "h=", actualSha = "h="))
+    }
+
+    @Test
+    fun upsertAll_appendsNewReplacesExistingAndPersistsOnce() {
+        fun t(id: String, name: String = "$id.bin") =
+            QueuedTransfer(id = id, mode = FileTransferModes.DOWNLOAD, fileName = name, size = 1, localUri = "content://x/$id")
+        val current = store().upsert(emptyList(), t("a"))
+        val updated = store().upsertAll(current, listOf(t("b"), t("a", "renamed.bin"), t("c")))
+        assertEquals(listOf("a", "b", "c"), updated.map { it.id })
+        assertEquals("renamed.bin", updated[0].fileName)
+        assertEquals(listOf("a", "b", "c"), store().load().map { it.id })
+    }
 }

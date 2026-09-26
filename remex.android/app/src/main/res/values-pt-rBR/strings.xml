@@ -725,6 +725,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d arquivos na fila, mas a pasta era grande demais para listar por completo — alguns arquivos ficaram de fora.</string>
     <string name="file_manager_transfers_title">Transferências (%1$d)</string>
     <string name="file_manager_clear_finished">Limpar concluídas</string>
+    <string name="file_manager_cancel_all">Cancelar todas</string>
     <string name="file_manager_pause">Pausar</string>
     <string name="file_manager_resume">Retomar</string>
     <string name="file_manager_transfer_queued">Na fila</string>

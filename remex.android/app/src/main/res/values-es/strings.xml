@@ -725,6 +725,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d archivos en cola, pero la carpeta era demasiado grande para listarla por completo: se omitieron algunos archivos.</string>
     <string name="file_manager_transfers_title">Transferencias (%1$d)</string>
     <string name="file_manager_clear_finished">Borrar finalizadas</string>
+    <string name="file_manager_cancel_all">Cancelar todas</string>
     <string name="file_manager_pause">Pausar</string>
     <string name="file_manager_resume">Reanudar</string>
     <string name="file_manager_transfer_queued">En cola</string>

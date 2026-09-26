@@ -16,6 +16,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,8 +35,10 @@ import org.json.JSONObject
  * Android-initiated transfer engine (plan WP5). Drives the v3 negotiation on the native `/ws` control
  * plane (`file_transfer_offer/ready/complete/result/control` via [RemexCoreClient]) and the bulk data
  * on the shared binary `/ws/files` channel ([FileTransferChannelClient]). Supports offset-based resume
- * (re-hash on resume) and ack-driven backpressure, exactly mirroring the PC host's
- * `TransferSessionManager`.
+ * of UPLOADS (re-hash on resume) and ack-driven backpressure, exactly mirroring the PC host's
+ * `TransferSessionManager`. Downloads do not resume: the offer carries only a `resumeRequested` flag,
+ * not the receiver's offset, so the host (the sender) always answers `startOffset = 0`. Download
+ * resume needs a protocol change; until then a paused download restarts from zero.
  *
  * Work is persisted to `filesDir/transfer_queue.json` via [TransferQueueStore] so it survives process
  * death; the [FileTransferJobService] (a User-Initiated Data Transfer job) keeps the process alive
@@ -61,8 +64,13 @@ object FileTransferEngine {
     // StateFlow and the file, with no self-healing re-read to recover it (unlike before this fix).
     // enqueueUpload/enqueueDownload/cancel/clearFinished run on caller (ViewModel/UI) threads;
     // updateState and updateProgress run on the engine's own Dispatchers.IO scope for every data
-    // frame - all six must serialize on the same lock around "read _queue.value, mutate, assign".
+    // frame - all of them must serialize on the same lock around "read _queue.value, mutate, assign".
+    // Every mutation now goes through [controller], which is handed this lock.
     private val queueLock = Any()
+
+    // Owns the queue state machine and the drain slot (live-check C1): cancel/pause stop the running
+    // transfer's job instead of leaving it waiting on frames the host stopped sending.
+    private lateinit var controller: TransferQueueController
 
     // Control-plane awaiters keyed by transferId (fulfilled from the fileTransferMessages collector).
     private val readyWaiters = ConcurrentHashMap<String, CompletableDeferred<ReadyInfo>>()
@@ -86,6 +94,13 @@ object FileTransferEngine {
         // dropping stale terminal entries at startup. See TransferQueueStore.pruneStale for why
         // this doesn't run on every terminal transition instead.
         synchronized(queueLock) { _queue.value = queueStore.pruneStale() }
+        controller = TransferQueueController(queueStore, _queue, queueLock)
+        // A previous process that died mid-transfer left its row Negotiating/Active/Verifying, which
+        // the drain never picks: park it as Paused so the user can resume it (or cancel it).
+        controller.recoverInterrupted()
+        // Live-check C6: delete partials and staged share copies that no row owns any more (a cancel
+        // or pruned row from an earlier run). Rows that can still resume keep theirs.
+        scope.launch { sweepLocalFiles() }
 
         scope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> onControlMessage(json) }
@@ -128,9 +143,19 @@ object FileTransferEngine {
                 destRelativePath = destRelativePath,
                 peerId = peerId,
             )
-        synchronized(queueLock) { _queue.value = queueStore.upsert(_queue.value, t) }
+        controller.enqueue(listOf(t))
         return t.id
     }
+
+    /** One download for [enqueueDownloads]: a peer file (root/relative path) to local [destUri]. */
+    data class DownloadRequest(
+        val destUri: String,
+        val fileName: String,
+        val size: Long,
+        val sourceRoot: String,
+        val sourceRelativePath: String?,
+        val peerId: String? = null,
+    )
 
     /** Enqueues a download of a peer file (identified by root/relative path) to local [destUri]. */
     fun enqueueDownload(
@@ -140,95 +165,110 @@ object FileTransferEngine {
         sourceRoot: String,
         sourceRelativePath: String?,
         peerId: String? = null,
-    ): String {
-        val t =
-            QueuedTransfer(
-                id = UUID.randomUUID().toString(),
-                mode = FileTransferModes.DOWNLOAD,
-                fileName = fileName,
-                size = size,
-                localUri = destUri,
-                destRoot = sourceRoot,
-                destRelativePath = sourceRelativePath,
-                peerId = peerId,
-            )
-        synchronized(queueLock) { _queue.value = queueStore.upsert(_queue.value, t) }
-        return t.id
+    ): String =
+        enqueueDownloads(listOf(DownloadRequest(destUri, fileName, size, sourceRoot, sourceRelativePath, peerId)))
+            .single()
+
+    /**
+     * Enqueues many downloads in one queue write and one queue emission (a folder download: one
+     * rewrite of the queue file and one recomposition per file was O(n^2), live-check C3).
+     */
+    fun enqueueDownloads(requests: List<DownloadRequest>): List<String> {
+        val transfers =
+            requests.map { r ->
+                QueuedTransfer(
+                    id = UUID.randomUUID().toString(),
+                    mode = FileTransferModes.DOWNLOAD,
+                    fileName = r.fileName,
+                    size = r.size,
+                    localUri = r.destUri,
+                    destRoot = r.sourceRoot,
+                    destRelativePath = r.sourceRelativePath,
+                    peerId = r.peerId,
+                )
+            }
+        controller.enqueue(transfers)
+        return transfers.map { it.id }
     }
 
+    /**
+     * Cancels a transfer: stops its run if it holds the drain slot (live-check C1 - it used to keep
+     * waiting for frames the host had stopped sending, blocking every later transfer), then deletes its
+     * partial or staged source and the empty download target once that run has unwound.
+     */
     fun cancel(transferId: String) {
         sendControl(transferId, FileTransferControlActions.CANCEL)
         FileTransferChannelClient.unregisterSink(transferId)
-        val t = _queue.value.firstOrNull { it.id == transferId }
-        if (t != null && t.state != TransferState.Done) {
-            // Query + deleteDocument is ContentResolver I/O; cancel() is often invoked straight from a
-            // UI thread (or from a coroutine that is itself mid-cancellation), so hop onto the engine's
-            // own long-lived scope rather than a `withContext` that would silently no-op the cleanup if
-            // the caller's scope is already cancelled.
-            scope.launch { discardEmptyDownloadTarget(t) }
+        val stopped = controller.cancel(transferId) ?: return
+        forgetRate(transferId)
+        cleanUpAfterStop(listOf(stopped))
+    }
+
+    /**
+     * Cancels every unfinished transfer (live-check C4). Only rows the host has already seen get a
+     * cancel message; a never-offered Queued row does not, and a folder can queue hundreds of them.
+     * A paused-then-resumed row is Queued too but the host knows it ([TransferQueueController.Stopped.hostKnows]).
+     */
+    fun cancelAll() {
+        val stopped = controller.cancelAll()
+        for (s in stopped) {
+            if (s.hostKnows) {
+                sendControl(s.transfer.id, FileTransferControlActions.CANCEL)
+                FileTransferChannelClient.unregisterSink(s.transfer.id)
+            }
+            forgetRate(s.transfer.id)
         }
-        updateState(transferId) { it.copy(state = TransferState.Cancelled) }
+        cleanUpAfterStop(stopped)
+    }
+
+    // Query + deleteDocument is ContentResolver I/O and cancel() is often invoked straight from a UI
+    // thread (or from a coroutine that is itself mid-cancellation), so hop onto the engine's own
+    // long-lived scope rather than a `withContext` that would silently no-op the cleanup if the
+    // caller's scope is already cancelled. The join comes first: the run may still be writing the
+    // partial, or reading the staged source, until it has unwound.
+    private fun cleanUpAfterStop(stopped: List<TransferQueueController.Stopped>) {
+        if (stopped.isEmpty()) return
+        scope.launch {
+            for (s in stopped) {
+                s.job?.join()
+                discardLocalFiles(s.transfer)
+                discardEmptyDownloadTarget(s.transfer)
+            }
+        }
     }
 
     /**
      * Pauses a transfer (plan WP7 queue control). A not-yet-started (Queued) item is held so the drain
-     * loop skips it; an already-Active item's Paused mark is best-effort — the current stream runs to
-     * its natural end (Done/Failed) since the WP5 streaming loops don't yet cooperatively yield, and
-     * [cancel] is the immediate stop. [resume] re-queues a paused (or previously failed) transfer,
-     * which then re-negotiates from its last durable offset via the existing resume machinery.
+     * loop skips it. A running one has its run stopped (live-check C1): the host cancels its sender on
+     * PAUSE, so the run would otherwise wait out the six-hour ceiling while holding the drain slot.
+     * [resume] re-queues the transfer. An UPLOAD keeps its source and re-negotiates from the host's
+     * durable offset. A DOWNLOAD restarts from zero: the host always serves a download from offset 0
+     * (the offer has no field for the receiver's offset; download resume needs a protocol change), so
+     * its partial is not kept: [runDownload] deletes it as the stopped run unwinds.
      */
     fun pause(transferId: String) {
         sendControl(transferId, FileTransferControlActions.PAUSE)
-
-        // NOT A GUARANTEE THAT NOTHING IS MEASURED ACROSS THE PAUSE, and the docstring above says
-        // why: an Active item's pause is best-effort and the current stream runs to its natural
-        // end, so the send loop's next frame recreates this estimator microseconds later. What
-        // makes the resume correct is the terminal-state cleanup plus the estimator's own
-        // negative-delta guard, which drops the average when a resumed transfer restarts its
-        // byte count. This call is the cheap, immediate half of that.
+        // A resumed transfer restarts its byte count; a live estimator would measure across the gap.
         forgetRate(transferId)
-
-        updateState(transferId) {
-            if (it.state == TransferState.Queued ||
-                it.state == TransferState.Negotiating ||
-                it.state == TransferState.Active
-            ) {
-                it.copy(state = TransferState.Paused)
-            } else it
-        }
+        controller.pause(transferId)
     }
 
     fun resume(transferId: String) {
         sendControl(transferId, FileTransferControlActions.RESUME)
-        updateState(transferId) {
-            if (it.state == TransferState.Paused || it.state == TransferState.Failed) {
-                it.copy(state = TransferState.Queued, error = null)
-            } else it
-        }
+        controller.resume(transferId)
     }
 
     fun clearFinished() {
-        synchronized(queueLock) { _queue.value = queueStore.pruneFinished(_queue.value) }
+        val removed = controller.clearFinished()
+        // A cleared Failed row still owned its partial (it could have been resumed); nothing does now.
+        if (removed.isNotEmpty()) scope.launch { removed.forEach { discardLocalFiles(it) } }
     }
 
     // ── Queue drain loop (FIFO, one active at a time) ─────────────────────────
 
+    // Perf audit P0-8 (suspend on the queue instead of polling) lives on in TransferQueueController.
     private suspend fun drainLoop() {
-        while (true) {
-            // Paused is a held state (WP7): only Queued items are auto-picked. resume() re-queues.
-            val next = _queue.value.firstOrNull { it.state == TransferState.Queued }
-            if (next == null) {
-                onQueueIdle?.invoke()
-                // Perf audit P0-8: suspend on the queue itself instead of polling every 750ms for the
-                // process lifetime once started - a permanent wake in a process the foreground service
-                // keeps alive. `first { }` resumes the instant a Queued item appears (a new enqueue,
-                // or resume() re-queuing a paused one), so this fires onQueueIdle once per busy-to-idle
-                // edge, same as before, just without the interim polling.
-                _queue.first { it.any { transfer -> transfer.state == TransferState.Queued } }
-                continue
-            }
-            runOne(next)
-        }
+        controller.drain(onIdle = { onQueueIdle?.invoke() }) { t -> runOne(t) }
     }
 
     // Leased for the whole transfer (perf audit P0-7): the binary channel's idle close must not fire
@@ -238,7 +278,7 @@ object FileTransferEngine {
 
     private suspend fun runOneLeased(t: QueuedTransfer) {
         try {
-            updateState(t.id) { it.copy(state = TransferState.Negotiating, error = null) }
+            // The controller already moved the row to Negotiating when it claimed the drain slot.
             if (!ensureChannel()) {
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = "Not connected.") }
                 if (t.mode == FileTransferModes.DOWNLOAD) discardEmptyDownloadTarget(t)
@@ -249,6 +289,11 @@ object FileTransferEngine {
                 FileTransferModes.DOWNLOAD -> runDownload(t)
                 else -> updateState(t.id) { it.copy(state = TransferState.Failed, error = "Unknown mode.") }
             }
+        } catch (e: CancellationException) {
+            // A user cancel or pause (or the process scope going away). Not a failure: the row already
+            // says Cancelled/Paused, and the binary channel is healthy - invalidating it here would
+            // tear down every other transfer's socket for nothing.
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Transfer ${t.id} failed", e)
             updateState(t.id) { it.copy(state = TransferState.Failed, error = e.message) }
@@ -352,6 +397,9 @@ object FileTransferEngine {
             val result = awaitResult(t.id)
             if (result != null && result.verified) {
                 updateState(t.id) { it.copy(state = TransferState.Done) }
+                // A Share-to-PC push reads from a private staged copy; it has landed, so drop it
+                // (live-check C6). A content:// source the user picked is left alone.
+                discardLocalFiles(t)
                 // Confirm the send (parity with runDownload's completion notification).
                 FileTransferNotificationManager.showTransferComplete(appContext, t.fileName, isDownload = false)
             } else {
@@ -372,7 +420,26 @@ object FileTransferEngine {
     }
 
     private suspend fun runDownload(t: QueuedTransfer) {
-        val partial = File(downloadDir(), safeStem(t.id) + ".part")
+        // Registered BEFORE the offer (live-check C3). For an empty file the host sends no data frame
+        // and announces file_transfer_complete straight away - before this side used to start
+        // listening, so the message was dropped and every empty file cost the full complete timeout.
+        completeWaiters[t.id] = CompletableDeferred()
+        try {
+            runDownloadStream(t)
+        } finally {
+            completeWaiters.remove(t.id)
+            // No download partial outlives its run, whatever ended it (success, failure, cancel,
+            // pause). The host always serves a download from offset 0 - the offer carries no receiver
+            // offset - so a kept partial could never be resumed from; it was deleted on the next run
+            // anyway, after sitting in filesDir. Deleted HERE, inside the run, because the drain does
+            // not start the next run (a quick resume of this row) until this one has unwound: a
+            // cleanup launched elsewhere could delete the partial the re-run is writing.
+            File(downloadDir(), TransferLocalFiles.partialFileName(t.id)).delete()
+        }
+    }
+
+    private suspend fun runDownloadStream(t: QueuedTransfer) {
+        val partial = File(downloadDir(), TransferLocalFiles.partialFileName(t.id))
         downloadDir().mkdirs()
         val existing = if (partial.exists()) partial.length() else 0L
         val resume = TransferResumeLogic.shouldRequestResume(existing, t.size)
@@ -456,6 +523,12 @@ object FileTransferEngine {
                 }
             }
         FileTransferChannelClient.registerSink(t.id, sink)
+        // Nothing left to receive (an empty file, or a partial that already holds every byte): the host
+        // sends no frame at all, so there is no Final frame to wait for (live-check C3).
+        // That skip trusts the listing size, so the host's complete must then confirm it: see
+        // TransferResumeLogic.downloadVerified.
+        val skippedFrameWait = !TransferResumeLogic.expectsDataFrames(startOffset, t.size)
+        if (skippedFrameWait) done.complete(true)
         try {
             // The PC sender's file_transfer_complete carries the authoritative full-file hash.
             val streamedOk = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { done.await() } ?: false
@@ -473,7 +546,7 @@ object FileTransferEngine {
             raf.close()
             val expectedSha = awaitComplete(t.id)
             val actualSha = Base64.encodeToString(digest.digest(), Base64.NO_WRAP)
-            val verified = streamedOk && (expectedSha == null || expectedSha == actualSha)
+            val verified = TransferResumeLogic.downloadVerified(streamedOk, skippedFrameWait, expectedSha, actualSha)
             if (verified && commitDownload(partial, t.localUri)) {
                 partial.delete()
                 sendResult(t.id, true, actualSha, null)
@@ -482,7 +555,10 @@ object FileTransferEngine {
                 FileTransferNotificationManager.showDownloadComplete(appContext, t.fileName, t.localUri)
             } else {
                 partial.delete()
-                val err = if (!streamedOk) "Transfer incomplete." else "SHA-256 mismatch."
+                // A skipped wait with no complete from the host is unconfirmed, not a hash mismatch.
+                val err =
+                    if (!streamedOk || (skippedFrameWait && expectedSha == null)) "Transfer incomplete."
+                    else "SHA-256 mismatch."
                 sendResult(t.id, false, actualSha, err)
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = err) }
                 discardEmptyDownloadTarget(t)
@@ -491,6 +567,9 @@ object FileTransferEngine {
             FileTransferChannelClient.unregisterSink(t.id)
             // Idempotent; here for the exception and cancellation paths, which skip the call above.
             withContext(NonCancellable) { writer.shutdown() }
+            // Same paths: a cancel or pause lands while the stream is waiting, and the open handle
+            // would otherwise leak. Closing twice is a no-op.
+            try { raf.close() } catch (e: Exception) {}
         }
     }
 
@@ -535,8 +614,13 @@ object FileTransferEngine {
         val waiter = CompletableDeferred<ReadyInfo>()
         readyWaiters[t.id] = waiter
         sendOffer(t, resumeRequested)
-        val ready = withTimeoutOrNull(NEGOTIATE_TIMEOUT_MS) { waiter.await() }
-        readyWaiters.remove(t.id)
+        // finally: a cancel or pause can now stop the run mid-wait (live-check C1).
+        val ready =
+            try {
+                withTimeoutOrNull(NEGOTIATE_TIMEOUT_MS) { waiter.await() }
+            } finally {
+                readyWaiters.remove(t.id)
+            }
         if (ready == null) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = "Peer did not respond.") }
             // No control reply within the window: the socket(s) to the host are very likely silently-dead
@@ -551,17 +635,21 @@ object FileTransferEngine {
     private suspend fun awaitResult(id: String): ResultInfo? {
         val waiter = CompletableDeferred<ResultInfo>()
         resultWaiters[id] = waiter
-        val r = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { waiter.await() }
-        resultWaiters.remove(id)
-        return r
+        try {
+            return withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { waiter.await() }
+        } finally {
+            resultWaiters.remove(id)
+        }
     }
 
+    /** Uses the waiter [runDownload] registered before its offer, so an early complete is not lost. */
     private suspend fun awaitComplete(id: String): String? {
-        val waiter = CompletableDeferred<String>()
-        completeWaiters[id] = waiter
-        val sha = withTimeoutOrNull(NEGOTIATE_TIMEOUT_MS) { waiter.await() }
-        completeWaiters.remove(id)
-        return sha
+        val waiter = completeWaiters.getOrPut(id) { CompletableDeferred() }
+        try {
+            return withTimeoutOrNull(NEGOTIATE_TIMEOUT_MS) { waiter.await() }
+        } finally {
+            completeWaiters.remove(id)
+        }
     }
 
     private fun onControlMessage(json: String) {
@@ -677,16 +765,32 @@ object FileTransferEngine {
         return FileTransferChannelClient.ensureConnected(appContext, host, port, clientId, spki)
     }
 
-    private fun downloadDir(): File = File(appContext.filesDir, "transfers/outgoing")
+    private fun downloadDir(): File = File(appContext.filesDir, TransferLocalFiles.DOWNLOAD_PARTIAL_DIR)
 
+    private fun shareStagingRoot(): File = File(appContext.filesDir, TransferLocalFiles.SHARE_STAGING_DIR)
+
+    /** Deletes [t]'s download partial or staged share copy (live-check C6). Never throws. */
+    private fun discardLocalFiles(t: QueuedTransfer) {
+        try {
+            TransferLocalFiles.discard(t, downloadDir(), shareStagingRoot())
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not delete local files of transfer ${t.id}", e)
+        }
+    }
+
+    private fun sweepLocalFiles() {
+        try {
+            val deleted =
+                TransferLocalFiles.sweep(downloadDir(), shareStagingRoot(), controller.snapshot(), System.currentTimeMillis())
+            if (deleted.isNotEmpty()) Log.i(TAG, "Swept ${deleted.size} orphaned transfer file(s).")
+        } catch (e: Exception) {
+            Log.w(TAG, "Transfer file sweep failed", e)
+        }
+    }
+
+    /** A state write from a transfer's own run; see [TransferQueueController.updateFromRun]. */
     private fun updateState(id: String, transform: (QueuedTransfer) -> QueuedTransfer) {
-        val updated =
-            synchronized(queueLock) {
-                val current = _queue.value.firstOrNull { it.id == id } ?: return
-                val next = transform(current)
-                _queue.value = queueStore.upsert(_queue.value, next)
-                next
-            }
+        val updated = controller.updateFromRun(id, transform) ?: return
 
         // RATE CLEANUP LIVES HERE RATHER THAN AT THE ELEVEN TERMINAL CALL SITES, because a
         // per-site version is a list that a future state transition silently drops off — and the
@@ -711,9 +815,7 @@ object FileTransferEngine {
         // so a wall clock would not produce a wrong speed, it would silently stop producing one.
         estimatorFor(id).update(bytes, SystemClock.elapsedRealtime())
 
-        synchronized(queueLock) {
-            _queue.value = _queue.value.map { if (it.id == id) it.copy(bytesTransferred = bytes) else it }
-        }
+        controller.progress(id, bytes)
     }
 
     // ── Throughput and time-remaining (RemEx-qmiv) ────────────────────────────
@@ -754,9 +856,6 @@ object FileTransferEngine {
     private fun forgetRate(transferId: String) {
         rateEstimators.remove(transferId)
     }
-
-    private fun safeStem(id: String): String =
-        buildString { for (c in id) append(if (c.isLetterOrDigit() || c == '-' || c == '_') c else '_') }
 
     private const val NEGOTIATE_TIMEOUT_MS = 30_000L
     private const val TRANSFER_TIMEOUT_MS = 6L * 60 * 60 * 1000 // 6h ceiling for a single transfer

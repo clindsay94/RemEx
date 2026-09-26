@@ -269,4 +269,31 @@ class FileManagerLogicTest {
     fun browseDeviceEnabled_isFalse_whenBrowsingIsNotOffered_andARequestIsPending() {
         assertFalse(FileManagerLogic.browseDeviceEnabled(canBrowseDevice = false, pending = true))
     }
+
+    // Live-check C2: an access-denied folder used to be committed to the path before the host
+    // answered, so the next folder was combined onto it and failed too, stacking.
+
+    @Test
+    fun committedBrowsePath_isNull_whenTheBrowseFailed_soThePathStaysPut() {
+        assertEquals(null, FileManagerLogic.committedBrowsePath("Documents and Settings", "Documents and Settings", failed = true))
+        assertEquals(null, FileManagerLogic.committedBrowsePath("Documents and Settings", null, failed = true))
+    }
+
+    @Test
+    fun committedBrowsePath_prefersTheHostsRelativePath_andFallsBackToTheRequest() {
+        assertEquals("Users/Connor", FileManagerLogic.committedBrowsePath("users/connor", "Users/Connor", failed = false))
+        assertEquals("Users", FileManagerLogic.committedBrowsePath("Users", null, failed = false))
+        assertEquals("/", FileManagerLogic.committedBrowsePath("Users", "", failed = false))
+    }
+
+    @Test
+    fun deniedFolderThenSibling_resolvesAgainstTheLastGoodFolder() {
+        // Walk: at "C:", tap a denied folder (fails), then tap "Users" - it must be C:/Users, not
+        // C:/Documents and Settings/Users.
+        var path = "C:"
+        val denied = FileManagerLogic.combinePath(path, "Documents and Settings")
+        FileManagerLogic.committedBrowsePath(denied, denied, failed = true)?.let { path = it }
+        val next = FileManagerLogic.combinePath(path, "Users")
+        assertEquals("C:/Users", next)
+    }
 }

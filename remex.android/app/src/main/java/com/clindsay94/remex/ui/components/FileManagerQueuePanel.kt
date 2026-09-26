@@ -53,8 +53,11 @@ import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
 
 /**
  * Persistent transfer-queue panel (plan WP7): one row per [QueuedTransfer] with live progress and
- * per-item pause / resume / cancel, plus a "Clear finished" action. Bound to [FileTransferEngine]'s
- * queue by the caller.
+ * per-item pause / resume / cancel, plus "Cancel all" and "Clear finished" actions. Bound to
+ * [FileTransferEngine]'s queue by the caller.
+ *
+ * "Cancel all" exists because a folder can queue hundreds of rows (live-check C4): per-row cancel
+ * does not scale, and "Clear finished" removes terminal rows - none of the ones you want to stop.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -63,6 +66,7 @@ fun FileManagerQueuePanel(
     onPause: (String) -> Unit,
     onResume: (String) -> Unit,
     onCancel: (String) -> Unit,
+    onCancelAll: () -> Unit,
     onClearFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -78,7 +82,7 @@ fun FileManagerQueuePanel(
             fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
         modifier = modifier,
     ) {
-        QueuePanelContent(lastNonEmpty, onPause, onResume, onCancel, onClearFinished)
+        QueuePanelContent(lastNonEmpty, onPause, onResume, onCancel, onCancelAll, onClearFinished)
     }
 }
 
@@ -88,11 +92,14 @@ private fun QueuePanelContent(
     onPause: (String) -> Unit,
     onResume: (String) -> Unit,
     onCancel: (String) -> Unit,
+    onCancelAll: () -> Unit,
     onClearFinished: () -> Unit,
 ) {
-    val hasFinished = transfers.any {
-        it.state == TransferState.Done || it.state == TransferState.Cancelled || it.state == TransferState.Failed
+    val isFinished = { t: QueuedTransfer ->
+        t.state == TransferState.Done || t.state == TransferState.Cancelled || t.state == TransferState.Failed
     }
+    val hasFinished = transfers.any(isFinished)
+    val hasUnfinished = transfers.any { !isFinished(it) }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp,
@@ -105,6 +112,11 @@ private fun QueuePanelContent(
                     style = MaterialTheme.typography.titleSmallEmphasized,
                     modifier = Modifier.weight(1f),
                 )
+                if (hasUnfinished) {
+                    TextButton(onClick = onCancelAll) {
+                        Text(stringResource(R.string.file_manager_cancel_all))
+                    }
+                }
                 if (hasFinished) {
                     TextButton(onClick = onClearFinished) {
                         Text(stringResource(R.string.file_manager_clear_finished))

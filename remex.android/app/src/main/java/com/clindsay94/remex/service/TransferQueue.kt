@@ -43,6 +43,12 @@ data class QueuedTransfer(
     val sha256: String? = null,
     val error: String? = null,
     val createdAtMs: Long = System.currentTimeMillis(),
+    /**
+     * True once this row has been offered to the host (the drain claimed it). Stays true across
+     * pause/resume: a paused-then-resumed row is Queued again while the host still holds it as
+     * Paused, so a cancel must still reach the host (live-check C4 review).
+     */
+    val hostKnows: Boolean = false,
 ) {
     fun toJson(): JSONObject =
         JSONObject().apply {
@@ -60,11 +66,15 @@ data class QueuedTransfer(
             if (sha256 != null) put("sha256", sha256)
             if (error != null) put("error", error)
             put("createdAtMs", createdAtMs)
+            put("hostKnows", hostKnows)
         }
 
     companion object {
-        fun fromJson(obj: JSONObject): QueuedTransfer =
-            QueuedTransfer(
+        fun fromJson(obj: JSONObject): QueuedTransfer {
+            val state =
+                runCatching { TransferState.valueOf(obj.optString("state")) }
+                    .getOrDefault(TransferState.Queued)
+            return QueuedTransfer(
                 id = obj.optString("id"),
                 mode = obj.optString("mode"),
                 fileName = obj.optString("fileName"),
@@ -74,14 +84,15 @@ data class QueuedTransfer(
                 destRelativePath = obj.optStringOrNull("destRelativePath"),
                 sourcePath = obj.optStringOrNull("sourcePath"),
                 peerId = obj.optStringOrNull("peerId"),
-                state =
-                    runCatching { TransferState.valueOf(obj.optString("state")) }
-                        .getOrDefault(TransferState.Queued),
+                state = state,
                 bytesTransferred = obj.optLong("bytesTransferred", 0L),
                 sha256 = obj.optStringOrNull("sha256"),
                 error = obj.optStringOrNull("error"),
                 createdAtMs = obj.optLong("createdAtMs", System.currentTimeMillis()),
+                // A row persisted before the flag existed: anything past Queued was offered.
+                hostKnows = obj.optBoolean("hostKnows", state != TransferState.Queued),
             )
+        }
     }
 }
 
@@ -142,6 +153,28 @@ class TransferQueueStore(private val dir: File) {
             val updated = current.toMutableList()
             val idx = updated.indexOfFirst { it.id == transfer.id }
             if (idx >= 0) updated[idx] = transfer else updated.add(transfer)
+            save(updated)
+            updated
+        }
+
+    /**
+     * [upsert] for many entries with ONE file write. A folder download enqueues hundreds of files;
+     * one rewrite of the whole queue per file was O(n^2) bytes (live-check C3).
+     */
+    fun upsertAll(current: List<QueuedTransfer>, transfers: List<QueuedTransfer>): List<QueuedTransfer> =
+        synchronized(lock) {
+            val updated = current.toMutableList()
+            val index = HashMap<String, Int>(updated.size * 2)
+            updated.forEachIndexed { i, t -> index[t.id] = i }
+            for (t in transfers) {
+                val idx = index[t.id]
+                if (idx != null) {
+                    updated[idx] = t
+                } else {
+                    index[t.id] = updated.size
+                    updated.add(t)
+                }
+            }
             save(updated)
             updated
         }
@@ -226,4 +259,35 @@ object TransferResumeLogic {
      */
     fun shouldRequestResume(partialLength: Long, expectedSize: Long): Boolean =
         partialLength in 1 until expectedSize
+
+    /**
+     * Whether a download starting at [startOffset] will receive any data frame at all. The host's
+     * sender only frames bytes it reads, so an empty file (or a partial that already holds every
+     * byte) gets NO frame - not even a Final one - and goes straight to `file_transfer_complete`.
+     * Waiting for a Final frame there held the one-at-a-time queue for the six-hour transfer
+     * ceiling (live-check C3: a folder with one empty file left every later file on "Queued").
+     */
+    fun expectsDataFrames(startOffset: Long, expectedSize: Long): Boolean = startOffset < expectedSize
+
+    /**
+     * Whether a finished download may be committed. [expectedSha] is the host's
+     * `file_transfer_complete` hash (null when it did not arrive in time); [actualSha] is the hash of
+     * what this side holds.
+     *
+     * **When the frame wait was skipped ([skippedFrameWait], see [expectsDataFrames]) a missing
+     * complete is a failure, not a pass.** The skip trusts the listing size, and a declared size can
+     * be stale (the file grew) or a SAF "unknown" 0 (RG:403). The host's hash is then the ONLY evidence
+     * that "nothing to receive" was true; for an empty file it must be the SHA-256 of empty input
+     * ([EMPTY_SHA256_B64]), which is exactly what [actualSha] is when nothing was written. Without
+     * this an absent complete committed an empty file as Done (live-check C3 review).
+     */
+    fun downloadVerified(streamedOk: Boolean, skippedFrameWait: Boolean, expectedSha: String?, actualSha: String): Boolean =
+        when {
+            !streamedOk -> false
+            skippedFrameWait -> expectedSha != null && expectedSha == actualSha
+            else -> expectedSha == null || expectedSha == actualSha
+        }
+
+    /** Base64 SHA-256 of zero bytes (hex e3b0c442...b855), the wire form of an empty file's hash. */
+    const val EMPTY_SHA256_B64 = "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
 }

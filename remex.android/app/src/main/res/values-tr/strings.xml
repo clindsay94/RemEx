@@ -725,6 +725,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d dosya kuyruğa alındı, ancak klasör tamamen listelenemeyecek kadar büyüktü — bazı dosyalar dışarıda kaldı.</string>
     <string name="file_manager_transfers_title">Aktarımlar (%1$d)</string>
     <string name="file_manager_clear_finished">Bitenleri temizle</string>
+    <string name="file_manager_cancel_all">Tümünü iptal et</string>
     <string name="file_manager_pause">Duraklat</string>
     <string name="file_manager_resume">Sürdür</string>
     <string name="file_manager_transfer_queued">Sırada</string>

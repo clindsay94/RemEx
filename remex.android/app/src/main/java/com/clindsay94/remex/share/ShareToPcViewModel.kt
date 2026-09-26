@@ -375,7 +375,8 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
 
     companion object {
         private const val TAG = "ShareToPcVM"
-        private const val STAGING_DIR = "share_staging"
+        // Shared with FileTransferEngine, which deletes a staged copy once its push lands (live-check C6).
+        private const val STAGING_DIR = com.clindsay94.remex.service.TransferLocalFiles.SHARE_STAGING_DIR
         private const val STAGING_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
     }
 }

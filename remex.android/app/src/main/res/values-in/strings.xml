@@ -718,6 +718,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d berkas masuk antrean, tetapi folder terlalu besar untuk didaftar seluruhnya — sebagian berkas tidak disertakan.</string>
     <string name="file_manager_transfers_title">Transfer (%1$d)</string>
     <string name="file_manager_clear_finished">Hapus yang selesai</string>
+    <string name="file_manager_cancel_all">Batalkan semua</string>
     <string name="file_manager_pause">Jeda</string>
     <string name="file_manager_resume">Lanjutkan</string>
     <string name="file_manager_transfer_queued">Diantrekan</string>

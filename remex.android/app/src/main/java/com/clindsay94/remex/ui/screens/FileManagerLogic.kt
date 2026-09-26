@@ -193,6 +193,18 @@ object FileManagerLogic {
         return if (lastSlash <= 0) "/" else normalized.substring(0, lastSlash)
     }
 
+    /**
+     * The folder to commit as the current path once a browse reply arrives, or null when the browse
+     * failed and the view must stay where it was (live-check C2). The path used to be committed when
+     * the request was SENT, so an access-denied folder stuck in the breadcrumb and every later folder
+     * was combined onto it and failed as well. [responseRelativePath] is null when the reply omits it.
+     */
+    fun committedBrowsePath(requestedPath: String, responseRelativePath: String?, failed: Boolean): String? {
+        if (failed) return null
+        val path = responseRelativePath ?: requestedPath
+        return if (path.isBlank()) "/" else path
+    }
+
     /** True at a root folder (nothing above to navigate to). */
     fun isAtRoot(path: String): Boolean {
         val normalized = path.replace('\\', '/').trim('/')

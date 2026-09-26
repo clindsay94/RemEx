@@ -718,6 +718,7 @@
     <string name="file_manager_folder_queued_truncated">Dodano %1$d plików do kolejki, ale folder był zbyt duży, aby odczytać go w całości — część plików pominięto.</string>
     <string name="file_manager_transfers_title">Transfery (%1$d)</string>
     <string name="file_manager_clear_finished">Wyczyść zakończone</string>
+    <string name="file_manager_cancel_all">Anuluj wszystkie</string>
     <string name="file_manager_pause">Wstrzymaj</string>
     <string name="file_manager_resume">Wznów</string>
     <string name="file_manager_transfer_queued">W kolejce</string>

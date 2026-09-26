@@ -725,6 +725,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d फ़ाइलें कतार में हैं, लेकिन फ़ोल्डर पूरी सूची बनाने के लिए बहुत बड़ा था — कुछ फ़ाइलें छूट गईं।</string>
     <string name="file_manager_transfers_title">स्थानांतरण (%1$d)</string>
     <string name="file_manager_clear_finished">पूर्ण हटाएँ</string>
+    <string name="file_manager_cancel_all">सभी रद्द करें</string>
     <string name="file_manager_pause">रोकें</string>
     <string name="file_manager_resume">फिर शुरू करें</string>
     <string name="file_manager_transfer_queued">कतार में</string>

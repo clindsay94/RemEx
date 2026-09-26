@@ -739,6 +739,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d файлів додано до черги, але теку було завелико, щоб прочитати її повністю — деякі файли пропущено.</string>
     <string name="file_manager_transfers_title">Передавання (%1$d)</string>
     <string name="file_manager_clear_finished">Очистити завершені</string>
+    <string name="file_manager_cancel_all">Скасувати всі</string>
     <string name="file_manager_pause">Пауза</string>
     <string name="file_manager_resume">Відновити</string>
     <string name="file_manager_transfer_queued">У черзі</string>

@@ -465,6 +465,7 @@ fun FileTransferScreen(
                         onPause = vm::pauseTransfer,
                         onResume = vm::resumeTransfer,
                         onCancel = vm::cancelTransfer,
+                        onCancelAll = vm::cancelAllTransfers,
                         onClearFinished = vm::clearFinishedTransfers,
                     )
 

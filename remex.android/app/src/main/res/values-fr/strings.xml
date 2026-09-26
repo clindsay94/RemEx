@@ -725,6 +725,7 @@
     <string name="file_manager_folder_queued_truncated">%1$d fichiers en file d\'attente, mais le dossier était trop volumineux pour être listé entièrement : certains fichiers ont été omis.</string>
     <string name="file_manager_transfers_title">Transferts (%1$d)</string>
     <string name="file_manager_clear_finished">Effacer les terminés</string>
+    <string name="file_manager_cancel_all">Tout annuler</string>
     <string name="file_manager_pause">Pause</string>
     <string name="file_manager_resume">Reprendre</string>
     <string name="file_manager_transfer_queued">En file</string>

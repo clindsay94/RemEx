@@ -35,9 +35,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -219,6 +222,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private val pendingManageOps = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
     private val pendingRootManageOps = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
     private var pendingBrowseRequestId: String? = null
+    /** The folder [pendingBrowseRequestId] asked for; becomes [_remotePath] only on success. */
+    private var pendingBrowsePath: String? = null
     private var pendingRootsDeferred: CompletableDeferred<Unit>? = null
     private var pendingBrowseDeferred: CompletableDeferred<Unit>? = null
 
@@ -294,6 +299,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun selectRoot(rootId: String) {
         if (_selectedRootId.value == rootId) return
         _selectedRootId.value = rootId
+        // A new root has no "previous folder" to stay in; the old root's path means nothing here.
+        _remotePath.value = "/"
         clearSelection()
         clearSearchInternal()
         browseRemote("/")
@@ -302,6 +309,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     /** Selects a full-browse volume as the active browsing root (its id doubles as a root id). */
     fun selectVolume(volume: RemoteVolume) {
         _selectedRootId.value = volume.id
+        _remotePath.value = "/"
         clearSelection()
         clearSearchInternal()
         browseRemote("/")
@@ -316,7 +324,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         clearSelection()
         val requestId = newRequestId()
         pendingBrowseRequestId = requestId
-        _remotePath.value = path
+        // NOT committed to _remotePath until the host lists it (live-check C2): a denied folder
+        // committed here stuck in the breadcrumb, and every later tap was combined onto it.
+        pendingBrowsePath = path
         _isLoading.value = true
         _statusText.value = ""
 
@@ -1201,7 +1211,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
         val base = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
 
-        viewModelScope.launch {
+        trackFolderExpansion(viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_manager_folder_scanning)
             try {
@@ -1242,7 +1252,19 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             } finally {
                 _isLoading.value = false
             }
-        }
+        })
+    }
+
+    /**
+     * Folder expansions (listing, creating targets, enqueueing) still in progress. Cancel-all has to
+     * stop these too, or a folder still being expanded refills the queue right after it was emptied
+     * (live-check C4). Completion handlers run on arbitrary threads, hence the concurrent set.
+     */
+    private val folderExpansionJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet()
+
+    private fun trackFolderExpansion(job: Job) {
+        folderExpansionJobs += job
+        job.invokeOnCompletion { folderExpansionJobs -= job }
     }
 
     /**
@@ -1257,7 +1279,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             return
         }
 
-        viewModelScope.launch {
+        trackFolderExpansion(viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_manager_folder_scanning)
             try {
@@ -1282,6 +1304,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 }
 
                 for ((file, parentRelative) in files) {
+                    ensureActive() // cancel-all stops a folder mid-enqueue (live-check C4)
                     // destRelativePath is the DIRECTORY only — the host appends the file name itself
                     // (RemEx-y6x6). Passing the full path here doubles it into 'name/name'.
                     val destDirectory = if (parentRelative.isEmpty()) destBase else "$destBase/$parentRelative"
@@ -1299,7 +1322,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             } finally {
                 _isLoading.value = false
             }
-        }
+        })
     }
 
     /**
@@ -1406,8 +1429,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     /**
      * Recreates the folder shape under [destinationRoot] and enqueues one download per file. Returns
      * how many transfers were queued.
+     *
+     * Live-check C3/C4: every file is enqueued in ONE batch at the end (one queue write, one queue
+     * emission), each directory is listed once instead of once per `findFile` (a SAF `findFile` lists
+     * and queries every child over IPC), and a cancel-all stops the walk and deletes the empty target
+     * files it had created but not yet queued.
      */
-    private fun enqueueSubtreeDownloads(
+    private suspend fun enqueueSubtreeDownloads(
         rootId: String,
         base: String,
         entries: List<ManifestNode>,
@@ -1417,6 +1445,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         // Directories are created up front, empty ones included — no file implies an empty folder, so
         // leaving them to the downloads would silently drop them.
         val directories = mutableMapOf("" to destinationRoot)
+        // One listing per directory we touch, keyed by the directory's destination-relative path.
+        val listings = HashMap<String, MutableMap<String, DocumentFile>>()
+
+        fun childrenOf(path: String, dir: DocumentFile): MutableMap<String, DocumentFile> =
+            listings.getOrPut(path) {
+                dir.listFiles().mapNotNull { child -> child.name?.let { it to child } }.toMap(HashMap())
+            }
 
         fun directoryFor(path: String): DocumentFile? {
             if (path.isEmpty()) return destinationRoot
@@ -1425,7 +1460,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             val parentPath = if (cut < 0) "" else path.substring(0, cut)
             val name = if (cut < 0) path else path.substring(cut + 1)
             val parent = directoryFor(parentPath) ?: return null
-            val made = parent.findFile(name)?.takeIf { it.isDirectory } ?: parent.createDirectory(name)
+            val siblings = childrenOf(parentPath, parent)
+            val made = siblings[name]?.takeIf { it.isDirectory } ?: parent.createDirectory(name)?.also { siblings[name] = it }
             if (made != null) directories[path] = made
             return made
         }
@@ -1444,33 +1480,53 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             return segments.joinToString("/")
         }
 
+        val context = currentCoroutineContext()
         for (node in entries.filter { it.isDirectory }) {
+            context.ensureActive()
             val relative = toDestinationRelative(node) ?: continue
             directoryFor(relative)
         }
 
-        var queued = 0
-        for (node in entries.filter { !it.isDirectory }) {
-            val relative = toDestinationRelative(node) ?: continue
-            val cut = relative.lastIndexOf('/')
-            val parentPath = if (cut < 0) "" else relative.substring(0, cut)
-            val fileName = if (cut < 0) relative else relative.substring(cut + 1)
-            val parent = directoryFor(parentPath) ?: continue
+        val requests = mutableListOf<FileTransferEngine.DownloadRequest>()
+        val created = mutableListOf<DocumentFile>()
+        try {
+            for (node in entries.filter { !it.isDirectory }) {
+                context.ensureActive()
+                val relative = toDestinationRelative(node) ?: continue
+                val cut = relative.lastIndexOf('/')
+                val parentPath = if (cut < 0) "" else relative.substring(0, cut)
+                val fileName = if (cut < 0) relative else relative.substring(cut + 1)
+                val parent = directoryFor(parentPath) ?: continue
+                val siblings = childrenOf(parentPath, parent)
 
-            val existing = parent.findFile(fileName)?.takeIf { !it.isDirectory }
-            val target = existing ?: parent.createFile("application/octet-stream", fileName) ?: continue
+                val existing = siblings[fileName]?.takeIf { !it.isDirectory }
+                val target =
+                    existing
+                        ?: parent.createFile("application/octet-stream", fileName)?.also {
+                            created += it
+                            // SAF may uniquify the name; record what it is really called too.
+                            siblings[fileName] = it
+                        }
+                        ?: continue
 
-            FileTransferEngine.enqueueDownload(
-                destUri = target.uri.toString(),
-                fileName = fileName,
-                size = node.sizeBytes,
-                sourceRoot = rootId,
-                sourceRelativePath = node.relativePath,
-            )
-            queued++
+                requests +=
+                    FileTransferEngine.DownloadRequest(
+                        destUri = target.uri.toString(),
+                        fileName = fileName,
+                        size = node.sizeBytes,
+                        sourceRoot = rootId,
+                        sourceRelativePath = node.relativePath,
+                    )
+            }
+            context.ensureActive()
+        } catch (e: CancellationException) {
+            // Stopped before anything was queued: the empty files made for it would be 0-byte ghosts.
+            withContext(NonCancellable) { created.forEach { runCatching { it.delete() } } }
+            throw e
         }
 
-        return queued
+        FileTransferEngine.enqueueDownloads(requests)
+        return requests.size
     }
 
     // ── v3 queue controls ─────────────────────────────────────────────────────
@@ -1483,6 +1539,24 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun cancelTransfer(id: String) = FileTransferEngine.cancel(id)
+
+    /**
+     * Cancels every unfinished transfer, and any folder still being expanded into the queue
+     * (live-check C4). Per-row cancel plus "clear finished" was not enough: clearing finished removes
+     * terminal rows, i.e. none of the ones a user wants to stop.
+     */
+    fun cancelAllTransfers() {
+        val expanding = folderExpansionJobs.toList()
+        expanding.forEach { it.cancel() }
+        FileTransferEngine.cancelAll()
+        if (expanding.isEmpty()) return
+        // An expansion that was already inside its final enqueue when cancelled lands after the call
+        // above; sweep once more when every expansion has actually stopped.
+        viewModelScope.launch {
+            expanding.forEach { it.join() }
+            FileTransferEngine.cancelAll()
+        }
+    }
 
     fun clearFinishedTransfers() = FileTransferEngine.clearFinished()
 
@@ -1699,13 +1773,20 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = false
         _isRefreshing.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
-        if (errorMessage != null) {
+        val committed =
+            FileManagerLogic.committedBrowsePath(
+                requestedPath = pendingBrowsePath ?: _remotePath.value,
+                responseRelativePath = if (response.has("relativePath")) response.optString("relativePath") else null,
+                failed = errorMessage != null,
+            )
+        pendingBrowsePath = null
+        if (committed == null) {
+            // Stay in the folder we were in; its listing is still on screen (live-check C2).
             Log.w(TAG, "Browse failed: $errorMessage")
             _statusText.value = app().getString(R.string.file_transfer_browse_error)
             return
         }
-        val path = response.optString("relativePath", _remotePath.value)
-        _remotePath.value = if (path.isBlank()) "/" else path
+        _remotePath.value = committed
 
         val entries = mutableListOf<RemoteFileEntry>()
         if (!FileManagerLogic.isAtRoot(_remotePath.value)) {
