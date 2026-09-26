@@ -44,8 +44,13 @@ public interface IReadinessProbe
     /// that: an unprivileged Linux agent cannot read ufw's rules, and a machine filtering with bare
     /// nftables has nothing to ask. See <see cref="FirewallReadiness"/> for why each of those is
     /// Unknown rather than a guess in either direction.
+    /// <para>
+    /// <paramref name="forceFresh"/> bypasses any cached verdict (RemEx-ny6u4). It is true only for a
+    /// user-pressed Refresh; automatic checks pass false and may be answered from the cache. No
+    /// default on purpose: every caller states which of the two it is.
+    /// </para>
     /// </remarks>
-    bool? IsInboundAllowedByFirewall(int port);
+    bool? IsInboundAllowedByFirewall(int port, bool forceFresh);
 
     /// <summary>Whether the logon task / autostart entry is registered, or null if unknowable.</summary>
     bool? IsAutostartRegistered();
@@ -93,8 +98,12 @@ public sealed class SystemReadinessService : ISystemReadinessService
     /// wrong — and the one repair available for a certificate is the one that bricks every paired
     /// phone. "Could not check" is the honest answer and the safe one.
     /// </para>
+    /// <para>
+    /// <paramref name="forceFresh"/> reaches only the firewall row, the one probe that caches
+    /// (RemEx-ny6u4). Every other probe is already live on every run.
+    /// </para>
     /// </remarks>
-    public SystemReadinessReport Run()
+    public SystemReadinessReport Run(bool forceFresh = false)
     {
         return new SystemReadinessReport(new List<ReadinessCheck>
         {
@@ -148,7 +157,7 @@ public sealed class SystemReadinessService : ISystemReadinessService
             // BLOCKED IS A PROBLEM, NOT A WARNING. It is not a degradation the user will notice
             // later - the connection does not happen at all, and it fails the same way an offline PC
             // does, which is why it produces the support case it does.
-            Evaluate(ReadinessCheckId.Firewall, () => _probe.IsInboundAllowedByFirewall(_port),
+            Evaluate(ReadinessCheckId.Firewall, () => _probe.IsInboundAllowedByFirewall(_port, forceFresh),
                 whenTrue: ReadinessState.Ok,
                 whenFalse: ReadinessState.Problem,
                 trueDetail: $"no firewall rule we can see refuses inbound traffic on {_port}",

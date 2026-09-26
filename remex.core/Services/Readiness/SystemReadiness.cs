@@ -175,6 +175,12 @@ public interface ISystemReadinessService
     /// **LAUNCHES A PROCESS AND BLOCKS, so never call it on the UI thread.** The firewall check shells
     /// out; the implementation's own documentation says so, and this restates it at the seam the UI
     /// actually touches, where forgetting it freezes the window rather than a background worker.
+    /// <para>
+    /// <paramref name="forceFresh"/> is for a USER-PRESSED Refresh only (RemEx-ny6u4): it bypasses the
+    /// cached firewall verdict and repopulates it. Automatic checks (screen load, the re-check after a
+    /// repair) leave it false so they stay cheap.
+    /// </para>
     /// </remarks>
-    SystemReadinessReport Run();
+    /// <param name="forceFresh">True to bypass any cached verdict and query the machine now.</param>
+    SystemReadinessReport Run(bool forceFresh = false);
 }

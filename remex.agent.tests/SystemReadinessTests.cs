@@ -43,9 +43,13 @@ public class SystemReadinessTests
 
         public bool? IsAutostartRegistered() => AutostartRegistered;
 
-        public bool? IsInboundAllowedByFirewall(int port)
+        /// <summary>Every forceFresh the firewall check was asked with, in order.</summary>
+        public List<bool> FirewallForceFreshAsked { get; } = [];
+
+        public bool? IsInboundAllowedByFirewall(int port, bool forceFresh)
         {
             FirewallPortAsked = port;
+            FirewallForceFreshAsked.Add(forceFresh);
             return FirewallAllows;
         }
     }
@@ -368,7 +372,22 @@ public class SystemReadinessTests
         public bool? IsPortListening(int port) => true;
         public bool? IsAutostartRegistered() => true;
 
-        public bool? IsInboundAllowedByFirewall(int port) =>
+        public bool? IsInboundAllowedByFirewall(int port, bool forceFresh) =>
             throw new System.ComponentModel.Win32Exception("the query was refused");
+    }
+
+    [Fact]
+    public void ForceFreshReachesTheFirewallProbe_AndAnAutomaticRunDoesNot()
+    {
+        // RemEx-ny6u4. The firewall probe is the one that caches, so the Refresh button's
+        // forceFresh has to arrive there intact - and the default (automatic) run must not force it,
+        // or every screen load pays the process spawn the cache exists to avoid.
+        var probe = new FakeProbe();
+        var service = new SystemReadinessService(probe, 5005);
+
+        service.Run();
+        service.Run(forceFresh: true);
+
+        Assert.Equal([false, true], probe.FirewallForceFreshAsked);
     }
 }

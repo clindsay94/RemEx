@@ -109,8 +109,19 @@ public sealed partial class SystemStatusViewModel : ObservableObject, IDisposabl
         _runOffUiThread = runOffUiThread;
         _resolveStartup = resolveStartup ?? ResolveStartupFromApp;
         _runRepairOffUiThread = runRepairOffUiThread ?? (work => Task.Run(work));
+        RefreshCommand = new AsyncRelayCommand(() => RefreshAsync(forceFresh: true));
         LocalizationService.Instance.PropertyChanged += OnLanguageChanged;
     }
+
+    /// <summary>The card's Refresh button: a user-initiated check that bypasses cached verdicts.</summary>
+    /// <remarks>
+    /// **THE ONLY CALLER THAT FORCES A FRESH CHECK (RemEx-ny6u4).** The firewall verdict is cached
+    /// for up to an hour, so without this a user who breaks the rule and presses Refresh would be
+    /// shown the cached green. Declared by hand rather than generated from
+    /// <see cref="RefreshAsync"/>, because the generated command would inherit that method's
+    /// automatic (cached) default, and the view binds to this name.
+    /// </remarks>
+    public IAsyncRelayCommand RefreshCommand { get; }
 
     public ObservableCollection<SystemStatusRowViewModel> Rows { get; } = [];
 
@@ -152,9 +163,14 @@ public sealed partial class SystemStatusViewModel : ObservableObject, IDisposabl
     /// **OFF THE UI THREAD, BECAUSE <see cref="ISystemReadinessService.Run"/> LAUNCHES A PROCESS.**
     /// The firewall check shells out and blocks; both the implementation and the interface say so.
     /// Called on the UI thread it would freeze the window for as long as the probe takes.
+    /// <para>
+    /// <paramref name="forceFresh"/> defaults to false because the callers that omit it are the
+    /// AUTOMATIC ones (screen load, the re-check after a repair), which may use cached verdicts.
+    /// Only <see cref="RefreshCommand"/> — the button — passes true.
+    /// </para>
     /// </remarks>
-    [RelayCommand]
-    public async Task RefreshAsync()
+    /// <param name="forceFresh">True to bypass cached verdicts; see <see cref="RefreshCommand"/>.</param>
+    public async Task RefreshAsync(bool forceFresh = false)
     {
         if (IsChecking)
         {
@@ -164,7 +180,7 @@ public sealed partial class SystemStatusViewModel : ObservableObject, IDisposabl
         IsChecking = true;
         try
         {
-            var report = await _runOffUiThread(() => _resolveService()?.Run());
+            var report = await _runOffUiThread(() => _resolveService()?.Run(forceFresh));
 
             // EVERYTHING BELOW TOUCHES BOUND STATE, and mutating a bound ObservableCollection off the
             // UI thread is a real crash in Avalonia. Today the continuation lands on the UI thread

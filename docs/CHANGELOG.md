@@ -186,6 +186,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The Refresh button on the System status card now really re-checks the firewall. The firewall
+  result is remembered for up to an hour so the Home screen does not start a PowerShell check every
+  time it opens, and Refresh used to get that remembered answer too. If you removed or broke the
+  firewall rule, the card could stay green for up to an hour even after you pressed Refresh. Refresh
+  now always asks the firewall directly, and if the answer is no longer "allowed" it also forgets the
+  old one. Opening the screen still uses the remembered answer. (RemEx-ny6u4)
+
 - The phone's palette reaches the PC as soon as it reconnects. The phone used to send its theme
   the instant the socket opened — before it had proven who it was — so the PC refused it as an
   unpaired message and nothing told the phone it had been dropped; the colours only arrived the

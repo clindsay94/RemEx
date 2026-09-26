@@ -177,5 +177,6 @@ public sealed class SystemReadinessProbe : IReadinessProbe
     /// The only probe that launches a process, which is why the work lives in
     /// <see cref="FirewallQuery"/> behind an injectable seam rather than inline here.
     /// </remarks>
-    public bool? IsInboundAllowedByFirewall(int port) => _firewall.IsInboundAllowed(port);
+    public bool? IsInboundAllowedByFirewall(int port, bool forceFresh) =>
+        _firewall.IsInboundAllowed(port, forceFresh);
 }

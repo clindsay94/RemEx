@@ -119,15 +119,27 @@ public sealed class FirewallQuery
     /// exactly the unhealthy case this row exists to catch promptly), so only the boring, common,
     /// steady-state "yes, still allowed" answer is worth avoiding the process spawn for.
     /// </para>
+    /// <para>
+    /// <paramref name="forceFresh"/> (RemEx-ny6u4) skips the cache READ, never the cache WRITE. It
+    /// exists for the card's Refresh button: a user who has just deleted or broken the firewall rule
+    /// and presses Refresh must see the real answer, not a cached "allowed" that can outlive the
+    /// change by up to <see cref="CacheTtl"/> when the exe's mtime did not move. A fresh
+    /// <see langword="true"/> still repopulates the cache, so the next automatic check is cheap again.
+    /// A fresh non-true verdict CLEARS the cache: leaving the old "allowed" entry behind would let the
+    /// very next automatic check (the next launch) repaint the row green from the verdict Refresh has
+    /// just proved wrong.
+    /// </para>
     /// </remarks>
+    /// <param name="port">The port to ask about.</param>
+    /// <param name="forceFresh">True to bypass the cached verdict and query the firewall now.</param>
     /// <returns>True if allowed, false if refused, null if it could not be established.</returns>
-    public bool? IsInboundAllowed(int port)
+    public bool? IsInboundAllowed(int port, bool forceFresh = false)
     {
         var exePath = _agentExecutablePath();
         var exeLastWriteUtc = string.IsNullOrWhiteSpace(exePath) ? null : _getFileLastWriteUtc(exePath);
         var now = _utcNow();
 
-        var cached = TryReadCache();
+        var cached = forceFresh ? null : TryReadCache();
         if (cached is not null
             && cached.ExePath == exePath
             && cached.ExeLastWriteUtcTicks == exeLastWriteUtc?.Ticks
@@ -141,7 +153,13 @@ public sealed class FirewallQuery
         var verdict = OperatingSystem.IsWindows() ? QueryWindows() : QueryLinux(port);
         if (verdict == true)
         {
-            WriteCache(new FirewallCacheEntry(exePath, exeLastWriteUtc?.Ticks, port, verdict, now.Ticks));
+            WriteCache(System.Text.Json.JsonSerializer.Serialize(
+                new FirewallCacheEntry(exePath, exeLastWriteUtc?.Ticks, port, verdict, now.Ticks)));
+        }
+        else if (forceFresh)
+        {
+            // An empty cache reads back as "no entry" (see TryReadCache).
+            WriteCache(string.Empty);
         }
 
         return verdict;
@@ -179,11 +197,11 @@ public sealed class FirewallQuery
         }
     }
 
-    private void WriteCache(FirewallCacheEntry entry)
+    private void WriteCache(string contents)
     {
         try
         {
-            _writeCache(System.Text.Json.JsonSerializer.Serialize(entry));
+            _writeCache(contents);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

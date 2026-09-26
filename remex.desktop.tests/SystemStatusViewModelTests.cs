@@ -14,9 +14,13 @@ public class SystemStatusViewModelTests
     {
         public int Runs { get; private set; }
 
-        public SystemReadinessReport Run()
+        /// <summary>Every forceFresh the service was run with, in order (RemEx-ny6u4).</summary>
+        public List<bool> ForceFreshAsked { get; } = [];
+
+        public SystemReadinessReport Run(bool forceFresh = false)
         {
             Runs++;
+            ForceFreshAsked.Add(forceFresh);
             return report;
         }
     }
@@ -299,6 +303,25 @@ public class SystemStatusViewModelTests
 
         Assert.Equal(1, startup.Enabled);
         Assert.Equal(2, readiness.Runs);
+
+        // The re-check after a repair is AUTOMATIC, so it may use cached verdicts (RemEx-ny6u4).
+        Assert.Equal([false, false], readiness.ForceFreshAsked);
+    }
+
+    [Fact]
+    public async Task TheRefreshButtonForcesAFreshCheck_WhileAutomaticChecksDoNot()
+    {
+        // RemEx-ny6u4. The firewall verdict is cached for up to an hour, so a user who breaks the
+        // rule and presses Refresh must bypass that cache. The screen-load check must NOT, or every
+        // Home visit pays the process spawn the cache exists to avoid. The view binds the button to
+        // RefreshCommand (pinned by HomeViewCharacterisationTests), so that is what is exercised.
+        var readiness = new FakeReadiness(Report(Check(ReadinessCheckId.Firewall, ReadinessState.Ok)));
+        var vm = new SystemStatusViewModel(() => readiness, Inline([]));
+
+        await vm.RefreshAsync(); // automatic: screen load
+        await vm.RefreshCommand.ExecuteAsync(null); // the button
+
+        Assert.Equal([false, true], readiness.ForceFreshAsked);
     }
 
     [Fact]

@@ -204,6 +204,56 @@ public sealed class FirewallQueryCacheTests
     }
 
     [Fact]
+    public void ForceFreshBypassesAWarmCache_AndRepopulatesItForTheNextAutomaticCheck()
+    {
+        // RemEx-ny6u4: the Refresh button. With a warm "allowed" entry, an automatic call is a cache
+        // hit - but a forced one must still reach the real query, and its fresh "allowed" must leave
+        // the cache warm so the automatic check after it is cheap again.
+        var (query, runCount) = Build();
+
+        query.IsInboundAllowed(51820); // warm the cache
+        var afterWarm = runCount();
+
+        query.IsInboundAllowed(51820);
+        Assert.Equal(afterWarm, runCount()); // automatic: served from the cache
+
+        query.IsInboundAllowed(51820, forceFresh: true);
+        var afterForced = runCount();
+        Assert.True(afterForced > afterWarm, "A forced check must reach the query even while the cache is warm.");
+
+        query.IsInboundAllowed(51820);
+        Assert.Equal(afterForced, runCount()); // repopulated: the next automatic check is a hit again
+    }
+
+    [Fact]
+    public void AForcedRefusedVerdictClearsTheCache_SoTheNextAutomaticCheckCannotRepaintItGreen()
+    {
+        // The case the bead is about: the rule is removed without the exe's mtime moving. Refresh
+        // must show "refused" - and the NEXT automatic check (the next launch) must not then serve
+        // the old cached "allowed" that Refresh has just proved wrong.
+        var ruleExists = true;
+        var (query, runCount) = Build(run: (fileName, args) =>
+            ruleExists
+                ? AllowedRun(fileName, args)
+                : fileName.Contains("powershell", StringComparison.OrdinalIgnoreCase)
+                    ? new CommandResult(true, 0, "REMEX-FW-DONE\n") // no RULE lines -> refused
+                    : new CommandResult(true, 1, string.Empty)); // firewall-cmd exit 1 -> refused/unknown
+
+        Assert.True(query.IsInboundAllowed(51820)); // warm the cache with "allowed"
+        ruleExists = false;
+
+        Assert.True(query.IsInboundAllowed(51820)); // automatic: the stale cached verdict (the bug's premise)
+
+        var forced = query.IsInboundAllowed(51820, forceFresh: true);
+        Assert.NotEqual(true, forced);
+
+        var afterForced = runCount();
+        var automatic = query.IsInboundAllowed(51820);
+        Assert.True(runCount() > afterForced, "After a forced non-allowed verdict the cache must not answer.");
+        Assert.NotEqual(true, automatic);
+    }
+
+    [Fact]
     public void ACorruptCacheFileIsTreatedAsAMissAndStillQueries()
     {
         var (query, runCount) = Build(cachedJson: "{ not valid json");
