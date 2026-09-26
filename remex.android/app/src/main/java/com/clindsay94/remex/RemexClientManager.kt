@@ -526,6 +526,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         "RemexManager",
                         "Heartbeat auto-connect to $currentHost (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)"
                 )
+                // Claim the attempt atomically: a widget tap's one-shot connect (live-check A8) may
+                // have started between the isConnecting check above and here. Two overlapping
+                // connects make the second close the first socket.
+                if (!_isConnecting.compareAndSet(false, true)) {
+                    delay(baseDelayMs)
+                    continue
+                }
                 connect(null, true)
                 consecutiveFailures++
                 // Sleep out the backoff, but cut it short if the gate closes meanwhile, so the loop
@@ -725,6 +732,31 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         if (_isConnecting.value) return
         _isConnecting.value = true
         managerScope.launch { connect(pairingPin) }
+    }
+
+    /**
+     * Starts ONE connect attempt to the saved PC for a widget tap that found no live connection
+     * (live-check A8). Returns false when there is nothing to try (no PC saved); true when an attempt
+     * is running or the socket is already up, and the caller waits on [isAuthenticated] itself.
+     *
+     * **ONE-SHOT, NOT A REOPENED HEARTBEAT.** [ReconnectGate] still keeps the background retry loop
+     * parked for these widgets (perf audit P0-11): a Remote Control or App Launcher tap is one
+     * explicit user action, so it earns one attempt, and nothing retries after it.
+     *
+     * **NEVER PAIRS.** This is [connect]'s auto-connect path with no PIN: a PC without a stored pin
+     * returns without contacting pairing and without raising [pairingRequired] (nobody is in the app
+     * to answer it). Trust is exactly what the heartbeat would use.
+     */
+    internal suspend fun startOneShotConnect(context: Context): Boolean {
+        initialize(context.applicationContext)
+        val settings = settingsManager ?: return false
+        if (settings.hostFlow.first().isBlank()) return false
+        if (_isConnected.value) return true
+        // compareAndSet so a tap during the heartbeat's own attempt waits on that one instead.
+        if (_isConnecting.compareAndSet(false, true)) {
+            managerScope.launch(Dispatchers.IO) { connect(null, isAutoConnect = true) }
+        }
+        return true
     }
 
     private val _pairingRequired =

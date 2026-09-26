@@ -26,6 +26,9 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.lazy.GridCells
+import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.currentState
@@ -33,9 +36,9 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
-import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
@@ -43,7 +46,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
-import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import org.json.JSONArray
 import org.json.JSONObject
@@ -56,7 +58,9 @@ data class WidgetAppEntry(
     val name: String,
     val path: String,
     private val iconBase64: String,
-    val order: Int = 0
+    val order: Int = 0,
+    /** Longest edge the icon is decoded to: the largest cell it is drawn in, in px (A7). */
+    private val maxIconPx: Int
 ) {
     /**
      * Decoded on first access, not at parse time (perf audit P3-12): the host sends the WHOLE
@@ -69,11 +73,29 @@ data class WidgetAppEntry(
         if (iconBase64.isBlank()) return@lazy null
         try {
             val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { boundedIcon(it, maxIconPx) }
         } catch (_: Exception) {
             null
         }
     }
+}
+
+/**
+ * The largest icon this widget draws (the >= 300dp tier below). Icons decode to THIS size on the
+ * current screen, not per tier: SizeMode.Exact can compose a portrait and a landscape layout in one
+ * update at different tiers, and one bitmap per app keeps both pointing at the same pixels.
+ */
+private const val LARGEST_ICON_DP = 56f
+
+/**
+ * The grid now renders every selected app (live-check A4), and all their bitmaps travel in one
+ * RemoteViews payload with a hard memory ceiling. Bound each icon to the pixels its cell can show
+ * (live-check A7) so a host sending large ones cannot push the widget over it and leave it blank.
+ */
+private fun boundedIcon(bitmap: Bitmap, maxPx: Int): Bitmap {
+    val (w, h) = WidgetGridMath.scaledIconSize(bitmap.width, bitmap.height, maxPx)
+    if (w == bitmap.width && h == bitmap.height) return bitmap
+    return Bitmap.createScaledBitmap(bitmap, w, h, true)
 }
 
 class AppLauncherWidget : GlanceAppWidget() {
@@ -82,16 +104,21 @@ class AppLauncherWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val launcherJson = WidgetDataCache.getLauncherJson(context)
-        val allApps = parseLauncherEntries(launcherJson)
+        // Live-check A7: icons sized from the cell's dp and this screen's density, and a cap on what
+        // they may spend of the launcher's bitmap ceiling, which is itself derived from the screen.
+        val metrics = context.resources.displayMetrics
+        val maxIconPx = WidgetGridMath.iconPx(LARGEST_ICON_DP, metrics.density)
+        val iconBudget = WidgetGridMath.iconBudgetBytes(metrics.widthPixels, metrics.heightPixels)
+        val allApps = parseLauncherEntries(launcherJson, maxIconPx)
 
         provideContent {
             GlanceTheme {
-                AppLauncherContent(allApps)
+                AppLauncherContent(allApps, iconBudget)
             }
         }
     }
 
-    private fun parseLauncherEntries(json: String?): List<WidgetAppEntry> {
+    private fun parseLauncherEntries(json: String?, maxIconPx: Int): List<WidgetAppEntry> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
             val array = JSONArray(json)
@@ -101,7 +128,8 @@ class AppLauncherWidget : GlanceAppWidget() {
                     name = obj.optString("displayName", "App"),
                     path = obj.optString("targetPath", ""),
                     iconBase64 = obj.optString("iconBase64", ""),
-                    order = obj.optInt("order", 0)
+                    order = obj.optInt("order", 0),
+                    maxIconPx = maxIconPx
                 )
             }
         } catch (e: Exception) {
@@ -112,7 +140,7 @@ class AppLauncherWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
+private fun AppLauncherContent(allApps: List<WidgetAppEntry>, iconBudgetBytes: Long) {
     val prefs = currentState<Preferences>()
     val selectedStr = prefs[SELECTED_APPS_KEY] ?: ""
     val selectedPaths = selectedStr.split("\n").filter { it.isNotBlank() }.toSet()
@@ -140,10 +168,17 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
     }
 
     val apps = allApps.filter { it.path in selectedPaths }.sortedBy { it.order }
+    // Live-check A7: the config screen does not cap how many apps are picked and the grid draws them
+    // all, so past the budget an app shows its letter tile instead of taking the widget down with it.
+    // Only selected apps reach this read, so unselected icons never decode.
+    val drawIcon = WidgetGridMath.iconsWithinBudget(
+        apps.map { app -> app.icon?.allocationByteCount?.toLong() },
+        iconBudgetBytes
+    )
+    val cells = apps.zip(drawIcon)
 
     val outerPadding = 6.dp
     val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
-    val availableHeight = (size.height - (outerPadding * 2)).coerceAtLeast(0.dp)
 
     val iconSize = when {
         size.width >= 300.dp -> 56.dp
@@ -154,16 +189,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
     // Tighter gutters so icons breathe without wasting space.
     val itemPadding = 2.dp
     val cellSize = iconSize + (itemPadding * 2)
-    // Each Row also adds 1.dp of vertical padding top+bottom (see below).
-    val rowStride = cellSize + 2.dp
-
-    // Fit a near-complete extra column/row instead of dropping it: any overflow up
-    // to a cell's own padding (itemPadding on each edge) is absorbed by the outer
-    // cells' padding, so icons never clip even when we round up to the edge.
-    val columns = ((availableWidth + itemPadding * 2) / cellSize).toInt().coerceAtLeast(1)
-    val maxRows = ((availableHeight + itemPadding * 2) / rowStride).toInt().coerceAtLeast(1)
-    val maxItems = columns * maxRows
-    val visibleApps = apps.take(maxItems)
+    val columns = WidgetGridMath.columns(availableWidth.value, cellSize.value)
 
     Column(
         modifier = GlanceModifier.fillMaxSize()
@@ -171,18 +197,23 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
             .cornerRadius(16.dp)
             .padding(outerPadding)
     ) {
-        if (visibleApps.isEmpty()) {
+        if (apps.isEmpty()) {
             Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(context.getString(R.string.widget_waiting_data), style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else {
-            val rows = visibleApps.chunked(columns)
-            rows.forEach { rowApps ->
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    rowApps.forEach { app ->
+            // Every selected app, scrolling when there are more than the widget shows (live-check
+            // A4). This used to take() only as many as fit and drop the rest without a trace.
+            LazyVerticalGrid(
+                gridCells = GridCells.Fixed(columns),
+                modifier = GlanceModifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                items(cells) { (app, withinBudget) ->
+                    Box(
+                        modifier = GlanceModifier.fillMaxWidth().height(cellSize),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Box(
                             modifier = GlanceModifier
                                 .size(cellSize)
@@ -197,8 +228,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            // Only visibleApps ever reach this read, so only their icons decode.
-                            val icon = app.icon
+                            val icon = if (withinBudget) app.icon else null
                             if (icon != null) {
                                 Image(
                                     provider = ImageProvider(icon),
@@ -244,7 +274,9 @@ class LaunchAppCallback : ActionCallback {
             widgetToast(context, context.getString(R.string.widget_toast_remex_not_ready))
             return
         }
-        if (!RemexClientManager.isConnected.value) {
+        // Live-check A8: a backgrounded or killed app gets one bounded connect attempt here instead
+        // of an immediate "not connected".
+        if (!ensureWidgetConnection(context)) {
             widgetToast(context, context.getString(R.string.widget_toast_not_connected))
             return
         }

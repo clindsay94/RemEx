@@ -23,6 +23,15 @@
     <init>();
 }
 
+# Glance widget tap callbacks (live-check A1/A3). actionRunCallback<T>() stores T's class NAME and
+# Glance instantiates it reflectively via getDeclaredConstructor().newInstance(). Glance's own
+# consumer rule keeps the class but not its constructor, and R8 full mode (AGP 8+ default) strips the
+# unreferenced <init>() - so every widget tap threw inside Glance's receiver, which logs and swallows
+# it, and the tap did nothing. Release usage.txt listed "<init>()" as removed for all three callbacks.
+-keep class * implements androidx.glance.appwidget.action.ActionCallback {
+    <init>();
+}
+
 # Keep pairing native bridge methods
 -keepclassmembers class com.clindsay94.remex.RemexCoreClient {
     public static native <methods>;

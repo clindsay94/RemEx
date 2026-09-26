@@ -20,25 +20,24 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.lazy.GridCells
+import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
-import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.first
@@ -104,25 +103,24 @@ private fun RemoteControlContent() {
         return
     }
 
-    val outerPadding = 8.dp
+    // Short widgets get a tighter frame so the one row they can show is whole (live-check A2).
+    val outerPadding = if (size.height < 64.dp) 4.dp else 8.dp
     val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
     val availableHeight = (size.height - (outerPadding * 2)).coerceAtLeast(0.dp)
 
-    val buttonMinWidth = 90.dp
-    val buttonMinHeight = 36.dp
-    val columns = (availableWidth / (buttonMinWidth + 4.dp)).toInt().coerceIn(1, 4)
+    val cellPadding = 2.dp
+    val columns = WidgetGridMath.columns(availableWidth.value, REMOTE_BUTTON_MIN_WIDTH.value, maxColumns = 4)
 
     val showTitle = size.height >= 80.dp
-    val titleHeight = if (showTitle) 24.dp else 0.dp
-    val contentHeight = (availableHeight - titleHeight).coerceAtLeast(0.dp)
+    // Title text (14sp, ~19dp line) plus its 6dp bottom padding. Only an ESTIMATE, used to size the
+    // buttons; the grid itself takes whatever is left via defaultWeight() and scrolls, so an
+    // estimate that is off costs a partially visible row, never an unreachable command.
+    val titleHeight = if (showTitle) 26.dp else 0.dp
+    val gridHeight = (availableHeight - titleHeight).coerceAtLeast(0.dp)
 
-    val maxRows = (contentHeight / (buttonMinHeight + 4.dp)).toInt().coerceAtLeast(1)
-    val maxItems = (columns * maxRows).coerceAtMost(commands.size)
-    val visibleCommands = commands.take(maxItems)
-
-    val itemWidth = ((availableWidth / columns) - 4.dp).coerceAtLeast(0.dp)
-    val currentRows = (visibleCommands.size + columns - 1) / columns
-    val itemHeight = (contentHeight / currentRows).coerceIn(buttonMinHeight, 60.dp)
+    val rows = (commands.size + columns - 1) / columns
+    val itemHeight = WidgetGridMath.buttonHeight(gridHeight.value, rows, cellPadding.value).dp
+    val itemWidth = (availableWidth / columns) - (cellPadding * 2)
 
     Column(
         modifier = GlanceModifier.fillMaxSize()
@@ -142,16 +140,19 @@ private fun RemoteControlContent() {
             )
         }
 
-        val rows = visibleCommands.chunked(columns)
-        rows.forEach { rowItems ->
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                rowItems.forEach { cmd ->
+        // Scrolls when the selection outgrows the widget, instead of silently dropping commands.
+        LazyVerticalGrid(
+            gridCells = GridCells.Fixed(columns),
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        ) {
+            items(commands) { cmd ->
+                Box(
+                    modifier = GlanceModifier.fillMaxWidth().padding(cellPadding),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = GlanceModifier
-                            .width(itemWidth)
+                            .fillMaxWidth()
                             .height(itemHeight)
                             .background(GlanceTheme.colors.primaryContainer)
                             .cornerRadius(12.dp)
@@ -167,20 +168,20 @@ private fun RemoteControlContent() {
                             WidgetText.ellipsize(context.getString(cmd.titleRes), WidgetText.ControlLabelBudget),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimaryContainer,
-                                fontSize = if (itemWidth >= 100.dp) 12.sp else 10.sp,
+                                fontSize = if (itemWidth >= 100.dp && itemHeight >= 28.dp) 12.sp else 10.sp,
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
                         )
-                    }
-                    if (rowItems.indexOf(cmd) < rowItems.lastIndex) {
-                        Spacer(modifier = GlanceModifier.width(4.dp))
                     }
                 }
             }
         }
     }
 }
+
+/** Narrowest a remote-control button gets before the grid drops a column. */
+private val REMOTE_BUTTON_MIN_WIDTH = 94.dp
 
 class RemoteCommandCallback : ActionCallback {
     override suspend fun onAction(
@@ -211,7 +212,9 @@ class RemoteCommandCallback : ActionCallback {
             sendWidgetWake(mac, broadcast, 9)
             widgetToast(context, context.getString(R.string.widget_toast_wol_sent))
         } else {
-            if (!RemexClientManager.isConnected.value) {
+            // Live-check A8: a backgrounded or killed app gets one bounded connect attempt here
+            // instead of an immediate "not connected".
+            if (!ensureWidgetConnection(context)) {
                 widgetToast(context, context.getString(R.string.widget_toast_not_connected))
                 return
             }

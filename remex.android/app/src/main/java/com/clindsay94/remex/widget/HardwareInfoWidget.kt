@@ -13,6 +13,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -21,6 +22,9 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.lazy.GridCells
+import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.ColorFilter
@@ -127,19 +131,21 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
     val showCategory = size.width >= 240.dp
     val useCards = size.height >= 60.dp
 
-    // Balanced padding for all sizes
-    val outerPadding = 8.dp
+    // Short widgets get a tighter frame so the one compact row they can show is whole (A5).
+    val outerPadding = if (useCards) 8.dp else 4.dp
     val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
 
+    // Cells reflow by width and the grid scrolls vertically, so every selected sensor is reachable
+    // and nothing is pushed off the sides or the bottom (live-check A5/A6). The old layout computed
+    // how many fit and dropped the rest; the compact one was a single Row that ran off the edge.
     val cardMinWidth = if (useCards) 100.dp else 80.dp
-    val columns = (availableWidth / cardMinWidth).toInt().coerceIn(1, 4)
-
-    val titleHeight = if (showTitle) 24.dp else 0.dp
-    val contentHeight = (size.height - (outerPadding * 2) - titleHeight).coerceAtLeast(0.dp)
-    val cardMinHeight = if (useCards) 54.dp else 34.dp
-    val maxRows = (contentHeight / (cardMinHeight + 4.dp)).toInt().coerceAtLeast(1)
-    val maxItems = (columns * maxRows).coerceAtMost(sensors.size)
-    val visibleSensors = sensors.take(maxItems)
+    val columns = WidgetGridMath.columns(
+        availableWidth.value,
+        cardMinWidth.value,
+        maxColumns = if (useCards) 4 else WidgetGridMath.MAX_GRID_COLUMNS
+    )
+    val cellPadding = 2.dp
+    val openApp = actionStartActivity<MainActivity>()
 
     Column(
         modifier = GlanceModifier.fillMaxSize()
@@ -166,85 +172,93 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             }
         }
 
-        if (visibleSensors.isEmpty()) {
+        if (sensors.isEmpty()) {
             Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(context.getString(R.string.widget_waiting_data), style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
-        } else if (useCards) {
-            val cardWidth = ((availableWidth / columns) - 4.dp).coerceAtLeast(0.dp)
-            val rows = visibleSensors.chunked(columns)
-
-            Column(modifier = GlanceModifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                rows.forEach { rowItems ->
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        rowItems.forEach { sensor ->
-                            Box(
-                                modifier = GlanceModifier
-                                    .width(cardWidth)
-                                    .background(GlanceTheme.colors.secondaryContainer)
-                                    .cornerRadius(12.dp)
-                                    .padding(8.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Column {
-                                    Text(
-                                        WidgetText.ellipsize(sensor.name, WidgetText.SensorNameBudget),
-                                        style = TextStyle(
-                                            color = GlanceTheme.colors.onSecondaryContainer,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        maxLines = 1
-                                    )
-                                    if (showCategory && sensor.category.isNotBlank()) {
-                                        Text(
-                                            WidgetText.ellipsize(sensor.category, WidgetText.SensorCategoryBudget),
-                                            style = TextStyle(
-                                                color = GlanceTheme.colors.onSecondaryContainer,
-                                                fontSize = 8.sp
-                                            ),
-                                            maxLines = 1
-                                        )
-                                    }
-                                    Spacer(modifier = GlanceModifier.height(2.dp))
-                                    Text(
-                                        WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget),
-                                        style = TextStyle(
-                                            color = GlanceTheme.colors.onSecondaryContainer,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                            if (rowItems.indexOf(sensor) < rowItems.lastIndex) {
-                                Spacer(modifier = GlanceModifier.width(4.dp))
-                            }
+        } else {
+            LazyVerticalGrid(
+                gridCells = GridCells.Fixed(columns),
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+            ) {
+                items(sensors) { sensor ->
+                    Box(modifier = GlanceModifier.fillMaxWidth().padding(cellPadding)) {
+                        if (useCards) {
+                            SensorCard(sensor, showCategory, openApp)
+                        } else {
+                            CompactSensorCell(sensor, openApp)
                         }
                     }
                 }
             }
-        } else {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                visibleSensors.forEachIndexed { index, sensor ->
-                    Column(modifier = GlanceModifier.padding(horizontal = 6.dp)) {
-                        Text(WidgetText.ellipsize(sensor.name, WidgetText.CompactSensorNameBudget), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 9.sp), maxLines = 1)
-                        Text(WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                    }
-                    if (index < visibleSensors.lastIndex) {
-                        Box(modifier = GlanceModifier.width(1.dp).height(16.dp).background(GlanceTheme.colors.outline)) {}
-                    }
-                }
-            }
         }
+    }
+}
+
+@Composable
+private fun SensorCard(sensor: WidgetSensorData, showCategory: Boolean, onClick: Action) {
+    Box(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .background(GlanceTheme.colors.secondaryContainer)
+            .cornerRadius(12.dp)
+            .clickable(onClick)
+            .padding(8.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Column {
+            Text(
+                WidgetText.ellipsize(sensor.name, WidgetText.SensorNameBudget),
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSecondaryContainer,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1
+            )
+            if (showCategory && sensor.category.isNotBlank()) {
+                Text(
+                    WidgetText.ellipsize(sensor.category, WidgetText.SensorCategoryBudget),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSecondaryContainer,
+                        fontSize = 8.sp
+                    ),
+                    maxLines = 1
+                )
+            }
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Text(
+                WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget),
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSecondaryContainer,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** Two-line name/value cell for widgets too short for cards (under 60dp tall). */
+@Composable
+private fun CompactSensorCell(sensor: WidgetSensorData, onClick: Action) {
+    Column(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .clickable(onClick)
+            .padding(horizontal = 4.dp)
+    ) {
+        Text(
+            WidgetText.ellipsize(sensor.name, WidgetText.CompactSensorNameBudget),
+            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 9.sp),
+            maxLines = 1
+        )
+        Text(
+            WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget),
+            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+            maxLines = 1
+        )
     }
 }
 
