@@ -7,6 +7,7 @@ using System.Security.Cryptography.X509Certificates;
 using Remex.Desktop.Services.Security;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Native;
 
 namespace Remex.Desktop.Services.Network;
 
@@ -275,11 +276,12 @@ public class RemoteDesktopService : IDisposable
             if (!ReferenceEquals(socket, _webSocket) || socket.State != WebSocketState.Open)
                 return;
 
-            await socket.SendAsync(
-                new ArraySegment<byte>(bytes),
-                WebSocketMessageType.Text,
-                endOfMessage: true,
-                ct);
+            // RemEx-kjk8f: bounded, same pattern as RemexDesktopClient.SendMessageAsync (P0-12). A
+            // write that cannot complete — the peer stopped acknowledging — used to block here
+            // forever; SendOrAbortAsync aborts the socket on its own deadline instead, which fails the
+            // receive loop's pending ReceiveAsync and reaches the existing best-effort handling below
+            // (Disconnected fires from ReceiveLoopAsync's finally either way).
+            await SocketLiveness.SendOrAbortAsync(socket, new ArraySegment<byte>(bytes), WebSocketMessageType.Text, ct);
         }
         catch (ObjectDisposedException)
         {
@@ -288,6 +290,10 @@ public class RemoteDesktopService : IDisposable
         catch (WebSocketException)
         {
             // Best effort during disconnect/race conditions.
+        }
+        catch (TimeoutException)
+        {
+            // The bounded send's own deadline fired and aborted the socket; best effort, same as above.
         }
         finally
         {
@@ -453,6 +459,11 @@ public class RemoteDesktopService : IDisposable
     private ClientWebSocket CreateClientWebSocket()
     {
         var socket = new ClientWebSocket();
+        // RemEx-kjk8f: this socket had no keep-alive Ping/Pong at all (not even an interval, let alone
+        // a timeout) — a dead link read Open until the OS gave up on TCP retransmits, the same
+        // half-open-stall class P0-12 (RemEx-4j8ls) fixed for RemexDesktopClient. Shared constants so
+        // every RD socket in the process detects a drop on the same budget.
+        SocketLiveness.ApplyKeepAlive(socket.Options);
         socket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
         return socket;
     }

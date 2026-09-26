@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
@@ -66,6 +67,28 @@ public class ConnectionViewModelTests : IDisposable
         vm.Should().NotBeNull();
         vm.IsConnected.Should().BeFalse();
         vm.Dispose();
+    }
+
+    /// <summary>
+    /// RemEx-kjk8f: this socket used to configure only <c>KeepAliveInterval</c>, so a Ping with no
+    /// answer left it reading <see cref="WebSocketState.Open"/> until the OS gave up on TCP
+    /// retransmits (many minutes) instead of the ~50s <c>SocketLiveness</c> budget every other
+    /// RD socket in the process now shares (the same half-open-stall class P0-12/RemEx-4j8ls fixed for
+    /// <c>RemexDesktopClient</c>).
+    /// </summary>
+    [Fact]
+    public void CreateConfiguredWebSocket_SetsBothKeepAliveIntervalAndTimeout()
+    {
+        var method = typeof(ConnectionViewModel).GetMethod(
+            "CreateConfiguredWebSocket", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        using var socket = (ClientWebSocket)method.Invoke(_viewModel, null)!;
+
+        socket.Options.KeepAliveInterval.Should().BeGreaterThan(TimeSpan.Zero);
+        // Matches Remex.Core.Native.SocketLiveness.KeepAliveTimeout (internal to remex.core, not
+        // visible here) so every RD socket in the process detects a drop on the same budget.
+        socket.Options.KeepAliveTimeout.Should().Be(TimeSpan.FromSeconds(20),
+            "a Ping with no answer must eventually abort the socket rather than stall forever");
     }
 
     [Theory]

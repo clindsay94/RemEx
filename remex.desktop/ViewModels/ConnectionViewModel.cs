@@ -22,6 +22,7 @@ using Remex.Core.Exceptions;
 using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Native;
 using Remex.Core.Services.Network;
 using Remex.Core.Services.Security;
 using Remex.Core.Validation;
@@ -1281,7 +1282,23 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         await _sendLock.WaitAsync(ct);
         try
         {
-            await MessageSerializer.SendAsync(ws, message, ct);
+            // RemEx-kjk8f: bounded, same as RemexDesktopClient's SendMessageAsync (P0-12). A send that
+            // cannot be written — the peer stopped acknowledging — used to block here forever instead
+            // of failing; SendOrAbortAsync aborts the socket on its own deadline, which fails the
+            // receive loop's pending ReceiveAsync and routes into the reconnect flow ReceiveLoopAsync
+            // already has (WebSocketException -> Cleanup() -> ReconnectLoopAsync unless the user
+            // disconnected). The TimeoutException it throws is swallowed here, not rethrown: every
+            // existing caller of SendGuardedAsync only ever expected a WebSocketException from a dead
+            // socket, and the abort itself is what carries the failure forward, exactly like the
+            // WebSocketException a hard socket failure already produces.
+            var bytes = MessageSerializer.Serialize(message);
+            try
+            {
+                await SocketLiveness.SendOrAbortAsync(ws, new ArraySegment<byte>(bytes), WebSocketMessageType.Text, ct);
+            }
+            catch (TimeoutException)
+            {
+            }
         }
         finally
         {
@@ -2074,6 +2091,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     {
         var socket = new ClientWebSocket();
         socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+        // RemEx-kjk8f: a Ping with no answer used to leave this socket reading Open until the OS gave
+        // up on TCP retransmits (many minutes) — the same half-open-stall class as P0-12
+        // (RemEx-4j8ls/SocketLiveness), just never closed here. Reusing the shared timeout keeps this
+        // socket and RemexDesktopClient's on the same detection budget.
+        socket.Options.KeepAliveTimeout = SocketLiveness.KeepAliveTimeout;
         socket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
         return socket;
     }
