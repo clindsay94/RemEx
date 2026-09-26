@@ -282,7 +282,7 @@ class PairingViewModel : ViewModel() {
                 startPairingSucceeded = true
                 // After the handshake, auto-fetch the PIN over the already-open native pairing
                 // WebSocket (pairing_pin_request) ONLY when the caller has determined the transport
-                // is trusted (loopback or an active Tailscale/WireGuard tunnel). The host enforces
+                // is trusted (an active Tailscale/WireGuard tunnel only). The host enforces
                 // the SAME TransportTrust gate on its side; on untrusted transports it replies with
                 // no PIN and the user types it manually, so the PIN keeps its out-of-band, anti-MITM
                 // value. The old trust-all HTTPS fetch is gone — this uses the .NET-trusted socket,
@@ -437,7 +437,7 @@ fun PairingScreen(
         val hostUrl = "wss://$host:$port/ws"
         val clientId = withContext(Dispatchers.IO) { settingsManager.getOrCreateClientId() }
         // Only allow the PIN to be fetched over the wire when the transport is trusted
-        // (loopback or an active Tailscale/WireGuard tunnel). Otherwise the user enters it
+        // (an active Tailscale/WireGuard tunnel; not loopback, RemEx-fd7e). Otherwise the user enters it
         // manually and the PIN retains its out-of-band, anti-MITM value.
         val allowAutoPin =
                 com.clindsay94.remex.security.TransportTrust.canAutoFetchPin(context, host)

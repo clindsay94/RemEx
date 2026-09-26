@@ -73,9 +73,11 @@ public class TransportTrustTests
     }
 
     [Theory]
-    // Loopback caller is always trusted, regardless of local address.
-    [InlineData("127.0.0.1", "127.0.0.1", true)]
-    [InlineData("::1", "::1", true)]
+    // Loopback is NOT trusted for the PIN (RemEx-fd7e): the PC UI reads it in-process, so the only
+    // loopback caller the wire path ever served was some other local process. See
+    // LoopbackPairingPinTests for the full pin.
+    [InlineData("127.0.0.1", "127.0.0.1", false)]
+    [InlineData("::1", "::1", false)]
     // Both ends Tailscale => the connection genuinely traversed the tunnel.
     [InlineData("100.64.0.5", "100.64.0.9", true)]
     [InlineData("fd7a:115c:a1e0::5", "fd7a:115c:a1e0::9", true)]

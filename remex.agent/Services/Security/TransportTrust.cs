@@ -12,8 +12,9 @@ namespace Remex.Agent.Services.Security;
 /// <remarks>
 /// This is the host-side mirror of the Android client's <c>TransportTrust</c>
 /// (<c>remex.android/.../security/TransportTrust.kt</c>); both sides must agree on what counts as a
-/// "trusted transport" or the PIN auto-fill silently fails on one end. "Trusted" means loopback
-/// (same machine) or an active Tailscale/WireGuard tunnel. Tailscale assigns addresses from the
+/// "trusted transport" or the PIN auto-fill silently fails on one end. "Trusted" means an active
+/// Tailscale/WireGuard tunnel, and nothing else — loopback deliberately is NOT trusted for the PIN
+/// (RemEx-fd7e; see <see cref="IsTrustedForPinAutoFetch"/>). Tailscale assigns addresses from the
 /// CGNAT range <c>100.64.0.0/10</c> (IPv4) and the <c>fd7a:115c:a1e0::/48</c> ULA prefix (IPv6);
 /// such an address is only reachable through the WireGuard tunnel, so a request arriving on one
 /// implies the tunnel is up and the peer has been authenticated by Tailscale.
@@ -69,13 +70,22 @@ public static class TransportTrust
     }
 
     /// <summary>
-    /// Whether the active pairing PIN may be served to a caller. Allowed only when the caller is on
-    /// loopback, or when both the caller (<paramref name="remote"/>) and the host-side address the
-    /// caller reached (<paramref name="local"/>) are Tailscale addresses — i.e. the connection genuinely
-    /// traversed the Tailscale tunnel. Requiring <paramref name="local"/> to also be Tailscale defeats a
-    /// LAN attacker who spoofs a <c>100.64.x.x</c> source while connecting to the host's LAN IP (there the
-    /// host-side address is the LAN IP, not a Tailscale one). Everything else must enter the PIN manually.
+    /// Whether the active pairing PIN may be served to a caller over the wire. Allowed only when both
+    /// the caller (<paramref name="remote"/>) and the host-side address the caller reached
+    /// (<paramref name="local"/>) are Tailscale addresses — i.e. the connection genuinely traversed the
+    /// Tailscale tunnel. Requiring <paramref name="local"/> to also be Tailscale defeats a LAN attacker
+    /// who spoofs a <c>100.64.x.x</c> source while connecting to the host's LAN IP (there the host-side
+    /// address is the LAN IP, not a Tailscale one). Everything else must enter the PIN manually.
     /// </summary>
+    /// <remarks>
+    /// LOOPBACK IS NOT TRUSTED HERE, AND MUST NOT BECOME SO AGAIN (RemEx-fd7e). It used to be, on the
+    /// theory that the only loopback caller was the PC's own UI. But the UI runs in the agent process
+    /// and reads the PIN in-process through <c>IPairingService.TryGetActivePinInfo</c> — it never used
+    /// the socket — so the loopback branch served exactly one population: any other local process,
+    /// including an unelevated one, which could open <c>/ws</c> on 127.0.0.1 and be handed the live PIN
+    /// of the elevated agent's open pairing window. Nothing distinguishes the UI from that caller at the
+    /// socket, which is why the answer is to not ask the socket at all.
+    /// </remarks>
     public static bool IsTrustedForPinAutoFetch(IPAddress? remote, IPAddress? local) =>
-        IsLoopback(remote) || (IsTailscaleAddress(remote) && IsTailscaleAddress(local));
+        IsTailscaleAddress(remote) && IsTailscaleAddress(local);
 }

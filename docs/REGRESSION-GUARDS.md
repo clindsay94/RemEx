@@ -961,13 +961,21 @@ existing `cert.pfx` is unreadable. Do not "helpfully" clear that state.
 Host `TransportTrust.IsTrustedForPinAutoFetch(remote, local)` and Android
 `TransportTrust.canAutoFetchPin(context, host)` must agree or PIN auto-fill breaks end to end.
 
-- **Host** allows auto-fetch when the caller is loopback, OR when **both** remote and local addresses
-  are Tailscale CGNAT (`100.64.0.0/10` / `fd7a:115c:a1e0::/48`). Requiring *both* ends defeats a LAN
-  attacker spoofing a `100.64.x.x` source. Handles IPv4-mapped addresses (`::ffff:100.64.x.x`) for
-  Kestrel.
-- **Android** allows auto-fetch for loopback, OR for a Tailscale address / `*.ts.net` MagicDNS
-  hostname **AND** `TRANSPORT_VPN` active. The VPN-active check is mandatory: a Tailscale-looking
-  address with no live tunnel must NOT unlock auto-fetch.
+- **Host** allows auto-fetch only when **both** remote and local addresses are Tailscale CGNAT
+  (`100.64.0.0/10` / `fd7a:115c:a1e0::/48`). Requiring *both* ends defeats a LAN attacker spoofing a
+  `100.64.x.x` source. Handles IPv4-mapped addresses (`::ffff:100.64.x.x`) for Kestrel.
+- **Android** allows auto-fetch only for a Tailscale address / `*.ts.net` MagicDNS hostname **AND**
+  `TRANSPORT_VPN` active. The VPN-active check is mandatory: a Tailscale-looking address with no live
+  tunnel must NOT unlock auto-fetch.
+- **Loopback is NOT trusted for the PIN, on either side — do not add it back (RemEx-fd7e).** It used to
+  be, "for the PC's own UI". But the UI runs in the agent process and reads the PIN in-process
+  (`IpcPairingPinQueryService` → `IPairingService.TryGetActivePinInfo`); it never used the socket. So
+  the loopback branch served only *other* local processes — including unelevated ones — handing them
+  the live PIN of the elevated agent's open pairing window. Nothing at the socket tells the UI apart
+  from them. `LoopbackPairingPinTests` (host, incl. the real `/ws` map site) and
+  `TransportTrustPinAutoFetchTest` (Android) fail if the loopback branch comes back. Note this is only
+  the PIN gate: loopback still satisfies the `/ws` pairing gate (`isLoopback` at the map site), which
+  is a separate decision (RemEx-4215 / RemEx-4u0d).
 
 `requiresLocalNetworkAccess(host)` returns `false` for loopback/Tailscale/`*.ts.net` targets, gating
 the `NEARBY_WIFI_DEVICES` / `ACCESS_LOCAL_NETWORK` runtime permission requests. Changes here silently

@@ -11,10 +11,14 @@ import android.net.NetworkCapabilities
  * LAN/internet path where the PIN must keep its purpose as a genuine out-of-band
  * secret and be entered manually.
  *
- * "Trusted transport" means: loopback (same device) or a Tailscale/WireGuard tunnel
- * (mutually authenticated, encrypted, no on-path attacker). On any other transport the
- * PIN is the only thing standing between an active network attacker and a successful
+ * "Trusted transport" for the PIN means a Tailscale/WireGuard tunnel (mutually
+ * authenticated, encrypted, no on-path attacker) and nothing else. On any other transport
+ * the PIN is the only thing standing between an active network attacker and a successful
  * first-pair, so it must NOT be served to the client automatically.
+ *
+ * Loopback is still exempt from LAN permission prompts ([requiresLocalNetworkAccess]) but
+ * is NOT trusted for the PIN: the host stopped serving it to loopback (RemEx-fd7e), and
+ * the two sides must agree or the auto-fill fails on one end.
  */
 object TransportTrust {
 
@@ -70,11 +74,11 @@ object TransportTrust {
 
     /**
      * Whether the pairing PIN may be auto-fetched over the network to [host]. Allowed
-     * only for loopback, or for a Tailscale address while a VPN tunnel is actually
-     * active. Everything else requires manual, out-of-band PIN entry.
+     * only for a Tailscale address or `*.ts.net` name while a VPN tunnel is actually
+     * active. Everything else, loopback included, requires manual PIN entry: the host
+     * refuses to relay the PIN to loopback (RemEx-fd7e), so asking would only fail.
      */
     fun canAutoFetchPin(context: Context, host: String): Boolean {
-        if (isLoopback(host)) return true
         // Keep isVpnActive() as a mandatory conjunct: the active WireGuard transport is what
         // actually supplies the authenticated, MITM-resistant property. A Tailscale-looking
         // address OR a *.ts.net name with no live tunnel must NOT unlock auto-fetch.

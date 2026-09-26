@@ -611,8 +611,10 @@ public static class HostBootstrapper
             // Whether this connection may auto-fetch the pairing PIN over /ws (pairing_pin_request).
             // Computed here from the real Kestrel connection addresses via the same
             // TransportTrust.IsTrustedForPinAutoFetch gate that the retired GET /pairing-pin endpoint
-            // used (RemEx-0xp0), so the WS path is exactly as powerful as that endpoint was — no more.
-            // A null RemoteIpAddress (TestServer/in-process) fails closed.
+            // used (RemEx-0xp0). Tailscale-both-ends only: loopback is NOT trusted for the PIN, even
+            // though isLoopback above still satisfies the pairing gate (RemEx-fd7e) — the PC UI reads
+            // the PIN in-process, so the only loopback caller the wire path ever served was some other
+            // local process. A null RemoteIpAddress (TestServer/in-process) fails closed.
             var isTrustedForPinAutoFetch = Remex.Agent.Services.Security.TransportTrust
                 .IsTrustedForPinAutoFetch(remoteIp, context.Connection.LocalIpAddress);
 
