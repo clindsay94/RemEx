@@ -1,3 +1,4 @@
+using Avalonia.Styling;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Models;
@@ -103,5 +104,29 @@ public class ThemeModeResolutionTests
         theme.HandleOsThemeVariant(osIsLight: true);
 
         posts.Should().Be(0);
+    }
+
+    /// <summary>
+    /// RemEx-ap3pd: <c>ApplyCustomizationCore</c> used to set <c>RequestedThemeVariant</c> from
+    /// <c>ApplyBaseThemeInternal</c>'s own preset-based guess (Light only for SolarFlare) and then
+    /// AGAIN from <c>isLightTheme</c> a few lines later — a real double flip whenever a dark preset
+    /// was in Light mode, or SolarFlare was in Dark mode, each re-resolving every variant-dependent
+    /// resource. <see cref="ThemeService.ResolveThemeVariant"/> is the one place that decision is
+    /// made now; <see cref="ThemeService.ApplyCustomizationCore"/> calls it exactly once per apply.
+    /// </summary>
+    /// <remarks>
+    /// This assembly has no <c>Avalonia.Headless</c> reference, so there is no live
+    /// <c>Application.Current</c> for a test to observe the assignment itself happening once instead
+    /// of twice (see <c>ThemeSwapMergedDictionaryTests</c>) — that needs <c>ui-verify</c> or a manual
+    /// palette sweep. What IS testable here, and pins the actual decision the fix introduced, is that
+    /// the single source of truth is exactly the light/dark bool and nothing about the preset.
+    /// </remarks>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveThemeVariantIsTheOnlyDecisionAndDependsOnlyOnIsLightTheme(bool isLightTheme)
+    {
+        var expected = isLightTheme ? ThemeVariant.Light : ThemeVariant.Dark;
+        ThemeService.ResolveThemeVariant(isLightTheme).Should().Be(expected);
     }
 }

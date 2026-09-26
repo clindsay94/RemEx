@@ -340,7 +340,15 @@ public class ThemeService : IDisposable
                 $"ThemeService.ApplyCustomization: unknown theme preset '{settings.ThemeId}' — falling back to {SeedPresetCatalog.DefaultId}.");
         }
 
-        ApplyBaseThemeInternal(preset.BaseTheme);
+        // RemEx-ap3pd: dictionary swap only here, deliberately NOT ApplyBaseThemeInternal. That
+        // method also sets RequestedThemeVariant from the PRESET (Light only for SolarFlare, Dark
+        // for the rest) — correct for its other two callers (SetBaseTheme / ApplyThemeSync), which
+        // have no isLightTheme of their own to set it from. This path computes the real isLightTheme
+        // from settings a few lines below and must be the ONLY place that assigns the variant here:
+        // setting it from the preset first and then again from isLightTheme was a real double flip
+        // whenever they disagreed (a dark preset in Light mode, or SolarFlare in Dark mode) — two
+        // full ThemeVariant changes per apply, each re-resolving every variant-dependent resource.
+        SwapBaseThemeDictionary(preset.BaseTheme);
 
         // ── Batch resource updates ──────────────────────────────────────
         // Build all new values first, then detach the override dictionary,
@@ -384,7 +392,7 @@ public class ThemeService : IDisposable
         // templates paint dark chrome underneath a light M3 palette.
         if (Application.Current is { } themedApp)
         {
-            themedApp.RequestedThemeVariant = isLightTheme ? ThemeVariant.Light : ThemeVariant.Dark;
+            themedApp.RequestedThemeVariant = ResolveThemeVariant(isLightTheme);
         }
 
         // AN UNPARSEABLE SEED MUST NOT SKIP THE PALETTE, and until RemEx-07jij it quietly did.
@@ -867,11 +875,18 @@ public class ThemeService : IDisposable
     /// hardware colour's own alpha is discarded — a seed is opaque by definition here.</summary>
     private static string ToHexSeed(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 
+    /// <summary>
+    /// Swaps the base theme file AND sets <c>RequestedThemeVariant</c> from the preset's own mapping
+    /// (Light only for SolarFlare, Dark otherwise). Used only by <see cref="SetBaseTheme"/> and
+    /// <see cref="ApplyThemeSync"/>, which have no <c>isLightTheme</c> of their own to set the variant
+    /// from — <see cref="ApplyCustomizationCore"/> calls <see cref="SwapBaseThemeDictionary"/> instead
+    /// (RemEx-ap3pd) so it remains the ONLY place that assigns the variant on that path.
+    /// </summary>
     private void ApplyBaseThemeInternal(AppTheme theme)
     {
-        if (Application.Current?.Resources is not ResourceDictionary resources) return;
+        if (Application.Current?.Resources is not ResourceDictionary) return;
 
-        _baseThemeResources = SwapBaseTheme(resources.MergedDictionaries, _baseThemeResources, BaseThemeUri(theme));
+        SwapBaseThemeDictionary(theme);
 
         if (Application.Current is { })
         {
@@ -880,6 +895,30 @@ public class ThemeService : IDisposable
                 : ThemeVariant.Dark;
         }
     }
+
+    /// <summary>
+    /// Swaps the base theme file merged into <c>Application.Resources</c>, without touching
+    /// <c>RequestedThemeVariant</c>. Split out of <see cref="ApplyBaseThemeInternal"/> (RemEx-ap3pd)
+    /// so <see cref="ApplyCustomizationCore"/> can replace the dictionary without also flipping the
+    /// variant from the preset's own guess — it sets the variant itself afterwards, once, from the
+    /// real <c>isLightTheme</c> decision.
+    /// </summary>
+    private void SwapBaseThemeDictionary(AppTheme theme)
+    {
+        if (Application.Current?.Resources is not ResourceDictionary resources) return;
+
+        _baseThemeResources = SwapBaseTheme(resources.MergedDictionaries, _baseThemeResources, BaseThemeUri(theme));
+    }
+
+    /// <summary>
+    /// The single <see cref="ThemeVariant"/> an apply should end on, computed once from the
+    /// light/dark decision (RemEx-ap3pd). Pulled out so the "compute once" rule has one place a test
+    /// can pin without needing a live <c>Application.Current</c> — this assembly has no
+    /// <c>Avalonia.Headless</c> reference, so <see cref="ApplyCustomizationCore"/>'s own assignment
+    /// never runs under test (see <c>ThemeSwapMergedDictionaryTests</c>).
+    /// </summary>
+    internal static ThemeVariant ResolveThemeVariant(bool isLightTheme) =>
+        isLightTheme ? ThemeVariant.Light : ThemeVariant.Dark;
 
     /// <summary>The folder every selectable base theme file lives in.</summary>
     private const string ThemeDictionaryPrefix = "avares://Remex.Desktop/Themes/";
