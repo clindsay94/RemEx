@@ -175,6 +175,8 @@
     <string name="remote_desktop_fps_unlimited_label">Hedef FPS: Sınırsız</string>
     <string name="remote_desktop_direct_touch_label">Doğrudan Dokunma Modu</string>
     <string name="remote_desktop_direct_touch_desc">Dokunma konumları, Trackpad hareketi yerine doğrudan ekran koordinatlarına eşlenir</string>
+    <string name="remote_desktop_adaptive_scale_label">Uyarlanabilir ölçek</string>
+    <string name="remote_desktop_adaptive_scale_desc">Kare hızını korumak için PC\'nin akış çözünürlüğünü düşürmesine izin verir. Değişim sırasında görüntü kısa bir süre takılabilir.</string>
     <string name="remote_desktop_pointer_speed_label">İmleç Hızı: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Dikey Kaydırma Hassasiyeti: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Yatay Kaydırma Hassasiyeti: %.1fx</string>

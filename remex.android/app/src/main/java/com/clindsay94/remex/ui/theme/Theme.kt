@@ -531,6 +531,83 @@ private fun rememberSystemContrast(): Float {
     return contrast
 }
 
+/** RemExTheme's light/dark decision: `"dark"` / `"light"` / else follow the system. */
+@Composable
+internal fun isDarkThemeFor(themeMode: String): Boolean =
+    when (themeMode.lowercase()) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    }
+
+/**
+ * The custom palette's scheme: the stored seed's hue and tone at the chroma ("vibrancy") slider's
+ * value, through the chosen variant at the chosen contrast. The Hct substitution is the one
+ * [com.clindsay94.remex.data.ThemeSyncSeedResolver.applyChroma] mirrors for the PC.
+ */
+@SuppressLint("RestrictedApi")
+internal fun customPaletteScheme(
+    baseSeedArgb: Int,
+    chroma: Float,
+    darkTheme: Boolean,
+    style: String,
+    contrast: Float
+): ColorScheme {
+    val baseHct = Hct.fromInt(baseSeedArgb)
+    val seed = Color(Hct.from(baseHct.hue, chroma.toDouble(), baseHct.tone).toInt())
+    return colorSchemeFromSeed(seed, darkTheme, style, contrast.toDouble())
+}
+
+/**
+ * The colour scheme a palette choice paints. ONE implementation shared by [RemExTheme] (the
+ * applied theme) and the Color Studio preview (live-check B1/B2), so the preview cannot drift from
+ * what the app paints. Branch order is the rule: a custom palette wins over the dynamic-colour
+ * toggle; "Default" with dynamic colour is the system (wallpaper) scheme; "Default" without it is
+ * the amber brand scheme. minSdk 34, so the dynamic scheme is always available.
+ */
+@SuppressLint("RestrictedApi")
+@Composable
+internal fun rememberPaletteColorScheme(
+    themePalette: String,
+    themeStyle: String,
+    themeSeedColor: String,
+    themeSeedChroma: Float,
+    themeContrast: Float,
+    dynamicColor: Boolean,
+    darkTheme: Boolean
+): ColorScheme =
+    when {
+        themePalette.equals("custom", ignoreCase = true) ->
+            remember(themeSeedColor, themeSeedChroma, darkTheme, themeStyle, themeContrast) {
+                val baseArgb =
+                    try {
+                        android.graphics.Color.parseColor(themeSeedColor)
+                    } catch (_: Exception) {
+                        null
+                    }
+                if (baseArgb != null) {
+                    customPaletteScheme(baseArgb, themeSeedChroma, darkTheme, themeStyle, themeContrast)
+                } else {
+                    colorSchemeFromSeed(
+                        Color(0xFF6750A4),
+                        darkTheme,
+                        themeStyle,
+                        themeContrast.toDouble()
+                    )
+                }
+            }
+
+        dynamicColor -> {
+            val context = LocalContext.current
+            remember(darkTheme, context) {
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            }
+        }
+
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
 // WARNING: This file imports com.google.android.material.color.utilities.* (Hct, Hct.from, etc.)
 // which are @RestrictTo(LIBRARY_GROUP) internals of the Material library. They are extremely
 // sensitive to material version bumps. Keep material version pinned to 1.14.0 in libs.versions.toml
@@ -549,11 +626,7 @@ fun RemExTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (themeMode.lowercase()) {
-        "dark" -> true
-        "light" -> false
-        else -> isSystemInDarkTheme()
-    }
+    val darkTheme = isDarkThemeFor(themeMode)
 
     // Clamp the in-app scale so it cannot compound with the system font-size setting past
     // MAX_COMBINED_FONT_SCALE (RemEx-95ls); the system's own scale is always fully honored.
@@ -563,41 +636,15 @@ fun RemExTheme(
         typographyForFontFamily(fontFamilyKey, effectiveFontScale)
     }
 
-    val seedColor = remember(themeSeedColor, themePalette, themeSeedChroma) {
-        try {
-            val baseColor = android.graphics.Color.parseColor(themeSeedColor)
-            if (themePalette.equals("custom", ignoreCase = true)) {
-                val baseHct = Hct.fromInt(baseColor)
-                Color(Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone).toInt())
-            } else {
-                Color(baseColor)
-            }
-        } catch (_: Exception) {
-            Color(0xFF6750A4)
-        }
-    }
-
-    val colorScheme = when {
-        themePalette.equals("custom", ignoreCase = true) ->
-            remember(seedColor, darkTheme, themeStyle, themeContrast) {
-                colorSchemeFromSeed(
-                    seedColor,
-                    darkTheme,
-                    themeStyle,
-                    themeContrast.toDouble()
-                )
-            }
-
-        dynamicColor -> {
-            val context = LocalContext.current
-            remember(darkTheme, context) {
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            }
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = rememberPaletteColorScheme(
+        themePalette = themePalette,
+        themeStyle = themeStyle,
+        themeSeedColor = themeSeedColor,
+        themeSeedChroma = themeSeedChroma,
+        themeContrast = themeContrast,
+        dynamicColor = dynamicColor,
+        darkTheme = darkTheme
+    )
 
     // When dynamic color drives the main scheme, the success palette follows the SYSTEM
     // contrast (the same source the dynamic scheme responds to); otherwise the app's

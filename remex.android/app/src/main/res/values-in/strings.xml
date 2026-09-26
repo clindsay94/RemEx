@@ -175,6 +175,8 @@
     <string name="remote_desktop_fps_unlimited_label">Target FPS: Tak Terbatas</string>
     <string name="remote_desktop_direct_touch_label">Mode sentuhan langsung</string>
     <string name="remote_desktop_direct_touch_desc">Posisi sentuhan dipetakan langsung ke koordinat layar</string>
+    <string name="remote_desktop_adaptive_scale_label">Skala adaptif</string>
+    <string name="remote_desktop_adaptive_scale_desc">Biarkan PC menurunkan resolusi streaming untuk menjaga frame rate. Gambar bisa tersendat sesaat saat berubah.</string>
     <string name="remote_desktop_pointer_speed_label">Kecepatan kursor: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Sensitivitas gulir vertikal: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Sensitivitas gulir horizontal: %.1fx</string>

@@ -49,10 +49,10 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
-import com.clindsay94.remex.ui.theme.colorSchemeFromSeed
+import com.clindsay94.remex.ui.theme.isDarkThemeFor
+import com.clindsay94.remex.ui.theme.rememberPaletteColorScheme
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
@@ -321,32 +321,41 @@ fun PersonalizationScreenContent(
                                     "uk" to "Українська"
                             )
 
-                    Card(
-                            colors =
-                                    CardDefaults.cardColors(
-                                            containerColor =
-                                                    MaterialTheme.colorScheme.tertiaryContainer
-                                                            .copy(alpha = 0.5f)
-                                    ),
-                            modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                    stringResource(R.string.personalization_language_note),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        }
+                    // The language note used to be a permanent banner above the picker. It is now
+                    // said once, at the moment it applies: picking a DIFFERENT language asks to
+                    // confirm with the note as the body (live-check B3). A dialog, not a snackbar,
+                    // because applying a locale recreates the activity and would wipe a snackbar
+                    // before it could be read.
+                    var pendingLanguageTag by remember { mutableStateOf<String?>(null) }
+                    pendingLanguageTag?.let { pendingTag ->
+                        AlertDialog(
+                                onDismissRequest = { pendingLanguageTag = null },
+                                icon = { Icon(Icons.Default.Language, contentDescription = null) },
+                                title = { Text(stringResource(R.string.personalization_app_language)) },
+                                text = { Text(stringResource(R.string.personalization_language_note)) },
+                                confirmButton = {
+                                    Button(
+                                            onClick = {
+                                                view.performHapticFeedback(
+                                                        HapticFeedbackConstants.CONFIRM
+                                                )
+                                                pendingLanguageTag = null
+                                                val tags = if (pendingTag == "system") "" else pendingTag
+                                                val lm = view.context.getSystemService(LocaleManager::class.java)
+                                                if (lm != null) {
+                                                    lm.applicationLocales =
+                                                        if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
+                                                        else LocaleList.forLanguageTags(tags)
+                                                }
+                                            }
+                                    ) { Text(stringResource(R.string.button_confirm)) }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { pendingLanguageTag = null }) {
+                                        Text(stringResource(R.string.button_cancel))
+                                    }
+                                }
+                        )
                     }
 
                     var expanded by remember { mutableStateOf(false) }
@@ -392,13 +401,9 @@ fun PersonalizationScreenContent(
                                                     HapticFeedbackConstants.KEYBOARD_TAP
                                             )
                                             expanded = false
-                                            val tags = if (tag == "system") "" else tag
-                                            val lm = view.context.getSystemService(LocaleManager::class.java)
-                                            if (lm != null) {
-                                                lm.applicationLocales =
-                                                    if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
-                                                    else LocaleList.forLanguageTags(tags)
-                                            }
+                                            // Re-picking the current language changes nothing,
+                                            // so it asks nothing.
+                                            if (tag != currentLangTag) pendingLanguageTag = tag
                                         }
                                 )
                             }
@@ -733,20 +738,6 @@ fun PersonalizationScreenContent(
                             )
                             TonalRow(hct = currentHct)
 
-                            // Mini Dashboard Preview
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                            ) {
-                                MiniCardPreview(
-                                        seedColor = seedColor,
-                                        shapePreset = telemetryCardShapePreset,
-                                        cornerRadius = cornerRadius,
-                                        opacity = cardOpacity
-                                )
-                            }
-
                             OutlinedTextField(
                                     value = seedColor,
                                     onValueChange = { if (it.length <= 7) seedColor = it },
@@ -758,6 +749,35 @@ fun PersonalizationScreenContent(
                                     textStyle = MaterialTheme.typography.bodyMediumEmphasized
                             )
                         }
+                    }
+
+                    // Mini Dashboard Preview, for BOTH palette modes (live-check B1/B2). Painted
+                    // from this screen's live state through the same scheme function RemExTheme
+                    // uses, so it follows the vibrancy/contrast/style/mode choices while a slider
+                    // is still moving (the saved theme only lands after the 500 ms save debounce),
+                    // and on "Default" it shows the scheme that choice really paints (the
+                    // system's dynamic colours, or the brand scheme with dynamic colour off).
+                    val previewScheme =
+                            rememberPaletteColorScheme(
+                                    themePalette = palette,
+                                    themeStyle = themeStyle,
+                                    themeSeedColor = seedColor,
+                                    themeSeedChroma = themeSeedChroma,
+                                    themeContrast = themeContrast,
+                                    dynamicColor = dynamicColor,
+                                    darkTheme = isDarkThemeFor(themeMode)
+                            )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                    ) {
+                        MiniCardPreview(
+                                scheme = previewScheme,
+                                shapePreset = telemetryCardShapePreset,
+                                cornerRadius = cornerRadius,
+                                opacity = cardOpacity
+                        )
                     }
                 }
             }
@@ -1367,21 +1387,15 @@ private fun TonalRow(hct: Hct) {
 
 @Composable
 private fun MiniCardPreview(
-        seedColor: String,
+        scheme: ColorScheme,
         shapePreset: Float,
         cornerRadius: Int,
         opacity: Float
 ) {
-    val isDark = isSystemInDarkTheme()
-    val scheme = remember(seedColor, isDark) {
-        try {
-            colorSchemeFromSeed(Color(seedColor.toColorInt()), isDark)
-        } catch (e: Exception) {
-            null
-        }
-    }
-    val containerTarget = scheme?.primaryContainer ?: MaterialTheme.colorScheme.primaryContainer
-    val contentColor = scheme?.onPrimaryContainer ?: MaterialTheme.colorScheme.onPrimaryContainer
+    // Was: a scheme rebuilt from the raw seed hex alone (system dark mode, default variant, zero
+    // contrast), so the vibrancy and contrast sliders never reached it (live-check B1).
+    val containerTarget = scheme.primaryContainer
+    val contentColor = scheme.onPrimaryContainer
     val animatedColor by
             animateColorAsState(
                     targetValue = containerTarget,

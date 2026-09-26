@@ -175,6 +175,8 @@
     <string name="remote_desktop_fps_unlimited_label">Цільовий FPS: Необмежено</string>
     <string name="remote_desktop_direct_touch_label">Режим прямого дотику</string>
     <string name="remote_desktop_direct_touch_desc">Позиції дотику відображаються безпосередньо на координати екрана, а не як рух трекпада</string>
+    <string name="remote_desktop_adaptive_scale_label">Адаптивний масштаб</string>
+    <string name="remote_desktop_adaptive_scale_desc">Дозволяє ПК знижувати роздільність трансляції, щоб утримати частоту кадрів. Під час зміни зображення може на мить затнутися.</string>
     <string name="remote_desktop_pointer_speed_label">Швидкість курсора: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Чутливість вертикального прокручування: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Чутливість горизонтального прокручування: %.1fx</string>

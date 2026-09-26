@@ -187,8 +187,27 @@ data class RemoteDesktopConfigState(
         val targetFps: Int = 120,
         val scale: Float = 0.5f,
         val codec: String = "H264",
-        val preset: DesktopPreset = DesktopPreset.SMOOTH_SHARP
+        val preset: DesktopPreset = DesktopPreset.SMOOTH_SHARP,
+        /**
+         * Lets the host drive the capture scale to hold the target FPS (Phase 5 adaptive scale,
+         * `DesktopConfig.AdaptiveScale`). Off by default: each host scale step changes the stream's
+         * resolution, which rebuilds this client's decoder surface (a brief hitch). Live-check D3.
+         */
+        val adaptiveScale: Boolean = false
 )
+
+/**
+ * The stream-setting fields of a `desktop_config` payload. Key names are the core's
+ * `DesktopConfig` `[JsonPropertyName]`s (remex.core/Models/DesktopConfig.cs); `adaptiveScale` is
+ * always sent explicitly so the host never falls back to its own default rule.
+ */
+internal fun putDesktopStreamSettings(json: JSONObject, state: RemoteDesktopConfigState) {
+    json.put("quality", state.quality)
+    json.put("scale", state.scale)
+    json.put("targetFps", state.targetFps)
+    json.put("codec", state.codec)
+    json.put("adaptiveScale", state.adaptiveScale)
+}
 
 /**
  * Named {quality, targetFps, scale} bundles for the remote-desktop stream (RemEx-vj31). CUSTOM has
@@ -1017,7 +1036,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                 quality = prefs.quality.coerceIn(1, 100),
                                 targetFps = prefs.targetFps.coerceIn(1, DESKTOP_MAX_FPS),
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f),
-                                preset = DesktopPreset.fromId(prefs.preset)
+                                preset = DesktopPreset.fromId(prefs.preset),
+                                adaptiveScale = prefs.adaptiveScale
                         )
                 desiredDisplayTarget = prefs.displayTarget
             }
@@ -1519,6 +1539,16 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     delay(screenshotStatusVisibleMs)
                     _screenshotStatus.value = null
                 }
+    }
+
+    /**
+     * Adaptive-scale switch (live-check D3). A tap is one change, so the debouncer's leading edge
+     * sends it at once; it also supersedes any slider send still pending (one host rebuild).
+     */
+    fun updateAdaptiveScale(enabled: Boolean) {
+        _configState.update { it.copy(adaptiveScale = enabled) }
+        viewModelScope.launch { settingsManager.saveRemoteDesktopAdaptiveScale(enabled) }
+        configPushDebouncer.onChange()
     }
 
     fun updateDirectTouch(enabled: Boolean) {
@@ -2319,14 +2349,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     private fun buildConfigJson(): JSONObject {
         return JSONObject().apply {
-            put("quality", _configState.value.quality)
-            put("scale", _configState.value.scale)
-            put("targetFps", _configState.value.targetFps)
-            put("codec", _configState.value.codec)
-            // Adaptive capture-scale (Phase 5, RemEx-eo0f) is intentionally NOT opted into: changing the
-            // capture scale mid-stream resizes the encoded frame, which forces this client to rebuild its
-            // SurfaceView + H.264 decoder each time (a periodic black flash/hitch as it oscillates). The
-            // presets use their fixed scale, which is stable. Field omitted -> host's off-by-default rule.
+            // Adaptive capture-scale (Phase 5, RemEx-eo0f) is the user's opt-in switch in the settings
+            // sheet, default OFF (live-check D3): changing the capture scale mid-stream resizes the
+            // encoded frame, which makes this client rebuild its SurfaceView + H.264 decoder each time
+            // (a brief hitch per step). The presets' fixed scale stays the stable default.
+            putDesktopStreamSettings(this, _configState.value)
             // The client renders the true native cursor itself from the streamed cursor SHAPE
             // (desktop_cursor_shape, real BGRA pixels) positioned by the live desktop_cursor_state.
             // Host-side compositing is left off so the cursor never freezes on mouse-only frames

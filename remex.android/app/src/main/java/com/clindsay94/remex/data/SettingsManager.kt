@@ -73,6 +73,8 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_UNLIMITED_WARNING_SHOWN_KEY =
                         booleanPreferencesKey("desktop_unlimited_warning_shown")
                 val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
+                // Opt-in host adaptive capture scale (DesktopConfig.AdaptiveScale), default off.
+                val DESKTOP_ADAPTIVE_SCALE_KEY = booleanPreferencesKey("desktop_adaptive_scale")
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
                 val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
                 // Persisted display-target selection token: "" (primary/default), "virtual"
@@ -180,7 +182,8 @@ class SettingsManager(val context: Context) {
                 val horizontalScrollSensitivity: Float = 1.0f,
                 val cursorScale: Float = 1.0f,
                 val displayTarget: String = "",
-                val preset: String = "smooth_sharp"
+                val preset: String = "smooth_sharp",
+                val adaptiveScale: Boolean = false
         )
 
         data class PersonalizationPreferences(
@@ -390,7 +393,8 @@ class SettingsManager(val context: Context) {
                                                         "smooth_sharp"
                                                 } else {
                                                         "custom"
-                                                }
+                                                },
+                                adaptiveScale = preferences[DESKTOP_ADAPTIVE_SCALE_KEY] ?: false
                         )
                 }
 
@@ -518,6 +522,12 @@ class SettingsManager(val context: Context) {
         suspend fun saveRemoteDesktopDirectTouch(enabled: Boolean) {
                 context.dataStore.edit { preferences ->
                         preferences[DESKTOP_DIRECT_TOUCH_KEY] = enabled
+                }
+        }
+
+        suspend fun saveRemoteDesktopAdaptiveScale(enabled: Boolean) {
+                context.dataStore.edit { preferences ->
+                        preferences[DESKTOP_ADAPTIVE_SCALE_KEY] = enabled
                 }
         }
 

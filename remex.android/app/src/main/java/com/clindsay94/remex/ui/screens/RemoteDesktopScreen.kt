@@ -420,6 +420,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onUpdateQuality = { viewModel.updateQuality(it) },
                 onUpdateTargetFps = { viewModel.updateTargetFps(it) },
                 onUpdateScale = { viewModel.updateScale(it) },
+                onUpdateAdaptiveScale = { viewModel.updateAdaptiveScale(it) },
                 onApplyPreset = { preset, q, f, s -> viewModel.applyDesktopPreset(preset, q, f, s) },
                 onSelectCustomPreset = { viewModel.selectCustomPreset() },
                 hasShownUnlimitedWarning = hasShownUnlimitedWarning,
@@ -494,6 +495,7 @@ fun RemoteDesktopScreenContent(
         onUpdateQuality: (Int) -> Unit,
         onUpdateTargetFps: (Int) -> Unit,
         onUpdateScale: (Float) -> Unit = {},
+        onUpdateAdaptiveScale: (Boolean) -> Unit = {},
         onApplyPreset: (DesktopPreset, Int, Int, Float) -> Unit = { _, _, _, _ -> },
         onSelectCustomPreset: () -> Unit = {},
         hasShownUnlimitedWarning: Boolean = false,
@@ -639,6 +641,8 @@ fun RemoteDesktopScreenContent(
         val doubleTapRadiusPx = with(density) { DOUBLE_TAP_RADIUS_DP.dp.toPx() }
         val inertiaMinVelPx = with(density) { INERTIA_MIN_VELOCITY.dp.toPx() }
         val inertiaStopVelPx = with(density) { INERTIA_STOP_VELOCITY.dp.toPx() }
+        val twoFingerDecisionSlopPx =
+                with(density) { TwoFingerGestureClassifier.DECISION_SLOP_DP.dp.toPx() }
 
         // These are read inside pointerInput coroutines which don't see recomposition.
         // rememberUpdatedState ensures the coroutine always reads the latest value.
@@ -1357,12 +1361,17 @@ fun RemoteDesktopScreenContent(
                                                                 var lastScrollSendTime =
                                                                         0L // P1-17: throttle wheel-scroll sends
 
-                                                                // Two-finger gesture state
-                                                                var twoFingerIntent: String? =
-                                                                        null // "scroll" | "pinch" |
-                                                                // null
+                                                                // Two-finger gesture state. The intent is
+                                                                // decided once, against the baseline taken
+                                                                // when the second finger landed (D1), and
+                                                                // held until the fingers lift.
+                                                                var twoFingerIntent: TwoFingerIntent? =
+                                                                        null
                                                                 var prevTwoFingerDist = 0f
                                                                 var prevTwoFingerCenter =
+                                                                        Offset.Zero
+                                                                var twoFingerStartDist = 0f
+                                                                var twoFingerStartCenter =
                                                                         Offset.Zero
 
                                                                 // Velocity tracking for inertia
@@ -1411,6 +1420,9 @@ fun RemoteDesktopScreenContent(
                                                                         twoFingerIntent = null
                                                                         prevTwoFingerDist = 0f
                                                                         prevTwoFingerCenter =
+                                                                                Offset.Zero
+                                                                        twoFingerStartDist = 0f
+                                                                        twoFingerStartCenter =
                                                                                 Offset.Zero
                                                                         scrollAccumX = 0f
                                                                         scrollAccumY = 0f
@@ -1508,9 +1520,16 @@ fun RemoteDesktopScreenContent(
                                                                                                                         2f
                                                                                                         )
 
-                                                                                                if (prevTwoFingerDist >
+                                                                                                if (prevTwoFingerDist <=
                                                                                                                 0f
                                                                                                 ) {
+                                                                                                        // First two-finger frame:
+                                                                                                        // the classifier's baseline.
+                                                                                                        twoFingerStartDist =
+                                                                                                                dist
+                                                                                                        twoFingerStartCenter =
+                                                                                                                center
+                                                                                                } else {
                                                                                                         val distDelta =
                                                                                                                 abs(
                                                                                                                         dist -
@@ -1520,27 +1539,31 @@ fun RemoteDesktopScreenContent(
                                                                                                                 center -
                                                                                                                         prevTwoFingerCenter
 
-                                                                                                        // Lock intent after first
-                                                                                                        // significant gesture
+                                                                                                        // D1: classify against the
+                                                                                                        // baseline once past the slop,
+                                                                                                        // then lock for the gesture.
+                                                                                                        // (Was: one frame's raw-px
+                                                                                                        // deltas, pinch first, which
+                                                                                                        // turned fast scrolls into zooms.)
                                                                                                         if (twoFingerIntent ==
                                                                                                                         null
                                                                                                         ) {
-                                                                                                                if (distDelta >
-                                                                                                                                5f
-                                                                                                                )
-                                                                                                                        twoFingerIntent =
-                                                                                                                                "pinch"
-                                                                                                                else if (moveDelta
-                                                                                                                                .getDistance() >
-                                                                                                                                3f
-                                                                                                                )
-                                                                                                                        twoFingerIntent =
-                                                                                                                                "scroll"
+                                                                                                                twoFingerIntent =
+                                                                                                                        TwoFingerGestureClassifier
+                                                                                                                                .classify(
+                                                                                                                                        startSpan = twoFingerStartDist,
+                                                                                                                                        startCenterX = twoFingerStartCenter.x,
+                                                                                                                                        startCenterY = twoFingerStartCenter.y,
+                                                                                                                                        span = dist,
+                                                                                                                                        centerX = center.x,
+                                                                                                                                        centerY = center.y,
+                                                                                                                                        decisionSlopPx = twoFingerDecisionSlopPx,
+                                                                                                                                )
                                                                                                         }
 
                                                                                                         when (twoFingerIntent
                                                                                                         ) {
-                                                                                                                "pinch" -> {
+                                                                                                                TwoFingerIntent.Pinch -> {
                                                                                                                         if (distDelta >
                                                                                                                                         2f
                                                                                                                         ) {
@@ -1602,7 +1625,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 suppressPanFollowUntilMs = System.currentTimeMillis() + 350
                                                                                                                         }
                                                                                                                 }
-                                                                                                                "scroll" -> {
+                                                                                                                TwoFingerIntent.Scroll -> {
                                                                                                                         if (zoomFactor >
                                                                                                                                         1.05f
                                                                                                                         ) {
@@ -1694,6 +1717,10 @@ fun RemoteDesktopScreenContent(
                                                                                                                                         }
                                                                                                                                 }
                                                                                                                         }
+                                                                                                                }
+                                                                                                                null -> {
+                                                                                                                        // Still inside the slop
+                                                                                                                        // window: nothing yet.
                                                                                                                 }
                                                                                                         }
                                                                                                 }
@@ -3476,6 +3503,53 @@ fun RemoteDesktopScreenContent(
                                                                                 Modifier.fillMaxWidth()
                                                                 )
                                                         }
+                                                }
+
+                                                // Adaptive scale (live-check D3): opt-in, default
+                                                // off. Own full-width row, like Direct Touch below.
+                                                Row(
+                                                        modifier = Modifier.fillMaxWidth()
+                                                                .toggleable(
+                                                                        value = config.adaptiveScale,
+                                                                        role = Role.Switch,
+                                                                        onValueChange = { onUpdateAdaptiveScale(it) }
+                                                                ),
+                                                        horizontalArrangement =
+                                                                Arrangement.SpaceBetween,
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically
+                                                ) {
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .remote_desktop_adaptive_scale_label
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodyLargeEmphasized
+                                                                )
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .remote_desktop_adaptive_scale_desc
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodySmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                        }
+                                                        Spacer(Modifier.width(16.dp))
+                                                        Switch(
+                                                                checked = config.adaptiveScale,
+                                                                onCheckedChange = null
+                                                        )
                                                 }
 
                                                 HorizontalDivider()

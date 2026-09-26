@@ -175,6 +175,8 @@
     <string name="remote_desktop_fps_unlimited_label">FPS Alvo: Ilimitado</string>
     <string name="remote_desktop_direct_touch_label">Modo toque direto</string>
     <string name="remote_desktop_direct_touch_desc">Posições de toque mapeiam diretamente para coordenadas da tela</string>
+    <string name="remote_desktop_adaptive_scale_label">Escala adaptável</string>
+    <string name="remote_desktop_adaptive_scale_desc">Permite que o PC reduza a resolução da transmissão para manter a taxa de quadros. A imagem pode travar por um instante ao mudar.</string>
     <string name="remote_desktop_pointer_speed_label">Velocidade do cursor: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Sensibilidade da rolagem vertical: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilidade da rolagem horizontal: %.1fx</string>

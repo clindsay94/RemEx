@@ -247,6 +247,8 @@
     <string name="remote_desktop_fps_unlimited_label">Target FPS: Unlimited</string>
     <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
     <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
+    <string name="remote_desktop_adaptive_scale_label">Adaptive scale</string>
+    <string name="remote_desktop_adaptive_scale_desc">Let the PC lower the stream resolution to hold the frame rate. The picture may hitch briefly when it changes.</string>
     <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>

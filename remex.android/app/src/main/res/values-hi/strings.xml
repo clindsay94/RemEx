@@ -175,6 +175,8 @@
     <string name="remote_desktop_fps_unlimited_label">लक्ष्य FPS: असीमित</string>
     <string name="remote_desktop_direct_touch_label">डायरेक्ट टच मोड</string>
     <string name="remote_desktop_direct_touch_desc">टच पोजीशन सीधे स्क्रीन कोऑर्डिनेट्स पर मैप होती हैं</string>
+    <string name="remote_desktop_adaptive_scale_label">अनुकूली स्केल</string>
+    <string name="remote_desktop_adaptive_scale_desc">फ़्रेम दर बनाए रखने के लिए PC को स्ट्रीम रिज़ॉल्यूशन कम करने दें। बदलाव के समय तस्वीर पल भर के लिए रुक सकती है।</string>
     <string name="remote_desktop_pointer_speed_label">कर्सर स्पीड: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">लंबवत स्क्रॉल संवेदनशीलता: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">क्षैतिज स्क्रॉल संवेदनशीलता: %.1fx</string>
