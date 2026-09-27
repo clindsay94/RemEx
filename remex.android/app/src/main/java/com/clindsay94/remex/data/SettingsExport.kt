@@ -74,6 +74,10 @@ object SettingsExport {
             "Importing this would skip onboarding on a phone that has never been set up.",
         "dashboard_coach_seen" to
             "Same as has_completed_onboarding.",
+        "routines_coach_seen" to
+            "Same as has_completed_onboarding: the new phone has never shown the Routines tips.",
+        "routines_opened" to
+            "Same as routines_coach_seen: the More badge must still show on a phone that never opened Routines.",
         "desktop_unlimited_warning_shown" to
             "Suppresses a warning. Importing it would silence a warning the new device never saw.",
         "shape_defaults_migrated_v2" to

@@ -107,6 +107,9 @@ class SettingsExportTest {
         val snapshot = mapOf(
             "has_completed_onboarding" to "true",
             "dashboard_coach_seen" to "true",
+            // Routines tips and the More "New" badge (routines spec 5.3, R-UX-41, RemEx-pp0rt.6).
+            "routines_coach_seen" to "true",
+            "routines_opened" to "true",
             "desktop_unlimited_warning_shown" to "true",
             "shape_defaults_migrated_v3" to "true",
             "client_id" to "device-identity-guid",

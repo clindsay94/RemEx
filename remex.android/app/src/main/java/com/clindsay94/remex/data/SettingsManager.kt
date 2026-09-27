@@ -140,6 +140,10 @@ class SettingsManager(val context: Context) {
                 // First-run Home Base coach marks: true once the user has seen or dismissed the
                 // dashboard coaching overlay. Reset re-arms it as first-run (RemEx-km0i.10).
                 val DASHBOARD_COACH_SEEN_KEY = booleanPreferencesKey("dashboard_coach_seen")
+                // Routines first-visit coach marks (routines spec 5.3) and the More "New" badge that
+                // shows until Routines is first opened (spec 1.2, R-UX-05). RemEx-pp0rt.6.
+                val ROUTINES_COACH_SEEN_KEY = booleanPreferencesKey("routines_coach_seen")
+                val ROUTINES_OPENED_KEY = booleanPreferencesKey("routines_opened")
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
@@ -255,6 +259,18 @@ class SettingsManager(val context: Context) {
         val dashboardCoachSeenFlow: Flow<Boolean> =
                 context.dataStore.data.map { preferences ->
                         preferences[DASHBOARD_COACH_SEEN_KEY] ?: false
+                }
+
+        /** Routines coach marks seen; false until [markRoutinesCoachSeen] (routines spec 5.3). */
+        val routinesCoachSeenFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[ROUTINES_COACH_SEEN_KEY] ?: false
+                }
+
+        /** Routines opened at least once; the More "New" badge shows while this is false (R-UX-05). */
+        val routinesOpenedFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[ROUTINES_OPENED_KEY] ?: false
                 }
 
         val hostFlow: Flow<String> =
@@ -501,6 +517,14 @@ class SettingsManager(val context: Context) {
 
         suspend fun resetDashboardCoach() {
                 context.dataStore.edit { it[DASHBOARD_COACH_SEEN_KEY] = false }
+        }
+
+        suspend fun setRoutinesCoachSeen(seen: Boolean) {
+                context.dataStore.edit { it[ROUTINES_COACH_SEEN_KEY] = seen }
+        }
+
+        suspend fun markRoutinesOpened() {
+                context.dataStore.edit { it[ROUTINES_OPENED_KEY] = true }
         }
 
         suspend fun getOrCreateClientId(): String {

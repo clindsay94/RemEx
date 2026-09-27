@@ -466,6 +466,28 @@ Host capabilities for a step come from `RemexClientManager.hostInfoForConnection
 connect and disconnect, checked against the authenticated epoch and host identity), never from the
 replaying `hostCapabilities`, which can still hold the previous PC's `supportsRoutines`.
 
+### Routines: a notification's Open reaches the run through `RoutineOpenRequests`, from BOTH activity entry points
+
+`remex.android/.../MainActivity.kt` (`RoutineOpenRequests.offer(intent)` in `onCreate` AND the
+`onNewIntent` override), `ui/navigation/AppNavigation.kt` (the `pendingRoutineOpen` effect) and
+`ui/routines/RoutinesScreen.kt` (the effect that consumes it) — RemEx-pp0rt.6, spec 1.7.
+
+The S1c notifications open `MainActivity` with `FLAG_ACTIVITY_SINGLE_TOP | FLAG_ACTIVITY_CLEAR_TOP`
+and two extras. When the app is already running, the intent arrives in `onNewIntent`, never
+`onCreate`; drop that override and "See what happened" on a failed run just brings the app forward on
+whatever screen it was on, with no log line. The request is a replaying `StateFlow` that only
+`RoutinesScreen` consumes, and AppNavigation navigates to Routines only once the current route is not
+Splash or Tutorial (both navigate onward by themselves and would be stranded under it); the effect is
+keyed on `currentDestination` so it retries when the splash finishes. Consuming it in AppNavigation
+instead loses it whenever Routines is not composed yet. `offer` strips the extras so a later
+configuration change cannot reopen the same run.
+
+The editor's app picker reads the PC's launcher entries straight from `launcher_sync`
+(`RoutinesViewModel.parseLauncher`) because a `launchApp` step stores the PC's `AppEntry.Id` GUID,
+which the App Launcher screen's own `AppEntry` model drops. An entry without a 36-character `id` is
+left out, so if the PC ever stops serialising `id`, the picker shows "Connect to your PC to choose an
+app" while connected, and no routine can open an app. Keep `AppEntry.Id` on the wire.
+
 ### Routines: the countdown window must not depend on `MainWindow`
 
 `remex.desktop/Services/Routines/AvaloniaRoutineUi.cs:52-53` (ownerless `new RoutineCountdownWindow(…)`

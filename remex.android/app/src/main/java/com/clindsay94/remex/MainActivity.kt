@@ -1,5 +1,6 @@
 package com.clindsay94.remex
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.provider.Settings
@@ -19,6 +20,7 @@ import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.ui.components.FileConsentDialogHost
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
+import com.clindsay94.remex.ui.routines.RoutineOpenRequests
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.SplashExitTransition
 import com.clindsay94.remex.ui.theme.SplashPaletteResolver
@@ -62,6 +64,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         RemexClientManager.initialize(this)
         WidgetDataCache.startCaching(this)
+        // A routine notification's Open / "See what happened" (RemEx-pp0rt.6); AppNavigation
+        // takes it to Routines once the splash has passed.
+        RoutineOpenRequests.offer(intent)
 
         // The system splash is painted from the manifest theme before this Activity exists, so it
         // cannot read the stored seed (RemEx-alwfa.1). Keep it on screen only until the first real
@@ -115,6 +120,16 @@ class MainActivity : ComponentActivity() {
                 FileConsentDialogHost()
             }
         }
+    }
+
+    /**
+     * The routine notifications open this activity with FLAG_ACTIVITY_SINGLE_TOP, so a running app
+     * receives them here rather than in [onCreate] (RemEx-pp0rt.6).
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        RoutineOpenRequests.offer(intent)
     }
 
     /**

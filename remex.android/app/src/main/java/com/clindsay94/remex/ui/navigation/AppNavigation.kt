@@ -87,6 +87,9 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AboutScreen
+import com.clindsay94.remex.ui.routines.RoutineEditorChrome
+import com.clindsay94.remex.ui.routines.RoutineOpenRequests
+import com.clindsay94.remex.ui.routines.RoutinesScreen
 import com.clindsay94.remex.ui.PairingRouteArgs
 import com.clindsay94.remex.ui.PairingRouteResult
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
@@ -141,10 +144,14 @@ fun AppNavigation() {
         val personalization by
                 settingsManager.personalizationPreferencesFlow.collectAsStateWithLifecycle(initialValue = SettingsManager.PersonalizationPreferences())
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+        // The More "New" badge shows until Routines is opened once (routines spec 1.2, R-UX-05).
+        // Initial true so a cold start never flashes a badge the user already dismissed.
+        val routinesOpened by settingsManager.routinesOpenedFlow.collectAsStateWithLifecycle(initialValue = true)
 
         AppNavigationContent(
                 hasCompletedOnboarding = hasCompletedOnboarding,
                 isConnected = isConnected,
+                showRoutinesBadge = !routinesOpened,
                 splashStyle = personalization.splashStyle,
                 onQrScanned = { host, port, pin ->
                         connectionViewModel.applyQrResultAndConnect(host, port, pin)
@@ -195,6 +202,7 @@ private fun AppNavigationContent(
                 @Composable
                 (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
         connectionScreenContent: @Composable (onNavigateToQrScanner: () -> Unit) -> Unit,
+        showRoutinesBadge: Boolean = false,
 ) {
         // Hold a blank surface while DataStore loads to avoid a white flash
         if (hasCompletedOnboarding == null) {
@@ -224,16 +232,21 @@ private fun AppNavigationContent(
 
         // ─── Adaptive layout ─────────────────────────────────────────────────────
         val adaptiveInfo = currentWindowAdaptiveInfoV2()
-        val showNav =
-                currentDestination != null && noNavChrome.none { currentDestination.hasRoute(it) }
-
         // M3: NavigationBar on compact, NavigationRail on medium, NavigationDrawer on expanded
-        val layoutType =
-                if (showNav) {
-                        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
-                } else {
-                        NavigationSuiteType.None
-                }
+        val suiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+        // The compact Routines editor hides the NavigationBar so its floating toolbar owns the
+        // bottom edge (routines spec 2.1). It is a pane inside Screen.Routines, not a route, so
+        // RoutineEditorChrome says when it is up; the rail on wider layouts is unaffected.
+        val routineEditorOwnsBottom =
+                suiteType == NavigationSuiteType.NavigationBar &&
+                        isOn(Screen.Routines) &&
+                        RoutineEditorChrome.editorShowing
+        val showNav =
+                currentDestination != null &&
+                        noNavChrome.none { currentDestination.hasRoute(it) } &&
+                        !routineEditorOwnsBottom
+
+        val layoutType = if (showNav) suiteType else NavigationSuiteType.None
 
         val isNavBarLayout = layoutType == NavigationSuiteType.NavigationBar
 
@@ -388,6 +401,16 @@ private fun AppNavigationContent(
                 }
         }
 
+        // A routine notification's Open / "See what happened" (RemEx-pp0rt.6): go to Routines,
+        // which consumes the request and shows the run. Never over the splash or the tutorial,
+        // which navigate onward themselves; the key on currentDestination retries once they have.
+        val pendingRoutineOpen by RoutineOpenRequests.pending.collectAsStateWithLifecycle()
+        LaunchedEffect(pendingRoutineOpen, currentDestination) {
+                if (pendingRoutineOpen == null || currentDestination == null) return@LaunchedEffect
+                if (isOn(Screen.Splash) || isOn(Screen.Tutorial) || isOn(Screen.Routines)) return@LaunchedEffect
+                navigateTo(Screen.Routines)
+        }
+
         // ─── Adaptive layout shell ────────────────────────────────────────────────
         if (isNavBarLayout || !showNav) {
                 // ── Compact (phone) or full-screen routes: Scaffold-style with bottom
@@ -522,9 +545,11 @@ private fun AppNavigationContent(
                                                         showMoreSheet = true
                                                 },
                                                 icon = {
-                                                        Icon(
-                                                                imageVector =
-                                                                        Icons.Default.MoreHoriz,
+                                                        // "New" until Routines is opened once, with
+                                                        // the disconnected badge's motion (spec M14).
+                                                        NewBadgedIcon(
+                                                                show = showRoutinesBadge,
+                                                                imageVector = Icons.Default.MoreHoriz,
                                                                 contentDescription =
                                                                         stringResource(
                                                                                 R.string
@@ -666,7 +691,8 @@ private fun AppNavigationContent(
                                                         selected = isOn(screen),
                                                         onClick = { onNavItemClick(screen) },
                                                         icon = {
-                                                                Icon(
+                                                                NewBadgedIcon(
+                                                                        show = showRoutinesBadge && screen == Screen.Routines,
                                                                         imageVector = screen.icon,
                                                                         contentDescription =
                                                                                 stringResource(
@@ -734,9 +760,17 @@ private fun AppNavigationContent(
                                 modifier = Modifier.padding(start = 28.dp, bottom = 4.dp),
                         )
                         moreItems.forEach { screen ->
+                                val newLabel = stringResource(R.string.routines_badge_new)
+                                val showNew = showRoutinesBadge && screen == Screen.Routines
                                 NavigationDrawerItem(
                                         label = { Text(stringResource(screen.titleRes)) },
                                         icon = { Icon(screen.icon, contentDescription = null) },
+                                        badge =
+                                                if (showNew) {
+                                                        { Badge { Text(newLabel) } }
+                                                } else {
+                                                        null
+                                                },
                                         selected = isOn(screen),
                                         onClick = {
                                                 view.performHapticFeedback(
@@ -1043,6 +1077,35 @@ private fun RemexNavHost(
                 composable<Screen.FileTransfer> {
                     FileTransferScreen(onNavigateToConnection = { onNavigateToConnection() })
                 }
+
+                // Routines (RemEx-pp0rt.6): list, gallery, editor, history and run detail are panes
+                // of one list-detail scaffold inside this destination (routines spec 2.1).
+                composable<Screen.Routines> {
+                        RoutinesScreen(onNavigateToConnection = { onNavigateToConnection() })
+                }
+        }
+}
+
+/**
+ * An icon with the "New" dot (routines spec 1.3, M14): the same scale + fade as the disconnected
+ * badge, and TalkBack hears "New" as the state while it shows (R-UX-05).
+ */
+@Composable
+private fun NewBadgedIcon(show: Boolean, imageVector: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String) {
+        val newLabel = stringResource(R.string.routines_badge_new)
+        BadgedBox(
+                badge = {
+                        androidx.compose.animation.AnimatedVisibility(
+                                visible = show,
+                                enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        ) {
+                                Badge()
+                        }
+                },
+                modifier = Modifier.semantics { if (show) stateDescription = newLabel },
+        ) {
+                Icon(imageVector = imageVector, contentDescription = contentDescription)
         }
 }
 

@@ -13,6 +13,19 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Routines on the phone: a Routines page, first in the More menu, with a "New" badge until you open
+  it. It starts with a short explanation and three templates, and has a template gallery, an editor
+  with separate When and Then sections, numbered steps you can drag, move or delete with undo, and a
+  toolbar with Test, History and Save. Save points at anything left to fill in and says how many
+  things need fixing; warnings never stop you saving. Run and Test work in the app (Test only
+  simulates a shut down, restart, sign out, sleep or hibernate), a running routine shows its progress
+  and can be stopped, and each run has a step-by-step history with a fix for the common problems.
+  Pause all sits in the top bar, the list says where each routine runs, steps that close your work
+  are tinted as a warning, and there are two short first-visit tips. A routine store saved by a newer
+  RemEx is shown read-only, and one that cannot be read offers to save a copy before resetting. On a
+  tablet or unfolded phone the list and the editor sit side by side. This first release offers the
+  Tap Run trigger; the others arrive in later updates. (RemEx-pp0rt.6)
+
 - Routines on the phone, underneath the screens that come next: an encrypted routine store with its
   own key (kept out of cloud backups and device transfers), a runner that works through a routine's
   steps in the background (wake the PC, wait for it to come online, wait, show a message, and ask the

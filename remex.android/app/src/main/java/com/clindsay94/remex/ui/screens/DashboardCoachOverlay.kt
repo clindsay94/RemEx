@@ -593,9 +593,12 @@ private fun DirectionalPointer(
     )
 }
 
-/** The bottom caption panel shared by every hint: body text + Skip / Next (or Got it) actions. */
+/**
+ * The bottom caption panel shared by every hint: body text + Skip / Next (or Got it) actions.
+ * Internal so the Routines coach marks reuse it (routines spec 5.3, RemEx-pp0rt.6).
+ */
 @Composable
-private fun CoachPanel(
+internal fun CoachPanel(
     body: String,
     isLast: Boolean,
     onAdvance: () -> Unit,

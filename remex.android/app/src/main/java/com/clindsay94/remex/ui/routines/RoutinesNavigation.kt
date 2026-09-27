@@ -1,0 +1,71 @@
+package com.clindsay94.remex.ui.routines
+
+import android.content.Intent
+import android.os.Parcelable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.clindsay94.remex.routines.RoutineNotificationPresenter
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.parcelize.Parcelize
+
+/**
+ * What the Routines detail pane shows (routines spec 2.1). These are the spec's
+ * `RoutineTemplates`, `RoutineEditorRoute`, `RoutineHistoryRoute` and `RoutineRunRoute`, carried as
+ * the content key of one `NavigableListDetailPaneScaffold` rather than as separate NavHost routes:
+ * the scaffold then gives a phone one pane at a time and a tablet the list beside the detail
+ * (spec 2.4, A13) from one code path, the way Settings does.
+ */
+sealed class RoutineDetail : Parcelable {
+    @Parcelize
+    data object Templates : RoutineDetail()
+
+    /** Both null = blank (spec 2.1). */
+    @Parcelize
+    data class Editor(val routineId: String? = null, val templateId: String? = null) : RoutineDetail()
+
+    /** null = every run. */
+    @Parcelize
+    data class History(val routineId: String? = null) : RoutineDetail()
+
+    @Parcelize
+    data class Run(val runId: String) : RoutineDetail()
+}
+
+/**
+ * A routine notification's "Open" / "See what happened" (S1c `RoutineNotificationPresenter`) asks
+ * MainActivity to show a run. MainActivity hands the intent here; AppNavigation opens Routines and
+ * the screen consumes the request and shows the run detail.
+ */
+object RoutineOpenRequests {
+    data class Request(val routineId: String?, val runId: String?)
+
+    private val _pending = MutableStateFlow<Request?>(null)
+    val pending: StateFlow<Request?> = _pending.asStateFlow()
+
+    /** True when [intent] carried a routine request (it is then remembered until consumed). */
+    fun offer(intent: Intent?): Boolean {
+        if (intent == null) return false
+        val runId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
+        val routineId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
+        if (runId == null && routineId == null) return false
+        // Consumed once: a later configuration change re-delivering the same intent must not reopen it.
+        intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
+        intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
+        _pending.value = Request(routineId, runId)
+        return true
+    }
+
+    fun consume(): Request? = _pending.value.also { _pending.value = null }
+}
+
+/**
+ * The compact editor hides the NavigationBar so its floating toolbar owns the bottom edge (spec
+ * 2.1). Snapshot state rather than a route, because the editor is a pane inside [RoutineDetail],
+ * not a NavHost destination; AppNavigation reads it only while Routines is the current route.
+ */
+object RoutineEditorChrome {
+    var editorShowing by mutableStateOf(false)
+}

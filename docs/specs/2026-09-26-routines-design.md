@@ -1309,7 +1309,7 @@ Sent after `routine_sync_result` on connect (using the request's `runCursor`), w
 | `testRun` | bool | D7: non-destructive steps run for real, destructive ones are simulated |
 | `source` | string | `manual.app` |
 
-The PC runs its own stored copy; the phone cannot inject a definition this way (T24). It is a normal PC run, subject to single-flight, PC Pause all, block and rate limits. Destructive steps count down, because a phone request is never presence at the PC (D1). Progress reaches the phone as live `routine_run_report` updates and the final record arrives as a normal report. A request that cannot start is answered with a live report whose record has `outcome: skipped` and a reason (`routine_not_found`, `disabled_on_pc`, `paused_on_pc`, `blocked_by_pc`, `already_running`, `rate_limited`). This is the only way a PC-run routine starts from the phone.
+The PC runs its own stored copy; the phone cannot inject a definition this way (T24). It is a normal PC run, subject to single-flight, PC Pause all, block and rate limits. Destructive steps count down, because a phone request is never presence at the PC (D1). Progress reaches the phone as live `routine_run_report` updates and the final record arrives as a normal report. A request that cannot start is answered with a live report whose record has `outcome: skipped` and a reason (`routine_not_found`, `disabled_on_pc`, `blocked_by_pc`, `already_running`, `rate_limited`). Pause all does not refuse it: a run request is person-initiated, and Pause all stops automatic sources only (§8.7). This is the only way a PC-run routine starts from the phone.
 
 ### 7.4 Sync algorithm
 
@@ -1816,7 +1816,7 @@ The UX draft's `skipped_paused` splits into `paused_on_phone` and `paused_on_pc`
 | Phone, NFC | 0 background cost (system dispatch) | — | — |
 | Phone, runs | Connection attempts only when a run needs the PC; `waitOnline` ≤ 1 attempt per 10 s | — | Run history timings + logcat |
 | Phone, total added drain | < 0.5 % battery/day with 4 home routines and the app closed | Target | 24 h A/B soak (routines on/off), same device, screen-off, Wi-Fi |
-| Host, no routines | 0 timers, 0 D-Bus subscriptions, no telemetry demand | Sources start lazily | `dotnet-counters monitor -p <pid> System.Runtime` (cpu-usage, working-set, timer-count) 30 min |
+| Host, no routines | 0 timers, no telemetry demand. The session source runs always (the countdown's locked-PC check needs it): Windows 1 thread + 1 message-only window, 0 D-Bus; Linux GNOME/KDE 2 D-Bus connections + 1 match rule, X11 fallback 1 D-Bus + 1 X display; all disposed on shutdown. Idle CPU ≈ 0 | Idle source starts lazily | `dotnet-counters monitor -p <pid> System.Runtime` (cpu-usage, working-set, timer-count) 30 min |
 | Host, `pc.idle` | Windows: one 15 s poll (~µs). Linux: one 15 s D-Bus call or zero polling on logind signals | — | Same counters; `pidstat -p <pid> 5` on Linux |
 | Host, `pc.session` | Event-driven, one parked thread on Windows | — | Thread count via counters |
 | Host, `pc.sensor` | Holds telemetry demand → existing 1 Hz sampling cost (no new sampler) | Reuses `TelemetryBackgroundService` | CPU with 1 armed sensor routine vs none, 30 min, compared to the perf-audit baseline (`remex-perf-audit` skill) |

@@ -1,0 +1,387 @@
+package com.clindsay94.remex.ui.routines
+
+import android.app.Application
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.R
+import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.KnownHosts
+import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.routines.RoutineItem
+import com.clindsay94.remex.routines.RoutineReasonText
+import com.clindsay94.remex.routines.RoutineRepository
+import com.clindsay94.remex.routines.RoutineRunStart
+import com.clindsay94.remex.routines.RoutineSaveResult
+import com.clindsay94.remex.routines.RoutineStoreStatus
+import com.clindsay94.remex.routines.Routines
+import com.clindsay94.remex.routines.model.Routine
+import com.clindsay94.remex.routines.model.RoutineReasonArgs
+import com.clindsay94.remex.routines.model.RoutineRun
+import com.clindsay94.remex.routines.model.RoutineRunSources
+import com.clindsay94.remex.routines.model.RoutineStepTypes
+import com.clindsay94.remex.security.HostIdentity
+import com.clindsay94.remex.security.PinnedHostStore
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+
+/** A paired PC as the routines UI names it. [name] is the user's nickname, or null (shown as "your PC"). */
+data class RoutinePc(val identity: String, val name: String?)
+
+/** An app from the connected PC's launcher list, with the stable id a `launchApp` step stores. */
+data class RoutineAppChoice(val id: String, val name: String)
+
+/** A one-line message for the snackbar, optionally with an action. */
+data class RoutinesMessage(val text: String, val action: RoutinesMessageAction? = null)
+
+sealed interface RoutinesMessageAction {
+    data class TestNow(val routineId: String) : RoutinesMessageAction
+
+    data class OpenRun(val runId: String) : RoutinesMessageAction
+
+    /** "Undo" after deleting a step in the editor (spec A4). */
+    class Undo(val restore: () -> Unit) : RoutinesMessageAction
+}
+
+/**
+ * The Routines screen's state holder (RemEx-pp0rt.6). Everything routine-shaped comes from the S1c
+ * [RoutineRepository]; this adds what the UI needs around it: the paired PCs, the selected PC's MAC,
+ * the connected PC's launcher list, the coach and badge flags, and the one open editor draft.
+ *
+ * Its flows are shared `Eagerly`: the ViewModel lives exactly as long as the Routines destination,
+ * and [openEditor] reads the selected PC and MAC synchronously the moment a template opens, which a
+ * `WhileSubscribed` flow with no collector yet would answer with its initial null.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class RoutinesViewModel(application: Application) : AndroidViewModel(application) {
+    private val app = application
+    private val repository: RoutineRepository = Routines.repository(application)
+    private val settings = SettingsManager(application)
+
+    val routines: StateFlow<List<RoutineItem>> = repository.routines
+    val pausedAll: StateFlow<Boolean> = repository.pausedAll
+    val status: StateFlow<RoutineStoreStatus> = repository.status
+    val activeRuns: StateFlow<Map<String, RoutineRun>> = repository.activeRuns
+    val history: StateFlow<List<RoutineRun>> = repository.history
+
+    private val _messages = MutableSharedFlow<RoutinesMessage>(extraBufferCapacity = 8)
+    val messages: SharedFlow<RoutinesMessage> = _messages.asSharedFlow()
+
+    val hasNfc: Boolean = application.packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)
+
+    private val paired = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** Paired PCs, most recently connected first. */
+    val pcs: StateFlow<List<RoutinePc>> =
+        combine(paired, settings.knownHostRecordsFlow) { byAddress, records ->
+            KnownHosts.build(byAddress, records).map { RoutinePc(it.identity, it.nickname.takeIf { n -> n.isNotBlank() }) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** The PC RemEx is set to (Connection), which is the default target for a new routine. */
+    val selectedPc: StateFlow<String?> =
+        settings.hostFlow
+            .mapLatest { host -> identityOf(host) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The selected PC's saved MAC in the `AA:BB:CC:DD:EE:FF` form a `wake` step stores, or null. */
+    val selectedMac: StateFlow<String?> =
+        settings.macAddressFlow
+            .map(::normalizeMac)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val connectedPc: StateFlow<String?> =
+        RemexClientManager.authenticatedConnection
+            .mapLatest { connection -> connection?.host?.let { identityOf(it) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val launcherApps: StateFlow<List<RoutineAppChoice>?> =
+        RemexClientManager.launcherEntries
+            .map(::parseLauncher)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The connected PC and its launcher list; the list is null until it has arrived. */
+    val launcher: StateFlow<Pair<String?, List<RoutineAppChoice>?>> =
+        combine(connectedPc, launcherApps) { pc, apps -> pc to (if (pc == null) null else apps) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+
+    val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
+
+    val coachSeen: StateFlow<Boolean?> =
+        settings.routinesCoachSeenFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // ── The one open editor ──
+
+    private val _draft = MutableStateFlow<RoutineDraft?>(null)
+    val draft: StateFlow<RoutineDraft?> = _draft.asStateFlow()
+    private val _draftOriginal = MutableStateFlow<RoutineDraft?>(null)
+    val draftOriginal: StateFlow<RoutineDraft?> = _draftOriginal.asStateFlow()
+    private var draftSource: RoutineDetail.Editor? = null
+
+    init {
+        viewModelScope.launch { repository.load() }
+        refreshPaired()
+        viewModelScope.launch { settings.markRoutinesOpened() }
+    }
+
+    fun refreshPaired() {
+        viewModelScope.launch {
+            paired.value = runCatchingIo("Reading paired PCs", emptyMap()) { PinnedHostStore.listPaired(app) }
+        }
+    }
+
+    /** Starts (or keeps) the draft for [source]. Returns false while the routine is not loaded yet. */
+    fun openEditor(source: RoutineDetail.Editor): Boolean {
+        if (draftSource == source && _draft.value != null) return true
+        val initial =
+            when {
+                source.routineId != null -> {
+                    val routine = routines.value.firstOrNull { it.routine.id == source.routineId }?.routine ?: return false
+                    RoutineDrafts.fromRoutine(routine)
+                }
+                source.templateId != null -> {
+                    val template = RoutineTemplates.byId(source.templateId) ?: return false
+                    RoutineDrafts.fromTemplate(
+                        template = template,
+                        name = app.getString(template.nameRes),
+                        hostIdentity = selectedPc.value ?: pcs.value.firstOrNull()?.identity,
+                        mac = selectedMac.value,
+                        notifyBody = { res -> app.getString(res) },
+                    )
+                }
+                else -> RoutineDrafts.blank(selectedPc.value ?: pcs.value.firstOrNull()?.identity)
+            }
+        draftSource = source
+        _draft.value = initial
+        _draftOriginal.value = initial
+        return true
+    }
+
+    fun updateDraft(transform: (RoutineDraft) -> RoutineDraft) {
+        _draft.value = _draft.value?.let(transform)
+    }
+
+    /**
+     * A new draft opened before the paired PCs and the selected PC had loaded has no target. Once
+     * they arrive it adopts the default PC (and its MAC for `wake` steps), in the original too, so the
+     * fill is not an unsaved change and a single-PC user is never stuck without a PC to pick.
+     */
+    fun adoptDefaultPc() {
+        val current = _draft.value ?: return
+        if (!current.isNew) return
+        val identity = current.hostIdentity ?: selectedPc.value ?: pcs.value.firstOrNull()?.identity ?: return
+        val mac = macFor(identity)
+        val needsMac = mac != null && current.steps.any { it.step.type == RoutineStepTypes.WAKE && it.step.mac == null }
+        if (current.hostIdentity == identity && !needsMac) return
+
+        fun fill(d: RoutineDraft): RoutineDraft {
+            val targeted = d.copy(hostIdentity = identity)
+            return if (needsMac) targeted.withWakeMac(mac) else targeted
+        }
+        _draft.value = fill(current)
+        _draftOriginal.value = _draftOriginal.value?.let(::fill)
+    }
+
+    fun closeEditor() {
+        draftSource = null
+        _draft.value = null
+        _draftOriginal.value = null
+    }
+
+    /** The MAC a new `wake` step for [identity] gets: known only for the selected PC. */
+    fun macFor(identity: String?): String? = if (identity != null && identity == selectedPc.value) selectedMac.value else null
+
+    fun environmentFor(identity: String?): EditorEnvironment {
+        val (pc, apps) = launcher.value
+        return EditorEnvironment(launcherAppIds = if (pc != null && pc == identity && !apps.isNullOrEmpty()) apps.map { it.id }.toSet() else null)
+    }
+
+    /**
+     * Saves the open draft. The target PC's MAC is refreshed into its `wake` steps first when RemEx
+     * knows it, so a MAC fixed in Connection settings reaches the routine on its next save.
+     */
+    suspend fun saveDraft(autoName: String): RoutineSaveResult {
+        val draft = _draft.value ?: return RoutineSaveResult.Unavailable
+        val mac = macFor(draft.hostIdentity)
+        val prepared = if (mac != null) draft.withWakeMac(mac) else draft
+        val result = repository.save(prepared.toRoutine(autoName))
+        if (result is RoutineSaveResult.Saved) {
+            // The pane keeps the key it was opened with (a template or blank); draftSource stays the
+            // same so a recomposition that asks for that key again keeps this saved draft.
+            val saved = RoutineDrafts.fromRoutine(result.routine)
+            _draft.value = saved
+            _draftOriginal.value = saved
+        }
+        return result
+    }
+
+    // ── List actions ──
+
+    fun setEnabled(routineId: String, enabled: Boolean) {
+        viewModelScope.launch {
+            val result = repository.setEnabled(routineId, enabled)
+            if (result !is RoutineSaveResult.Saved) post(saveFailureText(result))
+            _draft.value?.takeIf { it.base?.id == routineId }?.let { d ->
+                val stored = repository.routines.value.firstOrNull { it.routine.id == routineId }?.routine
+                if (stored != null) {
+                    _draft.value = d.copy(enabled = stored.enabled, base = stored)
+                    _draftOriginal.value = _draftOriginal.value?.copy(enabled = stored.enabled, base = stored)
+                }
+            }
+        }
+    }
+
+    fun setPausedAll(paused: Boolean) {
+        viewModelScope.launch {
+            if (!repository.setPausedAll(paused)) post(app.getString(R.string.routines_error_not_saved))
+        }
+    }
+
+    fun delete(routineId: String) {
+        viewModelScope.launch {
+            if (repository.delete(routineId)) {
+                if (_draft.value?.base?.id == routineId) closeEditor()
+                post(app.getString(R.string.routines_deleted))
+            } else {
+                post(app.getString(R.string.routines_error_not_saved))
+            }
+        }
+    }
+
+    fun duplicate(routineId: String) {
+        viewModelScope.launch {
+            val routine = routines.value.firstOrNull { it.routine.id == routineId }?.routine ?: return@launch
+            val copy = RoutineCopies.copyOf(routine) { name -> app.getString(R.string.routines_copy_name, name) }
+            when (val result = repository.save(copy)) {
+                is RoutineSaveResult.Saved -> post(app.getString(R.string.routines_duplicated, result.routine.name.orEmpty()))
+                else -> post(saveFailureText(result))
+            }
+        }
+    }
+
+    fun move(routineId: String, delta: Int) {
+        viewModelScope.launch {
+            val order = RoutineOrder.move(routines.value.map { it.routine }, routineId, delta) ?: return@launch
+            if (!repository.reorder(order)) post(app.getString(R.string.routines_error_not_saved))
+        }
+    }
+
+    /** In-app Run and Test (spec 1.6): source `manual.app`, so a switched-off routine still runs. */
+    fun run(routineId: String, testRun: Boolean) {
+        viewModelScope.launch {
+            val routine = routines.value.firstOrNull { it.routine.id == routineId }?.routine
+            val args = RoutineReasonArgs(pc = routine?.hostIdentity?.let(::pcName), routine = routine?.name)
+            when (val start = repository.run(routineId, RoutineRunSources.MANUAL_APP, testRun)) {
+                is RoutineRunStart.Started -> Unit
+                is RoutineRunStart.Skipped -> post(RoutineReasonText.message(app, start.reasonCode, args))
+                is RoutineRunStart.Failed ->
+                    _messages.emit(
+                        RoutinesMessage(RoutineReasonText.message(app, start.reasonCode, args), RoutinesMessageAction.OpenRun(start.runId)),
+                    )
+                is RoutineRunStart.Invalid ->
+                    post(app.getString(R.string.routines_run_invalid, RoutineReasonText.message(app, start.verdict.reasonCode, args.copy(detail = start.verdict.detail))))
+                RoutineRunStart.RunsOnPc -> post(app.getString(R.string.routines_run_on_pc_later))
+                RoutineRunStart.NotFound, RoutineRunStart.Unavailable -> post(app.getString(R.string.routines_error_not_saved))
+            }
+        }
+    }
+
+    fun cancel(routineId: String) {
+        viewModelScope.launch { repository.cancel(routineId) }
+    }
+
+    fun dismissStoreReset() {
+        viewModelScope.launch { repository.dismissStoreReset() }
+    }
+
+    suspend fun unreadableText(): String? = repository.unreadableDocumentText()
+
+    fun resetUnreadable() {
+        viewModelScope.launch { if (!repository.resetUnreadableStore()) post(app.getString(R.string.routines_error_not_saved)) }
+    }
+
+    fun setCoachSeen(seen: Boolean) {
+        viewModelScope.launch { settings.setRoutinesCoachSeen(seen) }
+    }
+
+    /** Asks the connected PC for its launcher list again (the same request App Launcher sends). */
+    fun refreshLauncher() {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (RemexCoreClient.isLibraryLoaded) RemexCoreClient.SendMessage("{\"type\":\"launcher_sync_request\"}")
+        }
+    }
+
+    fun post(text: String) {
+        _messages.tryEmit(RoutinesMessage(text))
+    }
+
+    fun postMessage(message: RoutinesMessage) {
+        _messages.tryEmit(message)
+    }
+
+    fun pcName(identity: String): String? = pcs.value.firstOrNull { it.identity == identity }?.name
+
+    fun routine(routineId: String?): Routine? = routines.value.firstOrNull { it.routine.id == routineId }?.routine
+
+    fun saveFailureText(result: RoutineSaveResult): String =
+        when (result) {
+            is RoutineSaveResult.Invalid ->
+                RoutineReasonText.message(app, result.verdict.reasonCode, RoutineReasonArgs(detail = result.verdict.detail))
+            RoutineSaveResult.ReadOnly -> app.getString(R.string.routines_read_only_body)
+            else -> app.getString(R.string.routines_error_not_saved)
+        }
+
+    private suspend fun identityOf(host: String): String? {
+        if (host.isBlank()) return null
+        return runCatchingIo("Reading a PC's pin", null) { HostIdentity.keyFor(PinnedHostStore.getPin(app, host)) }
+    }
+
+    private suspend fun <T> runCatchingIo(what: String, fallback: T, block: suspend () -> T): T =
+        try {
+            withContext(Dispatchers.IO) { block() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "$what failed.", e)
+            fallback
+        }
+
+    companion object {
+        private const val TAG = "RoutinesViewModel"
+
+        /** `aa-bb-cc-dd-ee-ff`, `AABBCCDDEEFF` or `aa:bb:...` to `AA:BB:CC:DD:EE:FF`; null when it is not a MAC. */
+        fun normalizeMac(raw: String?): String? {
+            val hex = raw.orEmpty().filter { it.isLetterOrDigit() }.uppercase()
+            if (hex.length != 12 || !hex.all { it in '0'..'9' || it in 'A'..'F' }) return null
+            return hex.chunked(2).joinToString(":")
+        }
+
+        /** The launcher JSON (PC `AppEntry`, camelCase). Entries without a GUID id are left out. */
+        fun parseLauncher(json: String): List<RoutineAppChoice> =
+            runCatching {
+                val array = JSONArray(json)
+                (0 until array.length()).mapNotNull { i ->
+                    val obj = array.optJSONObject(i) ?: return@mapNotNull null
+                    val id = obj.optString("id").takeIf { it.length == 36 } ?: return@mapNotNull null
+                    val name = obj.optString("displayName").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    RoutineAppChoice(id.lowercase(), name)
+                }.distinctBy { it.id }
+            }.getOrDefault(emptyList())
+    }
+}

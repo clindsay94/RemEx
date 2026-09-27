@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -119,6 +120,18 @@ sealed class Screen {
         override val titleRes = R.string.screen_file_transfer_title
         override val icon = Icons.Default.FolderOpen
     }
+
+    /**
+     * Routines (RemEx 3.0, routines spec 1.2 and 2.1). First in [moreItems], never a fifth primary:
+     * the bar already holds four primaries plus More. The list, gallery, editor, history and run
+     * detail all live under this one destination as panes of a list-detail scaffold (see
+     * `ui/routines/RoutinesScreen.kt`), so a phone gets one pane at a time and a tablet two.
+     */
+    @Serializable
+    data object Routines : NavDestination() {
+        override val titleRes = R.string.screen_routines_title
+        override val icon = Icons.Default.Route
+    }
 }
 
 /**
@@ -184,6 +197,8 @@ val navItems: List<PrimaryDestination> =
  */
 val moreItems =
         listOf<NavDestination>(
+                // First on purpose (routines spec 1.2, R-UX-01; NavRoutesRoutinesPlacementTest).
+                Screen.Routines,
                 Screen.FileTransfer,
                 Screen.RemoteDesktop,
                 Screen.RemoteMouse,
