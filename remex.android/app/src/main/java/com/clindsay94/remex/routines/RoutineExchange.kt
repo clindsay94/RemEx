@@ -95,12 +95,41 @@ object RoutineExchange {
         data object TooNew : ReadResult
     }
 
+    /**
+     * Deepest bracket nesting a real export can reach (file object → routine list → routine →
+     * step list → step → args) is well under this. Android's org.json parser recurses once per
+     * level with no limit of its own, so a small file of `[[[[…` throws StackOverflowError, which
+     * no `catch (JSONException)` sees: the depth is checked before parsing.
+     */
+    internal const val MAX_NESTING_DEPTH = 64
+
+    /** True when [text] opens more than [MAX_NESTING_DEPTH] brackets deep outside strings. */
+    internal fun nestsTooDeep(text: String): Boolean {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (c in text) {
+            when {
+                escaped -> escaped = false
+                inString && c == '\\' -> escaped = true
+                c == '"' -> inString = !inString
+                inString -> Unit
+                c == '[' || c == '{' -> if (++depth > MAX_NESTING_DEPTH) return true
+                c == ']' || c == '}' -> depth--
+            }
+        }
+        return false
+    }
+
     /** Never throws: a bad file is [ReadResult.Unreadable], not a crash (§1.9). */
     fun read(text: String?): ReadResult {
+        if (text == null || nestsTooDeep(text)) return ReadResult.Unreadable
         val obj =
             try {
-                JSONObject(text ?: return ReadResult.Unreadable)
+                JSONObject(text)
             } catch (e: JSONException) {
+                return ReadResult.Unreadable
+            } catch (e: StackOverflowError) {
                 return ReadResult.Unreadable
             }
         if (obj.optString("format") != FORMAT) return ReadResult.Unreadable

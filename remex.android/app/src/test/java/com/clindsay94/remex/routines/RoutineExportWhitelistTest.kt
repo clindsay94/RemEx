@@ -167,4 +167,14 @@ class RoutineExportWhitelistTest {
         assertEquals(listOf(false, false, true), reviews.map { it.importable })
         assertNull(reviews[0].prepared)
     }
+
+    @Test
+    fun `a deeply nested file is unreadable instead of overflowing the stack`() {
+        // org.json recurses once per bracket with no limit: a small file of [[[[ would throw
+        // StackOverflowError, which a catch (JSONException) never sees.
+        val bomb = "{\"format\":\"x\",\"routines\":" + "[".repeat(200_000) + "]".repeat(200_000) + "}"
+        assertEquals(RoutineExchange.ReadResult.Unreadable, RoutineExchange.read(bomb))
+        assertTrue(RoutineExchange.nestsTooDeep("[".repeat(RoutineExchange.MAX_NESTING_DEPTH + 1)))
+        assertFalse(RoutineExchange.nestsTooDeep("{\"a\":\"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\"}"))
+    }
 }
