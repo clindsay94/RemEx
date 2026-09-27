@@ -108,10 +108,10 @@ public class ShellNavListTests
     }
 
     [Fact]
-    public void ExactlyNineRealDestinationsExist()
+    public void ExactlyTenRealDestinationsExist()
     {
-        RealNavItems().Should().HaveCount(9,
-            "Home, Sensors, Commands, Launcher, Processes, Files, Logs, Settings, About");
+        RealNavItems().Should().HaveCount(10,
+            "Home, Sensors, Commands, Routines, Launcher, Processes, Files, Logs, Settings, About");
     }
 
     /// <summary>
@@ -125,6 +125,7 @@ public class ShellNavListTests
     [InlineData("Nav_Home", 0)]
     [InlineData("Nav_Sensors", 1)]
     [InlineData("Nav_Commands", 2)]
+    [InlineData("Nav_Routines", 10)]
     [InlineData("Nav_Launcher", 3)]
     [InlineData("Nav_Processes", 4)]
     [InlineData("Nav_Files", 7)]

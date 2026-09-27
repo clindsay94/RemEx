@@ -3726,4 +3726,148 @@ You can change:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>The routine history on this PC could not be read, so it was set aside and started again.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Go to Routines</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Pause all routines</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Resume routines</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Skipped</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Not started</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Skipped</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Simulated</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Wait {0} s</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Open {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Message on this PC</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Message to phone</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Unknown step</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Wait for the PC</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Wake the PC</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Arrive home</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Leave home</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>PC idle {0} min</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>PC locked</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>PC unlocked</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Run by hand</value>
+  </data>
+  <data name="Routine_Trigger_Nfc" xml:space="preserve">
+    <value>NFC tag</value>
+  </data>
+  <data name="Routine_Trigger_SensorAbove" xml:space="preserve">
+    <value>{0} above {1}</value>
+  </data>
+  <data name="Routine_Trigger_SensorBelow" xml:space="preserve">
+    <value>{0} below {1}</value>
+  </data>
+  <data name="Routine_Trigger_Unknown" xml:space="preserve">
+    <value>Unknown trigger</value>
+  </data>
+  <data name="Routines_ActionFailed" xml:space="preserve">
+    <value>That didn't work. The log has the details.</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>Block this phone</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>Block routines from {0}</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>Unblock</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>Unblock routines from {0}</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>Block routines from {0}?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>None of this phone's routines will run on this PC until you unblock it, and one that is running stops. The phone is told.</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>Block</value>
+  </data>
 </root>

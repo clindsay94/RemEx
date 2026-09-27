@@ -3721,4 +3721,112 @@ Możesz zmienić:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Nie udało się odczytać historii rutyn na tym komputerze, więc została odłożona i rozpoczęta od nowa.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Rutyny</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Rutyny</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Rutyny</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Przejdź do rutyn</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Wstrzymaj wszystkie rutyny</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Wznów rutyny</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>W toku</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Gotowe</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Niepowodzenie</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Anulowano</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Pominięto</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Przerwano</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Nie rozpoczęto</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>W toku</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Gotowe</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Niepowodzenie</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Pominięto</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Anulowano</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Zasymulowano</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Wygasło</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Czekaj {0} s</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Otwórz {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Następny utwór</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Odtwórz lub wstrzymaj</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Poprzedni utwór</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Wiadomość na tym komputerze</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Wiadomość na telefon</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Nieznany krok</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Czekaj na komputer</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Wybudź komputer</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Przyjście do domu</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Wyjście z domu</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>Komputer bezczynny {0} min</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>Komputer zablokowany</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>Komputer odblokowany</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Uruchamiana ręcznie</value>
+  </data>
 </root>

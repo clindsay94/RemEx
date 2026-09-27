@@ -3720,4 +3720,100 @@ Você pode mudar:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Não foi possível ler o histórico de rotinas deste PC, então ele foi separado e recomeçado.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Rotinas</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Rotinas</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Rotinas</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Ir para Rotinas</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Pausar todas as rotinas</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Retomar rotinas</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>Em execução</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Concluído</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Falhou</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Cancelada</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Ignorada</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Interrompida</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Não iniciada</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>Em execução</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Concluída</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Falhou</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Ignorada</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Cancelada</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Simulada</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Expirada</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Aguardar {0} s</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Abrir {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Próxima faixa</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Reproduzir ou pausar</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Faixa anterior</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Mensagem neste PC</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Mensagem para o celular</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Etapa desconhecida</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Aguardar o PC</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Ligar o PC</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Chegar em casa</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Sair de casa</value>
+  </data>
 </root>

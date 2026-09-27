@@ -131,7 +131,7 @@ public class DialogsHandleEnterTests
 
         Assert.Matches(
             new Regex(
-                @"new DialogContent\(\s*title,\s*message,\s*loc\[""Btn_Cancel""\],\s*confirmText,\s*""primary danger"",\s*actionIsDefault:\s*false\)",
+                @"new DialogContent\(\s*title,\s*message,\s*loc\[""Btn_Cancel""\],\s*confirmText,\s*actionClasses,\s*actionIsDefault:\s*false\)",
                 RegexOptions.Singleline),
             source);
 

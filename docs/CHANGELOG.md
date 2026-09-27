@@ -76,6 +76,28 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   sends it to the phone. Power actions on Linux are now only offered when the system says they are
   available. The Routines page on the PC comes next. (RemEx-pp0rt.9)
 
+- Routines (3.0): the PC side of routines that run on the PC. The PC now keeps each phone's PC-run
+  routines in `routines.json` (only the elevated agent can write it on Windows, owner-only on Linux),
+  checks every one again when it arrives, and runs them itself when the PC goes idle or is locked or
+  unlocked, on Windows and Linux. A phone can also ask the PC to run one of its routines now. The PC
+  can switch a routine off, pause everything, or block a phone, and a connected phone hears about it
+  at once; a phone that has not been seen for 30 days has its routines paused until it syncs again,
+  and unpairing a phone removes its routines and history. The PC keeps a history of what it ran and
+  sends it to the phone. Power actions on Linux are now only offered when the system says they are
+  available. The Routines page on the PC comes next. (RemEx-pp0rt.9)
+
+- Routines (3.0): a Routines page on the PC, right after Commands in the menu. It lists the routines
+  your phones have set to run on this PC, grouped by phone, with each one's trigger and steps, when it
+  last ran and how that went. Each routine has a switch to turn it off on this PC only, and Run now:
+  a routine that would shut down, restart, sign out, sleep or hibernate asks first, and because you are
+  at the PC it then runs without the 15 second countdown. Pause all stops every routine from starting on
+  its own, and a phone's routines can be blocked or unblocked. Picking a routine shows its history, and
+  each run opens up to show what every step did, including runs in progress, which you can cancel. The
+  page follows the window: list and details side by side when wide, one column when narrow. A short tip
+  appears on the first visit ("?" shows it again), the command palette gains "Go to Routines", "Pause
+  all routines" and "Resume routines", and a "Dry run" banner shows when RemEx was started with
+  `--routines-dry-run`. Routines are still made and changed on the phone only. (RemEx-pp0rt.9)
+
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you
   choose is remembered with the rest of your customization. The default is wider too — 520 instead

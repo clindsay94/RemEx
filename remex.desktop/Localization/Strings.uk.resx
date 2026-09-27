@@ -3721,4 +3721,85 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Не вдалося прочитати історію рутин на цьому ПК, тому її відкладено й почато заново.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Перейти до рутин</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Призупинити всі рутини</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Відновити рутини</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>Виконується</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Не вдалося</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Скасовано</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Пропущено</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Перервано</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Не розпочато</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>Виконується</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Не вдалося</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Пропущено</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Скасовано</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Змодельовано</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Термін минув</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Зачекати {0} с</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Відкрити {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Наступна доріжка</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Відтворити або призупинити</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Попередня доріжка</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Повідомлення на цьому комп'ютері</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Повідомлення на телефон</value>
+  </data>
 </root>

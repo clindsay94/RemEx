@@ -109,6 +109,9 @@ public partial class CommandPaletteViewModel : ObservableObject
         // off. The alias reuses that entry's own nine translations verbatim. (RemEx-efse.)
         new(LocalizationService.Instance["Palette_RemoteControl"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteCommand,
             SearchAliases: LocalizationService.Instance["Palette_RemoteControl_SearchAliases"]),
+        new(LocalizationService.Instance["Palette_Routines"],               LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRoutinesCommand),
+        new(LocalizationService.Instance["Palette_PauseRoutines"],          LocalizationService.Instance["PaletteCategory_Routines"], shell.PauseAllRoutinesCommand),
+        new(LocalizationService.Instance["Palette_ResumeRoutines"],         LocalizationService.Instance["PaletteCategory_Routines"], shell.ResumeRoutinesCommand),
         new(LocalizationService.Instance["Palette_AppLauncher"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToAppLauncherCommand),
         new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand),
         new(LocalizationService.Instance["Palette_RemoteDesktop"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteDesktopCommand),

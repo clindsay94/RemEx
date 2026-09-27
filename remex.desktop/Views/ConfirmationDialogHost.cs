@@ -29,9 +29,19 @@ internal static class ConfirmationDialogHost
     /// <param name="owner">The control whose top-level window parents the dialog.</param>
     internal static Func<string, string, string, Task<bool>> For(Control owner)
     {
+        var tinted = ForTinted(owner);
+        return (title, message, confirmText) => tinted(title, message, confirmText, "primary danger");
+    }
+
+    /// <summary>
+    /// As <see cref="For"/>, with the confirm button's vocabulary classes chosen per call ("primary
+    /// danger" or "primary warning"). Same fail-closed rule: no visible parent window, no confirmation.
+    /// </summary>
+    internal static Func<string, string, string, string, Task<bool>> ForTinted(Control owner)
+    {
         ArgumentNullException.ThrowIfNull(owner);
 
-        return async (title, message, confirmText) =>
+        return async (title, message, confirmText, actionClasses) =>
         {
             // Resolve and vet the owner BEFORE constructing the dialog: building a Window only to
             // abandon it unshown is waste, and ShowDialog throws on a non-visible owner — which is
@@ -50,7 +60,7 @@ internal static class ConfirmationDialogHost
                 return false;
             }
 
-            return await MaterialDialogs.ConfirmAsync(parentWindow, title, message, confirmText);
+            return await MaterialDialogs.ConfirmAsync(parentWindow, title, message, confirmText, actionClasses);
         };
     }
 }

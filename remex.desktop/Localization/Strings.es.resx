@@ -3734,4 +3734,406 @@ Puedes cambiar:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>No se pudo leer el historial de rutinas de este PC, así que se apartó y se empezó de nuevo.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Rutinas</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Rutinas</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Rutinas</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Ir a Rutinas</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Pausar todas las rutinas</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Reanudar rutinas</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>En curso</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Hecho</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Falló</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Cancelada</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Omitida</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Interrumpida</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Sin empezar</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>En curso</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Hecho</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Falló</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Omitido</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Simulado</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Caducado</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Esperar {0} s</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Abrir {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Pista siguiente</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Reproducir o pausar</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Pista anterior</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Mensaje en este PC</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Mensaje al teléfono</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Paso desconocido</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Esperar al PC</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Activar el PC</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Llegar a casa</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Salir de casa</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>PC inactivo {0} min</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>PC bloqueado</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>PC desbloqueado</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Ejecutar a mano</value>
+  </data>
+  <data name="Routine_Trigger_Nfc" xml:space="preserve">
+    <value>Etiqueta NFC</value>
+  </data>
+  <data name="Routine_Trigger_SensorAbove" xml:space="preserve">
+    <value>{0} por encima de {1}</value>
+  </data>
+  <data name="Routine_Trigger_SensorBelow" xml:space="preserve">
+    <value>{0} por debajo de {1}</value>
+  </data>
+  <data name="Routine_Trigger_Unknown" xml:space="preserve">
+    <value>Activador desconocido</value>
+  </data>
+  <data name="Routines_ActionFailed" xml:space="preserve">
+    <value>No ha funcionado. El registro tiene los detalles.</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>Bloquear este teléfono</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>Bloquear las rutinas de {0}</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>Desbloquear</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>Desbloquear las rutinas de {0}</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>¿Bloquear las rutinas de {0}?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>Ninguna rutina de este teléfono se ejecutará en este PC hasta que lo desbloquees, y la que esté en curso se detendrá. Se avisará al teléfono.</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>Bloquear</value>
+  </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>Bloqueada en este PC</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>Última ejecución: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>Esta rutina está dañada y no puede ejecutarse aquí. Vuelve a crearla en el teléfono.</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>{0} más</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>Aún no se ha ejecutado</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>Desactivada en {0}</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>En curso ahora</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>Permitir que {0} se ejecute en este PC</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>Desactívala para que esta rutina no se ejecute en este PC. El teléfono la conserva.</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>Rutina sin nombre</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>Rutinas en este PC</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>Esta página muestra las rutinas que se ejecutan en este PC. Usa el interruptor para desactivar una, o Ejecutar ahora para probarla.</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>Se crean en el teléfono</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>Para crear o cambiar rutinas, usa la app RemEx en tu teléfono.</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>Mostrar de nuevo los consejos de Rutinas</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>Entendido</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>Siguiente</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>De {0}, actualizada el {1}</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>De {0}</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>Historial</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>Aún no hay ejecuciones.</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>Selecciona una rutina para ver sus pasos y su historial.</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>Luego</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>Cuando</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>Todavía no hay rutinas en este PC</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>Las rutinas se crean en la app RemEx del teléfono, en Rutinas. Las que se ejecutan en este PC aparecen aquí.</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>Más sobre las rutinas</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>Las rutinas de {0} están bloqueadas.</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>Última sincronización: {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>Pausadas por {0}</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>Suspendidas: no se ha visto {0} desde el {1}</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>Cancelar ejecución</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>Cancelar la ejecución iniciada: {0}</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>Mostrar u ocultar los pasos de la ejecución iniciada: {0}</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>Paso {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>Pasos</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>Prueba desde {0}</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>La detección de inactividad no está disponible en este escritorio.</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>La detección de bloqueo no está disponible en este escritorio.</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>Ver historial</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>Desactivar en este PC</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>Activar en este PC</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>Pausar todo</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>Impide que cualquier rutina se inicie sola en este PC. Ejecutar ahora sigue funcionando.</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>Las rutinas están en pausa en este PC. Los activadores automáticos se omiten hasta que las reanudes.</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>Reanudar</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>Ejecutar ahora</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>Ejecutar {0} ahora</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>¿Ejecutar «{0}» ahora?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>Estás en este PC, así que el paso «{0}» se ejecuta de inmediato, sin cuenta atrás. Pasos: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>No se pudo iniciar {0}: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Se crean en la app RemEx del teléfono. Se ejecutan en este PC aunque el teléfono no esté cerca.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Las rutinas no están disponibles ahora porque el servicio de RemEx de esta app no se ha iniciado.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>Aplicación no permitida</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>La aplicación no se abrió</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>No compatible</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Rechazado por el sistema</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Falló la acción de energía</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Teclas multimedia no disponibles</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>El sensor dejó de enviar datos</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Inactividad no detectable</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Bloqueo no detectable</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Aún no está en el PC</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Rechazada por el PC</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Bloqueada por el PC</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>El PC ya no está vinculado</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Omitida: en pausa</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Omitida: en pausa en el PC</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Desactivada en el PC</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Omitida: desactivada</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Suspendida: teléfono ausente</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Ya en ejecución</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Omitida: demasiado pronto</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Omitida: cambios demasiado rápidos</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Omitida: demasiadas ejecuciones</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Omitida: cuenta atrás ocupada</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Cancelada en el PC</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Cancelada en el teléfono</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Interrumpida</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Mensaje en espera</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Mensaje caducado</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Simulada</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Simulación</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Cuenta atrás con el PC bloqueado</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Error inesperado</value>
+  </data>
 </root>

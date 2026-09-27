@@ -290,6 +290,9 @@ public class ButtonVocabularyTests
 
             ["Home_InitializeSensors"] = "HomeView - the Sensors HUD empty-state card is a different surface from the phone-link card",
             ["Home_InitializeLink"] = "HomeView - the phone-link card is a different surface from the Sensors HUD card",
+
+            ["Routines_Coach_Next"] = "RoutinesView - the coach overlay is its own surface (the page itself has no primary), and its two cards are mutually exclusive by CoachStep",
+            ["Routines_Coach_GotIt"] = "RoutinesView - see the Routines_Coach_Next entry",
         };
 
         var byFile = new Dictionary<string, List<string>>();

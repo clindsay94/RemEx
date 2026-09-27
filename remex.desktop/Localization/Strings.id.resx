@@ -3718,9 +3718,117 @@ Anda dapat mengubah:
     <value>Rutinitas</value>
   </data>
   <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
-    <value>Rutinitas yang tersimpan di PC ini tidak dapat dibaca, jadi disisihkan dan tidak ada yang akan dijalankan. Buka RemEx di ponsel Anda untuk mengirimnya lagi.</value>
+    <value>Rutinitas yang tersimpan di PC ini tidak dapat dibaca, jadi disisihkan dan tidak ada yang akan dijalankan. Buka RemEx di ponsel Anda untuk mengirimkannya lagi.</value>
   </data>
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Riwayat rutinitas di PC ini tidak dapat dibaca, jadi disisihkan dan dimulai dari awal.</value>
+  </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Rutinitas</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Rutinitas</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Rutinitas</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Buka Rutinitas</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Jeda semua rutinitas</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Lanjutkan rutinitas</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>Berjalan</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Selesai</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Gagal</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Dibatalkan</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Dilewati</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Terputus</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Belum dimulai</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>Berjalan</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Selesai</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Gagal</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Dilewati</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Dibatalkan</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Disimulasikan</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Kedaluwarsa</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Tunggu {0} dtk</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Buka {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Trek berikutnya</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Putar atau jeda</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Trek sebelumnya</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Pesan di PC ini</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Pesan ke ponsel</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Langkah tidak dikenal</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Tunggu PC</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Bangunkan PC</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Tiba di rumah</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Pergi dari rumah</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>PC diam {0} mnt</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>PC terkunci</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>PC tidak terkunci</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Jalankan manual</value>
   </data>
 </root>
