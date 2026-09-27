@@ -53,7 +53,9 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
     private readonly SessionTriggerSource _session;
     private readonly List<string> _warnings = [];
     private readonly object _gate = new();
+    private readonly RoutineHostReadiness _readiness;
     private ISessionStateSource? _sessionSource;
+    private IIdleSource? _idleSource;
 
     public RoutineHostService(
         RoutineHostStore store,
@@ -68,9 +70,11 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         IRoutineUi ui,
         RoutineCausality causality,
         IMediaSessionMonitor media,
+        RoutineHostReadiness readiness,
         TimeProvider time,
         ILoggerFactory loggers)
     {
+        _readiness = readiness;
         _store = store;
         _runs = runs;
         _runner = runner;
@@ -107,6 +111,8 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
 
         if (_store.LoadWarning is not null)
         {
+            // Also covers a file that could not even be set aside: the store then refuses every save
+            // (internal_error to the phone) until it can, so the original is never overwritten.
             Warn(RoutineStrings.Format("Routine_Warning_StoreUnreadable"));
         }
 
@@ -119,8 +125,14 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         _runner.Changed += RaiseChanged;
         _idle.Fired += OnFired;
         _session.Fired += OnFired;
+        _session.Suppressed += OnSuppressed;
 
         var idleSource = await _platform.ResolveIdleAsync(ct);
+        lock (_gate)
+        {
+            _idleSource = idleSource;
+        }
+
         _idle.SetSource(idleSource);
         _availability.SetIdleSource(idleSource?.Id);
 
@@ -138,6 +150,10 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
 
         _availability.SetSessionSource(sessionSource?.Id);
         Rearm();
+
+        // Only now may a sync or run request touch state (RoutineHostReadiness). A start that failed
+        // above never gets here, and every routine message is answered "try again" instead.
+        _readiness.MarkReady();
         RaiseChanged();
     }
 
@@ -166,6 +182,10 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         {
             _sessionSource?.Dispose();
             _sessionSource = null;
+
+            // The idle source may hold a D-Bus connection (Mutter, ScreenSaver, logind) or an X display.
+            (_idleSource as IDisposable)?.Dispose();
+            _idleSource = null;
         }
 
         base.Dispose();
@@ -295,6 +315,19 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         _ = _runner.StartAsync(new RoutineRunStart(fire.OwnerClientId, fire.RoutineId, fire.Source, Detail: fire.Detail));
     }
 
+    /// <summary>
+    /// An edge the loop guard suppressed is recorded, never dropped in silence (§8.1, "nothing fails
+    /// silently", §10). The v1 catalog has no dedicated code, so it is <c>flap_suppressed</c> with the detail
+    /// <c>caused_by_run</c>.
+    /// </summary>
+    private void OnSuppressed(RoutineTriggerFire fire)
+    {
+        _ = _runner.RecordSkipAsync(
+            new RoutineRunStart(fire.OwnerClientId, fire.RoutineId, fire.Source, Detail: fire.Detail),
+            RoutineReasonCodes.FlapSuppressed,
+            RoutineHostRunner.CausedByRunDetail);
+    }
+
     /// <summary>Recomputes which <c>pc.idle</c> / <c>pc.session</c> routines are armed.</summary>
     internal void Rearm()
     {
@@ -392,6 +425,7 @@ public sealed class RoutineHostMessageHandler
     private readonly RoutineSyncHandler _sync;
     private readonly RoutineHostRunner _runner;
     private readonly RoutineRunStore _runs;
+    private readonly RoutineHostReadiness _readiness;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
     private readonly object _gate = new();
@@ -401,12 +435,14 @@ public sealed class RoutineHostMessageHandler
         RoutineSyncHandler sync,
         RoutineHostRunner runner,
         RoutineRunStore runs,
+        RoutineHostReadiness readiness,
         TimeProvider time,
         ILogger<RoutineHostMessageHandler> logger)
     {
         _sync = sync;
         _runner = runner;
         _runs = runs;
+        _readiness = readiness;
         _time = time;
         _logger = logger;
     }
@@ -431,6 +467,23 @@ public sealed class RoutineHostMessageHandler
             }
 
             var runId = request.RunId!;
+
+            // Ownership FIRST, before anything is remembered or answered (T17): a run id that belongs to
+            // another phone is refused outright, on the first request and on every resend, so no reply can
+            // ever carry that phone's record.
+            if (_runs.Find(runId) is { } clash && !string.Equals(clash.OwnerClientId, clientId, StringComparison.Ordinal))
+            {
+                _logger.LogWarning("Refused a routine_run_request reusing another owner's run id from {ClientId}.", LogRedaction.RedactClientId(clientId));
+                return;
+            }
+
+            if (!await _readiness.WaitAsync(_time))
+            {
+                // Before start-up finished nothing may run; the phone may simply ask again.
+                await SendAsync(send, NotReady(clientId, request));
+                return;
+            }
+
             RoutineRun? existing;
             lock (_gate)
             {
@@ -439,17 +492,10 @@ public sealed class RoutineHostMessageHandler
                 _seenRunIds[(clientId, runId)] = _time.GetTimestamp();
             }
 
-            if (existing is not null)
+            if (existing is not null && string.Equals(existing.OwnerClientId, clientId, StringComparison.Ordinal))
             {
                 // A resend: the same run's record, never a second run (idempotent for 10 minutes).
                 await SendAsync(send, existing);
-                return;
-            }
-
-            if (_runs.Find(runId) is { } clash && !string.Equals(clash.OwnerClientId, clientId, StringComparison.Ordinal))
-            {
-                // Another phone's run id: never let one owner's request overwrite another's record (T17).
-                _logger.LogWarning("Refused a routine_run_request reusing another owner's run id from {ClientId}.", LogRedaction.RedactClientId(clientId));
                 return;
             }
 
@@ -480,6 +526,28 @@ public sealed class RoutineHostMessageHandler
             ? RoutineCancelledBy.Pause
             : RoutineCancelledBy.Phone;
         return _runner.CancelFromPhone(clientId, cancel.RunId, by);
+    }
+
+    /// <summary>The answer to a run request that arrived before start-up finished: skipped, retryable, not stored.</summary>
+    private RoutineRun NotReady(string clientId, Remex.Core.Messages.Routines.RoutineRunRequestPayload request)
+    {
+        var now = _time.GetUtcNow().ToUnixTimeMilliseconds();
+        return new RoutineRun
+        {
+            RunId = request.RunId,
+            OwnerClientId = clientId,
+            RoutineId = request.RoutineId,
+            Origin = RoutineRunOrigins.Pc,
+            Source = RoutineRunSources.ManualApp,
+            TestRun = request.TestRun,
+            TriggeredAtUnixMs = now,
+            StartedAtUnixMs = now,
+            EndedAtUnixMs = now,
+            Outcome = RoutineRunOutcomes.Skipped,
+            ReasonCode = RoutineReasonCodes.RateLimited,
+            Attributes = [],
+            Steps = [],
+        };
     }
 
     private async Task SendAsync(Func<Remex.Core.Messages.RemexMessage, Task> send, RoutineRun record)

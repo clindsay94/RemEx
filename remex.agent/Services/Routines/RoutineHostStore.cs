@@ -112,6 +112,7 @@ public sealed class RoutineHostStore
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private RoutineHostDocument _current = RoutineHostDocument.Empty;
+    private bool _writesBlocked;
 
     public RoutineHostStore(IRoutineStateFiles files, TimeProvider time, ILogger<RoutineHostStore> logger)
     {
@@ -135,6 +136,13 @@ public sealed class RoutineHostStore
     public void Load()
     {
         _files.SweepStagingOrphans(FileName);
+
+        // T14: a file an ordinary user could have planted is never parsed, let alone run.
+        if (_files.TrustProblem(FileName) is { } untrusted)
+        {
+            SetAside($"it is not protected ({untrusted})");
+            return;
+        }
 
         string? text;
         try
@@ -176,6 +184,15 @@ public sealed class RoutineHostStore
         await _writeGate.WaitAsync();
         try
         {
+            // An original that could not be set aside is never overwritten (atomic-save rules: a fallback
+            // document is never persisted over the real one). Until it is moved or reads back valid, every
+            // save is refused and the caller answers internal_error.
+            if (_writesBlocked && !TryUnblock())
+            {
+                _logger.LogError("{File} could not be set aside; refusing to save over it.", FileName);
+                return (false, default!);
+            }
+
             (var next, result) = mutate(Current);
             if (next is null)
             {
@@ -224,10 +241,52 @@ public sealed class RoutineHostStore
     {
         var aside = _files.Quarantine(FileName, _time.GetUtcNow());
         _logger.LogError(
-            "{File} is unreadable or invalid ({Problem}); set aside as {Aside}. Starting with no PC routines.",
+            "{File} is unreadable, invalid or untrusted ({Problem}); set aside as {Aside}. Starting with no PC routines.",
             FileName, problem, aside ?? "(could not be moved)");
         LoadWarning = problem;
         Volatile.Write(ref _current, RoutineHostDocument.Empty);
+
+        // Not moved and still there: the empty document in memory must never be saved over it.
+        _writesBlocked = aside is null && _files.Exists(FileName);
+    }
+
+    /// <summary>
+    /// Clears the write block when the original is gone, reads back valid and trusted (adopted as the current
+    /// state), or can now be set aside. Caller holds the write gate.
+    /// </summary>
+    private bool TryUnblock()
+    {
+        try
+        {
+            if (!_files.Exists(FileName))
+            {
+                _writesBlocked = false;
+                return true;
+            }
+
+            if (_files.TrustProblem(FileName) is null
+                && _files.Read(FileName) is { } text
+                && TryParse(text, out var document) is null)
+            {
+                Volatile.Write(ref _current, document!);
+                _writesBlocked = false;
+                _logger.LogInformation("{File} reads back valid; saves resume.", FileName);
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Still unreadable: try to move it aside below.
+        }
+
+        if (_files.Quarantine(FileName, _time.GetUtcNow()) is { } aside)
+        {
+            _writesBlocked = false;
+            _logger.LogWarning("{File} was set aside as {Aside} on a later attempt; saves resume.", FileName, aside);
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Parses and validates a whole file. Returns null on success, else the reason it was refused.</summary>

@@ -50,6 +50,7 @@ public sealed class RoutineRunStore
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly object _gate = new();
     private RoutineRunsDocument _current = new() { Runs = [] };
+    private bool _writesBlocked;
 
     public RoutineRunStore(IRoutineStateFiles files, TimeProvider time, ILogger<RoutineRunStore> logger)
     {
@@ -71,6 +72,12 @@ public sealed class RoutineRunStore
         RoutineRunsDocument? loaded = null;
         try
         {
+            // T14 applies to history too: it is reported to the phone and shown on the PC as fact.
+            if (_files.TrustProblem(FileName) is { } untrusted)
+            {
+                throw new UnauthorizedAccessException($"not protected: {untrusted}");
+            }
+
             var text = _files.Read(FileName);
             if (text is not null)
             {
@@ -85,9 +92,12 @@ public sealed class RoutineRunStore
         {
             // History is display data, but it is still never overwritten blind: set it aside first.
             var aside = _files.Quarantine(FileName, _time.GetUtcNow());
-            _logger.LogError(ex, "{File} could not be read; set aside as {Aside}. History starts empty.", FileName, aside);
+            _logger.LogError(ex, "{File} could not be read or trusted; set aside as {Aside}. History starts empty.", FileName, aside);
             LoadWarning = ex.GetType().Name;
             loaded = null;
+
+            // Not moved and still there: never save the empty history over it (see SaveCoreAsync).
+            _writesBlocked = aside is null && _files.Exists(FileName);
         }
 
         var document = loaded ?? new RoutineRunsDocument { Runs = [] };
@@ -263,6 +273,18 @@ public sealed class RoutineRunStore
         await _writeGate.WaitAsync();
         try
         {
+            // The original history could not be set aside at load: it is never overwritten by what is in
+            // memory. Retry the move; while it keeps failing, every save fails (and is logged by the caller).
+            if (_writesBlocked)
+            {
+                if (_files.Exists(FileName) && _files.Quarantine(FileName, _time.GetUtcNow()) is null)
+                {
+                    throw new IOException($"{FileName} could not be set aside; refusing to save over it.");
+                }
+
+                _writesBlocked = false;
+            }
+
             string json;
             lock (_gate)
             {

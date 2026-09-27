@@ -296,7 +296,12 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineTriggerAvailability>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineCausality>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.ISessionLockProbe, Remex.Agent.Services.Routines.SessionLockProbe>();
-        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePowerExecutor, Remex.Agent.Services.Routines.SharedVerbRoutinePowerExecutor>();
+        // The verb issue itself marks the routines loop guard (T9), for PC runs and phone step requests alike.
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.SharedVerbRoutinePowerExecutor>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePowerExecutor>(sp =>
+            new Remex.Agent.Services.Routines.CausalityMarkingPowerExecutor(
+                sp.GetRequiredService<Remex.Agent.Services.Routines.SharedVerbRoutinePowerExecutor>(),
+                sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineCausality>()));
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineMediaKeys, Remex.Agent.Services.Routines.InputSimulationMediaKeys>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineOwnerDirectory, Remex.Agent.Services.Routines.PairedRoutineOwnerDirectory>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineCountdownCoordinator>();
@@ -307,6 +312,7 @@ public static class HostBootstrapper
         // routines.json / routine_runs.json in the host state directory, the sync handler, the runner, the
         // idle and session sources, and the IRoutinesHost backend of the PC Routines page. Still in-process
         // only: nothing here reaches RemexNetworkListener (T15).
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostReadiness>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineStateFiles, Remex.Agent.Services.Routines.RoutineStateFiles>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostStore>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineRunStore>();
@@ -333,7 +339,6 @@ public static class HostBootstrapper
             sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutinePhoneChannel>(),
             sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutinePhoneNotifier>(),
             sp.GetRequiredService<Remex.Desktop.Services.Routines.IRoutineUi>(),
-            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineCausality>(),
             sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostIdentity>().Get,
             sp.GetRequiredService<TimeProvider>(),
             sp.GetRequiredService<ILogger<Remex.Agent.Services.Routines.RoutineHostRunner>>()));

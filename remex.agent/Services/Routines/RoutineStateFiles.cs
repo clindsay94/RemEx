@@ -18,6 +18,16 @@ public interface IRoutineStateFiles
     /// <summary>The file's text, or null when it does not exist. Throws when it exists and cannot be read.</summary>
     string? Read(string fileName);
 
+    /// <summary>Whether the file exists at all (a failed set-aside leaves it in place).</summary>
+    bool Exists(string fileName);
+
+    /// <summary>
+    /// Why the file must not be trusted, or null when it may be (T14): on an elevated Windows agent, a file
+    /// not owned by Administrators/SYSTEM, or writable by anyone else, may have been planted by a
+    /// non-elevated process and is never loaded.
+    /// </summary>
+    string? TrustProblem(string fileName);
+
     /// <summary>
     /// Writes <paramref name="contents"/> atomically and restricts its permissions. Throws on failure: a
     /// caller must never report a save that did not happen (docs/REGRESSION-GUARDS.md, atomic saves).
@@ -71,6 +81,30 @@ public sealed class RoutineStateFiles : IRoutineStateFiles
     {
         var path = PathOf(fileName);
         return File.Exists(path) ? File.ReadAllText(path) : null;
+    }
+
+    /// <inheritdoc />
+    public bool Exists(string fileName) => File.Exists(PathOf(fileName));
+
+    /// <inheritdoc />
+    public string? TrustProblem(string fileName)
+    {
+        var path = PathOf(fileName);
+        if (!OperatingSystem.IsWindows() || !Environment.IsPrivilegedProcess || !File.Exists(path))
+        {
+            // Linux: the agent runs as the user, so 0600 is all the protection there is and any same-user
+            // process could write the file anyway. A non-elevated Windows run is no privilege boundary.
+            return null;
+        }
+
+        try
+        {
+            return RoutineFilePermissions.CheckWindowsSecurity(new FileInfo(path).GetAccessControl());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return $"its permissions could not be read ({ex.GetType().Name})";
+        }
     }
 
     /// <inheritdoc />
@@ -164,6 +198,47 @@ public static class RoutineFilePermissions
         {
             logger.LogWarning(ex, "Could not restrict the permissions of a routine state file.");
         }
+    }
+
+    /// <summary>
+    /// The trust test for a routine state file an elevated agent is about to load (T14): the owner is
+    /// Administrators or LocalSystem, and no other principal is ALLOWED any right that writes, deletes, or
+    /// changes the ACL or owner. Returns null when trusted, else why not.
+    /// </summary>
+    /// <remarks>
+    /// <c>C:\ProgramData\RemEx</c> lets ordinary users create files, so while <c>routines.json</c> is missing a
+    /// non-elevated process could create one of its own. The agent's own saves pass this test by construction
+    /// (<see cref="BuildWindowsSecurity"/>); anything else is set aside, and the host starts empty.
+    /// </remarks>
+    [SupportedOSPlatform("windows")]
+    public static string? CheckWindowsSecurity(FileSecurity security)
+    {
+        var localSystem = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+        bool Trusted(IdentityReference? sid) => sid is SecurityIdentifier s && (s == localSystem || s == administrators);
+
+        var owner = security.GetOwner(typeof(SecurityIdentifier));
+        if (!Trusted(owner))
+        {
+            return $"it is owned by {owner?.Value ?? "nobody"}, not Administrators or SYSTEM";
+        }
+
+        const FileSystemRights writeRights =
+            FileSystemRights.WriteData | FileSystemRights.AppendData | FileSystemRights.WriteExtendedAttributes
+            | FileSystemRights.WriteAttributes | FileSystemRights.Delete | FileSystemRights.DeleteSubdirectoriesAndFiles
+            | FileSystemRights.ChangePermissions | FileSystemRights.TakeOwnership;
+
+        foreach (FileSystemAccessRule rule in security.GetAccessRules(true, true, typeof(SecurityIdentifier)))
+        {
+            if (rule.AccessControlType == AccessControlType.Allow
+                && (rule.FileSystemRights & writeRights) != 0
+                && !Trusted(rule.IdentityReference))
+            {
+                return $"{rule.IdentityReference.Value} can write to it";
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

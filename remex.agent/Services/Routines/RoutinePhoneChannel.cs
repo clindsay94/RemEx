@@ -82,10 +82,18 @@ public sealed class LiveOnlyRoutinePhoneNotifier(IRoutinePhoneChannel channel) :
 /// The loop guard (routines spec §8.1, T9, Q9): an edge a routine's own step caused triggers nothing.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A routine's <c>LOCK</c> produces a <c>pc.session locked</c> edge a moment later; without this, a
-/// "lock → run X" routine and a "run X → lock" routine would feed each other. Every host-executed step (a
-/// PC run's, or a phone run's <c>routine_step_request</c>) marks here while it runs and for
-/// <see cref="Window"/> after; a trigger source asks at the moment an edge arrives.
+/// "lock → run X" routine and a "run X → lock" routine would feed each other. Only the power VERB ISSUE is
+/// marked (<see cref="CausalityMarkingPowerExecutor"/>), from every routine path (a PC run's, or a phone
+/// run's <c>routine_step_request</c>), while it runs and for <see cref="Window"/> after; a trigger source
+/// asks at the moment an edge arrives.
+/// </para>
+/// <para>
+/// <b>NOT THE WHOLE STEP.</b> A destructive step spends 15 s in its countdown before the verb, and a person
+/// locking the PC during those seconds is a real edge. Marking the step would swallow it; marking the verb
+/// cannot. A suppressed edge is still recorded (<c>flap_suppressed</c> / <c>caused_by_run</c>).
+/// </para>
 /// </remarks>
 public sealed class RoutineCausality(TimeProvider time)
 {
@@ -136,6 +144,22 @@ public sealed class RoutineCausality(TimeProvider time)
             {
                 owner.End();
             }
+        }
+    }
+}
+
+/// <summary>
+/// <see cref="IRoutinePowerExecutor"/> that marks <see cref="RoutineCausality"/> around the verb itself: the
+/// only routine action that produces a lock or unlock edge, and the narrowest window that catches it.
+/// </summary>
+public sealed class CausalityMarkingPowerExecutor(IRoutinePowerExecutor inner, RoutineCausality causality) : IRoutinePowerExecutor
+{
+    /// <inheritdoc />
+    public async Task<Remex.Core.Services.Command.SharedCommandVerbs.Outcome?> ExecuteAsync(string verb, int? delaySeconds)
+    {
+        using (causality.BeginStep())
+        {
+            return await inner.ExecuteAsync(verb, delaySeconds);
         }
     }
 }
