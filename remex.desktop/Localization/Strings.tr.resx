@@ -3691,7 +3691,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>Rutini iptal et</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{1} saniye içinde {0}. Geri sayım penceresinden veya tepsi menüsünden iptal edin.</value>
+    <value>{1} saniye içinde {0}. Geri sayım penceresinden iptal edin.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>İptal edildi. {0} gerçekleştirilmedi.</value>
@@ -4199,5 +4199,11 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Hata</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

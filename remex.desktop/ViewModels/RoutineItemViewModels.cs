@@ -209,7 +209,8 @@ public sealed partial class RoutineCardViewModel : ObservableObject
             Name,
             IsOn ? loc["Routines_Card_StateOn"] : loc["Routines_Card_StateOff"],
             LastRunText);
-        return HasNote ? $"{name} {Note}" : name;
+        // A localized sentence break, so a screen reader does not run "4:33 AM" into "Switched off".
+        return HasNote ? RoutineStrings.Format("Routines_Card_AccessibleWithNote", name, Note) : name;
     }
 
     /// <summary>The enable switch. On means "may run on this PC"; switching it goes to the host and the phone.</summary>
@@ -260,7 +261,7 @@ public sealed partial class RoutineCardViewModel : ObservableObject
         {
             Routine = entry.Routine;
             Name = string.IsNullOrWhiteSpace(entry.Routine.Name) ? loc["Routines_Card_Unnamed"] : entry.Routine.Name!;
-            TriggerText = RoutinePresentation.TriggerLabel(entry.Routine.Trigger);
+            TriggerText = RoutinePresentation.TriggerLabel(entry.Routine.Trigger, _page.SensorUnit);
             Running = entry.Running || latest?.Outcome == RoutineRunOutcomes.Running;
             DisabledOnPc = entry.DisabledOnPc;
             OnPropertyChanged(nameof(IsOn));

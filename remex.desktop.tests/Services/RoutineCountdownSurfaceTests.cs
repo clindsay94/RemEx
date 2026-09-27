@@ -142,12 +142,15 @@ public sealed class RoutineCountdownSurfaceTests
     {
         var xaml = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "RoutineCountdownWindow.axaml"));
 
-        Assert.Equal(1, CountOf(xaml, "<Button "));
-        Assert.Contains("IsDefault=\"True\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("IsCancel=\"True\"", xaml, StringComparison.Ordinal);
+        // Cancel, plus the title row's Close (RemEx-pp0rt.16: no OS or drawn caption at all).
+        Assert.Equal(2, CountOf(xaml, "<Button "));
+        Assert.Equal(1, CountOf(xaml, "IsDefault=\"True\""));
+        Assert.Equal(1, CountOf(xaml, "IsCancel=\"True\""));
         Assert.Contains("Topmost=\"True\"", xaml, StringComparison.Ordinal);
         Assert.Contains("CanMinimize=\"False\"", xaml, StringComparison.Ordinal);
         Assert.Contains("CanMaximize=\"False\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("WindowDecorations=\"None\"", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExtendClientAreaToDecorationsHint", xaml, StringComparison.Ordinal);
     }
 
     private static int CountOf(string text, string value)

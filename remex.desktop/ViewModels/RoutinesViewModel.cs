@@ -78,6 +78,21 @@ public sealed partial class RoutinesViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<RoutineOwnerGroupViewModel> Groups { get; } = new();
 
+    /// <summary>
+    /// A sensor's unit from this PC's live catalog (the latest telemetry frame), by the id a
+    /// <c>pc.sensor</c> trigger watches; null when the sensor is not reporting right now.
+    /// </summary>
+    internal string? SensorUnit(string? sensorId)
+    {
+        if (string.IsNullOrEmpty(sensorId))
+        {
+            return null;
+        }
+
+        var unit = _shell?.Connection.Telemetry?.Sensors?.FirstOrDefault(s => s.Id == sensorId)?.Unit;
+        return string.IsNullOrWhiteSpace(unit) ? null : unit;
+    }
+
     /// <summary>Localized problems from the host (an unreadable store, T14).</summary>
     public ObservableCollection<string> Warnings { get; } = new();
 

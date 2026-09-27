@@ -3687,7 +3687,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
     <value>Cancelar rotina</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} em {1} segundos. Cancele pela janela de contagem regressiva ou pelo menu da bandeja.</value>
+    <value>{0} em {1} segundos. Cancele na janela de contagem regressiva.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Cancelado. {0} não foi realizado.</value>
@@ -4195,5 +4195,11 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Erro</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

@@ -38,8 +38,12 @@ public static class RoutinePresentation
     /// <summary>True when <paramref name="verb"/> ends the session and loses unsaved work.</summary>
     public static bool DiscardsWork(string? verb) => verb is not null && DiscardsWorkVerbs.Contains(verb);
 
-    /// <summary>The chip text of a trigger ("PC idle 30 min").</summary>
-    public static string TriggerLabel(RoutineTrigger? trigger)
+    /// <summary>
+    /// The chip text of a trigger ("PC idle 30 min", "Physical Memory Load above 90%"). <paramref name="unitOf"/>
+    /// looks up a sensor's unit in this PC's live catalog by id; without one, a unit is inferred from the
+    /// sensor's name, and a sensor that gives no clue shows the bare number.
+    /// </summary>
+    public static string TriggerLabel(RoutineTrigger? trigger, Func<string?, string?>? unitOf = null)
     {
         var loc = LocalizationService.Instance;
         return trigger?.Type switch
@@ -55,9 +59,39 @@ public static class RoutinePresentation
             RoutineTriggerTypes.PcSensor => RoutineStrings.Format(
                 trigger.Direction == RoutineSensorDirections.Below ? "Routine_Trigger_SensorBelow" : "Routine_Trigger_SensorAbove",
                 string.IsNullOrWhiteSpace(trigger.SensorLabel) ? trigger.SensorId : trigger.SensorLabel,
-                (trigger.Threshold ?? 0).ToString("0.##", loc.Culture)),
+                LimitText(trigger.Threshold ?? 0, unitOf?.Invoke(trigger.SensorId) ?? InferUnit(trigger.SensorLabel ?? trigger.SensorId))),
             _ => loc["Routine_Trigger_Unknown"],
         };
+    }
+
+    /// <summary>A sensor limit with its unit: "90%" (a percent sign sits on the number), "85 °C".</summary>
+    public static string LimitText(double limit, string? unit)
+    {
+        var number = limit.ToString("0.##", LocalizationService.Instance.Culture);
+        if (string.IsNullOrWhiteSpace(unit))
+        {
+            return number;
+        }
+
+        return unit == "%" ? number + unit : $"{number} {unit}";
+    }
+
+    // The live pass read "Physical Memory Load above 1": a limit with no unit. The live catalog is the
+    // authority; these are only for a sensor that is not in it right now (HWiNFO closed, disconnected).
+    private static string? InferUnit(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        if (name.Contains("load", StringComparison.OrdinalIgnoreCase) || name.Contains("usage", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("utili", StringComparison.OrdinalIgnoreCase))
+        {
+            return "%";
+        }
+
+        return name.Contains("temp", StringComparison.OrdinalIgnoreCase) ? "°C" : null;
     }
 
     /// <summary>The chip text of one step ("Shut down", "Open Steam").</summary>

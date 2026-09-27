@@ -3687,7 +3687,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Annuler la routine</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} dans {1} secondes. Annulez depuis la fenêtre du compte à rebours ou le menu de la zone de notification.</value>
+    <value>{0} dans {1} secondes. Annulez dans la fenêtre du compte à rebours.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Annulé. {0} n'a pas été exécuté.</value>
@@ -4195,5 +4195,11 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Erreur</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

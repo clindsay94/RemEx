@@ -3688,7 +3688,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Скасувати рутину</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} через {1} с. Скасуйте у вікні відліку або в меню трею.</value>
+    <value>{0} через {1} с. Скасуйте у вікні відліку.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Скасовано. Дію «{0}» не виконано.</value>
@@ -4196,5 +4196,11 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Помилка</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

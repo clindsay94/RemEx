@@ -3688,7 +3688,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Anuluj rutynę</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} za {1} s. Anuluj w oknie odliczania lub w menu zasobnika.</value>
+    <value>{0} za {1} s. Anuluj w oknie odliczania.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Anulowano. Akcja {0} nie została wykonana.</value>
@@ -4196,5 +4196,11 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Błąd</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

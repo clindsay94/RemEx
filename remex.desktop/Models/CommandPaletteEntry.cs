@@ -37,6 +37,18 @@ public sealed record CommandPaletteEntry(
     string? ConfirmBtnKey = null,
     string? SearchAliases = null)
 {
+    /// <summary>
+    /// What a screen reader announces for the row: the label, then its category ("Pause all routines,
+    /// Routines"), joined with a localized list separator.
+    /// </summary>
+    public string AccessibleName => string.IsNullOrWhiteSpace(Category)
+        ? Label
+        : string.Format(
+            Remex.Desktop.Services.LocalizationService.Instance.Culture,
+            Remex.Desktop.Services.LocalizationService.Instance["A11y_LabelWithCategory"],
+            Label,
+            Category);
+
     /// <summary>True when this entry must be confirmed before its command runs.</summary>
     public bool RequiresConfirmation =>
         ConfirmTitleKey is not null && ConfirmMessageKey is not null && ConfirmBtnKey is not null;

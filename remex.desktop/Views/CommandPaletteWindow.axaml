@@ -74,6 +74,11 @@
                 </ListBox.ItemTemplate>
 
                 <ListBox.Styles>
+                    <!-- The item is what a screen reader lands on; without a name it announced the
+                         record's ToString, "CommandPaletteEntry { Label = ... }" (RemEx-pp0rt.16). -->
+                    <Style Selector="ListBoxItem" x:DataType="models:CommandPaletteEntry">
+                        <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleName}" />
+                    </Style>
                     <Style Selector="ListBoxItem">
                         <Setter Property="CornerRadius" Value="6" />
                         <Setter Property="Padding" Value="10,6" />

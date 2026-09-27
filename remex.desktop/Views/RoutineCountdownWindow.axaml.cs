@@ -97,8 +97,8 @@ public partial class RoutineCountdownWindow : Window
     }
 
     // ANY CLOSE BEFORE THE COUNTDOWN ENDS IS A CANCEL, whoever called Close(). IsProgrammatic is NOT a
-    // safe signal: the caption buttons are Avalonia-drawn (ExtendClientAreaToDecorationsHint), and a
-    // drawn X calls Window.Close() itself, so a real mouse click on it arrives as IsProgrammatic = true.
+    // safe signal: the title row's X (and, before RemEx-pp0rt.16 removed it, the Avalonia-drawn caption)
+    // calls Window.Close() itself, so a real mouse click on it arrives as IsProgrammatic = true.
     // Keying on it let the X close the window while the agent's 15 s ran on, and the PC shut down
     // right after the person dismissed the warning (RemEx-pp0rt.16). The only exempt close is the
     // coordinator's own, after the countdown has ended (CloseAfterCountdownEnded); Cancel then is also
@@ -113,6 +113,19 @@ public partial class RoutineCountdownWindow : Window
     }
 
     private void OnClosed(object? sender, EventArgs e) => _tick.Stop();
+
+    // The window has no OS caption (WindowDecorations="None", RemEx-pp0rt.16), so its title row is the
+    // drag handle. A press on the Close button is the button's, not a drag.
+    private void OnTitleBarPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && e.Source is not Button)
+        {
+            BeginMoveDrag(e);
+        }
+    }
+
+    // The title row's one caption button. A plain Close: OnClosing turns it into the Cancel.
+    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
     private void OnTick(object? sender, EventArgs e) => ViewModel?.Tick();
 

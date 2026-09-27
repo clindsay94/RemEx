@@ -15,18 +15,31 @@
         ShowInTaskbar="True"
         WindowStartupLocation="Manual"
         Background="{DynamicResource GlassBaseDarkBrush}"
-        ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaTitleBarHeightHint="32"
+        WindowDecorations="None"
         AutomationProperties.Name="{Binding RoutineName}">
 
     <!-- Routines spec §8.6. Its own top-level window with NO OWNER: MainWindow may never have been
          constructed at a minimized logon start, and a countdown that needed it would be a countdown
          nobody sees (docs/REGRESSION-GUARDS.md, "The countdown window must not depend on MainWindow").
-         One button, Cancel, which is both the default and the cancel button, so Enter, Space and Esc
-         all cancel. No Minimize and no Maximize (RemEx-pp0rt.16): a countdown that can be minimized
-         hides the only warning. The one caption button left, the (Avalonia-drawn) X, is a Cancel: any
-         close before the countdown ends cancels it, see RoutineCountdownWindow.OnClosing. -->
-    <StackPanel Margin="24,44,24,24" Spacing="12">
+         Cancel is both the default and the cancel button, so Enter, Space and Esc all cancel.
+         NO DRAWN CAPTION (RemEx-pp0rt.16): with the extend-client-area hint the Avalonia-drawn
+         caption still showed greyed Fullscreen, Minimize and Maximize buttons, and the OS frame's
+         invisible resize border put the visible window 8 px right of centre. No window decorations
+         removes both; this title row is the whole caption: a drag area and one Close, which is a
+         Cancel like any close before the countdown ends (RoutineCountdownWindow.OnClosing). -->
+    <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+    <StackPanel Margin="24,0,8,24" Spacing="12">
+        <Grid x:Name="TitleBar" ColumnDefinitions="*,Auto" Height="40" Background="Transparent"
+              PointerPressed="OnTitleBarPressed">
+            <TextBlock Grid.Column="0" Text="{local:Localize Routine_Countdown_WindowTitle}"
+                       Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <Button x:Name="CloseButton" Grid.Column="1" Classes="tertiary icon-button compact"
+                    Click="OnCloseClicked" IsTabStop="False"
+                    AutomationProperties.Name="{local:Localize A11y_Close}">
+                <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}"/>
+            </Button>
+        </Grid>
         <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="TimerOutline" Width="24" Height="24" VerticalAlignment="Center"
                               Foreground="{DynamicResource AccentPrimaryBrush}"/>
@@ -44,10 +57,11 @@
         <TextBlock Text="{Binding NoteText}" IsVisible="{Binding HasNote}" Theme="{StaticResource Body2TextBlock}"
                    Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
 
-        <Button x:Name="CancelButton" Classes="primary" HorizontalAlignment="Right" Margin="0,8,0,0"
+        <Button x:Name="CancelButton" Classes="primary" HorizontalAlignment="Right" Margin="0,8,16,0"
                 IsDefault="True" IsCancel="True"
                 Content="{local:Localize Btn_Cancel}"
                 AutomationProperties.Name="{local:Localize Btn_Cancel}"
                 Command="{Binding CancelCommand}"/>
     </StackPanel>
+    </Border>
 </Window>

@@ -122,4 +122,26 @@ public class CommandPaletteEntryTests
         new CommandPaletteEntry("Go Home", "Navigate", Command, SearchAliases: null)
             .Matches("wake").Should().BeFalse();
     }
+
+    // Live pass 2026-09-27: rows announced the record's ToString ("CommandPaletteEntry { Label = ... }")
+    // because nothing named them (RemEx-pp0rt.16). The row's automation name is the label and category.
+    [Fact]
+    public void AccessibleName_IsTheLabelAndCategory_NeverTheRecordText()
+    {
+        var entry = new CommandPaletteEntry("Pause all routines", "Routines", Command);
+
+        entry.AccessibleName.Should().StartWith("Pause all routines").And.EndWith("Routines");
+        entry.AccessibleName.Should().NotContain("CommandPaletteEntry").And.NotContain("{");
+        new CommandPaletteEntry("Go Home", "", Command).AccessibleName.Should().Be("Go Home");
+    }
+
+    [Fact]
+    public void ThePaletteListNamesEachItemFromItsAccessibleName()
+    {
+        var xaml = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "CommandPaletteWindow.axaml"));
+        xaml.Should().Contain("<Setter Property=\"AutomationProperties.Name\" Value=\"{Binding AccessibleName}\" />");
+    }
+
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

@@ -145,9 +145,18 @@ public sealed class RoutineCountdownWindowRenderTests
         window.CanMaximize.Should().BeFalse();
         window.CanResize.Should().BeFalse();
         window.GetVisualDescendants().OfType<Control>()
-            .Where(c => c.Name is "PART_MinimizeButton" or "PART_MaximizeButton" or "PART_RestoreButton")
+            .Where(c => c.Name is "PART_MinimizeButton" or "PART_MaximizeButton" or "PART_RestoreButton"
+                or "PART_FullScreenButton" or "PART_PopoverFullScreenButton")
             .Where(c => c.IsEffectivelyVisible)
-            .Should().BeEmpty("no drawn caption button may minimize or maximize the countdown");
+            .Should().BeEmpty("no drawn caption button may minimize, maximize or full-screen the countdown");
+
+        // Live pass 2026-09-27: the drawn caption still showed those three, greyed. No caption is drawn
+        // now, and the only visible buttons are the title row's Close and Cancel.
+        window.WindowDecorations.Should().Be(WindowDecorations.None);
+        window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.IsEffectivelyVisible)
+            .Select(b => b.Name)
+            .Should().BeEquivalentTo(new[] { "CloseButton", "CancelButton" });
 
         window.CloseAfterCountdownEnded();
     }

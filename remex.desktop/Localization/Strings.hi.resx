@@ -3687,7 +3687,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>रूटीन रद्द करें</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{1} सेकंड में {0}। इसे काउंटडाउन विंडो या ट्रे मेनू से रद्द करें।</value>
+    <value>{1} सेकंड में {0}। काउंटडाउन विंडो में रद्द करें।</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>रद्द किया गया। {0} नहीं किया गया।</value>
@@ -4195,5 +4195,11 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>त्रुटि</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}। {1}</value>
   </data>
 </root>

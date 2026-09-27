@@ -3693,7 +3693,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Cancel routine</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} in {1} seconds. Cancel it from the countdown window or the tray menu.</value>
+    <value>{0} in {1} seconds. Cancel it in the countdown window.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Cancelled. {0} was not carried out.</value>
@@ -4201,5 +4201,11 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Error</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

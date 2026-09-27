@@ -3701,7 +3701,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>Cancelar rutina</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} en {1} segundos. Cancélalo desde la ventana de cuenta atrás o el menú de la bandeja.</value>
+    <value>{0} en {1} segundos. Cancélalo en la ventana de cuenta atrás.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Cancelado. {0} no se llevó a cabo.</value>
@@ -4209,5 +4209,11 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Error inesperado</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>

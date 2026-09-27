@@ -3690,7 +3690,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
     <value>Batalkan rutinitas</value>
   </data>
   <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
-    <value>{0} dalam {1} detik. Batalkan dari jendela hitung mundur atau menu baki.</value>
+    <value>{0} dalam {1} detik. Batalkan di jendela hitung mundur.</value>
   </data>
   <data name="Routine_Tray_Cancelled" xml:space="preserve">
     <value>Dibatalkan. {0} tidak dijalankan.</value>
@@ -4198,5 +4198,11 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="Routine_History_internal_error" xml:space="preserve">
     <value>Kesalahan</value>
+  </data>
+  <data name="A11y_LabelWithCategory" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
   </data>
 </root>
