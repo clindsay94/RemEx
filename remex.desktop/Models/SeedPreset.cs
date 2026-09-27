@@ -86,7 +86,7 @@ public static class SeedPresetCatalog
         new("BaseDarkGlass", "Custom_PresetGlass", AppTheme.BaseDarkGlass,
             Seed: "#6C4CFF", SchemeVariant: "TonalSpot", IsLight: false, Contrast: 0.0,
             CornerRadius: 16, RemoteCardCornerRadius: 24, GlowStrength: 2, GlassOpacity: 0.1,
-            CardBorderThickness: 1, SplashStyle: "CosmicZoom"),
+            CardBorderThickness: 1, SplashStyle: "LiveHandshake"),
 
         new("CyberNOC", "Custom_PresetNeon", AppTheme.CyberNOC,
             Seed: "#00F3FF", SchemeVariant: "Vibrant", IsLight: false, Contrast: 0.0,

@@ -20,6 +20,26 @@ internal static class SplashPreview
             int h = args.Length > 5 && int.TryParse(args[5], out int ph) ? ph : 800;
 
             LoadFont();
+            if (style == "LiveHandshake")
+            {
+                // Deterministic in t, so one frame is rendered directly (the field shader runs on the
+                // CPU here, which is far too slow to step). The lab's "pc" scenario: three phones known,
+                // the S26 links at 0.86 s, the listener is up at 0.40 s.
+                using var live = new LiveHandshakeVariant();
+                live.Update(new HandshakeSnapshot(
+                    new[]
+                    {
+                        new HandshakePeer("Pixel 9 Pro", HandshakeDeviceKind.Phone, null),
+                        new HandshakePeer("Galaxy S26 Ultra", HandshakeDeviceKind.Phone, 0.86f),
+                        new HandshakePeer("Galaxy Tab S10", HandshakeDeviceKind.Tablet, null),
+                    },
+                    TargetIndex: 1, TargetAt: 0.86f, ReadyAt: 0.55f, ListeningAt: 0.40f, ListeningPort: 5005,
+                    FailedAt: null));
+                File.WriteAllBytes(outPath, BrandRasterizer.RenderSplashFramePng(live, w, h, t));
+                Console.WriteLine($"wrote {outPath}  ({style} @ {t:0.00}s, {w}x{h})");
+                return 0;
+            }
+
             ISplashVariant variant = style switch
             {
                 "CosmicZoom" => new CosmicZoomVariant(),

@@ -32,13 +32,15 @@ public class CustomizationMigrationTests
     /// (RemEx-ceu4x) could not do the same thing for the same reason arm 3 -&gt; 4 could not fold
     /// into arm 2 -&gt; 3: schema 4 had already shipped, so a real profile on disk at schema 4 needs
     /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness,
-    /// and schema 7 (RemEx-4kv0g.18.5) again for the tray flyout's own settings.
+    /// and schema 7 (RemEx-4kv0g.18.5) again for the tray flyout's own settings. Schema 8
+    /// (RemEx-8g6n0.2) moves a stored CosmicZoom to the new Live Handshake default: schema 7 shipped
+    /// with CosmicZoom as the default, so it needs its own arm for the same reason again.
     /// Move this number only with a new arm and a reason.
     /// </summary>
     [Fact]
-    public void TheCurrentSchemaIsSevenUntilANewArmSaysOtherwise()
+    public void TheCurrentSchemaIsEightUntilANewArmSaysOtherwise()
     {
-        CustomizationMigration.CurrentSchemaVersion.Should().Be(7);
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(8);
     }
 
     /// <summary>
@@ -193,10 +195,13 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
-    public void TheOldSplashDefaultBecomesCosmicZoom()
+    public void TheOldSplashDefaultFollowsTheDefaultForward()
     {
+        // RemexCommand was the default at schema 2: arm 2->3 moves it to CosmicZoom, the default it
+        // was replaced by, and arm 7->8 (RemEx-8g6n0.2) moves that on to today's Live Handshake. A
+        // profile that never chose a splash must not be stranded on either retired default.
         CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "RemexCommand" }, out _)
-            .SplashStyle.Should().Be("CosmicZoom");
+            .SplashStyle.Should().Be("LiveHandshake");
         CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "Pong" }, out _)
             .SplashStyle.Should().Be("Pong", "only the old default is flipped; a choice is a choice");
     }
@@ -243,7 +248,7 @@ public class CustomizationMigrationTests
         warning.Should().BeNull("nothing had to be repaired, only translated");
         migrated.BackgroundMaterial.Should().Be("Wallpaper");
         migrated.SchemeVariant.Should().Be("Neutral");
-        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SplashStyle.Should().Be("LiveHandshake", "RemexCommand -> CosmicZoom (arm 3) -> LiveHandshake (arm 8)");
         migrated.SavedPalettes.Should().ContainSingle(p => p.Seed == "#ABCDEF" && p.Strategy == "Neutral");
         migrated.CustomAccentColors.Should().BeEmpty();
         migrated.ColorSource.Should().Be(ColorSources.Custom);
@@ -333,13 +338,14 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
-    public void ASchemaThreeRemexCommandProfileBecomesCosmicZoom()
+    public void ASchemaThreeRemexCommandProfileFollowsTheDefaultForward()
     {
         // Fresh installs between task 1 and task 4 wrote SplashStyle="RemexCommand" explicitly at
-        // schema 3, past the 2->3 arm's flip, so a second arm is required here too.
+        // schema 3, past the 2->3 arm's flip, so a second arm is required here too. That arm lands it
+        // on CosmicZoom and arm 7->8 carries it on to Live Handshake (RemEx-8g6n0.2).
         var migrated = CustomizationMigration.Migrate(SchemaThree() with { SplashStyle = "RemexCommand" }, out _);
 
-        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SplashStyle.Should().Be("LiveHandshake");
         migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
     }
 
@@ -366,7 +372,7 @@ public class CustomizationMigrationTests
 
         migrated.BackgroundMaterial.Should().Be("Wallpaper");
         migrated.WallpaperBlur.Should().Be(0.9);
-        migrated.SplashStyle.Should().Be("CosmicZoom");
+        migrated.SplashStyle.Should().Be("LiveHandshake");
         migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
     }
 
@@ -513,6 +519,56 @@ public class CustomizationMigrationTests
             FlyoutHiddenTileIds = new List<string>(),
             FlyoutAppIds = new List<Guid>(),
         }, "arm 7 rewrites only the four flyout fields");
+    }
+
+    // ─── Arm 8: Live Handshake becomes the default splash (RemEx-8g6n0.2) ─────────────────────
+
+    private static CustomizationSettings SchemaSeven() => SchemaTwo() with { SchemaVersion = 7 };
+
+    [Fact]
+    public void ASchemaSevenCosmicZoomProfileMovesToLiveHandshake()
+    {
+        // Schema 7 shipped with CosmicZoom as the default, so a stored CosmicZoom is the previous
+        // default and follows the new one - the same rule the RemexCommand -> CosmicZoom move used.
+        var migrated = CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = "CosmicZoom" }, out var warning);
+
+        warning.Should().BeNull();
+        migrated.SplashStyle.Should().Be("LiveHandshake");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Theory]
+    [InlineData("Pong")]
+    [InlineData("RemexCommand")]
+    public void ASchemaSevenExplicitChoiceIsKept(string chosen)
+    {
+        // At schema 7 neither of these was the default, so either one is a choice somebody made.
+        CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = chosen }, out _)
+            .SplashStyle.Should().Be(chosen, "only the previous default moves; a choice is a choice");
+    }
+
+    [Fact]
+    public void ArmEightRunsOnceAndACurrentProfileKeepsCosmicZoom()
+    {
+        // Picking Cosmic Zoom again after the move is a choice made at schema 8, and must stick.
+        var current = SchemaSeven() with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion, SplashStyle = "CosmicZoom" };
+
+        CustomizationMigration.Migrate(current, out _).SplashStyle.Should().Be("CosmicZoom");
+    }
+
+    [Fact]
+    public void ArmEightDropsNoField()
+    {
+        // The RemEx-8y3qy guard, same shape as the other ArmXDropsNoField tests.
+        var before = DashboardLayoutClobberTests.BuildNonDefaultSettings(schemaVersion: 7) with { SplashStyle = "CosmicZoom" };
+
+        var after = CustomizationMigration.Migrate(before, out _);
+
+        after.Should().BeEquivalentTo(before with
+        {
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+            SplashStyle = "LiveHandshake",
+        }, "arm 8 rewrites only the splash style");
     }
 
     [Fact]

@@ -2452,6 +2452,45 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Cliquez n'importe où pour passer</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Liaison en Direct</value>
+  </data>
+  <data name="Splash_LiveHandshake_Starting" xml:space="preserve">
+    <value>Démarrage</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_One" xml:space="preserve">
+    <value>Ping de {0} téléphone</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Few" xml:space="preserve">
+    <value>Ping de {0} téléphones</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Many" xml:space="preserve">
+    <value>Ping de {0} téléphones</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Other" xml:space="preserve">
+    <value>Ping de {0} téléphones</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedCount" xml:space="preserve">
+    <value>{0} sur {1} connectés</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedTo" xml:space="preserve">
+    <value>Connecté · {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_NotAnswering" xml:space="preserve">
+    <value>{0} ne répond pas</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Aucun téléphone associé pour l'instant</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>En écoute sur le port {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>En écoute</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>connecté</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Scan Original</value>
   </data>

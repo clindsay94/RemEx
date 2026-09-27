@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1446,7 +1446,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> AvailableSplashStyles { get; } = new()
     {
-        "RemexCommand", "CosmicZoom", "Pong"
+        "LiveHandshake", "RemexCommand", "CosmicZoom", "Pong"
     };
 
     /// <summary>Plays the selected splash over the shell (spec section 8).</summary>

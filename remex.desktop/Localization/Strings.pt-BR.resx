@@ -2452,6 +2452,45 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Clique em qualquer lugar para pular</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Conexão ao Vivo</value>
+  </data>
+  <data name="Splash_LiveHandshake_Starting" xml:space="preserve">
+    <value>Iniciando</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_One" xml:space="preserve">
+    <value>Pingando {0} celular</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Few" xml:space="preserve">
+    <value>Pingando {0} celulares</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Many" xml:space="preserve">
+    <value>Pingando {0} celulares</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Other" xml:space="preserve">
+    <value>Pingando {0} celulares</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedCount" xml:space="preserve">
+    <value>{0} de {1} vinculados</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedTo" xml:space="preserve">
+    <value>Vinculado · {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_NotAnswering" xml:space="preserve">
+    <value>{0} não está respondendo</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Nenhum celular pareado ainda</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>Escutando na porta {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>Escutando</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>vinculado</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Escaneamento Original</value>
   </data>

@@ -2452,6 +2452,45 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Klik di mana saja untuk melewati</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Jabat Tangan Langsung</value>
+  </data>
+  <data name="Splash_LiveHandshake_Starting" xml:space="preserve">
+    <value>Memulai</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_One" xml:space="preserve">
+    <value>Melakukan ping ke {0} ponsel</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Few" xml:space="preserve">
+    <value>Melakukan ping ke {0} ponsel</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Many" xml:space="preserve">
+    <value>Melakukan ping ke {0} ponsel</value>
+  </data>
+  <data name="Splash_LiveHandshake_Pinging_Other" xml:space="preserve">
+    <value>Melakukan ping ke {0} ponsel</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedCount" xml:space="preserve">
+    <value>{0} dari {1} tertaut</value>
+  </data>
+  <data name="Splash_LiveHandshake_LinkedTo" xml:space="preserve">
+    <value>Tertaut · {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_NotAnswering" xml:space="preserve">
+    <value>{0} tidak merespons</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Belum ada ponsel yang dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>Mendengarkan di port {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>Mendengarkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>tertaut</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Pindaian Asli</value>
   </data>

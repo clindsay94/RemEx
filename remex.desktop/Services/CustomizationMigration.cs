@@ -52,8 +52,11 @@ public static class CustomizationMigration
     ///     not the record's own defaults. Left unrepaired that renders the popup's glass fully
     ///     transparent for every upgrading profile and null-crashes the first read of the hidden
     ///     lists.
+    /// 8 = Live Handshake becomes the default splash (RemEx-8g6n0.2). Schema 7 already shipped with
+    ///     CosmicZoom as the default, so a stored CosmicZoom is moved forward by its own arm, exactly
+    ///     as the RemexCommand -&gt; CosmicZoom move was; explicit Pong / RemexCommand choices stay.
     /// </remarks>
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -101,6 +104,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 5) migrated = FromSchemaFour(migrated);
         if (migrated.SchemaVersion < 6) migrated = FromSchemaFive(migrated);
         if (migrated.SchemaVersion < 7) migrated = FromSchemaSix(migrated);
+        if (migrated.SchemaVersion < 8) migrated = FromSchemaSeven(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -264,6 +268,27 @@ public static class CustomizationMigration
             FlyoutHiddenSensorIds = new(),
             FlyoutHiddenTileIds = new(),
             FlyoutAppIds = new(),
+        };
+
+    /// <summary>
+    /// Schema 7 → 8: Live Handshake becomes the default splash (RemEx-8g6n0.2). ONE <c>with</c>
+    /// EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// THE SAME RULE AS THE RemexCommand -&gt; CosmicZoom MOVE (arms 2 -&gt; 3 and 3 -&gt; 4): the stored
+    /// value that equals the previous default moves to the new default, once, and anything else is a
+    /// choice and stays. A profile that arrives with the older RemexCommand default is flipped to
+    /// CosmicZoom by those arms first and then lands here, so it follows the default all the way.
+    /// Someone who deliberately picked CosmicZoom cannot be told apart from someone who never opened
+    /// the picker; they get the new default and can pick CosmicZoom again - the same trade the earlier
+    /// move made.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaSeven(CustomizationSettings settings) =>
+        settings with
+        {
+            SplashStyle = string.Equals(settings.SplashStyle, "CosmicZoom", StringComparison.Ordinal)
+                ? "LiveHandshake"
+                : settings.SplashStyle,
         };
 
     /// <summary>

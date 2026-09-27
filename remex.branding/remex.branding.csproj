@@ -9,5 +9,13 @@
   <ItemGroup>
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+    <!-- Splash text shaping (SplashTextShaper): Devanagari and other complex scripts. -->
+    <PackageReference Include="HarfBuzzSharp" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The Live Handshake field (RemEx-8g6n0). Byte-identical twin of the Android .agsl; a parity
+         test compares the two files on disk, and LiveHandshakeField compiles this embedded copy. -->
+    <EmbeddedResource Include="Shaders\live_handshake_field.sksl" LogicalName="Remex.Branding.Shaders.live_handshake_field.sksl" />
   </ItemGroup>
 </Project>

@@ -22,6 +22,11 @@
          RemEx ships Hindi (hi) among its nine locales, which is exactly the case that degrades, and
          nothing throws to say so. See Program.cs / App builder configuration. -->
     <PackageVersion Include="Avalonia.HarfBuzz" Version="12.1.1" />
+    <!-- Referenced directly by remex.branding, whose splash text is drawn outside Avalonia's text
+         stack and shaped with HarfBuzz itself (RemEx-8g6n0.2). PINNED TO WHAT Avalonia.HarfBuzz
+         12.1.1 ALREADY PULLS IN (its nuspec: 8.3.1.3) — move the two together or not at all. -->
+    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.3" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.3" />
 
     <!-- Headless render harness for remex.desktop.render.tests (RemEx-0e9eq). Same cadence as
          Avalonia itself, pinned to the same version for the same reason as the packages above -

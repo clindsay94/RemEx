@@ -265,7 +265,7 @@ try {
 
         # Only the customization fields the sweep cares about — everything else in the profile
         # (canvas layout, connection history, sensor alerts...) passes through untouched.
-        # schemaVersion 7 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
+        # schemaVersion 8 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
         # a lower number is re-migrated on read, which is not what a sweep cell asked for. Every
         # cell above uses ThemeId BaseDarkGlass or Dynamic, both of which carry the record default
         # CardBorderThickness (1) - RemEx-bnz2x's new field needs no cell-specific write here for
@@ -273,14 +273,14 @@ try {
         #
         # RemEx-4kv0g.18.6 FIX: the four flyout fields (FlyoutOpacity/FlyoutHiddenSensorIds/
         # FlyoutHiddenTileIds/FlyoutAppIds) DO need a cell-specific write, unlike CardBorderThickness
-        # above - at schemaVersion 7 the host will NOT re-migrate this profile, so an absent key comes
+        # above - at the current schemaVersion the host will NOT re-migrate this profile, so an absent key comes
         # back as the JSON-absent-key CLR default (0.0 / null for the three lists), not the record's
         # own 1.0/empty-list default. The sweep never opens the tray flyout, so the three null lists
         # never reached a screenshot it checks, but FlyoutOpacity 0.0 is a real defect this stamped
         # profile was carrying silently: a script or test that opens the flyout against a sweep
         # profile got an invisible popup. Stamped explicitly at the record defaults so this profile
         # behaves exactly like a freshly-migrated one.
-        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 7                  -Force
+        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 8                  -Force
         $customization | Add-Member -NotePropertyName 'baseTheme'              -NotePropertyValue $cell.ThemeId       -Force
         $customization | Add-Member -NotePropertyName 'accentColor'            -NotePropertyValue $cell.Seed          -Force
         $customization | Add-Member -NotePropertyName 'schemeVariant'          -NotePropertyValue $cell.SchemeVariant -Force

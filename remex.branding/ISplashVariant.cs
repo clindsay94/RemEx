@@ -20,6 +20,47 @@ public interface ISplashVariant
     /// with a fixed dt up to the desired t.
     /// </summary>
     void Render(SKCanvas canvas, float width, float height, float t, float dt);
+
+    /// <summary>
+    /// Whether the splash is finished at elapsed time <paramref name="t"/>. The host finishes on this,
+    /// not on <see cref="Duration"/> directly, so a variant that ends on a real event (Live Handshake:
+    /// the app being ready) can say so. Fixed-length variants keep the default.
+    /// </summary>
+    bool IsComplete(float t) => t >= Duration;
+
+    /// <summary>
+    /// Multiplier for the host-drawn chrome (version label, skip hint) on the frame just rendered.
+    /// 1 for the fixed-length variants; a variant with its own exit (a portal) fades the chrome with it.
+    /// </summary>
+    float ChromeOpacity => 1f;
+}
+
+/// <summary>
+/// A splash driven by the real startup rather than a clock alone (RemEx-8g6n0, Live Handshake). The
+/// host feeds it what it observes, forwards the pointer and a click, and asks <see cref="ISplashVariant.IsComplete"/>
+/// every tick. <see cref="Update"/> and <see cref="RequestSkip"/> arrive on the UI thread while
+/// <see cref="ISplashVariant.Render"/> may run on the render thread, so implementations treat the
+/// snapshot as an immutable value swapped whole.
+/// </summary>
+public interface ILiveSplashVariant : ISplashVariant
+{
+    /// <summary>What the host has observed so far; times are seconds on the splash's own clock.</summary>
+    void Update(HandshakeSnapshot snapshot);
+
+    /// <summary>Click/tap: hand off now, from wherever the splash is.</summary>
+    void RequestSkip();
+
+    /// <summary>Reduced motion: no pulses, no displacement, final-state nodes, a fade instead of a portal.</summary>
+    bool ReducedMotion { set; }
+
+    /// <summary>
+    /// Whether the GPU field shader may run this frame. The host sets it from the leased canvas: on a
+    /// raster lease the shader costs ~200 ms a frame, so the variant falls back to a gradient.
+    /// </summary>
+    bool FieldEnabled { set; }
+
+    /// <summary>Pointer position for parallax, each axis in [-1, 1] (0 = centre).</summary>
+    void SetPointer(float nx, float ny);
 }
 
 /// <summary>Shared helpers for the splash variants (backdrop, etc.).</summary>
