@@ -42,7 +42,10 @@ public sealed class PingPongHandler(
     PairedDeviceActivityStore activityStore,
     Remex.Core.Services.Clipboard.IHostClipboard hostClipboard,
     Remex.Agent.Services.Media.IMediaSessionMonitor mediaSessionMonitor,
-    IPhoneThemeSnapshotStore phoneThemeStore) : IDisposable
+    IPhoneThemeSnapshotStore phoneThemeStore,
+    // Optional and last so the handler tests that construct this directly keep compiling; production
+    // (HostBootstrapper) always supplies it. Null means routine messages are logged and ignored.
+    Remex.Agent.Services.Routines.RoutineStepRequestHandler? routineStepHandler = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -631,6 +634,44 @@ public sealed class PingPongHandler(
                                 "Ignored malformed theme_sync from {ClientId}.", connectionClientId);
                         }
 
+                        break;
+
+                    // ── 3.0 Routines (RemEx-pp0rt.4, spec §7.3.3, §7.3.7) ──
+                    // Pairing-gated by RequiresPairing's default, AND scoped to a PROVEN identity: the
+                    // owner of a step or a cancel is the client this connection proved it is, never a
+                    // payload field. Loopback proves no identity and is refused, like every other
+                    // per-client handler here (RemEx-4215).
+                    //
+                    // DETACHED, because a destructive step holds a 15 s countdown and the routine_cancel
+                    // that would stop it arrives on THIS socket: running it inline would park the reader
+                    // on the very countdown the phone is trying to cancel. The handler never throws and
+                    // answers every request with a routine_step_result (the IsValidThemeSync lesson).
+                    case MessageTypes.RoutineStepRequest:
+                        if (routineStepHandler is null || !identityProven || string.IsNullOrWhiteSpace(connectionClientId))
+                        {
+                            logger.LogWarning("Ignored routine_step_request: no routine executor or no proven client identity.");
+                            break;
+                        }
+
+                        {
+                            var stepOwner = connectionClientId;
+                            var stepRequest = message.RoutineStepRequest;
+                            _ = RunDetachedAsync(
+                                () => routineStepHandler.HandleStepRequestAsync(
+                                    stepOwner, stepRequest, reply => MessageSerializer.SendAsync(webSocket, reply, ct)),
+                                "routine_step_request");
+                        }
+
+                        break;
+
+                    case MessageTypes.RoutineCancel:
+                        if (routineStepHandler is null || !identityProven || string.IsNullOrWhiteSpace(connectionClientId))
+                        {
+                            logger.LogWarning("Ignored routine_cancel: no routine executor or no proven client identity.");
+                            break;
+                        }
+
+                        routineStepHandler.HandleCancel(connectionClientId, message.RoutineCancel);
                         break;
 
                     // ── 2.5 Clipboard ──

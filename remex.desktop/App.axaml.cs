@@ -26,6 +26,9 @@ public partial class App : Application
     /// <summary>The two tray-menu items whose text or enablement follows phone presence.</summary>
     private NativeMenuItem? _statusHeaderItem;
     private NativeMenuItem? _remoteDesktopItem;
+    /// <summary>The tray menu, and its "Cancel routine" item shown only during a routine countdown.</summary>
+    private NativeMenu? _trayMenu;
+    private NativeMenuItem? _cancelRoutineItem;
     public static IServiceProvider Services { get; private set; } = null!;
     public static bool IsShuttingDown { get; set; }
 
@@ -147,6 +150,7 @@ public partial class App : Application
             && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
 
         BuildTrayMenu();
+        WireRoutineCancelItem();
         WireTrayTooltipToPhonePresence();
 
         _ = InitializeAppAsync();
@@ -833,7 +837,45 @@ public partial class App : Application
         if (TrayIcon.GetIcons(this)?.FirstOrDefault() is { } icon)
             icon.Menu = menu;
 
+        // "Cancel routine" (routines spec §8.6): present only while a routine countdown runs, at the
+        // top so it is the first thing under the pointer. The tray is the one cancel surface that
+        // exists whether or not MainWindow was ever built.
+        _trayMenu = menu;
+        _cancelRoutineItem = new NativeMenuItem { Header = strings["Routine_Tray_CancelMenu"] };
+        _cancelRoutineItem.Click += (_, _) =>
+            Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.CancelActive();
+        // The Changed subscription is NOT made here: this method reruns on every language change,
+        // and subscribing per rebuild would pile up handlers. It is made once, in
+        // WireRoutineCancelItem, and SyncRoutineCancelItem reads whichever menu is current.
+        SyncRoutineCancelItem();
+
         RefreshTrayMenu();
+    }
+
+    /// <summary>
+    /// Subscribes the tray's "Cancel routine" item to the countdown state, once for the app's life
+    /// (like the other process-wide singleton subscriptions here, it is never removed).
+    /// </summary>
+    private void WireRoutineCancelItem() =>
+        Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.Changed += () =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(SyncRoutineCancelItem);
+
+    /// <summary>Adds or removes the tray menu's "Cancel routine" item to match the countdown state.</summary>
+    private void SyncRoutineCancelItem()
+    {
+        if (_trayMenu is null || _cancelRoutineItem is null)
+            return;
+
+        var active = Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.IsActive;
+        var present = _trayMenu.Items.Contains(_cancelRoutineItem);
+        if (active && !present)
+        {
+            _trayMenu.Items.Insert(0, _cancelRoutineItem);
+        }
+        else if (!active && present)
+        {
+            _trayMenu.Items.Remove(_cancelRoutineItem);
+        }
     }
 
     /// <summary>Republishes the state-dependent parts: the status header and Remote's enablement.</summary>

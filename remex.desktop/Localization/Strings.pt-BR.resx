@@ -3579,4 +3579,91 @@ Você pode mudar:
   <data name="Custom_SubtitleFontTip" xml:space="preserve">
     <value>Fonte para a linha abaixo de cada título de página. Por padrão usa a fonte do título da página.</value>
   </data>
+  <data name="Routine_Countdown_WindowTitle" xml:space="preserve">
+    <value>Rotina do RemEx</value>
+  </data>
+  <data name="Routine_Countdown_Seconds" xml:space="preserve">
+    <value>{0} em {1} s</value>
+  </data>
+  <data name="Routine_Countdown_From" xml:space="preserve">
+    <value>De {0}, {1}</value>
+  </data>
+  <data name="Routine_Countdown_PhoneUnknown" xml:space="preserve">
+    <value>um celular pareado</value>
+  </data>
+  <data name="Routine_Countdown_TestNote" xml:space="preserve">
+    <value>Execução de teste. {0} não será realizado.</value>
+  </data>
+  <data name="Routine_Countdown_DryRunNote" xml:space="preserve">
+    <value>Simulação: ações de energia são registradas, não executadas.</value>
+  </data>
+  <data name="Routine_Tray_CancelMenu" xml:space="preserve">
+    <value>Cancelar rotina</value>
+  </data>
+  <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
+    <value>{0} em {1} segundos. Cancele pela janela de contagem regressiva ou pelo menu da bandeja.</value>
+  </data>
+  <data name="Routine_Tray_Cancelled" xml:space="preserve">
+    <value>Cancelado. {0} não foi realizado.</value>
+  </data>
+  <data name="Routine_Tray_LaunchFailed" xml:space="preserve">
+    <value>Não foi possível abrir {0}.</value>
+  </data>
+  <data name="Routine_Tray_PowerDenied" xml:space="preserve">
+    <value>O sistema recusou esta ação: {0}.</value>
+  </data>
+  <data name="Routine_Tray_PowerFailed" xml:space="preserve">
+    <value>Esta ação não funcionou: {0}.</value>
+  </data>
+  <data name="Routine_Action_SHUTDOWN" xml:space="preserve">
+    <value>Desligar</value>
+  </data>
+  <data name="Routine_Action_FORCESHUTDOWN" xml:space="preserve">
+    <value>Forçar desligamento</value>
+  </data>
+  <data name="Routine_Action_RESTART" xml:space="preserve">
+    <value>Reiniciar</value>
+  </data>
+  <data name="Routine_Action_FORCERESTART" xml:space="preserve">
+    <value>Forçar reinício</value>
+  </data>
+  <data name="Routine_Action_RESTARTTOUEFI" xml:space="preserve">
+    <value>Reiniciar no UEFI</value>
+  </data>
+  <data name="Routine_Action_SIGNOUT" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="Routine_Action_SLEEP" xml:space="preserve">
+    <value>Suspender</value>
+  </data>
+  <data name="Routine_Action_HIBERNATE" xml:space="preserve">
+    <value>Hibernar</value>
+  </data>
+  <data name="Routine_Action_LOCK" xml:space="preserve">
+    <value>Bloquear</value>
+  </data>
+  <data name="Routine_Action_MONITOROFF" xml:space="preserve">
+    <value>Desligar a tela</value>
+  </data>
+  <data name="Routine_Source_ManualApp" xml:space="preserve">
+    <value>app RemEx</value>
+  </data>
+  <data name="Routine_Source_ManualShortcut" xml:space="preserve">
+    <value>atalho</value>
+  </data>
+  <data name="Routine_Source_ManualWidget" xml:space="preserve">
+    <value>widget da tela inicial</value>
+  </data>
+  <data name="Routine_Source_NfcTap" xml:space="preserve">
+    <value>tag NFC</value>
+  </data>
+  <data name="Routine_Source_HomeArrive" xml:space="preserve">
+    <value>ao chegar em casa</value>
+  </data>
+  <data name="Routine_Source_HomeLeave" xml:space="preserve">
+    <value>ao sair de casa</value>
+  </data>
+  <data name="Routine_Source_Other" xml:space="preserve">
+    <value>uma rotina</value>
+  </data>
 </root>

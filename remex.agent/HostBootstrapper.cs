@@ -285,6 +285,22 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<PairedClientNameStore>();
         builder.Services.AddSingleton<PairedDeviceActivityStore>();
         builder.Services.AddSingleton<PairedDeviceNameOverrideStore>();
+
+        // ── 3.0 Routines: the step executor for phone-run routines (RemEx-pp0rt.4, spec §8.4) ──
+        // In-process only: routine_step_request arrives on the authenticated /ws control channel and is
+        // executed here. Nothing is registered with RemexNetworkListener; TCP 8338 is untouched (T15).
+        // Dry run is decided ONCE from argv and has no other way in (T23).
+        builder.Services.AddSingleton(Remex.Desktop.Services.Routines.RoutineDryRunMode.FromCommandLine(args));
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<Remex.Desktop.Services.Routines.IRoutineUi, Remex.Desktop.Services.Routines.AvaloniaRoutineUi>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.ISessionLockProbe, Remex.Agent.Services.Routines.SessionLockProbe>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePowerExecutor, Remex.Agent.Services.Routines.SharedVerbRoutinePowerExecutor>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineMediaKeys, Remex.Agent.Services.Routines.InputSimulationMediaKeys>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineOwnerDirectory, Remex.Agent.Services.Routines.PairedRoutineOwnerDirectory>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineCountdownCoordinator>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineStepExecutor>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineStepRequestHandler>();
+
         // The phone's last-known palette, for "Match my phone" (RemEx-sudp8). Interface lives in
         // Remex.Core so the desktop can depend on it without referencing Remex.Agent, resolved there
         // via App.EmbeddedHostServices the same way SystemStatusViewModel reaches ISystemReadinessService.
@@ -598,7 +614,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<PairedDeviceActivityStore>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for
