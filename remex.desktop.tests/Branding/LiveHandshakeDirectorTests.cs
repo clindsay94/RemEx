@@ -8,10 +8,10 @@ using Xunit;
 namespace Remex.Desktop.Tests.Branding;
 
 /// <summary>
-/// The Live Handshake director against the shared vectors (RemEx-8g6n0). The Android director reads
-/// the same file, so a rule changed on one platform and not the other fails here or there, never
-/// silently. Stepped the way the spec prescribes: <c>now</c> from 0 in 1 ms increments, hand-off
-/// expected within 2 ms.
+/// The Live Handshake director against the shared vectors (RemEx-8g6n0, staging revision .3). The
+/// Android director reads the same file, so a rule changed on one platform and not the other fails
+/// here or there, never silently. Stepped the way the spec prescribes: <c>now</c> from 0 in 1 ms
+/// increments, hand-off expected within 2 ms, plus the staged lock and answer show times.
 /// </summary>
 public class LiveHandshakeDirectorTests
 {
@@ -27,14 +27,20 @@ public class LiveHandshakeDirectorTests
     public void TheConstantsMatchTheVectorFile()
     {
         var k = Vectors().RootElement.GetProperty("constants");
-        LiveHandshakeDirector.Floor.Should().BeApproximately(k.GetProperty("floor").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.Grace.Should().BeApproximately(k.GetProperty("grace").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.Cap.Should().BeApproximately(k.GetProperty("cap").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.LockHold.Should().BeApproximately(k.GetProperty("lockHold").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.Exit.Should().BeApproximately(k.GetProperty("exit").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.FadeExit.Should().BeApproximately(k.GetProperty("fadeExit").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.FirstPulse.Should().BeApproximately(k.GetProperty("firstPulse").GetSingle(), 1e-6f);
-        LiveHandshakeDirector.PulsePeriod.Should().BeApproximately(k.GetProperty("pulsePeriod").GetSingle(), 1e-6f);
+        void Check(float actual, string name) =>
+            actual.Should().BeApproximately(k.GetProperty(name).GetSingle(), 1e-6f, name);
+        Check(LiveHandshakeDirector.Floor, "floor");
+        Check(LiveHandshakeDirector.Grace, "grace");
+        Check(LiveHandshakeDirector.Cap, "cap");
+        Check(LiveHandshakeDirector.LockHold, "lockHold");
+        Check(LiveHandshakeDirector.Exit, "exit");
+        Check(LiveHandshakeDirector.FadeExit, "fadeExit");
+        Check(LiveHandshakeDirector.FirstPulse, "firstPulse");
+        Check(LiveHandshakeDirector.PulsePeriod, "pulsePeriod");
+        Check(LiveHandshakeDirector.AnswerMin, "answerMin");
+        Check(LiveHandshakeDirector.AnswerGap, "answerGap");
+        Check(LiveHandshakeDirector.LockAfter, "lockAfter");
+        Check(LiveHandshakeDirector.LineGap, "lineGap");
     }
 
     [Fact]
@@ -45,11 +51,15 @@ public class LiveHandshakeDirectorTests
 
     [Theory]
     [MemberData(nameof(CaseNames))]
-    public void EachVectorHandsOffOnTimeFromTheRightOriginWithTheRightPulses(string name)
+    public void EachVectorHandsOffOnTimeWithTheRightStaging(string name)
     {
         var c = Vectors().RootElement.GetProperty("cases").EnumerateArray()
             .Single(x => x.GetProperty("name").GetString() == name);
 
+        var answers = c.GetProperty("answers").EnumerateArray()
+            .Select(a => new HandshakeAnswer(a.GetProperty("at").GetSingle(),
+                a.TryGetProperty("target", out var tg) && tg.GetBoolean()))
+            .ToArray();
         var timeline = new HandshakeTimeline(
             Peers: c.GetProperty("peers").GetInt32(),
             TargetAt: c.GetProperty("hasTarget").GetBoolean() ? 0f : null,
@@ -57,7 +67,8 @@ public class LiveHandshakeDirectorTests
             LinkedAt: Opt(c, "linkedAt"),
             FailedAt: Opt(c, "failedAt"),
             SkipAt: Opt(c, "skipAt"),
-            ExitFromMark: c.GetProperty("exitFromMark").GetBoolean());
+            ExitFromMark: c.GetProperty("exitFromMark").GetBoolean(),
+            Answers: answers);
         float expected = c.GetProperty("expectHandoff").GetSingle();
 
         // Step now from 0 in 1 ms increments; the first step that reports a hand-off is the frame
@@ -72,11 +83,23 @@ public class LiveHandshakeDirectorTests
 
         handoff.Should().NotBeNull($"'{name}' must hand off within the cap");
         stepNow.Should().BeApproximately(expected, 0.002, $"'{name}': the frame the hand-off starts on");
-        handoff!.Value.Should().BeApproximately(expected, 0.002f, $"'{name}': the hand-off time");
+        float h = handoff!.Value;
+        h.Should().BeApproximately(expected, 0.002f, $"'{name}': the hand-off time");
 
-        var origin = LiveHandshakeDirector.Origin(timeline, handoff.Value);
-        origin.Should().Be(c.GetProperty("expectOrigin").GetString() == "target" ? HandshakeOrigin.Target : HandshakeOrigin.Mark,
+        LiveHandshakeDirector.Origin(timeline, h).Should().Be(
+            c.GetProperty("expectOrigin").GetString() == "target" ? HandshakeOrigin.Target : HandshakeOrigin.Mark,
             $"'{name}': where the portal opens");
+
+        var lockShown = LiveHandshakeDirector.LockShownBy(timeline, h);
+        var expectLock = Opt(c, "expectLockShown");
+        if (expectLock is null) lockShown.Should().BeNull($"'{name}': no lock is shown");
+        else lockShown.Should().NotBeNull().And.BeApproximately(expectLock.Value, 0.002f, $"'{name}': the lock's shown time");
+
+        Span<float> staged = stackalloc float[LiveHandshakeDirector.MaxAnswers + 1];
+        int slots = LiveHandshakeDirector.StageAnswers(timeline, h, staged, out _);
+        var shown = staged[..slots].ToArray().Where(s => !float.IsNaN(s) && s < h).OrderBy(s => s).ToArray();
+        var expectShown = c.GetProperty("expectAnswersShown").EnumerateArray().Select(a => a.GetSingle()).ToArray();
+        shown.Should().Equal(expectShown, (a, b) => Math.Abs(a - b) < 0.002f, $"'{name}': answers shown before the hand-off");
 
         var pulses = Enumerable.Range(0, LiveHandshakeDirector.PulsesStarted(10f, handoff, reducedMotion: false))
             .Select(LiveHandshakeDirector.PulseAt).ToArray();
@@ -99,54 +122,73 @@ public class LiveHandshakeDirectorTests
     public void NeverReadyStillHandsOffAtTheCap()
     {
         var timeline = new HandshakeTimeline(0, null, null, null, null, null, true);
-        LiveHandshakeDirector.Handoff(timeline, 2.59f).Should().BeNull();
-        LiveHandshakeDirector.Handoff(timeline, 2.60f).Should().BeApproximately(LiveHandshakeDirector.Cap, 1e-4f);
+        LiveHandshakeDirector.Handoff(timeline, 2.99f).Should().BeNull();
+        LiveHandshakeDirector.Handoff(timeline, 3.00f).Should().BeApproximately(LiveHandshakeDirector.Cap, 1e-4f);
     }
 
     [Fact]
     public void ReducedMotionFiresNoPulses()
     {
-        LiveHandshakeDirector.PulsesStarted(5f, 2.6f, reducedMotion: true).Should().Be(0);
-        LiveHandshakeDirector.PulsesStarted(5f, 2.6f, reducedMotion: false).Should().Be(3);
+        LiveHandshakeDirector.PulsesStarted(5f, 3.0f, reducedMotion: true).Should().Be(0);
+        LiveHandshakeDirector.PulsesStarted(5f, 3.0f, reducedMotion: false).Should().Be(3);
     }
 
     [Fact]
-    public void ThePcStatusLineFollowsTheLabOrder()
+    public void ThePcConsoleQueuesItsLinesLineGapApart()
     {
-        LiveHandshakeDirector.Status(0.1f, 0, 0, null, null, null, null).Kind.Should().Be(HandshakeStatusKind.Starting);
-        LiveHandshakeDirector.Status(0.5f, 0, 0, null, null, null, null).Kind.Should().Be(HandshakeStatusKind.NonePaired);
+        // The lab's "pc" scenario: 3 phones, listener at 0.40, the S26 lock shown at 1.36, hand-off 2.06.
+        var lines = new HandshakeLine[4];
+        int n = LiveHandshakeDirector.PcConsole(3, 0.40f, 5005, "Galaxy S26 Ultra", 1.36f, 2.06f, lines);
 
-        var listening = LiveHandshakeDirector.Status(0.5f, 3, 0, null, null, 0.32f, 5005);
-        listening.Kind.Should().Be(HandshakeStatusKind.Listening);
-        listening.Port.Should().Be(5005);
-        LiveHandshakeDirector.Status(0.5f, 3, 0, null, null, 0.32f, null).Port.Should().BeNull("an unresolvable port is omitted, not guessed");
+        n.Should().Be(4);
+        lines[0].Kind.Should().Be(HandshakeLineKind.Paired);
+        lines[0].Count.Should().Be(3);
+        lines[0].At.Should().BeApproximately(0.32f, 1e-4f);
+        lines[1].Kind.Should().Be(HandshakeLineKind.Listening);
+        lines[1].Port.Should().Be(5005);
+        lines[1].At.Should().BeApproximately(0.64f, 1e-4f, "due 0.40 but queued LINE_GAP after the first line");
+        lines[2].Kind.Should().Be(HandshakeLineKind.Linked);
+        lines[2].Name.Should().Be("Galaxy S26 Ultra");
+        lines[2].Hot.Should().BeTrue();
+        lines[2].At.Should().BeApproximately(1.36f, 1e-4f);
+        lines[3].Kind.Should().Be(HandshakeLineKind.Opening);
+        lines[3].At.Should().BeApproximately(2.06f, 1e-4f);
+    }
 
-        LiveHandshakeDirector.Status(0.1f, 3, 0, null, null, null, null).Kind.Should().Be(HandshakeStatusKind.Starting);
-        var pinging = LiveHandshakeDirector.Status(0.5f, 3, 0, null, null, null, null);
-        pinging.Kind.Should().Be(HandshakeStatusKind.Pinging);
-        pinging.Count.Should().Be(3);
+    [Fact]
+    public void TheListeningLineIsNeverShownBeforeTheMarkHasLit()
+    {
+        // On the PC the host is usually up before the first frame (listeningAt = 0).
+        var lines = new HandshakeLine[4];
+        int n = LiveHandshakeDirector.PcConsole(0, 0f, null, null, null, null, lines);
 
-        var some = LiveHandshakeDirector.Status(0.9f, 3, 1, null, null, 0.32f, 5005);
-        some.Kind.Should().Be(HandshakeStatusKind.SomeLinked, "once a phone is linked the listener line gives way");
-        (some.Count, some.Total).Should().Be((1, 3));
+        n.Should().Be(2);
+        lines[0].Kind.Should().Be(HandshakeLineKind.NonePaired);
+        lines[1].Kind.Should().Be(HandshakeLineKind.Listening);
+        lines[1].Port.Should().BeNull("an unresolvable port is omitted, not guessed");
+        lines[1].At.Should().BeApproximately(0.64f, 1e-4f, "max(0, ListeningMin 0.4) queued after the 0.32 line");
+    }
 
-        var locked = LiveHandshakeDirector.Status(0.9f, 3, 1, "Galaxy S26 Ultra", null, 0.32f, 5005);
-        locked.Kind.Should().Be(HandshakeStatusKind.LinkedTo);
-        locked.Name.Should().Be("Galaxy S26 Ultra");
-        locked.Hot.Should().BeTrue();
+    [Fact]
+    public void ALockStagedPastTheHandoffIsNotOnTheConsole()
+    {
+        var lines = new HandshakeLine[4];
+        int n = LiveHandshakeDirector.PcConsole(1, 0.4f, 5005, "Pixel", 1.9f, 1.5f, lines);
+        lines[..n].ToArray().Should().NotContain(l => l.Kind == HandshakeLineKind.Linked);
     }
 
     [Fact]
     public void TheEnglishFallbackReadsLikeTheLab()
     {
         var text = EnglishHandshakeText.Instance;
-        text.Status(new HandshakeStatus(HandshakeStatusKind.Listening, Port: 5005)).Should().Be("LISTENING ON PORT 5005");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.Listening)).Should().Be("LISTENING");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.SomeLinked, 1, 3)).Should().Be("1 OF 3 LINKED");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.LinkedTo, Name: "Galaxy S26 Ultra")).Should().Be("LINKED · GALAXY S26 ULTRA");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.Pinging, 1, 1)).Should().Be("PINGING 1 PHONE");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.Pinging, 3, 3)).Should().Be("PINGING 3 PHONES");
-        text.Status(new HandshakeStatus(HandshakeStatusKind.NonePaired)).Should().Be("NO PHONES PAIRED YET");
+        text.Line(new HandshakeLine(HandshakeLineKind.Paired, 0, Count: 1)).Should().Be("1 phone paired");
+        text.Line(new HandshakeLine(HandshakeLineKind.Paired, 0, Count: 3)).Should().Be("3 phones paired");
+        text.Line(new HandshakeLine(HandshakeLineKind.NonePaired, 0)).Should().Be("No phones paired yet");
+        text.Line(new HandshakeLine(HandshakeLineKind.Listening, 0, Port: 5005)).Should().Be("Listening on port 5005");
+        text.Line(new HandshakeLine(HandshakeLineKind.Listening, 0)).Should().Be("Listening");
+        text.Line(new HandshakeLine(HandshakeLineKind.Linked, 0, Name: "Galaxy S26 Ultra")).Should().Be("Galaxy S26 Ultra is linked");
+        text.Line(new HandshakeLine(HandshakeLineKind.Opening, 0)).Should().Be("Opening RemEx");
+        text.LinkedSuffix.Should().Be("linked");
     }
 
     private static float? Opt(JsonElement c, string property) =>

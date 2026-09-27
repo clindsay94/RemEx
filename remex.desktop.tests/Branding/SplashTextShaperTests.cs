@@ -19,7 +19,7 @@ public class SplashTextShaperTests
     {
         // Needs at least one installed face that covers Devanagari (Windows ships Nirmala UI). On a
         // box with none there is nothing to fall back to, and "no boxes" cannot be asked of it.
-        using var devanagari = SKFontManager.Default.MatchCharacter('क');
+        var devanagari = SKFontManager.Default.MatchCharacter('क');
         if (OperatingSystem.IsWindows())
             devanagari.Should().NotBeNull("Windows ships Nirmala UI, so this test must really run there");
         if (devanagari is null || !devanagari.ContainsGlyph('क')) return;
@@ -27,8 +27,9 @@ public class SplashTextShaperTests
         var hi = HindiStrings();
         var lines = new[]
         {
-            string.Format(hi["Splash_LiveHandshake_LinkedTo"], "Galaxy S26 Ultra"),
-            string.Format(hi["Splash_LiveHandshake_Pinging_Other"], 3),
+            string.Format(hi["Splash_LiveHandshake_IsLinked"], "Galaxy S26 Ultra"),
+            string.Format(hi["Splash_LiveHandshake_Paired_Other"], 3),
+            hi["Splash_LiveHandshake_Opening"],
             string.Format(hi["Splash_LiveHandshake_ListeningOnPort"], 5005),
             hi["Splash_LiveHandshake_NonePaired"],
             "पिंकी का फ़ोन  " + hi["Splash_LiveHandshake_NodeLinked"],
@@ -48,7 +49,7 @@ public class SplashTextShaperTests
     [Fact]
     public void DevanagariIsShapedNotMappedCharacterByCharacter()
     {
-        using var devanagari = SKFontManager.Default.MatchCharacter('क');
+        var devanagari = SKFontManager.Default.MatchCharacter('क');
         if (devanagari is null || !devanagari.ContainsGlyph('क')) return;
 
         // "कि" is consonant + vowel sign I, which renders to the LEFT of the consonant: a shaper

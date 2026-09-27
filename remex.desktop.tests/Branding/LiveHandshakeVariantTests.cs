@@ -23,8 +23,9 @@ public class LiveHandshakeVariantTests
         },
         TargetIndex: 1, TargetAt: 0.86f, ReadyAt: 0.55f, ListeningAt: 0.40f, ListeningPort: 5005, FailedAt: null);
 
-    // Hand-off for PcScenario: max(0.86 + LOCK_HOLD, FLOOR, 0.55) = 1.36 s; mid-exit half an EXIT later.
-    private const float Handoff = 1.36f;
+    // Hand-off for PcScenario under staging: the link is shown at max(0.86, ANSWER_MIN) = 0.86, the lock
+    // at max(0.86, 0.86 + LOCK_AFTER) = 1.36, hand-off max(1.36 + LOCK_HOLD, FLOOR, 0.55) = 2.06 s.
+    private const float Handoff = 2.06f;
     private static readonly float MidExit = Handoff + LiveHandshakeDirector.Exit / 2f;
 
     private static LiveHandshakeVariant Variant(bool field = true)

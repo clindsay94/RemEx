@@ -2459,30 +2459,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Canlı El Sıkışma</value>
   </data>
-  <data name="Splash_LiveHandshake_Starting" xml:space="preserve">
-    <value>Başlatılıyor</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_One" xml:space="preserve">
-    <value>{0} telefona ping atılıyor</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Few" xml:space="preserve">
-    <value>{0} telefona ping atılıyor</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Many" xml:space="preserve">
-    <value>{0} telefona ping atılıyor</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Other" xml:space="preserve">
-    <value>{0} telefona ping atılıyor</value>
-  </data>
-  <data name="Splash_LiveHandshake_LinkedCount" xml:space="preserve">
-    <value>{0}/{1} bağlı</value>
-  </data>
-  <data name="Splash_LiveHandshake_LinkedTo" xml:space="preserve">
-    <value>Bağlandı · {0}</value>
-  </data>
-  <data name="Splash_LiveHandshake_NotAnswering" xml:space="preserve">
-    <value>{0} yanıt vermiyor</value>
-  </data>
   <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
     <value>Henüz eşleştirilmiş telefon yok</value>
   </data>
@@ -2494,6 +2470,24 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   </data>
   <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
     <value>bağlı</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} telefon eşleştirildi</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} telefon eşleştirildi</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} telefon eşleştirildi</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} telefon eşleştirildi</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} bağlı</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>RemEx açılıyor</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Orijinal Tarama</value>

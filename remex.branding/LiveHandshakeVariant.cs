@@ -35,12 +35,11 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
     // ── Layout (PC reference frame 1280×800) ──────────────────────────────────
     private const float RefW = 1280f, RefH = 800f;
     private const float CenterYFrac = 0.46f, MarkWidthDp = 150f, OrbitRxFrac = 0.27f, OrbitRyFrac = 0.30f;
-    private const float WordmarkYFrac = 0.86f, StatusGapDp = 26f;
+    // The console (spec, "The console"): wordmark at 0.80H, three mono lines 34 dp below it.
+    private const float WordmarkYFrac = 0.80f, ConsoleGapDp = 34f, ConsoleLineDp = 21f, ConsoleColumnDp = 420f;
     private const int MaxPeers = 8;
     /// <summary>Where a linked phone settles (the orbit is 1). No RTT on the PC, so one fixed radius.</summary>
     private const float LinkedRadius = 0.72f;
-    /// <summary>The listener usually comes up before the first frame; its ring locks with the first pulse, once the mark has lit.</summary>
-    private const float ListenFloor = FirstPulse;
     private const float WindowLen = 226f, Tau = MathF.PI * 2f;
 
     private static readonly SKColor DefaultPrimary = new(0xFF93A4C6);
@@ -82,11 +81,12 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
     private SKPathEffect? _ghostDash; private float _ghostDashU;
     // Text is shaped (fallback faces + HarfBuzz), not drawn with one SKFont: the hi locale and any
     // non-Latin nickname rendered as missing-glyph boxes otherwise (RemEx-8g6n0.2 review).
-    private const float LabelDp = 13f, StatusDp = 10.5f, WordmarkDp = 22f;
+    private const float LabelDp = 14f, ConsoleDp = 13.5f, WordmarkDp = 22f;
     private readonly SplashTextShaper _shaper = new();
-    private readonly Dictionary<(string, float), ShapedLine> _lines = new();
+    private readonly Dictionary<(string, float, bool), ShapedLine> _lines = new();
     private SKTypeface? _fontFace; private float _fontU;
-    private HandshakeStatus _statusKey; private int _statusDots = -1; private string _statusText = string.Empty;
+    private readonly Dictionary<HandshakeLine, string> _lineText = new();
+    private readonly HandshakeLine[] _consoleLines = new HandshakeLine[4];
 
     public LiveHandshakeVariant(ILiveHandshakeText? text = null)
     {
@@ -141,20 +141,34 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         {
             if (t > _lastT) _lastT = t;
             if (_handoff is { } latched) return latched;
-            var h = LiveHandshakeDirector.Handoff(Timeline(_layout.Snapshot, _skipAt), t);
+            var h = LiveHandshakeDirector.Handoff(Timeline(_layout, _skipAt), t);
             if (h is not null) _handoff = h;
             return h;
         }
     }
 
-    private static HandshakeTimeline Timeline(HandshakeSnapshot s, float? skipAt) => new(
-        Peers: s.Peers.Count,
-        TargetAt: s.TargetAt,
-        ReadyAt: s.ReadyAt,
-        LinkedAt: s.TargetLinkedAt,
-        FailedAt: s.FailedAt,
-        SkipAt: skipAt,
-        ExitFromMark: true);
+    /// <summary>
+    /// The director's view of a snapshot. On the PC a link is also that phone's answer, so every
+    /// linked phone is an answer (the target flagged) and the staging spaces them out for reading.
+    /// </summary>
+    private static HandshakeTimeline Timeline(PeerLayout layout, float? skipAt)
+    {
+        var s = layout.Snapshot;
+        return new HandshakeTimeline(
+            Peers: s.Peers.Count,
+            TargetAt: s.TargetAt,
+            ReadyAt: s.ReadyAt,
+            LinkedAt: s.TargetLinkedAt,
+            FailedAt: s.FailedAt,
+            SkipAt: skipAt,
+            ExitFromMark: true,
+            Answers: layout.Answers);
+    }
+
+    private float? SkipAtSnapshot()
+    {
+        lock (_gate) return _skipAt;
+    }
 
     // ── Frame ──────────────────────────────────────────────────────────────────
 
@@ -190,18 +204,25 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         f.ExitE = f.Exiting ? Clamp01(f.ExitT / Exit) : 0f;
         f.PortalR = PortalRadius(f);
 
-        // Visual link times: a link counts only if it came before the hand-off, and it ignites once
-        // its ghost has faded in (a warm link at t = 0 would otherwise light an invisible node).
+        // Every visual fires at its SHOWN time (the director's staging), never the raw event time:
+        // a linked phone ignites no sooner than ANSWER_MIN, phones ANSWER_GAP apart, the lock
+        // LOCK_AFTER later, and nothing staged past the hand-off is shown at all.
+        var timeline = Timeline(layout, SkipAtSnapshot());
         float hEnd = handoff ?? float.PositiveInfinity;
-        for (int i = 0; i < f.N; i++)
+        Span<float> staged = stackalloc float[LiveHandshakeDirector.MaxAnswers + 1];
+        LiveHandshakeDirector.StageAnswers(timeline, t, staged, out _);
+        for (int i = 0; i < f.N; i++) f.Vis[i] = float.NaN;
+        for (int a = 0; a < layout.AnswerPeer.Length && a < staged.Length; a++)
         {
-            f.Vis[i] = snap.Peers[i].LinkedAt is { } l && l < hEnd
-                ? (reduced ? l : Math.Max(l, Appear(i) + 0.2f))
-                : float.NaN;
+            int p = layout.AnswerPeer[a];
+            if (p < f.N && !float.IsNaN(staged[a]) && staged[a] < hEnd) f.Vis[p] = staged[a];
         }
         int ti = snap.TargetIndex;
-        f.Target = ti >= 0 && ti < f.N && !float.IsNaN(f.Vis[ti]) ? ti : -1;
-        f.ListenVis = snap.ListeningAt is { } la ? (reduced ? la : Math.Max(la, ListenFloor)) : float.NaN;
+        float? lockShown = LiveHandshakeDirector.LockShown(timeline, t);
+        f.LockAt = lockShown is { } ls && ls <= hEnd ? ls : float.NaN;
+        f.Target = ti >= 0 && ti < f.N && !float.IsNaN(f.LockAt) ? ti : -1;
+        // The listening beat: not before ListeningMin, the same rule as its console line.
+        f.ListenVis = snap.ListeningAt is { } la ? Math.Max(la, LiveHandshakeDirector.ListeningMin) : float.NaN;
 
         f.Pulses = PulsesStarted(t, handoff, reduced);
         float pAge = f.Pulses > 0 ? t - PulseAt(f.Pulses - 1) : 9f;
@@ -218,6 +239,7 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
     }
 
     private static float Appear(int i) => 0.16f + 0.08f * i;
+
 
     private void UpdateParallax(float t, float dt, bool reduced, float u)
     {
@@ -338,8 +360,10 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         for (int i = 0; i < f.N && n < all.Length; i++)
         {
             if (float.IsNaN(f.Vis[i])) continue;
-            all[n++] = new Ring(SettledPos(f, i), f.Vis[i], i == f.Target ? 0.85f : 0.5f);
+            all[n++] = new Ring(SettledPos(f, i), f.Vis[i], 0.5f);
         }
+        // The lock-on sends its own, stronger ripple from the target at the SHOWN lock time.
+        if (f.Target >= 0 && n < all.Length) all[n++] = new Ring(SettledPos(f, f.Target), f.LockAt, 0.85f);
         if (!float.IsNaN(f.ListenVis) && n < all.Length) all[n++] = new Ring(f.C, f.ListenVis, 0.6f);
         if (f.Handoff is { } h && n < all.Length) all[n++] = new Ring(f.E, h, 1.4f);
 
@@ -438,11 +462,11 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         if (fade <= 0.001f) { canvas.Restore(); return; }
         f.Fade = fade;
 
-        if (f.Target >= 0 && f.T >= f.Vis[f.Target]) DrawLock(canvas, f);
+        if (f.Target >= 0 && f.T >= f.LockAt) DrawLock(canvas, f);
         for (int i = 0; i < f.N; i++) DrawNode(canvas, f, i);
         DrawMarkLayer(canvas, f);
         DrawListenRing(canvas, f);
-        DrawWordmarkAndStatus(canvas, f);
+        DrawWordmarkAndConsole(canvas, f);
 
         canvas.Restore();
     }
@@ -451,7 +475,7 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
     private void DrawLock(SKCanvas canvas, Frame f)
     {
         int ti = f.Target;
-        float t = f.T, u = f.U, lv = f.Vis[ti], la = t - lv;
+        float t = f.T, u = f.U, lv = f.LockAt, la = t - lv;
         var node = NodePos(f, ti, f.Reduced ? 99f : t);
         float dx = node.X - f.C.X, dy = node.Y - f.C.Y, len = MathF.Max(Hypot(dx, dy), 1f);
         float ux = dx / len, uy = dy / len;
@@ -548,8 +572,8 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         int cut = peer.Name.Length + shown;
         if (shown < suffixLen && cut > 0 && char.IsHighSurrogate(full[cut - 1])) cut--;
         string txt = shown == suffixLen ? full : full[..cut];
-        var fullLine = Line(full, labelSize);
-        var line = ReferenceEquals(txt, full) ? fullLine : Line(txt, labelSize);
+        var fullLine = Line(full, labelSize, mono: true);
+        var line = ReferenceEquals(txt, full) ? fullLine : Line(txt, labelSize, mono: true);
         float m = 14f * u;
         float lo = m + fullLine.Width / 2f, hi = f.W - m - fullLine.Width / 2f;
         float lx = lo <= hi ? Math.Clamp(p.X, lo, hi) : f.W / 2f;
@@ -743,39 +767,99 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
             canvas.DrawArc(oval, q * 90f + gapDeg, 90f - 2f * gapDeg, false, _stroke);
     }
 
-    private void DrawWordmarkAndStatus(SKCanvas canvas, Frame f)
+    /// <summary>
+    /// The wordmark and, under it, the console: a three-line terminal readout narrating the staged
+    /// events (the lab's <c>drawConsole</c>). Newest line at full ink (accent when hot) typing in at
+    /// 55 chars/s with the block cursor, the two above at 55 % and 30 %, the stack sliding up one line
+    /// over 0.18 s as each line arrives. Reduced motion: whole lines, no slide, same timing.
+    /// </summary>
+    private void DrawWordmarkAndConsole(SKCanvas canvas, Frame f)
     {
+        float u = f.U;
+        float lh = ConsoleLineDp * u;
         float by = f.H * WordmarkYFrac;
+        float top = by + ConsoleGapDp * u;
+        // Keep the console's last line (and its cursor) clear of the host's version label and skip
+        // hint, which sit in the bottom ~9 % of the shorter side (SkiaSplashControl.SplashDrawOp).
+        float limit = f.H - MathF.Min(f.W, f.H) * 0.105f;
+        float overflow = top + 2f * lh + 3f * u - limit;
+        if (overflow > 0f) { by -= overflow; top -= overflow; }
+
         float alpha = f.Fade * f.Intro;
         if (alpha <= 0.001f) return;
         _fill.Shader = null;
         _fill.MaskFilter = null;
 
-        var rem = Line("Rem", WordmarkDp * f.U);
-        var ex = Line("Ex", WordmarkDp * f.U);
-        float x0 = f.C.X - (rem.Width + ex.Width) / 2f;
+        var rem = Line("Rem", WordmarkDp * u, mono: false);
+        var ex = Line("Ex", WordmarkDp * u, mono: false);
+        float wx = f.C.X - (rem.Width + ex.Width) / 2f;
         _fill.Color = A(f.Ink, alpha);
-        rem.Draw(canvas, x0, by, _fill);
+        rem.Draw(canvas, wx, by, _fill);
         _fill.Color = A(f.Acc, alpha);
-        ex.Draw(canvas, x0 + rem.Width, by, _fill);
+        ex.Draw(canvas, wx + rem.Width, by, _fill);
 
-        var status = BuildStatus(f);
-        var line = Line(StatusText(status, f.T), StatusDp * f.U);
-        _fill.Color = A(status.Hot ? f.Acc : f.Muted, alpha);
-        line.Draw(canvas, f.C.X - line.Width / 2f, by + StatusGapDp * f.U, _fill);
+        var snap = f.Layout.Snapshot;
+        var lines = _consoleLines;
+        int count = LiveHandshakeDirector.PcConsole(
+            snap.Peers.Count, snap.ListeningAt, snap.ListeningPort,
+            f.Target >= 0 ? snap.Peers[f.Target].Name : null,
+            float.IsNaN(f.LockAt) ? null : f.LockAt, f.Handoff, lines);
+        int shown = 0;
+        while (shown < count && lines[shown].At <= f.T) shown++;
+        if (shown == 0) return;
+
+        float colW = MathF.Min(f.W - 48f * u, ConsoleColumnDp * u);
+        float x0 = f.C.X - colW / 2f;
+        float age = f.T - lines[shown - 1].At;
+        float slide = f.Reduced ? 0f : lh * (1f - Std.Ease(Clamp01(age / 0.18f)));
+        float size = ConsoleDp * u;
+        var prompt = Line("›", size, mono: true);
+        int first = Math.Max(0, shown - 4);
+        for (int i = first; i < shown; i++)
+        {
+            int k = shown - 1 - i; // 0 = newest
+            if (k >= 3 && slide <= 0.5f) continue; // scrolled out
+            float y = top + (2 - k) * lh + slide;
+            float a = k == 0 ? 1f : k == 1 ? 0.55f : k == 2 ? 0.3f : 0.3f * (slide / lh);
+            string text = LineText(lines[i]);
+            int chars = k == 0 && !f.Reduced ? Math.Min(text.Length, (int)MathF.Floor(age * 55f)) : text.Length;
+            if (chars > 0 && chars < text.Length && char.IsHighSurrogate(text[chars - 1])) chars--;
+            var typed = Line(chars == text.Length ? text : text[..chars], size, mono: true);
+
+            _fill.Color = A(f.Acc, alpha * a);
+            prompt.Draw(canvas, x0, y, _fill);
+            _fill.Color = A(k == 0 && lines[i].Hot ? f.Acc : (k == 0 ? f.Ink : f.Muted), alpha * a);
+            float tx = x0 + 14f * u;
+            typed.Draw(canvas, tx, y, _fill);
+            if (k == 0 && (chars < text.Length || ((int)MathF.Floor(f.T / 0.53f)) % 2 == 0))
+            {
+                _fill.Color = A(f.Acc, alpha);
+                canvas.DrawRect(tx + typed.Width + 3f * u, y - 10f * u, 6f * u, 12f * u, _fill);
+            }
+        }
+    }
+
+    /// <summary>A console line's localized text, cached per line identity (not its time).</summary>
+    private string LineText(HandshakeLine line)
+    {
+        var key = line with { At = 0f };
+        if (_lineText.TryGetValue(key, out var text)) return text;
+        text = _text.Line(key);
+        _lineText[key] = text;
+        return text;
     }
 
     /// <summary>
     /// A shaped line from the cache (render thread only). Shaping is the expensive part — font
-    /// fallback lookup plus HarfBuzz — so each distinct (text, size) is shaped once; the typed-in
-    /// suffix and the three pinging-dot states are the only strings that change during a splash.
+    /// fallback lookup plus HarfBuzz — so each distinct (text, size, face) is shaped once; the typing
+    /// console lines and node suffixes are the only strings that change during a splash.
     /// </summary>
-    private ShapedLine Line(string text, float size)
+    private ShapedLine Line(string text, float size, bool mono)
     {
-        var key = (text, size);
+        var key = (text, size, mono);
         if (_lines.TryGetValue(key, out var line)) return line;
-        if (_lines.Count >= 128) ClearLines();
-        line = _shaper.Shape(text, _fontFace ?? SKTypeface.Default, size);
+        if (_lines.Count >= 256) ClearLines();
+        line = _shaper.Shape(text, mono ? MonoFace : (_fontFace ?? SKTypeface.Default), size);
         _lines[key] = line;
         return line;
     }
@@ -786,29 +870,25 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
         _lines.Clear();
     }
 
-    private static HandshakeStatus BuildStatus(Frame f)
-    {
-        var snap = f.Layout.Snapshot;
-        int linked = 0;
-        for (int i = 0; i < f.N; i++)
-            if (!float.IsNaN(f.Vis[i]) && f.T >= f.Vis[i]) linked++;
-        string? locked = f.Target >= 0 && f.T >= f.Vis[f.Target] ? snap.Peers[f.Target].Name : null;
-        return LiveHandshakeDirector.Status(
-            f.T, snap.Peers.Count, linked, locked, notAnsweringTarget: null,
-            float.IsNaN(f.ListenVis) ? null : f.ListenVis, snap.ListeningPort);
-    }
+    /// <summary>
+    /// The console and node labels are monospace (the spec). The brand's Victor Mono when it loaded,
+    /// else the first installed monospace family; the shaper still falls back per glyph for scripts
+    /// a monospace face does not cover.
+    /// </summary>
+    private static SKTypeface MonoFace => SplashBrand.Typeface ?? MonoFallback.Value;
 
-    private string StatusText(HandshakeStatus status, float t)
+    private static readonly Lazy<SKTypeface> MonoFallback = new(() =>
     {
-        int dots = status.Kind == HandshakeStatusKind.Pinging ? 1 + (int)MathF.Floor(t * 3f) % 3 : 0;
-        if (status == _statusKey && dots == _statusDots) return _statusText;
-        _statusKey = status;
-        _statusDots = dots;
-        string text = _text.Status(status);
-        if (dots > 0) text += new string('.', dots) + new string(' ', 3 - dots);
-        _statusText = text;
-        return text;
-    }
+        foreach (var family in new[] { "Cascadia Mono", "Consolas", "JetBrains Mono", "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono", "Menlo" })
+        {
+            var face = SKTypeface.FromFamilyName(family);
+            if (face is not null && string.Equals(face.FamilyName, family, StringComparison.OrdinalIgnoreCase)) return face;
+            // NOT disposed: for a missing family the font manager hands back its default face, and
+            // SkiaSharp maps one native typeface to one shared managed wrapper - disposing it here
+            // would dispose the default face out from under every other user in the process.
+        }
+        return SKTypeface.FromFamilyName("monospace") ?? SKTypeface.Default;
+    });
 
     // ── Small drawing helpers ─────────────────────────────────────────────────
 
@@ -920,7 +1000,7 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
 
     private sealed class Frame
     {
-        public float T, W, H, U, MarkW, Rx, Ry, ExitT, ExitE, PortalR, Env, Intro, ListenVis, Fade = 1f;
+        public float T, W, H, U, MarkW, Rx, Ry, ExitT, ExitE, PortalR, Env, Intro, ListenVis, LockAt, Fade = 1f;
         public bool Reduced, Exiting;
         public SKPoint C, E;
         public float? Handoff;
@@ -939,22 +1019,30 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
 
     /// <summary>
     /// The snapshot plus everything derived from its peer list alone: orbit angles and the finished
-    /// "name  LINKED" labels. Rebuilt only when the peer names change, so a poll that only moves a
-    /// timestamp does not re-hash anything.
+    /// "name  linked" labels (rebuilt only when the peer names change, so a poll that only moves a
+    /// timestamp does not re-hash anything), plus the director's answers: on the PC every linked phone
+    /// answered at its link time, and <see cref="AnswerPeer"/> maps each answer back to its peer.
     /// </summary>
     private sealed class PeerLayout
     {
         public HandshakeSnapshot Snapshot { get; private init; } = HandshakeSnapshot.Empty;
         public float[] Angles { get; private init; } = Array.Empty<float>();
         public string[] LinkedLabels { get; private init; } = Array.Empty<string>();
+        public HandshakeAnswer[] Answers { get; private init; } = Array.Empty<HandshakeAnswer>();
+        public int[] AnswerPeer { get; private init; } = Array.Empty<int>();
         private string Signature { get; init; } = string.Empty;
 
         public static PeerLayout Build(HandshakeSnapshot snapshot, PeerLayout? previous, ILiveHandshakeText text)
         {
             int n = Math.Min(snapshot.Peers.Count, MaxPeers);
             var sig = string.Join("|", snapshot.Peers.Take(n).Select(p => p.Name));
+            var (answers, answerPeer) = BuildAnswers(snapshot, n);
             if (previous is not null && previous.Signature == sig && previous.Angles.Length == n)
-                return new PeerLayout { Snapshot = snapshot, Angles = previous.Angles, LinkedLabels = previous.LinkedLabels, Signature = sig };
+                return new PeerLayout
+                {
+                    Snapshot = snapshot, Angles = previous.Angles, LinkedLabels = previous.LinkedLabels,
+                    Answers = answers, AnswerPeer = answerPeer, Signature = sig,
+                };
 
             // Peer angles: base = -pi/2 + 0.62 + hash(names) * 0.5, evenly spaced (+0.4 rad when
             // there are exactly two) — the spec's layout rule, the lab's layoutNodes.
@@ -966,7 +1054,28 @@ public sealed class LiveHandshakeVariant : ILiveSplashVariant, IDisposable
                 angles[i] = baseAngle + i * Tau / Math.Max(n, 1) + (n == 2 ? 0.4f : 0f);
                 labels[i] = snapshot.Peers[i].Name + "  " + text.LinkedSuffix;
             }
-            return new PeerLayout { Snapshot = snapshot, Angles = angles, LinkedLabels = labels, Signature = sig };
+            return new PeerLayout
+            {
+                Snapshot = snapshot, Angles = angles, LinkedLabels = labels,
+                Answers = answers, AnswerPeer = answerPeer, Signature = sig,
+            };
+        }
+
+        private static (HandshakeAnswer[], int[]) BuildAnswers(HandshakeSnapshot snapshot, int n)
+        {
+            int count = 0;
+            for (int i = 0; i < n; i++) if (snapshot.Peers[i].LinkedAt is not null) count++;
+            if (count == 0) return (Array.Empty<HandshakeAnswer>(), Array.Empty<int>());
+            var answers = new HandshakeAnswer[count];
+            var peers = new int[count];
+            int k = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (snapshot.Peers[i].LinkedAt is not { } at) continue;
+                answers[k] = new HandshakeAnswer(at, i == snapshot.TargetIndex);
+                peers[k++] = i;
+            }
+            return (answers, peers);
         }
 
         /// <summary>The lab's FNV-1a <c>hashStr</c>, mapped to [0, 1).</summary>

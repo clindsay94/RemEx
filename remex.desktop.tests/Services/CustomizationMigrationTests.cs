@@ -195,15 +195,15 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
-    public void TheOldSplashDefaultFollowsTheDefaultForward()
+    public void AnOldSchemaTwoSplashEndsOnLiveHandshake()
     {
-        // RemexCommand was the default at schema 2: arm 2->3 moves it to CosmicZoom, the default it
-        // was replaced by, and arm 7->8 (RemEx-8g6n0.2) moves that on to today's Live Handshake. A
-        // profile that never chose a splash must not be stranded on either retired default.
+        // Arm 2->3 still moves the schema-2 RemexCommand default to CosmicZoom, but arm 7->8
+        // (RemEx-8g6n0.3, Connor's 3.0 decision) then moves EVERY stored style to Live Handshake, so a
+        // full migration from schema 2 lands there whatever the profile carried.
         CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "RemexCommand" }, out _)
             .SplashStyle.Should().Be("LiveHandshake");
         CustomizationMigration.Migrate(SchemaTwo() with { SplashStyle = "Pong" }, out _)
-            .SplashStyle.Should().Be("Pong", "only the old default is flipped; a choice is a choice");
+            .SplashStyle.Should().Be("LiveHandshake", "3.0 moves everyone once, choices included");
     }
 
     [Fact]
@@ -282,6 +282,7 @@ public class CustomizationMigrationTests
                 FlyoutHiddenSensorIds = new List<string>(),
                 FlyoutHiddenTileIds = new List<string>(),
                 FlyoutAppIds = new List<Guid>(),
+                SplashStyle = "LiveHandshake", // arm 8 (RemEx-8g6n0.3) moves every stored splash
             },
             "arm 3 rewrites only the fields the spec names");
     }
@@ -350,18 +351,21 @@ public class CustomizationMigrationTests
     }
 
     [Fact]
-    public void ASchemaThreePongProfileKeepsPongApartFromTheStamp()
+    public void ASchemaThreePongProfileChangesOnlyItsSplashAndTheStamp()
     {
         var before = SchemaThree() with { SplashStyle = "Pong" };
 
         var after = CustomizationMigration.Migrate(before, out _);
 
-        // Arm 4 -> 5 (RemEx-ceu4x) also runs here; see the Aurora test above for why.
+        // Arm 3 -> 4 keeps Pong (it only flipped the old RemexCommand default), arm 4 -> 5
+        // (RemEx-ceu4x) seeds the chroma request, and arm 7 -> 8 (RemEx-8g6n0.3) moves every stored
+        // splash to Live Handshake once - Connor's 3.0 decision.
         after.Should().BeEquivalentTo(before with
         {
             SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
             ThemeSeedChromaRequest = before.ThemeSeedChroma,
-        }, "only the old default is flipped; a choice is a choice");
+            SplashStyle = "LiveHandshake",
+        });
     }
 
     [Fact]
@@ -434,6 +438,7 @@ public class CustomizationMigrationTests
             FlyoutHiddenSensorIds = new List<string>(),
             FlyoutHiddenTileIds = new List<string>(),
             FlyoutAppIds = new List<Guid>(),
+            SplashStyle = "LiveHandshake", // arm 8 (RemEx-8g6n0.3)
         }, "arm 5 rewrites only ThemeSeedChromaRequest");
     }
 
@@ -478,6 +483,7 @@ public class CustomizationMigrationTests
             FlyoutHiddenSensorIds = new List<string>(),
             FlyoutHiddenTileIds = new List<string>(),
             FlyoutAppIds = new List<Guid>(),
+            SplashStyle = "LiveHandshake", // arm 8 (RemEx-8g6n0.3)
         }, "arm 6 rewrites only CardBorderThickness");
     }
 
@@ -518,18 +524,18 @@ public class CustomizationMigrationTests
             FlyoutHiddenSensorIds = new List<string>(),
             FlyoutHiddenTileIds = new List<string>(),
             FlyoutAppIds = new List<Guid>(),
+            SplashStyle = "LiveHandshake", // arm 8 (RemEx-8g6n0.3)
         }, "arm 7 rewrites only the four flyout fields");
     }
 
-    // ─── Arm 8: Live Handshake becomes the default splash (RemEx-8g6n0.2) ─────────────────────
+    // ─── Arm 8: everyone upgrading to 3.0 moves to Live Handshake once (RemEx-8g6n0.2/.3) ───────
 
     private static CustomizationSettings SchemaSeven() => SchemaTwo() with { SchemaVersion = 7 };
 
     [Fact]
     public void ASchemaSevenCosmicZoomProfileMovesToLiveHandshake()
     {
-        // Schema 7 shipped with CosmicZoom as the default, so a stored CosmicZoom is the previous
-        // default and follows the new one - the same rule the RemexCommand -> CosmicZoom move used.
+        // Schema 7 shipped with CosmicZoom as the default; the upgrade moves it to Live Handshake.
         var migrated = CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = "CosmicZoom" }, out var warning);
 
         warning.Should().BeNull();
@@ -540,20 +546,30 @@ public class CustomizationMigrationTests
     [Theory]
     [InlineData("Pong")]
     [InlineData("RemexCommand")]
-    public void ASchemaSevenExplicitChoiceIsKept(string chosen)
+    [InlineData("CosmicZoom")]
+    [InlineData("LiveHandshake")]
+    [InlineData("SomethingFromTheFuture")]
+    public void ASchemaSevenProfileMovesToLiveHandshakeWhateverItHad(string stored)
     {
-        // At schema 7 neither of these was the default, so either one is a choice somebody made.
-        CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = chosen }, out _)
-            .SplashStyle.Should().Be(chosen, "only the previous default moves; a choice is a choice");
+        // Connor's decision for 3.0 (RemEx-8g6n0.3): everyone upgrading moves to Live Handshake once,
+        // WHATEVER they had - unlike the RemexCommand -> CosmicZoom move, which kept explicit choices.
+        CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = stored }, out _)
+            .SplashStyle.Should().Be("LiveHandshake");
     }
 
     [Fact]
-    public void ArmEightRunsOnceAndACurrentProfileKeepsCosmicZoom()
+    public void ArmEightRunsOnceAndAStylePickedAfterTheUpgradeSticks()
     {
-        // Picking Cosmic Zoom again after the move is a choice made at schema 8, and must stick.
-        var current = SchemaSeven() with { SchemaVersion = CustomizationMigration.CurrentSchemaVersion, SplashStyle = "CosmicZoom" };
+        // The move happens once: the profile leaves the migration stamped 8, so a style picked in the
+        // picker afterwards is saved at schema 8 and is never rewritten again.
+        var migrated = CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = "Pong" }, out _);
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
 
-        CustomizationMigration.Migrate(current, out _).SplashStyle.Should().Be("CosmicZoom");
+        foreach (var picked in new[] { "CosmicZoom", "Pong", "RemexCommand" })
+        {
+            var repicked = migrated with { SplashStyle = picked };
+            CustomizationMigration.Migrate(repicked, out _).SplashStyle.Should().Be(picked);
+        }
     }
 
     [Fact]

@@ -8,6 +8,7 @@ using Avalonia.Rendering;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using Remex.Branding;
 using Remex.Desktop.Localization;
 using Remex.Desktop.Services;
@@ -337,6 +338,8 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
         public bool Equals(ICustomDrawOperation? other) => false;
         public void Dispose() { }
 
+        private static int _renderFailureLogged;
+
         public void Render(ImmediateDrawingContext context)
         {
             // A frame is really being composed now: a live splash's clock starts here, not at attach
@@ -349,36 +352,60 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
             var canvas = lease.SkCanvas;
             float w = (float)bounds.Width, h = (float)bounds.Height;
 
-            canvas.Save();
-            canvas.ClipRect(new SKRect(0, 0, w, h));
-
-            // The Live Handshake field is a runtime shader: GPU-only. A raster lease (software
-            // fallback) has no GrContext and would spend ~200 ms a frame on it, so the variant draws
-            // its gradient fallback there instead (RemEx-8g6n0).
-            if (variant is ILiveSplashVariant live)
-                live.FieldEnabled = lease.GrContext is not null;
-
-            variant.Render(canvas, w, h, t, dt);
-
-            // Version label + skip hint fade in (bottom-center), matching the Android chrome. A variant
-            // with its own exit (Live Handshake's portal) fades them out with it.
-            float chrome = Math.Clamp(variant.ChromeOpacity, 0f, 1f);
-            float versionAlpha = Math.Clamp((t - 0.2f) / 0.4f, 0f, 1f) * chrome;
-            float hintAlpha = Math.Clamp((t - 0.8f) / 0.5f, 0f, 0.7f) * chrome;
-            float baseSize = MathF.Min(w, h);
-            if (versionAlpha > 0 && version.Length > 0)
-                SplashBrand.DrawText(canvas, version, w / 2f, h - baseSize * 0.06f, baseSize * 0.022f, SplashBrand.SlateLo, versionAlpha);
-            if (hintAlpha > 0 && hint.Length > 0)
-                SplashBrand.DrawText(canvas, hint, w / 2f, h - baseSize * 0.03f, baseSize * 0.018f, SplashBrand.SlateLo, hintAlpha);
-
-            // Tap-to-skip fade to the brand substrate.
-            if (skipAlpha > 0)
+            // The leased canvas is the window's own: a frame that threw between a Save and its Restore
+            // would leave it clipped/transformed for everything drawn after the splash. So the whole
+            // frame restores to the entry count no matter what, and a failure is logged once rather
+            // than every frame (RemEx-8g6n0.3 hardening).
+            int saveCount = canvas.Save();
+            try
             {
-                using var fade = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha((byte)(skipAlpha * 255f)) };
-                canvas.DrawRect(0, 0, w, h, fade);
-            }
+                canvas.ClipRect(new SKRect(0, 0, w, h));
 
-            canvas.Restore();
+                // The Live Handshake field is a runtime shader: GPU-only. A raster lease (software
+                // fallback) has no GrContext and would spend ~200 ms a frame on it, so the variant
+                // draws its gradient fallback there instead (RemEx-8g6n0).
+                if (variant is ILiveSplashVariant live)
+                    live.FieldEnabled = lease.GrContext is not null;
+
+                variant.Render(canvas, w, h, t, dt);
+
+                // Version label + skip hint fade in (bottom-center), matching the Android chrome. A
+                // variant with its own exit (Live Handshake's portal) fades them out with it.
+                float chrome = Math.Clamp(variant.ChromeOpacity, 0f, 1f);
+                float versionAlpha = Math.Clamp((t - 0.2f) / 0.4f, 0f, 1f) * chrome;
+                float hintAlpha = Math.Clamp((t - 0.8f) / 0.5f, 0f, 0.7f) * chrome;
+                float baseSize = MathF.Min(w, h);
+                if (versionAlpha > 0 && version.Length > 0)
+                    SplashBrand.DrawText(canvas, version, w / 2f, h - baseSize * 0.06f, baseSize * 0.022f, SplashBrand.SlateLo, versionAlpha);
+                if (hintAlpha > 0 && hint.Length > 0)
+                    SplashBrand.DrawText(canvas, hint, w / 2f, h - baseSize * 0.03f, baseSize * 0.018f, SplashBrand.SlateLo, hintAlpha);
+
+                // Tap-to-skip fade to the brand substrate.
+                if (skipAlpha > 0)
+                {
+                    using var fade = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha((byte)(skipAlpha * 255f)) };
+                    canvas.DrawRect(0, 0, w, h, fade);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (System.Threading.Interlocked.Exchange(ref _renderFailureLogged, 1) == 0)
+                {
+                    try
+                    {
+                        (App.Services?.GetService(typeof(ILogger<SkiaSplashControl>)) as ILogger)?.LogWarning(ex,
+                            "Splash frame failed to render; the splash still completes on its own clock");
+                    }
+                    catch (Exception)
+                    {
+                        // Logging must never be what breaks the render thread.
+                    }
+                }
+            }
+            finally
+            {
+                canvas.RestoreToCount(saveCount);
+            }
         }
     }
 }

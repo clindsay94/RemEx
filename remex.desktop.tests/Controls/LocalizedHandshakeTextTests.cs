@@ -18,17 +18,15 @@ public class LocalizedHandshakeTextTests
     private static readonly (string Key, int Args)[] Keys =
     {
         ("Splash_Style_LiveHandshake", 0),
-        ("Splash_LiveHandshake_Starting", 0),
-        ("Splash_LiveHandshake_Pinging_One", 1),
-        ("Splash_LiveHandshake_Pinging_Few", 1),
-        ("Splash_LiveHandshake_Pinging_Many", 1),
-        ("Splash_LiveHandshake_Pinging_Other", 1),
-        ("Splash_LiveHandshake_LinkedCount", 2),
-        ("Splash_LiveHandshake_LinkedTo", 1),
-        ("Splash_LiveHandshake_NotAnswering", 1),
+        ("Splash_LiveHandshake_Paired_One", 1),
+        ("Splash_LiveHandshake_Paired_Few", 1),
+        ("Splash_LiveHandshake_Paired_Many", 1),
+        ("Splash_LiveHandshake_Paired_Other", 1),
         ("Splash_LiveHandshake_NonePaired", 0),
         ("Splash_LiveHandshake_ListeningOnPort", 1),
         ("Splash_LiveHandshake_Listening", 0),
+        ("Splash_LiveHandshake_IsLinked", 1),
+        ("Splash_LiveHandshake_Opening", 0),
         ("Splash_LiveHandshake_NodeLinked", 0),
     };
 
@@ -42,6 +40,18 @@ public class LocalizedHandshakeTextTests
 
     [Fact]
     public void AllNineLanguagesAreChecked() => ResxFiles().Should().HaveCount(9);
+
+    [Theory]
+    [MemberData(nameof(ResxFiles))]
+    public void TheRetiredStatusLineKeysAreGone(string file)
+    {
+        // RemEx-8g6n0.3: the single status line became the console; its keys must not linger unused.
+        var names = XDocument.Load(Path.Combine(RepoRoot(), "remex.desktop", "Localization", file)).Root!
+            .Elements("data").Select(d => (string)d.Attribute("name")!).ToHashSet();
+        foreach (var retired in new[] { "Splash_LiveHandshake_Starting", "Splash_LiveHandshake_Pinging_Other",
+                     "Splash_LiveHandshake_LinkedCount", "Splash_LiveHandshake_LinkedTo", "Splash_LiveHandshake_NotAnswering" })
+            names.Should().NotContain(retired, file);
+    }
 
     [Theory]
     [MemberData(nameof(ResxFiles))]

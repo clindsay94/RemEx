@@ -2221,30 +2221,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Połączenie na żywo</value>
   </data>
-  <data name="Splash_LiveHandshake_Starting" xml:space="preserve">
-    <value>Uruchamianie</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_One" xml:space="preserve">
-    <value>Pingowanie {0} telefonu</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Few" xml:space="preserve">
-    <value>Pingowanie {0} telefonów</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Many" xml:space="preserve">
-    <value>Pingowanie {0} telefonów</value>
-  </data>
-  <data name="Splash_LiveHandshake_Pinging_Other" xml:space="preserve">
-    <value>Pingowanie {0} telefonu</value>
-  </data>
-  <data name="Splash_LiveHandshake_LinkedCount" xml:space="preserve">
-    <value>Połączono {0} z {1}</value>
-  </data>
-  <data name="Splash_LiveHandshake_LinkedTo" xml:space="preserve">
-    <value>Połączono · {0}</value>
-  </data>
-  <data name="Splash_LiveHandshake_NotAnswering" xml:space="preserve">
-    <value>{0} nie odpowiada</value>
-  </data>
   <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
     <value>Brak sparowanych telefonów</value>
   </data>
@@ -2256,6 +2232,24 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
     <value>połączono</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} sparowany telefon</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} sparowane telefony</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} sparowanych telefonów</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} sparowanego telefonu</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} jest połączony</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>Otwieranie RemEx</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Aktualizacja oprogramowania</value>

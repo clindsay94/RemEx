@@ -52,9 +52,9 @@ public static class CustomizationMigration
     ///     not the record's own defaults. Left unrepaired that renders the popup's glass fully
     ///     transparent for every upgrading profile and null-crashes the first read of the hidden
     ///     lists.
-    /// 8 = Live Handshake becomes the default splash (RemEx-8g6n0.2). Schema 7 already shipped with
-    ///     CosmicZoom as the default, so a stored CosmicZoom is moved forward by its own arm, exactly
-    ///     as the RemexCommand -&gt; CosmicZoom move was; explicit Pong / RemexCommand choices stay.
+    /// 8 = Live Handshake becomes the splash for everyone upgrading to 3.0 (RemEx-8g6n0.2/.3): Connor
+    ///     decided every stored SplashStyle moves to LiveHandshake once, whatever it was; a style picked
+    ///     after the upgrade is written at schema 8 and sticks.
     /// </remarks>
     public const int CurrentSchemaVersion = 8;
 
@@ -271,25 +271,18 @@ public static class CustomizationMigration
         };
 
     /// <summary>
-    /// Schema 7 → 8: Live Handshake becomes the default splash (RemEx-8g6n0.2). ONE <c>with</c>
-    /// EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// Schema 7 → 8: everyone upgrading to 3.0 moves to Live Handshake (RemEx-8g6n0.3). ONE
+    /// <c>with</c> EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
     /// </summary>
     /// <remarks>
-    /// THE SAME RULE AS THE RemexCommand -&gt; CosmicZoom MOVE (arms 2 -&gt; 3 and 3 -&gt; 4): the stored
-    /// value that equals the previous default moves to the new default, once, and anything else is a
-    /// choice and stays. A profile that arrives with the older RemexCommand default is flipped to
-    /// CosmicZoom by those arms first and then lands here, so it follows the default all the way.
-    /// Someone who deliberately picked CosmicZoom cannot be told apart from someone who never opened
-    /// the picker; they get the new default and can pick CosmicZoom again - the same trade the earlier
-    /// move made.
+    /// DELIBERATELY UNLIKE THE RemexCommand -&gt; CosmicZoom MOVE, which only flipped the old default and
+    /// kept every other choice. Connor's decision for 3.0: the new splash is the release's showcase, so
+    /// every stored style - CosmicZoom, Pong, RemexCommand, anything - becomes LiveHandshake, ONCE. The
+    /// profile is stamped 8 on the way out, so this arm never runs again for it: a style picked in the
+    /// picker after the upgrade is saved at schema 8 and sticks.
     /// </remarks>
     private static CustomizationSettings FromSchemaSeven(CustomizationSettings settings) =>
-        settings with
-        {
-            SplashStyle = string.Equals(settings.SplashStyle, "CosmicZoom", StringComparison.Ordinal)
-                ? "LiveHandshake"
-                : settings.SplashStyle,
-        };
+        settings with { SplashStyle = "LiveHandshake" };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

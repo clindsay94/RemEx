@@ -9,14 +9,14 @@ using Remex.Desktop.Services.FileTransfer;
 namespace Remex.Desktop.Controls.Splash;
 
 /// <summary>
-/// Live Handshake's words from the app's .resx (RemEx-8g6n0), upper-cased with the current UI culture
-/// at draw time — the splash sets its status line and node suffixes in capitals, and "i" in Turkish
-/// must become "İ", not "I". Falls back to English for any key that does not resolve.
+/// Live Handshake's words from the app's .resx (RemEx-8g6n0): the console lines and the node suffix,
+/// in sentence case, formatted with the app's current culture. Falls back to English for any key that
+/// does not resolve.
 /// </summary>
 /// <remarks>
 /// A failed lookup or a malformed translation degrades to the English line rather than throwing into
 /// the splash, and is logged ONCE per key and exception type as a warning with its exception — the
-/// status line is re-read many times a second, so logging every occurrence would bury the log.
+/// console is re-read many times a second, so logging every occurrence would bury the log.
 /// </remarks>
 public sealed class LocalizedHandshakeText : ILiveHandshakeText
 {
@@ -31,25 +31,23 @@ public sealed class LocalizedHandshakeText : ILiveHandshakeText
     /// <summary>Test seam: supply the logger (resolved lazily, at the first failure).</summary>
     public LocalizedHandshakeText(Func<ILogger?> logger) => _logger = logger;
 
-    public string LinkedSuffix => Upper(Lookup("Splash_LiveHandshake_NodeLinked")
-        ?? EnglishHandshakeText.Instance.LinkedSuffix);
+    public string LinkedSuffix => Lookup("Splash_LiveHandshake_NodeLinked")
+        ?? EnglishHandshakeText.Instance.LinkedSuffix;
 
-    public string Status(HandshakeStatus status)
+    public string Line(HandshakeLine line)
     {
-        string? text = status.Kind switch
+        string? text = line.Kind switch
         {
-            HandshakeStatusKind.Starting => Lookup("Splash_LiveHandshake_Starting"),
-            HandshakeStatusKind.Pinging => Plural("Splash_LiveHandshake_Pinging", status.Count),
-            HandshakeStatusKind.SomeLinked => Format("Splash_LiveHandshake_LinkedCount", status.Count, status.Total),
-            HandshakeStatusKind.LinkedTo => Format("Splash_LiveHandshake_LinkedTo", status.Name ?? string.Empty),
-            HandshakeStatusKind.NotAnswering => Format("Splash_LiveHandshake_NotAnswering", status.Name ?? string.Empty),
-            HandshakeStatusKind.NonePaired => Lookup("Splash_LiveHandshake_NonePaired"),
-            HandshakeStatusKind.Listening => status.Port is { } port
+            HandshakeLineKind.Paired => Plural("Splash_LiveHandshake_Paired", line.Count),
+            HandshakeLineKind.NonePaired => Lookup("Splash_LiveHandshake_NonePaired"),
+            HandshakeLineKind.Listening => line.Port is { } port
                 ? Format("Splash_LiveHandshake_ListeningOnPort", port)
                 : Lookup("Splash_LiveHandshake_Listening"),
+            HandshakeLineKind.Linked => Format("Splash_LiveHandshake_IsLinked", line.Name ?? string.Empty),
+            HandshakeLineKind.Opening => Lookup("Splash_LiveHandshake_Opening"),
             _ => null,
         };
-        return text is null ? EnglishHandshakeText.Instance.Status(status) : Upper(text);
+        return text ?? EnglishHandshakeText.Instance.Line(line);
     }
 
     private string? Lookup(string key)
@@ -112,7 +110,6 @@ public sealed class LocalizedHandshakeText : ILiveHandshakeText
         }
     }
 
-    private string Upper(string text) => text.ToUpper(Culture);
 
     private void LogOnce(string what, Exception ex)
     {
