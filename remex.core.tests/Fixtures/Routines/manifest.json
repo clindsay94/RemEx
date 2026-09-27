@@ -1,0 +1,326 @@
+{
+  "validation": [
+    {
+      "file": "appearance-color.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "arrive-no-home.invalid.home_not_set.json",
+      "expected": "home_not_set"
+    },
+    {
+      "file": "arrive-with-debounce.invalid.field_not_allowed.json",
+      "expected": "field_not_allowed"
+    },
+    {
+      "file": "broadcast-leading-zero.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "delay-missing.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "delay-with-verb.invalid.field_not_allowed.json",
+      "expected": "field_not_allowed"
+    },
+    {
+      "file": "delay-zero.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "duplicate-id.invalid.duplicate_id.json",
+      "expected": "duplicate_id"
+    },
+    {
+      "file": "empty-steps.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "four-notify.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "fractional-int.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "home-leave-bounds.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "host-identity-uppercase.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "id-not-v4.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "id-uppercase.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "idle-241.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "lock-with-delay.invalid.field_not_allowed.json",
+      "expected": "field_not_allowed"
+    },
+    {
+      "file": "mac-lowercase.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "manual-lock.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "manual-with-home.invalid.field_not_allowed.json",
+      "expected": "field_not_allowed"
+    },
+    {
+      "file": "name-41.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "name-blank.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "name-newline.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "name-trimmed-40.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "not-an-object.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "notify-body-121.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "notify-title-blank.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "null-for-non-nullable.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "null-step.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "pc-budget-at-limit.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "pc-budget.invalid.budget_exceeded.json",
+      "expected": "budget_exceeded"
+    },
+    {
+      "file": "pc-destructive-not-last.invalid.destructive_not_last.json",
+      "expected": "destructive_not_last"
+    },
+    {
+      "file": "pc-sensor.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "pc-session-sleep-last.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "phone-budget-at-limit.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "phone-budget-countdown.invalid.budget_exceeded.json",
+      "expected": "budget_exceeded"
+    },
+    {
+      "file": "phone-budget.invalid.budget_exceeded.json",
+      "expected": "budget_exceeded"
+    },
+    {
+      "file": "phone-steps-after-destructive.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "revision-zero.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "schedule-trigger.invalid.unsupported_trigger.json",
+      "expected": "unsupported_trigger"
+    },
+    {
+      "file": "schema-too-new.invalid.schema_too_new.json",
+      "expected": "schema_too_new"
+    },
+    {
+      "file": "schema-zero.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "sensor-no-threshold.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "session-state.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "seventeen-pc-routines.invalid.too_many_routines.json",
+      "expected": "too_many_routines"
+    },
+    {
+      "file": "shell-step.invalid.unsupported_step.json",
+      "expected": "unsupported_step"
+    },
+    {
+      "file": "sixteen-pc-routines.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "spec-example.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "thirteen-steps.invalid.too_many_steps.json",
+      "expected": "too_many_steps"
+    },
+    {
+      "file": "thirty-three-routines.invalid.too_many_routines.json",
+      "expected": "too_many_routines"
+    },
+    {
+      "file": "three-wait-online.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "twelve-steps.valid.json",
+      "expected": "ok"
+    },
+    {
+      "file": "two-destructive.invalid.too_many_destructive.json",
+      "expected": "too_many_destructive"
+    },
+    {
+      "file": "unknown-verb.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "updated-before-created.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "wait-online-on-pc.invalid.step_not_allowed_on_pc.json",
+      "expected": "step_not_allowed_on_pc"
+    },
+    {
+      "file": "wake-no-mac.invalid.wake_no_mac.json",
+      "expected": "wake_no_mac"
+    },
+    {
+      "file": "wake-on-pc.invalid.step_not_allowed_on_pc.json",
+      "expected": "step_not_allowed_on_pc"
+    },
+    {
+      "file": "wakeonlan-reserved.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    },
+    {
+      "file": "wrong-json-type.invalid.invalid_field.json",
+      "expected": "invalid_field"
+    }
+  ],
+  "wire": [
+    {
+      "file": "wire.routine_cancel.json",
+      "type": "routine_cancel",
+      "slot": "routineCancel"
+    },
+    {
+      "file": "wire.routine_notify.json",
+      "type": "routine_notify",
+      "slot": "routineNotify"
+    },
+    {
+      "file": "wire.routine_notify_ack.json",
+      "type": "routine_notify_ack",
+      "slot": "routineNotifyAck"
+    },
+    {
+      "file": "wire.routine_run_report.json",
+      "type": "routine_run_report",
+      "slot": "routineRunReport"
+    },
+    {
+      "file": "wire.routine_run_request.json",
+      "type": "routine_run_request",
+      "slot": "routineRunRequest"
+    },
+    {
+      "file": "wire.routine_step_request.json",
+      "type": "routine_step_request",
+      "slot": "routineStepRequest"
+    },
+    {
+      "file": "wire.routine_step_result.json",
+      "type": "routine_step_result",
+      "slot": "routineStepResult"
+    },
+    {
+      "file": "wire.routine_sync_result.json",
+      "type": "routine_sync_result",
+      "slot": "routineSyncResult"
+    },
+    {
+      "file": "wire.routines_sync.json",
+      "type": "routines_sync",
+      "slot": "routinesSync"
+    }
+  ],
+  "rejected": [
+    {
+      "file": "rejected.notify-ack-null-id.json",
+      "type": "routine_notify_ack",
+      "slot": "routineNotifyAck"
+    },
+    {
+      "file": "rejected.run-report-null-attribute.json",
+      "type": "routine_run_report",
+      "slot": "routineRunReport"
+    },
+    {
+      "file": "rejected.run-report-null-run.json",
+      "type": "routine_run_report",
+      "slot": "routineRunReport"
+    },
+    {
+      "file": "rejected.run-report-null-step.json",
+      "type": "routine_run_report",
+      "slot": "routineRunReport"
+    },
+    {
+      "file": "rejected.sync-result-null-disabled.json",
+      "type": "routine_sync_result",
+      "slot": "routineSyncResult"
+    },
+    {
+      "file": "rejected.sync-result-null-result.json",
+      "type": "routine_sync_result",
+      "slot": "routineSyncResult"
+    }
+  ],
+  "routineRuns": "model.routine-runs.json",
+  "reasonCodes": "reason-codes.json",
+  "hostIdentityVectors": "host-identity-vectors.json"
+}

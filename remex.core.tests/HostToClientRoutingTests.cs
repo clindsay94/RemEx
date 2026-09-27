@@ -61,6 +61,7 @@ public class HostToClientRoutingTests
     [Theory]
     [InlineData("file_", "_onFileTransferMessageMethodId")]
     [InlineData("clipboard_", "_onClipboardMessageMethodId")]
+    [InlineData("routine_", "_onRoutineMessageMethodId")]
     public void TheFamilyIsForwardedByPrefixToItsCallback(string prefix, string callbackField)
     {
         var body = RouterBody();
@@ -80,6 +81,10 @@ public class HostToClientRoutingTests
     [InlineData("clipboard_", "clipboard_content")]
     [InlineData("clipboard_", "clipboard_request")]
     [InlineData("file_", "file_transfer_offer")]
+    [InlineData("routine_", "routine_sync_result")]
+    [InlineData("routine_", "routine_step_result")]
+    [InlineData("routine_", "routine_notify")]
+    [InlineData("routine_", "routine_run_report")]
     public void TheWireValueStartsWithThePrefixItIsRoutedBy(string prefix, string wireValue)
     {
         // THE TWO HALVES OF THE ROUTING LIVE IN DIFFERENT FILES AND NOTHING TIED THEM TOGETHER.
@@ -97,6 +102,32 @@ public class HostToClientRoutingTests
         // so the pair cannot drift apart without one of the two failing.
         Assert.Equal("clipboard_content", Remex.Core.Messages.MessageTypes.ClipboardContent);
         Assert.Equal("clipboard_request", Remex.Core.Messages.MessageTypes.ClipboardRequest);
+
+        // Routines (RemEx-pp0rt.3): every host -> phone routines type rides the routine_ prefix.
+        // routines_sync is the one phone -> host type whose locked id does NOT start with it, which
+        // is harmless (it is never routed to the phone) and why its reply is routine_sync_result.
+        Assert.Equal("routine_sync_result", Remex.Core.Messages.MessageTypes.RoutineSyncResult);
+        Assert.Equal("routine_step_result", Remex.Core.Messages.MessageTypes.RoutineStepResult);
+        Assert.Equal("routine_notify", Remex.Core.Messages.MessageTypes.RoutineNotify);
+        Assert.Equal("routine_run_report", Remex.Core.Messages.MessageTypes.RoutineRunReport);
+    }
+
+    [Fact]
+    public void EveryHostToPhoneRoutineTypeIsCoveredByTheRoutinePrefix()
+    {
+        // The audience table is the declared list of host -> phone routines types; each one must be
+        // reachable through the prefix forward, or it is exactly the new-type-no-route gap
+        // REGRESSION-GUARDS.md:373 describes.
+        var routineTypes = Remex.Core.Messages.MessageAudience.HostToClient
+            .Where(e => e.Key.Contains("routine", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.Equal(4, routineTypes.Count);
+        foreach (var (wire, audience) in routineTypes)
+        {
+            Assert.StartsWith("routine_", wire, StringComparison.Ordinal);
+            Assert.Equal(Remex.Core.Messages.ClientSurface.AndroidControl, audience);
+        }
     }
 
     [Theory]
@@ -107,6 +138,7 @@ public class HostToClientRoutingTests
     // that only covers the callbacks that existed when it was written stops being a guard for the
     // next one, which is the case it is most needed for.
     [InlineData("onLinkQuality", "_onLinkQualityMethodId")]
+    [InlineData("onRoutineMessage", "_onRoutineMessageMethodId")]
     public void TheCallbackIsLookedUpAndAssignedDuringRegistration(string javaMethod, string field)
     {
         // **THE HOLE THE ROUTER SCAN CANNOT SEE, AND IT IS THE BIGGER ONE.** The forward can be
@@ -134,6 +166,7 @@ public class HostToClientRoutingTests
                  {
                      ("file_", "_onFileTransferMessageMethodId"),
                      ("clipboard_", "_onClipboardMessageMethodId"),
+                     ("routine_", "_onRoutineMessageMethodId"),
                  })
         {
             var match = Regex.Match(
@@ -164,6 +197,7 @@ public class HostToClientRoutingTests
 
         Assert.DoesNotContain("MessageTypes.FileTransfer", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.ClipboardContent", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("MessageTypes.Routine", body, StringComparison.Ordinal);
     }
 
     [Fact]

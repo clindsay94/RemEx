@@ -1,0 +1,135 @@
+[
+  {
+    "runId": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "routineId": "6b86b273-ff34-4ce1-ad6b-804eff5a3f57",
+    "routineName": "Game time",
+    "routineRevision": 4,
+    "origin": "phone",
+    "hostIdentity": "9f2c4be07a1d33e5",
+    "source": "home.arrive",
+    "testRun": true,
+    "sourceDetail": {
+      "homeLabel": "Home (router 192.168.1.1)"
+    },
+    "triggeredAtUnixMs": 1790000000000,
+    "startedAtUnixMs": 1790000061000,
+    "endedAtUnixMs": 1790000070000,
+    "outcome": "failed",
+    "reasonCode": "launch_not_allowed",
+    "reasonArgs": {
+      "pc": "DESKTOP-1",
+      "app": "Steam",
+      "detail": "appId not in launchers.json"
+    },
+    "attributes": [
+      "deferred_by_os",
+      "simulated"
+    ],
+    "steps": [
+      {
+        "index": 0,
+        "kind": "wake",
+        "status": "succeeded",
+        "startedAtUnixMs": 1790000061000,
+        "endedAtUnixMs": 1790000061100,
+        "reasonCode": "ok"
+      },
+      {
+        "index": 1,
+        "kind": "launchApp",
+        "status": "failed",
+        "startedAtUnixMs": 1790000061100,
+        "endedAtUnixMs": 1790000070000,
+        "reasonCode": "launch_not_allowed",
+        "reasonArgs": {
+          "app": "Steam",
+          "routine": "Game time"
+        }
+      },
+      {
+        "index": 2,
+        "kind": "notify",
+        "status": "skipped"
+      }
+    ]
+  },
+  {
+    "runId": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+    "seq": 118,
+    "ownerClientId": "client-7f3a9c",
+    "routineId": "5a9d0f21-1c3e-4b7a-8e2f-6c4d3b2a1f00",
+    "routineName": "Bedtime",
+    "routineRevision": 2,
+    "origin": "pc",
+    "hostIdentity": "9f2c4be07a1d33e5",
+    "source": "pc.idle",
+    "testRun": false,
+    "sourceDetail": {
+      "idleMinutes": 45
+    },
+    "triggeredAtUnixMs": 1790000000000,
+    "startedAtUnixMs": 1790000000000,
+    "endedAtUnixMs": 1790000000000,
+    "outcome": "skipped",
+    "reasonCode": "owner_absent",
+    "reasonArgs": {
+      "phone": "Pixel 9",
+      "date": "2026-08-27",
+      "n": "3"
+    },
+    "steps": []
+  },
+  {
+    "runId": "3c4d5e6f-7a8b-4c9d-ae0f-1a2b3c4d5e6f",
+    "seq": 119,
+    "ownerClientId": "client-7f3a9c",
+    "routineId": "7c2e1b90-4d5f-4a3b-b6c7-8d9e0f1a2b3c",
+    "routineName": "Lock and sleep",
+    "routineRevision": 9,
+    "origin": "pc",
+    "hostIdentity": "9f2c4be07a1d33e5",
+    "source": "pc.session",
+    "testRun": false,
+    "sourceDetail": {
+      "sessionState": "locked",
+      "sensorName": "GPU hot spot",
+      "value": -12.25,
+      "unit": "°C"
+    },
+    "triggeredAtUnixMs": 1790000000000,
+    "startedAtUnixMs": 1790000003000,
+    "endedAtUnixMs": 1790000018500,
+    "outcome": "succeeded",
+    "reasonCode": "ok",
+    "reasonArgs": {
+      "sensor": "GPU hot spot",
+      "duration": "15 s",
+      "routine": "Lock and sleep",
+      "action": "sleep"
+    },
+    "attributes": [
+      "countdown_unseen",
+      "dry_run",
+      "notify_queued",
+      "background_restricted"
+    ],
+    "steps": [
+      {
+        "index": 0,
+        "kind": "power",
+        "status": "simulated",
+        "startedAtUnixMs": 1790000003000,
+        "endedAtUnixMs": 1790000018500,
+        "reasonCode": "simulated",
+        "reasonArgs": {
+          "action": "sleep",
+          "pc": "DESKTOP-1"
+        }
+      }
+    ],
+    "countdown": {
+      "shown": true,
+      "startedAtUnixMs": 1790000003000
+    }
+  }
+]

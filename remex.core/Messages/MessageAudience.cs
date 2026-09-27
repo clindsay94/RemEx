@@ -132,6 +132,15 @@ public static class MessageAudience
         // Only the control socket's PingPongHandler acks a proof; the desktop stream's handshake
         // authenticates inline and never sends this (RemEx-0vpw5).
         [MessageTypes.ReconnectResult] = ClientSurface.AndroidControl,
+        // Routines (RemEx-pp0rt.3, spec §7.7). The phone only: it is the sole editor and the owner of
+        // every routine, and the PC's own UI reads routine state in-process from the agent, never over
+        // loopback. All four reach Kotlin through the routine_ prefix forward in
+        // AndroidNativeExports.OnNativeMessageReceived; declaring them here is what makes that forward
+        // impossible to delete in silence.
+        [MessageTypes.RoutineNotify] = ClientSurface.AndroidControl,
+        [MessageTypes.RoutineRunReport] = ClientSurface.AndroidControl,
+        [MessageTypes.RoutineStepResult] = ClientSurface.AndroidControl,
+        [MessageTypes.RoutineSyncResult] = ClientSurface.AndroidControl,
         [MessageTypes.Telemetry] = ClientSurface.AndroidControl | ClientSurface.PcUi,
     };
 }

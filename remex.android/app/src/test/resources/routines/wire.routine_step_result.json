@@ -1,0 +1,12 @@
+{
+  "type": "routine_step_result",
+  "routineStepResult": {
+    "runId": "0d4c9a51-7f3b-4e2a-9c61-3b5e8d2f1a70",
+    "stepIndex": 2,
+    "outcome": "cancelled",
+    "reasonCode": "cancelled_on_phone",
+    "countdownShown": true,
+    "cancelledBy": "phone",
+    "detail": "cancelled from the phone"
+  }
+}

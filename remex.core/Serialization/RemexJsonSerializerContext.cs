@@ -3,9 +3,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Remex.Core.Messages;
+using Remex.Core.Messages.Routines;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
 using Remex.Core.Native;
+using Remex.Core.Routines;
 
 namespace Remex.Core.Serialization;
 
@@ -159,6 +161,31 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(MediaArtwork))]
 [JsonSerializable(typeof(MediaSeekRequest))]
 [JsonSerializable(typeof(PhoneThemeSnapshot))]
+// ── 3.0 Routines (RemEx-pp0rt.3). The lenient converters resolve nested types through this context
+//    (options.GetTypeInfo), so every routine type they read must be listed here too. ──
+[JsonSerializable(typeof(RoutineSet))]
+[JsonSerializable(typeof(Routine))]
+[JsonSerializable(typeof(List<Routine>))]
+[JsonSerializable(typeof(RoutineAppearance))]
+[JsonSerializable(typeof(RoutineTrigger))]
+[JsonSerializable(typeof(RoutineStep))]
+[JsonSerializable(typeof(List<RoutineStep>))]
+[JsonSerializable(typeof(RoutineRun))]
+[JsonSerializable(typeof(List<RoutineRun>))]
+[JsonSerializable(typeof(RoutineRunSourceDetail))]
+[JsonSerializable(typeof(RoutineReasonArgs))]
+[JsonSerializable(typeof(RoutineRunStep))]
+[JsonSerializable(typeof(RoutineRunCountdown))]
+[JsonSerializable(typeof(RoutinesSyncPayload))]
+[JsonSerializable(typeof(RoutineSyncResultPayload))]
+[JsonSerializable(typeof(RoutineSyncItemResult))]
+[JsonSerializable(typeof(RoutineStepRequestPayload))]
+[JsonSerializable(typeof(RoutineStepResultPayload))]
+[JsonSerializable(typeof(RoutineNotifyPayload))]
+[JsonSerializable(typeof(RoutineNotifyAckPayload))]
+[JsonSerializable(typeof(RoutineRunReportPayload))]
+[JsonSerializable(typeof(RoutineCancelPayload))]
+[JsonSerializable(typeof(RoutineRunRequestPayload))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
     /// <summary>

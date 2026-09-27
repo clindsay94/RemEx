@@ -56,6 +56,19 @@ object RemexCoreClient {
          * exists. Switch on `type` and ignore what you do not handle.
          */
         fun onClipboardMessage(json: String?)
+
+        /**
+         * Any `routine_*` message from the PC, as a whole RemexMessage envelope (RemEx-pp0rt.3,
+         * routines spec §7.7): `routine_sync_result`, `routine_step_result`, `routine_notify`,
+         * `routine_run_report`, and whatever a later routines slice adds.
+         *
+         * Forwarded by PREFIX in the native router, like `file_*` and `clipboard_*`. Parse with
+         * [com.clindsay94.remex.routines.model.RoutineInbound.parse], which never throws and reports
+         * an unknown `routine_*` type as ignorable. REQUIRED, not defaulted: the native callback
+         * registration is all-or-nothing, and the native client advertises
+         * `ClientCapabilities.supportsRoutines` on the strength of this method existing.
+         */
+        fun onRoutineMessage(json: String?)
         /**
          * Link quality measured by the native layer (RemEx-93n2).
          *

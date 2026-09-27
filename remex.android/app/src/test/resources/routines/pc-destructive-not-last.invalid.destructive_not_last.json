@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "routines": [
+    {
+      "id": "6b86b273-ff34-4ce1-ad6b-804eff5a3f57",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 30
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "HIBERNATE"
+        },
+        {
+          "type": "notify",
+          "target": "pc",
+          "title": "late"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    }
+  ]
+}

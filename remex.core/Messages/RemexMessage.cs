@@ -401,6 +401,53 @@ public sealed record RemexMessage
     /// </remarks>
     [JsonPropertyName("themeSync")]
     public Remex.Core.Models.PhoneThemeSnapshot? ThemeSync { get; init; }
+
+    // ── Routines (RemEx-pp0rt.3, spec §7.2). Optional additions; no protocolVersion bump. ──
+    //
+    // EVERY SLOT IS LENIENT (LenientRoutinePayloadConverter). A routine payload with a field of the
+    // wrong JSON type would otherwise make System.Text.Json throw, MessageSerializer.Deserialize would
+    // hand back a null envelope, and PingPongHandler would drop the WHOLE session (spec T18, the
+    // PhoneThemeSnapshot lesson). A payload that cannot be read becomes a null slot on a non-null
+    // envelope instead, which a handler can answer with a result. Phone -> host: routinesSync,
+    // routineStepRequest, routineNotifyAck, routineCancel, routineRunRequest (pairing-gated, no
+    // audience entry). Host -> phone: the four routine_* results, reports and notifications, routed
+    // by the routine_ prefix forward and declared in MessageAudience.
+
+    [JsonPropertyName("routinesSync")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutinesSyncPayload>))]
+    public Remex.Core.Messages.Routines.RoutinesSyncPayload? RoutinesSync { get; init; }
+
+    [JsonPropertyName("routineSyncResult")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineSyncResultPayload>))]
+    public Remex.Core.Messages.Routines.RoutineSyncResultPayload? RoutineSyncResult { get; init; }
+
+    [JsonPropertyName("routineStepRequest")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineStepRequestPayload>))]
+    public Remex.Core.Messages.Routines.RoutineStepRequestPayload? RoutineStepRequest { get; init; }
+
+    [JsonPropertyName("routineStepResult")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineStepResultPayload>))]
+    public Remex.Core.Messages.Routines.RoutineStepResultPayload? RoutineStepResult { get; init; }
+
+    [JsonPropertyName("routineNotify")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineNotifyPayload>))]
+    public Remex.Core.Messages.Routines.RoutineNotifyPayload? RoutineNotify { get; init; }
+
+    [JsonPropertyName("routineNotifyAck")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineNotifyAckPayload>))]
+    public Remex.Core.Messages.Routines.RoutineNotifyAckPayload? RoutineNotifyAck { get; init; }
+
+    [JsonPropertyName("routineRunReport")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineRunReportPayload>))]
+    public Remex.Core.Messages.Routines.RoutineRunReportPayload? RoutineRunReport { get; init; }
+
+    [JsonPropertyName("routineCancel")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineCancelPayload>))]
+    public Remex.Core.Messages.Routines.RoutineCancelPayload? RoutineCancel { get; init; }
+
+    [JsonPropertyName("routineRunRequest")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineRunRequestPayload>))]
+    public Remex.Core.Messages.Routines.RoutineRunRequestPayload? RoutineRunRequest { get; init; }
 }
 
 /// <summary>
@@ -631,4 +678,38 @@ public static class MessageTypes
     /// is no reply to route and no JNI concern on the way back to Android.
     /// </remarks>
     public const string ThemeSync = "theme_sync";
+
+    // ── Routines (RemEx-pp0rt.3, spec §7.1) ──
+    //
+    // NAMING RULE: every HOST -> PHONE type starts with "routine_", so the single prefix forward in
+    // AndroidNativeExports.OnNativeMessageReceived carries all of them. routines_sync is the locked
+    // phone -> host id and never needs routing; that is why its reply is routine_sync_result and not
+    // routines_sync_result. Do not add a host -> phone routines type outside the prefix.
+
+    /// <summary>Phone -> host: this phone's full PC-run routine set for this PC (§7.3.1).</summary>
+    public const string RoutinesSync = "routines_sync";
+
+    /// <summary>Host -> phone: per-routine accept/reject plus host routine state (§7.3.2).</summary>
+    public const string RoutineSyncResult = "routine_sync_result";
+
+    /// <summary>Phone -> host: execute one host-side step of a phone-run routine (§7.3.3).</summary>
+    public const string RoutineStepRequest = "routine_step_request";
+
+    /// <summary>Host -> phone: the outcome of a <see cref="RoutineStepRequest"/> (§7.3.4).</summary>
+    public const string RoutineStepResult = "routine_step_result";
+
+    /// <summary>Host -> phone: a notify(phone) step or a countdown heads-up (§7.3.5).</summary>
+    public const string RoutineNotify = "routine_notify";
+
+    /// <summary>Phone -> host: dequeues delivered <see cref="RoutineNotify"/> ids (§7.3.5).</summary>
+    public const string RoutineNotifyAck = "routine_notify_ack";
+
+    /// <summary>Host -> phone: host run history pages and live run progress (§7.3.6).</summary>
+    public const string RoutineRunReport = "routine_run_report";
+
+    /// <summary>Phone -> host: cancel a countdown or run this phone owns (§7.3.7).</summary>
+    public const string RoutineCancel = "routine_cancel";
+
+    /// <summary>Phone -> host: run or test one of this phone's stored PC-run routines (§7.3.8).</summary>
+    public const string RoutineRunRequest = "routine_run_request";
 }

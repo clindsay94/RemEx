@@ -31,4 +31,20 @@ public sealed record ClientCapabilities
     /// </remarks>
     [JsonPropertyName("supportsConsentPrompt")]
     public bool SupportsConsentPrompt { get; init; }
+
+    /// <summary>
+    /// Whether this client consumes the routine_* messages (routines spec §7.5, RemEx-pp0rt.3).
+    /// </summary>
+    /// <remarks>
+    /// Absent or false: the host never sends any <c>routine_*</c> message to this client and never
+    /// queues one for it. An older phone's native router has no <c>routine_</c> forward and would drop
+    /// them in silence (REGRESSION-GUARDS.md:380), so sending to it would look like a working PC and a
+    /// phone that never hears.
+    /// </remarks>
+    [JsonPropertyName("supportsRoutines")]
+    public bool SupportsRoutines { get; init; }
+
+    /// <summary>The routine schema this client writes (<c>RoutineSchema.CurrentVersion</c>); 0 = none.</summary>
+    [JsonPropertyName("routineSchemaVersion")]
+    public int RoutineSchemaVersion { get; init; }
 }

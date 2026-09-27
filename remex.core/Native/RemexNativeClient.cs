@@ -373,8 +373,19 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     /// appearing on the PC again. Repeating it is idempotent on the host side (a plain field write) and
     /// costs ~48 bytes on a JSON control message.
     /// </para>
+    /// <para>
+    /// <c>SupportsRoutines</c> (RemEx-pp0rt.3) is true for the same same-APK reason: this <c>.so</c>
+    /// carries the <c>routine_</c> prefix forward in <c>AndroidNativeExports.OnNativeMessageReceived</c>,
+    /// and the Kotlin build it ships with implements <c>RemexCallback.onRoutineMessage</c> (the
+    /// callback registration is all-or-nothing, so the two cannot be half present).
+    /// </para>
     /// </remarks>
-    public static ClientCapabilities BuildCapabilities { get; } = new() { SupportsConsentPrompt = true };
+    public static ClientCapabilities BuildCapabilities { get; } = new()
+    {
+        SupportsConsentPrompt = true,
+        SupportsRoutines = true,
+        RoutineSchemaVersion = Remex.Core.Routines.RoutineSchema.CurrentVersion,
+    };
 
     /// <summary>
     /// Applies the identity and capability fields every outbound message must carry.

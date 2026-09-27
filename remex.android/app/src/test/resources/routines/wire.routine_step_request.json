@@ -1,0 +1,17 @@
+{
+  "type": "routine_step_request",
+  "routineStepRequest": {
+    "runId": "0d4c9a51-7f3b-4e2a-9c61-3b5e8d2f1a70",
+    "routineId": "5a9d0f21-1c3e-4b7a-8e2f-6c4d3b2a1f00",
+    "routineName": "Bedtime",
+    "triggerType": "manual",
+    "stepIndex": 2,
+    "step": {
+      "type": "power",
+      "verb": "SHUTDOWN",
+      "delaySeconds": 30
+    },
+    "testRun": true,
+    "source": "manual.app"
+  }
+}

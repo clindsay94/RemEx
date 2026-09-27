@@ -1032,7 +1032,7 @@ Schedule triggers are deferred to 3.x and are not in the v1 enum.
 | Homes per phone | 1 in v1 (§1.4, D9) | `too_many_homes` |
 | Steps per routine | 1–12 | `too_many_steps` / `invalid_field` |
 | Phone-run static time budget: Σ`delay.seconds` + Σ`waitOnline.timeoutSeconds` + 60 s per host-executed step + 15 s if a destructive step exists | ≤ 540 s (fits a 10-minute Android job window with margin) | `budget_exceeded` |
-| Host-run static time budget: Σ`delay.seconds` + 30 s per step + 15 s countdown | ≤ 1800 s | `budget_exceeded` |
+| Host-run static time budget: Σ`delay.seconds` + 30 s per step + 15 s countdown when the routine has a destructive step | ≤ 1800 s | `budget_exceeded` |
 | Phone-run routine containing a host-executed step with no preceding `waitOnline` and no connection guarantee | Allowed; at run it connects on demand and fails `pc_unreachable` if the PC is off | — |
 | `pc.*` trigger combined with `wake`/`waitOnline` | Forbidden | `step_not_allowed_on_pc` |
 | `routines_sync` serialized size | ≤ 64 KiB (matches the 8338 frame bound philosophy, `RemexNetworkListener.cs:59`) | `payload_too_large` |

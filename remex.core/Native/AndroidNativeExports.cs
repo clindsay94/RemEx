@@ -220,6 +220,7 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopWindowResultMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onClipboardMessageMethodId;
+    private static IntPtr _onRoutineMessageMethodId;
     private static IntPtr _onLinkQualityMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
@@ -367,6 +368,7 @@ public static class AndroidNativeExports
         _onDesktopWindowResultMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onClipboardMessageMethodId = IntPtr.Zero;
+        _onRoutineMessageMethodId = IntPtr.Zero;
         _onLinkQualityMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
@@ -481,6 +483,7 @@ public static class AndroidNativeExports
                 var onDesktopWindowResultMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
                 var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
                 var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
+                var onRoutineMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onRoutineMessage", "(Ljava/lang/String;)V");
                 var onLinkQualityMethodId = GetRequiredCallbackMethodId(env, clazz, "onLinkQuality", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
@@ -504,6 +507,7 @@ public static class AndroidNativeExports
                     || onDesktopWindowResultMethodId == IntPtr.Zero
                     || onFileTransferMessageMethodId == IntPtr.Zero
                     || onClipboardMessageMethodId == IntPtr.Zero
+                    || onRoutineMessageMethodId == IntPtr.Zero
                     || onLinkQualityMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
@@ -532,6 +536,7 @@ public static class AndroidNativeExports
                 _onDesktopWindowResultMethodId = onDesktopWindowResultMethodId;
                 _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
                 _onClipboardMessageMethodId = onClipboardMessageMethodId;
+                _onRoutineMessageMethodId = onRoutineMessageMethodId;
                 _onLinkQualityMethodId = onLinkQualityMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
@@ -2062,6 +2067,24 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onClipboardMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
+        }
+
+        // THE WHOLE routine_ FAMILY, BY PREFIX (RemEx-pp0rt.3, routines spec §7.7). Every host -> phone
+        // routines type is named routine_* on purpose (routine_sync_result, routine_step_result,
+        // routine_notify, routine_run_report) so this one line carries all of them, and any type a
+        // later routines slice adds, to RemexCallback.onRoutineMessage. Without it the host answers a
+        // step request, the send succeeds, and the phone times the step out as "no answer from the PC"
+        // - the RemEx-y6x6 failure mode again, with a misleading message on top. The phone -> host
+        // types (routines_sync, routine_step_request, ...) also match the prefix but never arrive on
+        // this side, and the Kotlin router ignores any routine_ type it does not consume.
+        //
+        // The whole envelope, like the file_ and clipboard_ forwards, because the Kotlin side
+        // dispatches on `type`. Do NOT narrow it to an explicit type list.
+        if (msg.Type is { } routineType && routineType.StartsWith("routine_", StringComparison.Ordinal))
+        {
+            NotifyJavaData(
+                _onRoutineMessageMethodId,
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 

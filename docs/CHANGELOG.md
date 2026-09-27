@@ -13,6 +13,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Groundwork for Routines (3.0): the shared routine format, its validator and limits, the reason
+  codes, and the nine new routine messages between the phone and the PC, defined identically on both
+  sides and checked against shared test files. Both apps now advertise routine support, and the phone
+  forwards every `routine_*` message from the PC. Additive only: no protocol version change, and
+  nothing is visible yet. (RemEx-pp0rt.3)
+
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you
   choose is remembered with the rest of your customization. The default is wider too — 520 instead

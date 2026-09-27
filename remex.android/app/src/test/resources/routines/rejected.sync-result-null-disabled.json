@@ -1,0 +1,11 @@
+{
+  "type": "routine_sync_result",
+  "routineSyncResult": {
+    "revision": 1,
+    "status": "ok",
+    "pcDisabled": [
+      "5a9d0f21-1c3e-4b7a-8e2f-6c4d3b2a1f00",
+      null
+    ]
+  }
+}

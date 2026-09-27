@@ -94,4 +94,27 @@ public sealed record HostCapabilities
     /// with a placeholder, because a wrong MAC fails to wake and says nothing about why.
     /// </remarks>
     public string? MacAddress { get; init; }
+
+    /// <summary>
+    /// Whether this host implements Routines (routines spec §7.5, RemEx-pp0rt.3).
+    /// </summary>
+    /// <remarks>
+    /// Absent or false means a host that predates routines: the phone sends no <c>routines_sync</c>,
+    /// greys out PC triggers with "Update RemEx on this PC", and fails a host-executed step of a
+    /// phone-run routine with <c>pc_too_old</c> - it never falls back to the raw <c>command</c> verb,
+    /// because that would bypass the destructive-step countdown. Static, so it belongs in this cached
+    /// record; source availability (idle, session) is dynamic and travels in every
+    /// <c>routine_sync_result</c> instead.
+    /// </remarks>
+    public bool SupportsRoutines { get; init; }
+
+    /// <summary>The routine schema this host reads (<c>RoutineSchema.CurrentVersion</c>); 0 = none.</summary>
+    public int RoutineSchemaVersion { get; init; }
+
+    /// <summary>
+    /// The power verbs this host can execute for a routine, never <c>WAKEONLAN</c> (D5). A verb that is
+    /// missing is disabled in the phone editor and rejected at sync with <c>power_unsupported</c>.
+    /// Null on a host that predates routines.
+    /// </summary>
+    public List<string>? RoutinePowerVerbs { get; init; }
 }

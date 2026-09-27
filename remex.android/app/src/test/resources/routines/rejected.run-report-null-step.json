@@ -1,0 +1,17 @@
+{
+  "type": "routine_run_report",
+  "routineRunReport": {
+    "runs": [
+      {
+        "runId": "0d4c9a51-7f3b-4e2a-9c61-3b5e8d2f1a70",
+        "routineRevision": 1,
+        "testRun": false,
+        "triggeredAtUnixMs": 1790000000000,
+        "startedAtUnixMs": 1790000000000,
+        "steps": [
+          null
+        ]
+      }
+    ]
+  }
+}

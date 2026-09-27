@@ -1,0 +1,10 @@
+{
+  "type": "routine_sync_result",
+  "routineSyncResult": {
+    "revision": 1,
+    "status": "ok",
+    "results": [
+      null
+    ]
+  }
+}

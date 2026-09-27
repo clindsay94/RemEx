@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "routines": [
+    {
+      "id": "27badc98-3df1-480b-a0c2-b3fa9d3a19a0",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "43974ed7-4066-4207-a30f-fd0fed514676",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "c17edaae-86e4-416a-a83e-098582f6dbf3",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "4621c1d5-5fa4-486c-a0da-e4288302641b",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "fc56dbc6-d465-4b31-ab86-b71c8d688c1c",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "f8809aff-4d69-4ece-a9da-be35be0c708b",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "5cf4e26b-d3d8-4da5-a03f-80a43a64f122",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "968076be-2e38-4f89-ad4d-6cea3faca9c0",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "8df66f64-b574-4439-ad36-3fd6b811fed3",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "83f814f7-a92e-465c-ad79-f9addceed185",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "d29d5370-1d3c-459e-a9e1-b90028eec1ca",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "093434a3-ee9e-4a01-abb2-c2aae06c2614",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "fa2b7af0-a811-49ac-ae60-2aacb78e3638",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "d48ff4b2-f68a-40fd-ac86-f185a6ccede0",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "802b906a-1859-4ead-aa6d-d809b262ace4",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "d86580a5-7f7b-4542-a852-02283cb84595",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "0f4121d0-ef1d-44c8-a854-c7ebb47ae1c9",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 1,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 10
+      },
+      "steps": [
+        {
+          "type": "power",
+          "verb": "LOCK"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    }
+  ]
+}

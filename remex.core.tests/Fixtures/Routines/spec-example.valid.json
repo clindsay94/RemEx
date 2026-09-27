@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "routines": [
+    {
+      "id": "3f0c2a4e-7b1d-4c55-9a60-2d7e8f1b9c10",
+      "name": "Game time",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 3,
+      "appearance": {
+        "icon": "sports_esports",
+        "color": "#6750A4"
+      },
+      "trigger": {
+        "type": "home.arrive",
+        "homeId": "b7e14c0a-52c1-4e4f-8f43-0d7c2f9a6e11"
+      },
+      "steps": [
+        {
+          "type": "wake",
+          "mac": "0A:1B:2C:3D:4E:5F",
+          "broadcastIp": "192.168.1.255",
+          "port": 9
+        },
+        {
+          "type": "waitOnline",
+          "timeoutSeconds": 120
+        },
+        {
+          "type": "launchApp",
+          "appId": "c1d2e3f4-0000-4000-8000-00000000abcd",
+          "appLabel": "Steam"
+        },
+        {
+          "type": "notify",
+          "target": "phone",
+          "title": "PC ready",
+          "body": "Steam is starting."
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000000000
+    },
+    {
+      "id": "5a9d0f21-1c3e-4b7a-8e2f-6c4d3b2a1f00",
+      "name": "Bedtime",
+      "hostIdentity": "9f2c4be07a1d33e5",
+      "enabled": true,
+      "revision": 2,
+      "trigger": {
+        "type": "pc.idle",
+        "idleMinutes": 45,
+        "ignoreWhileMediaPlaying": true
+      },
+      "steps": [
+        {
+          "type": "notify",
+          "target": "phone",
+          "title": "PC going to sleep",
+          "body": "Idle for 45 minutes."
+        },
+        {
+          "type": "power",
+          "verb": "SLEEP"
+        }
+      ],
+      "createdAtUnixMs": 1790000000000,
+      "updatedAtUnixMs": 1790000500000
+    }
+  ]
+}

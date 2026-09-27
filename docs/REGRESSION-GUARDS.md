@@ -393,6 +393,36 @@ return value of the `FetchPairingPinNative` native export. It therefore needs no
 **Do not add it to the router.** It looks like an oversight against the rule above; it is not. This
 is recorded because the rule above makes adding it the obvious "fix". (RemEx-1t0b)
 
+### Routines: every host→phone type rides the `routine_` prefix forward
+
+`remex.core/Native/AndroidNativeExports.cs:2084` (`OnNativeMessageReceived`), audience entries at
+`remex.core/Messages/MessageAudience.cs:140-143`; pinned by `HostToClientRoutingTests`,
+`MessageAudienceTests` and the Kotlin `RoutineMessageRoutingTest` — RemEx-pp0rt.3.
+
+`routine_sync_result`, `routine_step_result`, `routine_notify` and `routine_run_report` reach Kotlin
+only through the one `StartsWith("routine_", …)` forward to `RemexCallback.onRoutineMessage`. Remove
+or narrow it and the host answers a step request, the send succeeds, and the phone times the step out
+as "no answer from the PC" — the RemEx-y6x6 failure with a misleading message on top. **Every new
+host→phone routines type must start with `routine_`** (the locked phone→host id `routines_sync` is the
+only exception, which is why its reply is `routine_sync_result`). The host must also never send a
+`routine_*` type to a client without `ClientCapabilities.supportsRoutines`: an older phone's router has
+no such forward and drops it in silence.
+
+### Routines: no `required` members on routine wire payloads, and every slot is lenient
+
+`remex.core/Messages/RemexMessage.cs:416-450` (the nine `[JsonConverter(LenientRoutinePayloadConverter<…>)]`
+slots), `remex.core/Messages/Routines/LenientRoutineConverters.cs`; pinned by
+`RoutinesSyncMalformedPayloadTests` and `RoutineNoRequiredMembersTests` — RemEx-pp0rt.3, spec T18.
+
+A `required` member missing from the JSON, or any field of the wrong JSON type, makes System.Text.Json
+throw; `MessageSerializer.Deserialize` then returns a null envelope and `PingPongHandler` drops the
+**whole session**, so one bad routine from a buggy or hostile phone would disconnect it on every
+reconnect. Routine payloads therefore have no `required` members, triggers and steps are flat records
+(an unknown `type` deserializes and is refused by `RoutineValidator`), and the lenient converters turn
+an unreadable routine into a malformed placeholder (rejected alone, `invalid_field`) and an unreadable
+payload into a null slot on a non-null envelope. The Kotlin reader (`RoutineJson`) applies the same
+strict-type rule so both sides reject the same documents — the shared fixtures pin it.
+
 ### `protocolVersion` bumps must be coordinated
 
 `RemexMessage` carries `protocolVersion: 2`. A breaking wire-format change requires bumping it in

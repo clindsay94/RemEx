@@ -1,0 +1,48 @@
+{
+  "vectors": [
+    {
+      "pin": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "key": "5c4074cf6deb47f5"
+    },
+    {
+      "pin": "sha256/47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "key": "5c4074cf6deb47f5"
+    },
+    {
+      "pin": "  sha256/ 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=  ",
+      "key": "5c4074cf6deb47f5"
+    },
+    {
+      "pin": "47deqpj8hbsa+/timw+5jceuqerkm5nmpjwzg3hsufu=",
+      "key": "08284a572cc0a281"
+    },
+    {
+      "pin": "SHA256/47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "key": "8097f881fc5d6272"
+    },
+    {
+      "pin": "sha256/sha256/abc",
+      "key": "4a1b95df5ff17274"
+    },
+    {
+      "pin": "abc",
+      "key": "ba7816bf8f01cfea"
+    },
+    {
+      "pin": "",
+      "key": null
+    },
+    {
+      "pin": "   ",
+      "key": null
+    },
+    {
+      "pin": "sha256/",
+      "key": null
+    },
+    {
+      "pin": null,
+      "key": null
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "type": "routine_run_report",
+  "routineRunReport": {
+    "runs": [
+      {
+        "runId": "0d4c9a51-7f3b-4e2a-9c61-3b5e8d2f1a70",
+        "seq": 43,
+        "routineId": "4b227777-d4dd-4fc6-ac6f-884f48641d02",
+        "routineName": "Too hot",
+        "routineRevision": 1,
+        "origin": "pc",
+        "hostIdentity": "9f2c4be07a1d33e5",
+        "source": "pc.sensor",
+        "testRun": false,
+        "sourceDetail": {
+          "sensorName": "CPU package",
+          "value": 91.5,
+          "unit": "°C"
+        },
+        "triggeredAtUnixMs": 1790000000000,
+        "startedAtUnixMs": 1790000000020,
+        "endedAtUnixMs": 1790000016020,
+        "outcome": "cancelled",
+        "reasonCode": "cancelled_on_phone",
+        "reasonArgs": {
+          "pc": "DESKTOP-1",
+          "phone": "Pixel",
+          "action": "shut down"
+        },
+        "cancelledBy": "phone",
+        "attributes": [
+          "countdown_unseen",
+          "notify_queued"
+        ],
+        "steps": [
+          {
+            "index": 0,
+            "kind": "notify",
+            "status": "succeeded",
+            "startedAtUnixMs": 1790000000020,
+            "endedAtUnixMs": 1790000000025,
+            "reasonCode": "ok"
+          },
+          {
+            "index": 1,
+            "kind": "power",
+            "status": "cancelled",
+            "startedAtUnixMs": 1790000000025,
+            "endedAtUnixMs": 1790000016020,
+            "reasonCode": "cancelled_on_phone",
+            "reasonArgs": {
+              "action": "shut down"
+            }
+          }
+        ],
+        "countdown": {
+          "shown": false,
+          "startedAtUnixMs": 1790000000025,
+          "cancelledBy": "phone"
+        }
+      }
+    ],
+    "more": true,
+    "live": false
+  }
+}

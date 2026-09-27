@@ -1,0 +1,31 @@
+{
+  "type": "routine_sync_result",
+  "routineSyncResult": {
+    "revision": 7,
+    "storedRevision": 7,
+    "status": "partial",
+    "results": [
+      {
+        "routineId": "5a9d0f21-1c3e-4b7a-8e2f-6c4d3b2a1f00",
+        "accepted": true,
+        "reasonCode": "ok"
+      },
+      {
+        "routineId": "4b227777-d4dd-4fc6-ac6f-884f48641d02",
+        "accepted": false,
+        "reasonCode": "sensor_unavailable",
+        "detail": "trigger.sensorId"
+      }
+    ],
+    "hostPaused": false,
+    "ownerPaused": true,
+    "unsolicited": true,
+    "pcDisabled": [
+      "7c2e1b90-4d5f-4a3b-b6c7-8d9e0f1a2b3c"
+    ],
+    "ownerSuspended": "owner_absent",
+    "idleSource": "win32.lastinput",
+    "sessionSource": "wts",
+    "sensorTrigger": true
+  }
+}

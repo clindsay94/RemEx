@@ -850,6 +850,20 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     val clipboardMessages = _clipboardMessages.asSharedFlow()
 
     /**
+     * Every `routine_*` envelope from the PC, verbatim (RemEx-pp0rt.3, routines spec §7.7). Decode
+     * with [com.clindsay94.remex.routines.model.RoutineInbound.parse]. Emitted from the JNI callback
+     * thread, so tryEmit; the buffer covers a burst of run-report pages plus live updates, and the
+     * oldest is dropped rather than blocking JNI. Nothing is lost for good by a drop: sync results
+     * are resent on the next sync, and run reports page from the phone's stored cursor.
+     */
+    private val _routineMessages =
+            MutableSharedFlow<String>(
+                    extraBufferCapacity = 32,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
+    val routineMessages = _routineMessages.asSharedFlow()
+
+    /**
      * Smoothed round-trip time to the PC in milliseconds, or null before the first pong (RemEx-93n2).
      *
      * A StateFlow, unlike [clipboardMessages]: this is a CURRENT VALUE, not an event. A consumer
@@ -1446,6 +1460,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onClipboardMessage(json: String?) {
         json?.let { _clipboardMessages.tryEmit(it) }
+    }
+
+    override fun onRoutineMessage(json: String?) {
+        json?.let { _routineMessages.tryEmit(it) }
     }
 
     override fun onLinkQuality(json: String?) {

@@ -185,6 +185,12 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             InputBackend = GetInputBackendName(linuxBackend, prereqReport, windowsReport),
             WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,
+            // Routines (RemEx-pp0rt.3, spec §7.5). Static facts only - the record is cached for the
+            // process lifetime; idle/session source availability is dynamic and travels in every
+            // routine_sync_result instead.
+            SupportsRoutines = true,
+            RoutineSchemaVersion = Remex.Core.Routines.RoutineSchema.CurrentVersion,
+            RoutinePowerVerbs = Routines.RoutinePowerVerbProbe.Probe(),
         };
     }
 
