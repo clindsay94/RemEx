@@ -115,9 +115,12 @@ internal fun NfcWriteSheet(
     val currentToken by rememberUpdatedState(token)
     val currentCommitted by rememberUpdatedState(committed)
     val currentReplace by rememberUpdatedState(replaceConfirmedFor)
-    val listening = NfcWriteRules.readsTags(state) && token != null && activity != null
-    DisposableEffect(listening, activity) {
-        if (listening) {
+    // Reader mode stays on for the WHOLE life of the sheet, in every state: a tag held to the phone
+    // while it shows Success, an error or "Replace?" must be swallowed here, never dispatched to
+    // NfcRoutineActivity, or a second touch after writing would run the routine. Only the listening
+    // states act on a tag; the rest ignore it.
+    DisposableEffect(activity) {
+        if (activity != null) {
             NfcTagIo.enableReader(activity) { tag ->
                 // The NFC reader thread: inspect and write while the tag is still in contact.
                 when (currentState) {

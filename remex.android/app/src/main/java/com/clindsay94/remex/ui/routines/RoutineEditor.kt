@@ -141,6 +141,8 @@ import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
+private const val LOCK_WHEN_GONE_TEMPLATE = "tpl.home.lock"
+
 /** The step sheet: choosing a kind (grid) or editing one step's parameters (spec A5). */
 private data class StepSheet(val editIndex: Int?, val working: RoutineStep?)
 
@@ -156,6 +158,7 @@ internal fun RoutineEditorPane(
     onClose: () -> Unit,
     onOpenHistory: (String) -> Unit,
     onNavigateToConnection: () -> Unit,
+    onOpenTemplate: (String) -> Unit = {},
 ) {
     val routines by viewModel.routines.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
@@ -452,6 +455,13 @@ internal fun RoutineEditorPane(
                         pcName = pcName,
                         onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
+                    // Spec 1.8: the leave-home warning links to "Lock my PC when I'm gone", the PC-side
+                    // way to act on the PC once the phone has left (D6).
+                    if (problems.any { it.code == EditorProblemCode.LEAVE_NEEDS_REACH }) {
+                        TextButton(onClick = { onOpenTemplate(LOCK_WHEN_GONE_TEMPLATE) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.routines_tpl_home_lock_name))
+                        }
+                    }
                     if (RoutineHomeRules.isHomeTrigger(draft.trigger?.type)) {
                         HomeTriggerDetails(
                             trigger = draft.trigger,

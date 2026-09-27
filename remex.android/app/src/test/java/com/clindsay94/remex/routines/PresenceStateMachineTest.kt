@@ -19,8 +19,8 @@ class PresenceStateMachineTest {
     private val leave = mapOf("leave-3m" to 180, "leave-10m" to 600)
     private val none = emptyMap<String, Int>()
 
-    private fun step(p: PresenceRecord, matches: Boolean, at: Long, debounces: Map<String, Int> = leave): PresenceStep =
-        PresenceStateMachine.step(p, matches, at, debounces, 180)
+    private fun step(p: PresenceRecord, matches: Boolean, at: Long, debounces: Map<String, Int> = leave, foreign: Boolean = !matches): PresenceStep =
+        PresenceStateMachine.step(p, matches, at, debounces, 180, foreign)
 
     private fun homeSince(at: Long) = PresenceRecord(PresenceState.HOME, changedAtUnixMs = at, homeSinceUnixMs = at)
 
@@ -31,12 +31,33 @@ class PresenceStateMachineTest {
         val atHome = step(PresenceRecord(), matches = true, at = t0)
         assertEquals(PresenceState.HOME, atHome.presence.state)
         assertTrue(atHome.events.isEmpty())
-        val away = step(PresenceRecord(), matches = false, at = t0)
+        val away = step(PresenceRecord(), matches = false, at = t0, foreign = true)
         assertEquals(PresenceState.AWAY, away.presence.state)
         assertTrue(away.events.isEmpty())
         // And an UNKNOWN -> AWAY phone has not "left": no leave ever follows from it.
         val later = step(away.presence, matches = false, at = t0 + 3_600_000)
         assertTrue(later.events.isEmpty())
+    }
+
+    @Test
+    fun `L9 - reboot with no network stays UNKNOWN, so the first home join is learned, not an arrive`() {
+        val booted = step(PresenceRecord(), matches = false, at = t0, foreign = false)
+        assertEquals(PresenceState.UNKNOWN, booted.presence.state)
+        assertTrue(booted.events.isEmpty())
+        val wifi = step(booted.presence, matches = true, at = t0 + 20_000)
+        assertEquals(PresenceState.HOME, wifi.presence.state)
+        assertTrue("joining home after a reboot must not wake the PC", wifi.events.isEmpty())
+        assertTrue(step(wifi.presence, matches = true, at = t0 + 40_000).events.isEmpty())
+    }
+
+    @Test
+    fun `L9 - reboot on a foreign Wi-Fi is stamped, so an arrive within 300 s is suppressed`() {
+        val booted = step(PresenceRecord(), matches = false, at = t0, foreign = true)
+        assertEquals(PresenceState.AWAY, booted.presence.state)
+        assertEquals(t0, booted.presence.changedAtUnixMs)
+        val settle = step(booted.presence, matches = true, at = t0 + 30_000)
+        val arrived = step(settle.presence, matches = true, at = t0 + 40_000)
+        assertEquals(listOf(PresenceEvent.Arrive(suppressed = true)), arrived.events)
     }
 
     @Test

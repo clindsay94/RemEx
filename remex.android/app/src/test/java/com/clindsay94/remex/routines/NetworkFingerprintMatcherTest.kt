@@ -85,6 +85,20 @@ class NetworkFingerprintMatcherTest {
     }
 
     @Test
+    fun `a DNS or DHCP server that is the gateway is weak, not a secondary signal`() {
+        // Most routers: gateway = DNS = DHCP. A foreign network on the same default address agrees on
+        // all three for free, so none of them may stand in for a real secondary fact.
+        val routerOnly = homeWifi.copy(dnsServers = listOf("192.168.1.1"), domains = emptyList(), dhcpServer = "192.168.1.1", addresses = listOf("192.168.1.23"))
+        val facts = HomeFacts.of(routerOnly)
+        assertFalse(facts.hasSecondary)
+        val weakHome = tokenizer.tokens(facts)
+        assertTrue(weakHome.secondary.isEmpty())
+        assertTrue(NetworkFingerprintMatcher.match(weakHome, tokenizer.tokens(facts), true).weak)
+        // A distinct DNS server still counts.
+        assertTrue(HomeFacts.of(routerOnly.copy(dnsServers = listOf("192.168.1.1", "192.168.1.2"))).hasSecondary)
+    }
+
+    @Test
     fun `any of several networks can be home`() {
         val mobile = NetworkSnapshot(wifiOrEthernet = false, vpn = false, gateways = listOf("10.0.0.1"), prefixes = listOf("10.0.0.0/8"))
         assertTrue(NetworkFingerprintMatcher.anyMatches(home, listOf(mobile, homeWifi), tokenizer))

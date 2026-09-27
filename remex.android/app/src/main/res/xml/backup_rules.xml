@@ -8,6 +8,7 @@
     <!-- Routines (spec T12, RemEx-pp0rt.5): the routine keyset and all three routine stores.
          Pinned by BackupRulesRoutineExclusionTest against RoutineStoreNames. -->
     <exclude domain="sharedpref" path="remex_routines_tink_prefs.xml"/>
+    <exclude domain="sharedpref" path="remex_routines_presence.xml"/>
     <exclude domain="file" path="datastore/remex_routines.preferences_pb" />
     <exclude domain="file" path="datastore/remex_routine_secrets.preferences_pb" />
     <exclude domain="file" path="datastore/remex_routine_history.preferences_pb" />

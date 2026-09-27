@@ -129,8 +129,17 @@ data class HomeFacts(
     val dhcpServer: String? = null,
     val ipv6Prefix48: String? = null,
 ) {
-    /** DNS, domain, DHCP server or IPv6 /48: what tells two networks with the same router apart. */
-    val hasSecondary: Boolean get() = dnsServers.isNotEmpty() || domain != null || dhcpServer != null || ipv6Prefix48 != null
+    /**
+     * The DNS servers that say something the router does not: on most home routers the DNS server
+     * and the DHCP server ARE the gateway, and a foreign network on the same default address
+     * (192.168.1.1 is everywhere) would "agree" on them for free. Those count as weak, not secondary.
+     */
+    val distinctDns: List<String> get() = dnsServers.filterNot { it in gateways }
+
+    val distinctDhcp: String? get() = dhcpServer?.takeIf { it !in gateways }
+
+    /** Distinct DNS, domain, distinct DHCP server or IPv6 /48: what tells two networks with the same router apart. */
+    val hasSecondary: Boolean get() = distinctDns.isNotEmpty() || domain != null || distinctDhcp != null || ipv6Prefix48 != null
 
     companion object {
         const val MAX_GATEWAYS = 4
@@ -169,9 +178,10 @@ class HomeTokenizer(key: ByteArray) {
             prefixes = facts.prefixes.map { token("prefix", it) }.toSet(),
             secondary =
                 buildSet {
-                    facts.dnsServers.forEach { add(token("dns", it)) }
+                    // A DNS or DHCP server that is the gateway itself proves nothing beyond the gateway.
+                    facts.distinctDns.forEach { add(token("dns", it)) }
                     facts.domain?.let { add(token("domain", it)) }
-                    facts.dhcpServer?.let { add(token("dhcp", it)) }
+                    facts.distinctDhcp?.let { add(token("dhcp", it)) }
                     facts.ipv6Prefix48?.let { add(token("v6", it)) }
                 },
         )

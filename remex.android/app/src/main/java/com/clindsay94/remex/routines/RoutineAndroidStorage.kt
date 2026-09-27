@@ -45,7 +45,13 @@ object RoutineStoreNames {
     /** SharedPreferences file holding the routines' own Tink keyset (never PinnedHostStore's). */
     const val TINK_PREFS_FILE = "remex_routines_tink_prefs"
 
+    /** Home presence's applied registration plan, the cheap "armed" flag (S3, §12). */
+    const val PRESENCE_PREFS_FILE = "remex_routines_presence"
+
     val DATASTORES = listOf(ROUTINES, SECRETS, HISTORY)
+
+    /** Every routine SharedPreferences file the backup rules must exclude. */
+    val PREFS_FILES = listOf(TINK_PREFS_FILE, PRESENCE_PREFS_FILE)
 }
 
 internal class DataStoreRoutineKeyValueStore(private val store: DataStore<Preferences>) : RoutineKeyValueStore {

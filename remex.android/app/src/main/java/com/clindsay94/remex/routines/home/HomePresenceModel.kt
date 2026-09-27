@@ -16,6 +16,10 @@ enum class PresenceState { UNKNOWN, HOME, AWAY }
  *   so a phone that starts away never fires a leave.
  * @property arriveSinceUnixMs while AWAY: when home started matching (the 10 s settle).
  * @property firedLeave the leave routines already handled in this away episode.
+ * @property pendingFire starts the state machine decided on and that have not been made yet. Written
+ *   in the SAME store write as the transition that caused them, cleared once each is started, and
+ *   replayed by the next evaluation, so a worker cancelled between the two cannot lose an arrive or a
+ *   leave.
  */
 data class PresenceRecord(
     val state: PresenceState = PresenceState.UNKNOWN,
@@ -24,7 +28,29 @@ data class PresenceRecord(
     val awaySinceUnixMs: Long? = null,
     val arriveSinceUnixMs: Long? = null,
     val firedLeave: Set<String> = emptySet(),
+    val pendingFire: List<PendingFire> = emptyList(),
 )
+
+/** One start still owed (see [PresenceRecord.pendingFire]); [suppressed] records `flap_suppressed` instead. */
+data class PendingFire(val routineId: String, val source: String, val suppressed: Boolean, val decidedAtUnixMs: Long)
+
+/** Turning a step's events into owed starts, and keeping that list honest. Pure JVM. */
+object PendingFires {
+    /** An owed start this old is dropped: a routine firing long after the moment it was for is worse than none. */
+    const val MAX_AGE_MS = 10 * 60 * 1000L
+
+    fun of(events: List<PresenceEvent>, arriveRoutineIds: List<String>, arriveSource: String, leaveSource: String, now: Long): List<PendingFire> =
+        events.flatMap { event ->
+            when (event) {
+                is PresenceEvent.Arrive -> arriveRoutineIds.map { PendingFire(it, arriveSource, event.suppressed, now) }
+                is PresenceEvent.Leave -> listOf(PendingFire(event.routineId, leaveSource, event.suppressed, now))
+            }
+        }
+
+    /** [existing] still owed (not too old), then [added]; one entry per routine and source. */
+    fun merge(existing: List<PendingFire>, added: List<PendingFire>, now: Long): List<PendingFire> =
+        (existing.filter { now - it.decidedAtUnixMs in 0..MAX_AGE_MS } + added).distinctBy { it.routineId to it.source }
+}
 
 /** The phone's one home (spec §6.6, D9): the displayable facts, their tokens, and the presence state. */
 data class Home(
@@ -68,7 +94,19 @@ object HomeCodec {
                     .putOpt("homeSinceUnixMs", home.presence.homeSinceUnixMs)
                     .putOpt("awaySinceUnixMs", home.presence.awaySinceUnixMs)
                     .putOpt("arriveSinceUnixMs", home.presence.arriveSinceUnixMs)
-                    .put("firedLeave", JSONArray(home.presence.firedLeave.sorted())),
+                    .put("firedLeave", JSONArray(home.presence.firedLeave.sorted()))
+                    .put(
+                        "pendingFire",
+                        JSONArray(
+                            home.presence.pendingFire.map {
+                                JSONObject()
+                                    .put("routineId", it.routineId)
+                                    .put("source", it.source)
+                                    .put("suppressed", it.suppressed)
+                                    .put("decidedAtUnixMs", it.decidedAtUnixMs)
+                            },
+                        ),
+                    ),
             )
             .toString()
 
@@ -108,6 +146,15 @@ object HomeCodec {
             awaySinceUnixMs = obj.optLongOrNull("awaySinceUnixMs"),
             arriveSinceUnixMs = obj.optLongOrNull("arriveSinceUnixMs"),
             firedLeave = strings(obj.optJSONArray("firedLeave")).toSet(),
+            pendingFire =
+                obj.optJSONArray("pendingFire")?.let { array ->
+                    (0 until array.length()).mapNotNull { i ->
+                        val item = array.optJSONObject(i) ?: return@mapNotNull null
+                        val id = item.optString("routineId").takeIf(String::isNotBlank) ?: return@mapNotNull null
+                        val source = item.optString("source").takeIf(String::isNotBlank) ?: return@mapNotNull null
+                        PendingFire(id, source, item.optBoolean("suppressed", false), item.optLong("decidedAtUnixMs", 0L))
+                    }
+                }.orEmpty(),
         )
 
     private fun JSONObject.optLongOrNull(key: String): Long? = if (has(key) && !isNull(key)) optLong(key) else null
@@ -144,16 +191,28 @@ object PresenceStateMachine {
     /**
      * @param matches whether any current network matches home.
      * @param leaveDebounceSeconds each enabled `home.leave` routine's debounce, by routine id.
+     * @param foreignNetwork whether a qualifying (Wi-Fi or Ethernet, not VPN) network that is NOT home
+     *   is present. Only that proves "away"; no network at all proves nothing.
      */
-    fun step(presence: PresenceRecord, matches: Boolean, nowUnixMs: Long, leaveDebounceSeconds: Map<String, Int>, defaultLeaveSeconds: Int): PresenceStep =
+    fun step(
+        presence: PresenceRecord,
+        matches: Boolean,
+        nowUnixMs: Long,
+        leaveDebounceSeconds: Map<String, Int>,
+        defaultLeaveSeconds: Int,
+        foreignNetwork: Boolean = false,
+    ): PresenceStep =
         when (presence.state) {
-            // Leaving UNKNOWN is learning the state, not a transition: it stamps no flap window, so
-            // the first real arrive or leave after it is judged on its own.
+            // Leaving UNKNOWN learns the state without firing (T20), and it IS stamped as a transition
+            // at now: a phone that reboots, sees another Wi-Fi and then joins home within 300 s must
+            // not fire an unsuppressed arrive (L9). With no qualifying network at all (just after a
+            // reboot, or mobile data only) it stays UNKNOWN, so the first home join is learned, not
+            // an arrival.
             PresenceState.UNKNOWN ->
-                if (matches) {
-                    PresenceStep(PresenceRecord(PresenceState.HOME, changedAtUnixMs = 0, homeSinceUnixMs = 0), emptyList(), null)
-                } else {
-                    PresenceStep(PresenceRecord(PresenceState.AWAY, changedAtUnixMs = 0), emptyList(), null)
+                when {
+                    matches -> PresenceStep(PresenceRecord(PresenceState.HOME, changedAtUnixMs = nowUnixMs, homeSinceUnixMs = nowUnixMs), emptyList(), null)
+                    foreignNetwork -> PresenceStep(PresenceRecord(PresenceState.AWAY, changedAtUnixMs = nowUnixMs), emptyList(), null)
+                    else -> PresenceStep(presence, emptyList(), null)
                 }
             PresenceState.HOME ->
                 if (matches) {

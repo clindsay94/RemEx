@@ -250,11 +250,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- The Routine widget's configure step. EXPORTED, the one deliberate exception to "every
+             routine component is not exported" besides NfcRoutineActivity: some launchers start a
+             widget's configure activity directly, and a non-exported one then fails to open. It is
+             safe to export because it can only let the person PICK a routine for a widget of this
+             app's own provider (it checks the widget id belongs to RoutineWidgetReceiver); it never
+             runs a routine. RoutineManifestExportTest allowlists it and scans it for any run path. -->
         <activity
             android:name=".routines.widget.RoutineWidgetConfigActivity"
-            android:exported="false"
+            android:exported="true"
             android:excludeFromRecents="true"
-            android:theme="@style/Theme.RemEx" />
+            android:theme="@style/Theme.RemEx">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <!-- Service for backwards compatibility of per-app languages -->
         <service

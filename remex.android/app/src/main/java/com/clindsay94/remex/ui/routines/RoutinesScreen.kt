@@ -276,6 +276,7 @@ fun RoutinesScreen(
                                 },
                                 onOpenHistory = { id -> open(RoutineDetail.History(id)) },
                                 onNavigateToConnection = onNavigateToConnection,
+                                onOpenTemplate = { id -> open(RoutineDetail.Editor(templateId = id)) },
                             )
                         is RoutineDetail.History ->
                             RoutineHistoryPane(

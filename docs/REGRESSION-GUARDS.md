@@ -1337,8 +1337,10 @@ that is exported, and the only thing between "any app on the phone" and "run thi
 holds. Drop it, or copy the `remex://routine` intent filter onto any other component, and every app
 can fire `remex://routine/<id>?t=...` at RemEx. Nothing breaks visibly when that happens: tags keep
 working, which is exactly why it would not be noticed. Every other routine component (the shortcut
-target, the confirm activity, the widget receiver and its config activity, the notification action
-receiver) stays `exported="false"`; the manifest test fails if one flips. Behind the permission the
+target, the confirm activity, the widget receiver, the network receiver, the notification action
+receiver) stays `exported="false"`; the manifest test fails if one flips. The one other allowlisted
+export is the widget's configure activity (launchers start it directly): it can only bind a widget of
+RemEx's own provider to a routine the person picks, and the test scans it for any path to a run. Behind the permission the
 tag is still untrusted: the token is compared in constant time, a locked phone is refused
 (`nfc_device_locked`), and a routine runs at most once per 10 s per tag tap.
 
@@ -1358,8 +1360,8 @@ signature is what binds a shortcut to the routine it was made for.
 
 ### Home presence: PendingIntent network callbacks only report availability, so leave detection needs the fallback (INVARIANT)
 
-`remex.android/.../routines/home/PresenceRegistrations.kt:22` (`periodicCheck`), `:53`
-(`PresenceRegistrar.apply`), `routines/home/HomePresence.kt:231` (`sync`); pinned by
+`remex.android/.../routines/home/PresenceRegistrations.kt:22` (`periodicCheck`), `:62`
+(`PresenceRegistrar.apply`), `routines/home/HomePresence.kt:243` (`sync`); pinned by
 `NetworkRegistrationTest` (`LeaveDetectionScheduling`), `PresenceStateMachineTest` — RemEx-pp0rt.8,
 spec §8.3.1 "Event sources", R-SYS-15.
 
@@ -1377,19 +1379,31 @@ leave routine exists.
 ### Home presence: registrations die on reboot and on update (INVARIANT)
 
 `AndroidManifest.xml:245` (`RoutineNetworkReceiver`: BOOT_COMPLETED, MY_PACKAGE_REPLACED),
-`AndroidManifest.xml:63` (`RemexApplication`), `routines/home/HomePresence.kt:74` (`onProcessStart`),
-`:343` (the receiver; `forgetPresence` at `:351`); pinned by `NetworkRegistrationTest` — RemEx-pp0rt.8,
-spec §8.3.1, R-SYS-16.
+`AndroidManifest.xml:63` (`RemexApplication`), `routines/home/HomePresence.kt:78` (`onProcessStart`),
+`:243` (`sync`, `force`), `:357` (the receiver; `forgetPresence` at `:382`),
+`routines/home/PresenceRegistrations.kt:62` (`PresenceRegistrar.apply`), `:110`
+(`PresenceEventRouter.actionsFor`); pinned by `NetworkRegistrationTest`, `PresenceStateMachineTest` —
+RemEx-pp0rt.8, spec §8.3.1, R-SYS-16.
 
 The platform drops every network callback an app registered when the phone reboots and when the app
-is updated, and a PendingIntent registration is not restored by anything. So the registrations are
-re-made on every path that can follow a loss: process start (`RemexApplication`), `BOOT_COMPLETED`,
-`MY_PACKAGE_REPLACED`, and after every routine edit. `PresenceRegistrar.apply` always re-registers
-and never trusts an "already registered" flag, because that flag is exactly what survives a reboot
-while the registration does not. After a reboot the presence is also reset to UNKNOWN before the
-first evaluation, so a phone that reboots at home learns "home" without firing `home.arrive` (T20,
-L9). Removing the receiver, its intent filters or `RECEIVE_BOOT_COMPLETED` presents as home routines
-that worked yesterday and never fire again.
+is updated, and a PendingIntent registration is not restored by anything. So the restart paths
+re-register with `force`: process start (`RemexApplication`, only when armed), `BOOT_COMPLETED` and
+`MY_PACKAGE_REPLACED` never trust the stored "applied" plan, because that record is exactly what
+survives a reboot while the registration does not. After a reboot the presence is reset to UNKNOWN,
+and UNKNOWN only becomes AWAY on a qualifying foreign network (stamped with the time, so a home join
+within 300 s is a flap), so a phone that reboots at home learns "home" without firing `home.arrive`
+(T20, L9). Removing the receiver, its intent filters or `RECEIVE_BOOT_COMPLETED` presents as home
+routines that worked yesterday and never fire again.
+
+**And the opposite mistake loops.** Re-registering the PendingIntent makes ConnectivityService drop
+the old request and deliver "available" AT ONCE for a Wi-Fi that already matches. If anything that
+the broadcast or an evaluation triggers re-registers, the result is broadcast -> register ->
+broadcast forever, and with `REPLACE` on the evaluation work each broadcast also cancelled the
+evaluation it had queued, so presence never moved: silent, and a battery drain (S3 review BLOCKER).
+So: the network broadcast only queues an evaluation (`APPEND_OR_REPLACE`), an evaluation never
+registers, an unchanged plan applies nothing, the plan is stored before registering (so the
+registration's own broadcast finds it armed), and every path checks the plain-pref armed flag first
+(§12: nothing armed reads no store and loads no native core).
 
 ### `PinnedHostStore` — reconnect-secret persistence
 

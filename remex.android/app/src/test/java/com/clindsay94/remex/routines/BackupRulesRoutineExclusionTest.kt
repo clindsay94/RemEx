@@ -30,7 +30,7 @@ class BackupRulesRoutineExclusionTest {
 
     private val required: Set<Pair<String, String>> =
         RoutineStoreNames.DATASTORES.map { "file" to "datastore/$it.preferences_pb" }.toSet() +
-            ("sharedpref" to "${RoutineStoreNames.TINK_PREFS_FILE}.xml")
+            RoutineStoreNames.PREFS_FILES.map { "sharedpref" to "$it.xml" }
 
     @Test
     fun `backup_rules excludes every routine store and the routine keyset`() {

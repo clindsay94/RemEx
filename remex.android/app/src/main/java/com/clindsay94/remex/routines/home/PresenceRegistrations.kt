@@ -45,19 +45,75 @@ interface PresenceRegistrationPort {
 
 object PresenceRegistrar {
     /**
-     * Makes the registrations match [plan]. Called on process start, after BOOT_COMPLETED and
-     * MY_PACKAGE_REPLACED (both drop every registration an app holds), after every routine edit and
-     * after every presence change. Registering is always re-done, never assumed: a registration from
-     * before a reboot or an update no longer exists, and nothing reports that it is gone.
+     * Brings the registrations from [previous] (what was last applied, persisted) to [plan], and
+     * returns what is now applied.
+     *
+     * **NEVER RE-REGISTERS THE PENDINGINTENT WHEN NOTHING CHANGED.** Re-registering it makes
+     * ConnectivityService drop the old request and immediately deliver "available" again for a Wi-Fi
+     * that already matches, and if the handler of that broadcast re-registered, the result was a
+     * broadcast -> register -> broadcast loop that also kept cancelling its own evaluation
+     * (REGRESSION-GUARDS). So the PendingIntent is (re)registered only when the callback plan turns on,
+     * or when [force] says a reboot, an update or a process start may have dropped it; never from the
+     * network broadcast, never after an evaluation.
+     *
+     * [force] re-does everything the plan wants: a registration from before a reboot or an update no
+     * longer exists, and nothing reports that it is gone.
      */
-    fun apply(plan: PresenceRegistrationPlan, port: PresenceRegistrationPort) {
+    fun apply(
+        plan: PresenceRegistrationPlan,
+        previous: PresenceRegistrationPlan?,
+        force: Boolean,
+        port: PresenceRegistrationPort,
+    ): PresenceRegistrationPlan {
+        if (!force && plan == previous) return plan
         if (plan.networkCallback) {
-            port.registerPendingIntentCallback()
+            if (force || previous?.networkCallback != true) port.registerPendingIntentCallback()
             port.registerInProcessCallback()
-        } else {
+        } else if (force || previous?.networkCallback != false) {
             port.unregisterPendingIntentCallback()
             port.unregisterInProcessCallback()
         }
-        if (plan.periodicCheck) port.schedulePeriodicCheck() else port.cancelPeriodicCheck()
+        if (plan.periodicCheck) {
+            if (force || previous?.periodicCheck != true) port.schedulePeriodicCheck()
+        } else if (force || previous?.periodicCheck != false) {
+            port.cancelPeriodicCheck()
+        }
+        return plan
     }
+}
+
+/** What a presence broadcast makes RemEx do (spec §8.3.1, §12). Pure, so the rules are proven off-device. */
+enum class PresenceAction {
+    /** Reset presence to UNKNOWN: after a reboot nothing is known (T20, L9). */
+    FORGET_PRESENCE,
+
+    /** Re-register everything the plan wants, whatever was applied before. */
+    SYNC_FORCED,
+
+    /** Queue one presence evaluation. */
+    EVALUATE,
+
+    /** A network broadcast arrived while nothing is armed: drop the stale registration, read nothing else. */
+    UNREGISTER_STALE,
+}
+
+object PresenceEventRouter {
+    const val NETWORK = "network"
+    const val BOOT = "boot"
+    const val PACKAGE_REPLACED = "package_replaced"
+
+    /**
+     * [armed] is the cheap flag (a plain pref of the applied plan): when false, no path decrypts the
+     * store, starts the native core or enqueues work (§12 "0 registrations, 0 work"). The network
+     * broadcast only ever evaluates; it never re-registers (see [PresenceRegistrar.apply]).
+     */
+    fun actionsFor(event: String, armed: Boolean): List<PresenceAction> =
+        when {
+            event == NETWORK && armed -> listOf(PresenceAction.EVALUATE)
+            event == NETWORK -> listOf(PresenceAction.UNREGISTER_STALE)
+            !armed -> emptyList()
+            event == BOOT -> listOf(PresenceAction.FORGET_PRESENCE, PresenceAction.SYNC_FORCED, PresenceAction.EVALUATE)
+            event == PACKAGE_REPLACED -> listOf(PresenceAction.SYNC_FORCED, PresenceAction.EVALUATE)
+            else -> emptyList()
+        }
 }

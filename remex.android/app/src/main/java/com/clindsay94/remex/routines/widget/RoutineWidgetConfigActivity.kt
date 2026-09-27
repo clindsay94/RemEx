@@ -2,6 +2,7 @@ package com.clindsay94.remex.routines.widget
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -45,9 +46,9 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.launch
 
 /**
- * Picks the routine a "Routine" widget runs (spec A12: `manual` routines only). NOT exported: the
- * launcher opens it through the AppWidget service's own IntentSender, and the widget's "Choose a
- * routine" tap opens it through RemEx's PendingIntent.
+ * Picks the routine a "Routine" widget runs (spec A12: `manual` routines only). Exported with the
+ * APPWIDGET_CONFIGURE filter, because some launchers start it directly; it can only bind a widget of
+ * RemEx's own provider to a routine the person taps, and it never runs one (RoutineManifestExportTest).
  */
 class RoutineWidgetConfigActivity : ComponentActivity() {
 
@@ -56,7 +57,10 @@ class RoutineWidgetConfigActivity : ComponentActivity() {
         val appWidgetId = intent?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
         // Backing out of the launcher's configure step must cancel the placement.
         setResult(Activity.RESULT_CANCELED, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        // Exported (launchers start it directly), so the id must be a widget of THIS provider: another
+        // app cannot use it to bind anything else. It only ever records the person's pick; it never runs a routine.
+        val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)?.provider
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID || provider != ComponentName(this, RoutineWidgetReceiver::class.java)) {
             finish()
             return
         }

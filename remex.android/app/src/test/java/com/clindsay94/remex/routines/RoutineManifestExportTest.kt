@@ -31,16 +31,39 @@ class RoutineManifestExportTest {
     private fun Element.attr(name: String): String = getAttributeNS(ns, name)
 
     private val nfcActivity = ".routines.nfc.NfcRoutineActivity"
+    private val widgetConfig = ".routines.widget.RoutineWidgetConfigActivity"
+
+    /**
+     * The allowlist: the NFC tag target (guarded by DISPATCH_NFC_MESSAGE) and the widget's configure
+     * activity (launchers start it directly; it can only PICK a routine, see the test below).
+     */
+    private val exportedAllowlist = setOf(nfcActivity, widgetConfig)
 
     @Test
-    fun `every routine component is not exported except the NFC tag target`() {
+    fun `every routine component is not exported except the allowlisted two`() {
         val routineComponents = components.filter { it.attr("name").contains(".routines.") }
         assertTrue("expected the routine components in the manifest", routineComponents.size >= 5)
         for (component in routineComponents) {
             val name = component.attr("name")
-            if (name == nfcActivity) continue
+            if (name in exportedAllowlist) continue
             assertEquals("$name must be exported=\"false\" (spec T1)", "false", component.attr("exported"))
         }
+    }
+
+    @Test
+    fun `the exported widget configure activity only answers APPWIDGET_CONFIGURE and cannot run a routine`() {
+        val config = components.single { it.attr("name") == widgetConfig }
+        val actions = config.getElementsByTagName("action")
+        assertEquals(listOf("android.appwidget.action.APPWIDGET_CONFIGURE"), (0 until actions.length).map { (actions.item(it) as Element).attr("name") })
+        val source =
+            listOf(File("src/main/java"), File("app/src/main/java")).first { it.isDirectory }
+                .resolve("com/clindsay94/remex/routines/widget/RoutineWidgetConfigActivity.kt").readText()
+        // No path from it to a run: no manual surface, no repository run, no run source, no runner.
+        for (forbidden in listOf("RoutineManualSurfaces", ".run(", "RoutineRunSources", "Routines.runner", "RoutineConfirmActivity")) {
+            assertTrue("RoutineWidgetConfigActivity must not reference $forbidden", !source.contains(forbidden))
+        }
+        // And it binds only widgets of RemEx's own Routine provider.
+        assertTrue(source.contains("ComponentName(this, RoutineWidgetReceiver::class.java)"))
     }
 
     @Test

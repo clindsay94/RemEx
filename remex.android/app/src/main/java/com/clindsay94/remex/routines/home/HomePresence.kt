@@ -21,18 +21,19 @@ import com.clindsay94.remex.routines.RoutineRepository
 import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.routines.model.Routine
 import com.clindsay94.remex.routines.model.RoutineLimits
-import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRunSources
 import com.clindsay94.remex.routines.model.RoutineTriggerTypes
 import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
-import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,32 +65,45 @@ object HomePresence {
     /** `home_fingerprint_stale`: authenticated to the home's PC on a LAN that no longer matches home. */
     val drift: StateFlow<Boolean> = _drift.asStateFlow()
 
-    @Volatile private var started = false
+    private val started = AtomicBoolean(false)
+    private val watchingAuth = AtomicBoolean(false)
+    private val planLock = Mutex()
 
     /**
-     * Process start (RemexApplication): re-registers what the routines need, since a process start
-     * after an update or a crash may be the first chance to, and watches authentications for drift and
-     * `reachableAway`. Cheap when nothing is armed: no store is read unless a home routine exists.
+     * Process start (RemexApplication). **Zero cost when nothing is armed (§12):** the armed flag is a
+     * plain pref, so a phone with no home routine reads no store, touches no native core and starts no
+     * watcher here. When armed, it re-registers (a process start may follow a force stop that dropped
+     * the PendingIntent) and watches authentications for drift and `reachableAway`.
      */
     fun onProcessStart(context: Context) {
         val app = context.applicationContext
-        if (started) return
-        started = true
+        if (!started.compareAndSet(false, true)) return
+        if (!PresencePlanStore.isArmed(app)) return
         scope.launch {
-            if (isArmed(app)) sync(app)
-            watchAuthentications(app)
+            sync(app, force = true)
+            startAuthWatch(app)
         }
     }
 
-    /** Keeps registrations in step with every routine and home edit (called once per process by the routine graph). */
+    /**
+     * Keeps registrations in step with every routine and home edit (called once per process by the
+     * routine graph, which only exists once routines are in use). Each emission is a plan check:
+     * [PresenceRegistrar.apply] does nothing when the plan did not change.
+     */
     fun watch(context: Context, repository: RoutineRepository) {
         val app = context.applicationContext
+        startAuthWatch(app)
         scope.launch {
             combine(repository.routines, repository.home) { items, home ->
                 val homeRoutines = items.map { it.routine }.filter { isHomeRoutine(it) && it.enabled }
                 Triple(home?.id to home?.presence?.state, homeRoutines.map { it.id to it.trigger }, repository.status.value.health)
             }.distinctUntilChanged().collect { sync(app) }
         }
+    }
+
+    private fun startAuthWatch(app: Context) {
+        if (!watchingAuth.compareAndSet(false, true)) return
+        scope.launch { watchAuthentications(app) }
     }
 
     // ── Capture (spec §1.4) ──
@@ -139,17 +153,20 @@ object HomePresence {
     /**
      * Reads every current network, steps the presence state machine and starts what it says. One at
      * a time: two network events in a row must not both see "away" and both fire the leave.
+     *
+     * It never registers anything (the registration plan follows the store through [watch]), so the
+     * PendingIntent's own "available" broadcast cannot feed back into another registration. The
+     * starts it decides are written with the transition and made under NonCancellable
+     * ([PresenceFiring]); a start still owed from an interrupted run is replayed here first.
      */
     suspend fun evaluate(context: Context, reason: String) {
         val app = context.applicationContext
         evaluation.withLock {
             val repository = Routines.repository(app)
             repository.load()
-            val home = repository.home.value
-            if (home == null) {
-                sync(app)
-                return
-            }
+            val home = repository.home.value ?: return
+            val now = System.currentTimeMillis()
+            PresenceFiring.fireOwed(repository, home.id, now)
             val routines = repository.routines.value.map { it.routine }.filter { it.enabled && it.trigger?.homeId == home.id }
             val arrive = routines.filter { it.trigger?.type == RoutineTriggerTypes.HOME_ARRIVE }.mapNotNull { it.id }
             val leave =
@@ -158,35 +175,26 @@ object HomePresence {
                     .toMap()
             val networks = HomeNetworks.current(app)
             val tokenizer = HomeTokenizer(Routines.secrets(app).homeKey())
-            val matches = NetworkFingerprintMatcher.anyMatches(home.tokens, networks, tokenizer)
-            val now = System.currentTimeMillis()
-            val step = PresenceStateMachine.step(home.presence, matches, now, leave, RoutineLimits.DEFAULT_LEAVE_DEBOUNCE_SECONDS)
-            if (step.presence != home.presence) {
-                repository.updateHome { current -> current?.takeIf { it.id == home.id }?.copy(presence = step.presence) }
-            }
-            RoutineLog.d("Home presence ($reason): ${home.presence.state} -> ${step.presence.state}, ${step.events.size} event(s).")
-            for (event in step.events) {
-                when (event) {
-                    is PresenceEvent.Arrive -> arrive.forEach { start(repository, it, RoutineRunSources.HOME_ARRIVE, event.suppressed) }
-                    is PresenceEvent.Leave -> start(repository, event.routineId, RoutineRunSources.HOME_LEAVE, event.suppressed)
-                }
-            }
-            scheduleRecheck(app, step.recheckAtUnixMs?.let { it - now })
-        }
-        sync(app)
-    }
-
-    private suspend fun start(repository: RoutineRepository, routineId: String, source: String, suppressed: Boolean) {
-        if (suppressed) {
-            repository.recordRefusal(routineId, source, RoutineReasonCodes.FLAP_SUPPRESSED)
-        } else {
-            repository.run(routineId, source)
+            val verdicts = networks.map { it to NetworkFingerprintMatcher.match(home.tokens, tokenizer.tokens(HomeFacts.of(it)), it.qualifies).matches }
+            val matches = verdicts.any { it.second }
+            val foreign = verdicts.any { (network, match) -> network.qualifies && !match }
+            val current = repository.home.value?.takeIf { it.id == home.id }?.presence ?: return
+            val step = PresenceStateMachine.step(current, matches, now, leave, RoutineLimits.DEFAULT_LEAVE_DEBOUNCE_SECONDS, foreign)
+            val owed = PendingFires.of(step.events, arrive, RoutineRunSources.HOME_ARRIVE, RoutineRunSources.HOME_LEAVE, now)
+            val next = step.presence.copy(pendingFire = PendingFires.merge(current.pendingFire, owed, now))
+            if (next != current && !PresenceFiring.record(repository, home.id, next)) return
+            RoutineLog.d("Home presence ($reason): ${current.state} -> ${next.state}, ${owed.size} start(s).")
+            PresenceFiring.fireOwed(repository, home.id, now)
+            withContext(NonCancellable) { scheduleRecheck(app, step.recheckAtUnixMs?.let { it - now }) }
         }
     }
 
-    /** After a reboot nothing is known: the next evaluation learns the state without firing (spec L9). */
+    /**
+     * After a reboot nothing is known: the next evaluation learns the state without firing (spec L9).
+     * Starts still owed from before the reboot are kept; they are dropped once too old.
+     */
     internal suspend fun forgetPresence(context: Context) {
-        Routines.repository(context.applicationContext).updateHome { it?.copy(presence = PresenceRecord()) }
+        Routines.repository(context.applicationContext).updateHome { it?.copy(presence = PresenceRecord(pendingFire = it.presence.pendingFire)) }
     }
 
     /** The runner's `isAwayFromHome` (`pc_unreachable` vs `pc_unreachable_away`): a home exists and no network matches it. */
@@ -227,23 +235,35 @@ object HomePresence {
 
     // ── Registrations (spec §8.3.1 Event sources) ──
 
-    /** Registers or removes every event source to match the routines now. Idempotent. */
-    suspend fun sync(context: Context) {
+    /**
+     * Brings the registrations in line with the routines now. Does nothing when the plan is the one
+     * last applied, unless [force] (process start, reboot, update: a registration may be gone without
+     * a trace). Never called from the network broadcast or after an evaluation (REGRESSION-GUARDS).
+     */
+    suspend fun sync(context: Context, force: Boolean = false) {
         val app = context.applicationContext
         try {
-            val repository = Routines.repository(app)
-            repository.load()
-            val home = repository.home.value
-            val homeRoutines = repository.routines.value.map { it.routine }.filter { it.enabled && isHomeRoutine(it) && it.trigger?.homeId == home?.id }
-            val plan =
-                PresenceRegistrationPlan.of(
-                    homeSet = home != null,
-                    enabledHomeRoutines = homeRoutines.size,
-                    enabledLeaveRoutines = homeRoutines.count { it.trigger?.type == RoutineTriggerTypes.HOME_LEAVE },
-                    state = home?.presence?.state,
-                )
-            PresenceRegistrar.apply(plan, AndroidPresenceRegistrations(app))
-            setArmed(app, plan.networkCallback)
+            planLock.withLock {
+                val repository = Routines.repository(app)
+                repository.load()
+                val home = repository.home.value
+                val homeRoutines = repository.routines.value.map { it.routine }.filter { it.enabled && isHomeRoutine(it) && it.trigger?.homeId == home?.id }
+                val plan =
+                    PresenceRegistrationPlan.of(
+                        homeSet = home != null,
+                        enabledHomeRoutines = homeRoutines.size,
+                        enabledLeaveRoutines = homeRoutines.count { it.trigger?.type == RoutineTriggerTypes.HOME_LEAVE },
+                        state = home?.presence?.state,
+                    )
+                val port = AndroidPresenceRegistrations(app)
+                val previous = PresencePlanStore.load(app)
+                // Stored BEFORE registering: the registration's own "available" broadcast reads the
+                // armed flag, and must find it on, or it would drop the registration as stale.
+                PresencePlanStore.save(app, plan)
+                val applied = PresenceRegistrar.apply(plan, previous, force, port)
+                // The in-process callback lives and dies with this process, whatever the stored plan says.
+                if (applied.networkCallback) port.registerInProcessCallback() else port.unregisterInProcessCallback()
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -251,6 +271,11 @@ object HomePresence {
         }
     }
 
+    /**
+     * Queues one evaluation. APPEND_OR_REPLACE, never REPLACE: a second network event must not cancel
+     * the evaluation already running (with REPLACE, a burst of events kept cancelling each other and
+     * presence never moved).
+     */
     internal fun enqueueEvaluation(context: Context, reason: String) {
         try {
             val request =
@@ -258,7 +283,7 @@ object HomePresence {
                     .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                     .setInputData(androidx.work.Data.Builder().putString(RoutinePresenceWorker.KEY_REASON, reason).build())
                     .build()
-            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(NET_EVAL_WORK, ExistingWorkPolicy.REPLACE, request)
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(NET_EVAL_WORK, EVAL_POLICY, request)
         } catch (e: IllegalStateException) {
             RoutineLog.e("WorkManager is not available.", e)
         }
@@ -295,22 +320,11 @@ object HomePresence {
             null
         }
 
-    // A marker in no-backup storage (never restored to another phone) that says "home routines exist",
-    // so a process start with none reads no store at all.
-    private fun armedFile(context: Context) = File(context.noBackupFilesDir, ARMED_FILE)
-
-    private fun isArmed(context: Context): Boolean = armedFile(context).exists()
-
-    private fun setArmed(context: Context, armed: Boolean) {
-        val file = armedFile(context)
-        runCatching { if (armed) file.createNewFile() else file.delete() }
-    }
-
     const val NET_EVAL_WORK = "routine-net-eval"
     const val RECHECK_WORK = "routine-presence-recheck"
     const val PERIODIC_WORK = "routine-presence-check"
+    val EVAL_POLICY = ExistingWorkPolicy.APPEND_OR_REPLACE
     private const val RECHECK_MARGIN_MS = 500L
-    private const val ARMED_FILE = "routines_presence_armed"
 }
 
 /** Every presence evaluation runs here: network events, re-checks and the 15-minute fallback. */
@@ -342,15 +356,32 @@ class RoutinePresenceWorker(context: Context, params: WorkerParameters) : Corout
  */
 class RoutineNetworkReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action ?: return
-        if (action !in HANDLED) return
+        val event =
+            when (intent.action) {
+                ACTION_NETWORK -> PresenceEventRouter.NETWORK
+                Intent.ACTION_BOOT_COMPLETED -> PresenceEventRouter.BOOT
+                Intent.ACTION_MY_PACKAGE_REPLACED -> PresenceEventRouter.PACKAGE_REPLACED
+                else -> return
+            }
         val app = context.applicationContext
+        // The armed flag is a plain pref: nothing below runs, and no store is read, when it is off (§12).
+        val actions = PresenceEventRouter.actionsFor(event, PresencePlanStore.isArmed(app))
+        if (actions.isEmpty()) return
+        if (PresenceAction.UNREGISTER_STALE in actions) {
+            AndroidPresenceRegistrations(app).unregisterPendingIntentCallback()
+            return
+        }
+        // The network broadcast only evaluates: re-registering here is what made the loop.
+        if (actions == listOf(PresenceAction.EVALUATE)) {
+            HomePresence.enqueueEvaluation(app, "network")
+            return
+        }
         val pending = goAsync()
         receiverScope.launch {
             try {
-                if (action == Intent.ACTION_BOOT_COMPLETED) HomePresence.forgetPresence(app)
-                HomePresence.sync(app)
-                HomePresence.enqueueEvaluation(app, if (action == ACTION_NETWORK) "network" else "restart")
+                if (PresenceAction.FORGET_PRESENCE in actions) HomePresence.forgetPresence(app)
+                if (PresenceAction.SYNC_FORCED in actions) HomePresence.sync(app, force = true)
+                if (PresenceAction.EVALUATE in actions) HomePresence.enqueueEvaluation(app, "restart")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -363,7 +394,6 @@ class RoutineNetworkReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_NETWORK = "com.clindsay94.remex.routines.NETWORK_AVAILABLE"
-        private val HANDLED = setOf(ACTION_NETWORK, Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)
         private val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }
