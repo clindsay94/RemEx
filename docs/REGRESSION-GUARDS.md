@@ -677,6 +677,10 @@ the handler. Neither handler may throw either, or the collection ends for the li
 deserialization failures, not clean errors. Non-breaking additions (new optional fields) need no
 bump, but document them in `CHANGELOG.md`.
 
+### PC transfer queue: the pump must survive a throwing item or handler
+
+`FileTransferQueue.PumpLoopAsync` (`FileTransferQueue.cs:590`) guards each run and resets `_pumping` in a `finally`. An escaped throw once ended the fire-and-forget pump with `_pumping` still set, and every later transfer sat at "Queued" forever with no error or log (RemEx-ostqe).
+
 ### Never announce `file_transfer_complete` before the peer has acked the data
 
 Bulk file data travels on `/ws/files`; `file_transfer_complete` travels on the control `/ws`. **TCP

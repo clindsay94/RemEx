@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
@@ -548,6 +549,139 @@ public class FileTransferQueueTests
         queue.Invoking(q => q.CancelAll()).Should().NotThrow();
 
         queue.Items.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// CancelAll used to cancel in list order, so the active transfer went first. Its cancellation
+    /// resumes the pump, and the pump can dequeue the NEXT item before the loop has reached it,
+    /// which lets a transfer the user just cancelled start and touch the wire (RemEx-ostqe).
+    /// </summary>
+    /// <remarks>
+    /// Made deterministic by draining CancelAll's post on a thread with no SynchronizationContext.
+    /// There the active transfer's cancellation unwinds INLINE: its catch, its completion and the
+    /// pump's next dequeue all run inside the loop's call to Cancel. That is the worst case of the
+    /// pool-thread race production has, turned from a narrow window into a certainty.
+    /// </remarks>
+    [Fact]
+    public async Task CancelAll_NeverLetsAQueuedItemGoActive()
+    {
+        var ui = new QueuedUiThread();
+        using var queue = new FileTransferQueue(ui.Post);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var active = queue.Enqueue(FileTransferQueueKind.Download, "active", async (_, ct) =>
+        {
+            // Synchronous continuations on purpose: cancelling the token resumes this transfer on
+            // whichever thread called Cancel.
+            var cancelled = new TaskCompletionSource();
+            using var registration = ct.Register(() => cancelled.TrySetCanceled(ct));
+            started.TrySetResult();
+            await cancelled.Task;
+        });
+
+        var ranAfterCancel = false;
+        var wentActive = new ConcurrentQueue<string>();
+        var queued = new List<FileTransferQueueItem>();
+        for (var i = 0; i < 20; i++)
+        {
+            var item = queue.Enqueue(FileTransferQueueKind.Download, $"f{i}", (_, _) =>
+            {
+                ranAfterCancel = true;
+                return Task.CompletedTask;
+            });
+            item.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(FileTransferQueueItem.State) && item.State == TransferState.Active)
+                    wentActive.Enqueue(item.FileName);
+            };
+            queued.Add(item);
+        }
+
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        ui.Drain(); // every row's Items.Add, and the active row's own Active
+
+        queue.CancelAll();
+        await Task.Run(ui.Drain);
+
+        await Settled(active);
+        foreach (var item in queued)
+            await Settled(item);
+        ui.Drain(); // the state changes the pump posted while it wound down
+
+        wentActive.Should().BeEmpty("no queued transfer may start once Cancel all has been pressed");
+        ranAfterCancel.Should().BeFalse("a cancelled transfer must never touch the wire");
+        active.State.Should().Be(TransferState.Cancelled);
+        queued.Should().OnlyContain(item => item.State == TransferState.Cancelled);
+    }
+
+    // ─── The pump survives a throw (RemEx-ostqe) ───
+
+    /// <summary>
+    /// The pump is one background loop that runs every transfer in turn. An exception that escaped
+    /// one item's run - here a State handler throwing as the item goes Active, which is exactly how
+    /// the flaky hang in RemEx-ostqe died - used to end that loop with <c>_pumping</c> still set. The
+    /// item never completed and nothing queued behind it ever ran again, with no error shown and no
+    /// log line: a silent, permanent freeze of the transfer queue.
+    /// </summary>
+    [Fact]
+    public async Task AThrowOutsideAnItemsWork_FailsThatItem_AndTheQueueCarriesOn()
+    {
+        var queue = NewQueue();
+        var gate = new TaskCompletionSource();
+        var victimRan = false;
+        var nextRan = false;
+
+        // Holds the pump so the victim's handler is attached before the pump can reach it.
+        var blocker = queue.Enqueue(FileTransferQueueKind.Upload, "blocker", async (_, _) => await gate.Task);
+        var victim = queue.Enqueue(FileTransferQueueKind.Upload, "victim", (_, _) =>
+        {
+            victimRan = true;
+            return Task.CompletedTask;
+        });
+        var next = queue.Enqueue(FileTransferQueueKind.Upload, "next", (_, _) =>
+        {
+            nextRan = true;
+            return Task.CompletedTask;
+        });
+
+        victim.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FileTransferQueueItem.State) && victim.State == TransferState.Active)
+                throw new InvalidOperationException("a State handler threw");
+        };
+
+        gate.SetResult();
+        await Settled(blocker);
+        await Settled(victim);
+        await Settled(next);
+
+        victim.State.Should().Be(TransferState.Failed);
+        victim.ErrorMessage.Should().NotBeNullOrWhiteSpace("a failed row has to say why");
+        victimRan.Should().BeFalse();
+        next.State.Should().Be(TransferState.Done);
+        nextRan.Should().BeTrue("one bad item must not freeze every transfer queued behind it");
+
+        // And the pump was released rather than stranded with _pumping set: new work still runs.
+        var later = queue.Enqueue(FileTransferQueueKind.Upload, "later", (_, _) => Task.CompletedTask);
+        await Settled(later);
+        later.State.Should().Be(TransferState.Done);
+    }
+
+    /// <summary>
+    /// A stand-in for the real dispatcher that queues each post until the test drains it, instead of
+    /// running it on the spot. That lets a test decide which thread runs a post, and when.
+    /// </summary>
+    private sealed class QueuedUiThread
+    {
+        private readonly ConcurrentQueue<Action> _posted = new();
+
+        public void Post(Action action) => _posted.Enqueue(action);
+
+        public void Drain()
+        {
+            while (_posted.TryDequeue(out var action))
+                action();
+        }
     }
 
     // ─── The periodic refresh timer (RemEx-4lcq review fix) ───

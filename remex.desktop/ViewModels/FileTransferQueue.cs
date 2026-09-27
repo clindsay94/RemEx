@@ -524,16 +524,32 @@ public sealed class FileTransferQueue : IDisposable
     /// item straight to Cancelled, and a handler reacting to that could otherwise mutate
     /// <see cref="Items"/> underneath the loop.
     /// </para>
+    /// <para>
+    /// QUEUED ROWS FIRST, THE RUNNING ONE LAST. Cancelling the active transfer releases the pump, and
+    /// its unwinding runs on a pool thread while this loop is still going, so in list order the
+    /// pump could dequeue the next row before the loop reached it and start a transfer the user had
+    /// just cancelled (RemEx-ostqe). Once every queued row's token is cancelled, the pump can only
+    /// find cancelled work, however early it gets there.
+    /// </para>
     /// </remarks>
     public void CancelAll()
     {
         _post(() =>
         {
-            foreach (var item in Items.ToArray())
+            var snapshot = Items.ToArray();
+
+            foreach (var item in snapshot)
+            {
+                if (item.State == TransferState.Queued)
+                    item.CancelCommand.Execute(null);
+            }
+
+            foreach (var item in snapshot)
             {
                 if (!item.IsTerminal)
                     item.CancelCommand.Execute(null);
             }
+
             Changed?.Invoke();
         });
     }
@@ -563,26 +579,102 @@ public sealed class FileTransferQueue : IDisposable
         _ = Task.Run(PumpLoopAsync);
     }
 
+    /// <summary>Runs queued transfers one at a time until the queue is empty.</summary>
+    /// <remarks>
+    /// THE PUMP MUST SURVIVE A THROWING ITEM OR HANDLER. It is started fire-and-forget, so an exception
+    /// escaping it used to fault the task unobserved and leave <see cref="_pumping"/> set: no error,
+    /// no log, and every transfer queued after that sat at "Queued" forever (RemEx-ostqe). Each run is
+    /// guarded so one bad item fails alone; the outer catch and the finally are the backstop for the
+    /// guard itself.
+    /// </remarks>
     private async Task PumpLoopAsync()
     {
-        while (true)
+        // Set only on the clean exit, which clears _pumping under the lock together with the emptiness
+        // check. The finally must not clear it again after that: an Enqueue in between may already
+        // have started the next pump, and clearing the flag under it would let a third one start
+        // alongside, breaking "one transfer at a time".
+        var drained = false;
+        try
         {
-            if (!_pending.TryDequeue(out var item))
+            while (true)
             {
-                lock (_pumpLock)
+                if (!_pending.TryDequeue(out var item))
                 {
-                    // Re-check under the lock to avoid a lost wakeup: an item enqueued between the failed
-                    // dequeue and here would otherwise strand the queue with _pumping cleared.
-                    if (_pending.IsEmpty)
+                    lock (_pumpLock)
                     {
-                        _pumping = false;
-                        return;
+                        // Re-check under the lock to avoid a lost wakeup: an item enqueued between the failed
+                        // dequeue and here would otherwise strand the queue with _pumping cleared.
+                        if (_pending.IsEmpty)
+                        {
+                            _pumping = false;
+                            drained = true;
+                            return;
+                        }
                     }
                     continue;
                 }
-            }
 
-            await RunItemAsync(item);
+                try
+                {
+                    await RunItemAsync(item);
+                }
+                catch (Exception ex)
+                {
+                    FailRunThatEscaped(item, ex);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "The file transfer queue's pump stopped unexpectedly; restarting it for the remaining transfers.");
+        }
+        finally
+        {
+            if (!drained)
+            {
+                lock (_pumpLock)
+                    _pumping = false;
+
+                // Nothing else would start it again until the next Enqueue. Bounded: each failed run
+                // above has already dequeued the item it failed on.
+                if (!_pending.IsEmpty)
+                    StartPumpIfNeeded();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fails an item whose run threw past <see cref="RunItemAsync"/>'s own handling, so its row says
+    /// so, anything awaiting it is released, and the pump can go on to the next one.
+    /// </summary>
+    /// <remarks>
+    /// RunItemAsync handles every failure of the transfer itself. What gets here is a throw from the
+    /// bookkeeping around it, such as a State change whose handler threw or a marshaller that threw.
+    /// The file name is left out of the log on purpose: it is the user's, and this entry is about a
+    /// defect in our own code, where the name adds nothing.
+    /// </remarks>
+    private void FailRunThatEscaped(FileTransferQueueItem item, Exception ex)
+    {
+        _logger.LogError(ex, "A {Kind} transfer failed outside its own error handling; the queue continues with the next one.", item.Kind);
+        try
+        {
+            _post(() =>
+            {
+                // A handler that threw on the way INTO Cancelled has already left the row terminal.
+                if (item.IsTerminal)
+                    return;
+                item.ErrorMessage = DescribeFailure(ex, item.Kind);
+                item.State = TransferState.Failed;
+            });
+        }
+        catch (Exception postEx)
+        {
+            _logger.LogError(postEx, "Could not mark a failed {Kind} transfer as failed.", item.Kind);
+        }
+        finally
+        {
+            item.Completion.TrySetResult();
+            item.Cts.Dispose();
         }
     }
 
