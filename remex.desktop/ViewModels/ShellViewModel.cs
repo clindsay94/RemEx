@@ -372,6 +372,35 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _transitionDirection = 1;
 
+    /// <summary>
+    /// The nav indices (the drawer items' <c>Tag</c>s) in the order the drawer in
+    /// <c>ShellView.axaml</c> shows them, top to bottom. This is what "further down the sidebar"
+    /// means for <see cref="TransitionDirection"/>: the Tags are ids, not positions, and About (6)
+    /// and Settings (9) sit out of numeric order, so reading the direction off the Tag slid those
+    /// pages the wrong way (RemEx-pp0rt.2). A new drawer item is one entry here, at its visual
+    /// position; <c>ShellViewModelNavDirectionTests</c> fails if this and the XAML disagree.
+    /// </summary>
+    private static readonly int[] _drawerNavOrder = [0, 1, 2, 3, 4, 7, 8, 9, 6];
+
+    /// <inheritdoc cref="_drawerNavOrder"/>
+    internal static IReadOnlyList<int> DrawerNavOrder => _drawerNavOrder;
+
+    /// <summary>
+    /// Direction of the shared-axis transition for a move from <paramref name="fromNavIndex"/> to
+    /// <paramref name="toNavIndex"/>: 1 when the target sits at or below the current page in the
+    /// drawer, -1 when above. A destination that has no drawer item (Remote Desktop, reached from
+    /// Home, the palette or the tray) ranks below the whole drawer, so entering it drills forward
+    /// and leaving it comes back.
+    /// </summary>
+    internal static int TransitionDirectionFor(int fromNavIndex, int toNavIndex) =>
+        DrawerPosition(toNavIndex) >= DrawerPosition(fromNavIndex) ? 1 : -1;
+
+    private static int DrawerPosition(int navIndex)
+    {
+        var position = Array.IndexOf(_drawerNavOrder, navIndex);
+        return position >= 0 ? position : _drawerNavOrder.Length;
+    }
+
     /// <summary>Controls the startup welcome splash overlay visibility.</summary>
     [ObservableProperty]
     private bool _showWelcomeSplash = true;
@@ -1450,7 +1479,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // shell used to pick one of four transitions at random per navigation, which meant the same
         // journey animated differently each time and told the user nothing. Material's shared axis
         // is one transition whose direction carries the meaning instead (RemEx-yzu5m).
-        TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
+        TransitionDirection = TransitionDirectionFor(ActiveNavIndex, targetIndex);
 
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;
