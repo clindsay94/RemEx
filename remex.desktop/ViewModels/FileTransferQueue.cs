@@ -349,8 +349,8 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 /// Local, in-process transfer queue (plan §1.4): FIFO, one active transfer at a time. Persistence to
 /// <c>transfer_queue.json</c> and the binary <c>/ws/files</c> channel are the host-side responsibility
 /// (WP4); this queue drives the PC UI's transfers over the existing path and gives the UI a live,
-/// cancellable view. UI mutations are marshalled through <see cref="_post"/> so it is safe from any thread
-/// and drivable synchronously in tests.
+/// cancellable view. UI mutations are marshalled through <see cref="_post"/> so it is safe from any thread,
+/// and drivable synchronously in tests as long as that post serializes (see the constructor).
 /// </summary>
 public sealed class FileTransferQueue : IDisposable
 {
@@ -396,7 +396,12 @@ public sealed class FileTransferQueue : IDisposable
     {
     }
 
-    /// <param name="post">UI-thread marshaller. Defaults to <see cref="Dispatcher.UIThread"/>; tests pass a synchronous invoker.</param>
+    /// <param name="post">
+    /// UI-thread marshaller. Defaults to <see cref="Dispatcher.UIThread"/>. Whatever is passed MUST
+    /// serialize: the pump posts from the thread pool while callers post from their own thread, and
+    /// both touch <see cref="Items"/>. A bare <c>action =&gt; action()</c> lets them race and can kill
+    /// the pump for good (RemEx-ostqe); tests use a lock-guarded synchronous invoker instead.
+    /// </param>
     /// <param name="logger">
     /// Where a failure's real detail goes. Optional and null-defaulted to match the other view models,
     /// so existing construction sites and tests are unaffected.

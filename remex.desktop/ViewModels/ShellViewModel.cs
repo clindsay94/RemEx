@@ -973,8 +973,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// null, which <see cref="FileTransferQueue"/> itself turns into a real
     /// <see cref="Dispatcher.UIThread"/>.Post - correct in production, but this assembly has no
     /// <c>Avalonia.Headless</c> reference to pump one, so a test that wants to enqueue against
-    /// <see cref="TransferQueueForTests"/> and observe the result synchronously passes
-    /// <c>action =&gt; action()</c>, same shape as <c>FileTransferQueueTests.NewQueue</c>.
+    /// <see cref="TransferQueueForTests"/> and observe the result synchronously passes a synchronous
+    /// invoker. It must still serialize, as <see cref="FileTransferQueue"/>'s constructor explains
+    /// (RemEx-ostqe).
     /// </param>
     public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null)
     {

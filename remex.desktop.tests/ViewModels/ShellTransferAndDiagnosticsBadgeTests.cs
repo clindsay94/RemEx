@@ -23,10 +23,12 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// counting logic, which <c>FileTransferQueueTests</c> already covers.
 /// </summary>
 /// <remarks>
-/// <c>transferQueuePost: action =&gt; action()</c> makes the shared queue's pump loop run
-/// synchronously - this assembly has no <c>Avalonia.Headless</c> reference to pump a real
-/// <c>Dispatcher.UIThread.Post</c>, the same reason <c>FileTransferQueueTests.NewQueue</c> does the
-/// same thing. <c>ProfileReplacedDispatch</c> and <c>DiagnosticsLogDispatch</c> are both set to run
+/// <c>transferQueuePost</c> is a lock-guarded synchronous invoker, which makes the shared queue's
+/// marshalling run synchronously - this assembly has no <c>Avalonia.Headless</c> reference to pump a
+/// real <c>Dispatcher.UIThread.Post</c>, the same reason <c>FileTransferQueueTests.NewQueue</c> does the
+/// same thing. The lock is not optional: the pump posts from the thread pool, and a bare
+/// <c>action =&gt; action()</c> let it race the test thread over the queue's items (RemEx-ostqe).
+/// <c>ProfileReplacedDispatch</c> and <c>DiagnosticsLogDispatch</c> are both set to run
 /// inline for the identical reason, spelled out on <c>ProfileReplacementInvalidatesCustomizationVmTests</c>.
 /// </remarks>
 public sealed class ShellTransferAndDiagnosticsBadgeTests : IAsyncLifetime
@@ -34,6 +36,7 @@ public sealed class ShellTransferAndDiagnosticsBadgeTests : IAsyncLifetime
     private readonly string _tempDir;
     private readonly ThemeService _theme;
     private readonly DashboardLayoutService _layoutService;
+    private readonly object _transferQueueUiThread = new();
     private ShellViewModel _shell = null!;
 
     public ShellTransferAndDiagnosticsBadgeTests()
@@ -55,7 +58,11 @@ public sealed class ShellTransferAndDiagnosticsBadgeTests : IAsyncLifetime
                 .AddSingleton<SensorAlertStore>()
                 .AddSingleton<SensorAlertTracker>()
                 .BuildServiceProvider(),
-            transferQueuePost: action => action());
+            transferQueuePost: action =>
+            {
+                lock (_transferQueueUiThread)
+                    action();
+            });
 
         _shell.ProfileReplacedDispatch = run => run();
         _shell.DiagnosticsLogDispatch = run => run();

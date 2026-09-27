@@ -12,8 +12,31 @@ namespace Remex.Desktop.Tests.ViewModels;
 
 public class FileTransferQueueTests
 {
-    // Synchronous UI-thread marshaller so the queue is deterministic in tests.
-    private static FileTransferQueue NewQueue() => new(action => action());
+    private static FileTransferQueue NewQueue() => new(UiThreadStandIn());
+
+    /// <summary>
+    /// A synchronous stand-in for <c>Dispatcher.UIThread.Post</c> that keeps the one property of the
+    /// UI thread the queue depends on: only one thread is ever inside a posted action.
+    /// </summary>
+    /// <remarks>
+    /// A bare <c>action =&gt; action()</c> is NOT that. The pump runs on the thread pool, so it ran
+    /// its posts there while the test thread ran its own <see cref="FileTransferQueue.Enqueue"/> posts
+    /// at the same time. The pump's <c>SetState(Active)</c> enumerated <c>Items</c> (via
+    /// <c>Changed</c>, in <c>UpdateRefreshTimerRunning</c>) while the test thread was adding to it,
+    /// threw "Collection was modified", and killed the pump with <c>_pumping</c> still set. After that
+    /// nothing ran again, and <see cref="CancelAll_StopsTheActiveItemAndEveryQueuedOne"/> waited
+    /// forever for a transfer that would never start (RemEx-ostqe). The lock is reentrant, so a post
+    /// that raises another post on the same thread (State -&gt; Changed) still runs inline.
+    /// </remarks>
+    private static Action<Action> UiThreadStandIn()
+    {
+        var uiThread = new object();
+        return action =>
+        {
+            lock (uiThread)
+                action();
+        };
+    }
 
     [Fact]
     public async Task Enqueue_RunsWorkAndReachesDone()
@@ -481,7 +504,8 @@ public class FileTransferQueueTests
             }));
         }
 
-        await started.Task;
+        // Bounded: a dead pump must fail this test, not hang the whole verify run.
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         queue.CancelAll();
 
@@ -555,7 +579,7 @@ public class FileTransferQueueTests
     public async Task ActiveTransfer_ThatStalls_GoesBlankThroughThePeriodicRefreshTimer()
     {
         var clock = new ManualTimeProvider();
-        var queue = new FileTransferQueue(action => action(), timeProvider: clock);
+        var queue = new FileTransferQueue(UiThreadStandIn(), timeProvider: clock);
         var started = new TaskCompletionSource();
         var gate = new TaskCompletionSource();
 
@@ -594,7 +618,7 @@ public class FileTransferQueueTests
     public async Task RefreshTimer_StopsOnceNoItemIsActive()
     {
         var clock = new ManualTimeProvider();
-        var queue = new FileTransferQueue(action => action(), timeProvider: clock);
+        var queue = new FileTransferQueue(UiThreadStandIn(), timeProvider: clock);
 
         var item = queue.Enqueue(FileTransferQueueKind.Upload, "quick.bin", (_, _) => Task.CompletedTask);
         await item.Completion.Task;
