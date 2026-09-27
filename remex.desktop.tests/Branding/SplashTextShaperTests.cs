@@ -81,6 +81,43 @@ public class SplashTextShaperTests
     }
 
     [Fact]
+    public void TheFontBytesHarfBuzzReadsSurviveAGarbageCollection()
+    {
+        // RemEx-f96e7: HarfBuzzSharp's Blob.FromStream pins its copy of the font only inside a
+        // `fixed` block and keeps nothing alive afterwards, so HarfBuzz was left pointing at a managed
+        // array the GC was free to collect and reuse. The next shape read freed memory: an access
+        // violation in hb_shape_full that took the whole test host down, or garbage tables that sent
+        // it spinning - the "hang" verify.ps1 reported under full-suite load, where GCs are frequent.
+        using var shaper = new SplashTextShaper();
+        const string text = "LINKED · GALAXY S26 ULTRA · LISTENING ON 5005";
+        ushort[] before;
+        float width;
+        using (var first = shaper.Shape(text, SKTypeface.Default, 14f))
+        {
+            before = first.Glyphs.ToArray();
+            width = first.Width;
+        }
+
+        // Collect (compacting the large object heap, where a font-sized array lives) and then fill
+        // freshly allocated memory with a pattern, so anything still pointing at the old copy reads it.
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        var churn = new List<byte[]>();
+        for (int i = 0; i < 32; i++)
+        {
+            var junk = new byte[256 * 1024 * (1 + i % 8)];
+            Array.Fill(junk, (byte)0xA5);
+            churn.Add(junk);
+        }
+
+        using var again = shaper.Shape(text, SKTypeface.Default, 14f);
+        again.Glyphs.Should().Equal(before, "the cached HarfBuzz face must still read the real font");
+        again.Width.Should().Be(width);
+        GC.KeepAlive(churn);
+    }
+
+    [Fact]
     public void EmptyTextIsAnEmptyLine()
     {
         using var shaper = new SplashTextShaper();

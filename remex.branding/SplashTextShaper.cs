@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using HarfBuzzSharp;
 using SkiaSharp;
@@ -209,7 +210,14 @@ public sealed class SplashTextShaper : IDisposable
                 data = new byte[stream?.Length ?? 0];
                 if (stream is not null && data.Length > 0) stream.Read(data, data.Length);
             }
-            var blob = Blob.FromStream(new MemoryStream(data, writable: false));
+            // NOT Blob.FromStream: HarfBuzzSharp pins its copy of the bytes only inside a `fixed`
+            // block and keeps nothing alive after it returns, so HarfBuzz is left holding a pointer
+            // into a managed array the GC may collect or move. The next shape then reads freed
+            // memory - an access violation in hb_shape_full, or garbage metrics (RemEx-f96e7).
+            // Native memory HarfBuzz frees itself, when the last blob reference goes, cannot move.
+            var native = Marshal.AllocHGlobal(Math.Max(data.Length, 1));
+            Marshal.Copy(data, 0, native, data.Length);
+            var blob = new Blob(native, data.Length, MemoryMode.ReadOnly, () => Marshal.FreeHGlobal(native));
             var face = new Face(blob, ttcIndex) { Index = ttcIndex, UnitsPerEm = typeface.UnitsPerEm };
             var font = new HarfBuzzSharp.Font(face);
             font.SetScale(HbScale, HbScale);
