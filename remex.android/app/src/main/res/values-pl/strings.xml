@@ -1189,7 +1189,6 @@
     <string name="routines_copy_name">%1$s (kopia)</string>
     <string name="routines_error_not_saved">RemEx nie mógł zapisać tej zmiany. Spróbuj ponownie.</string>
     <string name="routines_run_invalid">Popraw tę rutynę przed uruchomieniem. %1$s</string>
-    <string name="routines_run_on_pc_later">Ta rutyna działa na komputerze, więc uruchom ją tam.</string>
     <string name="routines_delete_title">Usunąć %1$s?</string>
     <string name="routines_delete_body">Jej historia uruchomień też zostanie usunięta.</string>
     <string name="routines_run_confirm_title">Uruchomić %1$s?</string>
@@ -1352,4 +1351,44 @@
     <string name="routines_run_not_found">Ta rutyna już nie istnieje.</string>
     <string name="routines_run_unavailable">RemEx nie mógł uruchomić tej rutyny. Spróbuj ponownie.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">Bezczynność PC</string>
+    <string name="routines_trigger_idle_title">Mój komputer jest bezczynny</string>
+    <string name="routines_trigger_idle_supporting">Gdy nikt od jakiegoś czasu nie używa komputera</string>
+    <string name="routines_trigger_session_chip">Blokada PC</string>
+    <string name="routines_trigger_session_title">Mój komputer się blokuje lub odblokowuje</string>
+    <string name="routines_trigger_session_supporting">Gdy ktoś zablokuje lub odblokuje komputer</string>
+    <string name="routines_trigger_session_locked">Zablokowany</string>
+    <string name="routines_trigger_session_unlocked">Odblokowany</string>
+    <string name="routines_trigger_idle_for">Bezczynny przez</string>
+    <string name="routines_trigger_idle_media">Nie podczas odtwarzania multimediów</string>
+    <string name="routines_trigger_session_when">Gdy komputer jest</string>
+    <string name="routines_trigger_pc_too_old">Zaktualizuj RemEx na %1$s, aby tego użyć.</string>
+    <string name="routines_category_home">Dom i poza domem</string>
+    <string name="routines_category_privacy">Prywatność</string>
+    <string name="routines_category_power">Oszczędzanie energii</string>
+    <string name="routines_tpl_home_lock_name">Zablokuj komputer, gdy wyjdę</string>
+    <string name="routines_tpl_home_lock_why">Blokuje komputer, gdy nikt go nie używa, nawet gdy telefon opuścił już dom.</string>
+    <string name="routines_tpl_home_sleep_name">Uśpij komputer, gdy go zablokuję</string>
+    <string name="routines_tpl_home_sleep_why">Zablokuj komputer, wychodząc, a sam przejdzie w uśpienie.</string>
+    <string name="routines_tpl_priv_unlock_name">Powiadom, gdy komputer się odblokuje</string>
+    <string name="routines_tpl_priv_unlock_why">Dowiedz się, czy ktoś się zalogował pod Twoją nieobecność.</string>
+    <string name="routines_tpl_priv_unlock_message">Ktoś odblokował Twój komputer.</string>
+    <string name="routines_tpl_power_sleep_name">Uśpij bezczynny komputer</string>
+    <string name="routines_tpl_power_sleep_why">Nie płać za zasilanie pustego pokoju.</string>
+    <string name="routines_tpl_power_screen_name">Wyłącz ekran przy bezczynności</string>
+    <string name="routines_tpl_power_screen_why">Wyłącz monitor bez usypiania komputera.</string>
+    <string name="routines_sync_pending">Czeka na synchronizację z %1$s</string>
+    <string name="routines_sync_synced">Na %1$s</string>
+    <string name="routines_paused_scope_both">Wstrzymane na tym telefonie i na %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s wstrzyma się po połączeniu</string>
+    <string name="routines_badge_on_pc">na PC</string>
+    <string name="routines_history_as_of">Historia %1$s na %2$s</string>
+    <string name="routines_switch_and_run">Przełącz i uruchom</string>
+    <string name="routines_run_now">Uruchom teraz</string>
+    <string name="routines_pc_run_started">Uruchomiono na %1$s.</string>
+    <string name="routines_pc_test_started">Rozpoczęto test na %1$s.</string>
+    <string name="routines_saved_sent_pc">Zapisano i wysłano do %1$s.</string>
+    <string name="routines_saved_pc_later">Zapisano. Trafi do %1$s przy następnym połączeniu.</string>
+    <string name="routines_forget_pc_residual">Rutyny dla %1$s usunięto z tego telefonu. Komputer zachowa swoją kopię, dopóki nie usuniesz tam tego telefonu. Jeśli ten telefon nie połączy się przez 30 dni, komputer je wstrzyma.</string>
 </resources>

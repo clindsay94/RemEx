@@ -14,10 +14,14 @@ import com.clindsay94.remex.data.KnownPcEntry
 import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.RecentConnections
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.routines.RoutineForgetNotice
+import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.service.RemexConnectionService
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import android.content.Context
 import com.clindsay94.remex.security.HostCertificateProbe
@@ -431,10 +435,16 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      */
     fun unpairKnownHost(context: Context, knownHost: KnownHost) {
         viewModelScope.launch {
-            for (address in knownHost.addresses) {
-                // Pin AND reconnect secret, via forgetHost — a surviving secret fails the next
-                // proof-of-possession challenge and leaves the user stuck (RemEx-j9ei).
-                PinnedHostStore.forgetHost(context, address)
+            // NonCancellable: the flush, the unpin and the record go together or the pin outlives an
+            // "unpaired" row (RemEx-pp0rt.12 review).
+            withContext(NonCancellable) {
+                // Routines first (RemEx-pp0rt.12, T8): the forget flush needs the pins this loop clears.
+                RoutineForgetNotice.show(context, Routines.forgetPc(context, knownHost.identity), knownHost.nickname)
+                for (address in knownHost.addresses) {
+                    // Pin AND reconnect secret, via forgetHost — a surviving secret fails the next
+                    // proof-of-possession challenge and leaves the user stuck (RemEx-j9ei).
+                    PinnedHostStore.forgetHost(context, address)
+                }
             }
             settingsManager.forgetKnownHost(knownHost.identity)
             // And its address history. Unpairing is the user asking to forget the MACHINE, so
@@ -442,6 +452,25 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             // them to pair it again. A certificate that merely CHANGED does not come through here —
             // that PC keeps its rows, which is why the history is stored separately at all.
             settingsManager.forgetRecentConnectionsOf(knownHost.identity, knownHost.addresses)
+            _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
+        }
+    }
+
+    /**
+     * The Connection form's Unpair for the address typed there. Runs here rather than in the
+     * screen's scope, and the forget itself under NonCancellable: leaving the screen during the
+     * routine flush used to cancel it before [PinnedHostStore.forgetHost], so the pin survived while
+     * the screen said "unpaired" (RemEx-pp0rt.12 review).
+     */
+    fun unpairAddress(context: Context, address: String) {
+        val appContext = context.applicationContext
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                // Routines first (T8): the flush needs the pin.
+                RoutineForgetNotice.show(appContext, Routines.forgetPcAt(appContext, address), null)
+                PinnedHostStore.forgetHost(appContext, address)
+            }
+            // That address may be one of a Known PCs row's; the list is a snapshot.
             _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
         }
     }

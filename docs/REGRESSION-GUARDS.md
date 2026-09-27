@@ -603,11 +603,13 @@ a declined dialog as "run it anyway, with the countdown" looks safe but is not w
 and treating it as "run it with presence" removes the 15 s Cancel with nobody at the PC. A destructive
 routine runs from this page only after a dialog the person answered Yes to; anything else runs nothing.
 
-### Routines: the drawer page is four edits that must agree
+### Routines: the drawer page is five edits that must agree
 
 `remex.desktop/Views/ShellView.axaml:844` (the `Tag="10"` item after Commands) and `:1109` (the
-`RoutinesViewModel` DataTemplate), `remex.desktop/Views/ShellView.axaml.cs:857` (`case 10`) and
-`remex.desktop/ViewModels/ShellViewModel.cs:383` (`_drawerNavOrder`); pinned by `ShellNavRoutinesTests`,
+`RoutinesViewModel` DataTemplate), `remex.desktop/Views/ShellView.axaml.cs:857` (`case 10`),
+`remex.desktop/ViewModels/ShellViewModel.cs:383` (`_drawerNavOrder`) and
+`remex.desktop/Converters/NavIndexToTitleConverter.cs` (`10 => "Nav_Routines"`, or the app-bar title goes
+blank on the page); pinned by `NavIndexToTitleConverterTests`, `ShellNavRoutinesTests`,
 `ShellNavListTests.TheTagSetInMarkupMatchesTheCaseSetInActivateNavItem`,
 `ShellViewModelNavDirectionTests.DirectionOrderMatchesTheDrawerOrderInShellViewXaml` and
 `ShellNavEntranceTests` — RemEx-pp0rt.9, R-UX-02 to R-UX-04.
@@ -617,6 +619,45 @@ out), a view model with no DataTemplate renders as its type name, a Tag missing 
 ranks below the drawer so every move to Routines slides the wrong way, and an eleventh item without its
 own `nth-child` style flashes in unanimated. The stagger step is 18 ms so the last of the eleven still
 ends by 300 ms.
+
+### Routines: the phone never sends `routines_sync` revision 0, and forget flushes BEFORE the pins go
+
+`remex.android/.../routines/RoutineSyncClient.kt` `runSession` (the `snapshot.revision <= 0` skip) and
+`forgetPc`; the forget calls in `ui/screens/ConnectionViewModel.kt` `unpairKnownHost` and the per-address
+Unpair in `ui/screens/ConnectionScreen.kt`; pinned by `RoutineSyncClientTest` ("forget flush tells the
+connected PC...", "a phone with no PC routines never sends anything") — RemEx-pp0rt.12, spec §7.4.5, T8.
+
+Revision 0 means "this phone keeps no books for that PC": it never had a PC-run routine there, or it was
+just forgotten. The PC treats a sync for an owner it does not know as a new owner, so sending revision 0
+right after a forget would quietly recreate the set the flush just deleted, and the PC would go on running
+routines the phone no longer shows. The flush also needs the pinned connection, so every flow that calls
+`PinnedHostStore.forgetHost` must call `Routines.forgetPc` / `forgetPcAt` FIRST; moved after it, the flush
+can never reach the PC and every forget becomes the 30-day owner-absent residual with nothing in the log.
+
+### Routines: a pending "Switch and run" belongs to the next authenticated connection only
+
+`remex.android/.../routines/RoutineSyncClient.kt` `consumePendingSwitchRun` (called first in
+`runSession`) and `cancelPendingSwitchRun` (from `ConnectionScreen`'s `DisposableEffect`); pinned by
+`RoutineSyncClientTest` ("a pending switch-run dies with a connection to another PC...") — RemEx-pp0rt.12
+review.
+
+The pending run is taken by the first authenticated session after it was armed, whichever PC that is,
+and runs only if that PC is the target. Keeping it pending across a connection to another PC means any
+later reconnect to the target inside the window, for any reason, starts the routine, and a routine that
+ends in SHUTDOWN runs without anyone asking for it again. The countdown still shows, but nobody expects
+it. Leaving Connection drops it as well.
+
+### Routines: sync answers and run reports are handled inside the one routine collector, which never blocks
+
+`remex.android/.../routines/RoutineInboundHandler.kt` and `RoutineSyncClient.onSyncResult` /
+`onRunReport`; pinned by `RoutineSyncClientTest` — RemEx-pp0rt.12.
+
+`routine_sync_result` and `routine_run_report` are handled on the single long-lived collector started in
+`RemexClientManager.initialize`. Anything that waits there (a retry back-off, a resend, a wait for a run's
+answer) stalls every later routine message, and because the flow is `replay = 0` with `DROP_OLDEST`, a
+burst behind a stalled collector is dropped, not queued: history pages vanish and a Run on PC reports
+"no answer". Back-offs and resends are launched in the connection's sync session scope, never awaited in
+the handler. Neither handler may throw either, or the collection ends for the life of the process.
 
 
 ### `protocolVersion` bumps must be coordinated

@@ -120,7 +120,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.RoutineSaveResult
+import com.clindsay94.remex.routines.RoutineSyncStates
 import com.clindsay94.remex.routines.model.RoutineLimits
+import com.clindsay94.remex.routines.model.RoutineReasonCodes
+import com.clindsay94.remex.routines.model.RoutineSessionStates
 import com.clindsay94.remex.routines.model.RoutineNotifyTargets
 import com.clindsay94.remex.routines.model.RoutinePowerVerbs
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
@@ -164,6 +167,10 @@ internal fun RoutineEditorPane(
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     val activeRuns by viewModel.activeRuns.collectAsStateWithLifecycle()
+    val pcActiveRuns by viewModel.pcActiveRuns.collectAsStateWithLifecycle()
+    val hostSync by viewModel.hostSync.collectAsStateWithLifecycle()
+    val pausedAll by viewModel.pausedAll.collectAsStateWithLifecycle()
+    val routinesSupport by viewModel.routinesSupport.collectAsStateWithLifecycle()
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     // A new draft opened before the PCs loaded picks up the default PC and its MAC once they do.
     LaunchedEffect(draftOrNull?.isNew, pcs, selectedPc, selectedMac) { viewModel.adoptDefaultPc() }
@@ -186,7 +193,12 @@ internal fun RoutineEditorPane(
     val dirty = original?.let { !draft.sameContentAs(it) } ?: false
     val readOnly = status.readOnly
     val pcName = draft.hostIdentity?.let { id -> pcs.firstOrNull { it.identity == id }?.name }
-    val activeRun = draft.base?.id?.let { activeRuns[it] }
+    val activeRun = draft.base?.id?.let { activeRuns[it] ?: pcActiveRuns[it] }
+    val pcView = draft.hostIdentity?.let { RoutineSyncStates.pc(it, hostSync[it]) }
+    // The stored routine's sync state; an unsaved edit is by definition not on the PC yet.
+    val syncView = draft.base?.takeIf { draft.runsOnPc && !dirty }?.let { RoutineSyncStates.routine(it, draft.hostIdentity?.let { h -> hostSync[h] }) }
+    // Only a definite "no" from THIS connection to the target PC disables the PC triggers (§7.6).
+    val pcTooOld = routinesSupport.first != null && routinesSupport.first == draft.hostIdentity && routinesSupport.second == false
 
     var showProblems by rememberSaveable(source) { mutableStateOf(source.templateId != null) }
     var confirmDiscard by remember { mutableStateOf(false) }
@@ -238,6 +250,15 @@ internal fun RoutineEditorPane(
                     val id = result.routine.id.orEmpty()
                     if (afterSave != null) {
                         afterSave(id)
+                    } else if (draft.runsOnPc) {
+                        // Spec 1.3 step 6: where a PC routine goes next, in plain words.
+                        val connected = viewModel.connectedPc.value == draft.hostIdentity
+                        val text =
+                            resources.getString(
+                                if (connected) R.string.routines_saved_sent_pc else R.string.routines_saved_pc_later,
+                                pcLabelText(resources, pcName),
+                            )
+                        viewModel.postMessage(RoutinesMessage(text, if (draft.isNew) RoutinesMessageAction.TestNow(id) else null))
                     } else if (draft.isNew) {
                         viewModel.postMessage(RoutinesMessage(resources.getString(R.string.routines_saved_new), RoutinesMessageAction.TestNow(id)))
                     } else {
@@ -343,6 +364,10 @@ internal fun RoutineEditorPane(
                         )
                     }
                     problems.filter { it.target == ProblemTarget.Pc }.forEach { ProblemLine(it, pcName, showProblems) }
+                    if (draft.runsOnPc) {
+                        syncView?.let { OutcomeLine(routineSyncLook(it), routineSyncText(it, pcName)) }
+                        pcView?.let { PcSyncBanners(pc = it, phonePaused = pausedAll, pcName = pcName) }
+                    }
 
                     // The enable switch (spec 1.6): an existing, unedited routine saves at once and
                     // shares state with the list card (R-UX-19); otherwise it is part of the draft.
@@ -395,6 +420,11 @@ internal fun RoutineEditorPane(
                         enabled = !readOnly,
                         onClick = { triggerSheet = true },
                         modifier = Modifier.onGloballyPositioned { targetY[ProblemTarget.Trigger] = it.positionInParent().y.roundToInt() },
+                    )
+                    TriggerParameters(
+                        trigger = draft.trigger,
+                        enabled = !readOnly,
+                        onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
                     Connector(dashed = false)
 
@@ -483,12 +513,26 @@ internal fun RoutineEditorPane(
     if (triggerSheet) {
         TriggerPickerSheet(
             current = draft.trigger?.type,
+            unavailableReason = { type ->
+                when {
+                    !RoutineTriggerTypes.isHostRun(type) -> null
+                    pcTooOld -> resources.getString(R.string.routines_trigger_pc_too_old, pcLabelText(resources, pcName))
+                    RoutineSyncStates.triggerAvailable(type, pcView) == false ->
+                        RoutineReasonText.message(
+                            context,
+                            if (type == RoutineTriggerTypes.PC_IDLE) RoutineReasonCodes.IDLE_SOURCE_UNAVAILABLE else RoutineReasonCodes.SESSION_SOURCE_UNAVAILABLE,
+                            RoutineReasonArgs(pc = pcLabelText(resources, pcName)),
+                        )
+                    else -> null
+                }
+            },
             onDismiss = { triggerSheet = false },
             onPick = { type ->
                 triggerSheet = false
                 val invalid = RoutineEditorRules.stepsInvalidatedBy(type, draft.steps.map { it.step })
                 if (invalid.isEmpty()) {
-                    viewModel.updateDraft { it.copy(trigger = RoutineTrigger(type = type)) }
+                    // Keep the parameters when re-picking the same trigger.
+                    if (draft.trigger?.type != type) viewModel.updateDraft { it.copy(trigger = RoutineTriggerFamilies.newTrigger(type)) }
                 } else {
                     pendingTriggerChange = type to invalid
                 }
@@ -504,7 +548,7 @@ internal fun RoutineEditorPane(
                 Button(onClick = {
                     pendingTriggerChange = null
                     viewModel.updateDraft { d ->
-                        d.copy(trigger = RoutineTrigger(type = type), steps = d.steps.filterIndexed { i, _ -> i !in invalid })
+                        d.copy(trigger = RoutineTriggerFamilies.newTrigger(type), steps = d.steps.filterIndexed { i, _ -> i !in invalid })
                     }
                 }) { Text(stringResource(R.string.routines_trigger_change_confirm)) }
             },
@@ -595,7 +639,7 @@ private fun Connector(dashed: Boolean) {
 }
 
 @Composable
-private fun RunsOnChip(runsOnPc: Boolean, pcName: String?) {
+internal fun RunsOnChip(runsOnPc: Boolean, pcName: String?) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer, shape = MaterialTheme.shapes.small) {
         Row(Modifier.heightIn(min = 32.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(if (runsOnPc) Icons.Default.Computer else Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -676,6 +720,60 @@ private fun TriggerCard(
         }
     }
     problems.forEach { ProblemLine(it, pcName, showProblems) }
+}
+
+/** A PC's display name outside composition (the "your PC" fallback). */
+private fun pcLabelText(resources: android.content.res.Resources, name: String?): String =
+    name?.takeIf { it.isNotBlank() } ?: resources.getString(R.string.routine_pc_fallback_name)
+
+/**
+ * The WHEN card's parameters for the PC triggers (spec A4 progressive disclosure): how long the PC
+ * must be idle, whether playing media keeps it awake, and which lock edge starts the routine.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TriggerParameters(trigger: RoutineTrigger?, enabled: Boolean, onChange: (RoutineTrigger) -> Unit) {
+    when (trigger?.type) {
+        RoutineTriggerTypes.PC_IDLE -> {
+            val minutes = trigger.idleMinutes ?: RoutineTriggerText.DEFAULT_IDLE_MINUTES
+            Text(stringResource(R.string.routines_trigger_idle_for), style = MaterialTheme.typography.labelLarge)
+            if (enabled) {
+                // The shared duration chips work in seconds; idle minutes are whole minutes.
+                DurationChoices(RoutineTriggerText.idleChoices.map { it * 60 }, minutes * 60) { seconds ->
+                    onChange(trigger.copy(idleMinutes = (seconds / 60).coerceAtLeast(1)))
+                }
+            }
+            val media = trigger.ignoreWhileMediaPlaying ?: false
+            val onLabel = stringResource(R.string.routines_state_on)
+            val offLabel = stringResource(R.string.routines_state_off)
+            Row(
+                Modifier.fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .toggleable(value = media, enabled = enabled, role = Role.Switch, onValueChange = { onChange(trigger.copy(ignoreWhileMediaPlaying = it)) })
+                    .semantics { stateDescription = if (media) onLabel else offLabel },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.routines_trigger_idle_media), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(16.dp))
+                Switch(checked = media, onCheckedChange = null, enabled = enabled)
+            }
+        }
+        RoutineTriggerTypes.PC_SESSION -> {
+            Text(stringResource(R.string.routines_trigger_session_when), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(RoutineSessionStates.LOCKED, RoutineSessionStates.UNLOCKED).forEach { state ->
+                    FilterChip(
+                        selected = trigger.sessionState == state,
+                        onClick = { onChange(trigger.copy(sessionState = state)) },
+                        enabled = enabled,
+                        label = { Text(stringResource(RoutineTriggerText.sessionState(state))) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+                }
+            }
+        }
+        else -> Unit
+    }
 }
 
 /** One editor message (spec 1.8). Errors show once Save was tried (templates flag them at once). */
@@ -956,7 +1054,7 @@ private fun StepBadge(number: Int, status: String?) {
 /** "What starts this routine?" (spec A7). Lists only [RoutineTriggerFamilies.offered]. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TriggerPickerSheet(current: String?, onDismiss: () -> Unit, onPick: (String) -> Unit) {
+private fun TriggerPickerSheet(current: String?, unavailableReason: (String) -> String?, onDismiss: () -> Unit, onPick: (String) -> Unit) {
     val state = rememberExpandedSheetState()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state, sheetMaxWidth = 640.dp) {
         Column(Modifier.padding(bottom = 24.dp)) {
@@ -969,11 +1067,11 @@ private fun TriggerPickerSheet(current: String?, onDismiss: () -> Unit, onPick: 
             val pc = RoutineTriggerFamilies.offered.filter { RoutineTriggerTypes.isHostRun(it) }
             if (phone.isNotEmpty()) {
                 PickerGroup(stringResource(R.string.routines_trigger_group_phone))
-                phone.forEach { type -> TriggerOption(type, current == type) { onPick(type) } }
+                phone.forEach { type -> TriggerOption(type, current == type, unavailableReason(type)) { onPick(type) } }
             }
             if (pc.isNotEmpty()) {
                 PickerGroup(stringResource(R.string.routines_trigger_group_pc))
-                pc.forEach { type -> TriggerOption(type, current == type) { onPick(type) } }
+                pc.forEach { type -> TriggerOption(type, current == type, unavailableReason(type)) { onPick(type) } }
             }
         }
     }
@@ -996,12 +1094,15 @@ private fun PickerGroup(text: String) {
 }
 
 @Composable
-private fun TriggerOption(type: String, selected: Boolean, onClick: () -> Unit) {
+private fun TriggerOption(type: String, selected: Boolean, unavailable: String?, onClick: () -> Unit) {
+    // A trigger the target PC cannot offer stays listed, disabled, with the reason (§7.5 gating).
+    val enabled = unavailable == null || selected
     Row(
         Modifier.fillMaxWidth()
-            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .selectable(selected = selected, enabled = enabled, onClick = onClick, role = Role.RadioButton)
             .heightIn(min = 56.dp)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.6f },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(triggerIcon(type), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1009,7 +1110,7 @@ private fun TriggerOption(type: String, selected: Boolean, onClick: () -> Unit) 
         Column(Modifier.weight(1f)) {
             Text(stringResource(RoutineTriggerText.title(type)), style = MaterialTheme.typography.bodyLarge)
             Text(
-                stringResource(RoutineTriggerText.supporting(type)),
+                unavailable ?: stringResource(RoutineTriggerText.supporting(type)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -1171,7 +1171,6 @@
     <string name="routines_copy_name">%1$s (copia)</string>
     <string name="routines_error_not_saved">RemEx no pudo guardar ese cambio. Inténtalo de nuevo.</string>
     <string name="routines_run_invalid">Corrige esta rutina antes de ejecutarla. %1$s</string>
-    <string name="routines_run_on_pc_later">Esta rutina se ejecuta en el PC, así que iníciala allí.</string>
     <string name="routines_delete_title">¿Eliminar %1$s?</string>
     <string name="routines_delete_body">También se elimina su historial de ejecuciones.</string>
     <string name="routines_run_confirm_title">¿Ejecutar %1$s?</string>
@@ -1326,4 +1325,44 @@
     <string name="routines_run_not_found">Esta rutina ya no existe.</string>
     <string name="routines_run_unavailable">RemEx no pudo iniciar esta rutina. Inténtalo de nuevo.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">PC inactivo</string>
+    <string name="routines_trigger_idle_title">Mi PC está inactivo</string>
+    <string name="routines_trigger_idle_supporting">Cuando nadie ha usado el PC durante un rato</string>
+    <string name="routines_trigger_session_chip">Bloqueo del PC</string>
+    <string name="routines_trigger_session_title">Mi PC se bloquea o desbloquea</string>
+    <string name="routines_trigger_session_supporting">Cuando alguien bloquea o desbloquea el PC</string>
+    <string name="routines_trigger_session_locked">Bloqueado</string>
+    <string name="routines_trigger_session_unlocked">Desbloqueado</string>
+    <string name="routines_trigger_idle_for">Inactivo durante</string>
+    <string name="routines_trigger_idle_media">No mientras se reproduce contenido</string>
+    <string name="routines_trigger_session_when">Cuando el PC está</string>
+    <string name="routines_trigger_pc_too_old">Actualiza RemEx en %1$s para usar esto.</string>
+    <string name="routines_category_home">En casa y fuera</string>
+    <string name="routines_category_privacy">Privacidad</string>
+    <string name="routines_category_power">Ahorro de energía</string>
+    <string name="routines_tpl_home_lock_name">Bloquear el PC cuando me vaya</string>
+    <string name="routines_tpl_home_lock_why">Bloquea el PC cuando nadie lo usa, incluso después de que tu teléfono haya salido de casa.</string>
+    <string name="routines_tpl_home_sleep_name">Suspender el PC al bloquearlo</string>
+    <string name="routines_tpl_home_sleep_why">Bloquea el PC al salir y se suspenderá solo.</string>
+    <string name="routines_tpl_priv_unlock_name">Avisarme si mi PC se desbloquea</string>
+    <string name="routines_tpl_priv_unlock_why">Entérate si alguien inicia sesión mientras no estás.</string>
+    <string name="routines_tpl_priv_unlock_message">Alguien desbloqueó tu PC.</string>
+    <string name="routines_tpl_power_sleep_name">Suspender el PC si está inactivo</string>
+    <string name="routines_tpl_power_sleep_why">Deja de pagar por dar energía a una habitación vacía.</string>
+    <string name="routines_tpl_power_screen_name">Apagar la pantalla si está inactivo</string>
+    <string name="routines_tpl_power_screen_why">Apaga el monitor sin suspender el PC.</string>
+    <string name="routines_sync_pending">Esperando para sincronizar con %1$s</string>
+    <string name="routines_sync_synced">En %1$s</string>
+    <string name="routines_paused_scope_both">En pausa en este teléfono y en %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s se pausará cuando se conecte</string>
+    <string name="routines_badge_on_pc">en el PC</string>
+    <string name="routines_history_as_of">Historial de %1$s a las %2$s</string>
+    <string name="routines_switch_and_run">Cambiar y ejecutar</string>
+    <string name="routines_run_now">Ejecutar ahora</string>
+    <string name="routines_pc_run_started">Iniciada en %1$s.</string>
+    <string name="routines_pc_test_started">Prueba iniciada en %1$s.</string>
+    <string name="routines_saved_sent_pc">Guardada y enviada a %1$s.</string>
+    <string name="routines_saved_pc_later">Guardada. Llegará a %1$s la próxima vez que te conectes.</string>
+    <string name="routines_forget_pc_residual">Las rutinas de %1$s se eliminaron de este teléfono. El PC conserva su copia hasta que quites este teléfono allí. Si este teléfono no se conecta en 30 días, el PC las pausa.</string>
 </resources>

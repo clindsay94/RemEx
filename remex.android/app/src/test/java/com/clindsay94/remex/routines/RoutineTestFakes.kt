@@ -186,7 +186,13 @@ internal class FakeHostLink : RoutineHostLink {
         return true
     }
 
-    override suspend fun supportsRoutines(hostIdentity: String): Boolean = supports
+    /** How long the capability answer takes (a fresh connection waiting for `host_info`). */
+    var supportsDelayMs = 0L
+
+    override suspend fun supportsRoutines(hostIdentity: String): Boolean {
+        if (supportsDelayMs > 0) kotlinx.coroutines.delay(supportsDelayMs)
+        return supports
+    }
 
     override fun send(json: String): Boolean {
         val envelope = JSONObject(json)

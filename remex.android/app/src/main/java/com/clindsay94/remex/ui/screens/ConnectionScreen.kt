@@ -76,6 +76,13 @@ fun ConnectionScreen(
         val knownPcRows by viewModel.knownPcRows.collectAsStateWithLifecycle()
         val certRepair by viewModel.certRepair.collectAsStateWithLifecycle()
 
+        // Leaving Connection drops a pending routine "Switch and run" (RemEx-pp0rt.12): it may only
+        // start from a switch the person makes while they are here.
+        val routineContext = androidx.compose.ui.platform.LocalContext.current
+        androidx.compose.runtime.DisposableEffect(Unit) {
+                onDispose { com.clindsay94.remex.routines.Routines.syncClient(routineContext).cancelPendingSwitchRun() }
+        }
+
         ConnectionScreenContent(
                 certRepair = certRepair,
                 connectionPrefs = connectionPrefs,
@@ -121,7 +128,8 @@ fun ConnectionScreen(
                 onForgetRecentConnection = { address ->
                         viewModel.forgetRecentConnection(address)
                 },
-                onRefreshKnownHosts = { viewModel.refreshKnownHosts() }
+                onRefreshKnownHosts = { viewModel.refreshKnownHosts() },
+                onUnpairAddress = { context, address -> viewModel.unpairAddress(context, address) }
         )
 }
 
@@ -152,7 +160,8 @@ fun ConnectionScreenContent(
         onRenameKnownHost: (String, String) -> Unit,
         onUnpairKnownHost: (android.content.Context, KnownHost) -> Unit,
         onForgetRecentConnection: (String) -> Unit,
-        onRefreshKnownHosts: () -> Unit
+        onRefreshKnownHosts: () -> Unit,
+        onUnpairAddress: (android.content.Context, String) -> Unit
 ) {
         val view = LocalView.current
         val context = LocalContext.current
@@ -2048,19 +2057,13 @@ fun ConnectionScreenContent(
                                                                                 HapticFeedbackConstants
                                                                                         .KEYBOARD_TAP
                                                                         )
-                                                                        scope.launch {
-                                                                                PinnedHostStore
-                                                                                        .forgetHost(
-                                                                                                context,
-                                                                                                hostInput
-                                                                                        )
-                                                                                // That address may
-                                                                                // be one of a Known
-                                                                                // PCs row's — the
-                                                                                // list is a
-                                                                                // snapshot.
-                                                                                onRefreshKnownHosts()
-                                                                        }
+                                                                        // In the ViewModel, not this
+                                                                        // screen's scope: leaving the
+                                                                        // screen mid-flush must not
+                                                                        // leave the pin behind while
+                                                                        // this says "unpaired". It also
+                                                                        // refreshes the Known PCs list.
+                                                                        onUnpairAddress(context, hostInput)
                                                                         isPaired = false
                                                                 },
                                                                 contentPadding =
@@ -2188,7 +2191,8 @@ private fun ConnectionScreenPreview() {
             onRenameKnownHost = { _, _ -> },
             onUnpairKnownHost = { _, _ -> },
             onForgetRecentConnection = {},
-            onRefreshKnownHosts = {}
+            onRefreshKnownHosts = {},
+            onUnpairAddress = { _, _ -> }
         )
     }
 }

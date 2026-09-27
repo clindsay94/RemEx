@@ -1171,7 +1171,6 @@
     <string name="routines_copy_name">%1$s (copie)</string>
     <string name="routines_error_not_saved">RemEx n\'a pas pu enregistrer cette modification. Réessayez.</string>
     <string name="routines_run_invalid">Corrigez cette routine avant de la lancer. %1$s</string>
-    <string name="routines_run_on_pc_later">Cette routine s\'exécute sur le PC, lancez-la donc depuis le PC.</string>
     <string name="routines_delete_title">Supprimer %1$s ?</string>
     <string name="routines_delete_body">Son historique d\'exécution est supprimé aussi.</string>
     <string name="routines_run_confirm_title">Lancer %1$s ?</string>
@@ -1326,4 +1325,44 @@
     <string name="routines_run_not_found">Cette routine n\'existe plus.</string>
     <string name="routines_run_unavailable">RemEx n\'a pas pu lancer cette routine. Réessayez.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">PC inactif</string>
+    <string name="routines_trigger_idle_title">Mon PC est inactif</string>
+    <string name="routines_trigger_idle_supporting">Quand personne n\'a utilisé le PC depuis un moment</string>
+    <string name="routines_trigger_session_chip">Verrouillage du PC</string>
+    <string name="routines_trigger_session_title">Mon PC se verrouille ou se déverrouille</string>
+    <string name="routines_trigger_session_supporting">Quand quelqu\'un verrouille ou déverrouille le PC</string>
+    <string name="routines_trigger_session_locked">Verrouillé</string>
+    <string name="routines_trigger_session_unlocked">Déverrouillé</string>
+    <string name="routines_trigger_idle_for">Inactif depuis</string>
+    <string name="routines_trigger_idle_media">Pas pendant la lecture d\'un média</string>
+    <string name="routines_trigger_session_when">Quand le PC est</string>
+    <string name="routines_trigger_pc_too_old">Mettez à jour RemEx sur %1$s pour utiliser ceci.</string>
+    <string name="routines_category_home">À la maison et dehors</string>
+    <string name="routines_category_privacy">Confidentialité</string>
+    <string name="routines_category_power">Économie d\'énergie</string>
+    <string name="routines_tpl_home_lock_name">Verrouiller mon PC quand je pars</string>
+    <string name="routines_tpl_home_lock_why">Verrouille le PC dès que personne ne l\'utilise, même après que votre téléphone a quitté la maison.</string>
+    <string name="routines_tpl_home_sleep_name">Mettre mon PC en veille au verrouillage</string>
+    <string name="routines_tpl_home_sleep_why">Verrouillez le PC en partant et il se met en veille tout seul.</string>
+    <string name="routines_tpl_priv_unlock_name">Me prévenir si mon PC se déverrouille</string>
+    <string name="routines_tpl_priv_unlock_why">Sachez si quelqu\'un se connecte pendant votre absence.</string>
+    <string name="routines_tpl_priv_unlock_message">Quelqu\'un a déverrouillé votre PC.</string>
+    <string name="routines_tpl_power_sleep_name">Mettre mon PC en veille s\'il est inactif</string>
+    <string name="routines_tpl_power_sleep_why">Arrêtez de payer pour alimenter une pièce vide.</string>
+    <string name="routines_tpl_power_screen_name">Écran éteint en cas d\'inactivité</string>
+    <string name="routines_tpl_power_screen_why">Éteignez l\'écran sans mettre le PC en veille.</string>
+    <string name="routines_sync_pending">En attente de synchronisation avec %1$s</string>
+    <string name="routines_sync_synced">Sur %1$s</string>
+    <string name="routines_paused_scope_both">En pause sur ce téléphone et sur %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s se mettra en pause à la connexion</string>
+    <string name="routines_badge_on_pc">sur le PC</string>
+    <string name="routines_history_as_of">Historique de %1$s à %2$s</string>
+    <string name="routines_switch_and_run">Changer et lancer</string>
+    <string name="routines_run_now">Lancer maintenant</string>
+    <string name="routines_pc_run_started">Lancée sur %1$s.</string>
+    <string name="routines_pc_test_started">Test lancé sur %1$s.</string>
+    <string name="routines_saved_sent_pc">Enregistrée et envoyée à %1$s.</string>
+    <string name="routines_saved_pc_later">Enregistrée. Elle arrivera sur %1$s à la prochaine connexion.</string>
+    <string name="routines_forget_pc_residual">Les routines de %1$s ont été supprimées de ce téléphone. Le PC garde sa copie jusqu\'à ce que vous y retiriez ce téléphone. Si ce téléphone reste absent 30 jours, le PC les met en pause.</string>
 </resources>

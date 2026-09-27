@@ -18,6 +18,12 @@ sealed interface RoutinesMessageAction {
 
     /** "Undo" after deleting a step in the editor (spec A4). */
     class Undo(val restore: () -> Unit) : RoutinesMessageAction
+
+    /**
+     * "Switch and run" (D8, §7.4.4): a PC routine for a PC RemEx is not set to. Opens Connection so
+     * the person switches; the run starts once that PC is connected. Never switches by itself.
+     */
+    data class SwitchAndRun(val routineId: String, val hostIdentity: String, val testRun: Boolean) : RoutinesMessageAction
 }
 
 /**

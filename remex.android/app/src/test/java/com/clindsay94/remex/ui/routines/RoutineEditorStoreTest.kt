@@ -36,7 +36,7 @@ class RoutineEditorStoreTest {
             val h = RepositoryHarness()
             val repo = h.repository()
             repo.load()
-            val template = RoutineTemplates.offered().first()
+            val template = checkNotNull(RoutineTemplates.byId("tpl.game.night"))
             val draft = RoutineDrafts.fromTemplate(template, "Game night", HOST, mac) { "Ready to play." }
 
             // Opening (and leaving) a template only builds a draft.
@@ -65,15 +65,33 @@ class RoutineEditorStoreTest {
     }
 
     @Test
-    fun `S1 offers manual templates only and features three of them`() {
-        assertTrue(RoutineTemplates.offered().isNotEmpty())
-        assertTrue(RoutineTemplates.offered().all { it.trigger.type == RoutineTriggerTypes.MANUAL })
-        assertEquals(listOf(RoutineTriggerTypes.MANUAL), RoutineTriggerFamilies.offered)
+    fun `S4 offers manual, idle and session templates and features three of them`() {
+        val expected = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+        assertEquals(expected, RoutineTriggerFamilies.offered)
+        // pc.sensor is S5: neither the picker nor the gallery may offer it yet.
+        assertTrue(RoutineTemplates.offered().none { it.trigger.type == RoutineTriggerTypes.PC_SENSOR })
+        assertTrue(RoutineTemplates.offered().all { it.trigger.type in expected })
+        val s4 = listOf("tpl.home.lock", "tpl.home.sleep", "tpl.priv.unlock", "tpl.power.sleep", "tpl.power.screen")
+        assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s4))
         assertEquals(3, RoutineTemplates.featured(hasNfc = true).size)
         assertEquals(3, RoutineTemplates.featured(hasNfc = false).size)
-        // Without NFC the spec swaps in Game night; it is offered, so it leads.
-        assertEquals("tpl.game.night", RoutineTemplates.featured(hasNfc = false).first().id)
+        // The spec's featured order: Sleep my PC when it's idle is offered now, so it leads; without
+        // NFC, Game night follows it.
+        assertEquals(listOf("tpl.power.sleep", "tpl.game.night"), RoutineTemplates.featured(hasNfc = false).take(2).map { it.id })
         assertTrue(RoutineTemplates.categories().all { c -> RoutineTemplates.offered().any { it.category == c } })
+    }
+
+    @Test
+    fun `a picked PC trigger arrives with defaults the validator accepts`() {
+        for (type in listOf(RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)) {
+            val routine =
+                com.clindsay94.remex.routines.model.Routine(
+                    id = uuid(), name = "x", hostIdentity = HOST, enabled = true, revision = 1, createdAtUnixMs = 1, updatedAtUnixMs = 1,
+                    trigger = RoutineTriggerFamilies.newTrigger(type),
+                    steps = listOf(com.clindsay94.remex.routines.model.RoutineStep(type = RoutineStepTypes.POWER, verb = "LOCK")),
+                )
+            assertEquals(type, "ok", RoutineValidator.validateRoutine(routine).reasonCode)
+        }
     }
 
     @Test

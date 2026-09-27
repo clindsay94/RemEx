@@ -1271,7 +1271,6 @@
     <string name="routines_copy_name">%1$s (copy)</string>
     <string name="routines_error_not_saved">RemEx couldn\'t save that change. Try again.</string>
     <string name="routines_run_invalid">Fix this routine before running it. %1$s</string>
-    <string name="routines_run_on_pc_later">This routine runs on the PC, so start it there.</string>
     <string name="routines_delete_title">Delete %1$s?</string>
     <string name="routines_delete_body">Its run history is deleted too.</string>
     <string name="routines_run_confirm_title">Run %1$s?</string>
@@ -1426,4 +1425,44 @@
     <string name="routines_run_not_found">This routine no longer exists.</string>
     <string name="routines_run_unavailable">RemEx couldn\'t start this routine. Try again.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">PC idle</string>
+    <string name="routines_trigger_idle_title">My PC is idle</string>
+    <string name="routines_trigger_idle_supporting">When nobody has used the PC for a while</string>
+    <string name="routines_trigger_session_chip">PC lock</string>
+    <string name="routines_trigger_session_title">My PC locks or unlocks</string>
+    <string name="routines_trigger_session_supporting">When someone locks or unlocks the PC</string>
+    <string name="routines_trigger_session_locked">Locked</string>
+    <string name="routines_trigger_session_unlocked">Unlocked</string>
+    <string name="routines_trigger_idle_for">Idle for</string>
+    <string name="routines_trigger_idle_media">Not while media is playing</string>
+    <string name="routines_trigger_session_when">When the PC is</string>
+    <string name="routines_trigger_pc_too_old">Update RemEx on %1$s to use this.</string>
+    <string name="routines_category_home">Home and away</string>
+    <string name="routines_category_privacy">Privacy</string>
+    <string name="routines_category_power">Power saving</string>
+    <string name="routines_tpl_home_lock_name">Lock my PC when I\'m gone</string>
+    <string name="routines_tpl_home_lock_why">Locks the PC once nobody is using it, even after your phone has left home.</string>
+    <string name="routines_tpl_home_sleep_name">Sleep my PC when I lock it</string>
+    <string name="routines_tpl_home_sleep_why">Lock the PC on your way out and it goes to sleep by itself.</string>
+    <string name="routines_tpl_priv_unlock_name">Tell me when my PC unlocks</string>
+    <string name="routines_tpl_priv_unlock_why">Know if someone signs in while you\'re away.</string>
+    <string name="routines_tpl_priv_unlock_message">Someone unlocked your PC.</string>
+    <string name="routines_tpl_power_sleep_name">Sleep my PC when it\'s idle</string>
+    <string name="routines_tpl_power_sleep_why">Stop paying to power an empty room.</string>
+    <string name="routines_tpl_power_screen_name">Screen off when idle</string>
+    <string name="routines_tpl_power_screen_why">Turn the monitor off without sleeping the PC.</string>
+    <string name="routines_sync_pending">Waiting to sync with %1$s</string>
+    <string name="routines_sync_synced">On %1$s</string>
+    <string name="routines_paused_scope_both">Paused on this phone and on %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s will pause when it connects</string>
+    <string name="routines_badge_on_pc">on PC</string>
+    <string name="routines_history_as_of">History from %1$s as of %2$s</string>
+    <string name="routines_switch_and_run">Switch and run</string>
+    <string name="routines_run_now">Run now</string>
+    <string name="routines_pc_run_started">Started on %1$s.</string>
+    <string name="routines_pc_test_started">Test started on %1$s.</string>
+    <string name="routines_saved_sent_pc">Saved and sent to %1$s.</string>
+    <string name="routines_saved_pc_later">Saved. It goes to %1$s the next time you connect.</string>
+    <string name="routines_forget_pc_residual">Routines for %1$s were removed from this phone. The PC keeps its copy until you remove this phone there. If this phone stays away for 30 days, the PC pauses them.</string>
 </resources>

@@ -16,10 +16,14 @@ internal object RoutineInboundHandler {
     suspend fun handle(context: Context, message: RoutineInboundMessage) {
         try {
             when (message) {
-                // History (§7.3.6, §8.8): PC runs land in the same store as the phone's own.
-                is RoutineInboundMessage.RunReport -> Routines.repository(context).applyRunReport(message.payload)
-                // Consumed by the S4 sync client (RoutineSyncClient); nothing sends routines_sync before it.
-                is RoutineInboundMessage.SyncResult -> RoutineLog.d("routine_sync_result received; the sync client is not in this build.")
+                // History (§7.3.6, §8.8): PC runs land in the same store as the phone's own, then the
+                // sync client answers a waiting Run on PC and updates the progress notification.
+                is RoutineInboundMessage.RunReport -> {
+                    val applied = Routines.repository(context).applyRunReport(message.payload)
+                    Routines.syncClient(context).onRunReport(message.payload, applied)
+                }
+                // Solicited or not (§7.3.2): stored per PC and turned into sync states (RemEx-pp0rt.12).
+                is RoutineInboundMessage.SyncResult -> Routines.syncClient(context).onSyncResult(message.payload)
                 // Presented by the S5 queue slice (RoutineNotificationPresenter for PC-run notifies).
                 is RoutineInboundMessage.Notify -> RoutineLog.d("routine_notify received; PC-run notifications are not in this build.")
                 is RoutineInboundMessage.Malformed -> RoutineLog.w("Unreadable ${message.type} from the PC was ignored.")

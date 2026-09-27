@@ -49,6 +49,7 @@ import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
+import com.clindsay94.remex.routines.model.RoutineRunOrigins
 import com.clindsay94.remex.routines.model.RoutineRunOutcomes
 import com.clindsay94.remex.routines.model.RoutineRunStep
 import com.clindsay94.remex.routines.model.RoutineStep
@@ -80,6 +81,13 @@ internal fun RoutineHistoryPane(
     val groups = remember(runs) { RoutineRunViews.groupByDay(runs, zone) }
     val today = LocalDate.now(zone)
     val locale = appLocale()
+    val hostSync by viewModel.hostSync.collectAsStateWithLifecycle()
+    val connectedPc by viewModel.connectedPc.collectAsStateWithLifecycle()
+    // PC history is a cache while that PC is not connected: say how old it is (R-UX-29).
+    val staleHosts =
+        runs.filter { it.origin == RoutineRunOrigins.PC }.mapNotNull { it.hostIdentity }.distinct()
+            .filter { it != connectedPc }
+            .mapNotNull { host -> hostSync[host]?.historyAsOfUnixMs?.let { host to it } }
 
     Scaffold(
         topBar = {
@@ -101,6 +109,18 @@ internal fun RoutineHistoryPane(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
+            items(staleHosts, key = { "as-of-" + it.first }) { (host, asOf) ->
+                Text(
+                    stringResource(
+                        R.string.routines_history_as_of,
+                        pcLabel(pcs.firstOrNull { it.identity == host }?.name),
+                        RoutineTimeText.time(asOf, locale = locale),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+            }
             groups.forEach { (day, dayRuns) ->
                 stickyHeader(key = "day-$day") {
                     GroupHeader(
@@ -240,7 +260,10 @@ internal fun RoutineRunPane(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (running) {
                     OutlinedButton(onClick = { run.routineId?.let(viewModel::cancel) }) { Text(stringResource(R.string.routines_stop)) }
-                } else if (item != null && item.verdict.isValid && item.routine.trigger?.type == RoutineTriggerTypes.MANUAL) {
+                } else if (
+                    item != null && item.verdict.isValid &&
+                    (item.routine.trigger?.type == RoutineTriggerTypes.MANUAL || RoutineTriggerTypes.isHostRun(item.routine.trigger?.type))
+                ) {
                     Button(onClick = {
                         // A real run of a routine that powers the PC off confirms first, as on the list.
                         if (!run.testRun && item.routine.steps.orEmpty().any { it?.isDestructive == true }) {

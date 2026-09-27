@@ -1171,7 +1171,6 @@
     <string name="routines_copy_name">%1$s (कॉपी)</string>
     <string name="routines_error_not_saved">RemEx यह बदलाव सेव नहीं कर पाया। फिर से कोशिश करें।</string>
     <string name="routines_run_invalid">चलाने से पहले इस रूटीन को ठीक करें। %1$s</string>
-    <string name="routines_run_on_pc_later">यह रूटीन PC पर चलता है, इसलिए इसे वहीं से शुरू करें।</string>
     <string name="routines_delete_title">%1$s मिटाएँ?</string>
     <string name="routines_delete_body">इसके चलने का इतिहास भी मिट जाएगा।</string>
     <string name="routines_run_confirm_title">%1$s चलाएँ?</string>
@@ -1326,4 +1325,44 @@
     <string name="routines_run_not_found">यह रूटीन अब मौजूद नहीं है।</string>
     <string name="routines_run_unavailable">RemEx यह रूटीन शुरू नहीं कर पाया। फिर से कोशिश करें।</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">PC निष्क्रिय</string>
+    <string name="routines_trigger_idle_title">मेरा PC निष्क्रिय है</string>
+    <string name="routines_trigger_idle_supporting">जब कुछ समय से किसी ने PC का उपयोग नहीं किया हो</string>
+    <string name="routines_trigger_session_chip">PC लॉक</string>
+    <string name="routines_trigger_session_title">मेरा PC लॉक या अनलॉक होता है</string>
+    <string name="routines_trigger_session_supporting">जब कोई PC को लॉक या अनलॉक करे</string>
+    <string name="routines_trigger_session_locked">लॉक</string>
+    <string name="routines_trigger_session_unlocked">अनलॉक</string>
+    <string name="routines_trigger_idle_for">इतनी देर निष्क्रिय</string>
+    <string name="routines_trigger_idle_media">मीडिया चलते समय नहीं</string>
+    <string name="routines_trigger_session_when">जब PC हो</string>
+    <string name="routines_trigger_pc_too_old">इसका उपयोग करने के लिए %1$s पर RemEx अपडेट करें।</string>
+    <string name="routines_category_home">घर पर और बाहर</string>
+    <string name="routines_category_privacy">निजता</string>
+    <string name="routines_category_power">बिजली बचत</string>
+    <string name="routines_tpl_home_lock_name">मेरे जाने पर मेरा PC लॉक करें</string>
+    <string name="routines_tpl_home_lock_why">जब कोई PC का उपयोग नहीं कर रहा हो तब उसे लॉक करता है, आपके फ़ोन के घर से निकलने के बाद भी।</string>
+    <string name="routines_tpl_home_sleep_name">लॉक करने पर मेरा PC स्लीप करें</string>
+    <string name="routines_tpl_home_sleep_why">निकलते समय PC लॉक करें और वह अपने आप स्लीप में चला जाएगा।</string>
+    <string name="routines_tpl_priv_unlock_name">मेरा PC अनलॉक होने पर मुझे बताएं</string>
+    <string name="routines_tpl_priv_unlock_why">जानें कि आपकी गैरमौजूदगी में किसी ने साइन इन किया या नहीं।</string>
+    <string name="routines_tpl_priv_unlock_message">किसी ने आपका PC अनलॉक किया।</string>
+    <string name="routines_tpl_power_sleep_name">निष्क्रिय होने पर मेरा PC स्लीप करें</string>
+    <string name="routines_tpl_power_sleep_why">खाली कमरे को बिजली देने का खर्च बचाएं।</string>
+    <string name="routines_tpl_power_screen_name">निष्क्रिय होने पर स्क्रीन बंद</string>
+    <string name="routines_tpl_power_screen_why">PC को स्लीप किए बिना मॉनिटर बंद करें।</string>
+    <string name="routines_sync_pending">%1$s के साथ सिंक होने की प्रतीक्षा</string>
+    <string name="routines_sync_synced">%1$s पर मौजूद</string>
+    <string name="routines_paused_scope_both">इस फ़ोन पर और %1$s पर रुका हुआ</string>
+    <string name="routines_paused_scope_pending">%1$s कनेक्ट होने पर रुक जाएगा</string>
+    <string name="routines_badge_on_pc">PC पर</string>
+    <string name="routines_history_as_of">%1$s का इतिहास, %2$s तक</string>
+    <string name="routines_switch_and_run">बदलें और चलाएं</string>
+    <string name="routines_run_now">अभी चलाएं</string>
+    <string name="routines_pc_run_started">%1$s पर शुरू हुआ।</string>
+    <string name="routines_pc_test_started">%1$s पर टेस्ट शुरू हुआ।</string>
+    <string name="routines_saved_sent_pc">सहेजा गया और %1$s को भेजा गया।</string>
+    <string name="routines_saved_pc_later">सहेजा गया। अगली बार कनेक्ट करने पर यह %1$s पर पहुंचेगा।</string>
+    <string name="routines_forget_pc_residual">%1$s के रूटीन इस फ़ोन से हटा दिए गए। PC अपनी कॉपी तब तक रखता है जब तक आप वहां से यह फ़ोन नहीं हटाते। अगर यह फ़ोन 30 दिनों तक कनेक्ट नहीं होता, तो PC उन्हें रोक देता है।</string>
 </resources>

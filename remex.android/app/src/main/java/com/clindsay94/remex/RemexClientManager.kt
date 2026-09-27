@@ -22,6 +22,7 @@ import com.clindsay94.remex.data.ThemeSyncSeedResolver
 import com.clindsay94.remex.data.ThemeSyncSender
 import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.routines.RoutineInboundHandler
+import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.routines.model.RoutineInbound
 import com.clindsay94.remex.routines.model.RoutineInboundMessage
 import com.clindsay94.remex.routines.model.RoutineStepResultPayload
@@ -441,6 +442,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         managerScope.launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
             routineMessages.collect { RoutineInboundHandler.handle(appContext, it) }
         }
+
+        // The routine sync client (RemEx-pp0rt.12): one routines_sync session per authenticated
+        // connection, keyed off authenticatedConnection for the same reason as theme_sync above
+        // (routines_sync is pairing-gated host-side). IO: its sends are blocking JNI calls.
+        managerScope.launch(Dispatchers.IO) { Routines.syncClient(appContext).run() }
 
         startTelemetryBackgroundPause(appContext)
         val reconnectAllowed = startReconnectGateSignals(appContext)

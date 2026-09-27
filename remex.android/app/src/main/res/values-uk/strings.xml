@@ -1189,7 +1189,6 @@
     <string name="routines_copy_name">%1$s (копія)</string>
     <string name="routines_error_not_saved">RemEx не вдалося зберегти цю зміну. Спробуйте ще раз.</string>
     <string name="routines_run_invalid">Виправте цю рутину перед запуском. %1$s</string>
-    <string name="routines_run_on_pc_later">Ця рутина працює на комп\'ютері, тож запускайте її там.</string>
     <string name="routines_delete_title">Видалити %1$s?</string>
     <string name="routines_delete_body">Її історію запусків теж буде видалено.</string>
     <string name="routines_run_confirm_title">Запустити %1$s?</string>
@@ -1352,4 +1351,44 @@
     <string name="routines_run_not_found">Цієї рутини більше немає.</string>
     <string name="routines_run_unavailable">RemEx не вдалося запустити цю рутину. Спробуйте ще раз.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">ПК неактивний</string>
+    <string name="routines_trigger_idle_title">Мій ПК неактивний</string>
+    <string name="routines_trigger_idle_supporting">Коли ПК деякий час ніхто не використовує</string>
+    <string name="routines_trigger_session_chip">Блокування ПК</string>
+    <string name="routines_trigger_session_title">Мій ПК блокується або розблоковується</string>
+    <string name="routines_trigger_session_supporting">Коли хтось блокує або розблоковує ПК</string>
+    <string name="routines_trigger_session_locked">Заблоковано</string>
+    <string name="routines_trigger_session_unlocked">Розблоковано</string>
+    <string name="routines_trigger_idle_for">Неактивний протягом</string>
+    <string name="routines_trigger_idle_media">Не під час відтворення медіа</string>
+    <string name="routines_trigger_session_when">Коли ПК</string>
+    <string name="routines_trigger_pc_too_old">Оновіть RemEx на %1$s, щоб скористатися цим.</string>
+    <string name="routines_category_home">Вдома і поза домом</string>
+    <string name="routines_category_privacy">Конфіденційність</string>
+    <string name="routines_category_power">Енергозбереження</string>
+    <string name="routines_tpl_home_lock_name">Блокувати ПК, коли я йду</string>
+    <string name="routines_tpl_home_lock_why">Блокує ПК, щойно ним ніхто не користується, навіть коли телефон уже поза домом.</string>
+    <string name="routines_tpl_home_sleep_name">Присипляти ПК, коли я його блокую</string>
+    <string name="routines_tpl_home_sleep_why">Заблокуйте ПК, виходячи, і він сам перейде в сон.</string>
+    <string name="routines_tpl_priv_unlock_name">Повідомляти, коли ПК розблоковано</string>
+    <string name="routines_tpl_priv_unlock_why">Дізнайтеся, чи хтось увійшов, поки вас немає.</string>
+    <string name="routines_tpl_priv_unlock_message">Хтось розблокував ваш ПК.</string>
+    <string name="routines_tpl_power_sleep_name">Присипляти ПК під час простою</string>
+    <string name="routines_tpl_power_sleep_why">Не платіть за живлення порожньої кімнати.</string>
+    <string name="routines_tpl_power_screen_name">Вимикати екран під час простою</string>
+    <string name="routines_tpl_power_screen_why">Вимкніть монітор, не присипляючи ПК.</string>
+    <string name="routines_sync_pending">Очікує синхронізації з %1$s</string>
+    <string name="routines_sync_synced">На %1$s</string>
+    <string name="routines_paused_scope_both">Призупинено на цьому телефоні та на %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s призупиниться після підключення</string>
+    <string name="routines_badge_on_pc">на ПК</string>
+    <string name="routines_history_as_of">Історія %1$s станом на %2$s</string>
+    <string name="routines_switch_and_run">Перемкнути й запустити</string>
+    <string name="routines_run_now">Запустити зараз</string>
+    <string name="routines_pc_run_started">Запущено на %1$s.</string>
+    <string name="routines_pc_test_started">Тест запущено на %1$s.</string>
+    <string name="routines_saved_sent_pc">Збережено й надіслано на %1$s.</string>
+    <string name="routines_saved_pc_later">Збережено. Потрапить на %1$s під час наступного підключення.</string>
+    <string name="routines_forget_pc_residual">Рутини для %1$s видалено з цього телефону. ПК зберігає свою копію, доки ви не видалите там цей телефон. Якщо телефон не підключатиметься 30 днів, ПК їх призупинить.</string>
 </resources>

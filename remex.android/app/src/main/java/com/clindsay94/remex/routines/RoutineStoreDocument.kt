@@ -10,9 +10,10 @@ import org.json.JSONTokener
 /**
  * Per-PC sync bookkeeping inside the phone store (routines spec §6.8, §7.4.1).
  *
- * S1c only ever BUMPS [localRevision] (in the same transaction as the edit that changes this PC's
- * PC-run subset or the pause flag, §7.4.1 step 1) and advances [runCursor] from stored run reports.
- * Sending `routines_sync` and reading [ackedRevision] / [lastResultJson] back is the S4 sync client.
+ * Every edit that changes this PC's PC-run subset or the pause flag BUMPS [localRevision] in the same
+ * transaction (§7.4.1 step 1); run reports advance [runCursor]. The S4 sync client
+ * ([RoutineSyncClient]) sends `routines_sync` and stores the answer in [ackedRevision] and
+ * [lastResultJson], which [RoutineSyncStates] turns into what the screens show.
  */
 data class RoutineHostSync(
     val localRevision: Long = 0,
@@ -23,6 +24,11 @@ data class RoutineHostSync(
     val runCursor: Long = 0,
     /** When the phone last authenticated to this PC from a network that is not home (§8.3.1). */
     val reachableAwayAtUnixMs: Long? = null,
+    /**
+     * When this PC's run history on the phone was last brought up to date (a sync answer or a run
+     * report page). The history shows "As of" this time while the PC is not connected (R-UX-29).
+     */
+    val historyAsOfUnixMs: Long? = null,
     /** Keys this build does not know, kept verbatim (§6.7). */
     val unknownFieldsJson: String? = null,
 )
@@ -62,7 +68,8 @@ data class RoutineStoreDocument(
  */
 object RoutineStoreCodec {
     private val KNOWN_KEYS = setOf("schemaVersion", "pausedAll", "routines", "home", "hostSync", "storeResetAtUnixMs")
-    private val KNOWN_HOST_KEYS = setOf("localRevision", "ackedRevision", "lastResultJson", "runCursor", "reachableAwayAtUnixMs")
+    private val KNOWN_HOST_KEYS =
+        setOf("localRevision", "ackedRevision", "lastResultJson", "runCursor", "reachableAwayAtUnixMs", "historyAsOfUnixMs")
 
     fun encode(doc: RoutineStoreDocument): String {
         val obj = doc.unknownFieldsJson?.let(::objectOrNull) ?: JSONObject()
@@ -79,6 +86,7 @@ object RoutineStoreCodec {
             entry.putOpt("lastResultJson", state.lastResultJson)
             entry.put("runCursor", state.runCursor)
             entry.putOpt("reachableAwayAtUnixMs", state.reachableAwayAtUnixMs)
+            entry.putOpt("historyAsOfUnixMs", state.historyAsOfUnixMs)
             sync.put(host, entry)
         }
         obj.put("hostSync", sync)
@@ -132,12 +140,14 @@ object RoutineStoreCodec {
         val cursor = optLong(entry, "runCursor") ?: return null
         val away = optLong(entry, "reachableAwayAtUnixMs") ?: return null
         val last = optTyped<String>(entry, "lastResultJson") ?: return null
+        val asOf = optLong(entry, "historyAsOfUnixMs") ?: return null
         return RoutineHostSync(
             localRevision = local.value ?: 0,
             ackedRevision = acked.value ?: 0,
             lastResultJson = last.value,
             runCursor = cursor.value ?: 0,
             reachableAwayAtUnixMs = away.value,
+            historyAsOfUnixMs = asOf.value,
             unknownFieldsJson = unknownFields(entry, KNOWN_HOST_KEYS),
         )
     }

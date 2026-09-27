@@ -1166,7 +1166,6 @@
     <string name="routines_copy_name">%1$s (salinan)</string>
     <string name="routines_error_not_saved">RemEx tidak dapat menyimpan perubahan itu. Coba lagi.</string>
     <string name="routines_run_invalid">Perbaiki rutinitas ini sebelum menjalankannya. %1$s</string>
-    <string name="routines_run_on_pc_later">Rutinitas ini berjalan di PC, jadi mulai dari sana.</string>
     <string name="routines_delete_title">Hapus %1$s?</string>
     <string name="routines_delete_body">Riwayat eksekusinya juga akan dihapus.</string>
     <string name="routines_run_confirm_title">Jalankan %1$s?</string>
@@ -1321,4 +1320,44 @@
     <string name="routines_run_not_found">Rutinitas ini sudah tidak ada.</string>
     <string name="routines_run_unavailable">RemEx tidak dapat memulai rutinitas ini. Coba lagi.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">PC diam</string>
+    <string name="routines_trigger_idle_title">PC saya tidak dipakai</string>
+    <string name="routines_trigger_idle_supporting">Saat tidak ada yang memakai PC selama beberapa waktu</string>
+    <string name="routines_trigger_session_chip">Kunci PC</string>
+    <string name="routines_trigger_session_title">PC saya terkunci atau terbuka</string>
+    <string name="routines_trigger_session_supporting">Saat seseorang mengunci atau membuka kunci PC</string>
+    <string name="routines_trigger_session_locked">Terkunci</string>
+    <string name="routines_trigger_session_unlocked">Tidak terkunci</string>
+    <string name="routines_trigger_idle_for">Tidak dipakai selama</string>
+    <string name="routines_trigger_idle_media">Tidak saat media diputar</string>
+    <string name="routines_trigger_session_when">Saat PC</string>
+    <string name="routines_trigger_pc_too_old">Perbarui RemEx di %1$s untuk memakai ini.</string>
+    <string name="routines_category_home">Di rumah dan pergi</string>
+    <string name="routines_category_privacy">Privasi</string>
+    <string name="routines_category_power">Hemat daya</string>
+    <string name="routines_tpl_home_lock_name">Kunci PC saat saya pergi</string>
+    <string name="routines_tpl_home_lock_why">Mengunci PC saat tidak ada yang memakainya, bahkan setelah ponsel Anda meninggalkan rumah.</string>
+    <string name="routines_tpl_home_sleep_name">Tidurkan PC saat saya menguncinya</string>
+    <string name="routines_tpl_home_sleep_why">Kunci PC saat Anda keluar dan PC akan tidur sendiri.</string>
+    <string name="routines_tpl_priv_unlock_name">Beri tahu saat PC saya dibuka</string>
+    <string name="routines_tpl_priv_unlock_why">Ketahui jika seseorang masuk saat Anda pergi.</string>
+    <string name="routines_tpl_priv_unlock_message">Seseorang membuka kunci PC Anda.</string>
+    <string name="routines_tpl_power_sleep_name">Tidurkan PC saat tidak dipakai</string>
+    <string name="routines_tpl_power_sleep_why">Berhenti membayar listrik untuk ruangan kosong.</string>
+    <string name="routines_tpl_power_screen_name">Layar mati saat tidak dipakai</string>
+    <string name="routines_tpl_power_screen_why">Matikan monitor tanpa menidurkan PC.</string>
+    <string name="routines_sync_pending">Menunggu sinkron dengan %1$s</string>
+    <string name="routines_sync_synced">Ada di %1$s</string>
+    <string name="routines_paused_scope_both">Dijeda di ponsel ini dan di %1$s</string>
+    <string name="routines_paused_scope_pending">%1$s akan dijeda saat terhubung</string>
+    <string name="routines_badge_on_pc">di PC</string>
+    <string name="routines_history_as_of">Riwayat %1$s per %2$s</string>
+    <string name="routines_switch_and_run">Ganti dan jalankan</string>
+    <string name="routines_run_now">Jalankan sekarang</string>
+    <string name="routines_pc_run_started">Dimulai di %1$s.</string>
+    <string name="routines_pc_test_started">Uji dimulai di %1$s.</string>
+    <string name="routines_saved_sent_pc">Tersimpan dan dikirim ke %1$s.</string>
+    <string name="routines_saved_pc_later">Tersimpan. Akan dikirim ke %1$s saat Anda terhubung lagi.</string>
+    <string name="routines_forget_pc_residual">Rutinitas untuk %1$s dihapus dari ponsel ini. PC menyimpan salinannya sampai Anda menghapus ponsel ini di sana. Jika ponsel ini tidak terhubung selama 30 hari, PC menjedanya.</string>
 </resources>

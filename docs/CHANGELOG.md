@@ -13,6 +13,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Routines that run on the PC, from the phone: two new triggers, "My PC is idle" and "My PC locks or
+  unlocks", and five templates that use them (lock the PC when you're gone, sleep it when you lock it,
+  tell you when it unlocks, sleep it when idle, and turn the screen off when idle). The phone sends each
+  PC its own routines when it connects and after every change, and each card shows whether the PC has
+  it yet, turned it down (and why), or switched it off there. The list and the editor say when a PC has
+  paused its routines, blocked this phone, or paused them because the phone had been away for 30 days,
+  and how far this phone's Pause all has reached. Run and Test of a PC routine ask the PC to run its own
+  copy and show the progress live; a routine for a PC RemEx isn't set to offers "Switch and run" instead
+  of switching by itself. PC runs appear in the phone's history with an "on PC" badge, and history from
+  a PC that isn't connected says how old it is. Unpairing a PC now tells it to delete this phone's
+  routines first, and says so when the PC couldn't be reached. (RemEx-pp0rt.12)
+
 - Routines on the phone: a Routines page, first in the More menu, with a "New" badge until you open
   it. It starts with a short explanation and three templates, and has a template gallery, an editor
   with separate When and Then sections, numbered steps you can drag, move or delete with undo, and a

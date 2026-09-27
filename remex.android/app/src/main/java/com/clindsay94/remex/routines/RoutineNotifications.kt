@@ -315,7 +315,8 @@ class RoutineNotificationActionReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         ReceiverScope.launch {
             try {
-                Routines.repository(appContext).cancelRun(runId)
+                // A phone run stops here; a PC run's progress row (RemEx-pp0rt.12) asks the PC.
+                if (!Routines.repository(appContext).cancelRun(runId)) Routines.syncClient(appContext).cancelPcRun(runId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

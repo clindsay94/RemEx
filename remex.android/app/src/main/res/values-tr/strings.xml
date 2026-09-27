@@ -1173,7 +1173,6 @@
     <string name="routines_copy_name">%1$s (kopya)</string>
     <string name="routines_error_not_saved">RemEx bu değişikliği kaydedemedi. Yeniden deneyin.</string>
     <string name="routines_run_invalid">Çalıştırmadan önce bu rutini düzeltin. %1$s</string>
-    <string name="routines_run_on_pc_later">Bu rutin bilgisayarda çalışır, bu yüzden oradan başlatın.</string>
     <string name="routines_delete_title">%1$s silinsin mi?</string>
     <string name="routines_delete_body">Çalıştırma geçmişi de silinir.</string>
     <string name="routines_run_confirm_title">%1$s çalıştırılsın mı?</string>
@@ -1328,4 +1327,44 @@
     <string name="routines_run_not_found">Bu rutin artık yok.</string>
     <string name="routines_run_unavailable">RemEx bu rutini başlatamadı. Yeniden deneyin.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
+    <!-- Routines S4, PC-run routines on the phone (RemEx-pp0rt.12) -->
+    <string name="routines_trigger_idle_chip">Bilgisayar boşta</string>
+    <string name="routines_trigger_idle_title">Bilgisayarım boşta</string>
+    <string name="routines_trigger_idle_supporting">Bir süredir kimse bilgisayarı kullanmadığında</string>
+    <string name="routines_trigger_session_chip">Bilgisayar kilidi</string>
+    <string name="routines_trigger_session_title">Bilgisayarım kilitlenir veya kilidi açılır</string>
+    <string name="routines_trigger_session_supporting">Biri bilgisayarı kilitlediğinde veya kilidini açtığında</string>
+    <string name="routines_trigger_session_locked">Kilitli</string>
+    <string name="routines_trigger_session_unlocked">Kilidi açık</string>
+    <string name="routines_trigger_idle_for">Boşta kalma süresi</string>
+    <string name="routines_trigger_idle_media">Medya oynatılırken değil</string>
+    <string name="routines_trigger_session_when">Bilgisayar şu durumdayken</string>
+    <string name="routines_trigger_pc_too_old">Bunu kullanmak için %1$s üzerindeki RemEx\'i güncelleyin.</string>
+    <string name="routines_category_home">Evde ve dışarıda</string>
+    <string name="routines_category_privacy">Gizlilik</string>
+    <string name="routines_category_power">Güç tasarrufu</string>
+    <string name="routines_tpl_home_lock_name">Gittiğimde bilgisayarımı kilitle</string>
+    <string name="routines_tpl_home_lock_why">Kimse kullanmadığında bilgisayarı kilitler, telefonunuz evden ayrıldıktan sonra bile.</string>
+    <string name="routines_tpl_home_sleep_name">Kilitlediğimde bilgisayarımı uyut</string>
+    <string name="routines_tpl_home_sleep_why">Çıkarken bilgisayarı kilitleyin, kendiliğinden uyku moduna geçsin.</string>
+    <string name="routines_tpl_priv_unlock_name">Kilidi açılınca bana haber ver</string>
+    <string name="routines_tpl_priv_unlock_why">Siz yokken birinin oturum açıp açmadığını öğrenin.</string>
+    <string name="routines_tpl_priv_unlock_message">Biri bilgisayarınızın kilidini açtı.</string>
+    <string name="routines_tpl_power_sleep_name">Boştayken bilgisayarımı uyut</string>
+    <string name="routines_tpl_power_sleep_why">Boş bir odaya elektrik parası ödemeyi bırakın.</string>
+    <string name="routines_tpl_power_screen_name">Boştayken ekranı kapat</string>
+    <string name="routines_tpl_power_screen_why">Bilgisayarı uyutmadan monitörü kapatın.</string>
+    <string name="routines_sync_pending">%1$s ile eşitlenmeyi bekliyor</string>
+    <string name="routines_sync_synced">%1$s üzerinde</string>
+    <string name="routines_paused_scope_both">Bu telefonda ve %1$s üzerinde duraklatıldı</string>
+    <string name="routines_paused_scope_pending">%1$s bağlandığında duraklatılacak</string>
+    <string name="routines_badge_on_pc">bilgisayarda</string>
+    <string name="routines_history_as_of">%1$s geçmişi, %2$s itibarıyla</string>
+    <string name="routines_switch_and_run">Değiştir ve çalıştır</string>
+    <string name="routines_run_now">Şimdi çalıştır</string>
+    <string name="routines_pc_run_started">%1$s üzerinde başlatıldı.</string>
+    <string name="routines_pc_test_started">%1$s üzerinde test başlatıldı.</string>
+    <string name="routines_saved_sent_pc">Kaydedildi ve %1$s cihazına gönderildi.</string>
+    <string name="routines_saved_pc_later">Kaydedildi. Bir sonraki bağlantınızda %1$s cihazına gidecek.</string>
+    <string name="routines_forget_pc_residual">%1$s için rutinler bu telefondan kaldırıldı. Bilgisayar, bu telefonu orada kaldırana kadar kendi kopyasını tutar. Bu telefon 30 gün bağlanmazsa bilgisayar onları duraklatır.</string>
 </resources>

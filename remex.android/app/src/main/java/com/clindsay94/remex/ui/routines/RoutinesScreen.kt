@@ -118,6 +118,9 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.routines.RoutineItem
 import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.RoutineStoreHealth
+import com.clindsay94.remex.routines.RoutineSyncStates
+import com.clindsay94.remex.routines.RoutineSyncView
+import com.clindsay94.remex.routines.model.RoutineRunOrigins
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
@@ -197,6 +200,7 @@ fun RoutinesScreen(
                     is RoutinesMessageAction.TestNow -> resources.getString(R.string.routines_action_test_now)
                     is RoutinesMessageAction.OpenRun -> resources.getString(R.string.routine_notification_see_what_happened)
                     is RoutinesMessageAction.Undo -> resources.getString(R.string.routines_undo)
+                    is RoutinesMessageAction.SwitchAndRun -> resources.getString(R.string.routines_switch_and_run)
                     null -> null
                 }
             val result =
@@ -211,6 +215,10 @@ fun RoutinesScreen(
                     is RoutinesMessageAction.TestNow -> viewModel.run(action.routineId, testRun = true)
                     is RoutinesMessageAction.OpenRun -> open(RoutineDetail.Run(action.runId))
                     is RoutinesMessageAction.Undo -> action.restore()
+                    is RoutinesMessageAction.SwitchAndRun -> {
+                        viewModel.switchAndRun(action.routineId, action.hostIdentity, action.testRun)
+                        onNavigateToConnection()
+                    }
                     null -> Unit
                 }
             }
@@ -323,6 +331,8 @@ private fun RoutinesListPane(
     val history by viewModel.history.collectAsStateWithLifecycle()
     val pcs by viewModel.pcs.collectAsStateWithLifecycle()
     val coachSeen by viewModel.coachSeen.collectAsStateWithLifecycle()
+    val pcActive by viewModel.pcActiveRuns.collectAsStateWithLifecycle()
+    val hostSync by viewModel.hostSync.collectAsStateWithLifecycle()
     val view = LocalView.current
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     val readOnly = status.readOnly
@@ -491,15 +501,25 @@ private fun RoutinesListPane(
                             val groups = items.groupBy { RoutineOrder.groupOf(it.routine) }
                             var firstCard = true
                             groups.forEach { (group, groupItems) ->
+                                val groupHost = groupItems.first().routine.hostIdentity
                                 stickyHeader(key = "header-$group") {
-                                    val host = groupItems.first().routine.hostIdentity
                                     GroupHeader(
                                         if (group == RoutineOrder.PHONE) {
                                             stringResource(R.string.routines_group_phone)
                                         } else {
-                                            stringResource(R.string.routines_group_pc, pcLabel(pcName(host)))
+                                            stringResource(R.string.routines_group_pc, pcLabel(pcName(groupHost)))
                                         },
                                     )
+                                }
+                                // The PC's own state for this phone's set (§7.4.1 step 5, §8.7).
+                                if (group != RoutineOrder.PHONE && groupHost != null) {
+                                    item(key = "pc-state-$group") {
+                                        PcSyncBanners(
+                                            pc = RoutineSyncStates.pc(groupHost, hostSync[groupHost]),
+                                            phonePaused = paused,
+                                            pcName = pcName(groupHost),
+                                        )
+                                    }
                                 }
                                 groupItems.forEachIndexed { index, item ->
                                     val id = item.routine.id.orEmpty()
@@ -510,6 +530,8 @@ private fun RoutinesListPane(
                                         RoutineCard(
                                             item = item,
                                             activeRun = active[id],
+                                            pcRun = pcActive[id],
+                                            syncView = RoutineSyncStates.routine(item.routine, item.routine.hostIdentity?.let { hostSync[it] }),
                                             lastRun = lastRun,
                                             pcName = pcName(item.routine.hostIdentity),
                                             paused = paused,
@@ -732,6 +754,8 @@ private fun UnreadableState(viewModel: RoutinesViewModel, modifier: Modifier = M
 private fun RoutineCard(
     item: RoutineItem,
     activeRun: RoutineRun?,
+    pcRun: RoutineRun?,
+    syncView: RoutineSyncView?,
     lastRun: RoutineRun?,
     pcName: String?,
     paused: Boolean,
@@ -753,7 +777,10 @@ private fun RoutineCard(
     val routine = item.routine
     val steps = routine.steps.orEmpty()
     val manual = routine.trigger?.type == RoutineTriggerTypes.MANUAL
-    val running = activeRun != null
+    val runsOnPc = RoutineTriggerTypes.isHostRun(routine.trigger?.type)
+    // A phone run of this routine, or the PC's run of it (live run reports, RemEx-pp0rt.12).
+    val shownRun = activeRun ?: pcRun
+    val running = shownRun != null
     val reduced = LocalReducedMotion.current
     val context = LocalContext.current
     val locale = appLocale()
@@ -830,6 +857,14 @@ private fun RoutineCard(
                     val moreLabel = stringResource(R.string.routines_routine_menu, name)
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, contentDescription = moreLabel) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        // A PC routine has a switch where a manual one has Run, so Run now and
+                        // Stop live here (spec 1.6 "List overflow Run now").
+                        if (runsOnPc && item.verdict.isValid && !running) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.routines_run_now)) }, onClick = { menuOpen = false; onRun() })
+                        }
+                        if (runsOnPc && running) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.routines_stop)) }, onClick = { menuOpen = false; onStop() })
+                        }
                         if (item.verdict.isValid && !running) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.routines_test)) }, onClick = { menuOpen = false; onTest() })
                         }
@@ -849,19 +884,23 @@ private fun RoutineCard(
             RoutineChipChain(
                 triggerType = routine.trigger?.type,
                 steps = steps,
-                highlightIndex = activeRun?.let { RoutineRunViews.currentStep(it) },
+                highlightIndex = shownRun?.let { RoutineRunViews.currentStep(it) },
                 modifier = Modifier.padding(end = 12.dp),
             )
-            if (activeRun != null) {
+            if (runsOnPc) {
+                // "Runs on PC" chip and the routine's sync state (spec 1.2, 2.2; §7.4.1 step 5).
+                RoutinePcStatusRow(syncView = syncView, pcName = pcName, modifier = Modifier.padding(end = 12.dp))
+            }
+            if (shownRun != null) {
                 // M8: the wave flattens under reduced motion (spec 3.3); progress is step-granular.
                 RemexLinearWavyProgress(
-                    progress = RoutineRunViews.progress(activeRun),
+                    progress = RoutineRunViews.progress(shownRun),
                     modifier = Modifier.fillMaxWidth().padding(end = 12.dp),
                     amplitude = if (reduced) { _ -> 0f } else androidx.compose.material3.WavyProgressIndicatorDefaults.indicatorAmplitude,
                 )
-                val current = RoutineRunViews.currentStep(activeRun)
+                val current = RoutineRunViews.currentStep(shownRun)
                 Text(
-                    stringResource(R.string.routine_progress_step_count, (current ?: 0) + 1, RoutineRunViews.totalSteps(activeRun)),
+                    stringResource(R.string.routine_progress_step_count, (current ?: 0) + 1, RoutineRunViews.totalSteps(shownRun)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -899,6 +938,10 @@ internal fun RunRow(run: RoutineRun, pcName: String?, showName: Boolean, onClick
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            // PC runs merged into the phone's history carry the "on PC" badge (§8.8).
+            if (run.origin == RoutineRunOrigins.PC) {
+                OnPcBadge(Modifier.padding(horizontal = 8.dp))
             }
             Text(RoutineTimeText.time(run.triggeredAtUnixMs, locale = locale), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

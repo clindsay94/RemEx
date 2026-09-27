@@ -1,6 +1,8 @@
 package com.clindsay94.remex.routines
 
 import com.clindsay94.remex.routines.model.Routine
+import com.clindsay94.remex.routines.model.RoutineJson
+import com.clindsay94.remex.routines.model.RoutineLimits
 import com.clindsay94.remex.routines.model.RoutineMigration
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
@@ -12,6 +14,7 @@ import com.clindsay94.remex.routines.model.RoutineRunSources
 import com.clindsay94.remex.routines.model.RoutineSchema
 import com.clindsay94.remex.routines.model.RoutineSet
 import com.clindsay94.remex.routines.model.RoutineStepStatuses
+import com.clindsay94.remex.routines.model.RoutineSyncResultPayload
 import com.clindsay94.remex.routines.model.RoutineTriggerTypes
 import com.clindsay94.remex.routines.model.RoutineValidationContext
 import com.clindsay94.remex.routines.model.RoutineValidator
@@ -100,6 +103,22 @@ sealed interface RoutineRunStart {
     data object Unavailable : RoutineRunStart
 }
 
+/**
+ * What [RoutineRepository.applyRunReport] stored: [stored] every record it took, and [finished] the
+ * PC runs that went from running to a final outcome on this page (the phone's progress notification
+ * for them ends).
+ */
+data class RoutineRunReportApplied(val stored: List<RoutineRun>, val finished: List<RoutineRun>)
+
+/** One `routines_sync` worth of state for one PC (§7.3.1). */
+data class RoutineSyncSnapshot(
+    val hostIdentity: String,
+    val revision: Long,
+    val paused: Boolean,
+    val routines: List<Routine>,
+    val runCursor: Long,
+)
+
 /** WorkManager, behind a seam. */
 interface RoutineRunScheduler {
     /** Enqueues the unique work for [ticket]'s routine; false when Android refused it. */
@@ -161,6 +180,19 @@ class RoutineRepository(
 
     private val _history = MutableStateFlow<List<RoutineRun>>(emptyList())
     val history: StateFlow<List<RoutineRun>> = _history.asStateFlow()
+
+    /**
+     * Routine id -> the PC run of it in progress, from live `routine_run_report` updates (§7.3.6).
+     * Separate from [activeRuns], which holds only runs THIS phone executes: a PC run is stopped
+     * with `routine_cancel`, never by the phone runner. A record whose final report never arrived
+     * (the connection dropped) stops counting once the PC's run budget has certainly passed.
+     */
+    private val _pcActiveRuns = MutableStateFlow<Map<String, RoutineRun>>(emptyMap())
+    val pcActiveRuns: StateFlow<Map<String, RoutineRun>> = _pcActiveRuns.asStateFlow()
+
+    /** Per-PC sync bookkeeping (§7.4.1), for the sync states the screens show ([RoutineSyncStates]). */
+    private val _hostSync = MutableStateFlow<Map<String, RoutineHostSync>>(emptyMap())
+    val hostSync: StateFlow<Map<String, RoutineHostSync>> = _hostSync.asStateFlow()
 
     fun historyFor(routineId: String): Flow<List<RoutineRun>> = history.map { all -> all.filter { it.routineId == routineId } }
 
@@ -358,7 +390,12 @@ class RoutineRepository(
             val byId = doc.routines.filter { it.id != null }.associateBy { it.id }
             val named = orderedIds.distinct().mapNotNull { byId[it] }
             val rest = doc.routines.filterNot { it in named }
-            write(doc.copy(routines = named + rest))
+            val next = named + rest
+            // The PC shows a phone's routines in the phone's order (spec 1.6), so a reorder that
+            // changes a PC's subset order is an edit of that PC's set.
+            val moved = (doc.routines.mapNotNull { it.hostIdentity } + next.mapNotNull { it.hostIdentity }).toSet()
+                .filter { host -> pcOrder(doc.routines, host) != pcOrder(next, host) }
+            write(doc.copy(routines = next, hostSync = bumpRevisions(doc.hostSync, moved)))
         }
 
     /** The phone-side enable toggle (§6.2): a save, so it bumps the routine's revision. */
@@ -499,33 +536,122 @@ class RoutineRepository(
      * after it ended is re-sent with a higher `seq`). For a non-live page the PC's run cursor
      * advances only AFTER the page is stored, so a crash in between re-fetches rather than skips.
      */
-    suspend fun applyRunReport(report: RoutineRunReportPayload) {
+    suspend fun applyRunReport(report: RoutineRunReportPayload): RoutineRunReportApplied {
         mutex.withLock {
             ensureLoadedLocked()
             val incoming = report.runs.orEmpty().filter { it.runId != null && it.routineId != null }
-            if (incoming.isEmpty()) return
+            if (incoming.isEmpty()) return RoutineRunReportApplied(emptyList(), emptyList())
             val touched = LinkedHashMap<String, MutableList<RoutineRun>>()
+            val stored = ArrayList<RoutineRun>()
+            val finished = ArrayList<RoutineRun>()
             for (raw in incoming) {
-                val run = raw.copy(origin = raw.origin ?: RoutineRunOrigins.PC, ownerClientId = null)
+                // A PC runs only PC-origin records; the phone never takes the PC's word for its own runs.
+                val run = raw.copy(origin = RoutineRunOrigins.PC, ownerClientId = null)
                 val routineId = checkNotNull(run.routineId)
                 val list = touched.getOrPut(routineId) { runs[routineId].orEmpty().toMutableList() }
                 val at = list.indexOfFirst { it.runId == run.runId }
-                if (at < 0) list += run else if ((list[at].seq ?: -1L) <= (run.seq ?: -1L)) list[at] = run
+                val previous = list.getOrNull(at)
+                // Upsert by run id. A live update carries the whole current record and no newer seq,
+                // so it replaces a record that is still running; a final record never goes back to running.
+                val replace =
+                    when {
+                        previous == null -> true
+                        previous.origin != RoutineRunOrigins.PC -> false
+                        previous.outcome != RoutineRunOutcomes.RUNNING && run.outcome == RoutineRunOutcomes.RUNNING -> false
+                        else -> (previous.seq ?: -1L) <= (run.seq ?: -1L) || previous.outcome == RoutineRunOutcomes.RUNNING
+                    }
+                if (!replace) continue
+                if (at < 0) list += run else list[at] = run
+                stored += run
+                if (previous?.outcome == RoutineRunOutcomes.RUNNING && run.outcome != RoutineRunOutcomes.RUNNING) finished += run
             }
             for ((routineId, list) in touched) putRunsLocked(routineId, list)
 
             val doc = document
             if (!report.live && doc != null && !doc.isNewerThanReader) {
+                val now = clock.nowUnixMs()
                 val maxSeq = incoming.groupBy { it.hostIdentity }.mapValues { (_, runs) -> runs.maxOf { it.seq ?: 0L } }
                 var sync = doc.hostSync
                 for ((host, seq) in maxSeq) {
-                    if (host == null) continue
-                    val entry = sync[host] ?: RoutineHostSync()
-                    if (seq > entry.runCursor) sync = sync + (host to entry.copy(runCursor = seq))
+                    // Only a PC this phone keeps books for: a stray report must not resurrect a forgotten PC.
+                    val entry = host?.let { sync[it] } ?: continue
+                    sync = sync + (host to entry.copy(runCursor = maxOf(entry.runCursor, seq), historyAsOfUnixMs = now))
                 }
                 if (sync != doc.hostSync) write(doc.copy(hostSync = sync))
             }
             publish()
+            return RoutineRunReportApplied(stored, finished)
+        }
+    }
+
+    // ── Sync with each PC (§7.3.1, §7.4.1; RoutineSyncClient) ──
+
+    /**
+     * The `routines_sync` this phone owes [hostIdentity] right now: its PC-run routines in the user's
+     * order, the revision, the pause flag and the run cursor. Null when the store cannot be read or
+     * is from a newer RemEx (a set this build cannot read faithfully is never sent).
+     */
+    suspend fun syncSnapshot(hostIdentity: String): RoutineSyncSnapshot? =
+        mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document?.takeIf { !it.isNewerThanReader } ?: return null
+            val entry = doc.hostSync[hostIdentity] ?: RoutineHostSync()
+            RoutineSyncSnapshot(
+                hostIdentity = hostIdentity,
+                revision = entry.localRevision,
+                paused = doc.pausedAll,
+                routines = doc.routines.filter { it.hostIdentity == hostIdentity && RoutineTriggerTypes.isHostRun(it.trigger?.type) && !it.isMalformed },
+                runCursor = entry.runCursor,
+            )
+        }
+
+    /**
+     * Stores [result] from [hostIdentity] and says what the sync client does next
+     * ([RoutineSyncProtocol]). A revision change is written in the same write as the answer.
+     */
+    suspend fun applySyncResult(hostIdentity: String, result: RoutineSyncResultPayload): RoutineSyncFollowUp =
+        mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document?.takeIf { !it.isNewerThanReader } ?: return RoutineSyncFollowUp.IGNORED
+            // A PC this phone has no books for (it was just forgotten) is not brought back by its answer.
+            val entry = doc.hostSync[hostIdentity] ?: return RoutineSyncFollowUp.IGNORED
+            val json = RoutineJson.write(result).toString()
+            val (next, followUp) = RoutineSyncProtocol.apply(entry, result, json, clock.nowUnixMs())
+            if (next != entry && !write(doc.copy(hostSync = doc.hostSync + (hostIdentity to next)))) return RoutineSyncFollowUp.RETRY_LATER
+            followUp
+        }
+
+    /** Whether any stored routine is bound to [hostIdentity]. */
+    suspend fun hasRoutinesFor(hostIdentity: String): Boolean =
+        mutex.withLock {
+            ensureLoadedLocked()
+            document?.routines.orEmpty().any { it.hostIdentity == hostIdentity }
+        }
+
+    /**
+     * The phone half of forgetting a PC (§7.4.5, T8): every routine bound to [hostIdentity], their
+     * history, and the PC's sync entry. Runs in progress of those routines are cancelled first.
+     */
+    suspend fun forgetHost(hostIdentity: String): Boolean {
+        val doomed = mutex.withLock {
+            ensureLoadedLocked()
+            document?.routines.orEmpty().filter { it.hostIdentity == hostIdentity }.mapNotNull { it.id }
+        }
+        doomed.forEach { id -> activeRunFor(id)?.runId?.let { cancelRun(it, RoutineCancelKind.DELETED) } }
+        return mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document ?: return false
+            if (doc.isNewerThanReader) return false
+            val next = doc.copy(routines = doc.routines.filterNot { it.hostIdentity == hostIdentity }, hostSync = doc.hostSync - hostIdentity)
+            if (next != doc && !write(next)) return false
+            // PC runs of routines the phone no longer has go too: they name a PC this phone forgot.
+            val runIds = runs.keys.filter { id -> id in doomed || runs[id].orEmpty().all { it.hostIdentity == hostIdentity } }
+            for (id in runIds) {
+                runs.remove(id)
+                runCatchingIo("Removing a forgotten PC's routine history") { historyStore.remove(id) }
+            }
+            publish()
+            true
         }
     }
 
@@ -650,6 +776,12 @@ class RoutineRepository(
             all.filter { it.isActivePhoneRun() }
                 .groupBy { it.routineId.orEmpty() }
                 .mapValues { (_, list) -> list.first() }
+        val now = clock.nowUnixMs()
+        _pcActiveRuns.value =
+            all.filter { it.outcome == RoutineRunOutcomes.RUNNING && it.origin == RoutineRunOrigins.PC && now - it.startedAtUnixMs.coerceAtLeast(it.triggeredAtUnixMs) < PC_RUN_STALE_MS }
+                .groupBy { it.routineId.orEmpty() }
+                .mapValues { (_, list) -> list.first() }
+        _hostSync.value = doc?.hostSync.orEmpty()
     }
 
     private fun validationContext(doc: RoutineStoreDocument): RoutineValidationContext =
@@ -701,6 +833,16 @@ class RoutineRepository(
     private fun RoutineRun.isActivePhoneRun(): Boolean = outcome == RoutineRunOutcomes.RUNNING && origin == RoutineRunOrigins.PHONE
 
     private companion object {
+        /**
+         * A PC run still `running` this long after it started lost its final report (the connection
+         * dropped): the PC's hard budget (§6.5) plus the countdown and a margin.
+         */
+        const val PC_RUN_STALE_MS = (RoutineLimits.MAX_HOST_RUN_BUDGET_SECONDS + 5L * 60L) * 1000L
+
+        /** The ids of [host]'s PC-run routines in list order. */
+        fun pcOrder(routines: List<Routine>, host: String): List<String?> =
+            routines.filter { it.hostIdentity == host && RoutineTriggerTypes.isHostRun(it.trigger?.type) }.map { it.id }
+
         /** The PCs whose PC-run subset an edit from [before] to [after] changes. */
         fun pcHosts(before: Routine?, after: Routine?): Set<String> =
             listOfNotNull(before, after)

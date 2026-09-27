@@ -10,15 +10,21 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.routines.RoutineHostSync
 import com.clindsay94.remex.routines.RoutineItem
+import com.clindsay94.remex.routines.RoutinePcRunStart
+import com.clindsay94.remex.routines.RoutinePcSyncView
 import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.RoutineRepository
 import com.clindsay94.remex.routines.RoutineRunStart
 import com.clindsay94.remex.routines.RoutineSaveResult
 import com.clindsay94.remex.routines.RoutineStoreStatus
+import com.clindsay94.remex.routines.RoutineSyncStates
+import com.clindsay94.remex.routines.RoutineSyncView
 import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.routines.model.Routine
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
+import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
 import com.clindsay94.remex.routines.model.RoutineRunSources
 import com.clindsay94.remex.routines.model.RoutineStepTypes
@@ -66,6 +72,18 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
     val activeRuns: StateFlow<Map<String, RoutineRun>> = repository.activeRuns
     val history: StateFlow<List<RoutineRun>> = repository.history
 
+    /** PC runs in progress, from live run reports (RemEx-pp0rt.12). */
+    val pcActiveRuns: StateFlow<Map<String, RoutineRun>> = repository.pcActiveRuns
+
+    /** Per-PC sync bookkeeping; read through [pcSyncView] and [syncView]. */
+    val hostSync: StateFlow<Map<String, RoutineHostSync>> = repository.hostSync
+
+    private val syncClient = Routines.syncClient(application)
+
+    fun pcSyncView(identity: String): RoutinePcSyncView = RoutineSyncStates.pc(identity, hostSync.value[identity])
+
+    fun syncView(routine: Routine): RoutineSyncView? = RoutineSyncStates.routine(routine, routine.hostIdentity?.let { hostSync.value[it] })
+
     private val messageChannel = RoutinesMessageChannel()
 
     /** The snackbar message to show now (latest wins, see [RoutinesMessageChannel]). */
@@ -95,7 +113,8 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             .map(::normalizeMac)
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    private val connectedPc: StateFlow<String?> =
+    /** The PC this phone is authenticated to right now, or null. */
+    val connectedPc: StateFlow<String?> =
         RemexClientManager.authenticatedConnection
             .mapLatest { connection -> connection?.host?.let { identityOf(it) } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -121,6 +140,17 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             pc to RoutineMediaKeys.supported(info?.json, sameConnection = info != null && connection != null && info.connection.epoch == connection.epoch)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
 
+    /**
+     * The connected PC and whether it advertises `supportsRoutines` (§7.5, §7.6), from THIS
+     * connection's `host_info` only. Null while unknown; the editor disables the PC triggers only on
+     * a definite false ("Update RemEx on <PC>").
+     */
+    val routinesSupport: StateFlow<Pair<String?, Boolean?>> =
+        combine(connectedPc, RemexClientManager.authenticatedConnection, RemexClientManager.hostInfoForConnection) { pc, connection, info ->
+            val json = info?.takeIf { connection != null && it.connection.epoch == connection.epoch }?.json
+            pc to json?.let { runCatching { org.json.JSONObject(it).optBoolean("supportsRoutines", false) }.getOrNull() }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
 
     val coachSeen: StateFlow<Boolean?> =
@@ -136,6 +166,17 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch { repository.load() }
+        // A "Switch and run" that did not start says why here, on the screen's own message path,
+        // usually when the person comes back from Connection (RemEx-pp0rt.12 review).
+        viewModelScope.launch {
+            syncClient.switchRunOutcomes.collect { outcome ->
+                if (outcome == null) return@collect
+                val routine = routine(outcome.routineId) ?: repository.routine(outcome.routineId)
+                val args = RoutineReasonArgs(pc = routine?.hostIdentity?.let(::pcName), routine = routine?.name)
+                postPcRunStart(outcome.routineId, outcome.testRun, outcome.start, args)
+                syncClient.consumeSwitchRunOutcome(outcome)
+            }
+        }
         refreshPaired()
         viewModelScope.launch { settings.markRoutinesOpened() }
     }
@@ -333,15 +374,50 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                     )
                 is RoutineRunStart.Invalid ->
                     post(app.getString(R.string.routines_run_invalid, RoutineReasonText.message(app, start.verdict.reasonCode, args.copy(detail = start.verdict.detail))))
-                RoutineRunStart.RunsOnPc -> post(app.getString(R.string.routines_run_on_pc_later))
+                RoutineRunStart.RunsOnPc -> runOnPc(routineId, testRun, args)
                 RoutineRunStart.NotFound -> post(app.getString(R.string.routines_run_not_found))
                 RoutineRunStart.Unavailable -> post(app.getString(R.string.routines_run_unavailable))
             }
         }
     }
 
+    /** Run and Test of a PC-run routine: `routine_run_request`, the PC runs its own copy (§7.3.8). */
+    private suspend fun runOnPc(routineId: String, testRun: Boolean, args: RoutineReasonArgs) {
+        postPcRunStart(routineId, testRun, syncClient.runOnPc(routineId, testRun), args)
+    }
+
+    private fun postPcRunStart(routineId: String, testRun: Boolean, start: RoutinePcRunStart, args: RoutineReasonArgs) {
+        when (start) {
+            is RoutinePcRunStart.Started ->
+                post(app.getString(if (testRun) R.string.routines_pc_test_started else R.string.routines_pc_run_started, pcNameOrDefault(args.pc)))
+            is RoutinePcRunStart.Skipped ->
+                postMessage(RoutinesMessage(RoutineReasonText.message(app, start.reasonCode, args), RoutinesMessageAction.OpenRun(start.runId)))
+            is RoutinePcRunStart.NotSelected ->
+                postMessage(
+                    RoutinesMessage(
+                        RoutineReasonText.message(app, RoutineReasonCodes.PC_NOT_SELECTED, args),
+                        RoutinesMessageAction.SwitchAndRun(routineId, start.hostIdentity, testRun),
+                    ),
+                )
+            is RoutinePcRunStart.Failed -> post(RoutineReasonText.message(app, start.reasonCode, args))
+            RoutinePcRunStart.NotFound -> post(app.getString(R.string.routines_run_not_found))
+        }
+    }
+
+    /** "Switch and run" (D8): the run waits for the person to switch to [hostIdentity] in Connection. */
+    fun switchAndRun(routineId: String, hostIdentity: String, testRun: Boolean) {
+        syncClient.runAfterSwitch(routineId, hostIdentity, testRun)
+    }
+
+    private fun pcNameOrDefault(name: String?): String = name?.takeIf { it.isNotBlank() } ?: app.getString(R.string.routine_pc_fallback_name)
+
+    /** Stop: the phone run of [routineId], or else its PC run in progress (`routine_cancel`). */
     fun cancel(routineId: String) {
-        viewModelScope.launch { repository.cancel(routineId) }
+        viewModelScope.launch {
+            if (repository.cancel(routineId)) return@launch
+            val pcRun = pcActiveRuns.value[routineId]?.runId ?: return@launch
+            if (!syncClient.cancelPcRun(pcRun)) post(RoutineReasonText.message(app, RoutineReasonCodes.PC_UNREACHABLE, RoutineReasonArgs(pc = routine(routineId)?.hostIdentity?.let(::pcName))))
+        }
     }
 
     fun dismissStoreReset() {

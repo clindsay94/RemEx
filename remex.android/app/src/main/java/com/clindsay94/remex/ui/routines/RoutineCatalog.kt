@@ -6,6 +6,7 @@ import com.clindsay94.remex.routines.model.RoutineLimits
 import com.clindsay94.remex.routines.model.RoutineMediaActions
 import com.clindsay94.remex.routines.model.RoutineNotifyTargets
 import com.clindsay94.remex.routines.model.RoutinePowerVerbs
+import com.clindsay94.remex.routines.model.RoutineSessionStates
 import com.clindsay94.remex.routines.model.RoutineStep
 import com.clindsay94.remex.routines.model.RoutineStepTypes
 import com.clindsay94.remex.routines.model.RoutineTrigger
@@ -23,17 +24,36 @@ import com.clindsay94.remex.routines.model.RoutineTriggerTypes
  */
 object RoutineTriggerFamilies {
     /** Triggers the editor's picker offers and the gallery shows templates for, in picker order. */
-    val offered: List<String> = listOf(RoutineTriggerTypes.MANUAL)
+    // S4 (RemEx-pp0rt.12) adds the PC idle and session families. `pc.sensor` is S5: not here.
+    val offered: List<String> = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
 
     fun isOffered(type: String?): Boolean = type in offered
+
+    /**
+     * A trigger with its defaults (spec 4: everything RemEx can guess is filled), so a freshly
+     * picked trigger passes the validator: idle 10 minutes, session "locked".
+     */
+    fun newTrigger(type: String): RoutineTrigger =
+        when (type) {
+            RoutineTriggerTypes.PC_IDLE -> RoutineTrigger(type = type, idleMinutes = RoutineTriggerText.DEFAULT_IDLE_MINUTES, ignoreWhileMediaPlaying = true)
+            RoutineTriggerTypes.PC_SESSION -> RoutineTrigger(type = type, sessionState = RoutineSessionStates.LOCKED)
+            else -> RoutineTrigger(type = type)
+        }
 }
 
 /** Label, editor title and picker supporting text for each trigger (spec 1.1). */
 object RoutineTriggerText {
+    const val DEFAULT_IDLE_MINUTES = 10
+
+    /** Choices for `pc.idle` minutes (1 to 240). */
+    val idleChoices: List<Int> = listOf(1, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240)
+
     @StringRes
     fun chip(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_chip
+            RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_chip
+            RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_chip
             else -> R.string.routines_trigger_unknown
         }
 
@@ -41,6 +61,8 @@ object RoutineTriggerText {
     fun title(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_title
+            RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_title
+            RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_title
             else -> R.string.routines_trigger_unknown
         }
 
@@ -48,8 +70,14 @@ object RoutineTriggerText {
     fun supporting(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_supporting
+            RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_supporting
+            RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_supporting
             else -> R.string.routines_trigger_unknown
         }
+
+    @StringRes
+    fun sessionState(state: String?): Int =
+        if (state == RoutineSessionStates.UNLOCKED) R.string.routines_trigger_session_unlocked else R.string.routines_trigger_session_locked
 }
 
 /** Step vocabulary (spec 1.1). Power verbs reuse Remote Control's `rc_*` labels. */
@@ -188,9 +216,12 @@ object RoutineStepText {
 
 /** Gallery filter groups (spec A3). Only groups that hold an offered template are shown. */
 enum class RoutineTemplateCategory(@StringRes val labelRes: Int) {
+    HOME(R.string.routines_category_home),
     GAMING(R.string.routines_category_gaming),
     MEDIA(R.string.routines_category_media),
     FOCUS(R.string.routines_category_focus),
+    PRIVACY(R.string.routines_category_privacy),
+    POWER(R.string.routines_category_power),
 }
 
 /** The gallery "Needs" tokens (spec 4.2) the offered templates use. */
@@ -229,6 +260,24 @@ object RoutineTemplates {
     /** Every template this build knows, catalog order (spec 4.1). */
     val all: List<RoutineTemplate> =
         listOf(
+            RoutineTemplate(
+                id = "tpl.home.lock",
+                category = RoutineTemplateCategory.HOME,
+                nameRes = R.string.routines_tpl_home_lock_name,
+                whyRes = R.string.routines_tpl_home_lock_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_IDLE, idleMinutes = 5, ignoreWhileMediaPlaying = true),
+                steps = listOf(RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.LOCK))),
+                needs = emptyList(),
+            ),
+            RoutineTemplate(
+                id = "tpl.home.sleep",
+                category = RoutineTemplateCategory.HOME,
+                nameRes = R.string.routines_tpl_home_sleep_name,
+                whyRes = R.string.routines_tpl_home_sleep_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_SESSION, sessionState = RoutineSessionStates.LOCKED),
+                steps = listOf(RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.SLEEP))),
+                needs = emptyList(),
+            ),
             RoutineTemplate(
                 id = "tpl.game.night",
                 category = RoutineTemplateCategory.GAMING,
@@ -273,6 +322,39 @@ object RoutineTemplates {
                         ),
                     ),
                 needs = listOf(RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
+            ),
+            RoutineTemplate(
+                id = "tpl.priv.unlock",
+                category = RoutineTemplateCategory.PRIVACY,
+                nameRes = R.string.routines_tpl_priv_unlock_name,
+                whyRes = R.string.routines_tpl_priv_unlock_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_SESSION, sessionState = RoutineSessionStates.UNLOCKED),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PHONE),
+                            notifyBodyRes = R.string.routines_tpl_priv_unlock_message,
+                        ),
+                    ),
+                needs = emptyList(),
+            ),
+            RoutineTemplate(
+                id = "tpl.power.sleep",
+                category = RoutineTemplateCategory.POWER,
+                nameRes = R.string.routines_tpl_power_sleep_name,
+                whyRes = R.string.routines_tpl_power_sleep_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_IDLE, idleMinutes = 30, ignoreWhileMediaPlaying = true),
+                steps = listOf(RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.SLEEP))),
+                needs = emptyList(),
+            ),
+            RoutineTemplate(
+                id = "tpl.power.screen",
+                category = RoutineTemplateCategory.POWER,
+                nameRes = R.string.routines_tpl_power_screen_name,
+                whyRes = R.string.routines_tpl_power_screen_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_IDLE, idleMinutes = 10, ignoreWhileMediaPlaying = true),
+                steps = listOf(RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.MONITOR_OFF))),
+                needs = emptyList(),
             ),
         )
 
