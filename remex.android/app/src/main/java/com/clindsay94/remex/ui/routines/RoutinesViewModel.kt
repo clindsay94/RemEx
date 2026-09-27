@@ -31,11 +31,13 @@ import com.clindsay94.remex.routines.RoutineSyncStates
 import com.clindsay94.remex.routines.RoutineSyncView
 import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.routines.model.Routine
+import com.clindsay94.remex.routines.model.RoutineLimits
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
 import com.clindsay94.remex.routines.model.RoutineRunSources
 import com.clindsay94.remex.routines.model.RoutineStepTypes
+import com.clindsay94.remex.routines.model.RoutineTrigger
 import com.clindsay94.remex.routines.model.RoutineTriggerTypes
 import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
@@ -192,6 +194,16 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             pc to json?.let { runCatching { org.json.JSONObject(it).optBoolean("supportsRoutines", false) }.getOrNull() }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
 
+    /**
+     * The connected PC and the power verbs it advertises as `routinePowerVerbs` (§7.5), from THIS
+     * connection's `host_info` only. Null while unknown or when an older PC does not say.
+     */
+    val powerVerbs: StateFlow<Pair<String?, List<String>?>> =
+        combine(connectedPc, RemexClientManager.authenticatedConnection, RemexClientManager.hostInfoForConnection) { pc, connection, info ->
+            val json = info?.takeIf { connection != null && it.connection.epoch == connection.epoch }?.json
+            pc to json?.let { RoutinePowerVerbsCapability.parse(it) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
 
     /**
@@ -287,7 +299,7 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                         name = app.getString(template.nameRes),
                         hostIdentity = hostIdentity,
                         mac = selectedMac.value,
-                        notifyBody = { res -> app.getString(res) },
+                        notifyBody = { res -> templateMessage(res, template.trigger, template.id) },
                         homeId = home.value?.id,
                     ).let { draft -> if (template.id == STEAM_TEMPLATE) preselectSteam(draft, hostIdentity) else draft }
                 }
@@ -305,7 +317,19 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
         private set
 
     fun updateDraft(transform: (RoutineDraft) -> RoutineDraft) {
-        _draft.value = _draft.value?.let(transform)
+        _draft.value =
+            _draft.value?.let { before ->
+                // A template message that says "over 90% for 2 minutes" follows the limit and hold
+                // time until the user edits it (RoutineTemplateMessages).
+                RoutineTemplateMessages.rederive(before, transform(before)) { res, trigger -> templateMessage(res, trigger, before.templateId) }
+            }
+    }
+
+    /** A template notify body, formatted with [trigger]'s limit (in the template sensor's unit) and hold time. */
+    private fun templateMessage(res: Int, trigger: RoutineTrigger?, templateId: String?): String {
+        val unit = templateId?.let { RoutineTemplates.byId(it) }?.sensorPreset?.unitHints?.firstOrNull()
+        val seconds = (trigger?.sustainSeconds ?: RoutineLimits.DEFAULT_SUSTAIN_SECONDS).toString()
+        return app.getString(res, RoutineTemplateMessages.limitText(trigger, unit), RoutineReasonText.formatDuration(app, seconds))
     }
 
     /**

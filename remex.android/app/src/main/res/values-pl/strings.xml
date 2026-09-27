@@ -1408,13 +1408,13 @@
     <string name="routines_need_memory_sensor">Czujnik obciążenia pamięci w komputerze</string>
     <string name="routines_tpl_health_gpu_name">GPU się grzeje</string>
     <string name="routines_tpl_health_gpu_why">Dowiedz się, kiedy gra lub renderowanie przegrzewa GPU.</string>
-    <string name="routines_tpl_health_gpu_message">Twoje GPU od 30 sekund ma ponad 85 °C.</string>
+    <string name="routines_tpl_health_gpu_message">Twoje GPU ma ponad %1$s przez %2$s.</string>
     <string name="routines_tpl_health_cpu_name">Ostudź, zanim coś się uszkodzi</string>
     <string name="routines_tpl_health_cpu_why">Usypia komputer, gdy CPU pozostaje niebezpiecznie gorące.</string>
     <string name="routines_tpl_health_cpu_message">Twój komputer był za gorący i przechodzi w uśpienie.</string>
     <string name="routines_tpl_health_ram_name">Pamięć prawie pełna</string>
     <string name="routines_tpl_health_ram_why">Złap aplikację, która wymknęła się spod kontroli, zanim komputer zwolni.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">Pamięć Twojego komputera od 2 minut przekracza 90%.</string>
+    <string name="routines_tpl_health_ram_message">Pamięć Twojego komputera przekracza %1$s przez %2$s.</string>
     <string name="routines_problem_choose_sensor">Wybierz czujnik.</string>
     <string name="routines_problem_sensor_missing">{pc} nie zgłasza teraz tego czujnika. Wybierz inny.</string>
     <string name="routines_problem_sensor_limit">Wpisz liczbę jako limit.</string>
@@ -1528,4 +1528,11 @@
     <string name="routines_tpl_home_music_why">Muzyka gra dalej od miejsca, w którym przerwała.</string>
     <string name="routines_tpl_game_steam_name">Powrót do domu i Steam</string>
     <string name="routines_tpl_game_steam_why">Wchodzisz, a biblioteka gier jest już otwarta.</string>
+    <string name="routine_channel_countdown_name">Odliczania rutyn</string>
+    <string name="routine_channel_countdown_description">Komputer, który za chwilę się wyłączy, uruchomi ponownie lub uśpi, z przyciskiem anulowania</string>
+    <string name="routines_run_origin_pc">Uruchomiona na: %1$s</string>
+    <string name="routines_run_source_idle">Po bezczynności: %1$s</string>
+    <string name="routines_run_source_sensor">%1$s: osiągnięto %2$s</string>
+    <string name="routines_run_source_session">Sesja komputera: %1$s</string>
+    <string name="routines_run_source_home">Dom: %1$s</string>
 </resources>

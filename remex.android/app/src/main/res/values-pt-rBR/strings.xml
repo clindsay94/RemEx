@@ -1382,13 +1382,13 @@
     <string name="routines_need_memory_sensor">Um sensor de uso de memória no PC</string>
     <string name="routines_tpl_health_gpu_name">GPU esquentando</string>
     <string name="routines_tpl_health_gpu_why">Saiba quando um jogo ou uma renderização está fritando sua GPU.</string>
-    <string name="routines_tpl_health_gpu_message">Sua GPU está acima de 85 °C há 30 segundos.</string>
+    <string name="routines_tpl_health_gpu_message">Sua GPU está acima de %1$s há %2$s.</string>
     <string name="routines_tpl_health_cpu_name">Esfriar antes do estrago</string>
     <string name="routines_tpl_health_cpu_why">Suspende o PC se a CPU continuar perigosamente quente.</string>
     <string name="routines_tpl_health_cpu_message">Seu PC estava quente demais e vai ser suspenso.</string>
     <string name="routines_tpl_health_ram_name">Memória quase cheia</string>
     <string name="routines_tpl_health_ram_why">Pegue um app descontrolado antes que o PC fique lento.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">A memória do seu PC está acima de 90% há 2 minutos.</string>
+    <string name="routines_tpl_health_ram_message">A memória do seu PC está acima de %1$s há %2$s.</string>
     <string name="routines_problem_choose_sensor">Escolha um sensor.</string>
     <string name="routines_problem_sensor_missing">{pc} não informa este sensor agora. Escolha outro.</string>
     <string name="routines_problem_sensor_limit">Digite um número para o limite.</string>
@@ -1502,4 +1502,11 @@
     <string name="routines_tpl_home_music_why">Sua música continua de onde parou.</string>
     <string name="routines_tpl_game_steam_name">Chegar em casa e abrir a Steam</string>
     <string name="routines_tpl_game_steam_why">Você entra e sua biblioteca já está aberta.</string>
+    <string name="routine_channel_countdown_name">Contagens regressivas de rotinas</string>
+    <string name="routine_channel_countdown_description">Um PC prestes a desligar, reiniciar ou suspender, com um botão para cancelar</string>
+    <string name="routines_run_origin_pc">Executada em %1$s</string>
+    <string name="routines_run_source_idle">Após %1$s de inatividade</string>
+    <string name="routines_run_source_sensor">%1$s chegou a %2$s</string>
+    <string name="routines_run_source_session">Sessão do PC: %1$s</string>
+    <string name="routines_run_source_home">Casa: %1$s</string>
 </resources>

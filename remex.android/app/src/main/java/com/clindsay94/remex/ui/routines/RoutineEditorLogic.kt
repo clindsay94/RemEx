@@ -155,6 +155,47 @@ object RoutineDrafts {
         )
 }
 
+/**
+ * A health template's message is derived text: "over 90% for 2 minutes" is formatted from the
+ * trigger's limit and hold time, and follows them while the user changes either. Once the user edits
+ * the message it is theirs, and a later trigger change leaves it alone.
+ */
+object RoutineTemplateMessages {
+    /** The limit as the message shows it: "85 °C", "90%" (a percent sign sits on the number). */
+    fun limitText(trigger: RoutineTrigger?, unit: String?): String {
+        val limit = RoutineSensorCatalog.formatLimit(trigger?.threshold)
+        val u = unit.orEmpty()
+        return when {
+            u.isBlank() -> limit
+            u == "%" -> limit + u
+            else -> "$limit $u"
+        }
+    }
+
+    /**
+     * [after] with each template notify body re-derived for its new trigger, where the body is still
+     * exactly what [before]'s trigger produced. [body] formats a template message resource for a trigger.
+     */
+    fun rederive(before: RoutineDraft, after: RoutineDraft, body: (Int, RoutineTrigger?) -> String): RoutineDraft {
+        if (before.trigger == after.trigger) return after
+        val template = after.templateId?.let { RoutineTemplates.byId(it) } ?: return after
+        var changed = false
+        val steps =
+            after.steps.map { draftStep ->
+                // Template steps keep their keys (1-based position) until the user adds or moves one.
+                val res = template.steps.getOrNull((draftStep.key - 1L).toInt())?.notifyBodyRes
+                val current = draftStep.step.body
+                if (res == null || draftStep.step.type != RoutineStepTypes.NOTIFY || current != body(res, before.trigger).take(RoutineLimits.MAX_NOTIFY_BODY_LENGTH)) {
+                    draftStep
+                } else {
+                    changed = true
+                    draftStep.copy(step = draftStep.step.copy(body = body(res, after.trigger).take(RoutineLimits.MAX_NOTIFY_BODY_LENGTH)))
+                }
+            }
+        return if (changed) after.copy(steps = steps) else after
+    }
+}
+
 /** How serious a problem is (spec 1.8): only errors block Save. */
 enum class ProblemKind { ERROR, WARNING, INFO }
 
@@ -265,6 +306,21 @@ object RoutineMediaKeys {
             null
         }
     }
+}
+
+/** `routinePowerVerbs` from a PC's `host_info` (§7.5): the power verbs that PC can run. */
+object RoutinePowerVerbsCapability {
+    /**
+     * Null when the key is absent (an older PC) or the JSON cannot be parsed; the picker then offers
+     * every verb and the PC refuses what it cannot do. WAKEONLAN is dropped even if a PC lists it (D5).
+     */
+    fun parse(hostInfoJson: String): List<String>? =
+        try {
+            val array = org.json.JSONObject(hostInfoJson).optJSONArray("routinePowerVerbs")
+            array?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf { v -> v.isNotBlank() && v != "WAKEONLAN" } } }
+        } catch (e: org.json.JSONException) {
+            null
+        }
 }
 
 /** "Discard changes?" before another draft replaces the open one (R-UX-58). */

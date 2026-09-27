@@ -1382,13 +1382,13 @@
     <string name="routines_need_memory_sensor">Un capteur de charge mémoire sur le PC</string>
     <string name="routines_tpl_health_gpu_name">GPU qui chauffe</string>
     <string name="routines_tpl_health_gpu_why">Sachez quand un jeu ou un rendu fait trop chauffer votre GPU.</string>
-    <string name="routines_tpl_health_gpu_message">Votre GPU dépasse 85 °C depuis 30 secondes.</string>
+    <string name="routines_tpl_health_gpu_message">Votre GPU dépasse %1$s depuis %2$s.</string>
     <string name="routines_tpl_health_cpu_name">Refroidir avant les dégâts</string>
     <string name="routines_tpl_health_cpu_why">Met le PC en veille si le CPU reste dangereusement chaud.</string>
     <string name="routines_tpl_health_cpu_message">Votre PC était trop chaud et va se mettre en veille.</string>
     <string name="routines_tpl_health_ram_name">Mémoire presque pleine</string>
     <string name="routines_tpl_health_ram_why">Repérez une application qui s\'emballe avant que le PC ne rame.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">La mémoire de votre PC dépasse 90 % depuis 2 minutes.</string>
+    <string name="routines_tpl_health_ram_message">La mémoire de votre PC dépasse %1$s depuis %2$s.</string>
     <string name="routines_problem_choose_sensor">Choisissez un capteur.</string>
     <string name="routines_problem_sensor_missing">{pc} ne transmet pas ce capteur pour le moment. Choisissez-en un autre.</string>
     <string name="routines_problem_sensor_limit">Saisissez un nombre pour le seuil.</string>
@@ -1502,4 +1502,11 @@
     <string name="routines_tpl_home_music_why">Votre musique reprend là où elle s\'était arrêtée.</string>
     <string name="routines_tpl_game_steam_name">Rentrer et ouvrir Steam</string>
     <string name="routines_tpl_game_steam_why">Vous entrez et votre bibliothèque est déjà ouverte.</string>
+    <string name="routine_channel_countdown_name">Comptes à rebours des routines</string>
+    <string name="routine_channel_countdown_description">Un PC sur le point de s\'éteindre, de redémarrer ou de se mettre en veille, avec un bouton pour annuler</string>
+    <string name="routines_run_origin_pc">Exécutée sur %1$s</string>
+    <string name="routines_run_source_idle">Après %1$s d\'inactivité</string>
+    <string name="routines_run_source_sensor">%1$s a atteint %2$s</string>
+    <string name="routines_run_source_session">Session du PC : %1$s</string>
+    <string name="routines_run_source_home">Domicile : %1$s</string>
 </resources>

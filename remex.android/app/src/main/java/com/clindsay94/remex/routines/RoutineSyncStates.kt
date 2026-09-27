@@ -3,6 +3,7 @@ package com.clindsay94.remex.routines
 import com.clindsay94.remex.routines.model.Routine
 import com.clindsay94.remex.routines.model.RoutineJson
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
+import com.clindsay94.remex.routines.model.RoutineStep
 import com.clindsay94.remex.routines.model.RoutineSyncResultPayload
 import com.clindsay94.remex.routines.model.RoutineSyncStatuses
 import com.clindsay94.remex.routines.model.RoutineTriggerTypes
@@ -86,6 +87,12 @@ data class RoutineSyncView(
     /** The PC's per-routine reason (REJECTED) or the set-level status code (REFUSED). */
     val reasonCode: String? = null,
     val detail: String? = null,
+    /** The `{action}` token of the step [detail] points at (REJECTED only). */
+    val action: String? = null,
+    /** The `{app}` of that step, when it launches one. */
+    val app: String? = null,
+    /** The `{sensor}` of the routine's trigger, for `sensor_unavailable`. */
+    val sensor: String? = null,
 )
 
 /** The set-level state of one PC (§7.4.1 step 5, §8.7). */
@@ -152,8 +159,27 @@ object RoutineSyncStates {
         return if (item.accepted) {
             RoutineSyncView(RoutineSyncState.SYNCED)
         } else {
-            RoutineSyncView(RoutineSyncState.REJECTED, reasonCode = item.reasonCode ?: RoutineReasonCodes.REJECTED_BY_PC, detail = item.detail)
+            val step = stepAt(routine, item.detail)
+            RoutineSyncView(
+                RoutineSyncState.REJECTED,
+                reasonCode = item.reasonCode ?: RoutineReasonCodes.REJECTED_BY_PC,
+                detail = item.detail,
+                action = RoutineActionTokens.of(step),
+                app = step?.appLabel,
+                sensor = routine.trigger?.sensorLabel,
+            )
         }
+    }
+
+    private val STEP_PATH = Regex("""^steps\[(\d+)]""")
+
+    /**
+     * The step a PC rejection's `detail` points at (`steps[2].verb`, §7.4.1), so "{pc} can't
+     * {action}." names the verb instead of rendering "can't ." Null for any other path.
+     */
+    fun stepAt(routine: Routine, detail: String?): RoutineStep? {
+        val index = detail?.let { STEP_PATH.find(it) }?.groupValues?.get(1)?.toIntOrNull() ?: return null
+        return routine.steps?.getOrNull(index)
     }
 
     /**

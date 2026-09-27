@@ -154,6 +154,18 @@ object RoutineStepText {
             RoutinePowerVerbs.RESTART_TO_UEFI,
         )
 
+    /**
+     * The verbs the picker offers for a PC that advertised [advertised] as `routinePowerVerbs` (§7.5):
+     * only those, in Remote Control's order, never WAKEONLAN (D5). Null (not connected, or an older PC
+     * that does not say) offers the full list; the PC still refuses what it cannot do (T5). The verb
+     * a step already has stays listed so an existing step never renders with nothing selected.
+     */
+    fun offeredPowerVerbs(advertised: List<String>?, current: String? = null): List<String> {
+        if (advertised == null) return powerVerbs
+        val allowed = advertised.toSet()
+        return powerVerbs.filter { it in allowed || it == current }
+    }
+
     val mediaActions: List<String> =
         listOf(RoutineMediaActions.PLAY_PAUSE, RoutineMediaActions.NEXT, RoutineMediaActions.PREVIOUS)
 

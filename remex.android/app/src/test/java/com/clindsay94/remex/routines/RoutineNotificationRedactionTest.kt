@@ -23,17 +23,25 @@ class RoutineNotificationRedactionTest {
     }
 
     @Test
-    fun `three channels with distinct ids, progress silent, all private on the lock screen`() {
+    fun `four channels with distinct ids, progress silent, countdown heads-up, all private on the lock screen`() {
         val specs = RoutineNotificationChannels.SPECS
         assertEquals(
-            listOf(RoutineNotificationChannels.PROGRESS, RoutineNotificationChannels.RESULTS, RoutineNotificationChannels.MESSAGES),
+            listOf(
+                RoutineNotificationChannels.PROGRESS,
+                RoutineNotificationChannels.RESULTS,
+                RoutineNotificationChannels.MESSAGES,
+                RoutineNotificationChannels.COUNTDOWN,
+            ),
             specs.map { it.id },
         )
         assertEquals(android.app.NotificationManager.IMPORTANCE_LOW, specs.first { it.id == RoutineNotificationChannels.PROGRESS }.importance)
+        // A countdown before a power-off must show heads-up with its Cancel button (live pass 2026-09-27).
+        assertEquals(android.app.NotificationManager.IMPORTANCE_HIGH, specs.first { it.id == RoutineNotificationChannels.COUNTDOWN }.importance)
+        assertTrue(source.contains("baseBuilder(RoutineNotificationChannels.COUNTDOWN)"))
         assertEquals(NotificationCompat.VISIBILITY_PRIVATE, RoutineNotificationChannels.LOCKSCREEN_VISIBILITY)
         assertEquals(
             "each channel sets the private lock-screen visibility",
-            3,
+            4,
             Regex("""lockscreenVisibility = LOCKSCREEN_VISIBILITY""").findAll(source).count(),
         )
     }

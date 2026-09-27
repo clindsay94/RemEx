@@ -1384,13 +1384,13 @@
     <string name="routines_need_memory_sensor">Bilgisayarda bir bellek yükü sensörü</string>
     <string name="routines_tpl_health_gpu_name">GPU çok ısınıyor</string>
     <string name="routines_tpl_health_gpu_why">Bir oyun ya da render GPU\'nuzu pişirdiğinde haberiniz olsun.</string>
-    <string name="routines_tpl_health_gpu_message">GPU\'nuz 30 saniyedir 85 °C üzerinde.</string>
+    <string name="routines_tpl_health_gpu_message">GPU\'nuz %2$s boyunca %1$s üzerinde kaldı.</string>
     <string name="routines_tpl_health_cpu_name">Zarar görmeden soğut</string>
     <string name="routines_tpl_health_cpu_why">CPU tehlikeli derecede sıcak kalırsa bilgisayarı uyutur.</string>
     <string name="routines_tpl_health_cpu_message">Bilgisayarınız çok ısındı ve uyku moduna geçiyor.</string>
     <string name="routines_tpl_health_ram_name">Bellek neredeyse dolu</string>
     <string name="routines_tpl_health_ram_why">Bilgisayar yavaşlamadan önce kontrolden çıkan uygulamayı yakalayın.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">Bilgisayarınızın belleği 2 dakikadır %90\'ın üzerinde.</string>
+    <string name="routines_tpl_health_ram_message">Bilgisayarınızın bellek kullanımı %2$s boyunca %1$s üzerinde kaldı.</string>
     <string name="routines_problem_choose_sensor">Bir sensör seçin.</string>
     <string name="routines_problem_sensor_missing">{pc} şu anda bu sensörü bildirmiyor. Başka birini seçin.</string>
     <string name="routines_problem_sensor_limit">Sınır için bir sayı girin.</string>
@@ -1504,4 +1504,11 @@
     <string name="routines_tpl_home_music_why">Müziğiniz kaldığı yerden devam eder.</string>
     <string name="routines_tpl_game_steam_name">Eve gel, Steam\'i aç</string>
     <string name="routines_tpl_game_steam_why">İçeri girdiğinizde kütüphaneniz açık olur.</string>
+    <string name="routine_channel_countdown_name">Rutin geri sayımları</string>
+    <string name="routine_channel_countdown_description">Kapanmak, yeniden başlamak veya uyumak üzere olan bir bilgisayar, iptal düğmesiyle</string>
+    <string name="routines_run_origin_pc">%1$s üzerinde çalıştı</string>
+    <string name="routines_run_source_idle">%1$s boşta kaldıktan sonra</string>
+    <string name="routines_run_source_sensor">%1$s %2$s değerine ulaştı</string>
+    <string name="routines_run_source_session">Bilgisayar oturumu: %1$s</string>
+    <string name="routines_run_source_home">Ev: %1$s</string>
 </resources>

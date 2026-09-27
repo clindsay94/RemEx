@@ -1482,13 +1482,13 @@
     <string name="routines_need_memory_sensor">A memory load sensor on the PC</string>
     <string name="routines_tpl_health_gpu_name">GPU running hot</string>
     <string name="routines_tpl_health_gpu_why">Know when a game or render is cooking your GPU.</string>
-    <string name="routines_tpl_health_gpu_message">Your GPU has been above 85 °C for 30 seconds.</string>
+    <string name="routines_tpl_health_gpu_message">Your GPU has been above %1$s for %2$s.</string>
     <string name="routines_tpl_health_cpu_name">Cool down before damage</string>
     <string name="routines_tpl_health_cpu_why">Sleeps the PC if the CPU stays dangerously hot.</string>
     <string name="routines_tpl_health_cpu_message">Your PC was too hot and is going to sleep.</string>
     <string name="routines_tpl_health_ram_name">Memory nearly full</string>
     <string name="routines_tpl_health_ram_why">Catch a runaway app before the PC crawls.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">Your PC\'s memory has been over 90% for 2 minutes.</string>
+    <string name="routines_tpl_health_ram_message">Your PC\'s memory has been over %1$s for %2$s.</string>
     <string name="routines_problem_choose_sensor">Choose a sensor.</string>
     <string name="routines_problem_sensor_missing">{pc} doesn\'t report this sensor right now. Choose another.</string>
     <string name="routines_problem_sensor_limit">Enter a number for the limit.</string>
@@ -1602,4 +1602,11 @@
     <string name="routines_tpl_home_music_why">Your music picks up where it stopped.</string>
     <string name="routines_tpl_game_steam_name">Get home, open Steam</string>
     <string name="routines_tpl_game_steam_why">Walk in and your library is already open.</string>
+    <string name="routine_channel_countdown_name">Routine countdowns</string>
+    <string name="routine_channel_countdown_description">A PC about to shut down, restart or sleep, with a button to cancel it</string>
+    <string name="routines_run_origin_pc">Ran on %1$s</string>
+    <string name="routines_run_source_idle">After %1$s idle</string>
+    <string name="routines_run_source_sensor">%1$s reached %2$s</string>
+    <string name="routines_run_source_session">PC session: %1$s</string>
+    <string name="routines_run_source_home">Home: %1$s</string>
 </resources>

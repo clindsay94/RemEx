@@ -54,6 +54,12 @@ internal object RoutineNotificationChannels {
     const val RESULTS = "routines_results"
     const val MESSAGES = "routines_messages"
 
+    /**
+     * A PC countdown before a power-off (§8.6). High importance so it shows heads-up with its Cancel
+     * button: a silent row in the shade is a countdown nobody sees in time.
+     */
+    const val COUNTDOWN = "routines_countdown"
+
     /** Lock-screen visibility of every routine channel and notification (T10). */
     const val LOCKSCREEN_VISIBILITY = NotificationCompat.VISIBILITY_PRIVATE
 
@@ -65,6 +71,7 @@ internal object RoutineNotificationChannels {
             Spec(PROGRESS, R.string.routine_channel_progress_name, R.string.routine_channel_progress_description, NotificationManager.IMPORTANCE_LOW),
             Spec(RESULTS, R.string.routine_channel_results_name, R.string.routine_channel_results_description, NotificationManager.IMPORTANCE_DEFAULT),
             Spec(MESSAGES, R.string.routine_channel_messages_name, R.string.routine_channel_messages_description, NotificationManager.IMPORTANCE_DEFAULT),
+            Spec(COUNTDOWN, R.string.routine_channel_countdown_name, R.string.routine_channel_countdown_description, NotificationManager.IMPORTANCE_HIGH),
         )
 
     fun ensure(context: Context) {
@@ -72,6 +79,14 @@ internal object RoutineNotificationChannels {
         val progress = SPECS[0]
         val results = SPECS[1]
         val messages = SPECS[2]
+        val countdown = SPECS[3]
+        manager.createNotificationChannel(
+            NotificationChannel(countdown.id, context.getString(countdown.name), countdown.importance).apply {
+                description = context.getString(countdown.description)
+                lockscreenVisibility = LOCKSCREEN_VISIBILITY
+                setShowBadge(false)
+            }
+        )
         manager.createNotificationChannel(
             NotificationChannel(progress.id, context.getString(progress.name), progress.importance).apply {
                 description = context.getString(progress.description)
@@ -116,14 +131,28 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
                 appContext.getString(R.string.routine_progress_countdown),
                 args(run, step).copy(duration = RoutineLimits.COUNTDOWN_SECONDS.toString()),
             )
+        // Heads-up on the countdown channel, not the silent progress row, with Cancel on its face.
         val builder =
-            progressBuilder(run, routine, stepIndex, text)
+            countdownBuilder(title(run, routine.name), text)
+                .setContentIntent(openIntent(run, REQUEST_OPEN_PROGRESS))
+                .addAction(0, appContext.getString(R.string.routine_notification_cancel), cancelIntent(run))
+                .setOngoing(true)
                 .setWhen(endsAtUnixMs)
                 .setShowWhen(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
         post(progressId(run), builder.build())
     }
+
+    /** A countdown mirror (§8.6): heads-up, alerting once, still redacted on the lock screen (T10). */
+    private fun countdownBuilder(title: String, text: String): NotificationCompat.Builder =
+        baseBuilder(RoutineNotificationChannels.COUNTDOWN)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setOnlyAlertOnce(true)
 
     override fun onFinished(run: RoutineRun, routine: Routine?) {
         cancel(progressId(run))
@@ -190,11 +219,7 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
         if (!canPost()) return false
         val body = notify.body.orEmpty()
         val builder =
-            baseBuilder(RoutineNotificationChannels.PROGRESS)
-                .setContentTitle(notify.title?.takeIf { it.isNotBlank() } ?: notify.routineName.orEmpty())
-                .setContentText(body)
-                .setOnlyAlertOnce(true)
-                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            countdownBuilder(notify.title?.takeIf { it.isNotBlank() } ?: notify.routineName.orEmpty(), body)
                 // Gone when the PC's countdown ends: the live report that follows says what happened.
                 .setTimeoutAfter(timeoutMs.coerceAtLeast(1L))
         notify.countdownEndsAtUnixMs?.let { builder.setWhen(it).setShowWhen(true).setUsesChronometer(true).setChronometerCountDown(true) }

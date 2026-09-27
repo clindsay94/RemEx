@@ -75,6 +75,7 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
@@ -170,7 +171,9 @@ fun RoutinesScreen(
         if (viewModel.needsDiscardBefore(detail)) confirmSwitch = detail else navigate(detail)
     }
     fun back() {
-        scope.launch { navigator.navigateBack() }
+        // PopUntilContentChange: Run -> History -> editor, one step at a time (the default pops every
+        // entry that leaves the scaffold unchanged, which on a phone is all of them).
+        scope.launch { navigator.navigateBack(BackNavigationBehavior.PopUntilContentChange) }
     }
 
     // A routine notification's "Open" / "See what happened" (RoutineOpenRequests).
@@ -246,6 +249,7 @@ fun RoutinesScreen(
     Box(Modifier.fillMaxSize()) {
         NavigableListDetailPaneScaffold(
             navigator = navigator,
+            defaultBackBehavior = BackNavigationBehavior.PopUntilContentChange,
             listPane = {
                 AnimatedPane {
                     RoutinesListPane(
@@ -1141,6 +1145,12 @@ private fun RoutinesEmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        // Above the featured cards, so both ways in are on a phone's first screen (live pass
+        // 2026-09-27: below them, "Start from blank" sat under the fold).
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
+            FilledTonalButton(onClick = onBrowse, enabled = enabled) { Text(stringResource(R.string.routines_browse_templates)) }
+            TextButton(onClick = onBlank, enabled = enabled) { Text(stringResource(R.string.routines_start_blank)) }
+        }
         featured.forEachIndexed { i, template ->
             // M1: cards rise 16dp and fade in with a 50 ms stagger; all present at once when reduced.
             val rise = remember { Animatable(if (reduced) 0f else 1f) }
@@ -1166,8 +1176,6 @@ private fun RoutinesEmptyState(
                     },
             )
         }
-        FilledTonalButton(onClick = onBrowse, enabled = enabled) { Text(stringResource(R.string.routines_browse_templates)) }
-        TextButton(onClick = onBlank, enabled = enabled) { Text(stringResource(R.string.routines_start_blank)) }
     }
 }
 

@@ -171,6 +171,7 @@ internal fun RoutineEditorPane(
     val selectedMac by viewModel.selectedMac.collectAsStateWithLifecycle()
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
+    val powerVerbs by viewModel.powerVerbs.collectAsStateWithLifecycle()
     val activeRuns by viewModel.activeRuns.collectAsStateWithLifecycle()
     val pcActiveRuns by viewModel.pcActiveRuns.collectAsStateWithLifecycle()
     val hostSync by viewModel.hostSync.collectAsStateWithLifecycle()
@@ -580,7 +581,7 @@ internal fun RoutineEditorPane(
                         RoutineReasonText.message(
                             context,
                             if (type == RoutineTriggerTypes.PC_IDLE) RoutineReasonCodes.IDLE_SOURCE_UNAVAILABLE else RoutineReasonCodes.SESSION_SOURCE_UNAVAILABLE,
-                            RoutineReasonArgs(pc = pcLabelText(resources, pcName)),
+                            RoutineReasonArgs(pc = pcName?.takeIf { it.isNotBlank() }),
                         )
                     else -> null
                 }
@@ -624,6 +625,7 @@ internal fun RoutineEditorPane(
             pcName = pcName,
             mac = viewModel.macFor(draft.hostIdentity),
             apps = launcher.second?.takeIf { launcher.first == draft.hostIdentity },
+            powerVerbs = powerVerbs.second?.takeIf { powerVerbs.first != null && powerVerbs.first == draft.hostIdentity },
             isConnected = isConnected,
             onRefreshApps = viewModel::refreshLauncher,
             onNavigateToConnection = onNavigateToConnection,
@@ -1378,6 +1380,7 @@ private fun StepSheetHost(
     pcName: String?,
     mac: String?,
     apps: List<RoutineAppChoice>?,
+    powerVerbs: List<String>?,
     isConnected: Boolean,
     onRefreshApps: () -> Unit,
     onNavigateToConnection: () -> Unit,
@@ -1410,6 +1413,7 @@ private fun StepSheetHost(
                     isNew = sheet.editIndex == null,
                     pcName = pcName,
                     apps = apps,
+                    powerVerbs = powerVerbs,
                     isConnected = isConnected,
                     onRefreshApps = onRefreshApps,
                     onNavigateToConnection = onNavigateToConnection,
@@ -1483,6 +1487,7 @@ private fun StepParameters(
     isNew: Boolean,
     pcName: String?,
     apps: List<RoutineAppChoice>?,
+    powerVerbs: List<String>?,
     isConnected: Boolean,
     onRefreshApps: () -> Unit,
     onNavigateToConnection: () -> Unit,
@@ -1528,7 +1533,8 @@ private fun StepParameters(
             }
             RoutineStepTypes.POWER -> {
                 Column {
-                    RoutineStepText.powerVerbs.forEach { verb ->
+                    // Only what the target PC advertised (§7.5); never WAKEONLAN (D5).
+                    RoutineStepText.offeredPowerVerbs(powerVerbs, step.verb).forEach { verb ->
                         val discards = RoutineStepText.discardsWork(RoutineStep(type = RoutineStepTypes.POWER, verb = verb))
                         Row(
                             Modifier.fillMaxWidth()

@@ -1408,13 +1408,13 @@
     <string name="routines_need_memory_sensor">Датчик навантаження пам\'яті на ПК</string>
     <string name="routines_tpl_health_gpu_name">GPU перегрівається</string>
     <string name="routines_tpl_health_gpu_why">Дізнавайтеся, коли гра чи рендер перегріває GPU.</string>
-    <string name="routines_tpl_health_gpu_message">Ваш GPU вже 30 секунд гарячіший за 85 °C.</string>
+    <string name="routines_tpl_health_gpu_message">Ваш GPU вже %2$s гарячіший за %1$s.</string>
     <string name="routines_tpl_health_cpu_name">Охолодити до пошкодження</string>
     <string name="routines_tpl_health_cpu_why">Присипляє ПК, якщо CPU лишається небезпечно гарячим.</string>
     <string name="routines_tpl_health_cpu_message">Ваш ПК був надто гарячим і переходить у режим сну.</string>
     <string name="routines_tpl_health_ram_name">Пам\'ять майже заповнена</string>
     <string name="routines_tpl_health_ram_why">Помітьте застосунок, що вийшов з-під контролю, до того як ПК загальмує.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">Пам\'ять вашого ПК уже 2 хвилини заповнена понад 90%.</string>
+    <string name="routines_tpl_health_ram_message">Пам\'ять вашого ПК уже %2$s заповнена понад %1$s.</string>
     <string name="routines_problem_choose_sensor">Виберіть датчик.</string>
     <string name="routines_problem_sensor_missing">{pc} зараз не передає цей датчик. Виберіть інший.</string>
     <string name="routines_problem_sensor_limit">Введіть число для порогу.</string>
@@ -1528,4 +1528,11 @@
     <string name="routines_tpl_home_music_why">Музика грає далі з того місця, де зупинилася.</string>
     <string name="routines_tpl_game_steam_name">Прийти додому й відкрити Steam</string>
     <string name="routines_tpl_game_steam_why">Ви заходите, а бібліотека вже відкрита.</string>
+    <string name="routine_channel_countdown_name">Зворотні відліки процедур</string>
+    <string name="routine_channel_countdown_description">ПК, який от-от вимкнеться, перезапуститься чи засне, з кнопкою скасування</string>
+    <string name="routines_run_origin_pc">Виконано на %1$s</string>
+    <string name="routines_run_source_idle">Після простою: %1$s</string>
+    <string name="routines_run_source_sensor">%1$s: досягнуто %2$s</string>
+    <string name="routines_run_source_session">Сеанс ПК: %1$s</string>
+    <string name="routines_run_source_home">Дім: %1$s</string>
 </resources>

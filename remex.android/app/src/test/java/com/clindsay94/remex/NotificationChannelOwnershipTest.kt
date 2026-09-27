@@ -46,12 +46,13 @@ class NotificationChannelOwnershipTest {
             constructor.containsMatchIn(it.readText())
         }.map { it.name }.sorted()
 
-        // Six channels, six constructions: connection, file transfer, file consent, and the three
-        // routine channels (progress, results, messages; RemEx-pp0rt.5), which RoutineNotifications.kt
-        // constructs one call each so this count keeps meaning "one construction per channel".
+        // Seven channels, seven constructions: connection, file transfer, file consent, and the four
+        // routine channels (progress, results, messages; RemEx-pp0rt.5; countdown, RemEx-pp0rt.17),
+        // which RoutineNotifications.kt constructs one call each so this count keeps meaning "one
+        // construction per channel".
         assertEquals(
             "each channel should be constructed once; found constructions in $declaringFiles",
-            6,
+            7,
             constructions
         )
     }

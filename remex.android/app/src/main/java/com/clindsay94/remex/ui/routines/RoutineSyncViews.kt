@@ -38,7 +38,15 @@ import com.clindsay94.remex.routines.model.RoutineSyncStatuses
 internal fun routineSyncText(view: RoutineSyncView, pcName: String?): String {
     val context = LocalContext.current
     val pc = pcLabel(pcName)
-    val args = RoutineReasonArgs(pc = pc)
+    // The real nickname or null: RoutineReasonText supplies the localized fallback and capitalises it
+    // where it starts a sentence ("Your PC can't sleep."), which a pre-filled "your PC" defeats.
+    val args =
+        RoutineReasonArgs(
+            pc = pcName?.takeIf { it.isNotBlank() },
+            action = view.action,
+            app = view.app,
+            sensor = view.sensor,
+        )
     return when (view.state) {
         RoutineSyncState.PENDING -> stringResource(R.string.routines_sync_pending, pc)
         RoutineSyncState.SYNCED -> stringResource(R.string.routines_sync_synced, pc)

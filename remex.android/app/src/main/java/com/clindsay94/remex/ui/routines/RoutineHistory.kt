@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +53,7 @@ import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
 import com.clindsay94.remex.routines.model.RoutineRunOrigins
+import com.clindsay94.remex.routines.model.RoutineRunSourceDetail
 import com.clindsay94.remex.routines.model.RoutineRunOutcomes
 import com.clindsay94.remex.routines.model.RoutineRunStep
 import com.clindsay94.remex.routines.model.RoutineStep
@@ -163,7 +167,7 @@ private val connectionFixCodes =
     )
 
 /** One run, step by step (spec A8, R-UX-28). Live while the run is in progress (M7). */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun RoutineRunPane(
     viewModel: RoutinesViewModel,
@@ -235,6 +239,27 @@ internal fun RoutineRunPane(
                 )
             }
 
+            // Where it ran, and the run's attributes (a dry run, a simulated test step, a countdown
+            // nobody saw): each changes what the outcome line means, so each is said (spec 1.10).
+            if (run.origin == RoutineRunOrigins.PC) {
+                Text(stringResource(R.string.routines_run_origin_pc, pcLabel(pcName)), style = MaterialTheme.typography.bodyMedium)
+            }
+            val attributes = run.attributes.orEmpty().filter { it in RoutineReasonText.coveredCodes && it != runCode }.distinct()
+            if (attributes.isNotEmpty()) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    attributes.forEach { code ->
+                        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
+                            Text(
+                                RoutineReasonText.history(context, code, (run.reasonArgs ?: RoutineReasonArgs()).withPc(pcName)),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
             // Timeline: the trigger node, then each step.
             TimelineNode(
                 look = OutcomeLook(triggerIcon(routine?.trigger?.type ?: RoutineTriggerTypes.MANUAL), MaterialTheme.colorScheme.primary),
@@ -242,6 +267,7 @@ internal fun RoutineRunPane(
                 trailing = RoutineTimeText.clock(run.triggeredAtUnixMs, locale = locale),
                 hasNext = run.steps.orEmpty().isNotEmpty(),
                 spinning = false,
+                message = run.sourceDetail?.let { sourceDetailText(it) },
             )
             val steps = run.steps.orEmpty()
             steps.forEachIndexed { i, step ->
@@ -337,6 +363,27 @@ private fun RunStepNode(step: RoutineRunStep, definition: RoutineStep?, pcName: 
  * A node of the run timeline: an icon (a loading indicator while that step runs, M7; a still icon
  * under reduced motion), a title, a trailing time and an optional message and fix.
  */
+/**
+ * What the trigger saw (`sourceDetail`, §6.8): "After 10 minutes idle", "GPU Core reached 92 °C",
+ * "Session: Locked", "Home: Flat". Null when the run carries nothing to say.
+ */
+@Composable
+private fun sourceDetailText(detail: RoutineRunSourceDetail): String? {
+    val context = LocalContext.current
+    val parts =
+        buildList {
+            detail.idleMinutes?.let {
+                add(stringResource(R.string.routines_run_source_idle, RoutineReasonText.formatDuration(context, (it * 60).toString())))
+            }
+            val sensor = detail.sensorName?.takeIf { it.isNotBlank() }
+            val value = detail.value?.let { v -> listOf(RoutineSensorCatalog.formatLimit(v), detail.unit.orEmpty()).filter { it.isNotBlank() }.joinToString(" ") }
+            if (sensor != null && value != null) add(stringResource(R.string.routines_run_source_sensor, sensor, value))
+            detail.sessionState?.let { add(stringResource(R.string.routines_run_source_session, stringResource(RoutineTriggerText.sessionState(it)))) }
+            detail.homeLabel?.takeIf { it.isNotBlank() }?.let { add(stringResource(R.string.routines_run_source_home, it)) }
+        }
+    return parts.takeIf { it.isNotEmpty() }?.joinToString("\n")
+}
+
 @Composable
 private fun TimelineNode(
     look: OutcomeLook,

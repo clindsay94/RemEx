@@ -1377,13 +1377,13 @@
     <string name="routines_need_memory_sensor">Sensor beban memori di PC</string>
     <string name="routines_tpl_health_gpu_name">GPU terlalu panas</string>
     <string name="routines_tpl_health_gpu_why">Ketahui saat game atau render membuat GPU Anda kepanasan.</string>
-    <string name="routines_tpl_health_gpu_message">GPU Anda di atas 85 °C selama 30 detik.</string>
+    <string name="routines_tpl_health_gpu_message">GPU Anda di atas %1$s selama %2$s.</string>
     <string name="routines_tpl_health_cpu_name">Dinginkan sebelum rusak</string>
     <string name="routines_tpl_health_cpu_why">Menidurkan PC jika CPU tetap terlalu panas.</string>
     <string name="routines_tpl_health_cpu_message">PC Anda terlalu panas dan akan tidur.</string>
     <string name="routines_tpl_health_ram_name">Memori hampir penuh</string>
     <string name="routines_tpl_health_ram_why">Tangkap aplikasi yang lepas kendali sebelum PC melambat.</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">Memori PC Anda di atas 90% selama 2 menit.</string>
+    <string name="routines_tpl_health_ram_message">Memori PC Anda di atas %1$s selama %2$s.</string>
     <string name="routines_problem_choose_sensor">Pilih sensor.</string>
     <string name="routines_problem_sensor_missing">{pc} tidak melaporkan sensor ini sekarang. Pilih yang lain.</string>
     <string name="routines_problem_sensor_limit">Masukkan angka untuk batas.</string>
@@ -1497,4 +1497,11 @@
     <string name="routines_tpl_home_music_why">Musik Anda lanjut dari tempat terakhir.</string>
     <string name="routines_tpl_game_steam_name">Tiba di rumah, buka Steam</string>
     <string name="routines_tpl_game_steam_why">Begitu masuk, pustaka Anda sudah terbuka.</string>
+    <string name="routine_channel_countdown_name">Hitung mundur rutinitas</string>
+    <string name="routine_channel_countdown_description">PC yang akan dimatikan, dimulai ulang, atau tidur, dengan tombol untuk membatalkannya</string>
+    <string name="routines_run_origin_pc">Dijalankan di %1$s</string>
+    <string name="routines_run_source_idle">Setelah %1$s tidak aktif</string>
+    <string name="routines_run_source_sensor">%1$s mencapai %2$s</string>
+    <string name="routines_run_source_session">Sesi PC: %1$s</string>
+    <string name="routines_run_source_home">Rumah: %1$s</string>
 </resources>

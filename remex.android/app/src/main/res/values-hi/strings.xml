@@ -1382,13 +1382,13 @@
     <string name="routines_need_memory_sensor">PC पर मेमोरी लोड सेंसर</string>
     <string name="routines_tpl_health_gpu_name">GPU बहुत गर्म</string>
     <string name="routines_tpl_health_gpu_why">जानें कि कब कोई गेम या रेंडर आपके GPU को तपा रहा है।</string>
-    <string name="routines_tpl_health_gpu_message">आपका GPU 30 सेकंड से 85 °C से ऊपर है।</string>
+    <string name="routines_tpl_health_gpu_message">आपका GPU %2$s से %1$s से ऊपर है।</string>
     <string name="routines_tpl_health_cpu_name">नुकसान से पहले ठंडा करें</string>
     <string name="routines_tpl_health_cpu_why">CPU ख़तरनाक रूप से गर्म रहे तो PC को स्लीप करता है।</string>
     <string name="routines_tpl_health_cpu_message">आपका PC बहुत गर्म था और स्लीप में जा रहा है।</string>
     <string name="routines_tpl_health_ram_name">मेमोरी लगभग भरी</string>
     <string name="routines_tpl_health_ram_why">PC धीमा होने से पहले बेकाबू ऐप को पकड़ें।</string>
-    <string name="routines_tpl_health_ram_message" formatted="false">आपके PC की मेमोरी 2 मिनट से 90% से ऊपर है।</string>
+    <string name="routines_tpl_health_ram_message">आपके PC की मेमोरी %2$s से %1$s से ऊपर है।</string>
     <string name="routines_problem_choose_sensor">कोई सेंसर चुनें।</string>
     <string name="routines_problem_sensor_missing">{pc} अभी यह सेंसर नहीं दिखा रहा। कोई दूसरा चुनें।</string>
     <string name="routines_problem_sensor_limit">सीमा के लिए कोई संख्या लिखें।</string>
@@ -1502,4 +1502,11 @@
     <string name="routines_tpl_home_music_why">आपका संगीत वहीं से चलेगा जहाँ रुका था।</string>
     <string name="routines_tpl_game_steam_name">घर पहुँचकर Steam खोलें</string>
     <string name="routines_tpl_game_steam_why">अंदर आते ही आपकी लाइब्रेरी खुली मिलेगी।</string>
+    <string name="routine_channel_countdown_name">रूटीन काउंटडाउन</string>
+    <string name="routine_channel_countdown_description">बंद, रीस्टार्ट या स्लीप होने वाला PC, रद्द करने के बटन के साथ</string>
+    <string name="routines_run_origin_pc">%1$s पर चली</string>
+    <string name="routines_run_source_idle">%1$s निष्क्रिय रहने के बाद</string>
+    <string name="routines_run_source_sensor">%1$s %2$s तक पहुंचा</string>
+    <string name="routines_run_source_session">PC सत्र: %1$s</string>
+    <string name="routines_run_source_home">घर: %1$s</string>
 </resources>
