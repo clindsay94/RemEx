@@ -3699,4 +3699,25 @@ Você pode mudar:
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>uma rotina</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>PC ocioso</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>bloqueio ou desbloqueio do PC</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>sensor do PC</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Executar agora neste PC</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Rotinas</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Não foi possível ler as rotinas salvas neste PC, então elas foram separadas e nenhuma será executada. Abra o RemEx no seu celular para enviá-las de novo.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>Não foi possível ler o histórico de rotinas deste PC, então ele foi separado e recomeçado.</value>
+  </data>
 </root>

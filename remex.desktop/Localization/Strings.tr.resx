@@ -3703,4 +3703,25 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>bir rutin</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>PC boşta</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>PC kilitleme veya kilit açma</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>PC sensörü</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Bu bilgisayarda şimdi çalıştır</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Rutinler</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Bu bilgisayarda kayıtlı rutinler okunamadı, bu yüzden bir kenara ayrıldı ve hiçbiri çalışmayacak. Yeniden göndermek için telefonunuzda RemEx'i açın.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>Bu bilgisayardaki rutin geçmişi okunamadı, bu yüzden bir kenara ayrıldı ve yeniden başlatıldı.</value>
+  </data>
 </root>

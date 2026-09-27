@@ -44,7 +44,10 @@ public sealed class PairedDeviceRevoker(
     PairedDeviceActivityStore activity,
     IFileTrustService fileTrust,
     IPairedDeviceDisconnector disconnector,
-    ILogger<PairedDeviceRevoker> logger) : IPairedDeviceRevoker
+    ILogger<PairedDeviceRevoker> logger,
+    // Optional and last so the revoker tests that construct this directly keep compiling; production
+    // (HostBootstrapper) always supplies it (routines spec §7.4.5, T7, RemEx-pp0rt.9).
+    Remex.Agent.Services.Routines.IRoutineOwnerLifecycle? routines = null) : IPairedDeviceRevoker
 {
     public async Task RevokeAsync(string clientId, CancellationToken ct)
     {
@@ -86,6 +89,22 @@ public sealed class PairedDeviceRevoker(
             (failures ??= []).Add(ex);
         }
 
+        // THE SIXTH STORE: a revoked phone's routines (T7). A routine is standing authority, so leaving one
+        // behind would let a lost phone's "unlock -> shut down" keep running on the PC it can no longer
+        // reach. Definitions, run history and any active run (cancelled, pc_not_paired) go together, and a
+        // failure is collected like the rest so the user hears the revocation was incomplete.
+        if (routines is not null)
+        {
+            try
+            {
+                await routines.ForgetOwnerAsync(clientId);
+            }
+            catch (Exception ex)
+            {
+                (failures ??= []).Add(ex);
+            }
+        }
+
         // AFTER THE STORES, NOT BEFORE THEM, AND OUTSIDE THE FAILURE LIST. The credential is what
         // decides whether the device may come back, so it goes first and this closes the door behind
         // it; cutting the sockets first would leave a window in which the phone reconnects, is still
@@ -115,7 +134,7 @@ public sealed class PairedDeviceRevoker(
         // carrying old rows" — which is why it is AFTER the failure check rather than before it. Run
         // unconditionally, it asserted the clean outcome in the one case where the two differ.
         logger.LogInformation(
-            "Paired device records cleared for {ClientId} (name, user override, activity, file trust).",
+            "Paired device records cleared for {ClientId} (name, user override, activity, file trust, routines).",
             LogRedaction.RedactClientId(clientId));
     }
 }

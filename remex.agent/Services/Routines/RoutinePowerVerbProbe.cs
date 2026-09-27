@@ -15,18 +15,25 @@ namespace Remex.Agent.Services.Routines;
 /// </para>
 /// <para>
 /// Windows: <c>GetPwrCapabilities</c> decides SLEEP (S3, or modern standby) and HIBERNATE (S4 with a
-/// hibernation file), and <c>GetFirmwareType</c> decides RESTARTTOUEFI. Linux: every verb is offered
-/// for now; the logind <c>CanSuspend</c> / <c>CanHibernate</c> / <c>CanRebootToFirmwareSetup</c> probe
-/// lands with the host runner (routines S4, <c>RoutinePowerVerbProbeTests</c>). A verb that turns out
-/// not to work fails visibly at run time (<c>power_denied_by_os</c> / <c>power_failed</c>).
+/// hibernation file), and <c>GetFirmwareType</c> decides RESTARTTOUEFI. A Windows probe whose DLL call
+/// throws falls back to the full list, which is what the host offered before it could probe.
 /// </para>
 /// <para>
-/// A probe that throws never takes the capability record down with it: it falls back to the full
-/// list, which is exactly what the host offered before it could probe.
+/// <b>Linux: ASK logind, AND ADVERTISE ONLY WHAT IT SAYS YES TO (RemEx-pp0rt.9 merge gate).</b> SHUTDOWN
+/// and FORCESHUTDOWN follow <c>CanPowerOff</c>, RESTART and FORCERESTART <c>CanReboot</c>, RESTARTTOUEFI
+/// <c>CanRebootToFirmwareSetup</c>, SLEEP <c>CanSuspend</c>, HIBERNATE <c>CanHibernate</c>, each only on an
+/// exact <c>yes</c> (<c>challenge</c> would raise a polkit prompt nobody is there to answer). SIGNOUT and
+/// LOCK run through <c>loginctl</c> and are offered when logind answered at all. MONITOROFF runs
+/// <c>xset dpms force off</c>, so it is offered only on an X11 session with <c>xset</c> on the PATH. A verb
+/// that cannot be probed is not advertised: the editor then disables it rather than letting a routine fail
+/// later on a PC that could never have run it.
 /// </para>
 /// </remarks>
 public static class RoutinePowerVerbProbe
 {
+    /// <summary>How long the Linux probe may take. It runs once, inside the cached capability record.</summary>
+    public static readonly TimeSpan LinuxProbeTimeout = TimeSpan.FromSeconds(3);
+
     public static List<string> Probe()
     {
         try
@@ -39,9 +46,131 @@ public static class RoutinePowerVerbProbe
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or MarshalDirectiveException)
         {
             // Fall through to the unfiltered list; see the class remarks.
+            return [.. RoutinePowerVerbs.All];
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            return ProbeLinux();
         }
 
         return [.. RoutinePowerVerbs.All];
+    }
+
+    /// <summary>
+    /// The Linux mapping, free of D-Bus so it is tested everywhere. <paramref name="answers"/> holds logind's
+    /// <c>Can*</c> answers by method name, or is null when logind could not be reached.
+    /// </summary>
+    public static List<string> MapLinux(IReadOnlyDictionary<string, string?>? answers, bool monitorOffAvailable)
+    {
+        bool Yes(string method) =>
+            answers is not null && answers.TryGetValue(method, out var answer) && LogindParsing.IsYes(answer);
+
+        var verbs = new List<string>(RoutinePowerVerbs.All.Count);
+        foreach (var verb in RoutinePowerVerbs.All)
+        {
+            var supported = verb switch
+            {
+                RoutinePowerVerbs.Shutdown or RoutinePowerVerbs.ForceShutdown => Yes("CanPowerOff"),
+                RoutinePowerVerbs.Restart or RoutinePowerVerbs.ForceRestart => Yes("CanReboot"),
+                RoutinePowerVerbs.RestartToUefi => Yes("CanRebootToFirmwareSetup"),
+                RoutinePowerVerbs.Sleep => Yes("CanSuspend"),
+                RoutinePowerVerbs.Hibernate => Yes("CanHibernate"),
+                RoutinePowerVerbs.SignOut or RoutinePowerVerbs.Lock => answers is not null,
+                RoutinePowerVerbs.MonitorOff => monitorOffAvailable,
+                _ => false,
+            };
+
+            if (supported)
+            {
+                verbs.Add(verb);
+            }
+        }
+
+        return verbs;
+    }
+
+    /// <summary>The logind methods the Linux probe asks.</summary>
+    public static readonly IReadOnlyList<string> LogindMethods =
+        ["CanPowerOff", "CanReboot", "CanRebootToFirmwareSetup", "CanSuspend", "CanHibernate"];
+
+    [SupportedOSPlatform("linux")]
+    private static List<string> ProbeLinux()
+    {
+        IReadOnlyDictionary<string, string?>? answers = null;
+        try
+        {
+            // Off the caller's context: this runs inside a Lazy the capability provider may build from a
+            // thread that carries a SynchronizationContext.
+            var probe = Task.Run(AskLogindAsync);
+            if (probe.Wait(LinuxProbeTimeout))
+            {
+                answers = probe.Result;
+            }
+        }
+        catch (AggregateException)
+        {
+            answers = null;
+        }
+
+        return MapLinux(answers, IsMonitorOffAvailable());
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static async Task<IReadOnlyDictionary<string, string?>?> AskLogindAsync()
+    {
+        var system = await RoutineDbus.ConnectAsync(
+            Tmds.DBus.Protocol.DBusAddress.System, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+        if (system is null)
+        {
+            return null;
+        }
+
+        using (system)
+        {
+            var answers = new Dictionary<string, string?>(StringComparer.Ordinal);
+            var reachable = false;
+            foreach (var method in LogindMethods)
+            {
+                try
+                {
+                    Tmds.DBus.Protocol.MessageBuffer buffer;
+                    {
+                        var writer = system.GetMessageWriter();
+                        writer.WriteMethodCallHeader(
+                            destination: RoutineDbus.LoginService,
+                            path: RoutineDbus.LoginPath,
+                            @interface: RoutineDbus.LoginManager,
+                            member: method);
+                        buffer = writer.CreateMessage();
+                    }
+
+                    answers[method] = await RoutineDbus.Timed(async () => await system.CallMethodAsync(
+                        buffer, static (Tmds.DBus.Protocol.Message msg, object? state) => msg.GetBodyReader().ReadString()));
+                    reachable = true;
+                }
+                catch (Exception)
+                {
+                    // An older logind without this method: that verb simply is not offered.
+                    answers[method] = null;
+                }
+            }
+
+            return reachable ? answers : null;
+        }
+    }
+
+    private static bool IsMonitorOffAvailable()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"))
+            || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+        {
+            return false;
+        }
+
+        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        return path.Split(':', StringSplitOptions.RemoveEmptyEntries)
+            .Any(dir => File.Exists(Path.Combine(dir, "xset")));
     }
 
     [SupportedOSPlatform("windows")]

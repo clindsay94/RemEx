@@ -3702,4 +3702,25 @@ Anda dapat mengubah:
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>rutinitas</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>PC menganggur</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>PC dikunci atau dibuka</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>sensor PC</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Jalankan sekarang di PC ini</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Rutinitas</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Rutinitas yang tersimpan di PC ini tidak dapat dibaca, jadi disisihkan dan tidak ada yang akan dijalankan. Buka RemEx di ponsel Anda untuk mengirimnya lagi.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>Riwayat rutinitas di PC ini tidak dapat dibaca, jadi disisihkan dan dimulai dari awal.</value>
+  </data>
 </root>

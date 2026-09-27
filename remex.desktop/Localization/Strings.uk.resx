@@ -3700,4 +3700,25 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>рутина</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>бездіяльність ПК</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>блокування або розблокування ПК</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>датчик ПК</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Запустити зараз на цьому ПК</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Не вдалося прочитати рутини, збережені на цьому ПК, тому їх відкладено, і жодна з них не запуститься. Відкрийте RemEx на телефоні, щоб надіслати їх знову.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>Не вдалося прочитати історію рутин на цьому ПК, тому її відкладено й почато заново.</value>
+  </data>
 </root>

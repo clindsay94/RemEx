@@ -29,6 +29,10 @@ public static class RoutineStrings
             RoutineRunSources.NfcTap => "Routine_Source_NfcTap",
             RoutineRunSources.HomeArrive => "Routine_Source_HomeArrive",
             RoutineRunSources.HomeLeave => "Routine_Source_HomeLeave",
+            RoutineRunSources.PcIdle => "Routine_Source_PcIdle",
+            RoutineRunSources.PcSession => "Routine_Source_PcSession",
+            RoutineRunSources.PcSensor => "Routine_Source_PcSensor",
+            RoutineRunSources.ManualPcRunNow => "Routine_Source_PcRunNow",
             _ => "Routine_Source_Other",
         };
         return LocalizationService.Instance[key];

@@ -45,7 +45,10 @@ public sealed class PingPongHandler(
     IPhoneThemeSnapshotStore phoneThemeStore,
     // Optional and last so the handler tests that construct this directly keep compiling; production
     // (HostBootstrapper) always supplies it. Null means routine messages are logged and ignored.
-    Remex.Agent.Services.Routines.RoutineStepRequestHandler? routineStepHandler = null) : IDisposable
+    Remex.Agent.Services.Routines.RoutineStepRequestHandler? routineStepHandler = null,
+    // PC-run routines (RemEx-pp0rt.9): routines_sync, routine_run_request, and the host-run half of
+    // routine_cancel. Optional and last for the same reason as the executor above.
+    Remex.Agent.Services.Routines.RoutineHostMessageHandler? routineHost = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -311,6 +314,11 @@ public sealed class PingPongHandler(
                 if (message.ClientCapabilities is { } capabilities)
                 {
                     sessionRegistry.SetSupportsPhonePrompt(session, capabilities.SupportsConsentPrompt);
+
+                    // Same reasoning, same safety: the flag only decides whether the host SENDS routine_*
+                    // to this client, and the registry never finds an unauthenticated session at all.
+                    // Absent means false, so an older phone is never sent a type its router would drop.
+                    sessionRegistry.SetSupportsRoutines(session, capabilities.SupportsRoutines);
                 }
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
@@ -636,6 +644,56 @@ public sealed class PingPongHandler(
 
                         break;
 
+                    // ── 3.0 Routines: PC-run routines (RemEx-pp0rt.9, spec §7.3.1, §7.3.8, §7.4.2) ──
+                    // Pairing-gated by RequiresPairing's default and scoped to a PROVEN identity, exactly
+                    // like the step request below: the owner is the client this connection proved it is,
+                    // never a payload field, and loopback (no proven identity) is refused (§7.4.2 step 1).
+                    //
+                    // DETACHED: a sync is coalesced to one per 2 s per phone and a run request may wait on
+                    // a save, and neither may park the reader that the next message arrives on. Both
+                    // handlers never throw and answer every well-formed request (T18).
+                    case MessageTypes.RoutinesSync:
+                        if (routineHost is null || !identityProven || string.IsNullOrWhiteSpace(connectionClientId))
+                        {
+                            logger.LogWarning("Ignored routines_sync: no routines host or no proven client identity.");
+                            break;
+                        }
+
+                        {
+                            var syncOwner = connectionClientId;
+                            var sync = message.RoutinesSync;
+                            _ = RunDetachedAsync(
+                                () => routineHost.HandleSyncAsync(
+                                    syncOwner, sync, reply => MessageSerializer.SendAsync(webSocket, reply, ct)),
+                                "routines_sync");
+                        }
+
+                        break;
+
+                    case MessageTypes.RoutineRunRequest:
+                        if (routineHost is null || !identityProven || string.IsNullOrWhiteSpace(connectionClientId))
+                        {
+                            logger.LogWarning("Ignored routine_run_request: no routines host or no proven client identity.");
+                            break;
+                        }
+
+                        {
+                            var runOwner = connectionClientId;
+                            var runRequest = message.RoutineRunRequest;
+                            _ = RunDetachedAsync(
+                                () => routineHost.HandleRunRequestAsync(
+                                    runOwner, runRequest, reply => MessageSerializer.SendAsync(webSocket, reply, ct)),
+                                "routine_run_request");
+                        }
+
+                        break;
+
+                    // The one-hour notify queue that this acknowledges is routines S5; nothing is queued
+                    // yet, so an ack has nothing to remove. Handled (not left to the default) so it is not
+                    // logged as an unknown type.
+                    case MessageTypes.RoutineNotifyAck:
+                        break;
+
                     // ── 3.0 Routines (RemEx-pp0rt.4, spec §7.3.3, §7.3.7) ──
                     // Pairing-gated by RequiresPairing's default, AND scoped to a PROVEN identity: the
                     // owner of a step or a cancel is the client this connection proved it is, never a
@@ -671,7 +729,12 @@ public sealed class PingPongHandler(
                             break;
                         }
 
-                        routineStepHandler.HandleCancel(connectionClientId, message.RoutineCancel);
+                        // A host run (PC-run routine, S4) first: it stops the run before its next step and
+                        // its countdown. Otherwise it is a phone run's step countdown (S1b).
+                        if (routineHost?.HandleCancel(connectionClientId, message.RoutineCancel) != true)
+                        {
+                            routineStepHandler.HandleCancel(connectionClientId, message.RoutineCancel);
+                        }
                         break;
 
                     // ── 2.5 Clipboard ──
