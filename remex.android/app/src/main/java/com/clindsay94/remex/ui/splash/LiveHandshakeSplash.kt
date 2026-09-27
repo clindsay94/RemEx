@@ -119,7 +119,7 @@ fun LiveHandshakeSplash(
     val scheme = MaterialTheme.colorScheme
     val palette = remember(scheme) { LiveHandshakePalette.from(scheme) }
     val locale: Locale = LocalConfiguration.current.locales[0]
-    val strings = remember(context.resources, locale) { LiveHandshakeStrings(context.resources, locale) }
+    val strings = remember(context.resources, locale) { LiveHandshakeStrings(context.resources) }
     val snapshot by signals.state.collectAsState()
     val systemMarkRect by SystemSplashHandoff.markWindowRect.collectAsState()
     val latestOnFinished by rememberUpdatedState(onFinished)
@@ -149,13 +149,10 @@ fun LiveHandshakeSplash(
                 ring = TextStyle(fontFamily = monoFamily, fontWeight = FontWeight.Medium, fontSize = 9.dp.toSp()),
                 label = TextStyle(
                     fontFamily = monoFamily, fontWeight = FontWeight.Medium,
-                    fontSize = 10.5.dp.toSp(), letterSpacing = 0.6.dp.toSp(),
+                    fontSize = 12.dp.toSp(), letterSpacing = 0.6.dp.toSp(),
                 ),
                 wordmark = TextStyle(fontFamily = wordmarkFamily, fontWeight = FontWeight.SemiBold, fontSize = 22.dp.toSp()),
-                status = TextStyle(
-                    fontFamily = monoFamily, fontWeight = FontWeight.Medium,
-                    fontSize = 10.5.dp.toSp(), letterSpacing = 1.6.dp.toSp(),
-                ),
+                console = TextStyle(fontFamily = monoFamily, fontWeight = FontWeight.Medium, fontSize = 12.dp.toSp()),
             )
         }
     }
@@ -278,8 +275,6 @@ private class LiveHandshakeScene {
     var skipAt: Double? = null
     var probeDoneAt: Double? = null
 
-    /** When the lock-on is shown (see [syncPeers]); the real ack time is [linkedAt]. */
-    var lockAt: Double? = null
     var strings: LiveHandshakeStrings? = null
 
     // Hand-off.
@@ -351,11 +346,12 @@ private class LiveHandshakeScene {
     val holePath = Path()
     val reticlePath = Path()
 
-    // Status line cache.
-    var statusKey: HandshakeStatus? = null
-    var statusText = ""
-    var statusLayout: TextLayoutResult? = null
-    var statusDots = -1
+    // Console caches: each line's text and full layout, plus the line being typed.
+    val lineTexts = ArrayList<String>(8)
+    val lineLayouts = ArrayList<TextLayoutResult>(8)
+    var typingLayout: TextLayoutResult? = null
+    var typingText = ""
+    var promptLayout: TextLayoutResult? = null
     var ringLabels: Array<TextLayoutResult?> = arrayOfNulls(3)
     var ringLabelsKey: Any? = null
     var wordmark: TextLayoutResult? = null
@@ -405,6 +401,10 @@ private class LiveHandshakeScene {
         return M.EmphasizedDecelerate(M.clamp01(t / 0.45)).toFloat()
     }
 
+    /**
+     * Brings the orbit up to date with [s]: nodes when the peer list changes, and each node's
+     * SHOWN answer time from the director's staging (the spec's staging rules; never a raw time).
+     */
     fun syncPeers(s: HandshakeSnapshot, strings: LiveHandshakeStrings) {
         snapshot = s
         // The snapshot is immutable and copied on change, so identity is a cheap "peers changed".
@@ -418,23 +418,9 @@ private class LiveHandshakeScene {
         target = null
         val targetId = s.targetId
         if (targetId != null) for (n in nodes) if (n.id == targetId) target = n
-        val realLinkedAt = sec(s.linkedAtNanos)
-        val speed = hypot(w, h) / 1.25
         for (n in nodes) {
-            val answer = s.answers[n.id]
-            val answeredAt = if (answer == null) null else sec(answer.atNanos)
-            val implicit = if (n === target) realLinkedAt else null
-            // A PC that linked has answered, whatever the probe says (it may still be in flight).
-            val at = if (answeredAt == null) implicit else if (implicit == null) answeredAt else min(answeredAt, implicit)
-            // Presentation, not simulation: an answer that is already in when the splash appears
-            // (the probe and the heartbeat both start under the system splash) is revealed when
-            // the first pulse's wavefront reaches that PC, never before. Later answers show the
-            // moment they land. The director only ever sees the real times.
-            n.answerAt = if (at == null || reduced || speed <= 0.0) at else {
-                val arrival = T.FIRST_PULSE + hypot(cos(n.angle) * rx, sin(n.angle) * ry) / speed
-                max(at, arrival)
-            }
-            val rtt = answer?.rttMs
+            n.answerAt = director.staging.shownAt(n.id)
+            val rtt = s.answers[n.id]?.rttMs
             if (rtt != n.rttMs) {
                 n.rttMs = rtt
                 n.radiusFactor = rtt?.let { M.radiusFor(it.toDouble()) } ?: 1.0
@@ -443,15 +429,37 @@ private class LiveHandshakeScene {
                 n.partial = null
             }
         }
-        // The lock is shown once the target is seen to answer, and never before it happened.
-        val tg = target
-        lockAt = if (tg == null || realLinkedAt == null) null
-        else if (reduced) realLinkedAt
-        else max(realLinkedAt, (tg.answerAt ?: realLinkedAt) + 0.12)
     }
 
+    /** Director inputs, rebuilt only when the snapshot (or the clock origin) changes. */
+    private var inputsFor: HandshakeSnapshot? = null
+    private var inputsStarted = false
+    var inputs = DirectorInputs(peers = 0, targetId = null)
+        private set
+
+    private fun inputsOf(s: HandshakeSnapshot): DirectorInputs {
+        if (s === inputsFor && started == inputsStarted) return inputs
+        inputsFor = s
+        inputsStarted = started
+        val targetId = s.targetId?.takeIf { id -> s.peers.any { it.id == id } }
+        val answers = ArrayList<DirectorAnswer>(s.answers.size)
+        for ((id, a) in s.answers) answers.add(DirectorAnswer(id, sec(a.atNanos)!!))
+        inputs = DirectorInputs(
+            peers = s.peers.size,
+            targetId = targetId,
+            answers = answers,
+            readyAt = sec(s.readyAtNanos),
+            linkedAt = if (targetId != null) sec(s.linkedAtNanos) else null,
+            failedAt = if (targetId != null) sec(s.failedAtNanos) else null,
+            skipAt = sec(s.skipAtNanos),
+        )
+        return inputs
+    }
+
+    /** One per scene, so the console's per-frame lookup allocates nothing. */
+    private val rttFor: (String) -> Long? = { id -> snapshot.answers[id]?.rttMs }
+
     fun step(t: Double, s: HandshakeSnapshot) {
-        strings?.let { if (w > 0f) syncPeers(s, it) }
         snapshot = s
         connectStartAt = sec(s.connectStartAtNanos)
         linkedAt = sec(s.linkedAtNanos)
@@ -459,18 +467,9 @@ private class LiveHandshakeScene {
         readyAt = sec(s.readyAtNanos)
         skipAt = sec(s.skipAtNanos)
         probeDoneAt = sec(s.probeDoneAtNanos)
-        val hasTarget = s.targetId != null && s.peers.any { it.id == s.targetId }
-        director.step(
-            t,
-            DirectorInputs(
-                peers = s.peers.size,
-                hasTarget = hasTarget,
-                readyAt = readyAt,
-                linkedAt = if (hasTarget) linkedAt else null,
-                failedAt = if (hasTarget) failedAt else null,
-                skipAt = skipAt,
-            ),
-        )
+        val inputs = inputsOf(s)
+        director.step(t, inputs)
+        strings?.let { if (w > 0f) syncPeers(s, it) }
         val handoff = director.handoffAt
         if (handoff != null && !exitFixed) {
             exitFixed = true
@@ -483,23 +482,26 @@ private class LiveHandshakeScene {
                 exitY = cy
             }
         }
+        console.update(t, director, inputs, rttFor, targetSilentAt())
     }
 
-    /**
-     * The lock as shown: the host acked before any hand-off (the director's rule, on the real
-     * time) and the reveal time [lockAt] has come.
-     */
-    fun lockedNow(t: Double): Boolean =
-        target != null && director.isLinkedAt(Double.MAX_VALUE, linkedAt) && director.isLinkedAt(t, lockAt)
+    val console = LiveHandshakeConsole()
+
+    /** The lock as SHOWN (staged), never the raw ack time. */
+    fun lockedNow(t: Double): Boolean = target != null && director.isLockShownAt(t)
+
+    fun nameOf(id: String?): String {
+        for (n in nodes) if (n.id == id) return n.name
+        return id.orEmpty()
+    }
 
     /** Seconds since the hand-off, or null while still waiting. */
     fun exitProgress(t: Double): Double? = director.handoffAt?.let { if (t >= it) t - it else null }
 
+    /** Shown as answered at [t]; the staging already dropped anything staged past the hand-off. */
     fun answered(n: NodeState, t: Double): Boolean {
         val a = n.answerAt ?: return false
-        if (t < a) return false
-        val h = director.handoffAt ?: return true
-        return a < h || (n === target && lockedNow(t))
+        return t >= a
     }
 
     private fun f(n: NodeState, t: Double): Double {
@@ -527,14 +529,12 @@ private class LiveHandshakeScene {
         fun consider(x: Double?) {
             if (x != null && (silent == null || x < silent!!)) silent = x
         }
-        if (tg.answerAt == null) consider(probeDoneAt)
+        if (snapshot.answers[tg.id] == null && linkedAt == null) consider(probeDoneAt)
         val h = director.handoffAt
-        val la = linkedAt
-        if (h != null && (la == null || la > h)) consider(h)
+        if (h != null && director.lockShown == null) consider(h)
         return silent
     }
 
-    fun awakeCount(t: Double): Int = nodes.count { answered(it, t) }
 
     /** Collects the live field rings (most recent first, at most 10) into [rings]. */
     private var scratchCount = 0
@@ -568,8 +568,8 @@ private class LiveHandshakeScene {
                 addRing(nodeX(node, a + 0.6), nodeY(node, a + 0.6), a, 0.5f)
             }
             val tg = target
-            val la = lockAt
-            if (tg != null && la != null && lockedNow(la) && (handoff == null || la <= handoff)) {
+            val la = director.lockShown
+            if (tg != null && la != null) {
                 addRing(nodeX(tg, la + 0.6), nodeY(tg, la + 0.6), la, 0.85f)
             }
             if (handoff != null) addRing(exitX, exitY, handoff, 1.4f)
@@ -640,7 +640,7 @@ private class LiveHandshakeTextStyles(
     val ring: TextStyle,
     val label: TextStyle,
     val wordmark: TextStyle,
-    val status: TextStyle,
+    val console: TextStyle,
 )
 
 private fun DrawScope.drawVectors(
@@ -708,7 +708,7 @@ private fun DrawScope.drawVectorLayer(
     drawBeamAndReticle(scene, t, p, reduced, fade, mcx, mcy, markW)
     drawNodes(scene, t, p, reduced, fade, mcx, mcy, tm, styles)
     drawMark(scene, t, p, reduced, env, mcx, mcy, markW, fade)
-    drawWordmarkAndStatus(scene, t, p, fade * intro, tm, styles, strings, wordmarkText)
+    drawWordmarkAndConsole(scene, t, p, reduced, fade * intro, tm, styles, strings, wordmarkText)
 }
 
 private fun DrawScope.drawRangeRings(
@@ -792,7 +792,7 @@ private fun DrawScope.drawBeamAndReticle(
     val y1 = ny - uy * r1
     val grow = if (reduced) 1f else M.EmphasizedDecelerate(M.clamp01((t - cs) / 0.35)).toFloat()
     val locked = scene.lockedNow(t)
-    val linkedAt = scene.lockAt ?: 0.0
+    val linkedAt = scene.director.lockShown ?: 0.0
     if (!locked) {
         val period = 9f * px
         val phase = (((-t * 70.0 * px) % period + period) % period).toFloat()
@@ -1065,10 +1065,11 @@ private fun DrawScope.drawMark(
     }
 }
 
-private fun DrawScope.drawWordmarkAndStatus(
+private fun DrawScope.drawWordmarkAndConsole(
     scene: LiveHandshakeScene,
     t: Double,
     p: LiveHandshakePalette,
+    reduced: Boolean,
     alpha: Float,
     tm: TextMeasurer,
     styles: LiveHandshakeTextStyles,
@@ -1076,55 +1077,107 @@ private fun DrawScope.drawWordmarkAndStatus(
     wordmarkText: String,
 ) {
     val px = scene.px
-    val by = scene.h * 0.84f
+    val by = scene.h * 0.785f
     val wm = scene.wordmark ?: tm.measure(wordmarkText, styles.wordmark).also { scene.wordmark = it }
     drawText(wm, color = p.ink, topLeft = Offset(scene.cx - wm.size.width / 2f, by - wm.firstBaseline), alpha = alpha)
+    drawConsole(scene, t, p, reduced, by + 30f * px, alpha, tm, styles, strings)
+}
 
-    val tg = scene.target
-    val status = LiveHandshakeStatusModel.statusAt(
-        t = t,
-        peers = scene.nodes.size,
-        awake = scene.awakeCount(t),
-        targetName = tg?.name,
-        linked = scene.lockedNow(t),
-        targetRttMs = tg?.rttMs,
-        targetSilentAt = scene.targetSilentAt(),
-    )
-    val dots = if (status is HandshakeStatus.Pinging) 1 + floor(t * 3).toInt() % 3 else 0
-    if (status != scene.statusKey || dots != scene.statusDots) {
-        scene.statusKey = status
-        scene.statusDots = dots
-        val base = strings.status(status)
-        // Pad to a fixed width so the centred line does not jitter as the dots cycle.
-        scene.statusText = if (status is HandshakeStatus.Pinging) base + ".".repeat(dots) + " ".repeat(3 - dots) else base
-        scene.statusLayout = tm.measure(scene.statusText, styles.status)
+/**
+ * The three-line console (spec, "The console"; the lab's drawConsole): newest line at full ink
+ * (accent when hot), the one above at 55 %, the oldest at 30 %; the newest types in at 55 chars/s
+ * behind a blinking amber block while the stack slides up one line over 0.18 s. Under reduced
+ * motion lines appear whole and nothing slides.
+ */
+private fun DrawScope.drawConsole(
+    scene: LiveHandshakeScene,
+    t: Double,
+    p: LiveHandshakePalette,
+    reduced: Boolean,
+    top: Float,
+    alpha: Float,
+    tm: TextMeasurer,
+    styles: LiveHandshakeTextStyles,
+    strings: LiveHandshakeStrings,
+) {
+    val lines = scene.console.lines
+    // Text and layout for each committed line, measured once.
+    while (scene.lineTexts.size < lines.size) {
+        val line = lines[scene.lineTexts.size]
+        val text = strings.line(line) { id -> scene.nameOf(id) }
+        scene.lineTexts.add(text)
+        scene.lineLayouts.add(tm.measure(text, styles.console))
     }
-    val sl = scene.statusLayout ?: return
-    drawText(
-        sl,
-        color = if (status.hot) p.accent else p.muted,
-        topLeft = Offset(scene.cx - sl.size.width / 2f, by + 26f * px - sl.firstBaseline),
-        alpha = alpha,
-    )
+    var shownCount = 0
+    for (i in lines.indices) if (lines[i].at <= t) shownCount = i + 1
+    if (shownCount == 0) return
+    val px = scene.px
+    val lh = 19f * px
+    val colW = min(scene.w - 48f * px, 320f * px)
+    val x0 = scene.cx - colW / 2f
+    val tx = x0 + 14f * px
+    val newest = lines[shownCount - 1]
+    val age = t - newest.at
+    val slide = if (reduced) 0f else (lh * (1.0 - M.Standard(M.clamp01(age / T.LINE_SLIDE)))).toFloat()
+    val prompt = scene.promptLayout ?: tm.measure("›", styles.console).also { scene.promptLayout = it }
+    val first = max(0, shownCount - 4)
+    for (i in first until shownCount) {
+        val k = shownCount - 1 - i // 0 = newest
+        val y = top + (2 - k) * lh + slide
+        if (k >= 3 && slide <= 0.5f) continue // scrolled out
+        val a = when (k) {
+            0 -> 1f
+            1 -> 0.55f
+            2 -> 0.3f
+            else -> 0.3f * (slide / lh)
+        }
+        val line = lines[i]
+        val full = scene.lineLayouts[i]
+        val text = scene.lineTexts[i]
+        val chars = if (k == 0 && !reduced) min(text.length, floor(age * T.LINE_TYPE_RATE).toInt()) else text.length
+        val layout = if (chars >= text.length) full else {
+            val partial = text.substring(0, chars)
+            if (scene.typingLayout == null || scene.typingText != partial) {
+                scene.typingText = partial
+                scene.typingLayout = tm.measure(partial, styles.console)
+            }
+            scene.typingLayout!!
+        }
+        drawText(prompt, color = p.accent, topLeft = Offset(x0, y - prompt.firstBaseline), alpha = alpha * a)
+        val color = if (k == 0 && line.hot) p.accent else if (k == 0) p.ink else p.muted
+        if (chars > 0) {
+            drawText(layout, color = color, topLeft = Offset(tx, y - layout.firstBaseline), alpha = alpha * a)
+        }
+        if (k == 0) {
+            val typing = chars < text.length
+            if (typing || floor(t / 0.53).toInt() % 2 == 0) {
+                val w = if (chars > 0) layout.size.width.toFloat() else 0f
+                drawRect(
+                    p.accent,
+                    topLeft = Offset(tx + w + 3f * px, y - 10f * px),
+                    size = Size(6f * px, 12f * px),
+                    alpha = alpha,
+                )
+            }
+        }
+    }
 }
 
 // ───────────────────────────────────────────────────────────────────────── strings
 
-/** The splash's localized text, upper-cased for the status line with the current locale. */
-internal class LiveHandshakeStrings(private val res: Resources, private val locale: Locale) {
+/** The splash's localized text. Keyed on the configuration locale so a language change re-resolves it. */
+internal class LiveHandshakeStrings(private val res: Resources) {
     fun rtt(ms: Long): String = res.getString(R.string.splash_live_rtt_ms, ms.toInt())
 
-    fun status(status: HandshakeStatus): String = when (status) {
-        HandshakeStatus.Starting -> res.getString(R.string.splash_live_starting)
-        is HandshakeStatus.Pinging -> res.getQuantityString(R.plurals.splash_live_pinging, status.peers, status.peers)
-        is HandshakeStatus.Awake -> res.getString(R.string.splash_live_awake, status.awake, status.peers)
-        is HandshakeStatus.Linked -> res.getString(
-            R.string.splash_live_linked,
-            status.rttMs?.let { status.name + " · " + rtt(it) } ?: status.name,
-        )
-        is HandshakeStatus.NotAnswering -> res.getString(R.string.splash_live_not_answering, status.name)
-        HandshakeStatus.NonePaired -> res.getString(R.string.splash_live_none_paired)
-    }.uppercase(locale)
+    /** One console line, sentence case (never upper-cased). [nameOf] names a peer by id. */
+    fun line(line: ConsoleLine, nameOf: (String?) -> String): String = when (line.kind) {
+        ConsoleLineKind.Pinging -> res.getQuantityString(R.plurals.splash_live_pinging, line.value.toInt(), line.value.toInt())
+        ConsoleLineKind.NonePaired -> res.getString(R.string.splash_live_none_paired)
+        ConsoleLineKind.Answered -> res.getString(R.string.splash_live_answered, nameOf(line.peerId), line.value.toInt())
+        ConsoleLineKind.Linked -> res.getString(R.string.splash_live_linked_to, nameOf(line.peerId))
+        ConsoleLineKind.NotAnswering -> res.getString(R.string.splash_live_not_answering, nameOf(line.peerId))
+        ConsoleLineKind.Opening -> res.getString(R.string.splash_live_opening)
+    }
 }
 
 // ───────────────────────────────────────────────────────────────────────── parallax

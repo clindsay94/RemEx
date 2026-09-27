@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         RemexClientManager.initialize(this)
         WidgetDataCache.startCaching(this)
-        // One-time move off the previous splash default (RemEx-8g6n0). The read path applies the
+        // One-time move of every upgrading user onto Live Handshake (RemEx-8g6n0). The read path applies the
         // same rule already, so this only makes it durable; it does not gate anything.
         lifecycleScope.launch {
             runCatching { SettingsManager(applicationContext).migrateSplashStyleDefault() }

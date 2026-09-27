@@ -5,8 +5,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * The Live Handshake default and the one-time move off the previous default (RemEx-8g6n0),
- * mirroring the PC's schema-4 RemexCommand -> Cosmic Zoom precedent.
+ * The Live Handshake default and the one-time move of every upgrading user onto it (RemEx-8g6n0,
+ * Connor's 2026-09-26 decision: whatever they had).
  */
 class SplashStylesTest {
 
@@ -29,20 +29,21 @@ class SplashStylesTest {
     }
 
     @Test
-    fun `the previous default moves to Live Handshake exactly once`() {
-        assertEquals(SplashStyles.LiveHandshake, SplashStyles.effective("RemexCommand", migrated = false))
-        assertEquals(SplashStyles.LiveHandshake, SplashStyles.migratedValue("RemexCommand", migrated = false))
-        // After the move, choosing the old style again sticks.
-        assertEquals(SplashStyles.RemexCommand, SplashStyles.effective("RemexCommand", migrated = true))
-        assertNull(SplashStyles.migratedValue("RemexCommand", migrated = true))
+    fun `every stored style moves to Live Handshake once, whatever it was`() {
+        for (stored in listOf("RemexCommand", "CosmicZoom", "Pong")) {
+            assertEquals(stored, SplashStyles.LiveHandshake, SplashStyles.effective(stored, migrated = false))
+            assertEquals(stored, SplashStyles.LiveHandshake, SplashStyles.migratedValue(stored, migrated = false))
+        }
+        // Already on it: nothing to write.
+        assertEquals(SplashStyles.LiveHandshake, SplashStyles.effective("LiveHandshake", migrated = false))
+        assertNull(SplashStyles.migratedValue("LiveHandshake", migrated = false))
     }
 
     @Test
-    fun `a style someone picked is never migrated`() {
-        for (picked in listOf("CosmicZoom", "Pong", "LiveHandshake")) {
-            assertEquals(picked, SplashStyles.effective(picked, migrated = false))
+    fun `after the move, a picked style sticks`() {
+        for (picked in listOf("RemexCommand", "CosmicZoom", "Pong", "LiveHandshake")) {
             assertEquals(picked, SplashStyles.effective(picked, migrated = true))
-            assertNull(SplashStyles.migratedValue(picked, migrated = false))
+            assertNull(SplashStyles.migratedValue(picked, migrated = true))
         }
     }
 }

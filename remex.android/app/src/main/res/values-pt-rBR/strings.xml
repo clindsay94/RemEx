@@ -783,16 +783,16 @@
     <string name="splash_term_connect">conexão</string>
     <string name="splash_term_pairing">pareamento</string>
     <string name="splash_term_session_ready">sessão pronta</string>
-    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
-    <string name="splash_live_starting">Iniciando</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
     <plurals name="splash_live_pinging">
         <item quantity="one">Pingando %1$d PC</item>
         <item quantity="other">Pingando %1$d PCs</item>
     </plurals>
-    <string name="splash_live_awake">%1$d de %2$d ativos</string>
-    <string name="splash_live_linked">Vinculado · %1$s</string>
     <string name="splash_live_not_answering">%1$s não está respondendo</string>
     <string name="splash_live_none_paired">Nenhum PC pareado ainda</string>
+    <string name="splash_live_answered">%1$s respondeu em %2$d ms</string>
+    <string name="splash_live_linked_to">Vinculado a %1$s</string>
+    <string name="splash_live_opening">Abrindo o RemEx</string>
     <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <string name="personalization_splash_live">Handshake ao vivo</string>

@@ -90,7 +90,7 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("horizontal_scroll_sensitivity")
                 val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
                 val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
-                // One-time move off the previous splash default onto Live Handshake (RemEx-8g6n0);
+                // One-time move of every upgrading user onto Live Handshake (RemEx-8g6n0);
                 // see SplashStyles. Set by the migration AND by every personalization save, so a
                 // style chosen after the update is never migrated.
                 val SPLASH_STYLE_MIGRATED_V3_KEY = booleanPreferencesKey("splash_style_migrated_v3")
@@ -704,9 +704,9 @@ class SettingsManager(val context: Context) {
         }
 
         /**
-         * One-time, idempotent move of users still on the previous splash default onto Live
+         * One-time, idempotent move of every upgrading user, whatever style they had, onto Live
          * Handshake (RemEx-8g6n0; rule in [SplashStyles]). The read path already applies the same
-         * rule, so this only makes it durable; it never touches a style someone else picked.
+         * rule, so this only makes it durable; once it has run, a style picked afterwards sticks.
          */
         suspend fun migrateSplashStyleDefault() {
                 val prefs = context.dataStore.data.first()

@@ -777,15 +777,15 @@
     <string name="splash_term_connect">menghubungkan</string>
     <string name="splash_term_pairing">penyandingan</string>
     <string name="splash_term_session_ready">sesi siap</string>
-    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
-    <string name="splash_live_starting">Memulai</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
     <plurals name="splash_live_pinging">
         <item quantity="other">Melakukan ping ke %1$d PC</item>
     </plurals>
-    <string name="splash_live_awake">%1$d dari %2$d aktif</string>
-    <string name="splash_live_linked">Tersambung · %1$s</string>
     <string name="splash_live_not_answering">%1$s tidak merespons</string>
     <string name="splash_live_none_paired">Belum ada PC yang dipasangkan</string>
+    <string name="splash_live_answered">%1$s menjawab dalam %2$d ms</string>
+    <string name="splash_live_linked_to">Tersambung ke %1$s</string>
+    <string name="splash_live_opening">Membuka RemEx</string>
     <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <string name="personalization_splash_live">Jabat Tangan Langsung</string>

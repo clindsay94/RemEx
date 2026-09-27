@@ -17,16 +17,16 @@
     <string name="splash_term_connect">connect</string>
     <string name="splash_term_pairing">pairing</string>
     <string name="splash_term_session_ready">session ready</string>
-    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
-    <string name="splash_live_starting">Starting</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
     <plurals name="splash_live_pinging">
         <item quantity="one">Pinging %1$d PC</item>
         <item quantity="other">Pinging %1$d PCs</item>
     </plurals>
-    <string name="splash_live_awake">%1$d of %2$d awake</string>
-    <string name="splash_live_linked">Linked · %1$s</string>
     <string name="splash_live_not_answering">%1$s is not answering</string>
     <string name="splash_live_none_paired">No PCs paired yet</string>
+    <string name="splash_live_answered">%1$s answered in %2$d ms</string>
+    <string name="splash_live_linked_to">Linked to %1$s</string>
+    <string name="splash_live_opening">Opening RemEx</string>
     <string name="splash_live_rtt_ms">%1$d ms</string>
 
     
