@@ -644,6 +644,21 @@ routines the phone no longer shows. The flush also needs the pinned connection, 
 `PinnedHostStore.forgetHost` must call `Routines.forgetPc` / `forgetPcAt` FIRST; moved after it, the flush
 can never reach the PC and every forget becomes the 30-day owner-absent residual with nothing in the log.
 
+### Routines: a certificate repair re-keys the PC's routines, and the re-key never lowers the revision
+
+`remex.android/.../routines/RoutineRepository.kt` `rekeyHost`, called from the cert-repair migration
+branch of `ui/screens/ConnectionViewModel.kt` `recordHostAsLastConnected` (next to
+`migrateKnownHostIdentity`); pinned by `RoutineRepositoryRekeyTest` — RemEx-pp0rt.15.
+
+A confirmed repair is NOT a forget: the pins are cleared without `Routines.forgetPc`, because it is the
+same machine and the PC keeps its routines per phone (`clientId`), not per PC identity. But the new pin is
+a new `HostIdentity`, so routines and their `hostSync` entry left on the old one are stranded: nothing
+ever authenticates as that identity again, the phone never syncs that PC, the PC keeps running the last
+set, and owner-absent suspension never fires because the phone keeps connecting. The re-key moves both in
+one write and bumps `localRevision` PAST the old books with `ackedRevision` reset, so this connection
+sends the full set and the PC replaces its copy. Resetting the revision to 0 instead is silent the other
+way: revision 0 is never sent (guard above), and a low one draws `stale_revision` from the PC.
+
 ### Routines: a pending "Switch and run" belongs to the next authenticated connection only
 
 `remex.android/.../routines/RoutineSyncClient.kt` `consumePendingSwitchRun` (called first in

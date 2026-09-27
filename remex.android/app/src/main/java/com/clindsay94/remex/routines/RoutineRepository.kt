@@ -689,6 +689,46 @@ class RoutineRepository(
         }
 
     /**
+     * A confirmed certificate repair re-pinned the SAME PC under a new identity (RemEx-pp0rt.15):
+     * moves every routine bound to [oldIdentity], and that PC's sync entry, to [newIdentity] in one
+     * write. Left alone they stay keyed to an identity no connection will ever report again, so the
+     * phone never syncs that PC while the PC keeps running the last set it was sent.
+     *
+     * The PC stores routines per phone (clientId), not per PC identity, so the next sync simply
+     * replaces its copy. To make that sync happen the moved entry drops its acknowledgement and last
+     * answer, and its local revision goes PAST anything the PC can hold — never back to 0, which the
+     * PC would refuse as `stale_revision`. Run cursor and the reachable-away and history stamps carry
+     * over: it is the same machine. An entry already under [newIdentity] is merged, not duplicated.
+     *
+     * @return true when the store now has nothing under [oldIdentity]; false when it could not say
+     *   (unreadable, newer, or the write failed) or the identities are blank or equal.
+     */
+    suspend fun rekeyHost(oldIdentity: String, newIdentity: String): Boolean =
+        mutex.withLock {
+            if (oldIdentity.isBlank() || newIdentity.isBlank() || oldIdentity == newIdentity) return false
+            ensureLoadedLocked()
+            val doc = document ?: return false
+            if (doc.isNewerThanReader) return false
+            val old = doc.hostSync[oldIdentity]
+            if (old == null && doc.routines.none { it.hostIdentity == oldIdentity }) return true
+            val sources = listOfNotNull(old, doc.hostSync[newIdentity])
+            val merged =
+                RoutineHostSync(
+                    localRevision = (sources.maxOfOrNull { maxOf(it.localRevision, it.ackedRevision) } ?: 0L) + 1,
+                    ackedRevision = 0,
+                    lastResultJson = null,
+                    runCursor = sources.maxOfOrNull { it.runCursor } ?: 0L,
+                    reachableAwayAtUnixMs = sources.mapNotNull { it.reachableAwayAtUnixMs }.maxOrNull(),
+                    historyAsOfUnixMs = sources.mapNotNull { it.historyAsOfUnixMs }.maxOrNull(),
+                    unknownFieldsJson = old?.unknownFieldsJson ?: sources.firstNotNullOfOrNull { it.unknownFieldsJson },
+                )
+            val routines = doc.routines.map { if (it.hostIdentity == oldIdentity) it.copy(hostIdentity = newIdentity) else it }
+            // No books for either identity (only phone-run routines): nothing to sync, so none are made.
+            val hostSync = if (sources.isEmpty()) doc.hostSync else doc.hostSync - oldIdentity + (newIdentity to merged)
+            write(doc.copy(routines = routines, hostSync = hostSync))
+        }
+
+    /**
      * The phone half of forgetting a PC (§7.4.5, T8): every routine bound to [hostIdentity], their
      * history, and the PC's sync entry. Runs in progress of those routines are cancelled first.
      */

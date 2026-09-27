@@ -551,6 +551,19 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 pendingCertRepairMigration = null
                 KnownHosts.identityToMigrateFrom(migration, host, identity)?.let { oldIdentity ->
                     settingsManager.migrateKnownHostIdentity(oldIdentity, identity)
+                    // The PC's routines and their sync books follow it (RemEx-pp0rt.15): same guard,
+                    // same machine. Left on the old identity, the phone would never sync this PC again
+                    // while the PC kept running the last set. The re-key bumps the sync revision, so
+                    // this very connection sends the full set, which replaces the PC's copy.
+                    try {
+                        if (!Routines.repository(getApplication()).rekeyHost(oldIdentity, identity)) {
+                            android.util.Log.w("ConnectionVM", "Moving routines to the repaired PC's identity failed")
+                        }
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        android.util.Log.w("ConnectionVM", "Moving routines to the repaired PC's identity failed", e)
+                    }
                 }
             }
 
