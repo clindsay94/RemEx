@@ -70,10 +70,20 @@ object Routines {
         return forgetPc(context, identity)
     }
 
+    /**
+     * Tests only (RemEx-pp0rt.13): rebuilds the process graph around [repository], typically one over
+     * in-memory stores, so instrumented Compose tests drive the real Routines screens without the
+     * device's encrypted store, widgets or home-presence registrations.
+     */
+    @androidx.annotation.VisibleForTesting
+    internal fun installForTest(context: Context, repository: RoutineRepository) {
+        synchronized(this) { graph = Graph(context.applicationContext, repository) }
+    }
+
     private fun graph(context: Context): Graph =
         graph ?: synchronized(this) { graph ?: Graph(context.applicationContext).also { graph = it } }
 
-    private class Graph(context: Context) {
+    private class Graph(context: Context, repositoryOverride: RoutineRepository? = null) {
         private val cipher = TinkRoutineCipherSource(context)
         private val presenter = RoutineNotificationPresenter(context)
         private val controls = RoutineRunControls()
@@ -86,7 +96,7 @@ object Routines {
         val secrets = RoutineSecretStore(DataStoreRoutineKeyValueStore(context.routineSecretsDataStore), cipher)
 
         val repository =
-            RoutineRepository(
+            repositoryOverride ?: RoutineRepository(
                 documents = RoutineDocumentStore(DataStoreRoutineKeyValueStore(context.routinesDataStore), cipher),
                 historyStore = RoutineHistoryStore(DataStoreRoutineKeyValueStore(context.routineHistoryDataStore), cipher),
                 cipherSource = cipher,
