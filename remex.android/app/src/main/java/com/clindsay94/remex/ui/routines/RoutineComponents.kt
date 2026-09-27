@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Monitor
@@ -80,6 +81,8 @@ fun triggerIcon(type: String?): ImageVector =
         RoutineTriggerTypes.MANUAL -> Icons.Default.PlayCircle
         RoutineTriggerTypes.PC_SENSOR -> com.clindsay94.remex.ui.components.ThermostatGlyph
         RoutineTriggerTypes.NFC_TAP -> ImageVector.vectorResource(R.drawable.ic_routine_nfc)
+        RoutineTriggerTypes.HOME_ARRIVE -> Icons.Default.Home
+        RoutineTriggerTypes.HOME_LEAVE -> ImageVector.vectorResource(R.drawable.ic_routine_leave)
         RoutineTriggerTypes.PC_IDLE -> Icons.Default.Schedule
         RoutineTriggerTypes.PC_SESSION -> Icons.Default.Lock
         else -> Icons.Default.Route

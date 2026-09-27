@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
@@ -251,6 +252,7 @@ fun RoutinesScreen(
                         viewModel = viewModel,
                         selected = detailKey,
                         onOpen = ::open,
+                        onNavigateToConnection = onNavigateToConnection,
                     )
                 }
             },
@@ -327,8 +329,12 @@ private fun RoutinesListPane(
     viewModel: RoutinesViewModel,
     selected: RoutineDetail?,
     onOpen: (RoutineDetail) -> Unit,
+    onNavigateToConnection: () -> Unit,
 ) {
     val items by viewModel.routines.collectAsStateWithLifecycle()
+    val drift by viewModel.homeDrift.collectAsStateWithLifecycle()
+    val backgroundRestricted by viewModel.backgroundRestricted.collectAsStateWithLifecycle()
+    var homeSheet by remember { mutableStateOf(false) }
     val paused by viewModel.pausedAll.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
     val active by viewModel.activeRuns.collectAsStateWithLifecycle()
@@ -363,6 +369,7 @@ private fun RoutinesListPane(
     var nfcOff by remember { mutableStateOf(false) }
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
         nfcOff = com.clindsay94.remex.routines.nfc.NfcTagIo.adapter(context)?.isEnabled == false
+        viewModel.refreshBackgroundRestricted()
         onPauseOrDispose { }
     }
     val showNfcOff = nfcOff && items.any { it.routine.enabled && it.routine.trigger?.type == RoutineTriggerTypes.NFC_TAP }
@@ -408,6 +415,17 @@ private fun RoutinesListPane(
                                     onOpen(RoutineDetail.History(null))
                                 },
                             )
+                            if (canEdit) {
+                                // Spec 1.4: "Home network" from the list overflow.
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.routines_menu_home)) },
+                                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        homeSheet = true
+                                    },
+                                )
+                            }
                             if (canEdit && items.isNotEmpty()) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.routines_menu_show_tips)) },
@@ -500,6 +518,17 @@ private fun RoutinesListPane(
                                 )
                             }
                         }
+                        if (drift && canEdit) {
+                            // §8.3.1 drift: a replaced router would otherwise present as nothing ever firing.
+                            item(key = "home-drift") {
+                                NoticeCard(
+                                    title = null,
+                                    body = RoutineReasonText.message(context, RoutineReasonCodes.HOME_FINGERPRINT_STALE, null),
+                                    actionLabel = stringResource(R.string.routines_home_update),
+                                    onAction = { homeSheet = true },
+                                )
+                            }
+                        }
                         if (showNfcOff) {
                             item(key = "nfc-off") {
                                 NoticeCard(
@@ -574,6 +603,7 @@ private fun RoutinesListPane(
                                             lastRun = lastRun,
                                             pcName = pcName(item.routine.hostIdentity),
                                             paused = paused,
+                                            restricted = backgroundRestricted && RoutineHomeRules.isHomeTrigger(item.routine.trigger?.type),
                                             canEdit = canEdit,
                                             selected = (selected as? RoutineDetail.Editor)?.routineId == id,
                                             canMoveUp = index > 0,
@@ -674,6 +704,9 @@ private fun RoutinesListPane(
             },
             onDismiss = { confirmDelete = null },
         )
+    }
+    if (homeSheet) {
+        HomeCaptureSheet(viewModel = viewModel, onNavigateToConnection = onNavigateToConnection, onDismiss = { homeSheet = false })
     }
     writeTag?.let { item ->
         NfcWriteSheet(
@@ -811,6 +844,7 @@ private fun RoutineCard(
     lastRun: RoutineRun?,
     pcName: String?,
     paused: Boolean,
+    restricted: Boolean,
     canEdit: Boolean,
     selected: Boolean,
     canMoveUp: Boolean,
@@ -950,6 +984,14 @@ private fun RoutineCard(
                 highlightIndex = shownRun?.let { RoutineRunViews.currentStep(it) },
                 modifier = Modifier.padding(end = 12.dp),
             )
+            if (restricted) {
+                // Spec 1.3 step 8: the "needs attention" line on a home routine's card.
+                OutcomeLine(
+                    look = OutcomeLook(Icons.Default.Warning, MaterialTheme.colorScheme.tertiary),
+                    text = stringResource(R.string.routines_home_background_restricted),
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+            }
             if (runsOnPc) {
                 // "Runs on PC" chip and the routine's sync state (spec 1.2, 2.2; §7.4.1 step 5).
                 RoutinePcStatusRow(syncView = syncView, pcName = pcName, modifier = Modifier.padding(end = 12.dp))

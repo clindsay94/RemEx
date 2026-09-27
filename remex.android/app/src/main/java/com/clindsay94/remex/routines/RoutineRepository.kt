@@ -1,5 +1,7 @@
 package com.clindsay94.remex.routines
 
+import com.clindsay94.remex.routines.home.Home
+import com.clindsay94.remex.routines.home.HomeCodec
 import com.clindsay94.remex.routines.model.Routine
 import com.clindsay94.remex.routines.model.RoutineJson
 import com.clindsay94.remex.routines.model.RoutineLimits
@@ -194,7 +196,45 @@ class RoutineRepository(
     private val _hostSync = MutableStateFlow<Map<String, RoutineHostSync>>(emptyMap())
     val hostSync: StateFlow<Map<String, RoutineHostSync>> = _hostSync.asStateFlow()
 
+    /** The phone's one home (§6.6, S3), or null when none is set or it cannot be read. */
+    private val _home = MutableStateFlow<Home?>(null)
+    val home: StateFlow<Home?> = _home.asStateFlow()
+
     fun historyFor(routineId: String): Flow<List<RoutineRun>> = history.map { all -> all.filter { it.routineId == routineId } }
+
+    // ── Home (S3, §8.3.1) ──
+
+    /**
+     * Replaces the home with [transform]'s answer (null forgets it) in one write. Forgetting home
+     * leaves every `home.*` routine in place, invalid with `home_not_set` until a home is set again
+     * (spec 1.4: "needs attention", never deleted). The home never reaches a PC, so no sync revision
+     * moves.
+     */
+    suspend fun updateHome(transform: (Home?) -> Home?): Boolean =
+        mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document ?: return false
+            if (doc.isNewerThanReader) return false
+            val next = transform(HomeCodec.decode(doc.homeJson))
+            val json = next?.let(HomeCodec::encode)
+            if (json == doc.homeJson) return true
+            write(doc.copy(homeJson = json))
+        }
+
+    /**
+     * The phone just authenticated to [hostIdentity] from a network that is not home (§8.3.1
+     * "Reachable away"): it silences the leave-home authoring warning for that PC and makes an
+     * unreachable PC fail `pc_unreachable` rather than `pc_unreachable_away`.
+     */
+    suspend fun markReachableAway(hostIdentity: String): Boolean =
+        mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document ?: return false
+            if (doc.isNewerThanReader) return false
+            val entry = doc.hostSync[hostIdentity] ?: RoutineHostSync()
+            if (entry.reachableAwayAtUnixMs != null) return true
+            write(doc.copy(hostSync = doc.hostSync + (hostIdentity to entry.copy(reachableAwayAtUnixMs = clock.nowUnixMs()))))
+        }
 
     // ── Loading ──
 
@@ -718,7 +758,10 @@ class RoutineRepository(
     override suspend fun isPausedAll(): Boolean = mutex.withLock { ensureLoadedLocked(); document?.pausedAll ?: false }
 
     override suspend fun reachableAwayAtUnixMs(hostIdentity: String): Long? =
-        mutex.withLock { document?.hostSync?.get(hostIdentity)?.reachableAwayAtUnixMs }
+        mutex.withLock {
+            ensureLoadedLocked()
+            document?.hostSync?.get(hostIdentity)?.reachableAwayAtUnixMs
+        }
 
     override suspend fun recordRun(run: RoutineRun): RoutineRun =
         mutex.withLock {
@@ -802,6 +845,7 @@ class RoutineRepository(
                 .groupBy { it.routineId.orEmpty() }
                 .mapValues { (_, list) -> list.first() }
         _hostSync.value = doc?.hostSync.orEmpty()
+        _home.value = HomeCodec.decode(doc?.homeJson)
     }
 
     private fun validationContext(doc: RoutineStoreDocument): RoutineValidationContext =

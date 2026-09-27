@@ -116,6 +116,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.routines.RoutineReasonText
@@ -190,8 +191,18 @@ internal fun RoutineEditorPane(
         }
         return
     }
-    // Recomputed whenever the connected PC's launcher list or the selected MAC changes.
-    val env = remember(draft.hostIdentity, launcher, mediaKeys, sensors, selectedMac, selectedPc) { viewModel.environmentFor(draft.hostIdentity) }
+    val home by viewModel.home.collectAsStateWithLifecycle()
+    val backgroundRestricted by viewModel.backgroundRestricted.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshBackgroundRestricted()
+        onPauseOrDispose { }
+    }
+    // Recomputed whenever the connected PC's launcher list or sensor catalog, the selected MAC, the
+    // home or the reachable-away record changes.
+    val env =
+        remember(draft.hostIdentity, launcher, mediaKeys, sensors, selectedMac, selectedPc, home, hostSync) {
+            viewModel.environmentFor(draft.hostIdentity)
+        }
     val problems = RoutineEditorRules.problems(draft, env)
     val errors = RoutineEditorRules.errors(problems)
     val dirty = original?.let { !draft.sameContentAs(it) } ?: false
@@ -214,6 +225,8 @@ internal fun RoutineEditorPane(
     var stepSheet by remember { mutableStateOf<StepSheet?>(null) }
     // The NFC write sheet: null closed, false "write" (same token), true "rewrite" (new token).
     var nfcSheet by remember { mutableStateOf<Boolean?>(null) }
+    // The home capture sheet (spec 1.4): opens by itself the first time a home trigger is picked with no home.
+    var homeSheet by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     val targetY = remember { mutableStateMapOf<ProblemTarget, Int>() }
@@ -439,6 +452,17 @@ internal fun RoutineEditorPane(
                         pcName = pcName,
                         onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
+                    if (RoutineHomeRules.isHomeTrigger(draft.trigger?.type)) {
+                        HomeTriggerDetails(
+                            trigger = draft.trigger,
+                            home = home,
+                            enabled = !readOnly,
+                            onOpenHome = { homeSheet = true },
+                            onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
+                        )
+                        // Spec 1.3 step 8: Android may hold a home routine back while RemEx is restricted.
+                        if (backgroundRestricted) BackgroundRestrictedNotice()
+                    }
                     if (draft.trigger?.type == RoutineTriggerTypes.NFC_TAP) {
                         NfcTagActions(
                             viewModel = viewModel,
@@ -557,7 +581,9 @@ internal fun RoutineEditorPane(
                 val invalid = RoutineEditorRules.stepsInvalidatedBy(type, draft.steps.map { it.step })
                 if (invalid.isEmpty()) {
                     // Keep the parameters when re-picking the same trigger.
-                    if (draft.trigger?.type != type) viewModel.updateDraft { it.copy(trigger = RoutineTriggerFamilies.newTrigger(type)) }
+                    if (draft.trigger?.type != type) viewModel.updateDraft { it.copy(trigger = RoutineTriggerFamilies.newTrigger(type, viewModel.home.value?.id)) }
+                    // Spec 1.4: the first home trigger with no home opens the capture sheet.
+                    if (RoutineHomeRules.isHomeTrigger(type) && viewModel.home.value == null) homeSheet = true
                 } else {
                     pendingTriggerChange = type to invalid
                 }
@@ -573,7 +599,7 @@ internal fun RoutineEditorPane(
                 Button(onClick = {
                     pendingTriggerChange = null
                     viewModel.updateDraft { d ->
-                        d.copy(trigger = RoutineTriggerFamilies.newTrigger(type), steps = d.steps.filterIndexed { i, _ -> i !in invalid })
+                        d.copy(trigger = RoutineTriggerFamilies.newTrigger(type, viewModel.home.value?.id), steps = d.steps.filterIndexed { i, _ -> i !in invalid })
                     }
                 }) { Text(stringResource(R.string.routines_trigger_change_confirm)) }
             },
@@ -608,6 +634,9 @@ internal fun RoutineEditorPane(
             },
             onKeep = { confirmDiscard = false },
         )
+    }
+    if (homeSheet) {
+        HomeCaptureSheet(viewModel = viewModel, onNavigateToConnection = onNavigateToConnection, onDismiss = { homeSheet = false })
     }
     nfcSheet?.let { rotate ->
         draft.base?.id?.let { id ->
@@ -945,6 +974,42 @@ private fun SensorParameters(
     }
 }
 
+/**
+ * The home trigger's details (spec 1.4, A4): "Home: router 192.168.1.1" (and "Weak match" when only
+ * the router and range identify it) or "Set up home", and for `home.leave` how long the phone must be
+ * gone first.
+ */
+@Composable
+private fun HomeTriggerDetails(
+    trigger: RoutineTrigger?,
+    home: com.clindsay94.remex.routines.home.Home?,
+    enabled: Boolean,
+    onOpenHome: () -> Unit,
+    onChange: (RoutineTrigger) -> Unit,
+) {
+    if (trigger == null) return
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.weight(1f)) {
+            if (home != null) {
+                Text(stringResource(R.string.routines_home_card, home.facts.gateways.firstOrNull().orEmpty()), style = MaterialTheme.typography.bodyMedium)
+                if (!home.facts.hasSecondary) {
+                    Text(stringResource(R.string.routines_home_weak_short), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        TextButton(onClick = onOpenHome, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp)) {
+            Text(stringResource(if (home == null) R.string.routines_home_set_up else R.string.routines_menu_home))
+        }
+    }
+    if (trigger.type == RoutineTriggerTypes.HOME_LEAVE) {
+        val seconds = trigger.leaveDebounceSeconds ?: RoutineLimits.DEFAULT_LEAVE_DEBOUNCE_SECONDS
+        Text(stringResource(R.string.routines_trigger_leave_after), style = MaterialTheme.typography.labelLarge)
+        if (enabled) {
+            DurationChoices(RoutineTriggerText.leaveChoices, seconds) { picked -> onChange(trigger.copy(leaveDebounceSeconds = picked)) }
+        }
+    }
+}
+
 /** One editor message (spec 1.8). Errors show once Save was tried (templates flag them at once). */
 @Composable
 private fun ProblemLine(problem: EditorProblem, pcName: String?, showProblems: Boolean) {
@@ -986,6 +1051,8 @@ internal fun problemText(problem: EditorProblem, pcName: String?): String {
             EditorProblemCode.SENSOR_MISSING -> R.string.routines_problem_sensor_missing
             EditorProblemCode.SENSOR_LIMIT -> R.string.routines_problem_sensor_limit
             EditorProblemCode.SENSOR_SUSTAIN -> R.string.routines_problem_sensor_sustain
+            EditorProblemCode.HOME_NOT_SET -> R.string.routines_problem_home_not_set
+            EditorProblemCode.LEAVE_NEEDS_REACH -> R.string.routines_problem_leave_reach
         }
     return RoutineReasonText.render(context, stringResource(res), RoutineReasonArgs(pc = pcName, app = problem.app))
 }

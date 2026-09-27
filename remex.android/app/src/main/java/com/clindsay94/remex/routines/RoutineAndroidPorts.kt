@@ -129,8 +129,16 @@ internal class AndroidRoutinePhone(
         appContext.getSystemService(ActivityManager::class.java)?.isBackgroundRestricted ?: false
 
     /**
-     * No presence state exists on the phone until a home is captured and matched (S3), and a phone
-     * with no home cannot be away from it, so this is false and `pc_unreachable` is chosen (§10.1).
+     * A home is set and none of the phone's current networks matches it (S3, §8.3.1). A phone with no
+     * home cannot be away from it, so that is false and `pc_unreachable` is chosen (§10.1).
      */
-    override suspend fun isAwayFromHome(): Boolean = false
+    override suspend fun isAwayFromHome(): Boolean =
+        try {
+            com.clindsay94.remex.routines.home.HomePresence.isAwayFromHome(appContext)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            RoutineLog.w("Checking whether the phone is away from home failed.", e)
+            false
+        }
 }

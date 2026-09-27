@@ -42,6 +42,15 @@ class NoLocationOrExactAlarmPermissionTest {
     }
 
     @Test
+    fun `S3 home presence adds only normal permissions and no foreground-service permission`() {
+        val requested = elements("uses-permission").map { it.getAttributeNS(android, "name") }.toSet()
+        assertEquals(true, "android.permission.RECEIVE_BOOT_COMPLETED" in requested)
+        val fgs = requested.filter { it.startsWith("android.permission.FOREGROUND_SERVICE_") }.toSet()
+        assertEquals(setOf("android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"), fgs)
+        assertEquals(false, requested.any { it.contains("LOCATION") })
+    }
+
+    @Test
     fun `the only foreground-service type stays the connection service's`() {
         val types =
             elements("service").mapNotNull { it.getAttributeNS(android, "foregroundServiceType").takeIf(String::isNotEmpty) }.toSet()

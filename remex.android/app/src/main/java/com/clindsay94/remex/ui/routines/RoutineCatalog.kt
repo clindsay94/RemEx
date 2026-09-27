@@ -26,9 +26,11 @@ import com.clindsay94.remex.routines.model.RoutineTriggerTypes
 object RoutineTriggerFamilies {
     /** Triggers the editor's picker offers and the gallery shows templates for, in picker order. */
     // S4 (RemEx-pp0rt.12) added the PC idle and session families, S5 (RemEx-pp0rt.10) the sensor,
-    // S2 (RemEx-pp0rt.7) the NFC tag.
+    // S2 (RemEx-pp0rt.7) the NFC tag, S3 (RemEx-pp0rt.8) arriving and leaving home.
     val offered: List<String> =
         listOf(
+            RoutineTriggerTypes.HOME_ARRIVE,
+            RoutineTriggerTypes.HOME_LEAVE,
             RoutineTriggerTypes.NFC_TAP,
             RoutineTriggerTypes.MANUAL,
             RoutineTriggerTypes.PC_SENSOR,
@@ -43,8 +45,12 @@ object RoutineTriggerFamilies {
      * picked trigger passes the validator: idle 10 minutes, session "locked", a sensor above 85 for
      * 60 s (the sensor itself is chosen from the PC's catalog).
      */
-    fun newTrigger(type: String): RoutineTrigger =
+    fun newTrigger(type: String, homeId: String? = null): RoutineTrigger =
         when (type) {
+            // The phone's one home (D9); none yet leaves it unset and the editor asks for one.
+            RoutineTriggerTypes.HOME_ARRIVE -> RoutineTrigger(type = type, homeId = homeId)
+            RoutineTriggerTypes.HOME_LEAVE ->
+                RoutineTrigger(type = type, homeId = homeId, leaveDebounceSeconds = RoutineLimits.DEFAULT_LEAVE_DEBOUNCE_SECONDS)
             RoutineTriggerTypes.PC_IDLE -> RoutineTrigger(type = type, idleMinutes = RoutineTriggerText.DEFAULT_IDLE_MINUTES, ignoreWhileMediaPlaying = true)
             RoutineTriggerTypes.PC_SESSION -> RoutineTrigger(type = type, sessionState = RoutineSessionStates.LOCKED)
             RoutineTriggerTypes.PC_SENSOR ->
@@ -68,9 +74,14 @@ object RoutineTriggerText {
     /** Choices for `pc.idle` minutes (1 to 240). */
     val idleChoices: List<Int> = listOf(1, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240)
 
+    /** Choices for the `home.leave` debounce, in seconds (60 to 1800, default 180). */
+    val leaveChoices: List<Int> = listOf(60, 180, 300, 600, 900, 1800)
+
     @StringRes
     fun chip(type: String?): Int =
         when (type) {
+            RoutineTriggerTypes.HOME_ARRIVE -> R.string.routines_trigger_arrive_chip
+            RoutineTriggerTypes.HOME_LEAVE -> R.string.routines_trigger_leave_chip
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_chip
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_chip
             RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_chip
@@ -82,6 +93,8 @@ object RoutineTriggerText {
     @StringRes
     fun title(type: String?): Int =
         when (type) {
+            RoutineTriggerTypes.HOME_ARRIVE -> R.string.routines_trigger_arrive_title
+            RoutineTriggerTypes.HOME_LEAVE -> R.string.routines_trigger_leave_title
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_title
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_title
             RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_title
@@ -93,6 +106,8 @@ object RoutineTriggerText {
     @StringRes
     fun supporting(type: String?): Int =
         when (type) {
+            RoutineTriggerTypes.HOME_ARRIVE -> R.string.routines_trigger_arrive_supporting
+            RoutineTriggerTypes.HOME_LEAVE -> R.string.routines_trigger_leave_supporting
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_supporting
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_supporting
             RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_supporting
@@ -263,6 +278,7 @@ enum class RoutineRequirement(@StringRes val labelRes: Int) {
     TEMPERATURE_SENSOR(R.string.routines_need_temperature_sensor),
     MEMORY_SENSOR(R.string.routines_need_memory_sensor),
     NFC(R.string.routines_need_nfc),
+    HOME_NETWORK(R.string.routines_need_home),
 }
 
 /**
@@ -307,6 +323,23 @@ object RoutineTemplates {
     val all: List<RoutineTemplate> =
         listOf(
             RoutineTemplate(
+                id = "tpl.home.wake",
+                category = RoutineTemplateCategory.HOME,
+                nameRes = R.string.routines_tpl_home_wake_name,
+                whyRes = R.string.routines_tpl_home_wake_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.HOME_ARRIVE),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.WAKE)),
+                        RoutineTemplateStep(wait5),
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PHONE),
+                            notifyBodyRes = R.string.routines_tpl_home_wake_message,
+                        ),
+                    ),
+                needs = listOf(RoutineRequirement.HOME_NETWORK, RoutineRequirement.MAC_ADDRESS),
+            ),
+            RoutineTemplate(
                 id = "tpl.home.lock",
                 category = RoutineTemplateCategory.HOME,
                 nameRes = R.string.routines_tpl_home_lock_name,
@@ -323,6 +356,33 @@ object RoutineTemplates {
                 trigger = RoutineTrigger(type = RoutineTriggerTypes.PC_SESSION, sessionState = RoutineSessionStates.LOCKED),
                 steps = listOf(RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.SLEEP))),
                 needs = emptyList(),
+            ),
+            RoutineTemplate(
+                id = "tpl.home.music",
+                category = RoutineTemplateCategory.HOME,
+                nameRes = R.string.routines_tpl_home_music_name,
+                whyRes = R.string.routines_tpl_home_music_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.HOME_ARRIVE),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.WAIT_ONLINE, timeoutSeconds = 120)),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.MEDIA, mediaAction = RoutineMediaActions.PLAY_PAUSE)),
+                    ),
+                needs = listOf(RoutineRequirement.HOME_NETWORK, RoutineRequirement.MEDIA_KEYS),
+            ),
+            RoutineTemplate(
+                id = "tpl.game.steam",
+                category = RoutineTemplateCategory.GAMING,
+                nameRes = R.string.routines_tpl_game_steam_name,
+                whyRes = R.string.routines_tpl_game_steam_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.HOME_ARRIVE),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.WAKE)),
+                        RoutineTemplateStep(wait5),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.LAUNCH_APP)),
+                    ),
+                needs = listOf(RoutineRequirement.HOME_NETWORK, RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
             ),
             RoutineTemplate(
                 id = "tpl.game.night",

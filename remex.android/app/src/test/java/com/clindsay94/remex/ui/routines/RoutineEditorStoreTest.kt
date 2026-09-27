@@ -53,8 +53,11 @@ class RoutineEditorStoreTest {
     @Test
     fun `every offered template is a valid routine once its blanks are filled`() {
         val sensor = RoutineSensorOption("/gpu/0/temperature/0", "GPU Core", "°C", com.clindsay94.remex.ui.telemetry.MetricKind.GPU_TEMP_C, "GPU", 60.0)
+        // A home template fills in the phone's home once one is set (S3).
+        val homeId = "b7e14c0a-52c1-4e4f-8f43-0d7c2f9a6e11"
+        val context = com.clindsay94.remex.routines.model.RoutineValidationContext(knownHomeIds = listOf(homeId))
         for (template in RoutineTemplates.offered()) {
-            val draft = RoutineDrafts.fromTemplate(template, "Name", HOST, mac) { "Body" }
+            val draft = RoutineDrafts.fromTemplate(template, "Name", HOST, mac, homeId) { "Body" }
             val withApps =
                 draft.steps.foldIndexed(draft) { i, d, s ->
                     if (s.step.type == RoutineStepTypes.LAUNCH_APP) d.updateStep(i, s.step.copy(appId = app, appLabel = "Steam")) else d
@@ -62,20 +65,32 @@ class RoutineEditorStoreTest {
             // A health template's sensor is the one blank only the PC's catalog can fill.
             val filled = withApps.trigger?.takeIf { template.sensorPreset != null }?.let { withApps.copy(trigger = RoutineSensorCatalog.choose(it, sensor)) } ?: withApps
             val routine = filled.toRoutine("x").copy(id = uuid(), revision = 1, createdAtUnixMs = 1, updatedAtUnixMs = 1)
-            assertEquals(template.id, "ok", RoutineValidator.validateRoutine(routine).reasonCode)
-            assertTrue(template.id, RoutineEditorRules.errors(RoutineEditorRules.problems(filled, EditorEnvironment(setOf(app)))).isEmpty())
+            assertEquals(template.id, "ok", RoutineValidator.validateRoutines(listOf(routine), context).routines.single().reasonCode)
+            assertTrue(template.id, RoutineEditorRules.errors(RoutineEditorRules.problems(filled, EditorEnvironment(setOf(app), homeId = homeId))).isEmpty())
         }
     }
 
     @Test
-    fun `S2, S4 and S5 offer tag, manual, sensor, idle and session templates and feature three of them`() {
+    fun `S2 to S5 offer home, tag, manual, sensor, idle and session templates and feature three of them`() {
         val expected =
-            listOf(RoutineTriggerTypes.NFC_TAP, RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+            listOf(
+                RoutineTriggerTypes.HOME_ARRIVE,
+                RoutineTriggerTypes.HOME_LEAVE,
+                RoutineTriggerTypes.NFC_TAP,
+                RoutineTriggerTypes.MANUAL,
+                RoutineTriggerTypes.PC_SENSOR,
+                RoutineTriggerTypes.PC_IDLE,
+                RoutineTriggerTypes.PC_SESSION,
+            )
         assertEquals(expected, RoutineTriggerFamilies.offered)
         val s2 = listOf("tpl.media.movie", "tpl.media.screenoff", "tpl.work.desk", "tpl.priv.tag", "tpl.media.next")
         assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s2))
-        // With NFC the featured set is the spec's: idle sleep, then the lock tag.
-        assertEquals(listOf("tpl.power.sleep", "tpl.priv.tag"), RoutineTemplates.featured(hasNfc = true).take(2).map { it.id })
+        val s3 = listOf("tpl.home.wake", "tpl.home.music", "tpl.game.steam")
+        assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s3))
+        // No v1 template pairs home.leave with a PC step (D6).
+        assertTrue(RoutineTemplates.all.none { it.trigger.type == RoutineTriggerTypes.HOME_LEAVE })
+        // The spec's featured set (4.1): wake when I get home, sleep when idle, the lock tag.
+        assertEquals(listOf("tpl.home.wake", "tpl.power.sleep", "tpl.priv.tag"), RoutineTemplates.featured(hasNfc = true).map { it.id })
         assertTrue(RoutineTemplates.offered().all { it.trigger.type in expected })
         val s4 = listOf("tpl.home.lock", "tpl.home.sleep", "tpl.priv.unlock", "tpl.power.sleep", "tpl.power.screen")
         assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s4))
@@ -84,9 +99,8 @@ class RoutineEditorStoreTest {
         assertTrue(RoutineTemplates.offered().filter { it.id in s5 }.all { it.sensorPreset != null && it.trigger.sensorId == null })
         assertEquals(3, RoutineTemplates.featured(hasNfc = true).size)
         assertEquals(3, RoutineTemplates.featured(hasNfc = false).size)
-        // The spec's featured order: Sleep my PC when it's idle is offered now, so it leads; without
-        // NFC, Game night follows it.
-        assertEquals(listOf("tpl.power.sleep", "tpl.game.night"), RoutineTemplates.featured(hasNfc = false).take(2).map { it.id })
+        // Without NFC, Game night takes the tag's place.
+        assertEquals(listOf("tpl.home.wake", "tpl.power.sleep", "tpl.game.night"), RoutineTemplates.featured(hasNfc = false).map { it.id })
         assertTrue(RoutineTemplates.categories().all { c -> RoutineTemplates.offered().any { it.category == c } })
     }
 

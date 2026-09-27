@@ -94,7 +94,11 @@ object Routines {
                 observer = observer,
                 clock = SystemRoutineClock,
                 controls = controls,
-            ).also(surfaces::watch)
+            ).also { repo ->
+                surfaces.watch(repo)
+                // Home presence registrations follow every edit (S3, spec §8.3.1 "after every edit").
+                com.clindsay94.remex.routines.home.HomePresence.watch(context, repo)
+            }
 
         val runner =
             RoutineRunner(

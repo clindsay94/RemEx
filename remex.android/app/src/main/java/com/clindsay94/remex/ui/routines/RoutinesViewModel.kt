@@ -14,6 +14,10 @@ import com.clindsay94.remex.routines.RoutineHostSync
 import com.clindsay94.remex.routines.RoutineItem
 import com.clindsay94.remex.routines.RoutineNfcBinding
 import com.clindsay94.remex.routines.RoutinePcRunStart
+import com.clindsay94.remex.routines.home.Home
+import com.clindsay94.remex.routines.home.HomeCaptureProbe
+import com.clindsay94.remex.routines.home.HomeFacts
+import com.clindsay94.remex.routines.home.HomePresence
 import com.clindsay94.remex.routines.manual.RoutineManualEntry
 import com.clindsay94.remex.routines.manual.RoutineShortcuts
 import com.clindsay94.remex.routines.widget.RoutineWidget
@@ -277,13 +281,15 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                 }
                 source.templateId != null -> {
                     val template = RoutineTemplates.byId(source.templateId) ?: return false
+                    val hostIdentity = selectedPc.value ?: pcs.value.firstOrNull()?.identity
                     RoutineDrafts.fromTemplate(
                         template = template,
                         name = app.getString(template.nameRes),
-                        hostIdentity = selectedPc.value ?: pcs.value.firstOrNull()?.identity,
+                        hostIdentity = hostIdentity,
                         mac = selectedMac.value,
                         notifyBody = { res -> app.getString(res) },
-                    )
+                        homeId = home.value?.id,
+                    ).let { draft -> if (template.id == STEAM_TEMPLATE) preselectSteam(draft, hostIdentity) else draft }
                 }
                 else -> RoutineDrafts.blank(selectedPc.value ?: pcs.value.firstOrNull()?.identity)
             }
@@ -350,6 +356,8 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             mediaKeysSupported = if (keysPc != null && keysPc == identity) keys else null,
             // An empty frame says nothing about the catalog; only a non-empty one can say "missing".
             sensors = if (sensorPc != null && sensorPc == identity && !sensorList.isNullOrEmpty()) sensorList else null,
+            homeId = home.value?.id,
+            reachableAway = identity != null && hostSync.value[identity]?.reachableAwayAtUnixMs != null,
         )
     }
 
@@ -393,6 +401,51 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             if (!repository.setPausedAll(paused)) post(app.getString(R.string.routines_error_not_saved))
         }
     }
+
+    // ── Home (S3, RemEx-pp0rt.8) ──
+
+    /** The phone's one home, or null. */
+    val home: StateFlow<Home?> = repository.home
+
+    /** "Your home network looks different" (`home_fingerprint_stale`). */
+    val homeDrift: StateFlow<Boolean> = HomePresence.drift
+
+    private val _backgroundRestricted = MutableStateFlow(false)
+
+    /** Android restricts RemEx in the background, so home routines may be held back (spec 1.3 step 8). */
+    val backgroundRestricted: StateFlow<Boolean> = _backgroundRestricted.asStateFlow()
+
+    /** Re-read on resume: the person may have just changed it in system settings. */
+    fun refreshBackgroundRestricted() {
+        _backgroundRestricted.value = app.getSystemService(android.app.ActivityManager::class.java)?.isBackgroundRestricted == true
+    }
+
+    /** The capture API (§8.3.1): what the home sheet shows before the person confirms. */
+    suspend fun probeHome(): HomeCaptureProbe = HomePresence.probe(app)
+
+    /** "Use this network as home" (spec 1.4). The open draft's home trigger picks the home up at once. */
+    fun saveHome(facts: HomeFacts, pcIdentity: String) {
+        viewModelScope.launch {
+            if (!HomePresence.saveHome(app, facts, pcIdentity)) {
+                post(app.getString(R.string.routines_error_not_saved))
+                return@launch
+            }
+            val id = home.value?.id ?: return@launch
+            updateDraft { d -> if (RoutineHomeRules.isHomeTrigger(d.trigger?.type) && d.trigger?.homeId != id) d.copy(trigger = d.trigger?.copy(homeId = id)) else d }
+            post(app.getString(R.string.routines_home_saved))
+        }
+    }
+
+    /** "Forget home" (spec 1.4): the routines that use it stay, and need a home before they run again. */
+    fun forgetHome() {
+        viewModelScope.launch {
+            if (HomePresence.forgetHome(app)) post(app.getString(R.string.routines_home_forgotten)) else post(app.getString(R.string.routines_error_not_saved))
+        }
+    }
+
+    /** Names of the routines that start at home, for the "Forget home" confirmation. */
+    fun homeRoutineNames(): List<String> =
+        routines.value.map { it.routine }.filter { RoutineHomeRules.isHomeTrigger(it.trigger?.type) }.mapNotNull { it.name }
 
     // ── NFC tags, shortcuts and widgets (S2, RemEx-pp0rt.7) ──
 
@@ -582,8 +635,21 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
             fallback
         }
 
+    /** `tpl.game.steam` preselects a launcher entry named Steam when the PC's list has one (spec 4.1). */
+    private fun preselectSteam(draft: RoutineDraft, hostIdentity: String?): RoutineDraft {
+        val (pc, apps) = launcher.value
+        val steam = apps?.takeIf { pc != null && pc == hostIdentity }?.firstOrNull { it.name.equals("Steam", ignoreCase = true) } ?: return draft
+        return draft.copy(
+            steps =
+                draft.steps.map {
+                    if (it.step.type == RoutineStepTypes.LAUNCH_APP && it.step.appId == null) it.copy(step = it.step.copy(appId = steam.id, appLabel = steam.name)) else it
+                },
+        )
+    }
+
     companion object {
         private const val TAG = "RoutinesViewModel"
+        private const val STEAM_TEMPLATE = "tpl.game.steam"
 
         /** `aa-bb-cc-dd-ee-ff`, `AABBCCDDEEFF` or `aa:bb:...` to `AA:BB:CC:DD:EE:FF`; null when it is not a MAC. */
         fun normalizeMac(raw: String?): String? {

@@ -61,6 +61,7 @@ internal fun RoutineTemplatesPane(
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     val sensors by viewModel.sensors.collectAsStateWithLifecycle()
     val pcs by viewModel.pcs.collectAsStateWithLifecycle()
+    val home by viewModel.home.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
     val categories = RoutineTemplates.categories()
     val templates = RoutineTemplates.offered().filter { filter == null || it.category.name == filter }
@@ -77,6 +78,7 @@ internal fun RoutineTemplatesPane(
             // Spec 4.2 "Sensor": THIS template's own sensor, in the connected PC's catalog.
             RoutineRequirement.TEMPERATURE_SENSOR, RoutineRequirement.MEMORY_SENSOR -> RoutineSensorCatalog.templateSensorAvailable(template, sensorOptions)
             RoutineRequirement.NFC -> viewModel.hasNfc
+            RoutineRequirement.HOME_NETWORK -> home != null
         }
 
     Scaffold(

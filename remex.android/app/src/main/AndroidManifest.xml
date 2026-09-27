@@ -11,6 +11,10 @@
         android:name="android.hardware.nfc"
         android:required="false" />
     <uses-permission android:name="android.permission.NFC" />
+    <!-- Home presence (routines spec §8.3.1): network callbacks die on reboot, so they are
+         re-registered at BOOT_COMPLETED. A normal permission; no location permission is ever
+         requested (T16, NoLocationOrExactAlarmPermissionTest). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -56,6 +60,7 @@
         prevent that data from being included in backups.
     -->
     <application
+        android:name=".RemexApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -231,6 +236,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/routine_widget_info" />
+        </receiver>
+
+        <!-- Routines S3 (RemEx-pp0rt.8): home presence. The PendingIntent network callback's target
+             and the reboot / app-update hook that re-registers it (spec §8.3.1). NOT exported: the
+             PendingIntent is RemEx's own and both system broadcasts come from the system. -->
+        <receiver
+            android:name=".routines.home.RoutineNetworkReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <activity

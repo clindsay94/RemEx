@@ -1326,8 +1326,8 @@ device transfer in both rule files; a routine store restored without its keyset 
 
 ### `NfcRoutineActivity` must keep `DISPATCH_NFC_MESSAGE` (INVARIANT)
 
-`remex.android/app/src/main/AndroidManifest.xml:207-217` (the activity, its
-`android:permission` at `:209`), `routines/nfc/NfcRoutineActivity.kt`, `routines/nfc/NfcRoutineTag.kt:78`
+`remex.android/app/src/main/AndroidManifest.xml:212-221` (the activity, its
+`android:permission` at `:214`), `routines/nfc/NfcRoutineActivity.kt`, `routines/nfc/NfcRoutineTag.kt:78`
 (`NfcTokenVerifier.verify`); pinned by `RoutineManifestExportTest`, `NfcTokenVerifierTest` —
 RemEx-pp0rt.7, spec §8.3.2, T1-T3.
 
@@ -1355,6 +1355,41 @@ a keyset reset, or one some launcher bug hands over with altered extras must not
 user never pinned. A missing or wrong `sig` opens the routines list with "That shortcut no longer
 works" and runs nothing. Do not "simplify" this to an id lookup because the component is private; the
 signature is what binds a shortcut to the routine it was made for.
+
+### Home presence: PendingIntent network callbacks only report availability, so leave detection needs the fallback (INVARIANT)
+
+`remex.android/.../routines/home/PresenceRegistrations.kt:22` (`periodicCheck`), `:53`
+(`PresenceRegistrar.apply`), `routines/home/HomePresence.kt:231` (`sync`); pinned by
+`NetworkRegistrationTest` (`LeaveDetectionScheduling`), `PresenceStateMachineTest` — RemEx-pp0rt.8,
+spec §8.3.1 "Event sources", R-SYS-15.
+
+`registerNetworkCallback(request, PendingIntent)` delivers only the "a network is available" edge
+("Action to perform when the network is available"). It is how a dead RemEx process hears about
+arriving home. It is NOT how it hears about leaving: with mobile data always on, walking out of Wi-Fi
+range makes no new network available, so no intent is ever sent, and a `home.leave` routine would
+simply never fire while RemEx is not running. Nothing logs that; the routine just stays silent. The
+two other sources exist for exactly that case: the in-process `NetworkCallback` (`onLost`) while the
+process lives, and the 15-minute `routine-presence-check` periodic work, scheduled only while a home
+is HOME and an enabled leave routine exists (and cancelled otherwise, for the §12 battery budget).
+Do not drop the periodic check as "redundant with the callback", and do not widen it to run when no
+leave routine exists.
+
+### Home presence: registrations die on reboot and on update (INVARIANT)
+
+`AndroidManifest.xml:245` (`RoutineNetworkReceiver`: BOOT_COMPLETED, MY_PACKAGE_REPLACED),
+`AndroidManifest.xml:63` (`RemexApplication`), `routines/home/HomePresence.kt:74` (`onProcessStart`),
+`:343` (the receiver; `forgetPresence` at `:351`); pinned by `NetworkRegistrationTest` — RemEx-pp0rt.8,
+spec §8.3.1, R-SYS-16.
+
+The platform drops every network callback an app registered when the phone reboots and when the app
+is updated, and a PendingIntent registration is not restored by anything. So the registrations are
+re-made on every path that can follow a loss: process start (`RemexApplication`), `BOOT_COMPLETED`,
+`MY_PACKAGE_REPLACED`, and after every routine edit. `PresenceRegistrar.apply` always re-registers
+and never trusts an "already registered" flag, because that flag is exactly what survives a reboot
+while the registration does not. After a reboot the presence is also reset to UNKNOWN before the
+first evaluation, so a phone that reboots at home learns "home" without firing `home.arrive` (T20,
+L9). Removing the receiver, its intent filters or `RECEIVE_BOOT_COMPLETED` presents as home routines
+that worked yesterday and never fire again.
 
 ### `PinnedHostStore` — reconnect-secret persistence
 

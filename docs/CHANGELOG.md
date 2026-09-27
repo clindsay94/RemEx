@@ -35,6 +35,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   that runs out of time shows as expired in the run's history. When a PC routine is about to shut down,
   restart, sign out, sleep or hibernate the PC, a connected phone shows the countdown too, with a Cancel
   that stops it. (RemEx-pp0rt.10)
+- Routines that start when you get home or leave home, without any location permission: RemEx
+  recognises home by your Wi-Fi network's router, address range, DNS and domain, which you set once
+  from a sheet that shows exactly what it found and only saves when you say so (and only while it can
+  reach your PC on that network, never over a VPN or Tailscale). Arriving fires about 10 seconds after
+  your phone joins home Wi-Fi; leaving fires after a delay you choose (3 minutes by default), with a
+  15-minute check for phones whose mobile data never drops. Nothing fires after a reboot at home, and
+  a network flipping back and forth within 5 minutes is skipped. The list says when your home network
+  looks different (a new router) and offers to update it, a leave routine that needs the PC warns
+  unless this phone has reached that PC from away before, and home routines show a note when Android
+  restricts RemEx in the background. Three home templates join the gallery: wake my PC when I get
+  home, music on when I get home, and get home, open Steam. (RemEx-pp0rt.8)
+
 - Routines you start without opening RemEx: a Tap Run routine can go on the home screen as a shortcut
   or as a new "RemEx Routine" widget that shows its last result, and your four most recently run ones
   appear when you long-press the RemEx icon. Remote Control has a "Your routines" section above Power

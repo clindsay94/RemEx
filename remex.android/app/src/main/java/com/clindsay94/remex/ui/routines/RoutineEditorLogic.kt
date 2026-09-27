@@ -125,6 +125,7 @@ object RoutineDrafts {
         name: String,
         hostIdentity: String?,
         mac: String?,
+        homeId: String? = null,
         notifyBody: (Int) -> String,
     ): RoutineDraft =
         RoutineDraft(
@@ -132,7 +133,9 @@ object RoutineDrafts {
             name = name.take(RoutineLimits.MAX_NAME_LENGTH),
             hostIdentity = hostIdentity,
             enabled = true,
-            trigger = template.trigger,
+            // A home template binds to the phone's one home when it has one (spec 1.3 step 3: "Set up
+            // home" is flagged only when it does not).
+            trigger = if (RoutineHomeRules.isHomeTrigger(template.trigger.type)) template.trigger.copy(homeId = homeId) else template.trigger,
             steps =
                 template.steps.mapIndexed { i, templateStep ->
                     val step = templateStep.step
@@ -195,6 +198,11 @@ enum class EditorProblemCode {
 
     /** The hold time is outside 5-600 s (§6.3). */
     SENSOR_SUSTAIN,
+    /** `home.*` with no home, or with a home that was forgotten (spec 1.8 "Set up your home network."). */
+    HOME_NOT_SET,
+
+    /** `home.leave` with a PC step while this phone has never reached that PC from away (D6, R-SYS-40). */
+    LEAVE_NEEDS_REACH,
 }
 
 data class EditorProblem(
@@ -219,7 +227,28 @@ data class EditorEnvironment(
     val launcherAppIds: Set<String>? = null,
     val mediaKeysSupported: Boolean? = null,
     val sensors: List<RoutineSensorOption>? = null,
+    /** The phone's home id, or null when no home is set (S3). */
+    val homeId: String? = null,
+    /** Whether this phone has reached the target PC from a network that is not home (§8.3.1). */
+    val reachableAway: Boolean = false,
 )
+
+/** The home trigger rules of the editor (spec 1.8, §8.3.1, D6). Pure JVM. */
+object RoutineHomeRules {
+    fun isHomeTrigger(type: String?): Boolean = type == RoutineTriggerTypes.HOME_ARRIVE || type == RoutineTriggerTypes.HOME_LEAVE
+
+    /** A home trigger whose home is missing or is not the phone's current one. */
+    fun needsHome(trigger: RoutineTrigger?, homeId: String?): Boolean =
+        isHomeTrigger(trigger?.type) && (homeId == null || trigger?.homeId != homeId)
+
+    /**
+     * The leave-home warning (D6): once the phone has left the LAN the PC is usually out of reach, so a
+     * leave routine that needs the PC only works if this phone has reached it from away before (for
+     * example over Tailscale). A warning, never a block.
+     */
+    fun warnLeaveReach(trigger: RoutineTrigger?, steps: List<RoutineStep>, reachableAway: Boolean): Boolean =
+        trigger?.type == RoutineTriggerTypes.HOME_LEAVE && !reachableAway && steps.any { it.isHostExecuted }
+}
 
 /** Whether a PC's `host_info` says it accepts key presses (spec 4.2 "Media keys"). */
 object RoutineMediaKeys {
@@ -290,6 +319,12 @@ object RoutineEditorRules {
         if (draft.hostIdentity.isNullOrEmpty()) out += EditorProblem(ProblemTarget.Pc, EditorProblemCode.NO_PC, ProblemKind.ERROR)
         if (draft.trigger?.type == null) out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.NO_TRIGGER, ProblemKind.ERROR)
         draft.trigger?.takeIf { it.type == RoutineTriggerTypes.PC_SENSOR }?.let { out += sensorProblems(it, env) }
+        if (RoutineHomeRules.needsHome(draft.trigger, env.homeId)) {
+            out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.HOME_NOT_SET, ProblemKind.ERROR)
+        }
+        if (RoutineHomeRules.warnLeaveReach(draft.trigger, steps, env.reachableAway)) {
+            out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.LEAVE_NEEDS_REACH, ProblemKind.WARNING)
+        }
         if (steps.isEmpty()) out += EditorProblem(ProblemTarget.Steps, EditorProblemCode.NO_STEPS, ProblemKind.ERROR)
 
         val seen = HashMap<String, Int>()
