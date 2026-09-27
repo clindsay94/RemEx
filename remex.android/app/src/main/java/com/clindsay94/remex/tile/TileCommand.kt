@@ -123,22 +123,27 @@ internal fun TileService.confirmTileCommand(action: String, @StringRes labelRes:
  */
 internal fun sendTileWake(macAddress: String, broadcastIp: String, port: Int) {
     launchTileWork {
-        val response = RemexCoreClient.WakePc(macAddress, broadcastIp, port).getOrNull()
-
-        // runCatching, not a bare JSONObject(...) — see the identical note on
-        // WidgetCommand.reportedSuccess. TileCommandScope has a SupervisorJob and no
-        // CoroutineExceptionHandler, and a supervisor stops a failure reaching SIBLINGS rather than
-        // swallowing it: a JSONException here would reach the thread's default handler and kill the
-        // process, from a path whose only job is to log quietly.
-        val sent =
-            response != null &&
-                runCatching { JSONObject(response).optBoolean("success", false) }
-                    .getOrDefault(false)
-
         // Loggable at all only since RemEx-52n0, which stopped the native side reporting success
         // unconditionally. Before that there was nothing here worth writing down.
-        if (!sent) Log.w(TAG, "Tile wake did not leave the phone: $response")
+        if (!sendWakePacketFromPhone(macAddress, broadcastIp, port)) Log.w(TAG, "Tile wake did not leave the phone")
     }
+}
+
+/**
+ * The phone-native Wake-on-LAN send the tile uses, as a suspend call that reports whether the packet
+ * left the phone. Shared with the routine `wake` step (routines spec §8.2, RemEx-pp0rt.5), so a
+ * routine wakes a PC by exactly the path the tile, the Dashboard and Remote Control already prove.
+ *
+ * True means SENT, not woken: a switched-off machine cannot acknowledge anything.
+ */
+internal suspend fun sendWakePacketFromPhone(macAddress: String, broadcastIp: String, port: Int): Boolean {
+    val response = RemexCoreClient.WakePc(macAddress, broadcastIp, port).getOrNull() ?: return false
+    // runCatching, not a bare JSONObject(...) — see the identical note on
+    // WidgetCommand.reportedSuccess. TileCommandScope has a SupervisorJob and no
+    // CoroutineExceptionHandler, and a supervisor stops a failure reaching SIBLINGS rather than
+    // swallowing it: a JSONException here would reach the thread's default handler and kill the
+    // process, from a path whose only job is to log quietly.
+    return runCatching { JSONObject(response).optBoolean("success", false) }.getOrDefault(false)
 }
 
 /**

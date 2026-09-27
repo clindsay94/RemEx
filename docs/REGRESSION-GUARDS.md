@@ -423,6 +423,88 @@ an unreadable routine into a malformed placeholder (rejected alone, `invalid_fie
 payload into a null slot on a non-null envelope. The Kotlin reader (`RoutineJson`) applies the same
 strict-type rule so both sides reject the same documents — the shared fixtures pin it.
 
+### Routines: `routine_step_result` has its own flow, and the routine collector subscribes in `initialize`
+
+`remex.android/.../RemexClientManager.kt` `_routineStepResults`, `onRoutineMessage` (splits by
+type) and the `CoroutineStart.UNDISPATCHED` collector in the `@Synchronized` `initialize`; pinned by
+`RoutineStepResultRoutingTest` — RemEx-pp0rt.5, S1a Kotlin review finding 1.
+
+Both flows are `replay = 0` with `DROP_OLDEST`. Two silent failures follow from that. (1) With no
+subscriber, `tryEmit` succeeds and the value is simply gone, so the collector that feeds history must
+already be subscribed when the first message can arrive: it is launched UNDISPATCHED from
+`initialize`, which runs before any connect, and the worker calls `initialize` itself because a
+background trigger can start a fresh process. (2) A step result sharing a buffer with run-report
+pages is evicted by a burst of pages: the PC did the step, answered, and the phone recorded
+`step_timeout` ("no answer from the PC"). **Never route `routine_step_result` back onto the general
+flow**, and keep the runner subscribing to it BEFORE it sends the request
+(`RoutineRunner.awaitStepResult`), since there is no replay to catch an early answer.
+
+### Routines: a phone run is at most once — a step is recorded `running` before it starts
+
+`remex.android/.../routines/RoutineRunner.kt` `executeAttached` (the restart check, and the one
+`try` that covers everything after the record exists); pinned by `RoutineRunnerTest` ("a retried
+worker whose run already started a step…", "a throwing persist…", "a budget that runs out during a
+destructive host step…") — RemEx-pp0rt.5, spec §8.2, §8.6.
+
+WorkManager retries a worker the system stopped, with the same input. A runner that simply started
+again from step 0 would send `SHUTDOWN` twice, or re-open an app, with nothing in history to say
+why. So every step is persisted `running` before it executes, a retry that finds a started step
+records `interrupted_phone` and stops, and a `CancellationException` that is not our own cancel is
+rethrown with the record left `running` (the retry or the start-up sweep,
+`RoutineRepository.sweepInterrupted`, then reports it). Do not "tidy" that catch into a generic
+failure record: it would turn every system stop into a false `internal_error` and lose the retry.
+
+Every OTHER exception after the record exists must end the run (`internal_error`) through the normal
+finish path, with `RoutineWorker`'s catch calling `RoutineRepository.abandonRun` as the backstop. A
+throw that escaped left the record `running`; the sweep only runs on the first load, so every later
+start was skipped `already_running` until the process died. And whenever a run ends by the budget
+or an external stop while a host step is in flight, `routine_cancel` goes out under
+`NonCancellable` first: otherwise the phone gives up while the PC's 15 s countdown carries on and
+powers off. `after_power_off` is keyed on a power-off step that actually SUCCEEDED, never on the
+definition, so a simulated, conflict-skipped or cancelled one does not silence the steps after it.
+Host capabilities for a step come from `RemexClientManager.hostInfoForConnection` (cleared on every
+connect and disconnect, checked against the authenticated epoch and host identity), never from the
+replaying `hostCapabilities`, which can still hold the previous PC's `supportsRoutines`.
+
+### Routines: the countdown window must not depend on `MainWindow`
+
+`remex.desktop/Services/Routines/AvaloniaRoutineUi.cs:52-53` (ownerless `new RoutineCountdownWindow(…)`
+then `Show()`), `remex.desktop/Views/RoutineCountdownWindow.axaml.cs`; pinned by
+`RoutineCountdownSurfaceTests.TheCountdownWindowNeverReachesForMainWindow` and
+`RoutineCountdownWindowRenderTests` — RemEx-pp0rt.4, spec §8.6.
+
+The countdown before a routine's shut down, restart, sign out, sleep or hibernate is the person at the
+PC's only chance to stop it, and it most often fires while RemEx sits in the tray after a `--minimized`
+logon start, the state in which `MainWindow` was never constructed (P1-29, see the `ConsentRoutePolicy`
+guard below). Give the window an owner, show it with `ShowDialog`, or route it through
+`desktop.MainWindow`, and it either throws or never appears; the coordinator records that as
+`countdown_unseen`, the 15 s elapse, and the PC shuts down with nothing on screen. No exception reaches
+anyone. Keep it a top-level, ownerless, topmost window, and keep the tray "Cancel routine" item
+(`RoutineCountdownTrayState`) armed before the window is attempted, so a window that fails still leaves a
+way to cancel.
+
+**Closing the countdown window is a cancel.** It keeps system chrome, so X, Alt+F4 and the taskbar can
+dismiss it; `RoutineCountdownWindow.OnClosing` runs Cancel whenever `!e.IsProgrammatic`. Drop that and
+the window disappears while the agent's 15 s keep running, and the PC shuts down right after the person
+dismissed the warning (pinned by `RoutineCountdownWindowRenderTests.AUserCloseFromTheChromeCancelsExactlyOnce`
+and `RoutineCountdownSurfaceTests.ClosingTheWindowIsWiredToCancel`).
+
+### Routines: a test run never issues a destructive verb
+
+`remex.agent/Services/Routines/RoutineStepExecutor.cs:232` (`if (execution.TestRun)` returns `simulated`
+before the pre-issue announcement and before `IRoutinePowerExecutor`), and
+`RoutineStepRequestHandler.cs:140` (`PresenceConfirmed: false` for every wire request); pinned by
+`TestRunSimulationTests` and `CountdownCancelTests.EveryWireInitiatedStepCountsDown` — RemEx-pp0rt.4,
+spec D7, T21, T22.
+
+The phone's Test button exists so a routine ending in SHUTDOWN can be tried without shutting down. The
+check sits AFTER the countdown (a test must still show it) and BEFORE the verb, and it must stay ahead
+of every branch that can issue one, including a confirmed Run now: `testRun` may only ever make the host
+do less. Moving it below the dry-run branch or the "succeeded before the verb" send turns a test into a
+real shutdown whose history then says `simulated`. The same file is also why no wire field may map to
+`presenceConfirmed`: it skips the countdown, so it is set in-process only, by the PC's own confirmed Run
+now (S4).
+
 ### `protocolVersion` bumps must be coordinated
 
 `RemexMessage` carries `protocolVersion: 2`. A breaking wire-format change requires bumping it in
@@ -1019,6 +1101,26 @@ break Tailscale users (spurious permission prompts) or open LAN permission gates
 with the Keystore intact — it clears the `remex_tink_prefs` SharedPreferences keyset, clears both
 DataStores, and retries. **Without this the app is permanently bricked.** The keyset is Android
 Keystore-backed; no deprecated `EncryptedSharedPreferences` or `MasterKey` APIs.
+
+### Routine store — its own keyset, a REPORTED reset, and an unreadable store is never overwritten
+
+`remex.android/.../routines/RoutineAndroidStorage.kt:118` (`recover`, the `KEY_LOSS_MARKER` at
+`:166`), `routines/RoutineRepository.kt:178` (unreadable → no writes), `:219` (`reportKeyLoss`),
+`routines/RoutineStoreDocument.kt:90` (`decode` returns null, never a default); pinned by
+`RoutineRepositoryTest`, `RoutineStoreDocumentTest`, `BackupRulesRoutineExclusionTest` —
+RemEx-pp0rt.5, spec §6.7, §6.8, T12.
+
+The routines use a separate Tink keyset (`remex_routines_keyset` in `remex_routines_tink_prefs`),
+so `PinnedHostStore` above is untouched and one keyset's failure cannot cost the other. Its recovery
+mirrors the pairing store's — clear the keyset and all three routine stores, retry — with two
+differences, each of which exists because the failure would otherwise be invisible. **The reset is
+reported:** a marker is committed to the prefs file BEFORE the stores are cleared, and the repository
+turns it into the `store_reset` banner and history record before clearing it; a lost pin re-pairs
+visibly, but a lost routine just never fires again. **An unreadable document is never replaced**:
+a store that decrypts but does not parse, or a known key of the wrong type, loads as `UNREADABLE`
+and every write is refused until the user picks Reset (the same rule as "Profile writes to disk must
+be atomic, and a fallback profile must never be persisted" above). All three stores and the prefs file are excluded from cloud backup and
+device transfer in both rule files; a routine store restored without its keyset reads as corrupt.
 
 ### `PinnedHostStore` — reconnect-secret persistence
 

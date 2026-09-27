@@ -21,6 +21,10 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.data.ThemeSyncSeedResolver
 import com.clindsay94.remex.data.ThemeSyncSender
 import com.clindsay94.remex.data.toThemeSnapshot
+import com.clindsay94.remex.routines.RoutineInboundHandler
+import com.clindsay94.remex.routines.model.RoutineInbound
+import com.clindsay94.remex.routines.model.RoutineInboundMessage
+import com.clindsay94.remex.routines.model.RoutineStepResultPayload
 import com.clindsay94.remex.service.FileTransferChannelClient
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
@@ -31,6 +35,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
@@ -65,6 +70,9 @@ import org.json.JSONObject
  */
 data class EstablishedConnection(val host: String, val port: Int, val epoch: Long)
 
+/** A `host_info` JSON and the connection it arrived on; see [RemexClientManager.hostInfoForConnection]. */
+data class HostInfoForConnection(val connection: EstablishedConnection, val json: String)
+
 object RemexClientManager : RemexCoreClient.RemexCallback {
 
     /** Longest side an artwork bitmap is decoded to; see [decodeDownsampledArtwork]. */
@@ -77,7 +85,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private const val SeekConfirmWindowMs = 2_500L
 
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var settingsManager: SettingsManager? = null
+    @Volatile private var settingsManager: SettingsManager? = null
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected = _isConnected.asStateFlow()
@@ -211,6 +219,19 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _hostCapabilities =
             MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val hostCapabilities = _hostCapabilities.asSharedFlow()
+
+    /**
+     * The latest `host_info` together with the connection it ARRIVED ON, cleared on every
+     * connect and disconnect (RemEx-pp0rt.5).
+     *
+     * [hostCapabilities] above deliberately outlives its connection (its UI consumers gate on
+     * `connected` themselves), which made it wrong for a decision: a routine step read the previous
+     * PC's `supportsRoutines` on a fresh connection and reported `pc_too_old`, or sent a step to a PC
+     * that never answers one. Anything that DECIDES from host capabilities reads this instead and
+     * checks the connection epoch against [authenticatedConnection].
+     */
+    private val _hostInfoForConnection = MutableStateFlow<HostInfoForConnection?>(null)
+    val hostInfoForConnection: StateFlow<HostInfoForConnection?> = _hostInfoForConnection.asStateFlow()
 
     /**
      * What the PC is playing (RemEx-xx6xf).
@@ -357,6 +378,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         RemexCoreClient.setCallback(this)
     }
 
+    /**
+     * **@Synchronized, AND THAT IS LOAD-BEARING (RemEx-pp0rt.5).** The guard below is check-then-set,
+     * and callers now include a background thread: RoutineWorker initializes a fresh process from
+     * WorkManager while MainActivity.onCreate can do the same on Main. Unsynchronized, both could
+     * pass the null check and start two heartbeat loops and two routine collectors (every run
+     * report stored twice). A second caller blocks only for the few launches the first one makes.
+     */
+    @Synchronized
     fun initialize(context: Context) {
         if (settingsManager != null) return
 
@@ -404,6 +433,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             authenticatedConnection.filterNotNull().collect {
                 sender.onConnected(settings.personalizationPreferencesFlow.first().toThemeSnapshot())
             }
+        }
+
+        // Routine messages from the PC (RemEx-pp0rt.5). UNDISPATCHED so the collector is subscribed
+        // before initialize returns, which is before any connection exists: routineMessages has no
+        // replay, and a run report arriving with nobody subscribed would be dropped in silence.
+        managerScope.launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+            routineMessages.collect { RoutineInboundHandler.handle(appContext, it) }
         }
 
         startTelemetryBackgroundPause(appContext)
@@ -850,18 +886,35 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     val clipboardMessages = _clipboardMessages.asSharedFlow()
 
     /**
-     * Every `routine_*` envelope from the PC, verbatim (RemEx-pp0rt.3, routines spec §7.7). Decode
-     * with [com.clindsay94.remex.routines.model.RoutineInbound.parse]. Emitted from the JNI callback
-     * thread, so tryEmit; the buffer covers a burst of run-report pages plus live updates, and the
-     * oldest is dropped rather than blocking JNI. Nothing is lost for good by a drop: sync results
-     * are resent on the next sync, and run reports page from the phone's stored cursor.
+     * Every `routine_*` message from the PC EXCEPT `routine_step_result`, decoded once on arrival
+     * (RemEx-pp0rt.3, routines spec §7.7). Emitted from the JNI callback thread, so tryEmit; the
+     * buffer covers a burst of run-report pages plus live updates, and the oldest is dropped rather
+     * than blocking JNI. Nothing is lost for good by a drop: sync results are resent on the next
+     * sync, and run reports page from the phone's stored cursor.
+     *
+     * **COLLECTED FROM [initialize], EAGERLY (RemEx-pp0rt.5).** `replay = 0` means an emission with no
+     * subscriber is simply gone, so the consumer must already be subscribed when the first message
+     * can arrive; initialize runs before any connect, and subscribes without a dispatch hop.
      */
     private val _routineMessages =
-            MutableSharedFlow<String>(
+            MutableSharedFlow<RoutineInboundMessage>(
                     extraBufferCapacity = 32,
                     onBufferOverflow = BufferOverflow.DROP_OLDEST
             )
     val routineMessages = _routineMessages.asSharedFlow()
+
+    /**
+     * `routine_step_result` only, on a flow of its own (RemEx-pp0rt.5). A phone run waits on exactly
+     * one of these per host step; sharing the buffer above with run-report pages let a burst of
+     * pages evict it, and the phone then timed a step out as "no answer from the PC" although the PC
+     * had answered. The runner subscribes BEFORE it sends the request, so no replay is needed.
+     */
+    private val _routineStepResults =
+            MutableSharedFlow<RoutineStepResultPayload>(
+                    extraBufferCapacity = 16,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
+    val routineStepResults = _routineStepResults.asSharedFlow()
 
     /**
      * Smoothed round-trip time to the PC in milliseconds, or null before the first pong (RemEx-93n2).
@@ -1139,6 +1192,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // the new connection, and no reader may ever observe connected=false with authenticated=true.
         _isAuthenticated.value = false
         _authenticatedConnection.value = null
+        // The previous connection's host_info must not describe the next one (RemEx-pp0rt.5).
+        _hostInfoForConnection.value = null
         _isConnected.value = isConnected
         _isConnecting.value = false
         // Which PC this is, not merely that there is one. A host switch drives this callback false
@@ -1232,6 +1287,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onHostInfoUpdate(hostInfoData: String?) {
         hostInfoData?.let {
+            _hostInfoForConnection.value = _connectedHost.value?.let { connection -> HostInfoForConnection(connection, it) }
             _hostCapabilities.tryEmit(it)
             captureHostReportedMac(it)
         }
@@ -1463,7 +1519,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onRoutineMessage(json: String?) {
-        json?.let { _routineMessages.tryEmit(it) }
+        // RoutineInbound.parse never throws: nothing above a JNI callback can catch an exception.
+        when (val message = RoutineInbound.parse(json)) {
+            is RoutineInboundMessage.StepResult -> _routineStepResults.tryEmit(message.payload)
+            is RoutineInboundMessage.Ignored -> Unit
+            else -> _routineMessages.tryEmit(message)
+        }
     }
 
     override fun onLinkQuality(json: String?) {
@@ -1483,6 +1544,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // with authenticated=true.
         _isAuthenticated.value = false
         _authenticatedConnection.value = null
+        _hostInfoForConnection.value = null
         _isConnected.value = false
         _isConnecting.value = false
         _connectedHost.value = null

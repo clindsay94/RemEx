@@ -1590,7 +1590,8 @@ Edges must persist 3 s before firing (collapses lock→unlock→lock flaps); ≤
 | After cancel | The destructive step records `cancelled` with `cancelledBy` (`pc`, `phone` or `pause`); every remaining step records `cancelled`; the run outcome is `cancelled` with reason `cancelled_on_pc` or `cancelled_on_phone` (a pause counts as a cancel from the side that paused) |
 | After timeout | The verb is issued and the step records `succeeded` |
 | Locked PC or no desktop | The window cannot draw over the secure desktop. The 15 s still elapse, the phone mirror (when connected) is the visible surface, and the step proceeds, because a `pc.session locked → SLEEP` routine must work. The run records the attribute `countdown_unseen` |
-| Conflicts | One countdown at a time on the PC; a second destructive step is Skipped `conflict_countdown_active` |
+| Conflicts | One countdown at a time on the PC. A second destructive step is refused: on the wire the `routine_step_result` outcome is `failed` with reason `conflict_countdown_active` (§7.3.4 has no `skipped` outcome); in history that step's status is `skipped` with the same reason (§8.8) |
+| Closing the window | Any user-initiated close of `RoutineCountdownWindow` (the X, Alt+F4, the taskbar) is a Cancel. Only the coordinator's own programmatic close after the countdown ends is not |
 | Test runs | `testRun` (§7.3.3, §7.3.8, D7): the countdown runs in full on the PC and the phone, then the verb is **not** issued; the step records `simulated` and the run carries the attribute `simulated` |
 | Dry run | `Remex.Agent.exe --routines-dry-run` (command line only; no setting, file or wire field can enable it) logs destructive verbs instead of issuing them and shows a persistent "Dry run" banner on the PC Routines page. Used by the live verification script (§13.6) |
 

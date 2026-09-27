@@ -164,6 +164,14 @@
             android:taskAffinity=""
             android:theme="@style/Theme.RemEx.TileConfirm" />
 
+        <!-- Routines (RemEx-pp0rt.5): the progress notification's Cancel. NOT exported: reached only
+             through RemEx's own immutable PendingIntent, so no other app can cancel a run (spec T1).
+             The runner itself is WorkManager expedited work; no service and no new foreground-service
+             type is declared for routines (T16). -->
+        <receiver
+            android:name=".routines.RoutineNotificationActionReceiver"
+            android:exported="false" />
+
         <!-- Service for backwards compatibility of per-app languages -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

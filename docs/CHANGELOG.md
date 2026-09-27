@@ -13,11 +13,31 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Routines on the phone, underneath the screens that come next: an encrypted routine store with its
+  own key (kept out of cloud backups and device transfers), a runner that works through a routine's
+  steps in the background (wake the PC, wait for it to come online, wait, show a message, and ask the
+  PC to lock, sleep, open an app and so on), Pause all, a run history that keeps the last 50 runs of
+  each routine or 30 days, and three notification channels (progress with a Cancel button, results,
+  and messages) that show nothing private on the lock screen. Every reason a routine can stop now has
+  a plain message in all nine languages. A lost encryption key is reported, never silent, and a
+  routine store that cannot be read is never overwritten until you choose to reset it. Step results
+  from the PC now arrive on their own channel, so a busy history sync can no longer make a step look
+  unanswered. (RemEx-pp0rt.5)
+
 - Groundwork for Routines (3.0): the shared routine format, its validator and limits, the reason
   codes, and the nine new routine messages between the phone and the PC, defined identically on both
   sides and checked against shared test files. Both apps now advertise routine support, and the phone
   forwards every `routine_*` message from the PC. Additive only: no protocol version change, and
   nothing is visible yet. (RemEx-pp0rt.3)
+
+- Routines (3.0): the PC now carries out the steps a phone routine sends it: power actions, opening an
+  app from the launcher list, media keys, and a notification on the PC. Shut down, restart, sign out,
+  sleep and hibernate always count down for 15 seconds first, in a small window of their own plus a tray
+  notice and a "Cancel routine" item in the tray menu; Enter, Space or Esc cancel, and so can the phone.
+  A test run from the phone shows the countdown but never turns anything off, and
+  `Remex.Agent.exe --routines-dry-run` logs power actions instead of carrying them out. Everything is
+  checked again on the PC at run time, a resent step is never run twice, and nothing new listens on the
+  network. (RemEx-pp0rt.4)
 
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you
