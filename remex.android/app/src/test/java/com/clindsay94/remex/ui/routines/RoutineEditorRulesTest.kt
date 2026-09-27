@@ -146,9 +146,52 @@ class RoutineEditorRulesTest {
     }
 
     @Test
-    fun `on a PC routine the power-off step must be last`() {
+    fun `on a PC routine the step after the power-off step is the one that cannot run`() {
+        // The message reads "the step BEFORE it turns off the PC", so it sits on the step after.
         val problems = RoutineEditorRules.problems(draft(sleep, lock, trigger = RoutineTriggerTypes.PC_IDLE), EditorEnvironment())
-        assertEquals(ProblemTarget.Step(0), problems.single { it.code == EditorProblemCode.DESTRUCTIVE_NOT_LAST }.target)
+        assertEquals(ProblemTarget.Step(1), problems.single { it.code == EditorProblemCode.DESTRUCTIVE_NOT_LAST }.target)
+        assertEquals(ProblemTarget.Step(0), problems.single { it.code == EditorProblemCode.COUNTDOWN }.target)
+        assertTrue(codes(draft(lock, sleep, trigger = RoutineTriggerTypes.PC_IDLE)).none { it == EditorProblemCode.DESTRUCTIVE_NOT_LAST })
+    }
+
+    // ── Media keys (spec 4.2) ──
+
+    private val media = RoutineStep(type = RoutineStepTypes.MEDIA, mediaAction = "next")
+
+    @Test
+    fun `a media step warns only when the PC definitely refuses key presses`() {
+        val refused = RoutineEditorRules.problems(draft(media), EditorEnvironment(mediaKeysSupported = false))
+        val warning = refused.single { it.code == EditorProblemCode.MEDIA_KEYS }
+        assertEquals(ProblemKind.WARNING, warning.kind)
+        assertEquals(ProblemTarget.Step(0), warning.target)
+        assertTrue(RoutineEditorRules.errors(refused).isEmpty())
+        assertTrue(codes(draft(media), EditorEnvironment(mediaKeysSupported = true)).none { it == EditorProblemCode.MEDIA_KEYS })
+        assertTrue(codes(draft(media), EditorEnvironment(mediaKeysSupported = null)).none { it == EditorProblemCode.MEDIA_KEYS })
+    }
+
+    @Test
+    fun `host_info answers media keys only for the live connection, absent means yes`() {
+        assertEquals(false, RoutineMediaKeys.supported("""{"supportsInputSimulation":false}""", sameConnection = true))
+        assertEquals(true, RoutineMediaKeys.supported("""{"supportsInputSimulation":true}""", sameConnection = true))
+        assertEquals(true, RoutineMediaKeys.supported("""{"hostName":"x"}""", sameConnection = true))
+        assertEquals(null, RoutineMediaKeys.supported("""{"supportsInputSimulation":false}""", sameConnection = false))
+        assertEquals(null, RoutineMediaKeys.supported(null, sameConnection = true))
+        assertEquals(null, RoutineMediaKeys.supported("not json", sameConnection = true))
+    }
+
+    // ── R-UX-58: switching drafts asks first ──
+
+    @Test
+    fun `switching away from unsaved edits asks, and only then`() {
+        val original = draft(lock)
+        val edited = original.copy(name = "Changed")
+        assertTrue(RoutineEditorSwitch.needsDiscardPrompt(edited, original, sameSource = false))
+        assertFalse(RoutineEditorSwitch.needsDiscardPrompt(edited, original, sameSource = true))
+        assertFalse(RoutineEditorSwitch.needsDiscardPrompt(original, original, sameSource = false))
+        assertFalse(RoutineEditorSwitch.needsDiscardPrompt(null, null, sameSource = false))
+        // A reorder is an edit too.
+        val reordered = draft(lock, wake).moveStep(1, 0)
+        assertTrue(RoutineEditorSwitch.needsDiscardPrompt(reordered, draft(lock, wake), sameSource = false))
     }
 
     @Test

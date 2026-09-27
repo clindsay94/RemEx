@@ -1325,5 +1325,7 @@
         <item quantity="one">%1$d adım yalnızca telefonunuzda çalışan rutinlerde çalışır. Kaldırılacak.</item>
         <item quantity="other">%1$d adım yalnızca telefonunuzda çalışan rutinlerde çalışır. Kaldırılacaklar.</item>
     </plurals>
+    <string name="routines_run_not_found">Bu rutin artık yok.</string>
+    <string name="routines_run_unavailable">RemEx bu rutini başlatamadı. Yeniden deneyin.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

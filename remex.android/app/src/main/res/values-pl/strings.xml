@@ -1349,5 +1349,7 @@
         <item quantity="many">%1$d kroków działa tylko w rutynach uruchamianych na telefonie. Zostaną usunięte.</item>
         <item quantity="other">%1$d kroku działa tylko w rutynach uruchamianych na telefonie. Zostaną usunięte.</item>
     </plurals>
+    <string name="routines_run_not_found">Ta rutyna już nie istnieje.</string>
+    <string name="routines_run_unavailable">RemEx nie mógł uruchomić tej rutyny. Spróbuj ponownie.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

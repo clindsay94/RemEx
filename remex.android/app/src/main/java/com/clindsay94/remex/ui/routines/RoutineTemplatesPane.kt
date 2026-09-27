@@ -58,6 +58,7 @@ internal fun RoutineTemplatesPane(
     val selectedMac by viewModel.selectedMac.collectAsStateWithLifecycle()
     val launcher by viewModel.launcher.collectAsStateWithLifecycle()
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
+    val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
     val categories = RoutineTemplates.categories()
     val templates = RoutineTemplates.offered().filter { filter == null || it.category.name == filter }
@@ -67,7 +68,8 @@ internal fun RoutineTemplatesPane(
         when (requirement) {
             RoutineRequirement.MAC_ADDRESS -> selectedMac != null
             RoutineRequirement.LAUNCHER_ENTRY -> launcher.first == selectedPc && !launcher.second.isNullOrEmpty()
-            RoutineRequirement.MEDIA_KEYS -> null
+            // Known only for the connected PC; a definite "no" shows the token as missing (spec 4.2).
+            RoutineRequirement.MEDIA_KEYS -> mediaKeys.second.takeIf { mediaKeys.first != null && mediaKeys.first == selectedPc }
         }
 
     Scaffold(

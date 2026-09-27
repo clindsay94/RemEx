@@ -182,6 +182,7 @@ enum class EditorProblemCode {
     AFTER_POWER_OFF,
     COUNTDOWN,
     BUDGET_EXCEEDED,
+    MEDIA_KEYS,
 }
 
 data class EditorProblem(
@@ -197,10 +198,37 @@ data class EditorProblem(
  *
  * @property launcherAppIds the ids in the PC's launcher list, or null while that list is unknown
  *   (not connected yet). An unknown list never produces [EditorProblemCode.APP_MISSING].
+ * @property mediaKeysSupported whether the target PC accepts key presses, or null while unknown
+ *   (not the connected PC). Only a definite false produces [EditorProblemCode.MEDIA_KEYS].
  */
 data class EditorEnvironment(
     val launcherAppIds: Set<String>? = null,
+    val mediaKeysSupported: Boolean? = null,
 )
+
+/** Whether a PC's `host_info` says it accepts key presses (spec 4.2 "Media keys"). */
+object RoutineMediaKeys {
+    /**
+     * Null when unknown: no `host_info` yet, one from an older connection, or one that cannot be
+     * parsed. An absent `supportsInputSimulation` means an older PC that does accept them, the same
+     * default Remote Control uses.
+     */
+    fun supported(hostInfoJson: String?, sameConnection: Boolean): Boolean? {
+        if (hostInfoJson == null || !sameConnection) return null
+        return try {
+            org.json.JSONObject(hostInfoJson).optBoolean("supportsInputSimulation", true)
+        } catch (e: org.json.JSONException) {
+            null
+        }
+    }
+}
+
+/** "Discard changes?" before another draft replaces the open one (R-UX-58). */
+object RoutineEditorSwitch {
+    /** True when the open draft has unsaved edits and the target is a different routine or template. */
+    fun needsDiscardPrompt(draft: RoutineDraft?, original: RoutineDraft?, sameSource: Boolean): Boolean =
+        !sameSource && draft != null && original != null && !draft.sameContentAs(original)
+}
 
 /** Whether a step kind can be added to this routine right now (R-UX-10). */
 enum class StepAvailability {
@@ -277,6 +305,9 @@ object RoutineEditorRules {
                     if (RoutineText.sanitize(step.title).isBlank()) {
                         out += EditorProblem(target, EditorProblemCode.NOTIFY_NO_TITLE, ProblemKind.ERROR)
                     }
+                // Spec 1.8 / 4.2: a warning, never a block; the PC may be set up before the routine runs.
+                RoutineStepTypes.MEDIA ->
+                    if (env.mediaKeysSupported == false) out += EditorProblem(target, EditorProblemCode.MEDIA_KEYS, ProblemKind.WARNING)
             }
 
             // A phone routine may act on the PC again after powering it off, but only once it is
@@ -290,10 +321,13 @@ object RoutineEditorRules {
                 destructiveSeen++
                 if (destructiveSeen > RoutineLimits.MAX_DESTRUCTIVE_STEPS) {
                     out += EditorProblem(target, EditorProblemCode.TOO_MANY_DESTRUCTIVE, ProblemKind.ERROR)
-                } else if (hostRun && i != steps.lastIndex) {
-                    out += EditorProblem(target, EditorProblemCode.DESTRUCTIVE_NOT_LAST, ProblemKind.ERROR)
                 } else {
                     out += EditorProblem(target, EditorProblemCode.COUNTDOWN, ProblemKind.INFO)
+                    // "This can't run: the step BEFORE it turns off the PC" belongs on the step that
+                    // cannot run, the one after the power step, not on the power step itself.
+                    if (hostRun && i != steps.lastIndex) {
+                        out += EditorProblem(ProblemTarget.Step(i + 1), EditorProblemCode.DESTRUCTIVE_NOT_LAST, ProblemKind.ERROR)
+                    }
                 }
                 poweredOff = true
             }

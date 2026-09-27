@@ -1318,5 +1318,7 @@
         <item quantity="one">%1$d langkah hanya berfungsi di rutinitas yang berjalan di ponsel Anda. Langkah itu akan dihapus.</item>
         <item quantity="other">%1$d langkah hanya berfungsi di rutinitas yang berjalan di ponsel Anda. Langkah-langkah itu akan dihapus.</item>
     </plurals>
+    <string name="routines_run_not_found">Rutinitas ini sudah tidak ada.</string>
+    <string name="routines_run_unavailable">RemEx tidak dapat memulai rutinitas ini. Coba lagi.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

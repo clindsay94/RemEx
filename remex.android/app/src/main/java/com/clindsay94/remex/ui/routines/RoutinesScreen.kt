@@ -62,6 +62,7 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -132,6 +133,7 @@ import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -152,8 +154,16 @@ fun RoutinesScreen(
     val context = LocalContext.current
     val resources = LocalResources.current
 
-    fun open(detail: RoutineDetail) {
+    // Another card, "Start from blank", a template or a run's Edit while the open draft has unsaved
+    // edits: ask first (R-UX-58). The editor's BackHandler only covers system back; every in-app
+    // route to another editor comes through open().
+    var confirmSwitch by remember { mutableStateOf<RoutineDetail?>(null) }
+
+    fun navigate(detail: RoutineDetail) {
         scope.launch { navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, detail) }
+    }
+    fun open(detail: RoutineDetail) {
+        if (viewModel.needsDiscardBefore(detail)) confirmSwitch = detail else navigate(detail)
     }
     fun back() {
         scope.launch { navigator.navigateBack() }
@@ -175,8 +185,13 @@ fun RoutinesScreen(
     SideEffect { RoutineEditorChrome.editorShowing = editorFullScreen }
     DisposableEffect(Unit) { onDispose { RoutineEditorChrome.editorShowing = false } }
 
+    // Latest wins (RoutinesMessageChannel): a new message cancels the one on screen via
+    // collectLatest, and it is dismissed explicitly first. Long, never Indefinite, even with an
+    // action, and always with a dismiss button, so nothing sits on screen waiting for a tap.
     LaunchedEffect(viewModel) {
-        viewModel.messages.collect { message ->
+        viewModel.messages.collectLatest { message ->
+            if (message == null) return@collectLatest
+            snackbar.currentSnackbarData?.dismiss()
             val actionLabel =
                 when (message.action) {
                     is RoutinesMessageAction.TestNow -> resources.getString(R.string.routines_action_test_now)
@@ -184,7 +199,13 @@ fun RoutinesScreen(
                     is RoutinesMessageAction.Undo -> resources.getString(R.string.routines_undo)
                     null -> null
                 }
-            val result = snackbar.showSnackbar(message.text, actionLabel = actionLabel, withDismissAction = actionLabel == null)
+            val result =
+                snackbar.showSnackbar(
+                    message.text,
+                    actionLabel = actionLabel,
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Long,
+                )
             if (result == SnackbarResult.ActionPerformed) {
                 when (val action = message.action) {
                     is RoutinesMessageAction.TestNow -> viewModel.run(action.routineId, testRun = true)
@@ -193,7 +214,20 @@ fun RoutinesScreen(
                     null -> Unit
                 }
             }
+            // Last: clearing the message re-emits, which would cancel this block.
+            viewModel.messageShown(message)
         }
+    }
+
+    confirmSwitch?.let { target ->
+        DiscardChangesDialog(
+            onDiscard = {
+                confirmSwitch = null
+                viewModel.closeEditor()
+                navigate(target)
+            },
+            onKeep = { confirmSwitch = null },
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -892,6 +926,22 @@ internal fun RunConfirmDialog(item: RoutineItem, pcName: String?, onConfirm: () 
             ) { Text(stringResource(R.string.routines_run)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.button_cancel)) } },
+    )
+}
+
+/** "Discard changes?" (spec 1.8, R-UX-58): Discard is the danger action, Keep editing stays put. */
+@Composable
+internal fun DiscardChangesDialog(onDiscard: () -> Unit, onKeep: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onKeep,
+        title = { Text(stringResource(R.string.routines_discard_title)) },
+        confirmButton = {
+            Button(
+                onClick = onDiscard,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+            ) { Text(stringResource(R.string.routines_discard)) }
+        },
+        dismissButton = { TextButton(onClick = onKeep) { Text(stringResource(R.string.routines_keep_editing)) } },
     )
 }
 

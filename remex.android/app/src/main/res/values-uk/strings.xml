@@ -1349,5 +1349,7 @@
         <item quantity="many">%1$d кроків працюють лише в рутинах, що виконуються на телефоні. Їх буде прибрано.</item>
         <item quantity="other">%1$d кроку працюють лише в рутинах, що виконуються на телефоні. Їх буде прибрано.</item>
     </plurals>
+    <string name="routines_run_not_found">Цієї рутини більше немає.</string>
+    <string name="routines_run_unavailable">RemEx не вдалося запустити цю рутину. Спробуйте ще раз.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

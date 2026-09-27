@@ -1323,5 +1323,7 @@
         <item quantity="one">%1$d étape ne fonctionne que dans les routines exécutées sur votre téléphone. Elle sera retirée.</item>
         <item quantity="other">%1$d étapes ne fonctionnent que dans les routines exécutées sur votre téléphone. Elles seront retirées.</item>
     </plurals>
+    <string name="routines_run_not_found">Cette routine n\'existe plus.</string>
+    <string name="routines_run_unavailable">RemEx n\'a pas pu lancer cette routine. Réessayez.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

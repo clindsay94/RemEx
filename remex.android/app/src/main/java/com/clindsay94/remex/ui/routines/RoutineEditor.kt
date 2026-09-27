@@ -162,6 +162,7 @@ internal fun RoutineEditorPane(
     val launcher by viewModel.launcher.collectAsStateWithLifecycle()
     val selectedMac by viewModel.selectedMac.collectAsStateWithLifecycle()
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
+    val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     val activeRuns by viewModel.activeRuns.collectAsStateWithLifecycle()
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     // A new draft opened before the PCs loaded picks up the default PC and its MAC once they do.
@@ -179,7 +180,7 @@ internal fun RoutineEditorPane(
         return
     }
     // Recomputed whenever the connected PC's launcher list or the selected MAC changes.
-    val env = remember(draft.hostIdentity, launcher, selectedMac, selectedPc) { viewModel.environmentFor(draft.hostIdentity) }
+    val env = remember(draft.hostIdentity, launcher, mediaKeys, selectedMac, selectedPc) { viewModel.environmentFor(draft.hostIdentity) }
     val problems = RoutineEditorRules.problems(draft, env)
     val errors = RoutineEditorRules.errors(problems)
     val dirty = original?.let { !draft.sameContentAs(it) } ?: false
@@ -414,11 +415,13 @@ internal fun RoutineEditorPane(
                         onDelete = { index ->
                             val removed = draft.steps.getOrNull(index) ?: return@StepList
                             viewModel.updateDraft { it.removeStep(index) }
+                            // Bound to THIS draft: after switching routines or closing, Undo does nothing.
+                            val session = viewModel.draftSession
                             viewModel.postMessage(
                                 RoutinesMessage(
                                     resources.getString(R.string.routines_step_deleted),
                                     RoutinesMessageAction.Undo {
-                                        viewModel.updateDraft { d ->
+                                        viewModel.updateDraftIn(session) { d ->
                                             val list = d.steps.toMutableList()
                                             list.add(index.coerceAtMost(list.size), removed.copy(key = d.nextKey()))
                                             d.copy(steps = list)
@@ -529,19 +532,12 @@ internal fun RoutineEditorPane(
     }
 
     if (confirmDiscard) {
-        AlertDialog(
-            onDismissRequest = { confirmDiscard = false },
-            title = { Text(stringResource(R.string.routines_discard_title)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        confirmDiscard = false
-                        onClose()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
-                ) { Text(stringResource(R.string.routines_discard)) }
+        DiscardChangesDialog(
+            onDiscard = {
+                confirmDiscard = false
+                onClose()
             },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.routines_keep_editing)) } },
+            onKeep = { confirmDiscard = false },
         )
     }
     if (confirmDelete) {
@@ -718,6 +714,7 @@ internal fun problemText(problem: EditorProblem, pcName: String?): String {
             EditorProblemCode.AFTER_POWER_OFF -> R.string.routines_problem_after_power_off
             EditorProblemCode.COUNTDOWN -> R.string.routines_problem_countdown
             EditorProblemCode.BUDGET_EXCEEDED -> R.string.routine_reason_budget_exceeded
+            EditorProblemCode.MEDIA_KEYS -> R.string.routine_reason_media_unavailable
         }
     return RoutineReasonText.render(context, stringResource(res), RoutineReasonArgs(pc = pcName, app = problem.app))
 }

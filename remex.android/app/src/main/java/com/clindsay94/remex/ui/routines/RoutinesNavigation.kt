@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.routines
 
 import android.content.Intent
 import android.os.Parcelable
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -48,13 +49,24 @@ object RoutineOpenRequests {
     /** True when [intent] carried a routine request (it is then remembered until consumed). */
     fun offer(intent: Intent?): Boolean {
         if (intent == null) return false
-        val runId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
-        val routineId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
-        if (runId == null && routineId == null) return false
-        // Consumed once: a later configuration change re-delivering the same intent must not reopen it.
-        intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
-        intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
-        _pending.value = Request(routineId, runId)
+        // MainActivity is exported (launcher), so any app can start it with extras. Reading ANY
+        // extra unparcels the whole bundle, and below API 33 a malformed or unknown Parcelable in it
+        // throws (BadParcelableException and friends) from onCreate: a crash on launch. A request
+        // we cannot read is simply not a request.
+        val request =
+            try {
+                val runId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
+                val routineId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
+                if (runId == null && routineId == null) return false
+                // Consumed once: a later configuration change re-delivering the intent must not reopen it.
+                intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
+                intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
+                Request(routineId, runId)
+            } catch (e: RuntimeException) {
+                Log.w("RoutineOpenRequests", "Ignoring an intent whose extras could not be read.", e)
+                return false
+            }
+        _pending.value = request
         return true
     }
 

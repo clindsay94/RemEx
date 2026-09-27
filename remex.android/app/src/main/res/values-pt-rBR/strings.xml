@@ -1323,5 +1323,7 @@
         <item quantity="one">%1$d etapa só funciona em rotinas que rodam no seu celular. Ela será removida.</item>
         <item quantity="other">%1$d etapas só funcionam em rotinas que rodam no seu celular. Elas serão removidas.</item>
     </plurals>
+    <string name="routines_run_not_found">Esta rotina não existe mais.</string>
+    <string name="routines_run_unavailable">O RemEx não conseguiu iniciar esta rotina. Tente de novo.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

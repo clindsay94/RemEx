@@ -1423,5 +1423,7 @@
         <item quantity="one">%1$d step only works in routines that run on your phone. It will be removed.</item>
         <item quantity="other">%1$d steps only work in routines that run on your phone. They will be removed.</item>
     </plurals>
+    <string name="routines_run_not_found">This routine no longer exists.</string>
+    <string name="routines_run_unavailable">RemEx couldn\'t start this routine. Try again.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

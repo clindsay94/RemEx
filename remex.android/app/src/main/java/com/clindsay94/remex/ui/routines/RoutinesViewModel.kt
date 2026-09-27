@@ -27,12 +27,9 @@ import com.clindsay94.remex.security.PinnedHostStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -47,18 +44,6 @@ data class RoutinePc(val identity: String, val name: String?)
 
 /** An app from the connected PC's launcher list, with the stable id a `launchApp` step stores. */
 data class RoutineAppChoice(val id: String, val name: String)
-
-/** A one-line message for the snackbar, optionally with an action. */
-data class RoutinesMessage(val text: String, val action: RoutinesMessageAction? = null)
-
-sealed interface RoutinesMessageAction {
-    data class TestNow(val routineId: String) : RoutinesMessageAction
-
-    data class OpenRun(val runId: String) : RoutinesMessageAction
-
-    /** "Undo" after deleting a step in the editor (spec A4). */
-    class Undo(val restore: () -> Unit) : RoutinesMessageAction
-}
 
 /**
  * The Routines screen's state holder (RemEx-pp0rt.6). Everything routine-shaped comes from the S1c
@@ -81,8 +66,12 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
     val activeRuns: StateFlow<Map<String, RoutineRun>> = repository.activeRuns
     val history: StateFlow<List<RoutineRun>> = repository.history
 
-    private val _messages = MutableSharedFlow<RoutinesMessage>(extraBufferCapacity = 8)
-    val messages: SharedFlow<RoutinesMessage> = _messages.asSharedFlow()
+    private val messageChannel = RoutinesMessageChannel()
+
+    /** The snackbar message to show now (latest wins, see [RoutinesMessageChannel]). */
+    val messages: StateFlow<RoutinesMessage?> = messageChannel.current
+
+    fun messageShown(message: RoutinesMessage) = messageChannel.consumed(message)
 
     val hasNfc: Boolean = application.packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)
 
@@ -121,6 +110,17 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
         combine(connectedPc, launcherApps) { pc, apps -> pc to (if (pc == null) null else apps) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
 
+    /**
+     * The connected PC and whether it accepts key presses (`supportsInputSimulation`), for the media
+     * step's warning (spec 4.2 "Media keys"). Read from `hostInfoForConnection` checked against the
+     * authenticated epoch, never the replaying `hostCapabilities`, which can still hold the previous
+     * PC's answer. An absent key means an older PC that accepts them, as on Remote Control.
+     */
+    val mediaKeys: StateFlow<Pair<String?, Boolean?>> =
+        combine(connectedPc, RemexClientManager.authenticatedConnection, RemexClientManager.hostInfoForConnection) { pc, connection, info ->
+            pc to RoutineMediaKeys.supported(info?.json, sameConnection = info != null && connection != null && info.connection.epoch == connection.epoch)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
 
     val coachSeen: StateFlow<Boolean?> =
@@ -146,9 +146,28 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** Starts (or keeps) the draft for [source]. Returns false while the routine is not loaded yet. */
+    /** Whether the open draft is already [source]'s (same key, or the routine it was saved as). */
+    private fun isCurrentSource(source: RoutineDetail.Editor): Boolean =
+        _draft.value != null && (source == draftSource || (source.routineId != null && source.routineId == _draft.value?.base?.id))
+
+    /**
+     * True when opening [target] would throw away unsaved edits (R-UX-58): the screen then asks
+     * "Discard changes?" before it navigates, and only [closeEditor] on Discard lets the switch happen.
+     */
+    fun needsDiscardBefore(target: RoutineDetail): Boolean =
+        target is RoutineDetail.Editor &&
+            RoutineEditorSwitch.needsDiscardPrompt(_draft.value, _draftOriginal.value, sameSource = isCurrentSource(target))
+
+    /**
+     * Starts (or keeps) the draft for [source]. Returns false while the routine is not loaded yet,
+     * and refuses to replace a draft with unsaved edits: the screen asks first ([needsDiscardBefore]).
+     */
     fun openEditor(source: RoutineDetail.Editor): Boolean {
-        if (draftSource == source && _draft.value != null) return true
+        if (isCurrentSource(source)) {
+            draftSource = source
+            return true
+        }
+        if (RoutineEditorSwitch.needsDiscardPrompt(_draft.value, _draftOriginal.value, sameSource = false)) return false
         val initial =
             when {
                 source.routineId != null -> {
@@ -168,13 +187,26 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                 else -> RoutineDrafts.blank(selectedPc.value ?: pcs.value.firstOrNull()?.identity)
             }
         draftSource = source
+        draftSession++
         _draft.value = initial
         _draftOriginal.value = initial
         return true
     }
 
+    /** Which draft is open: changes whenever a different draft opens or the editor closes. */
+    var draftSession: Long = 0
+        private set
+
     fun updateDraft(transform: (RoutineDraft) -> RoutineDraft) {
         _draft.value = _draft.value?.let(transform)
+    }
+
+    /**
+     * [transform] applies only if the draft from [session] is still the open one. A step's Undo is
+     * bound this way, so tapping it after switching routines never edits the other routine.
+     */
+    fun updateDraftIn(session: Long, transform: (RoutineDraft) -> RoutineDraft) {
+        if (session == draftSession) updateDraft(transform)
     }
 
     /**
@@ -200,6 +232,7 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
 
     fun closeEditor() {
         draftSource = null
+        draftSession++
         _draft.value = null
         _draftOriginal.value = null
     }
@@ -209,7 +242,11 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
 
     fun environmentFor(identity: String?): EditorEnvironment {
         val (pc, apps) = launcher.value
-        return EditorEnvironment(launcherAppIds = if (pc != null && pc == identity && !apps.isNullOrEmpty()) apps.map { it.id }.toSet() else null)
+        val (keysPc, keys) = mediaKeys.value
+        return EditorEnvironment(
+            launcherAppIds = if (pc != null && pc == identity && !apps.isNullOrEmpty()) apps.map { it.id }.toSet() else null,
+            mediaKeysSupported = if (keysPc != null && keysPc == identity) keys else null,
+        )
     }
 
     /**
@@ -291,13 +328,14 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                 is RoutineRunStart.Started -> Unit
                 is RoutineRunStart.Skipped -> post(RoutineReasonText.message(app, start.reasonCode, args))
                 is RoutineRunStart.Failed ->
-                    _messages.emit(
+                    postMessage(
                         RoutinesMessage(RoutineReasonText.message(app, start.reasonCode, args), RoutinesMessageAction.OpenRun(start.runId)),
                     )
                 is RoutineRunStart.Invalid ->
                     post(app.getString(R.string.routines_run_invalid, RoutineReasonText.message(app, start.verdict.reasonCode, args.copy(detail = start.verdict.detail))))
                 RoutineRunStart.RunsOnPc -> post(app.getString(R.string.routines_run_on_pc_later))
-                RoutineRunStart.NotFound, RoutineRunStart.Unavailable -> post(app.getString(R.string.routines_error_not_saved))
+                RoutineRunStart.NotFound -> post(app.getString(R.string.routines_run_not_found))
+                RoutineRunStart.Unavailable -> post(app.getString(R.string.routines_run_unavailable))
             }
         }
     }
@@ -328,11 +366,11 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun post(text: String) {
-        _messages.tryEmit(RoutinesMessage(text))
+        messageChannel.post(RoutinesMessage(text))
     }
 
     fun postMessage(message: RoutinesMessage) {
-        _messages.tryEmit(message)
+        messageChannel.post(message)
     }
 
     fun pcName(identity: String): String? = pcs.value.firstOrNull { it.identity == identity }?.name

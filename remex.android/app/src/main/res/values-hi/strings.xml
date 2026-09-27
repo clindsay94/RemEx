@@ -1323,5 +1323,7 @@
         <item quantity="one">%1$d चरण सिर्फ़ फ़ोन पर चलने वाले रूटीन में काम करता है। इसे हटा दिया जाएगा।</item>
         <item quantity="other">%1$d चरण सिर्फ़ फ़ोन पर चलने वाले रूटीन में काम करते हैं। इन्हें हटा दिया जाएगा।</item>
     </plurals>
+    <string name="routines_run_not_found">यह रूटीन अब मौजूद नहीं है।</string>
+    <string name="routines_run_unavailable">RemEx यह रूटीन शुरू नहीं कर पाया। फिर से कोशिश करें।</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>

@@ -1323,5 +1323,7 @@
         <item quantity="one">%1$d paso solo funciona en rutinas que se ejecutan en tu teléfono. Se quitará.</item>
         <item quantity="other">%1$d pasos solo funcionan en rutinas que se ejecutan en tu teléfono. Se quitarán.</item>
     </plurals>
+    <string name="routines_run_not_found">Esta rutina ya no existe.</string>
+    <string name="routines_run_unavailable">RemEx no pudo iniciar esta rutina. Inténtalo de nuevo.</string>
     <!-- END Routines phone UI (RemEx-pp0rt.6) -->
 </resources>
