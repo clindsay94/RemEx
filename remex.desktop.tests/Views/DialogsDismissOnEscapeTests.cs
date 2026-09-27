@@ -200,9 +200,14 @@ public class DialogsDismissOnEscapeTests
         // DialogsHandleEnterTests.MaterialDialogs_ConfirmPassesActionIsDefaultFalse_RestorePassesTrue,
         // which pins its exact value) - these two checks stay loose about that trailing argument and
         // only re-assert the button-vocabulary classes this test exists to guard.
+        // The confirm's classes became a parameter for routines Run now's warning tint (RemEx-pp0rt.9);
+        // its default is still "primary danger", so every existing caller keeps the destructive look.
         Assert.Matches(
             new Regex(
-                @"new DialogContent\(\s*title,\s*message,\s*loc\[""Btn_Cancel""\],\s*confirmText,\s*""primary danger"","),
+                @"new DialogContent\(\s*title,\s*message,\s*loc\[""Btn_Cancel""\],\s*confirmText,\s*actionClasses,"),
+            source);
+        Assert.Matches(
+            new Regex(@"string actionClasses = ""primary danger"""),
             source);
 
         Assert.Matches(

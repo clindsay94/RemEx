@@ -3688,4 +3688,406 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Не вдалося прочитати історію рутин на цьому ПК, тому її відкладено й почато заново.</value>
   </data>
+  <data name="Nav_Routines" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="PaletteCategory_Routines" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="Routines_Header" xml:space="preserve">
+    <value>Рутини</value>
+  </data>
+  <data name="Palette_Routines" xml:space="preserve">
+    <value>Перейти до рутин</value>
+  </data>
+  <data name="Palette_PauseRoutines" xml:space="preserve">
+    <value>Призупинити всі рутини</value>
+  </data>
+  <data name="Palette_ResumeRoutines" xml:space="preserve">
+    <value>Відновити рутини</value>
+  </data>
+  <data name="Routine_Outcome_Running" xml:space="preserve">
+    <value>Виконується</value>
+  </data>
+  <data name="Routine_Outcome_Succeeded" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Routine_Outcome_Failed" xml:space="preserve">
+    <value>Не вдалося</value>
+  </data>
+  <data name="Routine_Outcome_Cancelled" xml:space="preserve">
+    <value>Скасовано</value>
+  </data>
+  <data name="Routine_Outcome_Skipped" xml:space="preserve">
+    <value>Пропущено</value>
+  </data>
+  <data name="Routine_Outcome_Interrupted" xml:space="preserve">
+    <value>Перервано</value>
+  </data>
+  <data name="Routine_StepStatus_Pending" xml:space="preserve">
+    <value>Не розпочато</value>
+  </data>
+  <data name="Routine_StepStatus_Running" xml:space="preserve">
+    <value>Виконується</value>
+  </data>
+  <data name="Routine_StepStatus_Succeeded" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Routine_StepStatus_Failed" xml:space="preserve">
+    <value>Не вдалося</value>
+  </data>
+  <data name="Routine_StepStatus_Skipped" xml:space="preserve">
+    <value>Пропущено</value>
+  </data>
+  <data name="Routine_StepStatus_Cancelled" xml:space="preserve">
+    <value>Скасовано</value>
+  </data>
+  <data name="Routine_StepStatus_Simulated" xml:space="preserve">
+    <value>Змодельовано</value>
+  </data>
+  <data name="Routine_StepStatus_Expired" xml:space="preserve">
+    <value>Термін минув</value>
+  </data>
+  <data name="Routine_Step_Delay" xml:space="preserve">
+    <value>Зачекати {0} с</value>
+  </data>
+  <data name="Routine_Step_LaunchApp" xml:space="preserve">
+    <value>Відкрити {0}</value>
+  </data>
+  <data name="Routine_Step_MediaNext" xml:space="preserve">
+    <value>Наступна доріжка</value>
+  </data>
+  <data name="Routine_Step_MediaPlayPause" xml:space="preserve">
+    <value>Відтворити або призупинити</value>
+  </data>
+  <data name="Routine_Step_MediaPrevious" xml:space="preserve">
+    <value>Попередня доріжка</value>
+  </data>
+  <data name="Routine_Step_NotifyPc" xml:space="preserve">
+    <value>Повідомлення на цьому комп'ютері</value>
+  </data>
+  <data name="Routine_Step_NotifyPhone" xml:space="preserve">
+    <value>Повідомлення на телефон</value>
+  </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Невідомий крок</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Чекати на комп'ютер</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Розбудити комп'ютер</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Прихід додому</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Вихід з дому</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>Комп'ютер неактивний {0} хв</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>Комп'ютер заблоковано</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>Комп'ютер розблоковано</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Запуск вручну</value>
+  </data>
+  <data name="Routine_Trigger_Nfc" xml:space="preserve">
+    <value>NFC-мітка</value>
+  </data>
+  <data name="Routine_Trigger_SensorAbove" xml:space="preserve">
+    <value>{0} вище {1}</value>
+  </data>
+  <data name="Routine_Trigger_SensorBelow" xml:space="preserve">
+    <value>{0} нижче {1}</value>
+  </data>
+  <data name="Routine_Trigger_Unknown" xml:space="preserve">
+    <value>Невідомий тригер</value>
+  </data>
+  <data name="Routines_ActionFailed" xml:space="preserve">
+    <value>Не вдалося. Подробиці є в журналі.</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>Заблокувати цей телефон</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>Заблокувати рутини з телефона {0}</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>Розблокувати</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>Розблокувати рутини з телефона {0}</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>Заблокувати рутини з телефона {0}?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>Жодна рутина з цього телефона не запуститься на цьому комп'ютері, доки ви його не розблокуєте, а та, що виконується, зупиниться. Телефон отримає сповіщення.</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>Заблокувати</value>
+  </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>Заблоковано на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>Останній запуск: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>Ця рутина пошкоджена й не може працювати тут. Створіть її знову на телефоні.</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>ще {0}</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>Ще не запускалася</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>Вимкнено на телефоні {0}</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>Виконується зараз</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>Дозволити рутині {0} працювати на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>Вимкніть, щоб ця рутина не працювала на цьому комп'ютері. Телефон її зберігає.</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>Рутина без назви</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>Рутини на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>На цій сторінці показано рутини, що працюють на цьому комп'ютері. Вимкніть рутину перемикачем або спробуйте її кнопкою «Запустити зараз».</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>Створюються на телефоні</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>Щоб створити або змінити рутини, скористайтеся застосунком RemEx на телефоні.</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>Показати поради щодо рутин ще раз</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>Зрозуміло</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>Далі</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>З телефона {0}, оновлено {1}</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>З телефона {0}</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>Історія</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>Запусків ще не було.</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>Виберіть рутину, щоб побачити її кроки й історію.</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>Тоді</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>Коли</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>На цьому комп'ютері ще не працюють рутини</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>Рутини створюються в застосунку RemEx на телефоні, у розділі «Рутини». Ті, що працюють на цьому комп'ютері, з'являються тут.</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>Дізнатися про рутини</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>Рутини з телефона {0} заблоковано.</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>Остання синхронізація: {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>Призупинено з телефона {0}</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>Призупинено: телефон {0} не з'являвся з {1}</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>Скасувати запуск</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>Скасувати запуск, розпочатий: {0}</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>Показати або приховати кроки запуску, розпочатого: {0}</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>Крок {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>Кроки</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>Тест з телефона {0}</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>Визначення бездіяльності недоступне в цьому робочому середовищі.</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>Визначення блокування недоступне в цьому робочому середовищі.</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>Показати історію</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>Вимкнути на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>Увімкнути на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>Призупинити все</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>Жодна рутина на цьому комп'ютері не запускатиметься сама. «Запустити зараз» і далі працює.</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>Рутини на цьому комп'ютері призупинено. Автоматичні тригери пропускаються, доки ви їх не відновите.</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>Відновити</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>Запустити зараз</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>Запустити рутину {0} зараз</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>Запустити «{0}» зараз?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>Ви за цим комп'ютером, тож крок «{0}» виконається одразу, без зворотного відліку. Кроки: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>Не вдалося запустити {0}: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Створюються в застосунку RemEx на телефоні. Працюють на цьому комп'ютері, навіть коли телефона немає поруч.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Рутини зараз недоступні, бо служба RemEx у цьому застосунку не запустилася.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>Застосунок не дозволено</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>Застосунок не відкрився</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>Не підтримується</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Відхилено системою</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Дія живлення не вдалася</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Мультимедійні клавіші недоступні</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>Датчик перестав надсилати дані</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Неактивність не визначається</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Блокування не визначається</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Ще немає на комп'ютері</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Відхилено комп'ютером</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Заблоковано комп'ютером</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>Комп'ютер більше не пов'язаний</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Пропущено: призупинено</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Пропущено: призупинено на комп'ютері</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Вимкнено на комп'ютері</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Пропущено: вимкнено</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Призупинено: телефона немає</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Уже виконується</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Пропущено: зарано</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Пропущено: часті зміни</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Пропущено: забагато запусків</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Пропущено: триває інший відлік</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Скасовано на комп'ютері</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Скасовано на телефоні</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Перервано</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Повідомлення чекає</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Термін повідомлення минув</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Імітовано</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Пробний режим</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Відлік під час блокування</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Помилка</value>
+  </data>
 </root>

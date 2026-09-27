@@ -1,0 +1,537 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:sys="using:System"
+    x:Class="Remex.Desktop.Views.RoutinesView"
+    x:DataType="vm:RoutinesViewModel"
+    AutomationProperties.Name="{local:Localize Routines_Header}">
+
+    <!-- The PC Routines page (routines spec §2.3 P1-P3, S4b, RemEx-pp0rt.9). The PC never edits a
+         routine (D8, R-UX-35): there is no TextBox on this page and no add, edit or delete. The only
+         actions are the enable switch, Run now, Pause all, block a phone, cancel a run and history.
+         Colours are roles only (R-UX-53); every animation is gated on the root's reduced-motion
+         class (R-UX-52). -->
+
+    <UserControl.Resources>
+        <!-- The detail pane's content (P1 right column), shared by the wide pane and the narrow
+             layout's inline expansion (P2) so the two can never drift. -->
+        <DataTemplate x:Key="RoutineDetailTemplate" x:DataType="vm:RoutineCardViewModel">
+            <StackPanel Spacing="14">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Name}" Theme="{StaticResource Headline6TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding FromText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="64,*" RowDefinitions="Auto,Auto" RowSpacing="8">
+                    <TextBlock Grid.Row="0" Text="{local:Localize Routines_Detail_When}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,4,8,0"/>
+                    <WrapPanel Grid.Row="0" Grid.Column="1">
+                        <Border Classes="chip trigger">
+                            <TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{Binding TriggerText}"/>
+                        </Border>
+                    </WrapPanel>
+                    <TextBlock Grid.Row="1" Text="{local:Localize Routines_Detail_Then}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,4,8,0"/>
+                    <ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Chips}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RoutineChipViewModel">
+                                <Border Classes="chip" Classes.destructive="{Binding IsDestructive}" Classes.active="{Binding IsActive}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{Binding Text}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <TextBlock Text="{local:Localize Routines_Detail_History}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                <TextBlock Text="{local:Localize Routines_Detail_NoHistory}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !HasHistory}"/>
+                <ItemsControl x:Name="HistoryList" ItemsSource="{Binding History}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RoutineRunViewModel">
+                            <Border Classes="history-row">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <mi:MaterialIcon Grid.Column="0" Classes="status" Kind="{Binding Icon}" Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,10,0"
+                                                         Classes.succeeded="{Binding Kind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=succeeded}"
+                                                         Classes.failed="{Binding Kind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=failed}"
+                                                         Classes.running="{Binding Kind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=running}"
+                                                         Classes.skipped="{Binding Kind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=skipped}"/>
+                                        <StackPanel Grid.Column="1" Spacing="1">
+                                            <TextBlock Text="{Binding StatusText}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                            <WrapPanel>
+                                                <TextBlock Text="{Binding WhenText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0"/>
+                                                <TextBlock Text="{Binding SourceText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0"/>
+                                                <TextBlock Text="{Binding AttributesText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding HasAttributes}"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="secondary danger compact" Margin="8,0,0,0" VerticalAlignment="Top"
+                                                Content="{local:Localize Routines_History_Cancel}" Command="{Binding CancelCommand}"
+                                                IsVisible="{Binding IsRunning}" AutomationProperties.Name="{Binding CancelName}"/>
+                                        <Button Grid.Column="3" Classes="tertiary icon-button" Margin="4,0,0,0" VerticalAlignment="Top"
+                                                Command="{Binding ToggleExpandedCommand}" IsVisible="{Binding HasSteps}"
+                                                AutomationProperties.Name="{Binding ExpandName}" ToolTip.Tip="{local:Localize Routines_History_Steps}">
+                                            <Panel>
+                                                <mi:MaterialIcon Kind="ChevronDown" Width="18" Height="18" IsVisible="{Binding !IsExpanded}"/>
+                                                <mi:MaterialIcon Kind="ChevronUp" Width="18" Height="18" IsVisible="{Binding IsExpanded}"/>
+                                            </Panel>
+                                        </Button>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Steps}" IsVisible="{Binding IsExpanded}" Margin="28,0,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RoutineRunStepViewModel">
+                                                <Grid ColumnDefinitions="Auto,Auto,*" Margin="0,2">
+                                                    <mi:MaterialIcon Grid.Column="0" Classes="status" Kind="{Binding Icon}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,8,0"
+                                                                     Classes.succeeded="{Binding IsDone}" Classes.failed="{Binding IsFailed}"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding NumberText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                                                    <StackPanel Grid.Column="2" Spacing="1">
+                                                        <WrapPanel>
+                                                            <TextBlock Text="{Binding Label}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                        </WrapPanel>
+                                                        <TextBlock Text="{Binding ReasonText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding HasReason}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- Routine cards: the card surface with the plate role inside, never GlassBaseDarkBrush
+             (AUDIT-cohesiveness-2026-09-15 finding 2). The selected card carries the accent border. -->
+        <Style Selector="Border.routine-card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+            <Setter Property="Padding" Value="16,14"/>
+        </Style>
+        <Style Selector="Border.routine-card.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Border.detail-pane">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+            <Setter Property="Padding" Value="20"/>
+        </Style>
+        <Style Selector="Border.history-row">
+            <Setter Property="Background" Value="{DynamicResource CardPlateNeutralBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style Selector="Border.inline-detail">
+            <Setter Property="Background" Value="{DynamicResource CardPlateNeutralBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <!-- Chip chain (§2.5): display-only tokens in a WrapPanel, so they wrap at large UI sizes
+             (R-UX-51). A discards-work power step takes the error container role (R-UX-54) and keeps its
+             verb as text, so the tint is never the only signal (R-UX-50). -->
+        <Style Selector="Border.chip">
+            <Setter Property="Background" Value="{DynamicResource CardPlateNeutralBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PaletteOutlineVariantBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+        </Style>
+        <Style Selector="Border.chip > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Border.chip.trigger">
+            <Setter Property="Background" Value="{DynamicResource PaletteSecondaryContainerBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.trigger > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource PaletteOnSecondaryContainerBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.destructive">
+            <Setter Property="Background" Value="{DynamicResource PaletteErrorContainerBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PaletteErrorBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.destructive > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource PaletteOnErrorContainerBrush}"/>
+        </Style>
+        <!-- P-M4: a live run lights the chips up in order. -->
+        <Style Selector="Border.chip.active">
+            <Setter Property="Background" Value="{DynamicResource PalettePrimaryContainerBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.active > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource PaletteOnPrimaryContainerBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.done">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Border.chip.failed">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <!-- Outcome icons: each outcome has its own glyph as well as its text (R-UX-50). -->
+        <Style Selector="mi|MaterialIcon.status">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+        <Style Selector="mi|MaterialIcon.status.succeeded">
+            <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="mi|MaterialIcon.status.failed">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="mi|MaterialIcon.status.running">
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="mi|MaterialIcon.status.skipped">
+            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+
+        <Style Selector="TextBlock.note">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.note.problem">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <!-- Banners: the notice surfaces TaskManagerView already uses for its kill error. -->
+        <Style Selector="Border.banner">
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+        <Style Selector="Border.banner.error">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="Border.banner TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- P-M8: the Pause all banner grows and fades in over 200 ms CubicEaseOut; under reduced
+             motion it appears at once. It stays in the tree so the transition has something to run. -->
+        <Style Selector="Border.paused-banner">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="MaxHeight" Value="0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+        <Style Selector="Border.paused-banner.shown">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="MaxHeight" Value="240"/>
+            <Setter Property="IsHitTestVisible" Value="True"/>
+        </Style>
+        <Style Selector="Grid#RoutinesRoot:not(.reduced-motion) Border.paused-banner">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <DoubleTransition Property="MaxHeight" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- P-M4 chip recolour: 200 ms CubicEaseOut, instant under reduced motion. -->
+        <Style Selector="Grid#RoutinesRoot:not(.reduced-motion) Border.chip">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- The routine lists: no ListBoxItem chrome of their own, the card is the surface. -->
+        <Style Selector="ListBox.routine-list">
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.routine-list > ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+        </Style>
+
+        <!-- P-M1: cards stagger in on the first visit per process, 30 ms apart, 200 ms each on the
+             Material standard curve (KeySpline 0.2,0,0,1). Opacity + TranslateTransform.Y only, never
+             RenderTransform (RemEx-qolhg). Capped at four cards; the rest are simply there. Armed by
+             RoutinesView.axaml.cs through StaggeredEntrance, which returns false under reduced motion. -->
+        <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(1)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.200" Delay="0:0:0.000" FillMode="Backward">
+                    <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(2)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.200" Delay="0:0:0.030" FillMode="Backward">
+                    <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(3)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.200" Delay="0:0:0.060" FillMode="Backward">
+                    <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(4)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.200" Delay="0:0:0.090" FillMode="Backward">
+                    <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid x:Name="RoutinesRoot" Background="Transparent" Margin="32,24,32,32" RowDefinitions="Auto,Auto,*"
+          Classes.reduced-motion="{Binding IsReducedMotion}">
+
+        <!-- ═══ Header: title, the phone-is-the-editor subtitle (R-UX-35), Pause all ═══
+             Tab order is Pause all, then the list, then the detail (R-UX-48): the "?" replay button
+             is declared at the end of this Grid so it comes after them, though it paints up here. -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,44" Margin="0,0,0,16">
+            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                <TextBlock Classes="page-title" Text="{local:Localize Routines_Header}"/>
+                <TextBlock Classes="page-subtitle" Text="{local:Localize Routines_Subheader}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <StackPanel x:Name="PauseAllArea" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Margin="0,6,0,0" IsVisible="{Binding IsAvailable}">
+                <TextBlock Text="{local:Localize Routines_PauseAll}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                <ToggleSwitch x:Name="PauseAllSwitch" IsChecked="{Binding HostPaused}" OnContent="" OffContent="" VerticalAlignment="Center"
+                              AutomationProperties.Name="{local:Localize Routines_PauseAll}" ToolTip.Tip="{local:Localize Routines_PauseAllTooltip}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ Banners and notices ═══ -->
+        <StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,12">
+            <Border x:Name="DryRunBanner" Classes="banner" IsVisible="{Binding IsDryRun}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <mi:MaterialIcon Kind="TestTube" Width="18" Height="18" Foreground="{DynamicResource SystemWarningBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Theme="{StaticResource Body2TextBlock}" Text="{local:Localize Routine_Countdown_DryRunNote}"/>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="PausedBanner" Classes="banner paused-banner" Classes.shown="{Binding HostPaused}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <mi:MaterialIcon Grid.Column="0" Kind="PauseCircleOutline" Width="18" Height="18" Foreground="{DynamicResource SystemWarningBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="1" Theme="{StaticResource Body2TextBlock}" Text="{local:Localize Routines_PausedBanner}"/>
+                    <Button Grid.Column="2" Classes="secondary compact" Margin="12,0,0,0" Content="{local:Localize Routines_Resume}"
+                            Command="{Binding ResumeAllCommand}" IsEnabled="{Binding HostPaused}"
+                            AutomationProperties.Name="{local:Localize Palette_ResumeRoutines}"/>
+                </Grid>
+            </Border>
+
+            <Border Classes="banner" IsVisible="{Binding IdleSourceMissing}">
+                <TextBlock Theme="{StaticResource Body2TextBlock}" Text="{local:Localize Routines_IdleUnavailable}"/>
+            </Border>
+            <Border Classes="banner" IsVisible="{Binding SessionSourceMissing}">
+                <TextBlock Theme="{StaticResource Body2TextBlock}" Text="{local:Localize Routines_SessionUnavailable}"/>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Warnings}" IsVisible="{Binding HasWarnings}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="sys:String">
+                        <Border Classes="banner error" Margin="0,0,0,8">
+                            <TextBlock Theme="{StaticResource Body2TextBlock}" Text="{Binding}"/>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border x:Name="StatusBanner" Classes="banner error" IsVisible="{Binding HasStatusMessage}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Theme="{StaticResource Body2TextBlock}" Text="{Binding StatusMessage}"/>
+                    <Button Grid.Column="1" Classes="tertiary icon-button" Margin="8,0,0,0" Command="{Binding DismissStatusCommand}"
+                            AutomationProperties.Name="{local:Localize Routines_DismissStatus}" ToolTip.Tip="{local:Localize Routines_DismissStatus}">
+                        <mi:MaterialIcon Kind="Close" Width="16" Height="16"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <Border Classes="banner" IsVisible="{Binding !IsAvailable}">
+                <TextBlock Theme="{StaticResource Body2TextBlock}" Text="{local:Localize Routines_Unavailable}"/>
+            </Border>
+        </StackPanel>
+
+        <!-- ═══ List (P1 left, P2 the only column) and detail (P1 right) ═══
+             Columns are set by RoutinesView.axaml.cs at the 900 breakpoint (ResponsiveColumnWidthConverter's). -->
+        <Grid x:Name="ContentGrid" Grid.Row="2" ColumnDefinitions="*,24,*">
+            <ScrollViewer x:Name="ListScroller" Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="8">
+                    <!-- P3 empty state -->
+                    <StackPanel x:Name="EmptyState" Spacing="12" Margin="0,32,0,0" MaxWidth="560" HorizontalAlignment="Left" IsVisible="{Binding IsEmpty}">
+                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+                            <Border Classes="chip trigger"><TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{local:Localize Routine_Source_PcIdle}"/></Border>
+                            <mi:MaterialIcon Kind="ArrowRightThin" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <Border Classes="chip"><TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{local:Localize Routine_Action_SLEEP}"/></Border>
+                        </StackPanel>
+                        <TextBlock Text="{local:Localize Routines_Empty_Title}" Theme="{StaticResource Headline6TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{local:Localize Routines_Empty_Body}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <Button Classes="secondary" HorizontalAlignment="Left" Content="{local:Localize Routines_Empty_Learn}" Command="{Binding LearnAboutRoutinesCommand}"
+                                AutomationProperties.Name="{local:Localize Routines_Empty_Learn}"/>
+                    </StackPanel>
+
+                    <ItemsControl x:Name="RoutineGroups" ItemsSource="{Binding Groups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RoutineOwnerGroupViewModel">
+                                <StackPanel Spacing="8" Margin="0,0,0,16">
+                                    <!-- Group header: which phone, its state, block or unblock -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <mi:MaterialIcon Kind="Cellphone" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding PhoneName}" Theme="{StaticResource Subtitle1TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Classes="note" Theme="{StaticResource CaptionTextBlock}" Text="{Binding StateText}" IsVisible="{Binding HasStateText}" Classes.problem="{Binding Blocked}"/>
+                                            <TextBlock Classes="note" Theme="{StaticResource CaptionTextBlock}" Text="{Binding LastSeenText}" IsVisible="{Binding LastSeenText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="secondary compact" Classes.danger="{Binding !Blocked}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                                Content="{Binding BlockButtonText}" Command="{Binding ToggleBlockCommand}"
+                                                AutomationProperties.Name="{Binding BlockButtonName}"/>
+                                    </Grid>
+
+                                    <ListBox Classes="routine-list" ItemsSource="{Binding Routines}" SelectedItem="{Binding SelectedRoutine}" SelectionMode="Single"
+                                             AutomationProperties.Name="{Binding PhoneName}" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RoutineCardViewModel">
+                                                <Border Classes="routine-card" Classes.selected="{Binding IsSelected}">
+                                                    <StackPanel Spacing="10">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                                            <mi:MaterialIcon Grid.Column="0" Kind="Routes" Width="20" Height="20" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Theme="{StaticResource Subtitle1TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                                       TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                            <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsOn}" IsEnabled="{Binding CanToggle}" OnContent="" OffContent="" VerticalAlignment="Center" Margin="8,0,0,0"
+                                                                          AutomationProperties.Name="{Binding ToggleName}" ToolTip.Tip="{local:Localize Routines_Card_ToggleTooltip}"/>
+                                                        </Grid>
+
+                                                        <WrapPanel>
+                                                            <Border Classes="chip trigger"><TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{Binding TriggerText}"/></Border>
+                                                            <mi:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,4,6,0"/>
+                                                            <ItemsControl ItemsSource="{Binding CardChips}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <WrapPanel/>
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="vm:RoutineChipViewModel">
+                                                                        <Border Classes="chip" Classes.destructive="{Binding IsDestructive}" Classes.active="{Binding IsActive}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}">
+                                                                            <TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{Binding Text}"/>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <Border Classes="chip" IsVisible="{Binding HasMoreChips}"><TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{Binding MoreChipsText}"/></Border>
+                                                        </WrapPanel>
+
+                                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                                            <mi:MaterialIcon Grid.Column="0" Classes="status" Kind="{Binding LastRunIcon}" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                                             Classes.succeeded="{Binding LastRunKind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=succeeded}"
+                                                                             Classes.failed="{Binding LastRunKind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=failed}"
+                                                                             Classes.running="{Binding LastRunKind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=running}"
+                                                                             Classes.skipped="{Binding LastRunKind, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=skipped}"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding LastRunText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                            <Button Grid.Column="2" Classes="secondary compact" Margin="8,0,0,0" Content="{local:Localize Routines_RunNow}"
+                                                                    Command="{Binding RunNowCommand}" AutomationProperties.Name="{Binding RunNowName}"/>
+                                                        </Grid>
+
+                                                        <TextBlock Classes="note" Theme="{StaticResource CaptionTextBlock}" Classes.problem="{Binding NoteIsProblem}" Text="{Binding Note}" IsVisible="{Binding HasNote}"/>
+
+                                                        <!-- P2: the narrow layout expands the selected card inline. -->
+                                                        <Border Classes="inline-detail">
+                                                            <Border.IsVisible>
+                                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsSelected"/>
+                                                                    <Binding Path="!Page.IsWideLayout"/>
+                                                                </MultiBinding>
+                                                            </Border.IsVisible>
+                                                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource RoutineDetailTemplate}"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border x:Name="DetailPane" Grid.Column="2" Classes="detail-pane" VerticalAlignment="Top" IsVisible="{Binding ShowDetailPane}">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" MaxHeight="{Binding #ContentGrid.Bounds.Height}">
+                    <Panel>
+                        <TextBlock Text="{local:Localize Routines_Detail_Select}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                                   IsVisible="{Binding SelectedRoutine, Converter={x:Static ObjectConverters.IsNull}}"/>
+                        <!-- P-M3: the detail cross-fades 150 ms CubicEaseOut; RoutinesView.axaml.cs drops
+                             the transition under reduced motion. -->
+                        <TransitioningContentControl x:Name="DetailHost" Content="{Binding SelectedRoutine}" ContentTemplate="{StaticResource RoutineDetailTemplate}"/>
+                    </Panel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- The coach replay ("?", §5.3). Declared after the list and detail for tab order (R-UX-48). -->
+        <Button x:Name="CoachReplayButton" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0"
+                Classes="tertiary icon-button" Command="{Binding ReplayCoachMarkCommand}" IsVisible="{Binding IsAvailable}"
+                ToolTip.Tip="{local:Localize Routines_CoachReplay}" AutomationProperties.Name="{local:Localize Routines_CoachReplay}">
+            <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+        </Button>
+
+        <!-- ═══ First-visit coach (§5.3, R-UX-40): the CanvasView pattern, a scrim and a 320-wide card.
+             Step 1 points at the list, step 2 at Pause all. ═══ -->
+        <Grid x:Name="CoachOverlay" Grid.RowSpan="3" Margin="-32,-24,-32,-32" IsVisible="{Binding ShowCoachMark}" Background="{DynamicResource GlassOverlayBrush}">
+            <StackPanel x:Name="CoachStepOne" IsVisible="{Binding IsCoachStepOne}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="48,150,0,0" Width="320">
+                <mi:MaterialIcon Kind="MenuUp" Width="32" Height="32" HorizontalAlignment="Left" Margin="24,0,0,-10" Foreground="{DynamicResource CardBorderBrush}"/>
+                <Border Classes="detail-pane" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{local:Localize Routines_Coach1_Title}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Routines_Coach1_Body}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <Button x:Name="CoachNextButton" HorizontalAlignment="Right" Classes="primary" Command="{Binding NextCoachStepCommand}"
+                                Content="{local:Localize Routines_Coach_Next}" AutomationProperties.Name="{local:Localize Routines_Coach_Next}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+            <StackPanel x:Name="CoachStepTwo" IsVisible="{Binding IsCoachStepTwo}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,76,80,0" Width="320">
+                <mi:MaterialIcon Kind="MenuUp" Width="32" Height="32" HorizontalAlignment="Right" Margin="0,0,24,-10" Foreground="{DynamicResource CardBorderBrush}"/>
+                <Border Classes="detail-pane" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{local:Localize Routines_Coach2_Title}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Routines_Coach2_Body}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <Button x:Name="CoachGotItButton" HorizontalAlignment="Right" Classes="primary" Command="{Binding DismissCoachMarkCommand}"
+                                Content="{local:Localize Routines_Coach_GotIt}" AutomationProperties.Name="{local:Localize Routines_Coach_GotIt}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

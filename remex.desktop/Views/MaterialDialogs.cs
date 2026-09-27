@@ -74,13 +74,19 @@ internal static class MaterialDialogs
     private const string SkipResult = DialogHelper.DIALOG_RESULT_CANCEL;
 
     /// <summary>Builds and shows the confirm/cancel alert that replaced <c>ConfirmationDialog</c>.</summary>
-    internal static async Task<bool> ConfirmAsync(Window owner, string title, string message, string confirmText)
+    /// <param name="actionClasses">
+    /// The confirm button's vocabulary classes. "primary danger" (the default) for an action that loses
+    /// work; "primary warning" for one to proceed with knowingly (routines Run now of a sleep, R-UX-36).
+    /// </param>
+    internal static async Task<bool> ConfirmAsync(
+        Window owner, string title, string message, string confirmText, string actionClasses = "primary danger")
     {
         var loc = LocalizationService.Instance;
         // actionIsDefault: false (RemEx-df08 fix round 1) - this action is "primary danger", a
-        // destructive confirm, so Enter must not be able to fire it reflexively.
+        // destructive confirm, so Enter must not be able to fire it reflexively. The warning tint
+        // keeps that: it is still a power action.
         var content = new DialogContent(
-            title, message, loc["Btn_Cancel"], confirmText, "primary danger", actionIsDefault: false);
+            title, message, loc["Btn_Cancel"], confirmText, actionClasses, actionIsDefault: false);
 
         var dialog = DialogHelper.CreateCustomDialog(new CustomDialogBuilderParams
         {

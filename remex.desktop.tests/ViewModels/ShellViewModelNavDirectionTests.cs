@@ -32,6 +32,7 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
     private const int Files = 7;
     private const int Logs = 8;
     private const int Settings = 9;
+    private const int Routines = 10;
 
     private readonly string _tempDir;
     private readonly ThemeService _theme;
@@ -70,7 +71,8 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
 
     [Theory]
     [InlineData(Home, Sensors)]
-    [InlineData(Commands, Launcher)]
+    [InlineData(Commands, Routines)]
+    [InlineData(Routines, Launcher)]
     [InlineData(Processes, Files)]
     [InlineData(Logs, Settings)]
     [InlineData(Settings, About)]
@@ -87,6 +89,8 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
     [InlineData(Processes, Settings)]
     [InlineData(Files, About)]
     [InlineData(Commands, Files)]
+    [InlineData(Routines, About)]
+    [InlineData(Sensors, Routines)]
     public void MovingSeveralItemsDownTheDrawerIsForward(int from, int to)
     {
         ShellViewModel.TransitionDirectionFor(from, to).Should().Be(1);
@@ -120,6 +124,34 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
     {
         ShellViewModel.TransitionDirectionFor(drawerPage, RemoteDesktop).Should().Be(1);
         ShellViewModel.TransitionDirectionFor(RemoteDesktop, drawerPage).Should().Be(-1);
+    }
+
+    [Theory]
+    [InlineData(Launcher)]
+    [InlineData(Processes)]
+    [InlineData(Files)]
+    public void LeavingRoutinesForAPageBelowItIsForwardDespiteTheHigherTag(int to)
+    {
+        // Routines is Tag 10 but sits fourth, right after Commands (R-UX-03). A Tag comparison would
+        // read every one of these as backward.
+        ShellViewModel.TransitionDirectionFor(Routines, to).Should().Be(1);
+        ShellViewModel.TransitionDirectionFor(to, Routines).Should().Be(-1);
+    }
+
+    [Fact]
+    public void NavigatingToRoutinesUsesItsDrawerPositionAndShowsTheRoutinesPage()
+    {
+        // (Remote, Home and Launcher need services this bare container does not register; Processes
+        // and About construct their own view models.)
+        _shell.NavigateToTaskManager();
+        _shell.NavigateToRoutines();
+
+        _shell.TransitionDirection.Should().Be(-1, "Routines sits above Processes");
+        _shell.ActiveNavIndex.Should().Be(Routines);
+        _shell.CurrentView.Should().BeOfType<RoutinesViewModel>();
+
+        _shell.NavigateToAbout();
+        _shell.TransitionDirection.Should().Be(1, "About sits below Routines");
     }
 
     [Fact]

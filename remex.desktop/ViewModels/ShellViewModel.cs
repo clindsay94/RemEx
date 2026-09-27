@@ -380,7 +380,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// pages the wrong way (RemEx-pp0rt.2). A new drawer item is one entry here, at its visual
     /// position; <c>ShellViewModelNavDirectionTests</c> fails if this and the XAML disagree.
     /// </summary>
-    private static readonly int[] _drawerNavOrder = [0, 1, 2, 3, 4, 7, 8, 9, 6];
+    private static readonly int[] _drawerNavOrder = [0, 1, 2, 10, 3, 4, 7, 8, 9, 6];
 
     /// <inheritdoc cref="_drawerNavOrder"/>
     internal static IReadOnlyList<int> DrawerNavOrder => _drawerNavOrder;
@@ -710,6 +710,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private AboutViewModel? _aboutViewModel;
     private FileTransferViewModel? _fileTransferViewModel;
     private DiagnosticLogsViewModel? _diagnosticLogsViewModel;
+    private RoutinesViewModel? _routinesViewModel;
 
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
@@ -1186,6 +1187,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();
+        _routinesViewModel?.Dispose();
         if (_canvasViewModel != null)
         {
             _canvasViewModel.SensorAlertFired -= OnSensorAlertFired;
@@ -1540,6 +1542,40 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             _layoutService);
         SetTransitionAndNavigate(2, _remoteViewModel);
     }
+
+    /// <summary>
+    /// The PC Routines page (routines S4b, RemEx-pp0rt.9), Tag 10, directly after Commands in the
+    /// drawer. Not gated on the phone connection: the routines it shows run on this PC whether a phone
+    /// is connected or not.
+    /// </summary>
+    [RelayCommand]
+    public void NavigateToRoutines()
+    {
+        var routines = EnsureRoutinesViewModel();
+        routines.Refresh();
+        SetTransitionAndNavigate(10, routines);
+    }
+
+    /// <summary>Palette "Pause all routines" (§1.2, R-UX-21).</summary>
+    [RelayCommand]
+    public Task PauseAllRoutines() => EnsureRoutinesViewModel().SetHostPausedAsync(true);
+
+    /// <summary>Palette "Resume routines" (§1.2, R-UX-21).</summary>
+    [RelayCommand]
+    public Task ResumeRoutines() => EnsureRoutinesViewModel().SetHostPausedAsync(false);
+
+    /// <summary>
+    /// The page's view model, built once. The routines backend lives in the embedded host's container,
+    /// which is published after the host starts, so it is resolved on every use rather than captured
+    /// here (see <see cref="RoutinesViewModel"/>).
+    /// </summary>
+    internal RoutinesViewModel EnsureRoutinesViewModel() =>
+        _routinesViewModel ??= new RoutinesViewModel(
+            () => _services.GetService<Remex.Desktop.Services.Routines.IRoutinesHost>()
+                ?? EmbeddedHostServiceLocator.TryResolve<Remex.Desktop.Services.Routines.IRoutinesHost>(),
+            _layoutService,
+            this,
+            logger: _services.GetService<ILogger<RoutinesViewModel>>());
 
     [RelayCommand]
     public void NavigateToAppLauncher()

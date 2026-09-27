@@ -550,6 +550,51 @@ happened and misses real ones, and the only symptom is routines running at the w
 `LockedHint` is set by the locker once the screen really is locked. Follow the property through
 `PropertiesChanged` (re-reading it when it is only invalidated), never the signals.
 
+### Routines: the PC Routines page resolves its host on every use, never caching "no host"
+
+`remex.desktop/ViewModels/RoutinesViewModel.cs:240` (`AttachHost`: `_resolveHost()` until it returns a
+host, then one `Changed` subscription) and `remex.desktop/ViewModels/ShellViewModel.cs:1572`
+(`EnsureRoutinesViewModel`, resolving through `EmbeddedHostServiceLocator.TryResolve`); pinned by
+`RoutinesViewModelTests.AHostPublishedAfterThePageWasBuiltIsPickedUpOnTheNextRefresh` — RemEx-pp0rt.9, S4b.
+
+`IRoutinesHost` is registered in the embedded host's container, which is published after the host
+starts. The shell builds the page's view model lazily and keeps it for the session, so a view model that
+captured the host once at construction (or cached a null) would show "Routines aren't available" for the
+whole session whenever the page was first opened before the host came up, while the routines themselves
+kept running behind it. Resolve through the delegate until a host appears; subscribe to `Changed` exactly
+once. `Changed` fires on a background thread: every refresh goes through the posted, coalesced
+`OnHostChanged`, never straight into the collections.
+
+### Routines: the page passes presence only after a confirmation that actually showed
+
+`remex.desktop/ViewModels/RoutinesViewModel.cs:535` (`RunNowAsync`: `OnConfirmationRequested is null` or a
+false result returns before `host.RunNowAsync`; `presenceConfirmed = true` at `:560` only after a true
+result) and `remex.desktop/Views/RoutinesView.axaml.cs` (`ConfirmationDialogHost.ForTinted(this)`, which
+returns false with no visible parent window); pinned by `RoutinesViewModelTests` (`ADeclinedConfirmationRunsNothing`,
+`NoConfirmationWiredMeansNoRunFailClosed`, `RunNowWithADestructiveStepConfirmsAndAConfirmationIsPresence`) —
+RemEx-pp0rt.9, spec D3, T21, R-UX-36.
+
+This is the UI half of the guard above. The main window hides to the tray, so the page can exist with no
+visible window; `ConfirmationDialogHost` then declines instead of throwing. Treating a missing delegate or
+a declined dialog as "run it anyway, with the countdown" looks safe but is not what the person asked for,
+and treating it as "run it with presence" removes the 15 s Cancel with nobody at the PC. A destructive
+routine runs from this page only after a dialog the person answered Yes to; anything else runs nothing.
+
+### Routines: the drawer page is four edits that must agree
+
+`remex.desktop/Views/ShellView.axaml:844` (the `Tag="10"` item after Commands) and `:1109` (the
+`RoutinesViewModel` DataTemplate), `remex.desktop/Views/ShellView.axaml.cs:857` (`case 10`) and
+`remex.desktop/ViewModels/ShellViewModel.cs:383` (`_drawerNavOrder`); pinned by `ShellNavRoutinesTests`,
+`ShellNavListTests.TheTagSetInMarkupMatchesTheCaseSetInActivateNavItem`,
+`ShellViewModelNavDirectionTests.DirectionOrderMatchesTheDrawerOrderInShellViewXaml` and
+`ShellNavEntranceTests` — RemEx-pp0rt.9, R-UX-02 to R-UX-04.
+
+Each one fails quietly on its own: a Tag with no `case` is a dead click in Release (`Debug.Fail` compiles
+out), a view model with no DataTemplate renders as its type name, a Tag missing from `_drawerNavOrder`
+ranks below the drawer so every move to Routines slides the wrong way, and an eleventh item without its
+own `nth-child` style flashes in unanimated. The stagger step is 18 ms so the last of the eleven still
+ends by 300 ms.
+
 ### `protocolVersion` bumps must be coordinated
 
 `RemexMessage` carries `protocolVersion: 2`. A breaking wire-format change requires bumping it in

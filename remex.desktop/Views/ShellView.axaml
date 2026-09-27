@@ -300,9 +300,10 @@
              later-staggered item does not flash at full opacity before its turn, and gated once per
              process by ShellView.axaml.cs's OnAttachedToVisualTree so re-navigating never replays it.
 
-             NavList has ten direct ListBoxItem children (nine destinations plus the non-interactive
-             nav-divider at index 8), so one nth-child style per child at a 20ms step keeps the last
-             item's Delay+Duration at 180ms+120ms = 300ms, the bead's ceiling. ListBoxItems are
+             NavList has eleven direct ListBoxItem children (ten destinations plus the non-interactive
+             nav-divider at index 9), so one nth-child style per child at an 18ms step keeps the last
+             item's Delay+Duration at 180ms+120ms = 300ms, the bead's ceiling (Routines added the
+             eleventh item in RemEx-pp0rt.9 and the step shrank from 20ms to keep the ceiling). ListBoxItems are
              logical children of the ListBox but visual children of its ItemsPanel; Avalonia's
              :nth-child counts against the ItemsControl's own children and the '>' combinator walks
              the LOGICAL parent, so this selector reaches them directly with no descendant combinator
@@ -327,7 +328,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.020" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.018" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -341,7 +342,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.040" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.036" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -355,7 +356,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.060" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.054" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -369,7 +370,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(5)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.080" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.072" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -383,7 +384,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(6)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.090" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -397,7 +398,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(7)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.120" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.108" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -411,7 +412,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(8)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.140" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.126" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -425,7 +426,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(9)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.160" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.144" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -438,6 +439,20 @@
             </Style.Animations>
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(10)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.162" Easing="CubicEaseOut" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(11)">
             <Style.Animations>
                 <Animation Duration="0:0:0.120" Delay="0:0:0.180" Easing="CubicEaseOut" FillMode="Backward">
                     <KeyFrame Cue="0%">
@@ -823,6 +838,16 @@
                                         </Grid>
                                     </ListBoxItem>
 
+                                    <!-- Routines (3.0, RemEx-pp0rt.9): next to Commands, the other "make the PC do
+                                         something" page. Tag 10 sits out of numeric order on purpose; the
+                                         slide direction reads ShellViewModel.DrawerNavOrder, not the Tag. -->
+                                    <ListBoxItem Tag="10" AutomationProperties.Name="{conv:Localize Nav_Routines}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Routines}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <mi:MaterialIcon Grid.Column="0" Kind="Routes" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Routines}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
+
                                     <!-- App Launcher -->
                                     <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Launcher}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <Grid ColumnDefinitions="64,*">
@@ -1080,6 +1105,9 @@
                                 </DataTemplate>
                                 <DataTemplate DataType="vm:DiagnosticLogsViewModel">
                                     <views:DiagnosticLogsView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:RoutinesViewModel">
+                                    <views:RoutinesView />
                                 </DataTemplate>
                             </TransitioningContentControl.DataTemplates>
                             <TransitioningContentControl.PageTransition>

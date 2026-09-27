@@ -854,6 +854,7 @@ public partial class ShellView : UserControl
             case 7: vm.NavigateToFileTransferCommand.Execute(null); break;
             case 8: vm.NavigateToDiagnosticLogsCommand.Execute(null); break;
             case 9: vm.NavigateToSettingsCommand.Execute(null); break;
+            case 10: vm.NavigateToRoutinesCommand.Execute(null); break;
             default:
                 // Silent otherwise: the activated item just never navigates, and its still-true
                 // IsSelected binding (nothing changed ActiveNavIndex) leaves the PREVIOUS
