@@ -68,9 +68,14 @@ class RoutineEditorStoreTest {
     }
 
     @Test
-    fun `S5 offers manual, sensor, idle and session templates and features three of them`() {
-        val expected = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+    fun `S2, S4 and S5 offer tag, manual, sensor, idle and session templates and feature three of them`() {
+        val expected =
+            listOf(RoutineTriggerTypes.NFC_TAP, RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
         assertEquals(expected, RoutineTriggerFamilies.offered)
+        val s2 = listOf("tpl.media.movie", "tpl.media.screenoff", "tpl.work.desk", "tpl.priv.tag", "tpl.media.next")
+        assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s2))
+        // With NFC the featured set is the spec's: idle sleep, then the lock tag.
+        assertEquals(listOf("tpl.power.sleep", "tpl.priv.tag"), RoutineTemplates.featured(hasNfc = true).take(2).map { it.id })
         assertTrue(RoutineTemplates.offered().all { it.trigger.type in expected })
         val s4 = listOf("tpl.home.lock", "tpl.home.sleep", "tpl.priv.unlock", "tpl.power.sleep", "tpl.power.screen")
         assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s4))

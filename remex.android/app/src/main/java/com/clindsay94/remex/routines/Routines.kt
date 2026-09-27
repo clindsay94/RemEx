@@ -25,6 +25,20 @@ object Routines {
     /** The PC-run routine sync client (RemEx-pp0rt.12): Run on PC, forget flush, sync answers. */
     internal fun syncClient(context: Context): RoutineSyncClient = graph(context).syncClient
 
+    /** NFC tokens, the shortcut and home keys, widget bindings (spec §6.8; RemEx-pp0rt.7). */
+    fun secrets(context: Context): RoutineSecretStore = graph(context).secrets
+
+    /** A paired PC's nickname for messages, or null (shown as "your PC"). */
+    suspend fun pcDisplayName(context: Context, hostIdentity: String): String? =
+        try {
+            graph(context).link.displayName(hostIdentity)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            RoutineLog.w("Reading a PC's name failed.", e)
+            null
+        }
+
     /**
      * Forgets [hostIdentity]'s routines before its pins are cleared (§7.4.5, T8). Call it FIRST in
      * every flow that forgets a PC ([com.clindsay94.remex.security.PinnedHostStore.forgetHost]): once
@@ -63,7 +77,13 @@ object Routines {
         private val cipher = TinkRoutineCipherSource(context)
         private val presenter = RoutineNotificationPresenter(context)
         private val controls = RoutineRunControls()
-        private val link = RemexRoutineHostLink(context)
+        val link = RemexRoutineHostLink(context)
+
+        // Widgets and shortcuts follow runs and edits (S2): every observer call goes to both.
+        private val surfaces = com.clindsay94.remex.routines.manual.RoutineSurfaces(context)
+        private val observer = com.clindsay94.remex.routines.manual.CompositeRoutineRunObserver(presenter, surfaces)
+
+        val secrets = RoutineSecretStore(DataStoreRoutineKeyValueStore(context.routineSecretsDataStore), cipher)
 
         val repository =
             RoutineRepository(
@@ -71,17 +91,17 @@ object Routines {
                 historyStore = RoutineHistoryStore(DataStoreRoutineKeyValueStore(context.routineHistoryDataStore), cipher),
                 cipherSource = cipher,
                 scheduler = WorkManagerRoutineScheduler(context),
-                observer = presenter,
+                observer = observer,
                 clock = SystemRoutineClock,
                 controls = controls,
-            )
+            ).also(surfaces::watch)
 
         val runner =
             RoutineRunner(
                 store = repository,
                 link = link,
                 phone = AndroidRoutinePhone(context, presenter),
-                observer = presenter,
+                observer = observer,
                 clock = SystemRoutineClock,
                 controls = controls,
             )

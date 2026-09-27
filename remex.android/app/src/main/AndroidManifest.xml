@@ -5,6 +5,12 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+    <!-- Routine NFC tags (routines spec §8.3.2): optional, so phones without NFC still install;
+         NFC is a normal permission (T16). -->
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
+    <uses-permission android:name="android.permission.NFC" />
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -171,6 +177,67 @@
         <receiver
             android:name=".routines.RoutineNotificationActionReceiver"
             android:exported="false" />
+
+        <!-- Routines S2 (RemEx-pp0rt.7): the manual surfaces. Spec T1: EVERY routine component is
+             exported="false" except NfcRoutineActivity, and RoutineManifestExportTest fails the build
+             if that changes. No deep-link handler for remex:// exists anywhere else. -->
+        <!-- Pinned and dynamic shortcut target: the launcher starts it on RemEx's behalf, so it needs
+             no export; it still checks the shortcut's HMAC sig (REGRESSION-GUARDS). -->
+        <activity
+            android:name=".routines.manual.RoutineShortcutActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.RemEx.Invisible" />
+
+        <!-- The translucent confirm for a destructive routine started from a shortcut, the widget or
+             a tag (spec 1.7), the TileConfirmActivity pattern. -->
+        <activity
+            android:name=".routines.manual.RoutineConfirmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.RemEx.TileConfirm" />
+
+        <!-- THE ONLY EXPORTED ROUTINE COMPONENT (spec §8.3.2, T1). Tag dispatch requires export, so
+             it is guarded by DISPATCH_NFC_MESSAGE, which only the system NFC service holds: no other
+             app can start it. Never remove the permission (REGRESSION-GUARDS). -->
+        <activity
+            android:name=".routines.nfc.NfcRoutineActivity"
+            android:exported="true"
+            android:permission="android.permission.DISPATCH_NFC_MESSAGE"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.RemEx.Invisible">
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="remex" android:host="routine" />
+            </intent-filter>
+        </activity>
+
+        <!-- Widget: Routine (spec §8.3.3, A12). NOT exported, unlike the older widgets: the AppWidget
+             service sends as the system and still reaches it (T1). Taps are Glance ActionCallbacks,
+             kept in release by proguard-rules.pro (RoutineWidgetReleaseShapeTest). -->
+        <receiver
+            android:name=".routines.widget.RoutineWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_routine_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/routine_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".routines.widget.RoutineWidgetConfigActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.RemEx" />
 
         <!-- Service for backwards compatibility of per-app languages -->
         <service

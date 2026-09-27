@@ -41,7 +41,16 @@ sealed class RoutineDetail : Parcelable {
  * the screen consumes the request and shows the run detail.
  */
 object RoutineOpenRequests {
-    data class Request(val routineId: String?, val runId: String?)
+    /**
+     * @property notice a fixed notice code for the routines list (never text from the intent: any
+     *   app can start MainActivity, so it may only choose among RemEx's own messages).
+     */
+    data class Request(val routineId: String?, val runId: String?, val notice: String? = null)
+
+    /** Opens the routines list with a notice (a stale shortcut, spec §8.3.3). */
+    const val EXTRA_OPEN_LIST_NOTICE = "com.clindsay94.remex.routines.OPEN_LIST_NOTICE"
+    const val NOTICE_SHORTCUT_INVALID = "shortcut_invalid"
+    private val NOTICES = setOf(NOTICE_SHORTCUT_INVALID)
 
     private val _pending = MutableStateFlow<Request?>(null)
     val pending: StateFlow<Request?> = _pending.asStateFlow()
@@ -57,11 +66,13 @@ object RoutineOpenRequests {
             try {
                 val runId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
                 val routineId = intent.getStringExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
-                if (runId == null && routineId == null) return false
+                val notice = intent.getStringExtra(EXTRA_OPEN_LIST_NOTICE)?.takeIf { it in NOTICES }
+                if (runId == null && routineId == null && notice == null) return false
                 // Consumed once: a later configuration change re-delivering the intent must not reopen it.
                 intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_RUN_ID)
                 intent.removeExtra(RoutineNotificationPresenter.EXTRA_OPEN_ROUTINE_ID)
-                Request(routineId, runId)
+                intent.removeExtra(EXTRA_OPEN_LIST_NOTICE)
+                Request(routineId, runId, notice)
             } catch (e: RuntimeException) {
                 Log.w("RoutineOpenRequests", "Ignoring an intent whose extras could not be read.", e)
                 return false

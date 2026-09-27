@@ -212,6 +212,8 @@ internal fun RoutineEditorPane(
     // A trigger change waiting for "Remove it?" (R-UX-11): the new type and the steps it removes.
     var pendingTriggerChange by remember { mutableStateOf<Pair<String, List<Int>>?>(null) }
     var stepSheet by remember { mutableStateOf<StepSheet?>(null) }
+    // The NFC write sheet: null closed, false "write" (same token), true "rewrite" (new token).
+    var nfcSheet by remember { mutableStateOf<Boolean?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     val targetY = remember { mutableStateMapOf<ProblemTarget, Int>() }
@@ -263,6 +265,9 @@ internal fun RoutineEditorPane(
                                 pcLabelText(resources, pcName),
                             )
                         viewModel.postMessage(RoutinesMessage(text, if (draft.isNew) RoutinesMessageAction.TestNow(id) else null))
+                    } else if (draft.isNew && draft.templateId == "tpl.media.next") {
+                        // Spec 4.1: this one is made for the home screen, so the offer is the widget.
+                        viewModel.postMessage(RoutinesMessage(resources.getString(R.string.routines_saved_new), RoutinesMessageAction.AddWidget(id)))
                     } else if (draft.isNew) {
                         viewModel.postMessage(RoutinesMessage(resources.getString(R.string.routines_saved_new), RoutinesMessageAction.TestNow(id)))
                     } else {
@@ -434,6 +439,14 @@ internal fun RoutineEditorPane(
                         pcName = pcName,
                         onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
+                    if (draft.trigger?.type == RoutineTriggerTypes.NFC_TAP) {
+                        NfcTagActions(
+                            viewModel = viewModel,
+                            routineId = draft.base?.id?.takeIf { !dirty && draft.base.trigger?.type == RoutineTriggerTypes.NFC_TAP },
+                            enabled = !readOnly && viewModel.hasNfc,
+                            onWrite = { rotate -> nfcSheet = rotate },
+                        )
+                    }
                     Connector(dashed = false)
 
                     // THEN
@@ -523,6 +536,8 @@ internal fun RoutineEditorPane(
             current = draft.trigger?.type,
             unavailableReason = { type ->
                 when {
+                    // R-UX-13: no NFC hardware keeps the option listed, disabled, with the reason.
+                    type == RoutineTriggerTypes.NFC_TAP && !viewModel.hasNfc -> resources.getString(R.string.routines_trigger_nfc_no_hardware)
                     !RoutineTriggerTypes.isHostRun(type) -> null
                     pcTooOld -> resources.getString(R.string.routines_trigger_pc_too_old, pcLabelText(resources, pcName))
                     RoutineSyncStates.triggerAvailable(type, pcView) == false && type == RoutineTriggerTypes.PC_SENSOR ->
@@ -594,8 +609,20 @@ internal fun RoutineEditorPane(
             onKeep = { confirmDiscard = false },
         )
     }
+    nfcSheet?.let { rotate ->
+        draft.base?.id?.let { id ->
+            NfcWriteSheet(
+                viewModel = viewModel,
+                routineId = id,
+                routineName = draft.base.name.orEmpty(),
+                rotate = rotate,
+                onDismiss = { nfcSheet = null },
+            )
+        }
+    }
     if (confirmDelete) {
         DeleteConfirmDialog(
+            hasTags = draft.base?.trigger?.type == RoutineTriggerTypes.NFC_TAP,
             name = draft.base?.name.orEmpty(),
             onConfirm = {
                 confirmDelete = false

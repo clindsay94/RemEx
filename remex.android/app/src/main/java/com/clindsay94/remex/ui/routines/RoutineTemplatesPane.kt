@@ -76,6 +76,7 @@ internal fun RoutineTemplatesPane(
             RoutineRequirement.MEDIA_KEYS -> mediaKeys.second.takeIf { mediaKeys.first != null && mediaKeys.first == selectedPc }
             // Spec 4.2 "Sensor": THIS template's own sensor, in the connected PC's catalog.
             RoutineRequirement.TEMPERATURE_SENSOR, RoutineRequirement.MEMORY_SENSOR -> RoutineSensorCatalog.templateSensorAvailable(template, sensorOptions)
+            RoutineRequirement.NFC -> viewModel.hasNfc
         }
 
     Scaffold(
@@ -115,11 +116,18 @@ internal fun RoutineTemplatesPane(
                 items(templates, key = { it.id }) { template ->
                     // Spec 4.2: a definite "this PC has no such sensor" disables the card and says so.
                     val sensorMissing = RoutineSensorCatalog.templateSensorAvailable(template, sensorOptions) == false
+                    // A tag template on a phone without NFC is shown, disabled, with the reason (spec 4.2).
+                    val noNfc = RoutineRequirement.NFC in template.needs && !viewModel.hasNfc
                     TemplateCard(
                         template = template,
                         compact = false,
-                        enabled = canEdit && !sensorMissing,
-                        disabledReason = if (sensorMissing) sensorMissingText else null,
+                        enabled = canEdit && !sensorMissing && !noNfc,
+                        disabledReason =
+                            when {
+                                noNfc -> stringResource(R.string.routines_trigger_nfc_no_hardware)
+                                sensorMissing -> sensorMissingText
+                                else -> null
+                            },
                         satisfied = { satisfied(template, it) },
                         onClick = { onPick(template) },
                         modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec()),

@@ -12,7 +12,11 @@ import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.routines.RoutineHostSync
 import com.clindsay94.remex.routines.RoutineItem
+import com.clindsay94.remex.routines.RoutineNfcBinding
 import com.clindsay94.remex.routines.RoutinePcRunStart
+import com.clindsay94.remex.routines.manual.RoutineManualEntry
+import com.clindsay94.remex.routines.manual.RoutineShortcuts
+import com.clindsay94.remex.routines.widget.RoutineWidget
 import com.clindsay94.remex.routines.RoutinePcSyncView
 import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.RoutineRepository
@@ -390,9 +394,52 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    // ── NFC tags, shortcuts and widgets (S2, RemEx-pp0rt.7) ──
+
+    private val secrets = Routines.secrets(application)
+
+    /** Bumped whenever a tag is written, so the trigger card re-reads "Tag written <date>". */
+    private val _nfcRevision = MutableStateFlow(0)
+    val nfcRevision: StateFlow<Int> = _nfcRevision.asStateFlow()
+
+    suspend fun nfcBinding(routineId: String): RoutineNfcBinding? =
+        runCatchingIo("Reading a routine's tag token", null) { secrets.nfcBinding(routineId) }
+
+    /** A tag was written with [token] (a rotation when it differs: older tags stop working). */
+    suspend fun commitNfcToken(routineId: String, token: String) {
+        runCatchingIo("Storing a routine's tag token", Unit) { secrets.commitNfcToken(routineId, token, System.currentTimeMillis()) }
+        _nfcRevision.value++
+    }
+
+    /** A routine's name on this phone, or null; safe from any thread. */
+    fun routineName(routineId: String): String? = routine(routineId)?.name
+
+    /** "Add to home screen" (spec 1.6 "Pin", R-UX-24). */
+    fun requestShortcut(routineId: String) {
+        viewModelScope.launch {
+            val routine = routine(routineId) ?: return@launch
+            when (RoutineShortcuts.requestPin(app, routine)) {
+                RoutineShortcuts.PinResult.REQUESTED -> Unit
+                RoutineShortcuts.PinResult.UNSUPPORTED -> post(app.getString(R.string.routines_shortcut_unsupported))
+                RoutineShortcuts.PinResult.NOT_PINNABLE -> post(app.getString(R.string.routines_pin_manual_only))
+            }
+        }
+    }
+
+    /** "Add widget" (spec 1.6 "Pin", R-UX-25). */
+    fun requestWidget(routineId: String) {
+        val routine = routine(routineId)
+        when {
+            !RoutineManualEntry.isPinnable(routine) -> post(app.getString(R.string.routines_pin_manual_only))
+            !RoutineWidget.requestPin(app, routineId) -> post(app.getString(R.string.routines_widget_unsupported))
+        }
+    }
+
     fun delete(routineId: String) {
         viewModelScope.launch {
             if (repository.delete(routineId)) {
+                // Its tags stop working (spec 1.5); shortcuts and widgets follow via RoutineSurfaces.
+                runCatchingIo("Forgetting a deleted routine's tag", Unit) { secrets.removeRoutine(routineId) }
                 if (_draft.value?.base?.id == routineId) closeEditor()
                 post(app.getString(R.string.routines_deleted))
             } else {

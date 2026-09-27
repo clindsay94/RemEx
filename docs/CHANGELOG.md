@@ -35,6 +35,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   that runs out of time shows as expired in the run's history. When a PC routine is about to shut down,
   restart, sign out, sleep or hibernate the PC, a connected phone shows the countdown too, with a Cancel
   that stops it. (RemEx-pp0rt.10)
+- Routines you start without opening RemEx: a Tap Run routine can go on the home screen as a shortcut
+  or as a new "RemEx Routine" widget that shows its last result, and your four most recently run ones
+  appear when you long-press the RemEx icon. Remote Control has a "Your routines" section above Power
+  for the connected PC's Tap Run routines. A new trigger, "I tap an NFC tag", runs a routine when you
+  hold the phone to a tag you wrote from the routine's card: the write sheet names a tag that already
+  runs another routine before replacing it, refuses locked and too-small tags before writing, and has
+  a Test step that runs nothing. Rewriting a tag gives it a new code, so older copies stop working. A
+  tag only works on your own unlocked phone, and a routine that shuts down, restarts, signs out, sleeps
+  or hibernates the PC still asks first from a shortcut, the widget or a tag. Four tag templates join
+  the gallery (movie night, music on and screen off, desk tag, and tap a tag to lock the PC); on a phone
+  without NFC they are shown but can't be picked. (RemEx-pp0rt.7)
 
 - Routines that run on the PC, from the phone: two new triggers, "My PC is idle" and "My PC locks or
   unlocks", and five templates that use them (lock the PC when you're gone, sleep it when you lock it,

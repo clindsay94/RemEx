@@ -529,6 +529,26 @@ class RoutineRepository(
 
     private fun activeRunFor(routineId: String): RoutineRun? = _activeRuns.value[routineId]
 
+    /**
+     * Records a start that was refused before it could be a run: an NFC tap with a stale token
+     * (`nfc_unknown_tag`) or on a locked phone (`nfc_device_locked`), spec §8.3.2. Stored as a
+     * skipped run of [routineId] (coalesced like every skip) so History shows it; nothing is
+     * enqueued and no notification is posted, because the tap already showed a toast.
+     */
+    suspend fun recordRefusal(routineId: String, source: String, reasonCode: String): Boolean =
+        mutex.withLock {
+            ensureLoadedLocked()
+            val doc = document ?: return false
+            val routine = doc.routines.firstOrNull { it.id == routineId } ?: return false
+            val now = clock.nowUnixMs()
+            val past = runs[routineId].orEmpty()
+            if (RoutineSkipCoalescing.isCoalesced(past, reasonCode, now)) return true
+            val queued = RoutineRunRecords.queued(newId(), routine, source, false, now, null)
+            putRunsLocked(routineId, past + RoutineRunRecords.skipped(queued, reasonCode, now))
+            publish()
+            true
+        }
+
     // ── PC run reports (§7.3.6) ──
 
     /**

@@ -180,6 +180,8 @@ fun RoutinesScreen(
             request.runId != null -> open(RoutineDetail.Run(request.runId))
             request.routineId != null -> open(RoutineDetail.History(request.routineId))
         }
+        // A stale shortcut lands on the list with a word about it (spec §8.3.3); nothing ran.
+        if (request.notice == RoutineOpenRequests.NOTICE_SHORTCUT_INVALID) viewModel.post(resources.getString(R.string.routines_shortcut_invalid))
     }
 
     val detailKey = navigator.currentDestination?.contentKey
@@ -201,6 +203,7 @@ fun RoutinesScreen(
                     is RoutinesMessageAction.OpenRun -> resources.getString(R.string.routine_notification_see_what_happened)
                     is RoutinesMessageAction.Undo -> resources.getString(R.string.routines_undo)
                     is RoutinesMessageAction.SwitchAndRun -> resources.getString(R.string.routines_switch_and_run)
+                    is RoutinesMessageAction.AddWidget -> resources.getString(R.string.routines_menu_add_widget)
                     null -> null
                 }
             val result =
@@ -219,6 +222,7 @@ fun RoutinesScreen(
                         viewModel.switchAndRun(action.routineId, action.hostIdentity, action.testRun)
                         onNavigateToConnection()
                     }
+                    is RoutinesMessageAction.AddWidget -> viewModel.requestWidget(action.routineId)
                     null -> Unit
                 }
             }
@@ -353,6 +357,15 @@ private fun RoutinesListPane(
     var paneOrigin by remember { mutableStateOf(Offset.Zero) }
     var confirmRun by remember { mutableStateOf<RoutineItem?>(null) }
     var confirmDelete by remember { mutableStateOf<RoutineItem?>(null) }
+    var writeTag by remember { mutableStateOf<RoutineItem?>(null) }
+    val context = LocalContext.current
+    // NFC can be switched off in quick settings while RemEx is in the background: re-read on resume.
+    var nfcOff by remember { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        nfcOff = com.clindsay94.remex.routines.nfc.NfcTagIo.adapter(context)?.isEnabled == false
+        onPauseOrDispose { }
+    }
+    val showNfcOff = nfcOff && items.any { it.routine.enabled && it.routine.trigger?.type == RoutineTriggerTypes.NFC_TAP }
 
     fun pcName(identity: String?): String? = identity?.let { id -> pcs.firstOrNull { it.identity == id }?.name }
 
@@ -487,6 +500,16 @@ private fun RoutinesListPane(
                                 )
                             }
                         }
+                        if (showNfcOff) {
+                            item(key = "nfc-off") {
+                                NoticeCard(
+                                    title = null,
+                                    body = RoutineReasonText.message(context, RoutineReasonCodes.NFC_DISABLED, null),
+                                    actionLabel = stringResource(R.string.routines_nfc_turn_on),
+                                    onAction = { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_NFC_SETTINGS)) },
+                                )
+                            }
+                        }
                         item(key = "paused") {
                             AnimatedVisibility(
                                 visible = paused,
@@ -567,6 +590,9 @@ private fun RoutinesListPane(
                                             onDuplicate = { viewModel.duplicate(id) },
                                             onMove = { delta -> viewModel.move(id, delta) },
                                             onDelete = { confirmDelete = item },
+                                            onPinShortcut = { viewModel.requestShortcut(id) },
+                                            onAddWidget = { viewModel.requestWidget(id) },
+                                            onWriteTag = { writeTag = item },
                                             modifier =
                                                 Modifier.animateItem(
                                                     fadeInSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
@@ -641,11 +667,21 @@ private fun RoutinesListPane(
     confirmDelete?.let { item ->
         DeleteConfirmDialog(
             name = item.routine.name.orEmpty(),
+            hasTags = item.routine.trigger?.type == RoutineTriggerTypes.NFC_TAP,
             onConfirm = {
                 confirmDelete = null
                 viewModel.delete(item.routine.id.orEmpty())
             },
             onDismiss = { confirmDelete = null },
+        )
+    }
+    writeTag?.let { item ->
+        NfcWriteSheet(
+            viewModel = viewModel,
+            routineId = item.routine.id.orEmpty(),
+            routineName = item.routine.name.orEmpty(),
+            rotate = false,
+            onDismiss = { writeTag = null },
         )
     }
 }
@@ -788,6 +824,9 @@ private fun RoutineCard(
     onDuplicate: () -> Unit,
     onMove: (Int) -> Unit,
     onDelete: () -> Unit,
+    onPinShortcut: () -> Unit,
+    onAddWidget: () -> Unit,
+    onWriteTag: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val routine = item.routine
@@ -885,6 +924,14 @@ private fun RoutineCard(
                             DropdownMenuItem(text = { Text(stringResource(R.string.routines_test)) }, onClick = { menuOpen = false; onTest() })
                         }
                         DropdownMenuItem(text = { Text(stringResource(R.string.routines_history)) }, onClick = { menuOpen = false; onHistory() })
+                        // Home-screen surfaces run `manual` routines only (spec 1.6 "Pin"); tags run `nfc.tap` ones.
+                        if (manual && item.verdict.isValid) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.routines_menu_add_shortcut)) }, onClick = { menuOpen = false; onPinShortcut() })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.routines_menu_add_widget)) }, onClick = { menuOpen = false; onAddWidget() })
+                        }
+                        if (canEdit && routine.trigger?.type == RoutineTriggerTypes.NFC_TAP) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.routines_menu_write_nfc)) }, onClick = { menuOpen = false; onWriteTag() })
+                        }
                         if (canEdit) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.routines_duplicate)) }, onClick = { menuOpen = false; onDuplicate() })
                             if (canMoveUp) DropdownMenuItem(text = { Text(moveUp) }, onClick = { menuOpen = false; onMove(-1) })
@@ -1005,11 +1052,12 @@ internal fun DiscardChangesDialog(onDiscard: () -> Unit, onKeep: () -> Unit) {
 }
 
 @Composable
-internal fun DeleteConfirmDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+internal fun DeleteConfirmDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit, hasTags: Boolean = false) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.routines_delete_title, name)) },
-        text = { Text(stringResource(R.string.routines_delete_body)) },
+        // Spec 1.5: deleting a tag routine says its tags stop working.
+        text = { Text(stringResource(if (hasTags) R.string.routines_delete_body_tags else R.string.routines_delete_body)) },
         confirmButton = {
             Button(
                 onClick = onConfirm,

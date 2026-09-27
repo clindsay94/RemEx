@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "Routine" widget (routines spec §8.3.3, A12): 1x1 and 2x1, resizable. Configuration is
+     optional so a widget pinned from a routine's menu is placed already bound; one placed from the
+     widget picker shows "Choose a routine" until it is. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="57dp"
+    android:minHeight="57dp"
+    android:minResizeWidth="57dp"
+    android:minResizeHeight="57dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:maxResizeWidth="400dp"
+    android:maxResizeHeight="200dp"
+    android:updatePeriodMillis="0"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:previewImage="@drawable/widget_preview_launcher"
+    android:description="@string/widget_routine_description"
+    android:configure="com.clindsay94.remex.routines.widget.RoutineWidgetConfigActivity" />

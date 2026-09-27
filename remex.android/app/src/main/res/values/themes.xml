@@ -20,4 +20,15 @@
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
     </style>
+
+    <!-- Routine shortcut and NFC tag targets (routines spec §8.3.2, §8.3.3): they draw nothing,
+         run or hand over to the confirm dialog, and finish. Translucent rather than Theme.NoDisplay,
+         because their work is asynchronous and NoDisplay must finish before onResume. -->
+    <style name="Theme.RemEx.Invisible" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

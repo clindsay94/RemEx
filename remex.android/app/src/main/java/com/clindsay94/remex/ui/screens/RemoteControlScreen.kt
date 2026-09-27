@@ -315,8 +315,17 @@ fun RemoteControlScreen(
                     artwork = mediaArtwork
             )
 
+    // "Your routines" (routines spec A14, R-UX-06): the connected PC's Tap Run routines.
+    val routines = com.clindsay94.remex.ui.routines.rememberRemoteControlRoutines()
+    val routineContext = androidx.compose.ui.platform.LocalContext.current
+    val routineScope = rememberCoroutineScope()
+
     RemoteControlScreenContent(
             uiState = uiState,
+            routines = routines,
+            onRunRoutine = { id ->
+                routineScope.launch { com.clindsay94.remex.ui.routines.runRoutineFromRemoteControl(routineContext, id) }
+            },
             onNavigateToConnection = onNavigateToConnection,
             onWakePc = { viewModel.wakePc() },
             onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
@@ -341,7 +350,9 @@ fun RemoteControlScreenContent(
         onFetchClipboard: () -> Unit = {},
         onSendKey: (Int) -> Unit,
         onSeek: (Long) -> Unit = {},
-        onClearCommandStatus: () -> Unit
+        onClearCommandStatus: () -> Unit,
+        routines: List<com.clindsay94.remex.ui.routines.RemoteRoutine> = emptyList(),
+        onRunRoutine: (String) -> Unit = {}
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
@@ -421,6 +432,45 @@ fun RemoteControlScreenContent(
             // the thumb always lands rather than scrolling away with the rest of the grid.
 
             CommandCategory.entries.forEach { category ->
+                // "Your routines" sits directly above POWER, under the same banded header (spec
+                // A14), and is absent when the connected PC has no Tap Run routines.
+                if (category == CommandCategory.POWER && routines.isNotEmpty()) {
+                    item(span = { GridItemSpan(2) }, key = "routines-header") {
+                        SectionHeader(
+                                label = stringResource(R.string.rc_section_your_routines),
+                                icon = com.clindsay94.remex.ui.routines.RoutineIcon,
+                                backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                topPadding = 16.dp
+                        )
+                    }
+                    items(routines, key = { "routine-" + it.id }) { routine ->
+                        val confirmId = "routine-" + routine.id
+                        com.clindsay94.remex.ui.routines.RemoteRoutineCard(
+                                routine = routine,
+                                awaitingConfirmation = activeConfirmationId == confirmId,
+                                shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
+                                onPrimaryClick = {
+                                    view.hapticCommandSent()
+                                    if (routine.destructive) {
+                                        activeConfirmationId = if (activeConfirmationId == confirmId) null else confirmId
+                                    } else {
+                                        onRunRoutine(routine.id)
+                                    }
+                                },
+                                onConfirm = {
+                                    view.hapticCommandAcknowledged()
+                                    activeConfirmationId = null
+                                    onRunRoutine(routine.id)
+                                },
+                                onCancel = {
+                                    view.hapticCommandFailed()
+                                    activeConfirmationId = null
+                                },
+                                modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
+                        )
+                    }
+                }
                 val categoryCards = cardsByCategory[category].orEmpty()
                 item(span = { GridItemSpan(2) }) {
                     CommandCategoryHeader(

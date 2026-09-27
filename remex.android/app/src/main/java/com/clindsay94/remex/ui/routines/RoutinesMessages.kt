@@ -24,6 +24,9 @@ sealed interface RoutinesMessageAction {
      * the person switches; the run starts once that PC is connected. Never switches by itself.
      */
     data class SwitchAndRun(val routineId: String, val hostIdentity: String, val testRun: Boolean) : RoutinesMessageAction
+
+    /** "Add widget" after saving a routine made for the home screen (spec 4.1 `tpl.media.next`). */
+    data class AddWidget(val routineId: String) : RoutinesMessageAction
 }
 
 /**

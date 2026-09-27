@@ -25,9 +25,16 @@ import com.clindsay94.remex.routines.model.RoutineTriggerTypes
  */
 object RoutineTriggerFamilies {
     /** Triggers the editor's picker offers and the gallery shows templates for, in picker order. */
-    // S4 (RemEx-pp0rt.12) added the PC idle and session families; S5 (RemEx-pp0rt.10) the sensor.
+    // S4 (RemEx-pp0rt.12) added the PC idle and session families, S5 (RemEx-pp0rt.10) the sensor,
+    // S2 (RemEx-pp0rt.7) the NFC tag.
     val offered: List<String> =
-        listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+        listOf(
+            RoutineTriggerTypes.NFC_TAP,
+            RoutineTriggerTypes.MANUAL,
+            RoutineTriggerTypes.PC_SENSOR,
+            RoutineTriggerTypes.PC_IDLE,
+            RoutineTriggerTypes.PC_SESSION,
+        )
 
     fun isOffered(type: String?): Boolean = type in offered
 
@@ -66,6 +73,7 @@ object RoutineTriggerText {
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_chip
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_chip
+            RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_chip
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_chip
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_chip
             else -> R.string.routines_trigger_unknown
@@ -76,6 +84,7 @@ object RoutineTriggerText {
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_title
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_title
+            RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_title
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_title
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_title
             else -> R.string.routines_trigger_unknown
@@ -86,6 +95,7 @@ object RoutineTriggerText {
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_supporting
             RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_supporting
+            RoutineTriggerTypes.NFC_TAP -> R.string.routines_trigger_nfc_supporting
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_supporting
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_supporting
             else -> R.string.routines_trigger_unknown
@@ -252,6 +262,7 @@ enum class RoutineRequirement(@StringRes val labelRes: Int) {
     MEDIA_KEYS(R.string.routines_need_media_keys),
     TEMPERATURE_SENSOR(R.string.routines_need_temperature_sensor),
     MEMORY_SENSOR(R.string.routines_need_memory_sensor),
+    NFC(R.string.routines_need_nfc),
 }
 
 /**
@@ -281,6 +292,7 @@ data class RoutineTemplate(
 
 object RoutineTemplates {
     private val wait5 = RoutineStep(type = RoutineStepTypes.WAIT_ONLINE, timeoutSeconds = 300)
+    private val wait3 = RoutineStep(type = RoutineStepTypes.WAIT_ONLINE, timeoutSeconds = 180)
 
     /** A health template's trigger: "above" [limit] for [sustainSeconds]; the sensor is filled on open. */
     private fun sensorTrigger(limit: Double, sustainSeconds: Int) =
@@ -331,6 +343,33 @@ object RoutineTemplates {
                 needs = listOf(RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
             ),
             RoutineTemplate(
+                id = "tpl.media.movie",
+                category = RoutineTemplateCategory.MEDIA,
+                nameRes = R.string.routines_tpl_media_movie_name,
+                whyRes = R.string.routines_tpl_media_movie_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.NFC_TAP),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.WAKE)),
+                        RoutineTemplateStep(wait3),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.LAUNCH_APP)),
+                    ),
+                needs = listOf(RoutineRequirement.NFC, RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
+            ),
+            RoutineTemplate(
+                id = "tpl.media.screenoff",
+                category = RoutineTemplateCategory.MEDIA,
+                nameRes = R.string.routines_tpl_media_screenoff_name,
+                whyRes = R.string.routines_tpl_media_screenoff_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.NFC_TAP),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.MEDIA, mediaAction = RoutineMediaActions.PLAY_PAUSE)),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.MONITOR_OFF)),
+                    ),
+                needs = listOf(RoutineRequirement.NFC, RoutineRequirement.MEDIA_KEYS),
+            ),
+            RoutineTemplate(
                 id = "tpl.media.next",
                 category = RoutineTemplateCategory.MEDIA,
                 nameRes = R.string.routines_tpl_media_next_name,
@@ -356,6 +395,20 @@ object RoutineTemplates {
                         ),
                     ),
                 needs = listOf(RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
+            ),
+            RoutineTemplate(
+                id = "tpl.work.desk",
+                category = RoutineTemplateCategory.FOCUS,
+                nameRes = R.string.routines_tpl_work_desk_name,
+                whyRes = R.string.routines_tpl_work_desk_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.NFC_TAP),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.WAKE)),
+                        RoutineTemplateStep(wait3),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.LAUNCH_APP)),
+                    ),
+                needs = listOf(RoutineRequirement.NFC, RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
             ),
             RoutineTemplate(
                 id = "tpl.health.gpu",
@@ -409,6 +462,19 @@ object RoutineTemplates {
                     ),
                 needs = listOf(RoutineRequirement.MEMORY_SENSOR),
                 sensorPreset = RoutineSensorPreset.RAM_LOAD,
+            ),
+            RoutineTemplate(
+                id = "tpl.priv.tag",
+                category = RoutineTemplateCategory.PRIVACY,
+                nameRes = R.string.routines_tpl_priv_tag_name,
+                whyRes = R.string.routines_tpl_priv_tag_why,
+                trigger = RoutineTrigger(type = RoutineTriggerTypes.NFC_TAP),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.LOCK)),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.MONITOR_OFF)),
+                    ),
+                needs = listOf(RoutineRequirement.NFC),
             ),
             RoutineTemplate(
                 id = "tpl.priv.unlock",

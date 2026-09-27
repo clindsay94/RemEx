@@ -1324,6 +1324,38 @@ and every write is refused until the user picks Reset (the same rule as "Profile
 be atomic, and a fallback profile must never be persisted" above). All three stores and the prefs file are excluded from cloud backup and
 device transfer in both rule files; a routine store restored without its keyset reads as corrupt.
 
+### `NfcRoutineActivity` must keep `DISPATCH_NFC_MESSAGE` (INVARIANT)
+
+`remex.android/app/src/main/AndroidManifest.xml:207-217` (the activity, its
+`android:permission` at `:209`), `routines/nfc/NfcRoutineActivity.kt`, `routines/nfc/NfcRoutineTag.kt:78`
+(`NfcTokenVerifier.verify`); pinned by `RoutineManifestExportTest`, `NfcTokenVerifierTest` —
+RemEx-pp0rt.7, spec §8.3.2, T1-T3.
+
+Tag dispatch only reaches an EXPORTED activity, so the NFC tag target is the one routine component
+that is exported, and the only thing between "any app on the phone" and "run this routine" is
+`android:permission="android.permission.DISPATCH_NFC_MESSAGE"`, which only the system NFC service
+holds. Drop it, or copy the `remex://routine` intent filter onto any other component, and every app
+can fire `remex://routine/<id>?t=...` at RemEx. Nothing breaks visibly when that happens: tags keep
+working, which is exactly why it would not be noticed. Every other routine component (the shortcut
+target, the confirm activity, the widget receiver and its config activity, the notification action
+receiver) stays `exported="false"`; the manifest test fails if one flips. Behind the permission the
+tag is still untrusted: the token is compared in constant time, a locked phone is refused
+(`nfc_device_locked`), and a routine runs at most once per 10 s per tag tap.
+
+### A routine shortcut runs only with a valid HMAC `sig` (INVARIANT)
+
+`routines/manual/RoutineShortcutActivity.kt:35` (the check), `routines/manual/RoutineShortcutSignature.kt:27`
+(`verify`, constant time), the key from `RoutineSecretStore.shortcutKey`; pinned by
+`ShortcutSignatureTest`, `RoutineManifestExportTest` — RemEx-pp0rt.7, spec §8.3.3, T1, R-SEC-02.
+
+`RoutineShortcutActivity` is not exported, and it STILL verifies `sig = HMAC-SHA256(shortcutKey,
+routineId)` before it runs anything. The launcher replays whatever intent the shortcut was published
+with, forever: a shortcut for a routine that was deleted and whose id came back, one published before
+a keyset reset, or one some launcher bug hands over with altered extras must not run a routine the
+user never pinned. A missing or wrong `sig` opens the routines list with "That shortcut no longer
+works" and runs nothing. Do not "simplify" this to an id lookup because the component is private; the
+signature is what binds a shortcut to the routine it was made for.
+
 ### `PinnedHostStore` — reconnect-secret persistence
 
 After a successful pairing, `RemexClientManager` extracts `reconnectSecret` from the

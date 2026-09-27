@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,10 +70,16 @@ import java.time.format.FormatStyle
 
 val RoutineIcon: ImageVector get() = Icons.Default.Route
 
+/**
+ * A trigger's glyph (spec 1.1). Composable because the NFC and leave-home glyphs are the app's own
+ * vector drawables rather than new material-icons-extended usages (RemEx-owdk).
+ */
+@Composable
 fun triggerIcon(type: String?): ImageVector =
     when (type) {
         RoutineTriggerTypes.MANUAL -> Icons.Default.PlayCircle
         RoutineTriggerTypes.PC_SENSOR -> com.clindsay94.remex.ui.components.ThermostatGlyph
+        RoutineTriggerTypes.NFC_TAP -> ImageVector.vectorResource(R.drawable.ic_routine_nfc)
         RoutineTriggerTypes.PC_IDLE -> Icons.Default.Schedule
         RoutineTriggerTypes.PC_SESSION -> Icons.Default.Lock
         else -> Icons.Default.Route
