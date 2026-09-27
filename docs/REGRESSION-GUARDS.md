@@ -440,6 +440,12 @@ anyone. Keep it a top-level, ownerless, topmost window, and keep the tray "Cance
 (`RoutineCountdownTrayState`) armed before the window is attempted, so a window that fails still leaves a
 way to cancel.
 
+**Closing the countdown window is a cancel.** It keeps system chrome, so X, Alt+F4 and the taskbar can
+dismiss it; `RoutineCountdownWindow.OnClosing` runs Cancel whenever `!e.IsProgrammatic`. Drop that and
+the window disappears while the agent's 15 s keep running, and the PC shuts down right after the person
+dismissed the warning (pinned by `RoutineCountdownWindowRenderTests.AUserCloseFromTheChromeCancelsExactlyOnce`
+and `RoutineCountdownSurfaceTests.ClosingTheWindowIsWiredToCancel`).
+
 ### Routines: a test run never issues a destructive verb
 
 `remex.agent/Services/Routines/RoutineStepExecutor.cs:232` (`if (execution.TestRun)` returns `simulated`

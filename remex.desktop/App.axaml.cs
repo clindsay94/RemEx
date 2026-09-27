@@ -150,6 +150,7 @@ public partial class App : Application
             && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
 
         BuildTrayMenu();
+        WireRoutineCancelItem();
         WireTrayTooltipToPhonePresence();
 
         _ = InitializeAppAsync();
@@ -843,12 +844,21 @@ public partial class App : Application
         _cancelRoutineItem = new NativeMenuItem { Header = strings["Routine_Tray_CancelMenu"] };
         _cancelRoutineItem.Click += (_, _) =>
             Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.CancelActive();
-        Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.Changed += () =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(SyncRoutineCancelItem);
+        // The Changed subscription is NOT made here: this method reruns on every language change,
+        // and subscribing per rebuild would pile up handlers. It is made once, in
+        // WireRoutineCancelItem, and SyncRoutineCancelItem reads whichever menu is current.
         SyncRoutineCancelItem();
 
         RefreshTrayMenu();
     }
+
+    /// <summary>
+    /// Subscribes the tray's "Cancel routine" item to the countdown state, once for the app's life
+    /// (like the other process-wide singleton subscriptions here, it is never removed).
+    /// </summary>
+    private void WireRoutineCancelItem() =>
+        Remex.Desktop.Services.Routines.RoutineCountdownTrayState.Instance.Changed += () =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(SyncRoutineCancelItem);
 
     /// <summary>Adds or removes the tray menu's "Cancel routine" item to match the countdown state.</summary>
     private void SyncRoutineCancelItem()

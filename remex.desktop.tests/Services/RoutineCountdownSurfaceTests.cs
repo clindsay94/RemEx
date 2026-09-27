@@ -133,6 +133,20 @@ public sealed class RoutineCountdownSurfaceTests
         }
     }
 
+    /// <summary>
+    /// REGRESSION-GUARDS: closing the countdown window is a cancel. The render test drives the rule;
+    /// this pins that the window's Closing event actually reaches it with the real IsProgrammatic.
+    /// </summary>
+    [Fact]
+    public void ClosingTheWindowIsWiredToCancel()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "RoutineCountdownWindow.axaml.cs"));
+
+        Assert.Contains("Closing += OnClosing;", source, StringComparison.Ordinal);
+        Assert.Contains("=> HandleClosing(e.IsProgrammatic);", source, StringComparison.Ordinal);
+        Assert.Contains("if (!isProgrammatic)", source, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheCountdownWindowMarkupHasOneButtonThatIsDefaultAndCancel()
     {

@@ -48,6 +48,34 @@ public sealed class RoutineCountdownWindowRenderTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void AUserCloseFromTheChromeCancelsExactlyOnce()
+    {
+        var (window, cancels) = Open();
+
+        // What X, Alt+F4 and the taskbar produce: a Closing with IsProgrammatic = false. The headless
+        // platform's close request (IWindowImpl.Closing) is not reachable from a test, so this drives
+        // the handler's rule directly; RoutineCountdownSurfaceTests pins that Closing is wired to it.
+        window.HandleClosing(isProgrammatic: false);
+        Dispatcher.UIThread.RunJobs();
+        cancels().Should().Be(1, "closing the countdown window is a cancel, or the PC shuts down anyway");
+
+        window.HandleClosing(isProgrammatic: false);
+        cancels().Should().Be(1, "cancel runs at most once");
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void TheCoordinatorsOwnCloseDoesNotCancel()
+    {
+        var (window, cancels) = Open();
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        cancels().Should().Be(0, "a programmatic close is the countdown ending, not the user cancelling");
+    }
+
     [AvaloniaTheory]
     [InlineData(Key.Escape, PhysicalKey.Escape)]
     [InlineData(Key.Enter, PhysicalKey.Enter)]

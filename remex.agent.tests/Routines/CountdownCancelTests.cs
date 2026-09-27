@@ -106,11 +106,31 @@ public sealed class CountdownCancelTests
 
         var run = bench.Executor.ExecuteAsync(RoutineTestBench.Execution(Shutdown));
         await bench.WaitForCountdownAsync();
-        Assert.True(bench.Countdown.CancelActive(RoutineCancelledBy.Pc));
+        Assert.True(bench.Countdown.CancelActive(RoutineCancelledBy.Pause));
         var result = await run;
 
+        // A pause is a cancel from the side that paused: PC Pause all is cancelled_on_pc, even though
+        // cancelledBy says "pause" (§8.6, §8.7).
         Assert.Equal(RoutineReasonCodes.CancelledOnPc, result.ReasonCode);
+        Assert.Equal(RoutineCancelledBy.Pause, result.CancelledBy);
         Assert.Empty(bench.Power.Issued);
+    }
+
+    [Fact]
+    public async Task APhoneRoutineCancelWithReasonPauseIsCancelledOnThePhone()
+    {
+        var bench = new RoutineTestBench();
+        var handler = bench.CreateHandler();
+
+        var run = bench.Executor.ExecuteAsync(RoutineTestBench.Execution(Shutdown));
+        await bench.WaitForCountdownAsync();
+        Assert.True(handler.HandleCancel(
+            RoutineTestBench.Owner,
+            new Remex.Core.Messages.Routines.RoutineCancelPayload { RunId = "run-1", Reason = RoutineCancelReasons.Pause }));
+        var result = await run;
+
+        Assert.Equal(RoutineReasonCodes.CancelledOnPhone, result.ReasonCode);
+        Assert.Equal(RoutineCancelledBy.Pause, result.CancelledBy);
     }
 
     [Fact]

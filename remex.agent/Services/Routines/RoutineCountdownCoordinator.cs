@@ -23,7 +23,13 @@ public enum RoutineCountdownStatus
 /// False is the <c>countdown_unseen</c> attribute.
 /// </param>
 /// <param name="CancelledBy">A <see cref="RoutineCancelledBy"/> value when cancelled, else null.</param>
-public sealed record RoutineCountdownResult(RoutineCountdownStatus Status, bool Shown, string? CancelledBy);
+/// <param name="CancelledOnPc">
+/// Which SIDE cancelled, separately from <paramref name="CancelledBy"/>: a <c>pause</c> counts as a cancel
+/// from the side that paused (§8.6, §8.7), so PC Pause all is <c>cancelled_on_pc</c> and phone Pause all is
+/// <c>cancelled_on_phone</c>, while both report <c>cancelledBy = pause</c>.
+/// </param>
+public sealed record RoutineCountdownResult(
+    RoutineCountdownStatus Status, bool Shown, string? CancelledBy, bool CancelledOnPc = false);
 
 /// <summary>One countdown to run.</summary>
 /// <param name="RunId">The run it belongs to; what a phone's <c>routine_cancel</c> names.</param>
@@ -119,7 +125,7 @@ public sealed class RoutineCountdownCoordinator
             try
             {
                 windowShown = await _ui.ShowCountdownAsync(
-                    request.Prompt, () => Cancel(active, RoutineCancelledBy.Pc));
+                    request.Prompt, () => Cancel(active, RoutineCancelledBy.Pc, fromPc: true));
             }
             catch (Exception ex)
             {
@@ -137,9 +143,9 @@ public sealed class RoutineCountdownCoordinator
 
             if (finished == active.Cancelled.Task)
             {
-                var by = await active.Cancelled.Task;
+                var (by, fromPc) = await active.Cancelled.Task;
                 _logger.LogInformation("Routine countdown for run {RunId} cancelled by {By}.", request.RunId, by);
-                return new RoutineCountdownResult(RoutineCountdownStatus.Cancelled, shown, by);
+                return new RoutineCountdownResult(RoutineCountdownStatus.Cancelled, shown, by, fromPc);
             }
 
             // A cancel that raced the deadline still wins: the person pressed Cancel, and "it went
@@ -154,7 +160,8 @@ public sealed class RoutineCountdownCoordinator
                 }
             }
 
-            return new RoutineCountdownResult(RoutineCountdownStatus.Cancelled, shown, await active.Cancelled.Task);
+            var (lateBy, lateFromPc) = await active.Cancelled.Task;
+            return new RoutineCountdownResult(RoutineCountdownStatus.Cancelled, shown, lateBy, lateFromPc);
         }
         finally
         {
@@ -197,7 +204,7 @@ public sealed class RoutineCountdownCoordinator
             return false;
         }
 
-        return Cancel(active, cancelledBy);
+        return Cancel(active, cancelledBy, fromPc: false);
     }
 
     /// <summary>
@@ -212,7 +219,7 @@ public sealed class RoutineCountdownCoordinator
             active = _active;
         }
 
-        return active is not null && Cancel(active, cancelledBy);
+        return active is not null && Cancel(active, cancelledBy, fromPc: true);
     }
 
     /// <summary>
@@ -229,14 +236,14 @@ public sealed class RoutineCountdownCoordinator
 
         return active is not null
             && string.Equals(active.Request.OwnerClientId, ownerClientId, StringComparison.Ordinal)
-            && Cancel(active, cancelledBy);
+            && Cancel(active, cancelledBy, fromPc: false);
     }
 
-    private bool Cancel(Active active, string cancelledBy)
+    private bool Cancel(Active active, string cancelledBy, bool fromPc)
     {
         lock (_gate)
         {
-            return !active.IsClosed && active.Cancelled.TrySetResult(cancelledBy);
+            return !active.IsClosed && active.Cancelled.TrySetResult((cancelledBy, fromPc));
         }
     }
 
@@ -259,7 +266,7 @@ public sealed class RoutineCountdownCoordinator
 
         public RoutineCountdownRequest Request { get; } = request;
 
-        public TaskCompletionSource<string> Cancelled { get; } =
+        public TaskCompletionSource<(string By, bool FromPc)> Cancelled { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool IsClosed => Volatile.Read(ref _closed) != 0;

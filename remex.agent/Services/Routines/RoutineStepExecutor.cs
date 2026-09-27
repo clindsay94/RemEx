@@ -213,7 +213,9 @@ public sealed class RoutineStepExecutor
                         RunId = execution.RunId,
                         StepIndex = execution.StepIndex,
                         Outcome = RoutineStepOutcomes.Cancelled,
-                        ReasonCode = result.CancelledBy == RoutineCancelledBy.Pc
+                        // The SIDE decides the code, not cancelledBy: a pause is a cancel from
+                        // whichever side paused (§8.6, §8.7).
+                        ReasonCode = result.CancelledOnPc
                             ? RoutineReasonCodes.CancelledOnPc
                             : RoutineReasonCodes.CancelledOnPhone,
                         CountdownShown = result.Shown,

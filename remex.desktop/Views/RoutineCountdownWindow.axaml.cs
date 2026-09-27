@@ -33,6 +33,7 @@ public partial class RoutineCountdownWindow : Window
         InitializeComponent();
         _tick.Tick += OnTick;
         Opened += OnOpened;
+        Closing += OnClosing;
         Closed += OnClosed;
         AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
     }
@@ -50,6 +51,22 @@ public partial class RoutineCountdownWindow : Window
         CenterOnPrimaryWorkArea();
         CancelButton.Focus();
         _tick.Start();
+    }
+
+    // ANY CLOSE THE PERSON MAKES IS A CANCEL. The window keeps system chrome, so X, Alt+F4 and the
+    // taskbar's "Close window" all end it - and a window that simply went away while the agent's 15 s
+    // kept running would shut the PC down right after the user dismissed the warning. Only the
+    // coordinator's own Close() is programmatic, and by then the countdown is over, so Cancel is a
+    // no-op there (the view model runs it at most once, and the coordinator ignores a closed countdown).
+    private void OnClosing(object? sender, WindowClosingEventArgs e) => HandleClosing(e.IsProgrammatic);
+
+    /// <summary>The closing rule, separated so it is testable without a platform close request.</summary>
+    internal void HandleClosing(bool isProgrammatic)
+    {
+        if (!isProgrammatic)
+        {
+            ViewModel?.CancelCommand.Execute(null);
+        }
     }
 
     private void OnClosed(object? sender, EventArgs e) => _tick.Stop();
