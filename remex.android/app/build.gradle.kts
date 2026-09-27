@@ -270,6 +270,20 @@ android {
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
+                // Live Handshake splash (RemEx-8g6n0): LiveHandshakeDirectorTest reads the shared
+                // director vectors and LiveHandshakeShaderParityTest compares the PC shader byte for
+                // byte. Both live outside this module, so an edit to only them must still rerun.
+                it.inputs
+                        .file(File(repoRoot, "docs/specs/live-handshake-director-vectors.json"))
+                        .withPropertyName("liveHandshakeDirectorVectors")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+                it.inputs
+                        .file(File(repoRoot, "remex.branding/Shaders/live_handshake_field.sksl"))
+                        .withPropertyName("liveHandshakeFieldShaderPc")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
                 // And declare that C# file as a task INPUT. Without this, Gradle's up-to-date
                 // check has no idea the test depends on it, so editing ONLY that file leaves the
                 // test skipped as up-to-date — the guard would go quiet in exactly the situation

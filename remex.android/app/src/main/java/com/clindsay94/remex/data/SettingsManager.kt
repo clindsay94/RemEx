@@ -90,6 +90,10 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("horizontal_scroll_sensitivity")
                 val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
                 val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
+                // One-time move off the previous splash default onto Live Handshake (RemEx-8g6n0);
+                // see SplashStyles. Set by the migration AND by every personalization save, so a
+                // style chosen after the update is never migrated.
+                val SPLASH_STYLE_MIGRATED_V3_KEY = booleanPreferencesKey("splash_style_migrated_v3")
                 val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
                 // How often (seconds) the home-screen widgets actively poll the PC for fresh
@@ -205,7 +209,7 @@ class SettingsManager(val context: Context) {
                 val remoteDesktopCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteControlCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteMouseCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
-                val splashStyle: String = "RemexCommand"
+                val splashStyle: String = SplashStyles.Default
         )
 
         val appLauncherCardShapePresetFlow: Flow<Float> =
@@ -429,7 +433,10 @@ class SettingsManager(val context: Context) {
                                 remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                splashStyle = preferences[SPLASH_STYLE_KEY] ?: "RemexCommand"
+                                splashStyle = SplashStyles.effective(
+                                        preferences[SPLASH_STYLE_KEY],
+                                        preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
+                                )
                         )
                 }
 
@@ -692,6 +699,24 @@ class SettingsManager(val context: Context) {
                                 remoteControlCardShapePreset
                         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
                         preferences[SPLASH_STYLE_KEY] = splashStyle
+                        preferences[SPLASH_STYLE_MIGRATED_V3_KEY] = true
+                }
+        }
+
+        /**
+         * One-time, idempotent move of users still on the previous splash default onto Live
+         * Handshake (RemEx-8g6n0; rule in [SplashStyles]). The read path already applies the same
+         * rule, so this only makes it durable; it never touches a style someone else picked.
+         */
+        suspend fun migrateSplashStyleDefault() {
+                val prefs = context.dataStore.data.first()
+                if (prefs[SPLASH_STYLE_MIGRATED_V3_KEY] == true) return
+                context.dataStore.edit { p ->
+                        if (p[SPLASH_STYLE_MIGRATED_V3_KEY] == true) return@edit
+                        SplashStyles.migratedValue(p[SPLASH_STYLE_KEY], migrated = false)?.let {
+                                p[SPLASH_STYLE_KEY] = it
+                        }
+                        p[SPLASH_STYLE_MIGRATED_V3_KEY] = true
                 }
         }
 

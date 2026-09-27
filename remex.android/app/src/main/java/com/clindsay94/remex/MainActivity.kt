@@ -20,7 +20,10 @@ import com.clindsay94.remex.ui.components.FileConsentDialogHost
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
 import com.clindsay94.remex.ui.theme.RemExTheme
+import androidx.compose.ui.geometry.Rect
+import com.clindsay94.remex.ui.splash.SystemSplashHandoff
 import com.clindsay94.remex.ui.theme.SplashExitTransition
+import com.clindsay94.remex.ui.theme.SplashMarkGeometry
 import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import com.clindsay94.remex.ui.theme.buildSplashScheme
 import com.clindsay94.remex.ui.theme.splashExitTransitionFor
@@ -29,6 +32,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import android.util.Log
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 private const val TAG = "SplashExit"
 
@@ -59,9 +63,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        // A fresh seam for the Live Handshake overlay every creation: a warm start must never
+        // continue from a mark rect recorded by a previous Activity (RemEx-8g6n0).
+        SystemSplashHandoff.reset()
         enableEdgeToEdge()
         RemexClientManager.initialize(this)
         WidgetDataCache.startCaching(this)
+        // One-time move off the previous splash default (RemEx-8g6n0). The read path applies the
+        // same rule already, so this only makes it durable; it does not gate anything.
+        lifecycleScope.launch {
+            runCatching { SettingsManager(applicationContext).migrateSplashStyleDefault() }
+                .onFailure { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    Log.w(TAG, "splash style migration failed; the read path still applies it", e)
+                }
+        }
 
         // The system splash is painted from the manifest theme before this Activity exists, so it
         // cannot read the stored seed (RemEx-alwfa.1). Keep it on screen only until the first real
@@ -136,6 +152,8 @@ class MainActivity : ComponentActivity() {
         fun removeSplashOnce() {
             if (removed.compareAndSet(false, true)) {
                 runCatching { provider.remove() }
+                // The Live Handshake overlay starts its clock here, not at composition.
+                SystemSplashHandoff.markDone()
             }
         }
 
@@ -172,6 +190,10 @@ class MainActivity : ComponentActivity() {
                     removeSplashOnce()
                 }
                 SplashExitTransition.CROSSFADE -> {
+                    // The mark is last seen in this exit view, so that is where the Live Handshake
+                    // overlay picks it up (RemEx-8g6n0). Under CUT (reduced motion) nothing is
+                    // recorded and the overlay starts in place.
+                    SystemSplashHandoff.recordMark(exitViewMarkRect(splashRoot))
                     val fallback = Runnable {
                         runCatching { group.removeView(view) }
                         removeSplashOnce()
@@ -206,5 +228,24 @@ class MainActivity : ComponentActivity() {
             runCatching { decor?.removeView(exitView) }
             removeSplashOnce()
         }
+    }
+
+    /**
+     * Window-pixel bounds of the brand window as [SplashExitView] draws it: the monochrome mark
+     * fills a centred min(w, h) square, and the window shape spans 68 x 56 of its 108 units, scaled
+     * by the vector's own 0.8 group about the centre (see [SplashMarkGeometry]).
+     */
+    private fun exitViewMarkRect(splashRoot: android.view.View): Rect? {
+        val w = splashRoot.width
+        val h = splashRoot.height
+        if (w <= 0 || h <= 0) return null
+        val location = IntArray(2)
+        splashRoot.getLocationInWindow(location)
+        val unit = min(w, h) / SplashMarkGeometry.ViewportSize
+        val windowW = 68f * 0.8f * unit
+        val windowH = 56f * 0.8f * unit
+        val cx = location[0] + w / 2f
+        val cy = location[1] + h / 2f
+        return Rect(cx - windowW / 2f, cy - windowH / 2f, cx + windowW / 2f, cy + windowH / 2f)
     }
 }

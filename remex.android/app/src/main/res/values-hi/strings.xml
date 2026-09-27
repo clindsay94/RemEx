@@ -783,7 +783,19 @@
     <string name="splash_term_connect">कनेक्ट</string>
     <string name="splash_term_pairing">पेयरिंग</string>
     <string name="splash_term_session_ready">सत्र तैयार</string>
+    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
+    <string name="splash_live_starting">शुरू हो रहा है</string>
+    <plurals name="splash_live_pinging">
+        <item quantity="one">%1$d PC को पिंग किया जा रहा है</item>
+        <item quantity="other">%1$d PC को पिंग किया जा रहा है</item>
+    </plurals>
+    <string name="splash_live_awake">%2$d में से %1$d सक्रिय</string>
+    <string name="splash_live_linked">जुड़ा · %1$s</string>
+    <string name="splash_live_not_answering">%1$s जवाब नहीं दे रहा है</string>
+    <string name="splash_live_none_paired">अभी तक कोई PC पेयर नहीं है</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">लाइव हैंडशेक</string>
     <string name="coach_title">चारों ओर घूमना</string>
     <string name="coach_hold_body">एक कार्ड को पकड़ने के लिए उठाएं, फिर इसे स्थानांतरित करने के लिए खींचें।</string>
     <string name="coach_menu_body">कार्ड को कस्टमाइज़ करें, अंडू करें, या यहाँ मेनू से रीसेट करें।</string>

@@ -79,6 +79,8 @@ object SettingsExport {
         "shape_defaults_migrated_v2" to
             "A migration marker. Importing it would convince the app a migration had already run.",
         "shape_defaults_migrated_v3" to
+            "Same as shape_defaults_migrated_v2.",
+        "splash_style_migrated_v3" to
             "Same as shape_defaults_migrated_v2."
     )
 

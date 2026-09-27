@@ -783,7 +783,19 @@
     <string name="splash_term_connect">connexion</string>
     <string name="splash_term_pairing">couplage</string>
     <string name="splash_term_session_ready">session prête</string>
+    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
+    <string name="splash_live_starting">Démarrage</string>
+    <plurals name="splash_live_pinging">
+        <item quantity="one">Ping de %1$d PC</item>
+        <item quantity="other">Ping de %1$d PC</item>
+    </plurals>
+    <string name="splash_live_awake">%1$d sur %2$d éveillés</string>
+    <string name="splash_live_linked">Lié · %1$s</string>
+    <string name="splash_live_not_answering">%1$s ne répond pas</string>
+    <string name="splash_live_none_paired">Aucun PC associé pour l’instant</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Liaison en direct</string>
     <string name="cd_dashboard_exit_selection">Quitter la sélection</string>
     <string name="cd_dashboard_pin_selection">Épingler les cartes sélectionnées</string>
     <string name="cd_dashboard_remove_selection">Supprimer les cartes sélectionnées</string>

@@ -776,7 +776,21 @@
     <string name="splash_term_connect">łączenie</string>
     <string name="splash_term_pairing">parowanie</string>
     <string name="splash_term_session_ready">sesja gotowa</string>
+    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
+    <string name="splash_live_starting">Uruchamianie</string>
+    <plurals name="splash_live_pinging">
+        <item quantity="one">Pinguję %1$d komputer</item>
+        <item quantity="few">Pinguję %1$d komputery</item>
+        <item quantity="many">Pinguję %1$d komputerów</item>
+        <item quantity="other">Pinguję %1$d komputera</item>
+    </plurals>
+    <string name="splash_live_awake">Aktywne: %1$d z %2$d</string>
+    <string name="splash_live_linked">Połączono · %1$s</string>
+    <string name="splash_live_not_answering">%1$s nie odpowiada</string>
+    <string name="splash_live_none_paired">Brak sparowanych komputerów</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Uścisk dłoni na żywo</string>
     <string name="exit_dialog_title">Wyjść z RemEx?</string>
     <string name="exit_dialog_message">Czy na pewno chcesz wyjść?</string>
     <string name="button_exit">Wyjdź</string>

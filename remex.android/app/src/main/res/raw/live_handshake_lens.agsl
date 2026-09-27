@@ -1,0 +1,32 @@
+// RemEx 3.0 "Live Handshake" splash - the portal lens (RemEx-8g6n0). Android only.
+//
+// Applied as a RenderEffect to the app content (the NavHost container) while the splash opens
+// out of a PC: the content seen through the growing portal settles from uScale (1.12) to 1.0 about
+// the portal centre, and inside a 28 dp band at the portal's rim it refracts like glass (26 dp
+// inward pull) with a 4.5 dp chromatic split. Outside the portal the splash field still covers
+// the content, so nothing there needs masking. Same maths as the motion lab's dashboard lens
+// (docs/specs/assets/live-handshake-lab.html, drawField's uPortal branch).
+//
+// Units: pixels of the content layer, origin top-left; uPx is pixels per dp.
+
+uniform shader content;
+uniform float2 uCenter;
+uniform float uRadius;
+uniform float uScale;
+uniform float uPx;
+
+half4 main(float2 p) {
+    float2 dv = p - uCenter;
+    float d = length(dv);
+    float2 dir = dv / max(d, 1.0);
+    float edge = d - uRadius;
+    float rimW = 28.0 * uPx;
+    float lens = exp(-(edge * edge) / (rimW * rimW)) * step(edge, rimW);
+    float2 pd = uCenter + dv / uScale;
+    float2 off = -dir * lens * 26.0 * uPx;
+    float cs = lens * 4.5 * uPx;
+    half4 mid = content.eval(pd + off);
+    half r = content.eval(pd + off + dir * cs).r;
+    half b = content.eval(pd + off - dir * cs).b;
+    return half4(r, mid.g, b, mid.a);
+}

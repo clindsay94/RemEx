@@ -17,6 +17,17 @@
     <string name="splash_term_connect">connect</string>
     <string name="splash_term_pairing">pairing</string>
     <string name="splash_term_session_ready">session ready</string>
+    <!-- Live Handshake splash status line (RemEx-8g6n0); drawn upper-cased with the current locale -->
+    <string name="splash_live_starting">Starting</string>
+    <plurals name="splash_live_pinging">
+        <item quantity="one">Pinging %1$d PC</item>
+        <item quantity="other">Pinging %1$d PCs</item>
+    </plurals>
+    <string name="splash_live_awake">%1$d of %2$d awake</string>
+    <string name="splash_live_linked">Linked · %1$s</string>
+    <string name="splash_live_not_answering">%1$s is not answering</string>
+    <string name="splash_live_none_paired">No PCs paired yet</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
 
     
     <string name="snackbar_no_pc_connected">No PC connected</string>
@@ -519,6 +530,7 @@
     <string name="personalization_splash_original">Original Scan</string>
     <string name="personalization_splash_cosmic">Cosmic Zoom</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Live Handshake</string>
     <string name="personalization_splash_preview">Preview Animation</string>
     <string name="personalization_splash_preview_close">Close preview</string>
 

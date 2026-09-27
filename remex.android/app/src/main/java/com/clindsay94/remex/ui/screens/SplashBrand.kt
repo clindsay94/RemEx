@@ -35,7 +35,8 @@ import com.clindsay94.remex.R
  * shipped adaptive launcher icon (res/drawable/ic_launcher_background.xml +
  * ic_launcher_foreground_vector.xml, commit 685b493) — not an approximation.
  *
- * Shared by all three splash variants (CosmicZoom, RemexCommand, Pong).
+ * Shared by every splash variant (CosmicZoom, RemexCommand, Pong, and Live Handshake, which draws
+ * the mark paths itself in its seed-derived palette).
  */
 object SplashBrand {
     // ── Backdrop (ic_launcher_background.xml diagonal gradient) ──
@@ -75,19 +76,19 @@ object SplashBrand {
     // ── Icon artwork parsed once; pathData copied verbatim from ic_launcher_foreground_vector.xml ──
     private fun p(d: String): Path = PathParser().parsePathString(d).toPath()
 
-    private val WindowPath =
+    internal val WindowPath =
         p("M33,26 L75,26 A13,13 0 0 1 88,39 L88,69 A13,13 0 0 1 75,82 L33,82 A13,13 0 0 1 20,69 L20,39 A13,13 0 0 1 33,26 Z")
-    private val Dot1Path = p("M27.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
-    private val Dot2Path = p("M34.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
-    private val Dot3Path = p("M41.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
+    internal val Dot1Path = p("M27.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
+    internal val Dot2Path = p("M34.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
+    internal val Dot3Path = p("M41.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z")
 
     /** Amber `>` chevron (108-unit space). Exposed for Pong's left paddle + finale morph target. */
     val ChevronPath = p("M30,50 L39,61 L30,72")
 
-    private val RStemPath = p("M45,47 h7 v25 h-7 Z")
-    private val RBowlPath = p("M52,47 H60 A8,8 0 0 1 60,63 H52 Z")
-    private val RLegPath = p("M53,58.5 L61,58.5 L71.5,73 L63,73 Z")
-    private val RHolePath = p("M53.5,53 H58.8 A2.8,2.8 0 0 1 58.8,58.6 H53.5 Z")
+    internal val RStemPath = p("M45,47 h7 v25 h-7 Z")
+    internal val RBowlPath = p("M52,47 H60 A8,8 0 0 1 60,63 H52 Z")
+    internal val RLegPath = p("M53,58.5 L61,58.5 L71.5,73 L63,73 Z")
+    internal val RHolePath = p("M53.5,53 H58.8 A2.8,2.8 0 0 1 58.8,58.6 H53.5 Z")
 
     /** Amber cursor block (108-unit space). Exposed for Pong's right paddle + finale morph target. */
     val CursorPath = p("M73,50 h6 v22 h-6 Z")
