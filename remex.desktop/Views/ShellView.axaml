@@ -1458,7 +1458,8 @@
             <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding IsWelcomeSplashMounted}"
                                        Opacity="{Binding ShowWelcomeSplash, Converter={x:Static conv:BoolToDoubleConverter.Instance}, ConverterParameter='1.0|0.0'}"
                                        IsHitTestVisible="{Binding ShowWelcomeSplash}"
-                                       SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999">
+                                       SplashStyle="{Binding Customization.SplashStyle}"
+                                       ReduceMotion="{Binding IsReducedMotion}" ZIndex="999">
                 <splash:SkiaSplashControl.Transitions>
                     <Transitions>
                         <DoubleTransition Property="Opacity" Duration="0:0:0.4" Easing="CubicEaseOut"/>

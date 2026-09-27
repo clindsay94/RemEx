@@ -52,8 +52,11 @@ public static class CustomizationMigration
     ///     not the record's own defaults. Left unrepaired that renders the popup's glass fully
     ///     transparent for every upgrading profile and null-crashes the first read of the hidden
     ///     lists.
+    /// 8 = Live Handshake becomes the splash for everyone upgrading to 3.0 (RemEx-8g6n0.2/.3): Connor
+    ///     decided every stored SplashStyle moves to LiveHandshake once, whatever it was; a style picked
+    ///     after the upgrade is written at schema 8 and sticks.
     /// </remarks>
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -101,6 +104,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 5) migrated = FromSchemaFour(migrated);
         if (migrated.SchemaVersion < 6) migrated = FromSchemaFive(migrated);
         if (migrated.SchemaVersion < 7) migrated = FromSchemaSix(migrated);
+        if (migrated.SchemaVersion < 8) migrated = FromSchemaSeven(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -265,6 +269,20 @@ public static class CustomizationMigration
             FlyoutHiddenTileIds = new(),
             FlyoutAppIds = new(),
         };
+
+    /// <summary>
+    /// Schema 7 → 8: everyone upgrading to 3.0 moves to Live Handshake (RemEx-8g6n0.3). ONE
+    /// <c>with</c> EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// DELIBERATELY UNLIKE THE RemexCommand -&gt; CosmicZoom MOVE, which only flipped the old default and
+    /// kept every other choice. Connor's decision for 3.0: the new splash is the release's showcase, so
+    /// every stored style - CosmicZoom, Pong, RemexCommand, anything - becomes LiveHandshake, ONCE. The
+    /// profile is stamped 8 on the way out, so this arm never runs again for it: a style picked in the
+    /// picker after the upgrade is saved at schema 8 and sticks.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaSeven(CustomizationSettings settings) =>
+        settings with { SplashStyle = "LiveHandshake" };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

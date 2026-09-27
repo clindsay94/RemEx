@@ -219,6 +219,14 @@ public partial class ShellView : UserControl
                     vm2.OnBootSequenceCompleted();
             };
 
+            // The VM's safety backstop runs from the splash's first rendered frame, not from launch
+            // (RemEx-8g6n0.2): a slow start used to eat the backstop and cut a live splash mid-portal.
+            _bootSplash.FirstFrameRendered += () =>
+            {
+                if (DataContext is ShellViewModel vm3)
+                    vm3.OnWelcomeSplashFirstFrame();
+            };
+
             // Covers the common case where DataContext is already assigned by the time _bootSplash is
             // found. RemEx-8twk0.8 fix round, MEDIUM: this used to be the ONLY place this subscription
             // was attempted, gated behind the same _bootSplashHooked latch as everything above - so a

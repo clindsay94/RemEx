@@ -1217,16 +1217,47 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             return;
 
         _welcomeSplashStarted = true;
-        _ = DismissWelcomeSplashAsync();
+        _ = DismissWelcomeSplashAsync(WelcomeSplashCeiling);
     }
 
-    private async Task DismissWelcomeSplashAsync()
+    /// <summary>
+    /// Safety backstop measured from the splash's FIRST RENDERED FRAME (RemEx-8g6n0.2). It used to be
+    /// 6 s from launch, which a slow start ate: a Debug window became visible ~3.6 s after launch, and
+    /// a Live Handshake that ran to its cap (2.6 s + a 0.72 s exit, from its first frame) was cut off
+    /// mid-portal. Comfortably longer than the longest splash (Pong, ~3.2 s).
+    /// </summary>
+    internal static readonly TimeSpan WelcomeSplashBackstopFromFirstFrame = TimeSpan.FromSeconds(6);
+
+    /// <summary>
+    /// Absolute ceiling from <see cref="BeginWelcomeSplash"/>, for a splash that never renders a frame
+    /// (a window that stays hidden). The live splash's own clock starts by itself after 5 s without a
+    /// frame (<c>SplashClock.FirstFrameTimeout</c>) and then needs at most its cap plus exit, so this
+    /// only fires if the splash is genuinely stuck.
+    /// </summary>
+    internal static readonly TimeSpan WelcomeSplashCeiling = TimeSpan.FromSeconds(12);
+
+    /// <summary>
+    /// The boot splash has presented its first frame: arm the backstop from now. Once per launch — a
+    /// later Preview replay completes through its own sequence and must not be cut by a stale timer.
+    /// </summary>
+    public void OnWelcomeSplashFirstFrame()
     {
-        // Safety fallback — normally BootSequenceControl fires SequenceCompleted
-        await Task.Delay(6000);
+        if (_welcomeSplashFirstFrameSeen)
+            return;
+
+        _welcomeSplashFirstFrameSeen = true;
+        _ = DismissWelcomeSplashAsync(WelcomeSplashBackstopFromFirstFrame);
+    }
+
+    private bool _welcomeSplashFirstFrameSeen;
+
+    private async Task DismissWelcomeSplashAsync(TimeSpan after)
+    {
+        // Safety fallback — normally the splash control fires SequenceCompleted.
+        await Task.Delay(after);
         Dispatcher.UIThread.Post(() =>
         {
-            if (ShowWelcomeSplash)
+            if (ShowWelcomeSplash && !_isSplashPreview)
                 OnBootSequenceCompleted();
         });
     }

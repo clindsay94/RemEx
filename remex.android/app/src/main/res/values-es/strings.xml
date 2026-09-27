@@ -783,7 +783,19 @@
     <string name="splash_term_connect">conectar</string>
     <string name="splash_term_pairing">emparejamiento</string>
     <string name="splash_term_session_ready">sesión lista</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
+    <plurals name="splash_live_pinging">
+        <item quantity="one">Haciendo ping a %1$d PC</item>
+        <item quantity="other">Haciendo ping a %1$d PC</item>
+    </plurals>
+    <string name="splash_live_not_answering">%1$s no responde</string>
+    <string name="splash_live_none_paired">Aún no hay PC emparejados</string>
+    <string name="splash_live_answered">%1$s respondió en %2$d ms</string>
+    <string name="splash_live_linked_to">Enlazado con %1$s</string>
+    <string name="splash_live_opening">Abriendo RemEx</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Enlace en vivo</string>
     <string name="coach_title">Navegación básica</string>
     <string name="coach_hold_body">Mantén pulsada una tarjeta para cogerla y luego arrástrala para moverla.</string>
     <string name="coach_menu_body">Personaliza tarjetas, deshace o restaura desde el menú de arriba.</string>

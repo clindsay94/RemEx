@@ -6,8 +6,9 @@ using Remex.Desktop.Services;
 namespace Remex.Desktop.Converters;
 
 /// <summary>
-/// Maps a splash-style id (RemexCommand / CosmicZoom / Pong) to its localized display label
-/// (Original Scan / Cosmic Zoom / Signal Pong) via the "Splash_Style_&lt;id&gt;" resource key.
+/// Maps a splash-style id (LiveHandshake / RemexCommand / CosmicZoom / Pong) to its localized display
+/// label (Live Handshake / Original Scan / Cosmic Zoom / Signal Pong) via the "Splash_Style_&lt;id&gt;"
+/// resource key.
 /// The picker keeps binding SelectedItem to the raw id (compatible with saved profiles); only the
 /// shown text is friendly. Falls back to the raw id if no label resource exists.
 /// </summary>

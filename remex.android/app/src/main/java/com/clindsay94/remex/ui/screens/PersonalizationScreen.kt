@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +47,7 @@ import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.data.SplashStyles
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
@@ -505,26 +507,32 @@ fun PersonalizationScreenContent(
                             stringResource(R.string.personalization_splash_style),
                             style = MaterialTheme.typography.labelMedium
                     )
-                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom", "Pong")
-                    Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        splashStyleOptions.forEach { option ->
-                            ToggleButton(
-                                    checked = splashStyle == option,
-                                    onCheckedChange = { splashStyle = option },
-                                    modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    when (option) {
-                                        "RemexCommand" -> stringResource(R.string.personalization_splash_original)
-                                        "CosmicZoom" -> stringResource(R.string.personalization_splash_cosmic)
-                                        else -> stringResource(R.string.personalization_splash_pong)
-                                    },
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                    // Four styles, the default (Live Handshake, RemEx-8g6n0) first. Two per row,
+                    // and a label that does not fit wraps to a second line instead of being
+                    // clipped; both buttons in a row share the taller one's height.
+                    SplashStyles.All.chunked(2).forEach { rowOptions ->
+                        Row(
+                                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowOptions.forEach { option ->
+                                ToggleButton(
+                                        checked = splashStyle == option,
+                                        onCheckedChange = { splashStyle = option },
+                                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        when (option) {
+                                            SplashStyles.LiveHandshake -> stringResource(R.string.personalization_splash_live)
+                                            SplashStyles.RemexCommand -> stringResource(R.string.personalization_splash_original)
+                                            SplashStyles.CosmicZoom -> stringResource(R.string.personalization_splash_cosmic)
+                                            else -> stringResource(R.string.personalization_splash_pong)
+                                        },
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 2
+                                    )
+                                }
                             }
                         }
                     }
@@ -1214,7 +1222,7 @@ private fun PersonalizationScreenPreview() {
                 remoteDesktopCardShapePreset = 0f,
                 remoteControlCardShapePreset = 0f,
                 remoteMouseCardShapePreset = 0f,
-                splashStyle = "RemexCommand"
+                splashStyle = SplashStyles.Default
             ),
              showHeader = true,
              onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }

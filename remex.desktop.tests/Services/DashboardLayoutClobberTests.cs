@@ -105,8 +105,9 @@ public class DashboardLayoutClobberTests : IDisposable
         // Custom) - those are excluded here for the same reason ThemeMode is: this test isolates
         // "fields no arm claims", not "every field is byte-identical". Arm 6 (RemEx-bnz2x) also
         // legitimately rewrites CardBorderThickness from the (nonsense, reflection-generated) ThemeId
-        // this fixture carries, and arm 7 (RemEx-4kv0g.18.5) legitimately rewrites the four flyout
-        // fields, for the same reason.
+        // this fixture carries, arm 7 (RemEx-4kv0g.18.5) legitimately rewrites the four flyout
+        // fields, and arm 8 (RemEx-8g6n0.3) moves every stored SplashStyle to LiveHandshake, for the
+        // same reason.
         AssertSameCustomization(onDisk, loaded.Customization,
             "the schema-1-to-3 migration only touches the fields its arms claim; every other field must carry forward",
             nameof(CustomizationSettings.ThemeMode), nameof(CustomizationSettings.SchemaVersion),
@@ -114,7 +115,8 @@ public class DashboardLayoutClobberTests : IDisposable
             nameof(CustomizationSettings.SchemeVariant), nameof(CustomizationSettings.ColorSource),
             nameof(CustomizationSettings.CardBorderThickness),
             nameof(CustomizationSettings.FlyoutOpacity), nameof(CustomizationSettings.FlyoutHiddenSensorIds),
-            nameof(CustomizationSettings.FlyoutHiddenTileIds), nameof(CustomizationSettings.FlyoutAppIds));
+            nameof(CustomizationSettings.FlyoutHiddenTileIds), nameof(CustomizationSettings.FlyoutAppIds),
+            nameof(CustomizationSettings.SplashStyle));
     }
 
     [Fact]

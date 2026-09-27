@@ -51,6 +51,20 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   `Remex.Agent.exe --routines-dry-run` logs power actions instead of carrying them out. Everything is
   checked again on the PC at run time, a resent step is never run twice, and nothing new listens on the
   network. (RemEx-pp0rt.4)
+- A new startup splash, Live Handshake, is now the default on the phone and the PC. It shows the
+  app actually starting instead of playing a fixed animation. The mark sends out a pulse across a
+  dot lattice, your paired PCs appear as they answer and settle at a distance set by their measured
+  round trip, the PC you are connecting to locks on when its connection is accepted (the phone ticks
+  once), and the app opens out of that PC. On the phone the dashboard bends through the edge of the
+  opening as it appears. On the PC the splash shows the phones it knows, rings the mark when the
+  host is listening, and lights a phone that is already connected. A short console under the logo
+  says what is happening as it happens ("Pinging 1 PC", "DESKTOP answered in 8 ms", "Linked to
+  DESKTOP"). On a fast network everything really lands in half a second, so each step is held just
+  long enough to read; it opens after about 1.8 seconds, never more than 3, and a tap or click skips
+  it. If your PC is asleep it says so and opens into a dashboard that offers Wake. Remove
+  animations gets a still frame and a short fade. Everyone moves to Live Handshake once with 3.0;
+  Cosmic Zoom, Pong and RemEx Command are still in the picker afterwards. Both apps draw the
+  background with the same GPU shader. (RemEx-8g6n0)
 
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you

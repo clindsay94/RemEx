@@ -2218,6 +2218,39 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Kliknij w dowolnym miejscu, aby pominąć</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Połączenie na żywo</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Brak sparowanych telefonów</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>Nasłuchiwanie na porcie {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>Nasłuchiwanie</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>połączono</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} sparowany telefon</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} sparowane telefony</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} sparowanych telefonów</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} sparowanego telefonu</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} jest połączony</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>Otwieranie RemEx</value>
+  </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Aktualizacja oprogramowania</value>
   </data>

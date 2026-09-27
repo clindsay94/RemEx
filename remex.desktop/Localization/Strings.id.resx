@@ -2452,6 +2452,39 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Klik di mana saja untuk melewati</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Jabat Tangan Langsung</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Belum ada ponsel yang dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>Mendengarkan di port {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>Mendengarkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>tertaut</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} ponsel dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} ponsel dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} ponsel dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} ponsel dipasangkan</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} tertaut</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>Membuka RemEx</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Pindaian Asli</value>
   </data>

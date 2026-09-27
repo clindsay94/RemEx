@@ -18,6 +18,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.data.SplashStyles
+import com.clindsay94.remex.ui.splash.SplashLiveHandshake
 import com.clindsay94.remex.ui.theme.RemExTheme
 
 /**
@@ -39,7 +41,7 @@ import com.clindsay94.remex.ui.theme.RemExTheme
  * The later "skip hint → top-right" task can lift them out then.
  */
 @Composable
-fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
+fun SplashScreen(splashStyle: String = SplashStyles.Default, onFinished: () -> Unit) {
     val context = LocalContext.current
     DisposableEffect(Unit) {
         val activity = context as? Activity ?: return@DisposableEffect onDispose {}
@@ -57,7 +59,11 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
             .pointerInput(Unit) { detectTapGestures { skipRequested = true } }
     ) {
         when (splashStyle) {
-            "CosmicZoom" -> SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
+            // On a cold start Live Handshake does not come through here: AppNavigation hosts it as
+            // an overlay above the live app so the portal can open into it. This arm is the
+            // Personalization preview.
+            SplashStyles.LiveHandshake -> SplashLiveHandshake(onFinished, skipRequested) { skipRequested = false }
+            "CosmicZoom" ->SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
             "Pong" -> SplashPong(onFinished, skipRequested) { skipRequested = false }
             else -> SplashRemexCommand(onFinished, skipRequested) { skipRequested = false }
         }

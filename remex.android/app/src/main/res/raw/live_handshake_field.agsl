@@ -1,0 +1,149 @@
+// RemEx 3.0 "Live Handshake" splash - the backdrop field (RemEx-8g6n0).
+//
+// ONE shader, two platforms. This file and
+//   remex.android/app/src/main/res/raw/live_handshake_field.agsl
+// must stay byte-identical: SkiaSharp compiles it as an SKRuntimeEffect on the PC, Android
+// compiles it as an android.graphics.RuntimeShader (AGSL is SkSL). A parity test enforces it.
+// Edit both together or not at all.
+//
+// What it draws: a dim hex lattice of dots over a seed-tinted gradient and slow haze. Every
+// ring in uRings is a shockwave travelling out from its origin at uSpeed: its crest refracts the
+// lattice (a small radial displacement with a faint chromatic split), lights the dots it passes
+// and leaves a short afterglow behind it. Rings are real events - a reachability pulse from the
+// mark, a PC answering, the lock-on, the hand-off. uPortal cuts a transparent hole (whatever is
+// underneath shows through) edged with a bright rim; that is the hand-off into the app.
+//
+// Units: pixels, origin top-left. uPx is pixels per dp (Android density, or the PC's render
+// scaling) so every size below is density-correct. Output is premultiplied.
+//
+// Constraints for both compilers: constant loop bounds, no int uniforms (SkiaSharp 2.88 has no
+// int uniform setter), float3 colour uniforms in sRGB.
+
+uniform float2 uRes;
+uniform float uTime;
+uniform float uPx;
+uniform float2 uCenter;
+uniform float3 uBg0;
+uniform float3 uBg1;
+uniform float3 uPri;
+uniform float3 uAcc;
+uniform float4 uRings[10];
+uniform float uRingCount;
+uniform float uSpeed;
+uniform float uIntro;
+uniform float4 uPortal;
+uniform float uZoom;
+uniform float uStill;
+uniform float2 uPar;
+uniform float uAlpha;
+
+float lhHash(float2 p) {
+    p = fract(p * float2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+float lhNoise(float2 p) {
+    float2 i = floor(p);
+    float2 f = fract(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(lhHash(i), lhHash(i + float2(1.0, 0.0)), u.x),
+               mix(lhHash(i + float2(0.0, 1.0)), lhHash(i + float2(1.0, 1.0)), u.x), u.y);
+}
+
+float lhFbm(float2 p) {
+    float a = 0.5;
+    float s = 0.0;
+    for (int i = 0; i < 3; i++) {
+        s += a * lhNoise(p);
+        p = p * 2.03 + float2(17.1, 9.2);
+        a *= 0.5;
+    }
+    return s;
+}
+
+float lhDots(float2 q, float pitch, float rad) {
+    float2 g = q / pitch;
+    float row = floor(g.y);
+    g.x += mod(row, 2.0) * 0.5;
+    float2 c = (fract(g) - 0.5) * pitch;
+    return smoothstep(rad + uPx * 0.9, rad - uPx * 0.35, length(c));
+}
+
+half4 main(float2 p) {
+    float2 E = uPortal.xy;
+    float mn = min(uRes.x, uRes.y);
+    // Fly-in: during the hand-off the whole field scales up around the portal.
+    float2 pf = E + (p - E) / (1.0 + 0.5 * uZoom);
+
+    float2 disp = float2(0.0);
+    float crest = 0.0;
+    float lit = 0.0;
+    float w = 24.0 * uPx;
+    for (int i = 0; i < 10; i++) {
+        if (float(i) >= uRingCount) { break; }
+        float4 R = uRings[i];
+        float age = uTime - R.z;
+        if (age < 0.0) { continue; }
+        float2 dv = pf - R.xy;
+        float d = length(dv);
+        float band = d - age * uSpeed;
+        // Ahead of the front nothing has happened yet.
+        if (band > 4.0 * w) { continue; }
+        float2 dir = dv / max(d, 1.0);
+        float decay = R.w * exp(-age * 0.75);
+        float c = exp(-(band * band) / (w * w));
+        float behind = band < 0.0 ? 1.0 : 0.0;
+        float trail = behind * sin(band / (7.0 * uPx)) * exp(band / (46.0 * uPx));
+        disp += dir * (c * 13.0 * uPx + trail * 3.2 * uPx) * decay * (1.0 - uStill);
+        crest += c * decay;
+        lit += (c + behind * exp(band / (180.0 * uPx)) * 0.32) * decay;
+    }
+
+    float2 uv = p / uRes;
+    float3 col = mix(uBg0, uBg1, clamp(uv.x * 0.35 + uv.y * 0.65, 0.0, 1.0));
+    float haze = lhFbm(pf / (190.0 * uPx) + float2(uTime * 0.035, -uTime * 0.021));
+    col += uPri * 0.11 * haze * haze;
+    float dc = length(pf - uCenter) / mn;
+    col += uPri * 0.20 * exp(-dc * dc * 7.0) * uIntro;
+    col += uAcc * 0.08 * exp(-dc * dc * 30.0) * uIntro;
+
+    float2 q = pf + disp + uPar;
+    float pitch = 21.0 * uPx;
+    float rad = (0.95 + 1.3 * clamp(lit, 0.0, 1.5)) * uPx;
+    float dl = length(disp);
+    float3 lat;
+    if (dl > 0.25 * uPx) {
+        // Chromatic split only where the lattice is actually being bent.
+        float2 cd = disp / dl;
+        float ca = min(dl * 0.12, 2.0 * uPx);
+        lat = float3(lhDots(q + cd * ca, pitch, rad), lhDots(q, pitch, rad), lhDots(q - cd * ca, pitch, rad));
+    } else {
+        lat = float3(lhDots(q, pitch, rad));
+    }
+    float introR = uIntro * mn * 1.3;
+    float reveal = smoothstep(introR, introR - 160.0 * uPx, length(pf - uCenter));
+    float vis = (0.08 + 0.9 * clamp(lit, 0.0, 1.0)) * reveal;
+    float3 dotCol = mix(uPri, uAcc, clamp(crest * 1.2, 0.0, 1.0));
+    col += lat * dotCol * vis;
+    float fine = lhDots(pf + disp * 0.5 + uPar * 0.45 + float2(7.0, 3.0) * uPx, pitch * 0.5, 0.55 * uPx);
+    col += uPri * fine * 0.035 * reveal;
+    float2 vv = uv - 0.5;
+    col *= 1.0 - 0.9 * dot(vv, vv);
+    // Dither: a dark gradient bands visibly without it.
+    col += (lhHash(p + fract(uTime) * 97.0) - 0.5) * (2.0 / 255.0);
+
+    float a = 1.0;
+    float3 glow = float3(0.0);
+    if (uPortal.w > 0.5) {
+        float edge = length(p - E) - uPortal.z;
+        float inside = smoothstep(1.5 * uPx, -1.5 * uPx, edge);
+        a = 1.0 - inside;
+        float rim = exp(-(edge * edge) / ((2.6 * uPx) * (2.6 * uPx))) * 0.9;
+        float halo = exp(-(edge * edge) / ((34.0 * uPx) * (34.0 * uPx))) * 0.30;
+        glow = uAcc * rim + uPri * halo;
+        a = max(a, clamp(rim + halo * 0.6, 0.0, 1.0));
+    }
+    float3 outc = col * (1.0 - step(0.5, uPortal.w) * (1.0 - a)) + glow;
+    return half4(half3(outc * uAlpha), half(a * uAlpha));
+}

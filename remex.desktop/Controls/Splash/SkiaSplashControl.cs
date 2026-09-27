@@ -4,9 +4,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Rendering;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using Remex.Branding;
 using Remex.Desktop.Localization;
 using Remex.Desktop.Services;
@@ -24,10 +26,18 @@ namespace Remex.Desktop.Controls.Splash;
 /// just later ones — paints in the user's seed colours. Missing/corrupt sidecar falls back to the
 /// fixed brand palette, never throws.
 /// </summary>
-public sealed class SkiaSplashControl : Control, IDisposable
+public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
 {
     public static readonly StyledProperty<string> SplashStyleProperty =
-        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "CosmicZoom");
+        AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "LiveHandshake");
+
+    /// <summary>
+    /// The user's reduced-motion preference (ShellViewModel.IsReducedMotion). Live Handshake honours
+    /// it: a static frame and a short fade instead of pulses and a portal. The fixed films ignore it,
+    /// exactly as before.
+    /// </summary>
+    public static readonly StyledProperty<bool> ReduceMotionProperty =
+        AvaloniaProperty.Register<SkiaSplashControl, bool>(nameof(ReduceMotion));
 
     public string SplashStyle
     {
@@ -35,16 +45,45 @@ public sealed class SkiaSplashControl : Control, IDisposable
         set => SetValue(SplashStyleProperty, value);
     }
 
+    public bool ReduceMotion
+    {
+        get => GetValue(ReduceMotionProperty);
+        set => SetValue(ReduceMotionProperty, value);
+    }
+
     /// <summary>Raised once when the splash finishes (natural end or skip).</summary>
     public event Action? SequenceCompleted;
 
+    /// <summary>
+    /// Raised on the UI thread once per sequence, when its first frame has been rendered (or the live
+    /// clock gave up waiting for one). The shell arms its safety backstop from here, not from launch.
+    /// </summary>
+    public event Action? FirstFrameRendered;
+
+    private bool _firstFrameRaised;
+
+    /// <summary>
+    /// The whole splash is hit-testable while it is shown (RemEx-8g6n0.2): it draws through a custom
+    /// op with no background brush, so without this the pointer fell through to the shell underneath —
+    /// the shell's tooltips appeared over the animation and hover/clicks reached it. Whether it takes
+    /// input at all is still governed by <c>IsHitTestVisible</c> (bound to ShowWelcomeSplash), so the
+    /// shell gets the pointer back the moment the hand-off starts its fade.
+    /// </summary>
+    public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
+
     private const double SkipFadeSeconds = 0.2;
+
+    /// <summary>How often Live Handshake re-reads the host (seconds of splash time).</summary>
+    private const double FeedPollSeconds = 0.1;
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = new();
-    private ISplashVariant _variant = new CosmicZoomVariant();
-    private double _elapsed;
-    private double _lastDt;
+    private ISplashVariant _variant = new LiveHandshakeVariant();
+    private LiveHandshakeFeed? _feed;
+    private double _lastPoll = double.NegativeInfinity;
+    // Elapsed splash time lives in the clock: fixed films run from attach exactly as before; Live
+    // Handshake waits for its first rendered frame and clamps each step (SplashClock).
+    private readonly SplashClock _clock = new();
     private bool _completed;
     private bool _skipping;
     private double _skipElapsed;
@@ -62,6 +101,9 @@ public sealed class SkiaSplashControl : Control, IDisposable
         Focusable = false;
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
         _timer.Tick += OnTick;
+        // The pre-attach variant is Live Handshake: start compiling its field shader now, off the
+        // render path, so the first frame does not pay for it.
+        LiveHandshakeField.WarmUp();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -69,11 +111,38 @@ public sealed class SkiaSplashControl : Control, IDisposable
         base.OnPropertyChanged(change);
         if (change.Property == SplashStyleProperty)
         {
-            _variant = CreateVariant(SplashStyle);
-            _elapsed = 0;
+            SetVariant(CreateVariant(SplashStyle));
             _completed = false;
             _skipping = false;
             _skipElapsed = 0;
+        }
+        else if (change.Property == ReduceMotionProperty && _variant is ILiveSplashVariant live)
+        {
+            live.ReducedMotion = ReduceMotion;
+        }
+    }
+
+    /// <summary>
+    /// Swaps in <paramref name="variant"/>. A live variant gets a fresh feed (its clock restarts at 0
+    /// with the variant) and the current reduced-motion setting. The old variant is NOT disposed here:
+    /// a draw op already queued on the render thread may still be painting it, and disposing its
+    /// paints under that frame would be a native use-after-free. Its Skia wrappers finalize with it.
+    /// </summary>
+    private void SetVariant(ISplashVariant variant)
+    {
+        _variant = variant;
+        _lastPoll = double.NegativeInfinity;
+        _clock.Reset(live: variant is ILiveSplashVariant);
+        _firstFrameRaised = false;
+        if (variant is ILiveSplashVariant live)
+        {
+            LiveHandshakeField.WarmUp();
+            _feed = new LiveHandshakeFeed();
+            live.ReducedMotion = ReduceMotion;
+        }
+        else
+        {
+            _feed = null;
         }
     }
 
@@ -85,8 +154,7 @@ public sealed class SkiaSplashControl : Control, IDisposable
         // frame already carries the resolved palette (RemEx-alwfa.1, decision (b)) — the dashboard
         // profile has not loaded yet at this point, only the tiny sidecar has.
         SplashBrand.ApplyPalette(SplashPaletteResolver.ResolveFromSidecar());
-        _variant = CreateVariant(SplashStyle);
-        _elapsed = 0;
+        SetVariant(CreateVariant(SplashStyle));
         _completed = false;
         _skipping = false;
         _skipElapsed = 0;
@@ -104,8 +172,7 @@ public sealed class SkiaSplashControl : Control, IDisposable
     /// <summary>Plays the current <see cref="SplashStyle"/> from the start while attached — the sheet's Preview.</summary>
     public void Restart()
     {
-        _variant = CreateVariant(SplashStyle);
-        _elapsed = 0;
+        SetVariant(CreateVariant(SplashStyle));
         _completed = false;
         _skipping = false;
         _skipElapsed = 0;
@@ -120,10 +187,35 @@ public sealed class SkiaSplashControl : Control, IDisposable
         BeginSkip();
     }
 
-    /// <summary>Start the short fade-out and finish (tap-to-skip).</summary>
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_variant is not ILiveSplashVariant live) return;
+        var size = Bounds.Size;
+        if (size.Width <= 0 || size.Height <= 0) return;
+        var p = e.GetPosition(this);
+        live.SetPointer((float)((p.X / size.Width - 0.5) * 2.0), (float)((p.Y / size.Height - 0.5) * 2.0));
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (_variant is ILiveSplashVariant live) live.SetPointer(0f, 0f);
+    }
+
+    /// <summary>
+    /// Tap-to-skip. A live variant hands off at once through its own exit (the portal, or the fade
+    /// under reduced motion), so the host's fade-to-substrate is not used for it; the fixed films keep
+    /// the short fade-out they always had.
+    /// </summary>
     public void BeginSkip()
     {
         if (_completed || _skipping) return;
+        if (_variant is ILiveSplashVariant live)
+        {
+            live.RequestSkip();
+            return;
+        }
         _skipping = true;
         _skipElapsed = 0;
     }
@@ -133,15 +225,27 @@ public sealed class SkiaSplashControl : Control, IDisposable
         if (_completed) return;
         double dt = _stopwatch.Elapsed.TotalSeconds;
         _stopwatch.Restart();
-        _lastDt = dt;
-        _elapsed += dt;
+        _clock.Advance(dt);
+        double elapsed = _clock.Elapsed;
+        if (!_firstFrameRaised && _clock.HasRendered)
+        {
+            _firstFrameRaised = true;
+            FirstFrameRendered?.Invoke();
+        }
+
+        // Polled on the splash clock, so an event seen before the first frame is stamped t = 0.
+        if (_variant is ILiveSplashVariant live && _feed is not null && elapsed - _lastPoll >= FeedPollSeconds)
+        {
+            _lastPoll = elapsed;
+            live.Update(_feed.Poll((float)elapsed));
+        }
 
         if (_skipping)
         {
             _skipElapsed += dt;
             if (_skipElapsed >= SkipFadeSeconds) { Complete(); return; }
         }
-        else if (_elapsed >= _variant.Duration)
+        else if (_clock.Running && _variant.IsComplete((float)elapsed))
         {
             Complete();
             return;
@@ -165,11 +269,12 @@ public sealed class SkiaSplashControl : Control, IDisposable
         var bounds = new Rect(Bounds.Size);
         if (bounds.Width <= 0 || bounds.Height <= 0) return;
         float skipAlpha = _skipping ? (float)Math.Clamp(_skipElapsed / SkipFadeSeconds, 0, 1) : 0f;
-        context.Custom(new SplashDrawOp(bounds, _variant, (float)_elapsed, (float)_lastDt, skipAlpha, VersionLabel, SkipHint()));
+        context.Custom(new SplashDrawOp(bounds, _variant, _clock, (float)_clock.Elapsed, (float)_clock.LastDt, skipAlpha, VersionLabel, SkipHint()));
     }
 
     private static ISplashVariant CreateVariant(string? style) => style switch
     {
+        "LiveHandshake" => new LiveHandshakeVariant(new LocalizedHandshakeText()),
         "CosmicZoom" => new CosmicZoomVariant(),
         "Pong" => new PongVariant(),
         _ => new RemexCommandVariant(),
@@ -225,44 +330,82 @@ public sealed class SkiaSplashControl : Control, IDisposable
     }
 
     /// <summary>The custom draw op that leases the Skia canvas and paints one frame.</summary>
-    private sealed class SplashDrawOp(Rect bounds, ISplashVariant variant, float t, float dt, float skipAlpha, string version, string hint)
+    private sealed class SplashDrawOp(Rect bounds, ISplashVariant variant, SplashClock clock, float t, float dt, float skipAlpha, string version, string hint)
         : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
-        public bool HitTest(Point p) => false;
+        public bool HitTest(Point p) => bounds.Contains(p);
         public bool Equals(ICustomDrawOperation? other) => false;
         public void Dispose() { }
 
+        private static int _renderFailureLogged;
+
         public void Render(ImmediateDrawingContext context)
         {
+            // A frame is really being composed now: a live splash's clock starts here, not at attach
+            // (a Debug window became visible ~3.6 s after attach and showed only the hand-off).
+            clock.MarkFirstFrame();
+
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
             if (leaseFeature is null) return; // non-Skia backend: draw nothing (splash simply doesn't animate)
             using var lease = leaseFeature.Lease();
             var canvas = lease.SkCanvas;
             float w = (float)bounds.Width, h = (float)bounds.Height;
 
-            canvas.Save();
-            canvas.ClipRect(new SKRect(0, 0, w, h));
-
-            variant.Render(canvas, w, h, t, dt);
-
-            // Version label + skip hint fade in (bottom-center), matching the Android chrome.
-            float versionAlpha = Math.Clamp((t - 0.2f) / 0.4f, 0f, 1f);
-            float hintAlpha = Math.Clamp((t - 0.8f) / 0.5f, 0f, 0.7f);
-            float baseSize = MathF.Min(w, h);
-            if (versionAlpha > 0 && version.Length > 0)
-                SplashBrand.DrawText(canvas, version, w / 2f, h - baseSize * 0.06f, baseSize * 0.022f, SplashBrand.SlateLo, versionAlpha);
-            if (hintAlpha > 0 && hint.Length > 0)
-                SplashBrand.DrawText(canvas, hint, w / 2f, h - baseSize * 0.03f, baseSize * 0.018f, SplashBrand.SlateLo, hintAlpha);
-
-            // Tap-to-skip fade to the brand substrate.
-            if (skipAlpha > 0)
+            // The leased canvas is the window's own: a frame that threw between a Save and its Restore
+            // would leave it clipped/transformed for everything drawn after the splash. So the whole
+            // frame restores to the entry count no matter what, and a failure is logged once rather
+            // than every frame (RemEx-8g6n0.3 hardening).
+            int saveCount = canvas.Save();
+            try
             {
-                using var fade = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha((byte)(skipAlpha * 255f)) };
-                canvas.DrawRect(0, 0, w, h, fade);
-            }
+                canvas.ClipRect(new SKRect(0, 0, w, h));
 
-            canvas.Restore();
+                // The Live Handshake field is a runtime shader: GPU-only. A raster lease (software
+                // fallback) has no GrContext and would spend ~200 ms a frame on it, so the variant
+                // draws its gradient fallback there instead (RemEx-8g6n0).
+                if (variant is ILiveSplashVariant live)
+                    live.FieldEnabled = lease.GrContext is not null;
+
+                variant.Render(canvas, w, h, t, dt);
+
+                // Version label + skip hint fade in (bottom-center), matching the Android chrome. A
+                // variant with its own exit (Live Handshake's portal) fades them out with it.
+                float chrome = Math.Clamp(variant.ChromeOpacity, 0f, 1f);
+                float versionAlpha = Math.Clamp((t - 0.2f) / 0.4f, 0f, 1f) * chrome;
+                float hintAlpha = Math.Clamp((t - 0.8f) / 0.5f, 0f, 0.7f) * chrome;
+                float baseSize = MathF.Min(w, h);
+                if (versionAlpha > 0 && version.Length > 0)
+                    SplashBrand.DrawText(canvas, version, w / 2f, h - baseSize * 0.06f, baseSize * 0.022f, SplashBrand.SlateLo, versionAlpha);
+                if (hintAlpha > 0 && hint.Length > 0)
+                    SplashBrand.DrawText(canvas, hint, w / 2f, h - baseSize * 0.03f, baseSize * 0.018f, SplashBrand.SlateLo, hintAlpha);
+
+                // Tap-to-skip fade to the brand substrate.
+                if (skipAlpha > 0)
+                {
+                    using var fade = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha((byte)(skipAlpha * 255f)) };
+                    canvas.DrawRect(0, 0, w, h, fade);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (System.Threading.Interlocked.Exchange(ref _renderFailureLogged, 1) == 0)
+                {
+                    try
+                    {
+                        (App.Services?.GetService(typeof(ILogger<SkiaSplashControl>)) as ILogger)?.LogWarning(ex,
+                            "Splash frame failed to render; the splash still completes on its own clock");
+                    }
+                    catch (Exception)
+                    {
+                        // Logging must never be what breaks the render thread.
+                    }
+                }
+            }
+            finally
+            {
+                canvas.RestoreToCount(saveCount);
+            }
         }
     }
 }

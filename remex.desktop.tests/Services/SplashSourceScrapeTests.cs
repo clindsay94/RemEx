@@ -32,6 +32,53 @@ public sealed class SplashSourceScrapeTests
     }
 
     [Fact]
+    public void SkiaSplashControl_FinishesOnTheVariantsOwnCompletion()
+    {
+        // Live Handshake ends when the app is ready, never on a fixed timer (RemEx-8g6n0.2). The host
+        // must ask the variant, and the old Duration comparison must be gone - it would hold every
+        // live splash to its CAP + EXIT upper bound.
+        var source = Read("remex.desktop/Controls/Splash/SkiaSplashControl.cs");
+
+        source.Should().Contain("_variant.IsComplete((float)elapsed)");
+        source.Should().NotContain("_elapsed >= _variant.Duration");
+    }
+
+    [Fact]
+    public void SkiaSplashControl_StartsTheLiveClockFromTheFirstRenderedFrame()
+    {
+        // SplashClockTests pins the rule; this pins that the host actually feeds it: the draw op marks
+        // the first composed frame, and the tick advances the clock rather than a raw accumulator.
+        var source = Read("remex.desktop/Controls/Splash/SkiaSplashControl.cs");
+
+        source.Should().Contain("clock.MarkFirstFrame();");
+        source.Should().Contain("_clock.Advance(dt);");
+        source.Should().Contain("_clock.Reset(live: variant is ILiveSplashVariant);");
+        source.Should().Contain("LiveHandshakeField.WarmUp();", "the SkSL compile is warmed off the render path");
+    }
+
+    [Fact]
+    public void SkiaSplashControl_RunsTheFieldShaderOnlyOnAGpuLease()
+    {
+        // On a raster lease the field costs ~200 ms a frame; the variant must be told to fall back.
+        var source = Read("remex.desktop/Controls/Splash/SkiaSplashControl.cs");
+
+        source.Should().Contain("live.FieldEnabled = lease.GrContext is not null;");
+        var fieldIndex = source.IndexOf("live.FieldEnabled = lease.GrContext is not null;", StringComparison.Ordinal);
+        var renderIndex = source.IndexOf("variant.Render(canvas, w, h, t, dt);", StringComparison.Ordinal);
+        fieldIndex.Should().BeLessThan(renderIndex, "the GPU check has to land before the frame it governs");
+    }
+
+    [Fact]
+    public void SkiaSplashControl_LiveSkipHandsOffThroughTheVariantAndKeepsTheOldFadeForTheFilms()
+    {
+        var source = Read("remex.desktop/Controls/Splash/SkiaSplashControl.cs");
+
+        source.Should().Contain("live.RequestSkip();", "a click on Live Handshake opens the portal at once");
+        source.Should().Contain("_skipping = true;", "the fixed-length films keep their short skip fade");
+        source.Should().Contain("\"LiveHandshake\" => new LiveHandshakeVariant(new LocalizedHandshakeText()),");
+    }
+
+    [Fact]
     public void ApplyAndSave_WritesTheLastSeedSidecar()
     {
         var source = Read("remex.desktop/ViewModels/CustomizationViewModel.cs");

@@ -53,6 +53,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -62,6 +63,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -86,6 +88,10 @@ import androidx.navigation.toRoute
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.data.SplashStyles
+import com.clindsay94.remex.ui.splash.LiveHandshakeController
+import com.clindsay94.remex.ui.splash.LiveHandshakeSplash
+import com.clindsay94.remex.ui.splash.rememberLiveHandshakeLensModifier
 import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.routines.RoutineEditorChrome
 import com.clindsay94.remex.ui.routines.RoutineOpenRequests
@@ -141,46 +147,80 @@ fun AppNavigation() {
 
         val hasCompletedOnboarding by
                 settingsManager.hasCompletedOnboardingFlow.collectAsStateWithLifecycle(initialValue = null)
+        // Nullable until DataStore's first emission: the Splash route decides which splash plays
+        // from this value exactly once, so it must be the stored style, never the default that
+        // stands in for it while loading (RemEx-8g6n0).
         val personalization by
-                settingsManager.personalizationPreferencesFlow.collectAsStateWithLifecycle(initialValue = SettingsManager.PersonalizationPreferences())
+                settingsManager.personalizationPreferencesFlow.collectAsStateWithLifecycle(initialValue = null)
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
         // The More "New" badge shows until Routines is opened once (routines spec 1.2, R-UX-05).
         // Initial true so a cold start never flashes a badge the user already dismissed.
         val routinesOpened by settingsManager.routinesOpenedFlow.collectAsStateWithLifecycle(initialValue = true)
 
-        AppNavigationContent(
-                hasCompletedOnboarding = hasCompletedOnboarding,
-                isConnected = isConnected,
-                showRoutinesBadge = !routinesOpened,
-                splashStyle = personalization.splashStyle,
-                onQrScanned = { host, port, pin ->
-                        connectionViewModel.applyQrResultAndConnect(host, port, pin)
-                },
-                dashboardScreenContent = { onNav, isVisible ->
-                        DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
-                },
-                remoteControlScreenContent = { onNav ->
-                        RemoteControlScreen(onNavigateToConnection = onNav)
-                },
-                remoteMouseScreenContent = { onNav ->
-                        RemoteMouseScreen(onNavigateToConnection = onNav)
-                },
-                appLauncherScreenContent = { onNav ->
-                        AppLauncherScreen(onNavigateToConnection = onNav)
-                },
-                taskManagerScreenContent = { onNav, isVisible ->
-                        TaskManagerScreen(
-                                onNavigateToConnection = onNav,
-                                isVisible = isVisible,
+        // Initial true so a cold start never flashes a badge the user already dismissed.
+        val routinesOpened by settingsManager.routinesOpenedFlow.collectAsStateWithLifecycle(initialValue = true)
+
+        // Live Handshake (RemEx-8g6n0) is an overlay ABOVE the app rather than a route: the
+        // dashboard composes underneath and the portal opens into it, refracted by the lens on
+        // the content layer below.
+        val liveHandshake = remember { LiveHandshakeController(context.applicationContext) }
+        DisposableEffect(liveHandshake) { onDispose { liveHandshake.finish() } }
+        val lensModifier = rememberLiveHandshakeLensModifier(liveHandshake.lens)
+
+        Box(modifier = Modifier.fillMaxSize()) {
+                // The lens layer exists only while the splash does: no permanent layer over the
+                // whole app (and so none over the remote-desktop SurfaceView).
+                Box(
+                        modifier = Modifier.fillMaxSize()
+                                .then(if (liveHandshake.session != null) lensModifier else Modifier)
+                ) {
+                        AppNavigationContent(
+                                hasCompletedOnboarding = if (personalization == null) null else hasCompletedOnboarding,
+                                isConnected = isConnected,
+                                showRoutinesBadge = !routinesOpened,
+                                splashStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).splashStyle,
+                                liveHandshake = liveHandshake,
+                                onQrScanned = { host, port, pin ->
+                                        connectionViewModel.applyQrResultAndConnect(host, port, pin)
+                                },
+                                dashboardScreenContent = { onNav, isVisible ->
+                                        DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
+                                },
+                                remoteControlScreenContent = { onNav ->
+                                        RemoteControlScreen(onNavigateToConnection = onNav)
+                                },
+                                remoteMouseScreenContent = { onNav ->
+                                        RemoteMouseScreen(onNavigateToConnection = onNav)
+                                },
+                                appLauncherScreenContent = { onNav ->
+                                        AppLauncherScreen(onNavigateToConnection = onNav)
+                                },
+                                taskManagerScreenContent = { onNav, isVisible ->
+                                        TaskManagerScreen(
+                                                onNavigateToConnection = onNav,
+                                                isVisible = isVisible,
+                                        )
+                                },
+                                connectionScreenContent = { onQr ->
+                                        ConnectionScreen(
+                                                viewModel = connectionViewModel,
+                                                onNavigateToQrScanner = onQr
+                                        )
+                                },
                         )
-                },
-                connectionScreenContent = { onQr ->
-                        ConnectionScreen(
-                                viewModel = connectionViewModel,
-                                onNavigateToQrScanner = onQr
+                }
+                liveHandshake.session?.let { session ->
                         )
-                },
-        )
+                }
+                liveHandshake.session?.let { session ->
+                        LiveHandshakeSplash(
+                                signals = session.signals,
+                                lens = liveHandshake.lens,
+                                continueFromSystemSplash = true,
+                                onFinished = { liveHandshake.finish() },
+                        )
+                }
+        }
 }
 
 @OptIn(
@@ -193,6 +233,7 @@ private fun AppNavigationContent(
         hasCompletedOnboarding: Boolean?,
         isConnected: Boolean,
         splashStyle: String,
+        liveHandshake: LiveHandshakeController? = null,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -221,6 +262,16 @@ private fun AppNavigationContent(
         // destination's route class, which is what replaced string comparison (RemEx-mt43).
         val isAtPrimary = currentDestination?.hasRoute<PrimaryNav>() == true
         fun isOn(screen: Screen) = currentDestination?.hasRoute(screen::class) == true
+
+        // Live Handshake's "ready": the destination past the splash has composed its first frame
+        // under the overlay, so the portal has a real app to open into (RemEx-8g6n0).
+        val liveSession = liveHandshake?.session
+        if (liveSession != null && (isAtPrimary || isOn(Screen.Tutorial))) {
+                LaunchedEffect(liveSession) {
+                        withFrameNanos { }
+                        liveSession.markReady()
+                }
+        }
 
         // Keep primary destinations under one route owner so connected screens do not
         // re-create route-scoped ViewModels during tab changes.
@@ -442,6 +493,7 @@ private fun AppNavigationContent(
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         pagerState = if (showNav) pagerState else null,
+                                        onLiveHandshakeStart = liveHandshake?.let { it::start },
                                         modifier = Modifier.fillMaxSize(),
                                 )
                         }
@@ -730,6 +782,7 @@ private fun AppNavigationContent(
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         pagerState = if (showNav) pagerState else null,
+                                        onLiveHandshakeStart = liveHandshake?.let { it::start },
                                         modifier = Modifier.fillMaxSize(),
                                 )
 
@@ -862,6 +915,7 @@ private fun RemexNavHost(
         onNavigateToConnection: () -> Unit,
         onSelectPrimaryPage: (Int) -> Unit,
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
+        onLiveHandshakeStart: (() -> Unit)? = null,
         modifier: Modifier = Modifier,
 ) {
         // NavHost's transition lambdas are NOT @Composable, so the motionScheme specs must be
@@ -929,6 +983,15 @@ private fun RemexNavHost(
                                 // In-process recreation: the brand moment already played this
                                 // process, skip straight onward instead of replaying it.
                                 LaunchedEffect(Unit) { goPastSplash() }
+                        } else if (splashStyle == SplashStyles.LiveHandshake && onLiveHandshakeStart != null) {
+                                // Live Handshake plays as an overlay above the app (RemEx-8g6n0):
+                                // move on at once, like the warm path, so the destination composes
+                                // underneath and is what the portal opens into.
+                                LaunchedEffect(Unit) {
+                                        SplashGate.shown = true
+                                        onLiveHandshakeStart()
+                                        goPastSplash()
+                                }
                         } else {
                                 SplashScreen(
                                         splashStyle = splashStyle,
@@ -1167,7 +1230,7 @@ private fun AppNavigationPreview() {
                 AppNavigationContent(
                         hasCompletedOnboarding = true,
                         isConnected = true,
-                        splashStyle = "RemexCommand",
+                        splashStyle = SplashStyles.Default,
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -1187,7 +1250,7 @@ private fun AppNavigationDisconnectedPreview() {
                 AppNavigationContent(
                         hasCompletedOnboarding = true,
                         isConnected = false,
-                        splashStyle = "RemexCommand",
+                        splashStyle = SplashStyles.Default,
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },

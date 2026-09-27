@@ -797,7 +797,21 @@
     <string name="splash_term_connect">підключення</string>
     <string name="splash_term_pairing">сполучення</string>
     <string name="splash_term_session_ready">сесія готова</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
+    <plurals name="splash_live_pinging">
+        <item quantity="one">Пінгування %1$d ПК</item>
+        <item quantity="few">Пінгування %1$d ПК</item>
+        <item quantity="many">Пінгування %1$d ПК</item>
+        <item quantity="other">Пінгування %1$d ПК</item>
+    </plurals>
+    <string name="splash_live_not_answering">%1$s не відповідає</string>
+    <string name="splash_live_none_paired">Ще немає спарених ПК</string>
+    <string name="splash_live_answered">%1$s відповів за %2$d мс</string>
+    <string name="splash_live_linked_to">Зʼєднано з %1$s</string>
+    <string name="splash_live_opening">Відкриття RemEx</string>
+    <string name="splash_live_rtt_ms">%1$d мс</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Живе рукостискання</string>
     <string name="share_to_pc_skipped_unreadable">Пропущено %1$d файл(ів), які не можуть бути прочитані — вони можуть бути порожніми чи більше недоступні.</string>
     <string name="cd_dashboard_exit_selection">Вийти з режиму вибору</string>
     <string name="cd_dashboard_pin_selection">Закріпити вибрані картки</string>

@@ -783,7 +783,19 @@
     <string name="splash_term_connect">bağlanma</string>
     <string name="splash_term_pairing">eşleştirme</string>
     <string name="splash_term_session_ready">oturum hazır</string>
+    <!-- Live Handshake splash console lines (RemEx-8g6n0), sentence case -->
+    <plurals name="splash_live_pinging">
+        <item quantity="one">%1$d bilgisayara ping atılıyor</item>
+        <item quantity="other">%1$d bilgisayara ping atılıyor</item>
+    </plurals>
+    <string name="splash_live_not_answering">%1$s yanıt vermiyor</string>
+    <string name="splash_live_none_paired">Henüz eşleştirilmiş bilgisayar yok</string>
+    <string name="splash_live_answered">%1$s, %2$d ms içinde yanıt verdi</string>
+    <string name="splash_live_linked_to">%1$s ile bağlantı kuruldu</string>
+    <string name="splash_live_opening">RemEx açılıyor</string>
+    <string name="splash_live_rtt_ms">%1$d ms</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <string name="personalization_splash_live">Canlı El Sıkışma</string>
     <!-- Home Base coach marks (RemEx-km0i.10) -->
     <string name="coach_title">Etrafında Gezinmek</string>
     <string name="coach_hold_body">Bir kartı taşımak için basılı tutun, sonra sürükleyin.</string>

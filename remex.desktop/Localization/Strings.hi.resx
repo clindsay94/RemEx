@@ -2452,6 +2452,39 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>छोड़ने के लिए कहीं भी क्लिक करें</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>लाइव हैंडशेक</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>अभी तक कोई फ़ोन पेयर नहीं किया गया</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>पोर्ट {0} पर सुन रहा है</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>सुन रहा है</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>लिंक्ड</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} फ़ोन पेयर किया गया</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} फ़ोन पेयर किए गए</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} फ़ोन पेयर किए गए</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} फ़ोन पेयर किए गए</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} लिंक्ड है</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>RemEx खुल रहा है</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>मूल स्कैन</value>
   </data>

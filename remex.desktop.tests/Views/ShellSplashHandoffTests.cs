@@ -29,6 +29,8 @@ public class ShellSplashHandoffTests
             "the fade itself is driven by ShowWelcomeSplash's opacity, not a hard cut");
         element.Should().MatchRegex(@"<DoubleTransition\s+Property=""Opacity""",
             "the opacity change must animate rather than snap");
+        element.Should().Contain("ReduceMotion=\"{Binding IsReducedMotion}\"",
+            "Live Handshake honours reduced motion (a static frame and a fade), so the preference must reach it (RemEx-8g6n0.2)");
     }
 
     [Fact]
@@ -40,6 +42,50 @@ public class ShellSplashHandoffTests
         source.Should().Contain("public void OnBootSequenceCompleted()");
         source.Should().Contain("ShowWelcomeSplash = false;",
             "OnBootSequenceCompleted must still be the thing that starts the fade-out");
+    }
+
+    [Fact]
+    public void TheSafetyBackstopRunsFromTheSplashsFirstFrameNotFromLaunch()
+    {
+        // RemEx-8g6n0.2: a 6 s backstop from launch was eaten by a slow start (a Debug window became
+        // visible ~3.6 s in) and cut a live splash mid-portal.
+        var vm = ShellViewModelSource();
+        vm.Should().Contain("public void OnWelcomeSplashFirstFrame()");
+        vm.Should().Contain("DismissWelcomeSplashAsync(WelcomeSplashBackstopFromFirstFrame)");
+        vm.Should().Contain("DismissWelcomeSplashAsync(WelcomeSplashCeiling)",
+            "a splash that never renders still has an absolute ceiling from launch");
+        vm.Should().NotContain("await Task.Delay(6000);");
+
+        var codeBehind = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "ShellView.axaml.cs"));
+        codeBehind.Should().Contain("_bootSplash.FirstFrameRendered +=");
+        codeBehind.Should().Contain("vm3.OnWelcomeSplashFirstFrame();");
+    }
+
+    [Fact]
+    public void TheBackstopsLeaveRoomForTheLongestLiveSplash()
+    {
+        double liveSplash = Remex.Branding.LiveHandshakeDirector.Cap + Remex.Branding.LiveHandshakeDirector.Exit;
+
+        Remex.Desktop.ViewModels.ShellViewModel.WelcomeSplashBackstopFromFirstFrame.TotalSeconds
+            .Should().BeGreaterThan(liveSplash + 1.0, "from its first frame a live splash runs at most CAP + EXIT");
+        Remex.Desktop.ViewModels.ShellViewModel.WelcomeSplashCeiling.TotalSeconds
+            .Should().BeGreaterThan(Remex.Desktop.Controls.Splash.SplashClock.FirstFrameTimeout + liveSplash + 1.0,
+                "a never-rendering splash starts its own clock after FirstFrameTimeout and then still needs CAP + EXIT");
+    }
+
+    [Fact]
+    public void TheSplashTakesThePointerOverItsWholeBounds()
+    {
+        // RemEx-8g6n0.2: with no background brush and a draw op that answered HitTest false, the pointer
+        // fell through to the shell - its Ctrl+K tooltip showed over the whole animation.
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Controls", "Splash", "SkiaSplashControl.cs"));
+        source.Should().Contain("SkiaSplashControl : Control, ICustomHitTest, IDisposable");
+        source.Should().Contain("public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);");
+        source.Should().NotContain("public bool HitTest(Point p) => false;");
+
+        // Input still hands back to the shell when the splash starts fading.
+        var match = Regex.Match(ShellMarkup(), @"<splash:SkiaSplashControl\b[^>]*x:Name=""BootSplash""[^>]*>", RegexOptions.Singleline);
+        match.Value.Should().Contain("IsHitTestVisible=\"{Binding ShowWelcomeSplash}\"");
     }
 
     [Fact]

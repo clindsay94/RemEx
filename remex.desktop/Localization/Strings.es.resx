@@ -2466,6 +2466,39 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Haz clic en cualquier lugar para omitir</value>
   </data>
+  <data name="Splash_Style_LiveHandshake" xml:space="preserve">
+    <value>Enlace en Vivo</value>
+  </data>
+  <data name="Splash_LiveHandshake_NonePaired" xml:space="preserve">
+    <value>Aún no hay teléfonos emparejados</value>
+  </data>
+  <data name="Splash_LiveHandshake_ListeningOnPort" xml:space="preserve">
+    <value>Escuchando en el puerto {0}</value>
+  </data>
+  <data name="Splash_LiveHandshake_Listening" xml:space="preserve">
+    <value>Escuchando</value>
+  </data>
+  <data name="Splash_LiveHandshake_NodeLinked" xml:space="preserve">
+    <value>vinculado</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_One" xml:space="preserve">
+    <value>{0} teléfono emparejado</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Few" xml:space="preserve">
+    <value>{0} teléfonos emparejados</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Many" xml:space="preserve">
+    <value>{0} teléfonos emparejados</value>
+  </data>
+  <data name="Splash_LiveHandshake_Paired_Other" xml:space="preserve">
+    <value>{0} teléfonos emparejados</value>
+  </data>
+  <data name="Splash_LiveHandshake_IsLinked" xml:space="preserve">
+    <value>{0} está vinculado</value>
+  </data>
+  <data name="Splash_LiveHandshake_Opening" xml:space="preserve">
+    <value>Abriendo RemEx</value>
+  </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Escaneo Original</value>
   </data>
