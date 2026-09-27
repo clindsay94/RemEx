@@ -1,0 +1,940 @@
+<title>Live Handshake Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #07080B;
+    --panel: #0D0F15;
+    --line: #1C202B;
+    --line-hi: #2A3040;
+    --ink: #E7E9F0;
+    --muted: #8A92A5;
+    --faint: #5A6173;
+    --amber: #FFB63D;
+    --focus: #FFB63D;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    padding-block: 16px;
+    max-width: 1500px;
+    margin: 0 auto;
+    min-height: 100%;
+    box-sizing: border-box;
+  }
+  @media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { display: grid; place-items: center; min-height: 0; position: sticky; top: 16px; align-self: start; height: calc(100vh - 32px); }
+  @media (max-width: 900px) { .stage { position: static; height: auto; } }
+  .device {
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 0 1px #242834, 0 0 0 7px #0F1116, 0 0 0 8px #262a35, 0 40px 90px rgba(0,0,0,.7);
+    border-radius: 40px;
+    cursor: pointer;
+    max-width: 100%;
+  }
+  .device.pc { border-radius: 10px; box-shadow: 0 0 0 1px #2a2f3c, 0 40px 90px rgba(0,0,0,.7); }
+  .device canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .titlebar {
+    position: absolute; left: 0; right: 0; top: 0; height: 30px; z-index: 3;
+    display: none; align-items: center; justify-content: space-between;
+    padding-inline: 12px; font: 500 12px "IBM Plex Sans", sans-serif; color: #9AA2B4;
+    background: linear-gradient(#0B0D12e6, #0B0D1200);
+    pointer-events: none;
+  }
+  .device.pc .titlebar { display: flex; }
+  .titlebar .wc { display: flex; gap: 18px; font: 400 12px "IBM Plex Mono", monospace; color: #6D7486; }
+  .replay-hint {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 4;
+    font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase;
+    color: #cfd3dc; background: #0b0d12cc; border: 1px solid #2a2f3c; border-radius: 999px;
+    padding: 6px 12px; pointer-events: none; opacity: 0; transition: opacity .3s;
+  }
+  .replay-hint.show { opacity: 1; }
+
+  aside { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  header h1 {
+    margin: 0; font: 600 26px/1.1 "IBM Plex Sans", sans-serif; letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  header p { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+  .eyebrow {
+    font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 8px;
+  }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  legend {
+    font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px; padding: 0;
+  }
+  .scn { display: flex; flex-direction: column; gap: 6px; }
+  .scn label {
+    display: grid; grid-template-columns: 14px 1fr; gap: 10px; align-items: start;
+    padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    background: var(--panel);
+  }
+  .scn label:hover { border-color: var(--line-hi); }
+  .scn input { margin: 3px 0 0; accent-color: var(--amber); }
+  .scn label:has(input:checked) { border-color: #5a4a2a; background: #15130f; }
+  .scn b { font-weight: 500; display: block; }
+  .scn span.d { color: var(--muted); font-size: 12.5px; }
+  .scn .plat { font: 500 10px "IBM Plex Mono", monospace; letter-spacing: .12em; color: var(--faint); text-transform: uppercase; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .swatch {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0;
+    box-shadow: inset 0 0 0 1px #ffffff22;
+  }
+  .swatch[aria-pressed="true"] { border-color: var(--ink); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .seg button {
+    background: transparent; color: var(--muted); border: 0; padding: 6px 12px; cursor: pointer;
+    font: 500 12px "IBM Plex Mono", monospace;
+  }
+  .seg button[aria-pressed="true"] { background: #1c1f28; color: var(--ink); }
+  .btn {
+    background: var(--amber); color: #1a1204; border: 0; border-radius: 999px; padding: 9px 16px;
+    font: 600 13px "IBM Plex Sans", sans-serif; cursor: pointer;
+  }
+  .toggle { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); cursor: pointer; font-size: 13px; }
+  .toggle input { accent-color: var(--amber); }
+  button:focus-visible, input:focus-visible, label:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .timeline { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 10px 12px 8px; }
+  .timeline canvas { width: 100%; height: 74px; display: block; }
+  .log {
+    list-style: none; margin: 0; padding: 0; font: 12px/1.6 "IBM Plex Mono", monospace; color: var(--muted);
+    max-height: 190px; overflow-y: auto; font-variant-numeric: tabular-nums;
+  }
+  .log li { display: grid; grid-template-columns: 54px 1fr; gap: 8px; }
+  .log li .t { color: var(--faint); text-align: right; }
+  .log li.hi { color: var(--ink); }
+  .log li.hi .t { color: var(--amber); }
+  .wired { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+  .wired li { display: grid; grid-template-columns: 92px 1fr; gap: 10px; }
+  .wired b { color: var(--ink); font-weight: 500; }
+  .note { font-size: 12px; color: var(--faint); margin: 0; }
+  .glerr { color: #ffb4a8; padding: 24px; font-family: "IBM Plex Mono", monospace; }
+</style>
+
+<div class="wrap">
+  <main class="stage" id="stage">
+    <div class="device" id="device" role="img" aria-label="Live Handshake splash preview. Click to skip to the hand-off.">
+      <div class="titlebar"><span>RemEx</span><span class="wc"><span>&#x2014;</span><span>&#x25A1;</span><span>&#x2715;</span></span></div>
+      <canvas id="gl"></canvas>
+      <canvas id="vec"></canvas>
+      <div class="replay-hint" id="hint">Replay to watch again</div>
+    </div>
+  </main>
+
+  <aside>
+    <header>
+      <div class="eyebrow">RemEx 3.0 &middot; splash</div>
+      <h1>Live Handshake</h1>
+      <p>The splash is the real startup. Your PCs show up as they answer, the one you use locks on, and the app opens out of it. Nothing here runs on a fixed timer.</p>
+    </header>
+
+    <fieldset>
+      <legend>Scenario</legend>
+      <div class="scn" id="scn"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Seed colour</legend>
+      <div class="row" id="swatches"></div>
+    </fieldset>
+
+    <div class="row">
+      <button class="btn" id="replay" type="button">Replay</button>
+      <div class="seg" id="speed" role="group" aria-label="Playback speed">
+        <button type="button" data-s="1" aria-pressed="true">1&times;</button>
+        <button type="button" data-s="0.5" aria-pressed="false">&frac12;&times;</button>
+        <button type="button" data-s="0.25" aria-pressed="false">&frac14;&times;</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="reduced"> Remove animations</label>
+    </div>
+
+    <div class="timeline">
+      <legend style="display:block">Timeline</legend>
+      <canvas id="tl"></canvas>
+    </div>
+
+    <fieldset>
+      <legend>What happened</legend>
+      <ol class="log" id="log"></ol>
+    </fieldset>
+
+    <fieldset>
+      <legend>What each beat is wired to</legend>
+      <ul class="wired">
+        <li><b>Pulse</b><span>A reachability sweep going out to every paired PC.</span></li>
+        <li><b>Ghost</b><span>A PC from your paired list, not heard from yet.</span></li>
+        <li><b>Ignite</b><span>That PC answered. Its distance from the mark is the measured round trip.</span></li>
+        <li><b>Lock-on</b><span>The connection to your last PC finished its handshake. The phone ticks once.</span></li>
+        <li><b>Portal</b><span>The dashboard is live, so the splash opens into it from that PC.</span></li>
+      </ul>
+    </fieldset>
+    <p class="note">Click the preview to skip, the same as a tap in the app. Move the pointer over it for depth.</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+'use strict';
+const TAU = Math.PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sx = t => ((ax * t + bx) * t + cx) * t, sy = t => ((ay * t + by) * t + cy) * t;
+  const dsx = t => (3 * ax * t + 2 * bx) * t + cx;
+  return x => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 8; i++) { const d = dsx(t); if (Math.abs(d) < 1e-6) break; t -= (sx(t) - x) / d; }
+    return sy(clamp(t));
+  };
+}
+const EMPH_DEC = bezier(0.05, 0.7, 0.1, 1);
+const EMPH_ACC = bezier(0.3, 0, 0.8, 0.15);
+const STD = bezier(0.2, 0, 0, 1);
+// Portal opening: a visible first beat at the node, a fast middle, a soft landing.
+const PORTAL = bezier(0.45, 0, 0.15, 1);
+// Under-damped spring, 0 -> 1 with ~16% overshoot, settled by ~0.4 s.
+const spring = tau => tau <= 0 ? 0 : 1 - Math.exp(-tau * 9) * Math.cos(tau * 16);
+const hex = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+const rgba = (h, a) => { const [r, g, b] = hex(h); return `rgba(${r * 255 | 0},${g * 255 | 0},${b * 255 | 0},${a})`; };
+function hashStr(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10000) / 10000; }
+
+// ---------------------------------------------------------------- palettes (dark scheme per seed)
+const PALETTES = {
+  amber:  { name: 'Brand amber', bg0: '#0D1016', bg1: '#1A1F2B', pri: '#93A4C6', acc: '#FFB63D', markA: '#0C0E13', markB: '#0C0E13', surface: '#11141B', card: '#191D27', card2: '#222735', ink: '#F1F3F8', muted: '#8C95A8', ok: '#7BD88F', warn: '#FFB63D' },
+  tide:   { name: 'Tide',        bg0: '#061019', bg1: '#0E1F30', pri: '#78B7EE', acc: '#5FE0F0', markA: '#0A1A2A', markB: '#153350', surface: '#0A121B', card: '#112031', card2: '#18293D', ink: '#EAF3FB', muted: '#86A0B8', ok: '#7BD88F', warn: '#FFC46B' },
+  moss:   { name: 'Moss',        bg0: '#08110A', bg1: '#132318', pri: '#86C79A', acc: '#C8EA6A', markA: '#0E1B12', markB: '#1B3522', surface: '#0B130D', card: '#132017', card2: '#1A2B1F', ink: '#EDF6EE', muted: '#8CA692', ok: '#9BE38A', warn: '#F5C96B' },
+  orchid: { name: 'Orchid',      bg0: '#100B18', bg1: '#1F1630', pri: '#B9A2EE', acc: '#FF9BE6', markA: '#1A1026', markB: '#301F4A', surface: '#120D1A', card: '#1C1528', card2: '#261D35', ink: '#F5EFFC', muted: '#A393B8', ok: '#8FE0A8', warn: '#FFC46B' },
+  ember:  { name: 'Ember',       bg0: '#140B09', bg1: '#2A1612', pri: '#E8A08A', acc: '#FFC15E', markA: '#200F0B', markB: '#3E1D15', surface: '#160D0B', card: '#221613', card2: '#2D1D19', ink: '#FCF1EE', muted: '#B8968E', ok: '#9BE38A', warn: '#FFC15E' },
+};
+
+// ---------------------------------------------------------------- scenarios
+// Times are seconds since the splash started. `answer` = when that PC replied, `rtt` = its round trip.
+const SCENARIOS = {
+  trio:   { plat: 'android', title: 'Three PCs, one asleep', desc: 'Your desktop answers first and locks on. The laptop stays dark.',
+            nodes: [ { name: 'DESKTOP-RIG', rtt: 9, answer: 0.46, target: true }, { name: 'MEDIA-HTPC', rtt: 24, answer: 0.63 }, { name: 'OFFICE-LAPTOP', rtt: null } ],
+            connectStart: 0.30, connected: 1.02, ready: 0.72 },
+  solo:   { plat: 'android', title: 'One PC', desc: 'The common case. Quick answer, quick lock, straight in.',
+            nodes: [ { name: 'STUDIO-PC', rtt: 6, answer: 0.40, target: true } ], connectStart: 0.28, connected: 0.84, ready: 0.60 },
+  slow:   { plat: 'android', title: 'Slow Wi-Fi', desc: 'The PC answers late and far out. The splash waits for it, but never past its budget.',
+            nodes: [ { name: 'CABIN-PC', rtt: 148, answer: 1.32, target: true }, { name: 'DESKTOP-RIG', rtt: null } ], connectStart: 0.30, connected: 1.74, ready: 0.70 },
+  asleep: { plat: 'android', title: 'Your PC is asleep', desc: 'No lock-on. After a short grace period it opens from the mark and the dashboard offers Wake.',
+            nodes: [ { name: 'DESKTOP-RIG', rtt: null, target: true }, { name: 'MEDIA-HTPC', rtt: 31, answer: 0.70 } ], connectStart: 0.30, connected: null, ready: 0.70 },
+  first:  { plat: 'android', title: 'First run', desc: 'Nothing paired yet. One pulse into an empty room, then pairing.',
+            nodes: [], ready: 0.55 },
+  pc:     { plat: 'pc', title: 'PC, phone connected', desc: 'The PC side. Known phones ring the mark, and the one already linked lights up.',
+            nodes: [ { name: 'Pixel 9 Pro', kind: 'phone', rtt: null }, { name: 'Galaxy S26 Ultra', kind: 'phone', rtt: 4, answer: 0.58, target: true }, { name: 'Galaxy Tab S10', kind: 'tablet', rtt: null } ],
+            connectStart: 0.22, connected: 0.86, ready: 0.55, listenAt: 0.40, exitFromMark: true },
+};
+
+const FLOOR = 0.9, GRACE = 1.2, CAP = 2.6, LOCK_HOLD = 0.5, EXIT = 0.72, FADE_EXIT = 0.28;
+
+function buildTimeline(sc, reduced) {
+  const target = sc.nodes.find(n => n.target);
+  let handoff, fromNode = false;
+  if (!sc.nodes.length) handoff = Math.max(FLOOR, sc.ready);
+  else if (target && sc.connected != null && sc.connected <= Math.min(sc.ready + GRACE, CAP)) {
+    handoff = Math.max(sc.connected + LOCK_HOLD, FLOOR, sc.ready);
+    fromNode = !sc.exitFromMark;
+  } else handoff = Math.max(FLOOR, Math.min(sc.ready + GRACE, CAP));
+  const locked = !!(target && sc.connected != null && sc.connected < handoff);
+  const pulses = [];
+  if (!reduced) for (let tp = 0.32; tp < handoff; tp += 1.0) pulses.push(tp);
+  const events = [];
+  pulses.forEach((tp, i) => events.push({ t: tp, kind: 'pulse', text: `pulse ${i + 1} out` }));
+  sc.nodes.forEach(n => { if (n.answer != null && n.answer < handoff) events.push({ t: n.answer, kind: 'answer', hi: true, text: `${n.name} answered in ${n.rtt} ms` }); });
+  if (sc.listenAt != null) events.push({ t: sc.listenAt, kind: 'listen', hi: true, text: 'listening on port 5005' });
+  if (target && sc.connectStart != null) events.push({ t: sc.connectStart, kind: 'connect', text: `connecting to ${target.name}` });
+  events.push({ t: sc.ready, kind: 'ready', text: 'app ready' });
+  if (locked) events.push({ t: sc.connected, kind: 'lock', hi: true, text: `linked to ${target.name}` });
+  if (target && !locked) events.push({ t: handoff, kind: 'giveup', text: `${target.name} not answering, opening anyway` });
+  events.push({ t: handoff, kind: 'handoff', hi: true, text: fromNode ? `opening from ${target.name}` : 'opening from the mark' });
+  const done = handoff + (reduced ? FADE_EXIT : EXIT);
+  events.push({ t: done, kind: 'done', text: sc.plat === 'pc' ? 'shell' : (sc.nodes.length ? 'dashboard' : 'pairing') });
+  events.sort((a, b) => a.t - b.t);
+  return { handoff, fromNode, locked, target, pulses, events, done };
+}
+
+// ---------------------------------------------------------------- brand mark (RemexBrandData, 108-unit space)
+const P = {
+  window:  new Path2D('M33,26 L75,26 A13,13 0 0 1 88,39 L88,69 A13,13 0 0 1 75,82 L33,82 A13,13 0 0 1 20,69 L20,39 A13,13 0 0 1 33,26 Z'),
+  dot1:    new Path2D('M27.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z'),
+  dot2:    new Path2D('M34.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z'),
+  dot3:    new Path2D('M41.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z'),
+  chevron: new Path2D('M30,50 L39,61 L30,72'),
+  rstem:   new Path2D('M45,47 h7 v25 h-7 Z'),
+  rbowl:   new Path2D('M52,47 H60 A8,8 0 0 1 60,63 H52 Z'),
+  rleg:    new Path2D('M53,58.5 L61,58.5 L71.5,73 L63,73 Z'),
+  rhole:   new Path2D('M53.5,53 H58.8 A2.8,2.8 0 0 1 58.8,58.6 H53.5 Z'),
+  cursor:  new Path2D('M73,50 h6 v22 h-6 Z'),
+};
+const WINDOW_LEN = 226, CHEVRON_LEN = 28.5;
+
+// ---------------------------------------------------------------- DOM + GL setup
+const $ = s => document.querySelector(s);
+const dev = $('#device'), glc = $('#gl'), vc = $('#vec'), tlc = $('#tl');
+const vx = vc.getContext('2d');
+const S = {
+  scenario: 'trio', palette: 'amber', speed: 1, reduced: false,
+  start: performance.now(), clock: 0, lastNow: performance.now(), skipAt: null,
+  W: 0, H: 0, px: 1, C: [0, 0], markW: 0, nodes: [],
+  mouse: [0, 0], par: [0, 0], logged: 0, hapticDone: false, T: null,
+};
+try { const saved = JSON.parse(localStorage.getItem('lh-lab') || '{}'); if (SCENARIOS[saved.scenario]) S.scenario = saved.scenario; if (PALETTES[saved.palette]) S.palette = saved.palette; } catch (e) {}
+const persist = () => { try { localStorage.setItem('lh-lab', JSON.stringify({ scenario: S.scenario, palette: S.palette })); } catch (e) {} };
+
+const VERT = `#version 300 es
+in vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
+const FRAG = `#version 300 es
+precision highp float;
+uniform vec2 uRes; uniform float uTime; uniform float uPx;
+uniform vec2 uCenter;
+uniform vec3 uBg0, uBg1, uPri, uAcc;
+uniform vec4 uRings[10]; uniform int uRingCount; uniform float uSpeed;
+uniform float uIntro;
+uniform vec4 uPortal;      // x, y, radius, active
+uniform float uZoom;       // 0..1 fly-in progress
+uniform float uDashScale;
+uniform float uDashMix;    // reduced-motion crossfade
+uniform float uStill;      // 1 = no displacement
+uniform vec2 uPar;
+uniform sampler2D uDash;
+out vec4 outColor;
+
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y); }
+float fbm(vec2 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a * vnoise(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; } return s; }
+float dots(vec2 q, float pitch, float rad){
+  vec2 g = q / pitch; float row = floor(g.y); g.x += mod(row, 2.0) * 0.5;
+  vec2 c = (fract(g) - 0.5) * pitch;
+  return smoothstep(rad + uPx * 0.9, rad - uPx * 0.35, length(c));
+}
+vec3 dash(vec2 p){ return texture(uDash, clamp(p / uRes, vec2(0.0), vec2(1.0))).rgb; }
+
+void main(){
+  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 E = uPortal.xy;
+  float mn = min(uRes.x, uRes.y);
+  vec2 pf = E + (p - E) / (1.0 + 0.5 * uZoom);
+
+  // Shockwaves: every ring bends the lattice (refraction), lights it (sonar), and leaves an afterglow.
+  vec2 disp = vec2(0.0); float crest = 0.0; float lit = 0.0;
+  for (int i = 0; i < 10; i++){
+    if (i >= uRingCount) break;
+    vec4 R = uRings[i]; float age = uTime - R.z;
+    if (age < 0.0) continue;
+    vec2 dv = pf - R.xy; float d = length(dv); vec2 dir = dv / max(d, 1.0);
+    float band = d - age * uSpeed;
+    float w = 24.0 * uPx;
+    float decay = R.w * exp(-age * 0.75);
+    float c = exp(-(band * band) / (w * w));
+    float trail = band < 0.0 ? sin(band / (7.0 * uPx)) * exp(band / (46.0 * uPx)) : 0.0;
+    disp += dir * (c * 13.0 * uPx + trail * 3.2 * uPx) * decay * (1.0 - uStill);
+    crest += c * decay;
+    lit += (c + (band < 0.0 ? exp(band / (180.0 * uPx)) * 0.32 : 0.0)) * decay;
+  }
+
+  vec2 uv = p / uRes;
+  vec3 col = mix(uBg0, uBg1, clamp(uv.x * 0.35 + uv.y * 0.65, 0.0, 1.0));
+  float n = fbm(pf / (230.0 * uPx) + vec2(uTime * 0.035, -uTime * 0.021));
+  float n2 = fbm(pf / (120.0 * uPx) - vec2(uTime * 0.02, uTime * 0.03));
+  col += uPri * 0.08 * n * n2 * 2.0;
+  float dc = length(pf - uCenter) / mn;
+  col += uPri * 0.20 * exp(-dc * dc * 7.0) * uIntro;
+  col += uAcc * 0.08 * exp(-dc * dc * 30.0) * uIntro;
+
+  vec2 q = pf + disp + uPar;
+  float dl = length(disp); vec2 cd = dl > 0.001 ? disp / dl : vec2(0.0);
+  float ca = min(dl * 0.12, 2.0 * uPx);
+  float rad = (0.95 + 1.3 * clamp(lit, 0.0, 1.5)) * uPx;
+  float pitch = 21.0 * uPx;
+  vec3 lat = vec3(dots(q + cd * ca, pitch, rad), dots(q, pitch, rad), dots(q - cd * ca, pitch, rad));
+  float introR = uIntro * mn * 1.3;
+  float reveal = smoothstep(introR, introR - 160.0 * uPx, length(pf - uCenter));
+  float vis = (0.08 + 0.9 * clamp(lit, 0.0, 1.0)) * reveal;
+  vec3 dotCol = mix(uPri, uAcc, clamp(crest * 1.2, 0.0, 1.0));
+  col += lat * dotCol * vis;
+  float fine = dots(pf + disp * 0.5 + uPar * 0.45 + vec2(7.0, 3.0) * uPx, pitch * 0.5, 0.55 * uPx);
+  col += uPri * fine * 0.035 * reveal;
+  vec2 vv = uv - 0.5; col *= 1.0 - 0.9 * dot(vv, vv);
+
+  vec3 outc = col;
+  if (uPortal.w > 0.5){
+    vec2 dv = p - E; float d = length(dv); vec2 dir = dv / max(d, 1.0);
+    float edge = d - uPortal.z;
+    float rimW = 28.0 * uPx;
+    float lens = exp(-(edge * edge) / (rimW * rimW)) * step(edge, 0.0 + rimW);
+    vec2 pd = E + (p - E) / uDashScale;
+    vec2 off = -dir * lens * 26.0 * uPx;
+    float cs = lens * 4.5 * uPx;
+    vec3 dcol = vec3(dash(pd + off + dir * cs).r, dash(pd + off).g, dash(pd + off - dir * cs).b);
+    float inside = smoothstep(1.5 * uPx, -1.5 * uPx, edge);
+    outc = mix(col, dcol, inside);
+    outc += uAcc * exp(-(edge * edge) / pow(2.6 * uPx, 2.0)) * 0.9;
+    outc += uPri * exp(-(edge * edge) / pow(34.0 * uPx, 2.0)) * 0.30;
+  }
+  outc = mix(outc, dash(p), uDashMix);
+  outc += (hash(p + fract(uTime) * 97.0) - 0.5) * (2.0 / 255.0);
+  outColor = vec4(outc, 1.0);
+}`;
+
+let gl = null, U = {}, dashTex = null;
+const dashCanvas = document.createElement('canvas');
+function initGL() {
+  gl = glc.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
+  if (!gl) { dev.insertAdjacentHTML('beforeend', '<p class="glerr">This preview needs WebGL 2.</p>'); return false; }
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  for (const n of ['uRes','uTime','uPx','uCenter','uBg0','uBg1','uPri','uAcc','uRings','uRingCount','uSpeed','uIntro','uPortal','uZoom','uDashScale','uDashMix','uStill','uPar','uDash'])
+    U[n] = gl.getUniformLocation(prog, n);
+  dashTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, dashTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.uniform1i(U.uDash, 0);
+  return true;
+}
+
+// ---------------------------------------------------------------- layout
+function plat() { return SCENARIOS[S.scenario].plat; }
+function resize() {
+  const isPc = plat() === 'pc';
+  dev.classList.toggle('pc', isPc);
+  const LW = isPc ? 1280 : 390, LH = isPc ? 800 : 844;
+  const narrow = window.innerWidth <= 900;
+  const aw = dev.parentElement.clientWidth;
+  const ah = narrow ? Math.min(window.innerHeight * 0.78, 760) : Math.min(window.innerHeight - 32, 940);
+  const k = Math.min(aw / LW, ah / LH);
+  const cssW = Math.floor(LW * k), cssH = Math.floor(LH * k);
+  dev.style.width = cssW + 'px'; dev.style.height = cssH + 'px';
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  S.W = Math.round(cssW * dpr); S.H = Math.round(cssH * dpr); S.px = k * dpr;
+  for (const c of [glc, vc]) { c.width = S.W; c.height = S.H; }
+  S.C = isPc ? [S.W / 2, S.H * 0.46] : [S.W / 2, S.H * 0.40];
+  S.markW = (isPc ? 150 : 104) * S.px;
+  layoutNodes();
+  buildDashboard();
+  const r = tlc.getBoundingClientRect(); tlc.width = Math.round(r.width * dpr); tlc.height = Math.round(r.height * dpr);
+}
+
+const radiusFor = rtt => 0.58 + 0.42 * clamp(Math.log10(Math.max(rtt, 1)) / Math.log10(250));
+function layoutNodes() {
+  const sc = SCENARIOS[S.scenario], n = sc.nodes.length, isPc = plat() === 'pc';
+  const rx = S.W * (isPc ? 0.27 : 0.37), ry = S.H * (isPc ? 0.30 : 0.215);
+  const base = -Math.PI / 2 + 0.62 + hashStr(sc.nodes.map(x => x.name).join('|')) * 0.5;
+  S.orbit = { rx, ry };
+  S.nodes = sc.nodes.map((nd, i) => {
+    const ang = base + i * TAU / Math.max(n, 1) + (n === 2 ? 0.4 : 0);
+    return { ...nd, ang, appear: 0.16 + i * 0.08, f: nd.rtt ? radiusFor(nd.rtt) : 1 };
+  });
+}
+function nodePos(nd, t) {
+  let f = 1;
+  if (nd.answer != null && t >= nd.answer) f = lerp(1, nd.f, spring(t - nd.answer));
+  return [S.C[0] + Math.cos(nd.ang) * S.orbit.rx * f, S.C[1] + Math.sin(nd.ang) * S.orbit.ry * f];
+}
+
+// ---------------------------------------------------------------- dashboard mock (what the portal opens into)
+function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
+function buildDashboard() {
+  const sc = SCENARIOS[S.scenario], pal = PALETTES[S.palette], T = buildTimeline(sc, S.reduced);
+  const W = S.W, H = S.H, px = S.px;
+  dashCanvas.width = W; dashCanvas.height = H;
+  const c = dashCanvas.getContext('2d');
+  c.fillStyle = pal.surface; c.fillRect(0, 0, W, H);
+  const font = (w, s, fam = 'IBM Plex Sans') => `${w} ${s * px}px "${fam}", system-ui, sans-serif`;
+  const miniMark = (x, y, w) => { c.save(); c.translate(x, y); c.scale(w / 68, w / 68); c.translate(-54, -54); paintMark(c, pal, { alpha: 1 }); c.restore(); };
+  const spark = (x, y, w, h, seed, col) => { c.beginPath(); for (let i = 0; i <= 24; i++) { const v = 0.5 + 0.35 * Math.sin(i * 0.7 + seed) * Math.cos(i * 0.23 + seed * 2); const X = x + w * i / 24, Y = y + h * (1 - v); i ? c.lineTo(X, Y) : c.moveTo(X, Y); } c.strokeStyle = col; c.lineWidth = 2 * px; c.stroke(); };
+
+  if (sc.plat === 'pc') {
+    const dw = 240 * px;
+    c.fillStyle = pal.card; c.fillRect(0, 0, dw, H);
+    miniMark(40 * px, 70 * px, 40 * px);
+    c.fillStyle = pal.ink; c.font = font(600, 20); c.fillText('RemEx', 70 * px, 77 * px);
+    const items = ['Dashboard', 'Devices', 'Files', 'Remote desktop', 'Routines', 'Personalize', 'Settings'];
+    items.forEach((it, i) => { const y = (130 + i * 44) * px; if (!i) { c.fillStyle = pal.card2; rr(c, 12 * px, y - 26 * px, dw - 24 * px, 38 * px, 19 * px); c.fill(); }
+      c.fillStyle = i ? pal.muted : pal.ink; c.font = font(i ? 400 : 600, 15); c.fillText(it, 32 * px, y); });
+    const x0 = dw + 36 * px;
+    c.fillStyle = pal.ink; c.font = font(600, 28); c.fillText('Dashboard', x0, 88 * px);
+    c.fillStyle = pal.card; rr(c, x0, 116 * px, W - x0 - 36 * px, 96 * px, 20 * px); c.fill();
+    c.fillStyle = pal.ok; c.beginPath(); c.arc(x0 + 32 * px, 164 * px, 6 * px, 0, TAU); c.fill();
+    c.fillStyle = pal.ink; c.font = font(600, 18); c.fillText('Galaxy S26 Ultra is linked', x0 + 52 * px, 158 * px);
+    c.fillStyle = pal.muted; c.font = font(400, 14); c.fillText('4 ms round trip · battery 82% · 2 other phones known', x0 + 52 * px, 182 * px);
+    const cards = [['CPU', '18%'], ['GPU', '44 °C'], ['Memory', '9.8 GB'], ['Uptime', '3 h 12 m']];
+    const cw = (W - x0 - 36 * px - 3 * 16 * px) / 4;
+    cards.forEach(([l, v], i) => { const x = x0 + i * (cw + 16 * px), y = 232 * px; c.fillStyle = pal.card; rr(c, x, y, cw, 150 * px, 20 * px); c.fill();
+      c.fillStyle = pal.muted; c.font = font(500, 13); c.fillText(l, x + 20 * px, y + 34 * px);
+      c.fillStyle = pal.ink; c.font = font(600, 30); c.fillText(v, x + 20 * px, y + 78 * px);
+      spark(x + 20 * px, y + 96 * px, cw - 40 * px, 36 * px, i * 1.7, i % 2 ? pal.pri : pal.acc); });
+    c.fillStyle = pal.card; rr(c, x0, 402 * px, W - x0 - 36 * px, H - 440 * px, 20 * px); c.fill();
+    c.fillStyle = pal.muted; c.font = font(500, 13); c.fillText('Recent activity', x0 + 20 * px, 436 * px);
+    ['Galaxy S26 Ultra connected over Wi-Fi', 'Clipboard sent from Galaxy S26 Ultra', 'Remote desktop session, 42 min'].forEach((s, i) => {
+      c.fillStyle = pal.ink; c.font = font(400, 15); c.fillText(s, x0 + 20 * px, (476 + i * 36) * px); });
+  } else {
+    c.fillStyle = pal.ink; c.font = font(500, 14); c.fillText('9:41', 26 * px, 30 * px);
+    [0, 1, 2].forEach(i => { c.fillStyle = pal.ink; rr(c, W - (70 - i * 16) * px, 20 * px, 11 * px, 11 * px, 3 * px); c.fill(); });
+    if (!sc.nodes.length) {
+      miniMark(W / 2, 250 * px, 96 * px);
+      c.textAlign = 'center';
+      c.fillStyle = pal.ink; c.font = font(600, 26); c.fillText('Pair your first PC', W / 2, 360 * px);
+      c.fillStyle = pal.muted; c.font = font(400, 15); c.fillText('Open RemEx on your PC and scan', W / 2, 394 * px); c.fillText('the code it shows.', W / 2, 416 * px);
+      c.fillStyle = pal.acc; rr(c, W / 2 - 90 * px, 452 * px, 180 * px, 52 * px, 26 * px); c.fill();
+      c.fillStyle = '#1a1204'; c.font = font(600, 16); c.fillText('Pair a PC', W / 2, 484 * px);
+      c.textAlign = 'left';
+    } else {
+      const tgt = T.target, linked = T.locked;
+      miniMark(38 * px, 78 * px, 34 * px);
+      c.fillStyle = pal.ink; c.font = font(600, 22); c.fillText(tgt ? tgt.name : 'RemEx', 66 * px, 86 * px);
+      const chip = linked ? `Linked · ${tgt.rtt} ms` : 'Not responding';
+      c.font = font(500, 13); const cw = c.measureText(chip).width + 42 * px;
+      c.fillStyle = pal.card2; rr(c, 20 * px, 106 * px, cw, 30 * px, 15 * px); c.fill();
+      c.fillStyle = linked ? pal.ok : pal.warn; c.beginPath(); c.arc(38 * px, 121 * px, 5 * px, 0, TAU); c.fill();
+      c.fillStyle = pal.ink; c.fillText(chip, 50 * px, 126 * px);
+      if (linked) {
+        const cards = [['CPU', '34%'], ['GPU', '61 °C'], ['Memory', '12.4 GB'], ['Network', '48 Mb/s']];
+        const cw2 = (W - 32 * px - 12 * px) / 2;
+        cards.forEach(([l, v], i) => { const x = 16 * px + (i % 2) * (cw2 + 12 * px), y = (156 + Math.floor(i / 2) * 124) * px;
+          c.fillStyle = pal.card; rr(c, x, y, cw2, 112 * px, 22 * px); c.fill();
+          c.fillStyle = pal.muted; c.font = font(500, 13); c.fillText(l, x + 16 * px, y + 28 * px);
+          c.fillStyle = pal.ink; c.font = font(600, 26); c.fillText(v, x + 16 * px, y + 62 * px);
+          spark(x + 16 * px, y + 72 * px, cw2 - 32 * px, 26 * px, i * 1.3, i % 2 ? pal.pri : pal.acc); });
+      } else {
+        c.fillStyle = pal.card; rr(c, 16 * px, 156 * px, W - 32 * px, 236 * px, 26 * px); c.fill();
+        c.fillStyle = pal.ink; c.font = font(600, 20); c.fillText(`${tgt.name} is asleep or off`, 36 * px, 204 * px);
+        c.fillStyle = pal.muted; c.font = font(400, 15); c.fillText('Wake it over the network, or pick', 36 * px, 236 * px); c.fillText('another PC.', 36 * px, 258 * px);
+        c.fillStyle = pal.acc; rr(c, 36 * px, 296 * px, 150 * px, 52 * px, 26 * px); c.fill();
+        c.fillStyle = '#1a1204'; c.font = font(600, 16); c.fillText('Wake PC', 70 * px, 328 * px);
+      }
+      const qy = 412 * px;
+      c.fillStyle = pal.card; rr(c, 16 * px, qy, W - 32 * px, 132 * px, 26 * px); c.fill();
+      c.fillStyle = pal.muted; c.font = font(500, 13); c.fillText('Quick actions', 36 * px, qy + 32 * px);
+      ['Remote', 'Files', 'Sleep', 'Wake'].forEach((l, i) => { const x = 36 * px + i * ((W - 72 * px) / 4) + 22 * px;
+        c.fillStyle = pal.card2; c.beginPath(); c.arc(x, qy + 72 * px, 22 * px, 0, TAU); c.fill();
+        c.fillStyle = i ? pal.pri : pal.acc; c.beginPath(); c.arc(x, qy + 72 * px, 7 * px, 0, TAU); c.fill();
+        c.fillStyle = pal.ink; c.font = font(400, 12); c.textAlign = 'center'; c.fillText(l, x, qy + 114 * px); c.textAlign = 'left'; });
+      c.fillStyle = pal.card; rr(c, 16 * px, qy + 148 * px, W - 32 * px, 92 * px, 26 * px); c.fill();
+      c.fillStyle = pal.muted; c.font = font(500, 13); c.fillText('Storage  C:', 36 * px, qy + 182 * px);
+      c.fillStyle = pal.card2; rr(c, 36 * px, qy + 198 * px, W - 72 * px, 10 * px, 5 * px); c.fill();
+      c.fillStyle = pal.pri; rr(c, 36 * px, qy + 198 * px, (W - 72 * px) * 0.41, 10 * px, 5 * px); c.fill();
+    }
+    c.fillStyle = pal.card; c.fillRect(0, H - 84 * px, W, 84 * px);
+    ['Home', 'Control', 'Files', 'Settings'].forEach((l, i) => { const x = W * (i + 0.5) / 4;
+      if (!i) { c.fillStyle = pal.card2; rr(c, x - 32 * px, H - 72 * px, 64 * px, 32 * px, 16 * px); c.fill(); }
+      c.fillStyle = i ? pal.muted : pal.acc; c.beginPath(); c.arc(x, H - 56 * px, 6 * px, 0, TAU); c.fill();
+      c.fillStyle = i ? pal.muted : pal.ink; c.font = font(500, 12); c.textAlign = 'center'; c.fillText(l, x, H - 22 * px); c.textAlign = 'left'; });
+  }
+  if (gl) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, dashTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, dashCanvas); }
+}
+
+// ---------------------------------------------------------------- vector layer
+function paintMark(c, pal, o) {
+  const a = o.alpha ?? 1;
+  const g = c.createLinearGradient(20 + 68 * 0.056, 26 + 56 * 0.056, 20 + 68 * 0.944, 26 + 56 * 0.944);
+  g.addColorStop(0, pal.markA); g.addColorStop(1, pal.markB);
+  c.globalAlpha = a * (o.fillK ?? 1);
+  c.fillStyle = g; c.fill(P.window);
+  c.globalAlpha = a;
+  c.lineWidth = 1.4; c.strokeStyle = 'rgba(124,136,160,0.55)';
+  if (o.traceK != null && o.traceK < 1) { c.setLineDash([WINDOW_LEN, WINDOW_LEN]); c.lineDashOffset = WINDOW_LEN * (1 - o.traceK);
+    c.save(); c.shadowColor = pal.acc; c.shadowBlur = 8; c.strokeStyle = pal.acc; c.lineWidth = 1.8; c.stroke(P.window); c.restore(); }
+  else c.stroke(P.window);
+  c.setLineDash([]);
+  const dk = o.dotsK ?? [1, 1, 1];
+  [[P.dot1, pal.acc], [P.dot2, '#6E7B94'], [P.dot3, '#333B48']].forEach(([pth, col], i) => { if (dk[i] <= 0) return; c.globalAlpha = a * dk[i]; c.fillStyle = col; c.fill(pth); });
+  c.globalAlpha = a;
+  const ck = o.chevK ?? 1;
+  if (ck > 0) { c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = 4.8; c.strokeStyle = pal.acc;
+    if (ck < 1) { c.setLineDash([CHEVRON_LEN, CHEVRON_LEN]); c.lineDashOffset = CHEVRON_LEN * (1 - ck); }
+    c.stroke(P.chevron); c.setLineDash([]); }
+  const rk = o.rK ?? 1;
+  if (rk > 0) { c.save(); c.translate(58, 60); const s = 0.7 + 0.3 * rk; c.scale(s, s); c.translate(-58, -60); c.globalAlpha = a * clamp(rk);
+    c.fillStyle = '#F4F5F9'; c.fill(P.rstem); c.fill(P.rbowl); c.fill(P.rleg); c.fillStyle = g; c.fill(P.rhole); c.restore(); }
+  const cur = o.cursorA ?? 1;
+  if (cur > 0) { c.save(); c.globalAlpha = a * cur; if (o.cursorGlow) { c.shadowColor = pal.acc; c.shadowBlur = 14 * o.cursorGlow; } c.fillStyle = pal.acc; c.fill(P.cursor); c.restore(); }
+  if (o.sheenX != null) { c.save(); c.clip(P.window); const x = o.sheenX; const sg = c.createLinearGradient(x - 16, 20, x + 16, 36);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.20)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    c.globalAlpha = a; c.fillStyle = sg; c.fillRect(0, 0, 108, 108); c.restore(); }
+  c.globalAlpha = 1;
+}
+
+function pcGlyph(c, x, y, px, kind, lit, col, acc, ghost) {
+  const phone = kind === 'phone' || kind === 'tablet';
+  const w = (phone ? (kind === 'tablet' ? 15 : 11) : 24) * px, h = (phone ? (kind === 'tablet' ? 20 : 19) : 17) * px;
+  c.save();
+  rr(c, x - w / 2, y - h / 2, w, h, (phone ? 3 : 4) * px);
+  if (lit > 0) { c.globalAlpha = lit; const g = c.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2); g.addColorStop(0, rgba(col, 0.55)); g.addColorStop(1, rgba(acc, 0.35)); c.fillStyle = g; c.fill(); }
+  c.globalAlpha = ghost; c.lineWidth = 1.4 * px; c.strokeStyle = lit > 0.5 ? acc : col;
+  if (lit < 0.5) c.setLineDash([2.2 * px, 2.6 * px]);
+  c.stroke(); c.setLineDash([]);
+  c.globalAlpha = Math.max(lit, ghost * 0.6); c.fillStyle = lit > 0.5 ? acc : col;
+  c.beginPath(); c.arc(x - w / 2 + (phone ? w / 2 : 4.2 * px), y - h / 2 + (phone ? 3.4 * px : 4 * px), 1.4 * px, 0, TAU); c.fill();
+  c.restore();
+}
+
+function drawVectors(t) {
+  const c = vx, sc = SCENARIOS[S.scenario], pal = PALETTES[S.palette], T = S.T, px = S.px, [cx, cy] = S.C;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S.W, S.H);
+  const reduced = S.reduced, isPc = sc.plat === 'pc';
+  const exitT = t - T.handoff;
+  const exiting = exitT >= 0;
+  const E = exitOrigin(t);
+  let fade = 1;
+  if (exiting) {
+    if (reduced) fade = 1 - clamp(exitT / FADE_EXIT);
+    else {
+      const e = clamp(exitT / EXIT), z = 1 + 0.5 * STD(e);
+      fade = 1 - smooth(0, 0.55, e);
+      c.translate(E[0], E[1]); c.scale(z, z); c.translate(-E[0], -E[1]);
+      const pr = portalRadius(t);
+      c.beginPath(); c.rect(-S.W, -S.H, S.W * 3, S.H * 3); c.arc(E[0], E[1], pr / z, 0, TAU, true); c.clip();
+    }
+  }
+  if (fade <= 0.001) return;
+  c.globalAlpha = fade;
+  const lastPulse = T.pulses.filter(p => p <= t).pop();
+  const pAge = lastPulse != null ? t - lastPulse : 9;
+  const env = pAge < 0.3 ? Math.sin(Math.PI * pAge / 0.3) : 0;
+  const intro = reduced ? 1 : EMPH_DEC(clamp(t / 0.9));
+
+  // Range rings: real units. Distance from the mark is round-trip time.
+  if (sc.nodes.length) {
+    c.save(); c.globalAlpha = fade * 0.5 * intro;
+    c.strokeStyle = rgba(pal.pri, 0.16); c.lineWidth = 1 * px; c.setLineDash([1 * px, 5 * px]);
+    c.font = `500 ${(isPc ? 11 : 9) * px}px "IBM Plex Mono", monospace`; c.fillStyle = rgba(pal.pri, 0.45);
+    // Put the scale labels in the widest gap between nodes so they never sit under a label.
+    const angs = S.nodes.map(n => n.ang);
+    const la_ = [0, Math.PI / 4, -Math.PI / 4, 3 * Math.PI / 4, -3 * Math.PI / 4, Math.PI].reduce((best, a) => {
+      const gap = Math.min(...angs.map(b => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))));
+      return gap > best.gap ? { a, gap } : best; }, { a: 0, gap: -1 }).a;
+    c.textAlign = Math.cos(la_) < -0.1 ? 'right' : 'left';
+    for (const ms of [5, 25, 150]) { const f = radiusFor(ms);
+      c.beginPath(); c.ellipse(cx, cy, S.orbit.rx * f, S.orbit.ry * f, 0, 0, TAU); c.stroke();
+      c.fillText(`${ms} ms`, cx + S.orbit.rx * f * Math.cos(la_) + Math.sign(Math.cos(la_) || 1) * 5 * px, cy + S.orbit.ry * f * Math.sin(la_) - 3 * px); }
+    c.textAlign = 'left';
+    c.restore(); c.globalAlpha = fade;
+  }
+
+  // Beam + reticle for the target.
+  const tgt = S.nodes.find(n => n.target);
+  if (tgt && sc.connectStart != null && t >= sc.connectStart) {
+    const [nx, ny] = nodePos(tgt, t);
+    const dx = nx - cx, dy = ny - cy, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
+    const r0 = S.markW * 0.52, r1 = 16 * px;
+    const x0 = cx + ux * r0, y0 = cy + uy * r0, x1 = nx - ux * r1, y1 = ny - uy * r1;
+    const grow = reduced ? 1 : EMPH_DEC(clamp((t - sc.connectStart) / 0.35));
+    const ex = lerp(x0, x1, grow), ey = lerp(y0, y1, grow);
+    const lockedNow = T.locked && t >= sc.connected;
+    c.save(); c.lineCap = 'round';
+    if (!lockedNow) {
+      c.strokeStyle = rgba(pal.acc, 0.55); c.lineWidth = 1.3 * px; c.setLineDash([2 * px, 7 * px]); c.lineDashOffset = -t * 70 * px;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
+    } else {
+      const la = t - sc.connected;
+      const flare = Math.exp(-la * 4);
+      c.strokeStyle = rgba(pal.acc, 0.10 + 0.25 * flare); c.lineWidth = (7 + 10 * flare) * px; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+      c.strokeStyle = rgba(pal.acc, 0.65 + 0.35 * flare); c.lineWidth = 1.6 * px; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+      if (!reduced) for (let k = 0; k < 6; k++) {
+        const out = k < 3, st = sc.connected + (out ? 0 : 0.2) + (k % 3) * 0.07, u = (t - st) / 0.24;
+        if (u < 0 || u > 1) continue;
+        const e = STD(u), px_ = out ? lerp(x0, x1, e) : lerp(x1, x0, e), py_ = out ? lerp(y0, y1, e) : lerp(y1, y0, e);
+        c.save(); c.shadowColor = pal.acc; c.shadowBlur = 10 * px; c.fillStyle = out ? '#FFFFFF' : pal.acc;
+        c.beginPath(); c.arc(px_, py_, 2.4 * px, 0, TAU); c.fill(); c.restore();
+      }
+    }
+    c.restore();
+    // Reticle: hunts while connecting, snaps on lock.
+    let size, rot, ra;
+    if (!lockedNow) { size = (28 + 2.5 * Math.sin(t * 7)) * px; rot = t * 1.1; ra = 0.75 * grow; }
+    else { const k = reduced ? 1 : spring(t - sc.connected); size = lerp(28, 19, k) * px; rot = lerp((sc.connected * 1.1) % (Math.PI / 2), 0, k); ra = 1; }
+    c.save(); c.translate(nx, ny); c.rotate(rot); c.globalAlpha = fade * ra;
+    c.strokeStyle = pal.acc; c.lineWidth = 1.8 * px; c.lineCap = 'round';
+    const L = 7 * px;
+    for (let q = 0; q < 4; q++) { c.save(); c.rotate(q * Math.PI / 2); c.beginPath(); c.moveTo(size, size - L); c.lineTo(size, size); c.lineTo(size - L, size); c.stroke(); c.restore(); }
+    c.restore(); c.globalAlpha = fade;
+  }
+
+  // Nodes.
+  c.font = `500 ${(isPc ? 13 : 10.5) * px}px "IBM Plex Mono", monospace`;
+  try { c.letterSpacing = `${0.6 * px}px`; } catch (e) {}
+  for (const nd of S.nodes) {
+    if (t < nd.appear && !reduced) continue;
+    const ga = reduced ? 1 : smooth(nd.appear, nd.appear + 0.3, t);
+    const answered = nd.answer != null && t >= nd.answer && nd.answer < T.handoff;
+    const la = answered ? t - nd.answer : 0;
+    const lit = answered ? (reduced ? 1 : smooth(0, 0.12, la)) : 0;
+    const [x, y] = nodePos(nd, reduced && answered ? 99 : t);
+    if (answered && !reduced) {
+      const fl = Math.exp(-la * 5);
+      const g = c.createRadialGradient(x, y, 0, x, y, (26 + 30 * fl) * px);
+      g.addColorStop(0, rgba(pal.acc, 0.35 * lit + 0.4 * fl)); g.addColorStop(1, rgba(pal.acc, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, (26 + 30 * fl) * px, 0, TAU); c.fill();
+      // The echo: the reply travelling home to the mark.
+      const u = la / 0.3;
+      if (u < 1) { const e = STD(u), ex = lerp(x, cx, e), ey = lerp(y, cy, e);
+        c.save(); c.shadowColor = pal.acc; c.shadowBlur = 12 * px; c.fillStyle = pal.acc; c.globalAlpha = fade * (1 - u * 0.6);
+        c.beginPath(); c.arc(ex, ey, 2.6 * px, 0, TAU); c.fill(); c.restore(); }
+    } else if (answered) {
+      const g = c.createRadialGradient(x, y, 0, x, y, 26 * px); g.addColorStop(0, rgba(pal.acc, 0.3)); g.addColorStop(1, rgba(pal.acc, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, 26 * px, 0, TAU); c.fill();
+    }
+    pcGlyph(c, x, y, px, nd.kind, lit, pal.pri, pal.acc, (answered ? 1 : 0.42) * ga);
+    // Label, placed on the outer side of the orbit.
+    const above = y < cy - 4 * px;
+    const ly = y + (above ? -20 : 28) * px;
+    const suffix = answered ? `  ${nd.rtt} ms` : '';
+    const shown = answered && !reduced ? Math.min(suffix.length, Math.floor(la * 40)) : suffix.length;
+    const txt = nd.name + suffix.slice(0, shown);
+    // Centre on the node, but keep the full label (with its final suffix) inside the screen.
+    const fullW = c.measureText(nd.name + suffix).width, m = 14 * px;
+    const lx = clamp(x, m + fullW / 2, S.W - m - fullW / 2);
+    c.textAlign = 'center';
+    c.globalAlpha = fade * ga * (answered ? 1 : 0.4);
+    c.fillStyle = answered ? pal.ink : pal.pri;
+    c.fillText(txt, lx, ly);
+    if (answered && shown < suffix.length && !reduced) { const w = c.measureText(txt).width; c.fillStyle = pal.acc; c.fillRect(lx + w / 2 + 2 * px, ly - 9 * px, 5 * px, 11 * px); }
+    c.globalAlpha = fade;
+  }
+  c.textAlign = 'left'; try { c.letterSpacing = '0px'; } catch (e) {}
+
+  // The mark.
+  const glowR = S.markW * (1.1 + 0.25 * env);
+  const mg = c.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  mg.addColorStop(0, rgba(pal.acc, 0.10 + 0.22 * env)); mg.addColorStop(1, rgba(pal.acc, 0));
+  c.fillStyle = mg; c.beginPath(); c.arc(cx, cy, glowR, 0, TAU); c.fill();
+  const s = S.markW / 68 * (1 + 0.035 * env);
+  c.save(); c.translate(cx, cy); c.scale(s, s); c.translate(-54, -54);
+  const blinkOn = Math.floor(t / 0.53) % 2 === 0;
+  const o = { alpha: 1, cursorA: reduced ? 1 : (env > 0 ? 1 : (blinkOn ? 1 : 0.18)), cursorGlow: env };
+  if (isPc && !reduced) {
+    o.traceK = EMPH_DEC(clamp(t / 0.42)); o.fillK = smooth(0.2, 0.5, t);
+    o.dotsK = [smooth(0.28, 0.36, t), smooth(0.34, 0.42, t), smooth(0.40, 0.48, t)];
+    o.chevK = smooth(0.3, 0.5, t); o.rK = spring(t - 0.38) * (t > 0.38 ? 1 : 0); o.cursorA *= t > 0.5 ? 1 : 0;
+  } else if (!reduced && t < 0.6) o.sheenX = lerp(-10, 125, EMPH_DEC(clamp((t - 0.04) / 0.5)));
+  paintMark(c, pal, o);
+  c.restore();
+  // PC: the listener coming up locks a ring around the mark.
+  if (sc.listenAt != null && t >= sc.listenAt) {
+    const k = reduced ? 1 : spring(t - sc.listenAt);
+    const R = S.markW * lerp(1.0, 0.72, k);
+    c.save(); c.strokeStyle = rgba(pal.acc, 0.8); c.lineWidth = 1.5 * px; c.globalAlpha = fade * clamp(k * 1.5);
+    for (let q = 0; q < 4; q++) { c.beginPath(); c.arc(cx, cy, R, q * Math.PI / 2 + 0.25, q * Math.PI / 2 + Math.PI / 2 - 0.25); c.stroke(); }
+    c.restore(); c.globalAlpha = fade;
+  }
+
+  // Wordmark + live status line.
+  const by = isPc ? S.H * 0.86 : S.H * 0.84;
+  c.textAlign = 'center';
+  c.globalAlpha = fade * intro;
+  c.fillStyle = pal.ink; c.font = `600 ${22 * px}px "IBM Plex Sans", system-ui, sans-serif`;
+  c.fillText('RemEx', cx, by);
+  c.font = `500 ${10.5 * px}px "IBM Plex Mono", monospace`;
+  try { c.letterSpacing = `${1.6 * px}px`; } catch (e) {}
+  const st = statusText(t);
+  c.fillStyle = st.hot ? pal.acc : pal.muted;
+  c.fillText(st.text, cx, by + 26 * px);
+  c.textAlign = 'left'; try { c.letterSpacing = '0px'; } catch (e) {}
+  c.globalAlpha = 1;
+}
+
+function statusText(t) {
+  const sc = SCENARIOS[S.scenario], T = S.T, n = sc.nodes.length;
+  const noun = sc.plat === 'pc' ? (n === 1 ? 'PHONE' : 'PHONES') : (n === 1 ? 'PC' : 'PCS');
+  if (!n) return { text: t < 0.32 ? 'STARTING' : 'NO PCS PAIRED YET' };
+  if (T.locked && t >= sc.connected) {
+    const tg = T.target; return { text: sc.plat === 'pc' ? `LINKED · ${tg.name.toUpperCase()}` : `LINKED · ${tg.name} · ${tg.rtt} MS`, hot: true };
+  }
+  if (T.target && !T.locked && t >= sc.ready + 0.5) return { text: `${T.target.name.toUpperCase()} IS NOT ANSWERING` };
+  const awake = S.nodes.filter(x => x.answer != null && t >= x.answer && x.answer < T.handoff).length;
+  if (sc.plat === 'pc' && sc.listenAt != null && t >= sc.listenAt && awake === 0) return { text: 'LISTENING ON PORT 5005' };
+  if (t < 0.32) return { text: 'STARTING' };
+  const dots = '.'.repeat(1 + Math.floor(t * 3) % 3).padEnd(3, ' ');
+  return { text: awake ? `${awake} OF ${n} ${noun} ${sc.plat === 'pc' ? 'LINKED' : 'AWAKE'}` : `PINGING ${n} ${noun}${dots}` };
+}
+
+function exitOrigin(t) {
+  const T = S.T;
+  if (T.fromNode) { const tg = S.nodes.find(n => n.target); return nodePos(tg, T.handoff); }
+  return S.C;
+}
+function portalRadius(t) {
+  const [ex, ey] = exitOrigin(t);
+  const far = Math.max(Math.hypot(ex, ey), Math.hypot(S.W - ex, ey), Math.hypot(ex, S.H - ey), Math.hypot(S.W - ex, S.H - ey)) + 40 * S.px;
+  const e = clamp((t - S.T.handoff) / EXIT);
+  return lerp(10 * S.px, far, PORTAL(e));
+}
+
+// ---------------------------------------------------------------- field (GL)
+function drawField(t) {
+  const sc = SCENARIOS[S.scenario], pal = PALETTES[S.palette], T = S.T, reduced = S.reduced;
+  gl.viewport(0, 0, S.W, S.H);
+  gl.uniform2f(U.uRes, S.W, S.H); gl.uniform1f(U.uTime, t); gl.uniform1f(U.uPx, S.px);
+  gl.uniform2f(U.uCenter, S.C[0], S.C[1]);
+  gl.uniform3fv(U.uBg0, hex(pal.bg0)); gl.uniform3fv(U.uBg1, hex(pal.bg1)); gl.uniform3fv(U.uPri, hex(pal.pri)); gl.uniform3fv(U.uAcc, hex(pal.acc));
+  const rings = [];
+  if (!reduced) {
+    for (const p of T.pulses) rings.push([S.C[0], S.C[1], p, 1.0]);
+    for (const nd of S.nodes) if (nd.answer != null && nd.answer < T.handoff) { const [x, y] = nodePos(nd, nd.answer + 0.6); rings.push([x, y, nd.answer, 0.5]); }
+    if (T.locked) { const tg = S.nodes.find(n => n.target); const [x, y] = nodePos(tg, sc.connected + 0.6); rings.push([x, y, sc.connected, 0.85]); }
+    if (sc.listenAt != null) rings.push([S.C[0], S.C[1], sc.listenAt, 0.6]);
+    const E = exitOrigin(t); rings.push([E[0], E[1], T.handoff, 1.4]);
+  }
+  const live = rings.filter(r => r[2] <= t).sort((a, b) => b[2] - a[2]).slice(0, 10);
+  const flat = new Float32Array(40); live.forEach((r, i) => flat.set(r, i * 4));
+  gl.uniform4fv(U.uRings, flat); gl.uniform1i(U.uRingCount, live.length);
+  gl.uniform1f(U.uSpeed, Math.hypot(S.W, S.H) / 1.25);
+  gl.uniform1f(U.uIntro, reduced ? 1 : EMPH_DEC(clamp(t / 0.9)));
+  const exitT = t - T.handoff;
+  if (!reduced && exitT >= 0) {
+    const E = exitOrigin(t), e = clamp(exitT / EXIT);
+    gl.uniform4f(U.uPortal, E[0], E[1], portalRadius(t), 1);
+    gl.uniform1f(U.uZoom, STD(e)); gl.uniform1f(U.uDashScale, lerp(1.12, 1.0, EMPH_DEC(e)));
+  } else { gl.uniform4f(U.uPortal, 0, 0, 0, 0); gl.uniform1f(U.uZoom, 0); gl.uniform1f(U.uDashScale, 1); }
+  gl.uniform1f(U.uDashMix, reduced && exitT >= 0 ? clamp(exitT / FADE_EXIT) : 0);
+  gl.uniform1f(U.uStill, reduced ? 1 : 0);
+  gl.uniform2f(U.uPar, S.par[0], S.par[1]);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ---------------------------------------------------------------- timeline strip + log
+function drawTimeline(t) {
+  const c = tlc.getContext('2d'), W = tlc.width, H = tlc.height, k = W / 3.4, d = window.devicePixelRatio > 1 ? 2 : 1;
+  const T = S.T, sc = SCENARIOS[S.scenario];
+  c.clearRect(0, 0, W, H);
+  const X = s => 6 * d + s * (W - 12 * d) / 3.4;
+  const y0 = H * 0.55;
+  c.fillStyle = '#FFB63D14'; c.fillRect(X(0), 8 * d, X(FLOOR) - X(0), H - 26 * d);
+  c.fillStyle = '#1C202B'; c.fillRect(X(0), y0, X(3.4) - X(0), 1 * d);
+  c.font = `${10 * d}px "IBM Plex Mono", monospace`; c.fillStyle = '#5A6173';
+  for (let s = 0; s <= 3; s++) { c.fillRect(X(s), y0 - 3 * d, 1 * d, 7 * d); c.fillText(`${s}s`, X(s) + 3 * d, H - 4 * d); }
+  c.fillStyle = '#8A92A5'; c.fillText('floor', X(0) + 4 * d, 18 * d);
+  c.strokeStyle = '#3A3F4E'; c.setLineDash([3 * d, 3 * d]); c.beginPath(); c.moveTo(X(CAP), 8 * d); c.lineTo(X(CAP), H - 18 * d); c.stroke(); c.setLineDash([]);
+  c.fillText('cap', X(CAP) + 4 * d, 18 * d);
+  const mark = (s, col, r, shape) => { c.fillStyle = col; c.beginPath(); if (shape === 'd') { c.moveTo(X(s), y0 - r); c.lineTo(X(s) + r, y0); c.lineTo(X(s), y0 + r); c.lineTo(X(s) - r, y0); } else c.arc(X(s), y0, r, 0, TAU); c.fill(); };
+  for (const e of T.events) {
+    if (e.kind === 'pulse') mark(e.t, '#93A4C6', 2.5 * d);
+    else if (e.kind === 'answer') mark(e.t, '#FFB63D', 3.5 * d);
+    else if (e.kind === 'lock' || e.kind === 'listen') mark(e.t, '#FFB63D', 5 * d, 'd');
+    else if (e.kind === 'ready') { c.fillStyle = '#7BD88F'; c.fillRect(X(e.t), 22 * d, 1.5 * d, H - 40 * d); c.fillText('ready', X(e.t) + 4 * d, 32 * d); }
+    else if (e.kind === 'handoff') { c.fillStyle = '#E7E9F0'; c.fillRect(X(e.t), 22 * d, 1.5 * d, H - 40 * d); c.fillText('open', X(e.t) + 4 * d, 44 * d); }
+  }
+  c.fillStyle = '#E7E9F066'; c.fillRect(X(T.handoff), y0 - 1 * d, X(T.done) - X(T.handoff), 3 * d);
+  c.fillStyle = '#FFB63D'; c.fillRect(X(Math.min(t, 3.4)) - 0.75 * d, 6 * d, 1.5 * d, H - 22 * d);
+}
+function updateLog(t) {
+  const T = S.T, log = $('#log');
+  while (S.logged < T.events.length && T.events[S.logged].t <= t) {
+    const e = T.events[S.logged++];
+    const li = document.createElement('li'); if (e.hi) li.className = 'hi';
+    li.innerHTML = `<span class="t">${e.t.toFixed(2)} s</span><span></span>`; li.lastChild.textContent = e.text;
+    log.appendChild(li); log.scrollTop = log.scrollHeight;
+    if (e.kind === 'lock' && !S.reduced) { try { navigator.vibrate && navigator.vibrate([14]); } catch (x) {} }
+  }
+}
+
+// ---------------------------------------------------------------- loop
+function replay() {
+  S.T = buildTimeline(SCENARIOS[S.scenario], S.reduced);
+  S.clock = 0; S.lastNow = performance.now(); S.logged = 0; S.skipAt = null;
+  $('#log').innerHTML = ''; $('#hint').classList.remove('show');
+  buildDashboard();
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - S.lastNow) / 1000); S.lastNow = now;
+  S.clock += dt * S.speed;
+  if (S.frozen != null) S.clock = S.frozen;
+  const t = S.clock;
+  S.par[0] = lerp(S.par[0], S.mouse[0] * 9 * S.px + Math.sin(now / 3300) * 2.5 * S.px, 0.06);
+  S.par[1] = lerp(S.par[1], S.mouse[1] * 9 * S.px + Math.cos(now / 4100) * 2.5 * S.px, 0.06);
+  if (gl) drawField(t);
+  drawVectors(t);
+  drawTimeline(t);
+  updateLog(t);
+  if (t > S.T.done + 0.4) $('#hint').classList.add('show');
+  requestAnimationFrame(frame);
+}
+
+// Skip = what a tap does in the app: hand off right now, from wherever we are.
+dev.addEventListener('click', () => {
+  const t = S.clock;
+  if (t > S.T.done) { replay(); return; }
+  if (t < S.T.handoff) {
+    const T = S.T; T.handoff = t; T.done = t + (S.reduced ? FADE_EXIT : EXIT);
+    if (!(T.locked && t >= SCENARIOS[S.scenario].connected)) { T.fromNode = false; T.locked = T.locked && t >= SCENARIOS[S.scenario].connected; }
+    T.pulses = T.pulses.filter(p => p <= t);
+    T.events = T.events.filter(e => e.t <= t && e.kind !== 'handoff' && e.kind !== 'done' && e.kind !== 'giveup');
+    T.events.push({ t, kind: 'handoff', hi: true, text: 'tapped: opening now' }, { t: T.done, kind: 'done', text: 'dashboard' });
+    S.logged = Math.min(S.logged, T.events.length);
+    buildDashboard();
+  }
+});
+dev.addEventListener('pointermove', e => { const r = dev.getBoundingClientRect(); S.mouse = [((e.clientX - r.left) / r.width - 0.5) * 2, ((e.clientY - r.top) / r.height - 0.5) * 2]; });
+dev.addEventListener('pointerleave', () => { S.mouse = [0, 0]; });
+
+// ---------------------------------------------------------------- controls
+const scnEl = $('#scn');
+for (const [id, sc] of Object.entries(SCENARIOS)) {
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="radio" name="scn" id="scn-${id}" value="${id}"><span><b></b><span class="d"></span> <span class="plat">${sc.plat === 'pc' ? 'PC' : 'Android'}</span></span>`;
+  l.querySelector('b').textContent = sc.title; l.querySelector('.d').textContent = sc.desc;
+  const inp = l.querySelector('input'); inp.checked = id === S.scenario;
+  inp.addEventListener('change', () => { S.scenario = id; persist(); resize(); replay(); });
+  scnEl.appendChild(l);
+}
+const sw = $('#swatches');
+for (const [id, p] of Object.entries(PALETTES)) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'swatch'; b.id = `seed-${id}`;
+  b.style.background = `linear-gradient(135deg, ${p.acc} 0 50%, ${p.pri} 50% 100%)`;
+  b.setAttribute('aria-label', p.name); b.title = p.name; b.setAttribute('aria-pressed', String(id === S.palette));
+  b.addEventListener('click', () => { S.palette = id; persist(); sw.querySelectorAll('.swatch').forEach(x => x.setAttribute('aria-pressed', String(x === b))); buildDashboard(); });
+  sw.appendChild(b);
+}
+$('#speed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.speed = +b.dataset.s;
+  $('#speed').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+$('#reduced').addEventListener('change', e => { S.reduced = e.target.checked; replay(); });
+$('#replay').addEventListener('click', replay);
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { S.reduced = true; $('#reduced').checked = true; }
+window.addEventListener('resize', () => { resize(); });
+
+// Frame inspection: #t1.2 freezes the clock at 1.2 s; #t1.2-pc also picks a scenario.
+const fz = /^#t(\d+(?:\.\d+)?)(?:-(\w+))?$/.exec(location.hash);
+if (fz) { S.frozen = parseFloat(fz[1]); if (fz[2] && SCENARIOS[fz[2]]) S.scenario = fz[2]; }
+try { initGL(); } catch (err) { dev.insertAdjacentHTML('beforeend', `<p class="glerr">Shader failed: ${String(err.message).replace(/</g, '&lt;')}</p>`); gl = null; }
+resize(); replay();
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => buildDashboard());
+requestAnimationFrame(now => { S.lastNow = now; frame(now); });
+})();
+</script>
