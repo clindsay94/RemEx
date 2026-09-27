@@ -3579,4 +3579,91 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_SubtitleFontTip" xml:space="preserve">
     <value>हर पेज शीर्षक के नीचे की पंक्ति के लिए फ़ॉन्ट। डिफ़ॉल्ट रूप से पेज शीर्षक का फ़ॉन्ट।</value>
   </data>
+  <data name="Routine_Countdown_WindowTitle" xml:space="preserve">
+    <value>RemEx रूटीन</value>
+  </data>
+  <data name="Routine_Countdown_Seconds" xml:space="preserve">
+    <value>{1} सेकंड में {0}</value>
+  </data>
+  <data name="Routine_Countdown_From" xml:space="preserve">
+    <value>{0} से, {1}</value>
+  </data>
+  <data name="Routine_Countdown_PhoneUnknown" xml:space="preserve">
+    <value>एक पेयर किया गया फ़ोन</value>
+  </data>
+  <data name="Routine_Countdown_TestNote" xml:space="preserve">
+    <value>टेस्ट रन। {0} नहीं किया जाएगा।</value>
+  </data>
+  <data name="Routine_Countdown_DryRunNote" xml:space="preserve">
+    <value>ड्राई रन: पावर क्रियाएँ लॉग की जाती हैं, की नहीं जातीं।</value>
+  </data>
+  <data name="Routine_Tray_CancelMenu" xml:space="preserve">
+    <value>रूटीन रद्द करें</value>
+  </data>
+  <data name="Routine_Tray_CountdownMessage" xml:space="preserve">
+    <value>{1} सेकंड में {0}। इसे काउंटडाउन विंडो या ट्रे मेनू से रद्द करें।</value>
+  </data>
+  <data name="Routine_Tray_Cancelled" xml:space="preserve">
+    <value>रद्द किया गया। {0} नहीं किया गया।</value>
+  </data>
+  <data name="Routine_Tray_LaunchFailed" xml:space="preserve">
+    <value>{0} नहीं खुल सका।</value>
+  </data>
+  <data name="Routine_Tray_PowerDenied" xml:space="preserve">
+    <value>सिस्टम ने यह क्रिया अस्वीकार कर दी: {0}।</value>
+  </data>
+  <data name="Routine_Tray_PowerFailed" xml:space="preserve">
+    <value>यह क्रिया काम नहीं की: {0}।</value>
+  </data>
+  <data name="Routine_Action_SHUTDOWN" xml:space="preserve">
+    <value>शट डाउन</value>
+  </data>
+  <data name="Routine_Action_FORCESHUTDOWN" xml:space="preserve">
+    <value>ज़बरदस्ती शट डाउन</value>
+  </data>
+  <data name="Routine_Action_RESTART" xml:space="preserve">
+    <value>रीस्टार्ट</value>
+  </data>
+  <data name="Routine_Action_FORCERESTART" xml:space="preserve">
+    <value>ज़बरदस्ती रीस्टार्ट</value>
+  </data>
+  <data name="Routine_Action_RESTARTTOUEFI" xml:space="preserve">
+    <value>UEFI में रीस्टार्ट</value>
+  </data>
+  <data name="Routine_Action_SIGNOUT" xml:space="preserve">
+    <value>साइन आउट</value>
+  </data>
+  <data name="Routine_Action_SLEEP" xml:space="preserve">
+    <value>स्लीप</value>
+  </data>
+  <data name="Routine_Action_HIBERNATE" xml:space="preserve">
+    <value>हाइबरनेट</value>
+  </data>
+  <data name="Routine_Action_LOCK" xml:space="preserve">
+    <value>लॉक</value>
+  </data>
+  <data name="Routine_Action_MONITOROFF" xml:space="preserve">
+    <value>डिस्प्ले बंद करें</value>
+  </data>
+  <data name="Routine_Source_ManualApp" xml:space="preserve">
+    <value>RemEx ऐप</value>
+  </data>
+  <data name="Routine_Source_ManualShortcut" xml:space="preserve">
+    <value>शॉर्टकट</value>
+  </data>
+  <data name="Routine_Source_ManualWidget" xml:space="preserve">
+    <value>विजेट</value>
+  </data>
+  <data name="Routine_Source_NfcTap" xml:space="preserve">
+    <value>NFC टैग</value>
+  </data>
+  <data name="Routine_Source_HomeArrive" xml:space="preserve">
+    <value>घर पहुँचने पर</value>
+  </data>
+  <data name="Routine_Source_HomeLeave" xml:space="preserve">
+    <value>घर से निकलने पर</value>
+  </data>
+  <data name="Routine_Source_Other" xml:space="preserve">
+    <value>एक रूटीन</value>
+  </data>
 </root>

@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Remex.Desktop.ViewModels"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        x:Class="Remex.Desktop.Views.RoutineCountdownWindow"
+        x:DataType="vm:RoutineCountdownViewModel"
+        Title="{local:Localize Routine_Countdown_WindowTitle}"
+        Width="400"
+        SizeToContent="Height"
+        CanResize="False"
+        Topmost="True"
+        ShowInTaskbar="True"
+        WindowStartupLocation="Manual"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="32"
+        AutomationProperties.Name="{Binding RoutineName}">
+
+    <!-- Routines spec §8.6. Its own top-level window with NO OWNER: MainWindow may never have been
+         constructed at a minimized logon start, and a countdown that needed it would be a countdown
+         nobody sees (docs/REGRESSION-GUARDS.md, "The countdown window must not depend on MainWindow").
+         One button, Cancel, which is both the default and the cancel button, so Enter, Space and Esc
+         all cancel. -->
+    <StackPanel Margin="24,44,24,24" Spacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <mi:MaterialIcon Kind="TimerOutline" Width="24" Height="24" VerticalAlignment="Center"
+                              Foreground="{DynamicResource AccentPrimaryBrush}"/>
+            <TextBlock Text="{Binding RoutineName}" Theme="{StaticResource Headline6TextBlock}"
+                       Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"
+                       VerticalAlignment="Center" MaxWidth="320"/>
+        </StackPanel>
+
+        <TextBlock x:Name="CountdownLine" Text="{Binding CountdownText}" Theme="{StaticResource Subtitle1TextBlock}"
+                   Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+
+        <TextBlock Text="{Binding OriginText}" Theme="{StaticResource Body2TextBlock}"
+                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+        <TextBlock Text="{Binding NoteText}" IsVisible="{Binding HasNote}" Theme="{StaticResource Body2TextBlock}"
+                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+        <Button x:Name="CancelButton" Classes="primary" HorizontalAlignment="Right" Margin="0,8,0,0"
+                IsDefault="True" IsCancel="True"
+                Content="{local:Localize Btn_Cancel}"
+                AutomationProperties.Name="{local:Localize Btn_Cancel}"
+                Command="{Binding CancelCommand}"/>
+    </StackPanel>
+</Window>

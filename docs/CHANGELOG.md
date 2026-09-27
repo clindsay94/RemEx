@@ -19,6 +19,15 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   forwards every `routine_*` message from the PC. Additive only: no protocol version change, and
   nothing is visible yet. (RemEx-pp0rt.3)
 
+- Routines (3.0): the PC now carries out the steps a phone routine sends it: power actions, opening an
+  app from the launcher list, media keys, and a notification on the PC. Shut down, restart, sign out,
+  sleep and hibernate always count down for 15 seconds first, in a small window of their own plus a tray
+  notice and a "Cancel routine" item in the tray menu; Enter, Space or Esc cancel, and so can the phone.
+  A test run from the phone shows the countdown but never turns anything off, and
+  `Remex.Agent.exe --routines-dry-run` logs power actions instead of carrying them out. Everything is
+  checked again on the PC at run time, a resent step is never run twice, and nothing new listens on the
+  network. (RemEx-pp0rt.4)
+
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you
   choose is remembered with the rest of your customization. The default is wider too — 520 instead

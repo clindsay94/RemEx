@@ -423,6 +423,39 @@ an unreadable routine into a malformed placeholder (rejected alone, `invalid_fie
 payload into a null slot on a non-null envelope. The Kotlin reader (`RoutineJson`) applies the same
 strict-type rule so both sides reject the same documents — the shared fixtures pin it.
 
+### Routines: the countdown window must not depend on `MainWindow`
+
+`remex.desktop/Services/Routines/AvaloniaRoutineUi.cs:52-53` (ownerless `new RoutineCountdownWindow(…)`
+then `Show()`), `remex.desktop/Views/RoutineCountdownWindow.axaml.cs`; pinned by
+`RoutineCountdownSurfaceTests.TheCountdownWindowNeverReachesForMainWindow` and
+`RoutineCountdownWindowRenderTests` — RemEx-pp0rt.4, spec §8.6.
+
+The countdown before a routine's shut down, restart, sign out, sleep or hibernate is the person at the
+PC's only chance to stop it, and it most often fires while RemEx sits in the tray after a `--minimized`
+logon start, the state in which `MainWindow` was never constructed (P1-29, see the `ConsentRoutePolicy`
+guard below). Give the window an owner, show it with `ShowDialog`, or route it through
+`desktop.MainWindow`, and it either throws or never appears; the coordinator records that as
+`countdown_unseen`, the 15 s elapse, and the PC shuts down with nothing on screen. No exception reaches
+anyone. Keep it a top-level, ownerless, topmost window, and keep the tray "Cancel routine" item
+(`RoutineCountdownTrayState`) armed before the window is attempted, so a window that fails still leaves a
+way to cancel.
+
+### Routines: a test run never issues a destructive verb
+
+`remex.agent/Services/Routines/RoutineStepExecutor.cs:232` (`if (execution.TestRun)` returns `simulated`
+before the pre-issue announcement and before `IRoutinePowerExecutor`), and
+`RoutineStepRequestHandler.cs:140` (`PresenceConfirmed: false` for every wire request); pinned by
+`TestRunSimulationTests` and `CountdownCancelTests.EveryWireInitiatedStepCountsDown` — RemEx-pp0rt.4,
+spec D7, T21, T22.
+
+The phone's Test button exists so a routine ending in SHUTDOWN can be tried without shutting down. The
+check sits AFTER the countdown (a test must still show it) and BEFORE the verb, and it must stay ahead
+of every branch that can issue one, including a confirmed Run now: `testRun` may only ever make the host
+do less. Moving it below the dry-run branch or the "succeeded before the verb" send turns a test into a
+real shutdown whose history then says `simulated`. The same file is also why no wire field may map to
+`presenceConfirmed`: it skips the countdown, so it is set in-process only, by the PC's own confirmed Run
+now (S4).
+
 ### `protocolVersion` bumps must be coordinated
 
 `RemexMessage` carries `protocolVersion: 2`. A breaking wire-format change requires bumping it in
