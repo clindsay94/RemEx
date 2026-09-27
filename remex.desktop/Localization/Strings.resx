@@ -1340,6 +1340,17 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Routines are set up in the RemEx app on your phone. The ones that start on this PC, like going to sleep after 30 minutes idle, run here even when your phone is away.
+
+You can see them, switch them off and check their history on the Routines page.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Before a routine shuts down, restarts, signs out, sleeps or hibernates this PC, you get 15 seconds to cancel. Only Run now on this PC skips it, after you confirm.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3074,6 +3085,48 @@ You can change:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Yes. Open Settings and use "Replay Tutorial" in the Help section. You can do this as often as you like.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>What are routines?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>A routine runs a few RemEx actions for you when something happens. For example, when this PC has been idle for 30 minutes it can put itself to sleep.
+
+You create and change routines in the RemEx app on your phone, under More, then Routines. The ones that start from something on this PC run here, even when your phone is not connected. The Routines page shows them, and lets you switch them off, run them and check their history.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Why didn't my routine run?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>On the Routines page, select the routine and look at its history. Each run shows every step, and a run that did not start says why.
+
+The usual causes are that routines are paused on this PC or on your phone, the routine is switched off, the phone that made it is blocked on this PC, the sensor it watches stopped reporting (for example because HWiNFO was closed), or it was already running. Routines that start on your phone, like arriving home, run on the phone, so check their history in the phone app.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>Does RemEx track my location?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>No. The phone app works out when you arrive or leave by recognising your home Wi-Fi network, without location permission. This PC is never told where your phone is, only that a routine ran.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Can a routine shut down my PC while I'm using it?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Not without warning. Before a routine shuts down, restarts, signs out of, sleeps or hibernates this PC, a 15 second countdown appears with a Cancel button, even when the routine was started from your phone. Click Cancel, or press Esc or Enter, to stop it. If your phone is connected, you can also cancel from its notification. The only exception is Run now on the Routines page, which asks you to confirm first and then does not count down. Locking the PC or turning off the display never counts down.
+
+To stop routines from starting on their own, click Pause all on the Routines page. Nothing starts by itself until you click Resume.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Can I edit routines on my PC?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>No. You create and change routines in the RemEx app on your phone, and it sends this PC the ones that start here. On this PC you can switch a routine off, run it now, see its history, or block a phone's routines.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>How do NFC tags work with routines?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>NFC tags are a phone feature. On your phone, a routine can start when you tap an NFC tag, and its steps can then control this PC. If one of those steps would shut down or restart this PC, the countdown still appears here first.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>The file is arriving faster than the folder you chose can save it, so the download could not finish. Try saving to a folder on this computer's main drive instead of a USB stick or network folder.</value>

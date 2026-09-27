@@ -1304,6 +1304,17 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Ajusta temas, estrategia de paleta, fuentes, formas de tarjeta y opacidad para adaptarlos a tu forma de supervisar y controlar tu equipo.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Rutinas</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Las rutinas se configuran en la app RemEx de tu teléfono. Las que empiezan en este PC, como suspenderlo tras 30 minutos de inactividad, se ejecutan aquí aunque tu teléfono no esté cerca.
+
+En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Antes de que una rutina apague, reinicie, cierre la sesión, suspenda o hiberne este PC, tienes 15 segundos para cancelarlo. Solo Ejecutar ahora en este PC se lo salta, después de que lo confirmes.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3082,6 +3093,48 @@ Puedes cambiar:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Sí. Abre Configuración y usa «Repetir tutorial» en la sección Ayuda. Puedes hacerlo tantas veces como quieras.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>¿Qué son las rutinas?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Una rutina ejecuta por ti algunas acciones de RemEx cuando pasa algo. Por ejemplo, cuando este PC lleva 30 minutos inactivo, puede suspenderse solo.
+
+Las rutinas se crean y se cambian en la app RemEx de tu teléfono, en Más y luego Rutinas. Las que empiezan por algo que pasa en este PC se ejecutan aquí, aunque tu teléfono no esté conectado. La página Rutinas las muestra y te permite desactivarlas, ejecutarlas y consultar su historial.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>¿Por qué no se ejecutó mi rutina?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>En la página Rutinas, selecciona la rutina y mira su historial. Cada ejecución muestra todos los pasos, y una ejecución que no llegó a empezar indica por qué.
+
+Las causas habituales son que las rutinas están en pausa en este PC o en tu teléfono, que la rutina está desactivada, que el teléfono que la creó está bloqueado en este PC, que el sensor que vigila dejó de informar (por ejemplo, porque se cerró HWiNFO) o que ya se estaba ejecutando. Las rutinas que empiezan en tu teléfono, como al llegar a casa, se ejecutan en el teléfono, así que consulta su historial en la app del teléfono.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>¿RemEx rastrea mi ubicación?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>No. La app del teléfono sabe cuándo llegas o te vas reconociendo la red Wi-Fi de tu casa, sin permiso de ubicación. A este PC nunca se le dice dónde está tu teléfono, solo que se ejecutó una rutina.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>¿Puede una rutina apagar mi PC mientras lo estoy usando?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>No sin avisar. Antes de que una rutina apague, reinicie, cierre la sesión, suspenda o hiberne este PC, aparece una cuenta atrás de 15 segundos con un botón Cancelar, incluso si la rutina se inició desde tu teléfono. Haz clic en Cancelar, o pulsa Esc o Intro, para detenerla. Si tu teléfono está conectado, también puedes cancelarla desde su notificación. La única excepción es Ejecutar ahora en la página Rutinas, que te pide confirmación primero y después no hace cuenta atrás. Bloquear el PC o apagar la pantalla nunca tiene cuenta atrás.
+
+Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Rutinas. Nada empieza por sí solo hasta que hagas clic en Reanudar.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>¿Puedo editar rutinas en mi PC?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>No. Las rutinas se crean y se cambian en la app RemEx de tu teléfono, que envía a este PC las que empiezan aquí. En este PC puedes desactivar una rutina, ejecutarla ahora, ver su historial o bloquear las rutinas de un teléfono.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>¿Cómo funcionan las etiquetas NFC con las rutinas?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>Las etiquetas NFC son una función del teléfono. En tu teléfono, una rutina puede empezar cuando tocas una etiqueta NFC, y sus pasos pueden controlar este PC. Si uno de esos pasos fuera a apagar o reiniciar este PC, la cuenta atrás aparece aquí primero de todos modos.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>El archivo llega más rápido de lo que la carpeta elegida puede guardarlo, así que la descarga no pudo terminar. Prueba a guardarlo en una carpeta de la unidad principal de este equipo en lugar de una memoria USB o una carpeta de red.</value>

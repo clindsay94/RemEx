@@ -1298,6 +1298,17 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Ajustez les thèmes, la stratégie de palette, les polices, les formes de cartes et l'opacité pour personnaliser votre expérience.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Les routines se configurent dans l'application RemEx de votre téléphone. Celles qui démarrent sur ce PC, comme la mise en veille après 30 minutes d'inactivité, s'exécutent ici même quand votre téléphone est absent.
+
+Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur historique.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Avant qu'une routine éteigne, redémarre, déconnecte, mette en veille ou en veille prolongée ce PC, vous avez 15 secondes pour annuler. Seul Exécuter maintenant sur ce PC évite ce délai, après votre confirmation.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3068,6 +3079,48 @@ Vous pouvez modifier :
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Oui. Ouvrez les Paramètres et utilisez « Revoir le tutoriel » dans la section Aide. Vous pouvez le faire aussi souvent que vous le souhaitez.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>Que sont les routines ?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Une routine exécute pour vous quelques actions RemEx quand quelque chose se produit. Par exemple, quand ce PC est inactif depuis 30 minutes, il peut se mettre en veille tout seul.
+
+Vous créez et modifiez les routines dans l'application RemEx de votre téléphone, sous Plus, puis Routines. Celles qui démarrent à partir d'un événement sur ce PC s'exécutent ici, même quand votre téléphone n'est pas connecté. La page Routines les affiche et vous permet de les désactiver, de les exécuter et de consulter leur historique.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Pourquoi ma routine ne s'est-elle pas exécutée ?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>Sur la page Routines, sélectionnez la routine et regardez son historique. Chaque exécution affiche toutes les étapes, et une exécution qui n'a pas démarré indique pourquoi.
+
+Les causes habituelles : les routines sont en pause sur ce PC ou sur votre téléphone, la routine est désactivée, le téléphone qui l'a créée est bloqué sur ce PC, le capteur qu'elle surveille ne donne plus de valeurs (par exemple parce que HWiNFO a été fermé), ou elle était déjà en cours. Les routines qui démarrent sur votre téléphone, comme l'arrivée à la maison, s'exécutent sur le téléphone : consultez donc leur historique dans l'application du téléphone.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>RemEx suit-il ma position ?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>Non. L'application du téléphone sait quand vous arrivez ou partez en reconnaissant le réseau Wi-Fi de votre domicile, sans autorisation de localisation. Ce PC n'apprend jamais où se trouve votre téléphone, seulement qu'une routine s'est exécutée.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Une routine peut-elle éteindre mon PC pendant que je l'utilise ?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Pas sans prévenir. Avant qu'une routine éteigne, redémarre, déconnecte, mette en veille ou en veille prolongée ce PC, un compte à rebours de 15 secondes apparaît avec un bouton Annuler, même quand la routine a été lancée depuis votre téléphone. Cliquez sur Annuler, ou appuyez sur Échap ou Entrée, pour l'arrêter. Si votre téléphone est connecté, vous pouvez aussi annuler depuis sa notification. La seule exception est Exécuter maintenant sur la page Routines, qui vous demande d'abord de confirmer, puis ne fait pas de compte à rebours. Verrouiller le PC ou éteindre l'écran ne déclenche jamais de compte à rebours.
+
+Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en pause sur la page Routines. Rien ne démarre tout seul avant que vous cliquiez sur Reprendre.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Puis-je modifier les routines sur mon PC ?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>Non. Vous créez et modifiez les routines dans l'application RemEx de votre téléphone, qui envoie à ce PC celles qui démarrent ici. Sur ce PC, vous pouvez désactiver une routine, l'exécuter maintenant, voir son historique ou bloquer les routines d'un téléphone.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>Comment fonctionnent les tags NFC avec les routines ?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>Les tags NFC sont une fonction du téléphone. Sur votre téléphone, une routine peut démarrer quand vous touchez un tag NFC, et ses étapes peuvent ensuite contrôler ce PC. Si l'une de ces étapes doit éteindre ou redémarrer ce PC, le compte à rebours apparaît quand même ici d'abord.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Le fichier arrive plus vite que le dossier choisi ne peut l'enregistrer, le téléchargement n'a donc pas pu se terminer. Essayez d'enregistrer dans un dossier du disque principal de cet ordinateur plutôt que sur une clé USB ou un dossier réseau.</value>

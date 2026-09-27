@@ -2492,6 +2492,17 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i krycie, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Rutyny</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Rutyny konfigurujesz w aplikacji RemEx na telefonie. Te, które startują na tym komputerze, na przykład uśpienie po 30 minutach bezczynności, działają tutaj, nawet gdy telefonu nie ma w pobliżu.
+
+Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Zanim rutyna wyłączy, uruchomi ponownie, wyloguje, uśpi lub zahibernuje ten komputer, masz 15 sekund na anulowanie. Pomija to tylko Uruchom teraz na tym komputerze, po Twoim potwierdzeniu.</value>
+  </data>
   <data name="Faq_Q1_Question" xml:space="preserve">
     <value>Co muszę uruchomić na moim komputerze?</value>
   </data>
@@ -3069,6 +3080,48 @@ Możesz zmienić:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Tak. Otwórz Ustawienia i użyj opcji „Powtórz samouczek” w sekcji Pomoc. Możesz to robić dowolnie często.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>Czym są rutyny?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Rutyna wykonuje za Ciebie kilka działań RemEx, gdy coś się wydarzy. Na przykład gdy ten komputer jest bezczynny przez 30 minut, może sam przejść w stan uśpienia.
+
+Rutyny tworzysz i zmieniasz w aplikacji RemEx na telefonie, w sekcji Więcej, a potem Rutyny. Te, które startują od zdarzenia na tym komputerze, działają tutaj, nawet gdy telefon nie jest połączony. Strona Rutyny je pokazuje i pozwala je wyłączać, uruchamiać i sprawdzać ich historię.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Dlaczego moja rutyna się nie uruchomiła?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>Na stronie Rutyny wybierz rutynę i obejrzyj jej historię. Każde uruchomienie pokazuje wszystkie kroki, a uruchomienie, które się nie rozpoczęło, podaje powód.
+
+Najczęstsze przyczyny: rutyny są wstrzymane na tym komputerze lub na telefonie, rutyna jest wyłączona, telefon, który ją utworzył, jest zablokowany na tym komputerze, obserwowany czujnik przestał podawać odczyty (na przykład po zamknięciu HWiNFO) albo rutyna już działała. Rutyny, które startują na telefonie, na przykład po powrocie do domu, działają na telefonie, więc ich historię sprawdzisz w aplikacji na telefonie.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>Czy RemEx śledzi moją lokalizację?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>Nie. Aplikacja na telefonie rozpoznaje, kiedy przychodzisz lub wychodzisz, po Twojej domowej sieci Wi-Fi, bez uprawnień do lokalizacji. Ten komputer nigdy nie dowiaduje się, gdzie jest Twój telefon, tylko że rutyna została uruchomiona.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Czy rutyna może wyłączyć mój komputer, gdy go używam?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Nie bez ostrzeżenia. Zanim rutyna wyłączy, uruchomi ponownie, wyloguje, uśpi lub zahibernuje ten komputer, pojawia się 15-sekundowe odliczanie z przyciskiem Anuluj, nawet gdy rutynę uruchomiono z telefonu. Kliknij Anuluj albo naciśnij Esc lub Enter, aby ją zatrzymać. Jeśli telefon jest połączony, możesz też anulować z jego powiadomienia. Jedynym wyjątkiem jest Uruchom teraz na stronie Rutyny: najpierw prosi o potwierdzenie, a potem nie odlicza. Zablokowanie komputera lub wyłączenie ekranu nigdy nie ma odliczania.
+
+Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. Nic nie uruchomi się samo, dopóki nie klikniesz Wznów.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Czy mogę edytować rutyny na komputerze?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>Nie. Rutyny tworzysz i zmieniasz w aplikacji RemEx na telefonie, a ona wysyła do tego komputera te, które startują tutaj. Na tym komputerze możesz wyłączyć rutynę, uruchomić ją teraz, zobaczyć jej historię albo zablokować rutyny z danego telefonu.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>Jak działają tagi NFC z rutynami?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>Tagi NFC to funkcja telefonu. Na telefonie rutyna może się uruchomić, gdy dotkniesz tagu NFC, a jej kroki mogą potem sterować tym komputerem. Jeśli któryś z tych kroków miałby wyłączyć lub ponownie uruchomić ten komputer, odliczanie i tak najpierw pojawi się tutaj.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Plik przychodzi szybciej, niż wybrany folder może go zapisać, więc pobieranie nie mogło się zakończyć. Spróbuj zapisać w folderze na dysku głównym tego komputera zamiast na pendrivie lub w folderze sieciowym.</value>

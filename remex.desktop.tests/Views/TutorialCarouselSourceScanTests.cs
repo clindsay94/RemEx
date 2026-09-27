@@ -107,6 +107,30 @@ public class TutorialCarouselSourceScanTests
     }
 
     [Fact]
+    public void CarouselHasARoutinesPanelDirectlyBeforeTheFinishPanel()
+    {
+        // RemEx-pp0rt.11 (spec §5.2, R-UX-43): the Carousel's slots are declaration-ordered and must line
+        // up with the author indices 0..17 in ShellViewModel, so the Routines panel (author 16) sits
+        // between the last glossary page (15) and "You're all set" (17), and there are 18 slots.
+        var overlay = TutorialOverlaySource();
+        var start = overlay.IndexOf("<Carousel Name=\"TutorialCarousel\"", System.StringComparison.Ordinal);
+        var end = overlay.IndexOf("</Carousel>", start, System.StringComparison.Ordinal);
+        start.Should().BeGreaterThan(-1);
+        end.Should().BeGreaterThan(start);
+        var carousel = overlay.Substring(start, end - start);
+
+        var glossary = carousel.IndexOf("Tutorial_Glossary_Customization_Title", System.StringComparison.Ordinal);
+        var routines = carousel.IndexOf("Tutorial_P16_Routines_Title", System.StringComparison.Ordinal);
+        var finish = carousel.IndexOf("Tutorial_P10_Title", System.StringComparison.Ordinal);
+        routines.Should().BeGreaterThan(glossary, "the Routines panel follows the last glossary page");
+        finish.Should().BeGreaterThan(routines, "the tour still ends on \"You're all set\"");
+        carousel.Should().Contain("Tutorial_P16_Routines_Body").And.Contain("Tutorial_P16_Routines_Safety");
+
+        Regex.Matches(carousel, @"^ {28}<StackPanel\b", RegexOptions.Multiline).Count.Should().Be(18,
+            "one Carousel slot per TutorialPage author index 0..17");
+    }
+
+    [Fact]
     public void OverlayUsesNoLiteralColours()
     {
         var overlay = TutorialOverlaySource();

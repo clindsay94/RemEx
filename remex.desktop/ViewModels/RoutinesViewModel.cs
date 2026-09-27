@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Core.Routines;
+using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Routines;
 
@@ -599,9 +600,9 @@ public sealed partial class RoutinesViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void DismissStatus() => StatusMessage = null;
 
-    /// <summary>The empty state's "Learn about routines": the app tutorial.</summary>
+    /// <summary>The empty state's "Learn about routines": the tutorial, opened on its Routines page (§5.2).</summary>
     [RelayCommand]
-    private void LearnAboutRoutines() => _shell?.ReplayTutorial();
+    private void LearnAboutRoutines() => _shell?.ShowTutorialAt(TutorialPageIds.Routines);
 
     // ═══════════════ Coach mark (§5.3, R-UX-40) ═══════════════
 

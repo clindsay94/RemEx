@@ -13,6 +13,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- The PC tutorial has a Routines page, just before the last one. It explains that routines are made on
+  the phone, that the ones starting on the PC run there even when the phone is away, and that anything
+  that shuts down, restarts, signs out, sleeps or hibernates the PC gets a 15 second countdown first.
+  "Learn about routines" on the empty Routines page now opens the tutorial on that page instead of at the
+  start. The PC FAQ has six new answers about routines: what they are, why one didn't run, whether
+  RemEx tracks your location, whether a routine can shut the PC down while you use it, whether you can
+  edit them on the PC, and how NFC tags fit in. All in the nine languages. The Android FAQ gets the same
+  six in the phone half of this work. `docs/API_CONTRACTS.md` has a new Routines section covering all
+  nine routine messages as the code handles them, and `docs/SECURITY_EXPLAINED.md` explains what
+  routines change at all three levels. (RemEx-pp0rt.11)
+
 - Routines can now watch a PC sensor: "A PC sensor passes a limit" starts a routine when a sensor you
   pick from the PC's own list stays above or below a limit for a while (5 seconds to 10 minutes). It
   waits for a sustained reading, ignores a value hovering on the limit, and won't fire again for five

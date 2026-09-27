@@ -65,6 +65,25 @@ There's no RemEx account, no company server in the middle, and no data leaving y
 phone connects **straight to your PC**. If you want to use RemEx away from home, you add a private,
 encrypted network of your own (like **Tailscale** or **WireGuard**) — RemEx never does that silently.
 
+### Routines: RemEx acting on its own
+
+Routines (RemEx 3.0) let RemEx do things without you pressing a button: wake your PC when you get home,
+put it to sleep after 30 minutes idle, lock it when you tap an NFC tag. That is a new kind of power,
+because something you set up once keeps acting later, possibly while you are not looking. So:
+
+- **You only set them up on your phone.** The PC can switch a routine off, pause them all or block a
+  phone, but it can't create or change one. It checks every routine again before it keeps it.
+- **Nothing powers your PC off without a warning.** Before any routine shuts down, restarts, signs out,
+  sleeps or hibernates the PC, the PC shows a **15-second countdown with a Cancel button**, even if the
+  routine came from your phone. The only thing that skips it is you clicking **Run now on the PC itself
+  and confirming**, because then you are clearly sitting there.
+- **One button stops them.** Pause all, on the phone or on the PC, stops every routine from starting on
+  its own until you resume.
+- **No new doors.** Routines travel over the same locked connection as everything else. RemEx does not
+  open any new network port for them, and does not use the internet.
+- **No location tracking.** The phone knows you are home by recognising your home Wi-Fi, not by GPS, and
+  RemEx never asks for location permission.
+
 ### Your part of the deal
 
 RemEx protects the *connection*. A few things are still up to you:
@@ -155,10 +174,57 @@ is deliberate: it's what lets your phone control administrator windows, and it's
 paired-device list protected. RemEx is designed to **never** start without those rights — doing so would
 lock it out of its own certificate and break every existing pairing, so it refuses that unsafe path.
 
+### Routines (3.0)
+
+Routines add something the rest of RemEx did not have: **persistent, unattended authority**. A routine
+you approve once keeps acting later, when nobody is watching. The design keeps that authority no larger
+than what a paired phone could already do by hand, and puts a person back in the loop for anything that
+takes the PC away from its user.
+
+- **The phone is the only editor.** Your phone sends each PC only the routines that start on that PC,
+  over the existing paired `/ws` channel. The PC **revalidates every routine** (shared validator, its own
+  launcher allowlist, the power verbs it actually supports) and stores only the ones that pass. A
+  routine it rejects is dropped, including any older version of it, so the PC never runs a definition
+  your phone no longer holds. Checks run again at the moment a routine runs, so an app removed from the
+  allowlist or a phone that was unpaired stops working immediately.
+- **The countdown.** Every routine-issued shutdown, force shutdown, restart, force restart, restart to
+  UEFI, sign-out, sleep or hibernate counts down **15 seconds** on the PC with a Cancel button, whoever
+  started it: an automatic trigger, a phone, an NFC tag, a shortcut. Lock and display-off are not
+  destructive and do not count down. When the phone is connected it mirrors the countdown and can
+  cancel it too. Only one countdown runs at a time on a PC.
+- **Presence is the only bypass.** The one thing that skips the countdown is **Run now on the PC,
+  confirmed in a dialog by the person sitting there**. That confirmation is an in-process flag with **no
+  wire representation**: no field of any routine message can set it, so no phone, and no attacker
+  holding a phone, can skip the countdown. A confirmation dialog that cannot be shown declines.
+- **Tests can only do less.** The phone's "Test" flag makes the PC simulate destructive steps (the
+  countdown shows, the verb is never issued) and history marks the run as simulated on both sides.
+- **Pause all and blocking.** Pause all (either side) stops every automatic trigger. The PC user can also
+  switch off one routine, block a phone's routines entirely, or revoke the phone, which deletes its
+  routines, history and queued messages and cancels anything it has running.
+- **No new ingress.** Routines use only the authenticated `/ws` channel. The optional command port
+  **8338 is unchanged**: it still accepts only its fixed list of power verbs, and nothing about
+  routines is handled there. PC-run routines execute inside the RemEx process itself.
+- **NFC tags and shortcuts.** A tag carries a per-routine random token that you can rotate, and it only
+  runs a routine when your phone is **unlocked**. A home-screen shortcut carries a signature the app
+  checks before it runs anything. Another app on the phone cannot start a routine: the only routine
+  entry point exposed to the system is the NFC one, and only the system NFC service can call it. A
+  cloned tag still cannot power the PC off without the countdown.
+- **What leaves the phone, and what doesn't.** Routine data on the phone is encrypted at rest and
+  **excluded from Android cloud backup and device-to-device transfer**. The export file leaves out NFC
+  tokens, keys, your home-network details, PC identities and MAC addresses.
+- **The PC store is locked down.** On Windows the routine files live next to the paired-device list and
+  get the same treatment: **LocalSystem and Administrators only, inheritance off**, written atomically.
+  RemEx runs elevated, so a routine is a way to make an elevated process act; the lock-down is what stops
+  an ordinary program on the same PC from planting one. A file owned by anyone else, or writable by
+  anyone else, is **never loaded**: it is set aside, no routine runs, and the PC shows a warning.
+
 ### Honest limits (what RemEx does *not* do)
 
 - It secures the *connection*; it can't protect a PC that's already infected with malware, or one an
   attacker can physically sit down at while it's unlocked.
+- A routine acts with the authority of the phone that made it. A phone that is paired, unlocked and in
+  the wrong hands can set up routines, the same as it can already send commands. Revoke a lost phone
+  on the PC; that also deletes its routines.
 - Pair in private — anyone who watches you enter the PIN during those two minutes could pair their own
   device.
 - Over the open internet, use a VPN. TLS protects the data, but exposing services directly to the
@@ -297,6 +363,59 @@ will pin, so a session key derived against a different certificate cannot valida
 - `RemexMessage.protocolVersion` must be `2`; legacy 1.x messages (no version field, old access-key
   model) are rejected. 1.x's access keys and plaintext WebSockets were removed in 2.0.
 
+### Routines (3.0)
+
+Full threat table: `docs/specs/2026-09-26-routines-design.md` §9 (T1-T24). Wire contracts:
+[API_CONTRACTS.md §8](API_CONTRACTS.md#8-routines-30).
+
+- **Channel and identity.** All nine routine message types ride the authenticated `/ws` channel (TLS +
+  SPKI pin + HMAC-over-nonce reconnect). Phone → host handlers are pairing-gated and scoped to the
+  connection's **proven** `clientId`; the owner is never a payload field, and loopback (no proven
+  identity) is refused. Host state is keyed by `clientId`, so sync, reports, queued messages, cancel and
+  ack are all owner-scoped (T17). A `routine_run_request` names one of the sender's stored routine ids;
+  the PC runs its own revalidated copy and never a definition from the wire (T24).
+- **Validation.** `routines_sync` is size-capped (64 KB), coalesced to one per 2 s per client, and
+  ordered by a monotonic per-PC revision (stale and conflicting revisions are refused). Each routine
+  goes through `RoutineValidator` plus host checks (`pc.*` trigger, own `HostIdentity`, verbs in
+  `routinePowerVerbs`, `appId` in `launchers.json` and not a network path, idle/session source present).
+  Rejected routines are not stored and evict their previous version. The run path revalidates: owner
+  still in `PairedClientRegistry`, routine still valid, launcher entry still allowed (T6). No routine
+  payload has `required` members; malformed elements become per-routine rejections and the handlers
+  never throw into the receive loop (T18).
+- **Destructive-verb countdown (D1).** `SHUTDOWN`, `FORCESHUTDOWN`, `RESTART`, `FORCERESTART`,
+  `RESTARTTOUEFI`, `SIGNOUT`, `SLEEP`, `HIBERNATE` from any routine source wait 15 s behind a cancellable
+  countdown window (topmost, independent of `MainWindow`), mirrored to a connected owner as a
+  `routine_notify{kind:countdown}` and cancellable with `routine_cancel`. One countdown at a time per
+  host (`conflict_countdown_active`). `LOCK` and `MONITOROFF` do not count down.
+- **Presence (D3, T21).** `presenceConfirmed` is set only by PC Run now after the Routines page's
+  confirmation dialog (`RoutinesViewModel.OnConfirmationRequested`) returns a confirmation; it is not a
+  field of any payload. Every request from the phone runs with it
+  false. A dialog that cannot show fails closed.
+- **Test and dry run (T22, T23).** `testRun` can only suppress a destructive verb (outcome
+  `simulated`). `--routines-dry-run` is a command-line switch only (no setting, file or wire field) and
+  shows a persistent banner.
+- **Rate limits and loops (T9).** 4 concurrent host runs; 30 runs per owner per hour; 60 s minimum
+  between automatic runs of one routine; single-flight per routine; 60 step requests per client per
+  minute; sensor sustain + hysteresis + 300 s cooldown; session triggers settle 3 s and cap at 20 per
+  routine per hour; runs caused by another run are suppressed.
+- **No new ingress (T15).** No routine type is handled by `RemexNetworkListener`; `CommandVerbs.ScriptIngress`
+  is unchanged; host routines execute in-process. `RoutineIngressIsolationTests` pins this.
+- **Host store (T14).** `routines.json`, `routine_runs.json` and `routine_notify_queue.json` in the host
+  state directory. Windows: protected DACL, FullControl for LocalSystem + Administrators only, atomic
+  writes. On load, a file whose owner is not LocalSystem/Administrators, or that grants write to anyone
+  else, is **not trusted**; unreadable or untrusted content is moved aside as
+  `<name>.unreadable-<utc>`, the store starts empty, and a PC warning is shown. Partial content is never
+  executed. Linux: `0600`, the same trust boundary as `paired_clients.json`.
+- **Android.** Routine DataStores and the routine Tink keyset are Tink AES-256-GCM sealed by an Android
+  Keystore key and excluded in both `backup_rules.xml` and `data_extraction_rules.xml` (cloud backup and
+  device transfer) (T12). NFC: per-routine rotatable random token, unlocked device required, 10 s
+  debounce; the only exported routine component is the NFC activity, guarded by
+  `android.permission.DISPATCH_NFC_MESSAGE` (T1-T3). Shortcuts carry an HMAC signature verified before
+  anything runs. The `.remexroutines` export whitelist excludes tokens, keys, homes, `hostIdentity` and
+  MAC (T13). No location permission and no exact alarms (T16).
+- **Logs (T11).** No NFC tokens, keys, fingerprint values or notify bodies; client ids through
+  `LogRedaction.RedactClientId`; MACs partly masked; routine names truncated.
+
 ### Threat model
 
 **In scope (mitigated):**
@@ -310,6 +429,9 @@ will pin, so a session key derived against a different certificate cannot valida
 - Device-ID spoofing on reconnect → HMAC-over-nonce proof of the reconnect secret.
 - Local secret theft by a non-privileged process / off-device extraction → ACL/`0600` at rest on the
   host; Keystore-sealed AES-256-GCM on Android.
+- Routines (3.0): a hostile or buggy paired phone, a planted routine file, a cloned NFC tag, or a
+  remote attempt to skip the countdown → host revalidation, owner scoping, the 15 s countdown with no
+  wire bypass, the store ACL trust check, per-routine NFC tokens (see *Routines (3.0)* above).
 
 **Out of scope (your responsibility / not claimed):**
 
@@ -329,6 +451,9 @@ will pin, so a session key derived against a different certificate cannot valida
 | Android at-rest storage | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` |
 | Cleartext ban | `remex.android/app/src/main/res/xml/network_security_config.xml`, `AndroidManifest.xml` |
 | Elevation manifest / autostart | `remex.agent/app.manifest`, `scripts/autostart-remex.ps1` |
+| Routine sync, revalidation, store ACL | `remex.agent/Services/Routines/RoutineSyncHandler.cs`, `RoutineHostValidator.cs`, `RoutineStateFiles.cs` |
+| Routine countdown and presence | `remex.agent/Services/Routines/RoutineCountdownCoordinator.cs`, `RoutineHostRunner.cs`, `RoutineStepRequestHandler.cs` |
+| Routine backup exclusions | `remex.android/app/src/main/res/xml/backup_rules.xml`, `data_extraction_rules.xml` |
 
 ---
 

@@ -57,7 +57,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         new TutorialPage(13, "Glossary: Remote Desktop", "Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network.", PlatformFlags.All),
         new TutorialPage(14, "Glossary: Quick Settings", "On Android, add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app.", PlatformFlags.Android),
         new TutorialPage(15, "Glossary: Customization", "Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu.", PlatformFlags.All),
-        new TutorialPage(16, "Finish",          "You're all set — let's go!",             PlatformFlags.All),
+        new TutorialPage(TutorialPageIds.Routines, "Routines", "Routines run on this PC even when your phone is away.", PlatformFlags.Windows | PlatformFlags.Linux),
+        new TutorialPage(TutorialPageIds.Finish, "Finish", "You're all set — let's go!",             PlatformFlags.All),
     };
 
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
@@ -533,7 +534,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// happens to satisfy <c>PageIndex == </c>(its position in the array). Nothing enforces that;
     /// it holds only because <c>_tutorialPages</c> was authored in order and never had a page
     /// inserted or renumbered out of sequence. The PipsPager and <see cref="TutorialVisiblePageIndex"/>
-    /// key off this list rather than the raw 17-slot Carousel so pagination never exposes a page
+    /// key off this list rather than the raw 18-slot Carousel so pagination never exposes a page
     /// the running platform does not have; the Carousel's own slots stay declaration-ordered, so
     /// that agreement is what the invariant test below guards (RemEx-qgql review, MEDIUM).
     /// Delegates to <see cref="TutorialNavigator.VisiblePages"/> (RemEx-qgql) instead of
@@ -1412,6 +1413,25 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         TutorialPageIndex = 0;
         ShowTutorialOverlay = true;
+    }
+
+    /// <summary>
+    /// Opens the tutorial on one page, named by its author index (<see cref="TutorialPageIds"/>),
+    /// for deep links such as the Routines page's "Learn about routines" (spec §5.2).
+    /// </summary>
+    /// <remarks>
+    /// Resolved through <see cref="TutorialNavigator.PositionOfPage"/> against the
+    /// platform-filtered list, never used as a raw carousel position. A page this platform hides
+    /// resolves to -1, and the tour then opens at its start instead of on a neighbouring topic.
+    /// The overlay is shown first because showing it resets the carousel to page 0.
+    /// </remarks>
+    public void ShowTutorialAt(int authorPageIndex)
+    {
+        ShowTutorialOverlay = true;
+
+        var visible = TutorialNavigator.VisiblePages(_tutorialPages, CurrentTutorialPlatform);
+        var position = TutorialNavigator.PositionOfPage(visible, authorPageIndex);
+        TutorialVisiblePageIndex = position < 0 ? 0 : position;
     }
 
     [RelayCommand]

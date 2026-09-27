@@ -1781,7 +1781,18 @@
                                 <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_Customization_Body}"/>
                             </StackPanel>
 
-                            <!-- Page 16: You're All Set -->
+                            <!-- Page 16: Routines (Windows and Linux; spec §5.2). Deep-linked from the
+                                 Routines page's "Learn about routines" via TutorialPageIds.Routines. -->
+                            <StackPanel Spacing="12">
+                                <mi:MaterialIcon Kind="Routes" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P16_Routines_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" Text="{conv:Localize Tutorial_P16_Routines_Body}"/>
+                                <Border Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center" Text="{conv:Localize Tutorial_P16_Routines_Safety}"/>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Page 17: You're All Set -->
                             <StackPanel Spacing="12">
                                 <mi:MaterialIcon Kind="PartyPopper" Width="48" Height="48" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P10_Title}" Theme="{StaticResource Headline5TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>

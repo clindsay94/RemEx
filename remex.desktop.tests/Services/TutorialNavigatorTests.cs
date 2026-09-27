@@ -124,6 +124,31 @@ public class TutorialNavigatorTests
     }
 
     [Fact]
+    public void TheRoutinesDeepLinkResolvesOnBothDesktopPlatformsAndNotOnAndroid()
+    {
+        // RemEx-pp0rt.11 (spec §5.2): the Routines page is Windows | Linux, directly before Finish.
+        TutorialPage[] pages =
+        [
+            .. Pages,
+            new(TutorialPageIds.Routines, "Routines", "", PlatformFlags.Windows | PlatformFlags.Linux),
+            new(TutorialPageIds.Finish, "Finish", "", PlatformFlags.All)
+        ];
+
+        foreach (var platform in new[] { PlatformFlags.Windows, PlatformFlags.Linux })
+        {
+            var visible = TutorialNavigator.VisiblePages(pages, platform);
+            var position = TutorialNavigator.PositionOfPage(visible, TutorialPageIds.Routines);
+
+            Assert.Equal("Routines", visible[position].Title);
+            Assert.Equal(visible.Count - 2, position);
+            Assert.True(TutorialNavigator.IsLastPage(TutorialNavigator.Next(position, visible.Count), visible.Count));
+        }
+
+        var android = TutorialNavigator.VisiblePages(pages, PlatformFlags.Android);
+        Assert.Equal(-1, TutorialNavigator.PositionOfPage(android, TutorialPageIds.Routines));
+    }
+
+    [Fact]
     public void ANullPageSetIsEmptyRatherThanThrowing()
     {
         Assert.Empty(TutorialNavigator.VisiblePages(null, PlatformFlags.All));

@@ -227,3 +227,203 @@ Input events (mouse move, click, scroll, keyboard) are sent from client → host
   }
   ```
 
+---
+
+## 8. Routines (3.0)
+
+A routine is one trigger followed by ordered steps. The phone is the only editor. Routines whose trigger
+happens on the PC (`pc.idle`, `pc.session`, `pc.sensor`) are synced to that PC and run there; routines
+whose trigger happens on the phone run on the phone and ask the PC to carry out the steps that need it.
+Design: `docs/specs/2026-09-26-routines-design.md` §7. Payload records: `remex.core/Messages/Routines/RoutinePayloads.cs`.
+
+**Transport.** Every routine message is a `RemexMessage` on the existing authenticated `/ws` channel.
+`protocolVersion` stays `2`; the feature is additive and advertised through capabilities. **Nothing about
+routines is handled on the TCP 8338 listener** (section 4), which stays power-verbs-only.
+
+**Gating.** Each phone-to-host type is pairing-gated like `theme_sync` and scoped to the identity the
+connection *proved*: the owner of a sync, run, cancel or ack is the connection's own `clientId`, never a
+payload field. A connection with no proven identity (loopback) is ignored and logged. The handlers run
+detached from the socket reader and never throw into it; a bad payload is answered or ignored, never a
+closed socket.
+
+**Capabilities.**
+
+| Record | Field | Type | Meaning |
+| :--- | :--- | :--- | :--- |
+| `HostCapabilities` | `supportsRoutines` | `bool` | The PC understands the messages below. Absent: the phone sends none, and a phone-run step that needs the PC fails `pc_too_old` (it never falls back to `command`, which would skip the countdown) |
+| | `routineSchemaVersion` | `int` | Highest routine schema the PC validates. `0` = none |
+| | `routinePowerVerbs` | `string[]` | Power verbs this PC can run. Never `WAKEONLAN` |
+| `ClientCapabilities` | `supportsRoutines` | `bool` | The PC never sends a `routine_*` message to, or queues one for, a client without it. An older phone's router would drop them silently |
+| | `routineSchemaVersion` | `int` | Phone's schema. `0` = none |
+
+**Envelope slots.** One optional property per type, all camelCase:
+
+| `type` | Direction | Envelope property | Payload record |
+| :--- | :--- | :--- | :--- |
+| `routines_sync` | phone → host | `routinesSync` | `RoutinesSyncPayload` |
+| `routine_sync_result` | host → phone | `routineSyncResult` | `RoutineSyncResultPayload` |
+| `routine_step_request` | phone → host | `routineStepRequest` | `RoutineStepRequestPayload` |
+| `routine_step_result` | host → phone | `routineStepResult` | `RoutineStepResultPayload` |
+| `routine_notify` | host → phone | `routineNotify` | `RoutineNotifyPayload` |
+| `routine_notify_ack` | phone → host | `routineNotifyAck` | `RoutineNotifyAckPayload` |
+| `routine_run_report` | host → phone | `routineRunReport` | `RoutineRunReportPayload` |
+| `routine_cancel` | phone → host | `routineCancel` | `RoutineCancelPayload` |
+| `routine_run_request` | phone → host | `routineRunRequest` | `RoutineRunRequestPayload` |
+
+Every host → phone type starts with `routine_`. The Android native router forwards that whole prefix to
+Kotlin in one place (`REGRESSION-GUARDS.md`, "Wire protocol and native message routing"); a new host →
+phone routine type must keep the prefix or it is dropped without a trace.
+
+Every payload field is optional at the JSON layer. Lists skip null elements, and a routine or step with
+an unknown `type` is kept as a malformed entry that gets its own rejection instead of failing the whole
+message.
+
+### `routines_sync` (phone → host)
+
+The phone's **full** set of PC-run routines for this PC, not a delta. Sent after the connection is
+authenticated and `host_info` shows `supportsRoutines`, after every edit that changes this PC's set or
+the pause flag, and as the forget flush when the phone forgets this PC.
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `schemaVersion` | `int` | Phone's routine schema version |
+| `revision` | `long` | Phone's monotonic revision for this PC, starting at 1 |
+| `paused` | `bool` | Phone-side Pause all for this PC. The PC shows "Paused from <phone>" |
+| `routines` | `Routine[]` | The full PC-run set for this PC, 0 to 16 routines (spec §6.6 for the shape) |
+| `runCursor` | `long` | Highest host run `seq` the phone has stored. `0` = none |
+| `forget` | `bool` | `true` only in the forget flush: the PC deletes this owner's routines, history and queued messages |
+| `sentAtUnixMs` | `long` | Display only |
+
+Host processing, in this order:
+
+1. **Size.** Over 64 KB serialized: `payload_too_large`, answered at once.
+2. **Start-up.** A sync that arrives before the PC has loaded its store and probed its idle and session
+   sources waits up to 10 s, then is answered `rate_limited` with nothing applied. The phone retries.
+3. **Coalescing.** At most one sync per 2 s per phone is processed; a newer sync from the same phone
+   replaces a waiting one, and the replaced one gets no reply.
+4. **Block.** The PC user blocked this phone: `blocked_by_pc`.
+5. **Schema.** `schemaVersion` newer than the PC's: `schema_too_new`.
+6. **Forget.** Deletes the owner's state and answers `ok` with `storedRevision = 0` and no results.
+7. **Revision.** Lower than stored: `stale_revision` (with `storedRevision`, so the phone can jump past it
+   and resend). Equal with the same content hash: the stored result again. Equal with different
+   content: `revision_conflict`.
+8. **Validation.** Each routine is revalidated with the shared validator plus PC checks: the trigger is
+   `pc.*`, `hostIdentity` is this PC, verbs are in `routinePowerVerbs`, apps are in the launcher
+   allowlist, and the idle or session source exists. A rejected routine is **not stored, and any earlier
+   version of it is removed**, so the PC never runs a definition the phone no longer holds.
+9. **Save.** Atomic, before the reply. A failed save answers `internal_error` and keeps the old set.
+10. **Reply**, then, after an `ok` or `partial`, the unseen history as `routine_run_report` pages
+    (from `runCursor`), then any queued `routine_notify` messages.
+
+### `routine_sync_result` (host → phone)
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `revision` | `long` | Echo of the request's revision (equals `storedRevision` when unsolicited) |
+| `storedRevision` | `long` | Revision the PC now holds for this owner |
+| `status` | `string` | `ok`, `partial`, `stale_revision`, `revision_conflict`, `schema_too_new`, `payload_too_large`, `blocked_by_pc`, `rate_limited`, `internal_error` |
+| `results` | `{routineId, accepted, reasonCode, detail?}[]` | One per routine in the request, for `ok` and `partial` only |
+| `hostPaused` | `bool` | PC-side Pause all (all owners) |
+| `ownerPaused` | `bool` | This phone's `paused`, as the PC applied it |
+| `unsolicited` | `bool` | Sent without a request because PC-side state changed: a routine switched off or on at the PC, the phone blocked or unblocked, PC Pause all |
+| `pcDisabled` | `string[]` | Routine ids the PC user switched off. The phone never clears these; only the PC can |
+| `ownerSuspended` | `string?` | `owner_absent` when the set is suspended because the phone has not connected for 30 days |
+| `idleSource` | `string?` | Idle source in use (for example `win32.lastinput`), or null when idle triggers are unavailable |
+| `sessionSource` | `string?` | Lock/unlock source in use (for example `win32.wts`), or null |
+| `sensorTrigger` | `bool` | Sensor triggers are available on this PC |
+
+### `routine_step_request` (phone → host)
+
+One PC step of a **phone-run** routine.
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `runId` | `string` | UUID of the phone's run |
+| `routineId` | `string` | Routine id |
+| `routineName` | `string` | Up to 40 characters, for the countdown and messages on the PC |
+| `triggerType` | `string` | Trigger of the run |
+| `stepIndex` | `int` | 0 to 11 |
+| `step` | `RoutineStep` | `power`, `launchApp`, `media`, or `notify` with `target = pc` |
+| `testRun` | `bool` | In-app Test. A destructive verb is never issued: the countdown runs and the result is `simulated` |
+| `source` | `string` | Run source, for history only (for example `manual.app`, `nfc.tap`, `home.arrive`) |
+
+The PC revalidates the step against the current validator, launcher allowlist and verb table. Every
+destructive verb (`SHUTDOWN`, `FORCESHUTDOWN`, `RESTART`, `FORCERESTART`, `RESTARTTOUEFI`, `SIGNOUT`,
+`SLEEP`, `HIBERNATE`) counts down 15 s on the PC first; `LOCK` and `MONITOROFF` never do. **No field of
+this message can skip the countdown.** Requests are idempotent on `(clientId, runId, stepIndex)` for
+10 minutes: a resend gets the cached result, or `in_progress` while the first is still running. New
+requests are limited to 60 per minute per phone (`rate_limited`). The step runs on no connection
+token, so a phone that drops during a countdown has not cancelled it; it learns the outcome by
+resending.
+
+### `routine_step_result` (host → phone)
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `runId`, `stepIndex` | `string`, `int` | Correlation |
+| `outcome` | `string` | `succeeded`, `failed`, `cancelled`, `simulated`, `in_progress` |
+| `reasonCode` | `string` | Reason code (spec §10.1); `ok` on success |
+| `countdownShown` | `bool` | The PC countdown was actually on screen |
+| `cancelledBy` | `string?` | `pc`, `phone` or `pause` |
+| `detail` | `string?` | Up to 120 characters, English, already redacted. The phone shows its own localized reason |
+
+For a destructive verb the PC sends `succeeded` **immediately before** issuing it, because the socket
+dies with the machine. `succeeded` means "issued after the countdown".
+
+### `routine_notify` (host → phone) and `routine_notify_ack` (phone → host)
+
+| Property (`routine_notify`) | Type | Description |
+| :--- | :--- | :--- |
+| `notifyId` | `string` | UUID. The phone ignores ids it has already shown |
+| `kind` | `string` | `step` (a `notify` step aimed at the phone) or `countdown` (heads-up that a PC-run routine is counting down) |
+| `routineId`, `routineName`, `runId` | `string` | Correlation and display |
+| `title`, `body` | `string` | Text the phone authored, echoed back. Up to 40 and 160 characters |
+| `countdownEndsAtUnixMs` | `long?` | `countdown` only. The phone offers Cancel, which sends `routine_cancel` |
+| `queuedAtUnixMs`, `expiresAtUnixMs` | `long` | Expiry is one hour after queueing |
+
+`routine_notify_ack` is `{ "notifyIds": ["..."] }`. Delivery is at least once: live when the owner is
+connected, otherwise held on the PC (at most 20 per phone, oldest dropped, each expiring after an
+hour). A held message is removed only by an ack from its owner or by expiry, and an ack for another
+phone's id matches nothing. A `countdown` notify is never queued. Every notify is also shown on the PC.
+
+### `routine_run_report` (host → phone)
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `runs` | `RoutineRun[]` | This owner's PC runs with `seq > runCursor`, oldest first, at most 50 per message |
+| `more` | `bool` | More pages follow |
+| `live` | `bool` | An in-progress update of one running PC run (step started or finished, countdown started or cancelled). The phone upserts by `runId` and does not advance its cursor |
+
+Sent after a successful sync, when a PC run ends while its owner is connected, and live at every step
+transition. `seq` is the record's last-modified sequence, so a record that changes after it ended is
+sent again with a new `seq`.
+
+### `routine_cancel` (phone → host)
+
+`{ "runId": "...", "reason": "user" | "pause" }`. Acts only on runs owned by the sender; anything else is
+ignored and logged. The PC first looks for a running PC-run routine with that `runId` (stopped before
+its next step, countdown included); otherwise it cancels the phone run's step countdown
+(`cancelled_on_phone`).
+
+### `routine_run_request` (phone → host)
+
+Runs or tests one of the sender's **stored** PC-run routines now.
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `runId` | `string` | UUID chosen by the phone. A request without a valid UUID or `routineId` is ignored |
+| `routineId` | `string` | One of the sender's stored PC-run routine ids |
+| `testRun` | `bool` | Non-destructive steps run for real, destructive ones are simulated |
+| `source` | `string` | Informational. The PC records every run request as `manual.app` |
+
+The PC runs its own stored, revalidated copy; this message cannot carry a definition. A `runId` that
+belongs to another phone is refused; a repeat of one of the sender's own ids within 10 minutes gets the
+existing run's record instead of a second run. The answer is a live `routine_run_report` of the new run,
+or of a skipped record with a reason (`routine_not_found`, `pc_not_paired`, `blocked_by_pc`,
+`disabled_on_pc`, `invalid_field`, `already_running`, `rate_limited`; `rate_limited` is also the
+not-stored answer to a request that arrived before start-up finished). Pause all, the phone's own
+switch-off and owner-absent suspension do not refuse it: those stop automatic starts only, and a run
+request is person-initiated.
+Destructive steps count down, because a phone request is never presence at the PC; only Run now
+confirmed on the PC itself skips the countdown, and that flag has no wire representation.
+

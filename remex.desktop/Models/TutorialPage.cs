@@ -13,3 +13,17 @@ public enum PlatformFlags
 
 /// <summary>Describes a single tutorial page and which platforms show it.</summary>
 public record TutorialPage(int PageIndex, string Title, string Description, PlatformFlags SupportedPlatforms);
+
+/// <summary>
+/// Author indices of the tutorial pages something deep-links to. A link names a page, never a
+/// carousel position: resolve these through <c>TutorialNavigator.PositionOfPage</c> against the
+/// platform-filtered list.
+/// </summary>
+public static class TutorialPageIds
+{
+    /// <summary>The Routines page (spec §5.2). The Routines page's "Learn about routines" opens it.</summary>
+    public const int Routines = 16;
+
+    /// <summary>The closing "You're all set" page. Always the highest author index.</summary>
+    public const int Finish = 17;
+}

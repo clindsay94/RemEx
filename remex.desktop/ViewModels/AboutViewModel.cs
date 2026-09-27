@@ -306,9 +306,15 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         return (title, description);
     }
 
+    /// <summary>
+    /// Number of canonical FAQ entries. Must match the rows in <c>docs/FAQ-PARITY.md</c> and the
+    /// Android <c>FaqScreen</c> list (17-22 are the Routines entries, spec §5.4).
+    /// </summary>
+    internal const int FaqCount = 22;
+
     private void LoadFaq()
     {
-        for (int q = 1; q <= 16; q++)
+        for (int q = 1; q <= FaqCount; q++)
         {
             FaqItems.Add(new FaqItem(
                 LocalizationService.Instance[$"Faq_Q{q}_Question"],

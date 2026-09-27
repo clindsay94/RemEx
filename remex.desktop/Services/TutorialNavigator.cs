@@ -8,7 +8,7 @@ namespace Remex.Desktop.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The tutorial is seventeen near-identical hand-written panels gated by an index converter, while a
+/// The tutorial is eighteen near-identical hand-written panels gated by an index converter, while a
 /// <see cref="TutorialPage"/> model already exists and is populated — two parallel structures that
 /// have to agree. **THE THING THAT MAKES THEM DISAGREE IS <see cref="PlatformFlags"/>.** Pages are
 /// filtered per OS, so the dot strip and the navigation must both count the FILTERED list. Count one
@@ -89,6 +89,9 @@ public static class TutorialNavigator
     /// Returns -1 when the page is not visible here, so a caller can decline rather than land the
     /// user somewhere arbitrary — a Windows-only page linked from a Linux machine has no honest
     /// destination.
+    ///
+    /// First production caller: the Routines page's "Learn about routines", which resolves
+    /// <see cref="TutorialPageIds.Routines"/> through <c>ShellViewModel.ShowTutorialAt</c>.
     /// </remarks>
     public static int PositionOfPage(IReadOnlyList<TutorialPage> visible, int authorPageIndex)
     {

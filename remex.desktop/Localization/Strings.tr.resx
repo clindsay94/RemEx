@@ -1298,6 +1298,17 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Temaları, palet stratejisini, yazı tiplerini, kart biçimlerini ve saydamlığı izleme ve denetleme tarzınıza göre ayarlayın.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Rutinler</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Rutinler telefonunuzdaki RemEx uygulamasında ayarlanır. Bu bilgisayarda başlayanlar, örneğin 30 dakika boşta kaldıktan sonra uykuya geçmek, telefonunuz yakında olmasa da burada çalışır.
+
+Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyebilirsiniz.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Bir rutin bu bilgisayarı kapatmadan, yeniden başlatmadan, oturumu kapatmadan, uyku moduna ya da hazırda bekletmeye almadan önce iptal etmek için 15 saniyeniz olur. Bunu yalnızca bu bilgisayardaki Şimdi çalıştır atlar, siz onayladıktan sonra.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3072,6 +3083,48 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Eğitimi Yeniden Oynat" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>Rutinler nedir?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Rutin, bir şey olduğunda sizin için birkaç RemEx işlemi yapar. Örneğin bu bilgisayar 30 dakika boşta kaldığında kendini uykuya alabilir.
+
+Rutinleri telefonunuzdaki RemEx uygulamasında, Diğer ve ardından Rutinler bölümünde oluşturur ve değiştirirsiniz. Bu bilgisayardaki bir olayla başlayanlar, telefonunuz bağlı olmasa da burada çalışır. Rutinler sayfası onları gösterir; kapatmanıza, çalıştırmanıza ve geçmişlerini incelemenize olanak tanır.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Rutinim neden çalışmadı?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>Rutinler sayfasında rutini seçin ve geçmişine bakın. Her çalıştırma tüm adımları gösterir, başlamayan bir çalıştırma da nedenini söyler.
+
+Yaygın nedenler şunlardır: rutinler bu bilgisayarda ya da telefonunuzda duraklatılmıştır, rutin kapalıdır, onu oluşturan telefon bu bilgisayarda engellenmiştir, izlediği sensör veri göndermeyi bırakmıştır (örneğin HWiNFO kapatıldığı için) ya da rutin zaten çalışıyordur. Telefonunuzda başlayan rutinler, örneğin eve varınca çalışanlar, telefonda çalışır; bu yüzden geçmişlerini telefon uygulamasında kontrol edin.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>RemEx konumumu takip ediyor mu?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>Hayır. Telefon uygulaması, eve ne zaman geldiğinizi veya ayrıldığınızı konum izni olmadan ev Wi-Fi ağınızı tanıyarak anlar. Bu bilgisayara telefonunuzun nerede olduğu asla söylenmez, yalnızca bir rutinin çalıştığı bildirilir.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Bir rutin, ben kullanırken bilgisayarımı kapatabilir mi?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Uyarmadan kapatamaz. Bir rutin bu bilgisayarı kapatmadan, yeniden başlatmadan, oturumu kapatmadan, uyku moduna ya da hazırda bekletmeye almadan önce, rutin telefonunuzdan başlatılmış olsa bile İptal düğmesiyle 15 saniyelik bir geri sayım görünür. Durdurmak için İptal'e tıklayın ya da Esc veya Enter tuşuna basın. Telefonunuz bağlıysa, telefonun bildiriminden de iptal edebilirsiniz. Tek istisna Rutinler sayfasındaki Şimdi çalıştır'dır: önce onayınızı ister, sonra geri sayım yapmaz. Bilgisayarı kilitlemek veya ekranı kapatmak hiçbir zaman geri sayım başlatmaz.
+
+Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında Tümünü duraklat'a tıklayın. Siz Sürdür'e tıklayana kadar hiçbir şey kendiliğinden başlamaz.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Rutinleri bilgisayarımda düzenleyebilir miyim?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>Hayır. Rutinleri telefonunuzdaki RemEx uygulamasında oluşturur ve değiştirirsiniz; uygulama da burada başlayanları bu bilgisayara gönderir. Bu bilgisayarda bir rutini kapatabilir, şimdi çalıştırabilir, geçmişini görebilir ya da bir telefonun rutinlerini engelleyebilirsiniz.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>NFC etiketleri rutinlerle nasıl çalışır?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>NFC etiketleri bir telefon özelliğidir. Telefonunuzda bir rutin, bir NFC etiketine dokunduğunuzda başlayabilir ve ardından adımları bu bilgisayarı kontrol edebilir. Bu adımlardan biri bu bilgisayarı kapatacak ya da yeniden başlatacaksa, geri sayım yine de önce burada görünür.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Dosya, seçtiğiniz klasörün kaydedebileceğinden daha hızlı geliyor, bu yüzden indirme tamamlanamadı. USB bellek veya ağ klasörü yerine bu bilgisayarın ana sürücüsündeki bir klasöre kaydetmeyi deneyin.</value>

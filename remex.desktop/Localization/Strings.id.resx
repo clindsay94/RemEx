@@ -1298,6 +1298,17 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Sesuaikan tema, strategi palet, font, bentuk kartu, dan opasitas sesuai cara Anda memantau dan mengontrol setup.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Rutinitas</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>Rutinitas diatur di aplikasi RemEx di ponsel Anda. Rutinitas yang dimulai di PC ini, seperti masuk ke mode tidur setelah 30 menit tidak digunakan, berjalan di sini meski ponsel Anda tidak ada.
+
+Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayatnya.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Sebelum rutinitas mematikan, memulai ulang, mengeluarkan akun, menidurkan, atau menghibernasi PC ini, Anda punya 15 detik untuk membatalkannya. Hanya Jalankan sekarang di PC ini yang melewatinya, setelah Anda mengonfirmasi.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3071,6 +3082,48 @@ Anda dapat mengubah:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Ya. Buka Pengaturan dan gunakan "Putar Ulang Tutorial" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>Apa itu rutinitas?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Rutinitas menjalankan beberapa tindakan RemEx untuk Anda saat sesuatu terjadi. Misalnya, saat PC ini tidak digunakan selama 30 menit, PC dapat masuk ke mode tidur sendiri.
+
+Anda membuat dan mengubah rutinitas di aplikasi RemEx di ponsel, di Lainnya, lalu Rutinitas. Rutinitas yang dimulai dari sesuatu di PC ini berjalan di sini, meski ponsel Anda tidak terhubung. Halaman Rutinitas menampilkannya, dan memungkinkan Anda mematikannya, menjalankannya, dan memeriksa riwayatnya.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Kenapa rutinitas saya tidak berjalan?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>Di halaman Rutinitas, pilih rutinitasnya dan lihat riwayatnya. Setiap kali rutinitas berjalan, semua langkahnya ditampilkan, dan yang tidak dimulai menjelaskan alasannya.
+
+Penyebab umumnya: rutinitas dijeda di PC ini atau di ponsel Anda, rutinitas dimatikan, ponsel yang membuatnya diblokir di PC ini, sensor yang dipantaunya berhenti melapor (misalnya karena HWiNFO ditutup), atau rutinitas itu sudah berjalan. Rutinitas yang dimulai di ponsel, seperti saat tiba di rumah, berjalan di ponsel, jadi periksa riwayatnya di aplikasi ponsel.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>Apakah RemEx melacak lokasi saya?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>Tidak. Aplikasi ponsel mengetahui kapan Anda tiba atau pergi dengan mengenali jaringan Wi-Fi rumah Anda, tanpa izin lokasi. PC ini tidak pernah diberi tahu di mana ponsel Anda berada, hanya bahwa sebuah rutinitas berjalan.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Bisakah rutinitas mematikan PC saat saya sedang memakainya?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Tidak tanpa peringatan. Sebelum rutinitas mematikan, memulai ulang, mengeluarkan akun, menidurkan, atau menghibernasi PC ini, hitungan mundur 15 detik muncul dengan tombol Batal, bahkan jika rutinitas dimulai dari ponsel Anda. Klik Batal, atau tekan Esc atau Enter, untuk menghentikannya. Jika ponsel Anda terhubung, Anda juga dapat membatalkannya dari notifikasinya. Satu-satunya pengecualian adalah Jalankan sekarang di halaman Rutinitas, yang meminta konfirmasi Anda terlebih dahulu lalu tidak menghitung mundur. Mengunci PC atau mematikan layar tidak pernah menghitung mundur.
+
+Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak ada yang mulai sendiri sampai Anda mengeklik Lanjutkan.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Bisakah saya mengedit rutinitas di PC?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>Tidak. Anda membuat dan mengubah rutinitas di aplikasi RemEx di ponsel, dan ponsel mengirimkan ke PC ini rutinitas yang dimulai di sini. Di PC ini Anda dapat mematikan rutinitas, menjalankannya sekarang, melihat riwayatnya, atau memblokir rutinitas dari sebuah ponsel.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>Bagaimana tag NFC bekerja dengan rutinitas?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>Tag NFC adalah fitur ponsel. Di ponsel Anda, rutinitas dapat dimulai saat Anda menyentuhkan ponsel ke tag NFC, lalu langkah-langkahnya dapat mengontrol PC ini. Jika salah satu langkah itu akan mematikan atau memulai ulang PC ini, hitungan mundur tetap muncul di sini terlebih dahulu.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Berkas datang lebih cepat daripada kemampuan folder yang Anda pilih untuk menyimpannya, sehingga unduhan tidak dapat diselesaikan. Coba simpan ke folder di drive utama komputer ini, bukan ke flash disk USB atau folder jaringan.</value>

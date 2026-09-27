@@ -331,4 +331,84 @@ public sealed class ShellViewModelTutorialPagingTests : IAsyncLifetime
             "the Carousel is sitting on the re-snapped page 3, which is not this platform's first " +
             "visible page - Back has to stay visible, not disappear because the raw index used to be low");
     }
+
+    // ─── RemEx-pp0rt.11 (Routines S6, spec §5.2, R-UX-43): the Routines page is author index 16 and
+    // Finish moved to 17. The Routines page's "Learn about routines" is the first production caller of
+    // TutorialNavigator.PositionOfPage, so it must land on the Routines page on both desktop platforms.
+
+    [Fact]
+    public void RoutinesIsPage16AndFinishIsTheLastPage17()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.All;
+
+        _shell.TutorialPageCount.Should().Be(18, "sixteen existing pages, then Routines, then Finish");
+        TutorialPageIds.Routines.Should().Be(16);
+        TutorialPageIds.Finish.Should().Be(17);
+        _shell.VisibleTutorialPageIndices[^1].Should().Be(TutorialPageIds.Finish,
+            "Finish is the highest author index, so the tour still ends on the same page as before");
+    }
+
+    [Theory]
+    [InlineData(PlatformFlags.Windows)]
+    [InlineData(PlatformFlags.Linux)]
+    public void ShowTutorialAtRoutinesOpensTheOverlayOnTheRoutinesPage(PlatformFlags platform)
+    {
+        _shell.TutorialPlatformOverride = platform;
+
+        _shell.ShowTutorialAt(TutorialPageIds.Routines);
+
+        _shell.ShowTutorialOverlay.Should().BeTrue();
+        _shell.TutorialPageIndex.Should().Be(TutorialPageIds.Routines,
+            "showing the overlay resets it to page 0, so the deep link has to be applied after that");
+        _shell.IsTutorialLastPage.Should().BeFalse("Finish still follows the Routines page");
+
+        _shell.TutorialNextCommand.Execute(null);
+
+        _shell.TutorialPageIndex.Should().Be(TutorialPageIds.Finish);
+        _shell.IsTutorialLastPage.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShowTutorialAtAPageThisPlatformHidesOpensAtTheStart()
+    {
+        // The Routines page is Windows | Linux only. A page with no honest destination here must not
+        // land the user on a neighbouring topic.
+        _shell.TutorialPlatformOverride = PlatformFlags.Android;
+
+        _shell.ShowTutorialAt(TutorialPageIds.Routines);
+
+        _shell.ShowTutorialOverlay.Should().BeTrue();
+        _shell.TutorialVisiblePageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void ShowTutorialAtWorksWhenTheOverlayIsAlreadyOpen()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Windows;
+        _shell.ShowTutorialOverlay = true;
+        _shell.TutorialPageIndex = 3;
+
+        _shell.ShowTutorialAt(TutorialPageIds.Routines);
+
+        _shell.TutorialPageIndex.Should().Be(TutorialPageIds.Routines);
+    }
+
+    [Fact]
+    public void LearnAboutRoutinesOnTheRoutinesPageOpensTheRoutinesTutorialPage()
+    {
+        _shell.TutorialPlatformOverride = PlatformFlags.Windows;
+        var routines = new RoutinesViewModel(() => null, _layoutService, _shell, post: a => a());
+        try
+        {
+            routines.LearnAboutRoutinesCommand.Execute(null);
+
+            _shell.ShowTutorialOverlay.Should().BeTrue();
+            _shell.TutorialPageIndex.Should().Be(TutorialPageIds.Routines,
+                "the empty state's link used to replay the tour from the start (an S4b stopgap)");
+        }
+        finally
+        {
+            routines.Dispose();
+        }
+    }
 }

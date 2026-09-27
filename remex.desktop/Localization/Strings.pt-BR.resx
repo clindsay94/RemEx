@@ -1298,6 +1298,17 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Ajuste temas, estratégia de paleta, fontes, formatos de cartão e opacidade conforme o seu jeito de monitorar e controlar o equipamento.</value>
   </data>
+  <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
+    <value>Rotinas</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Body" xml:space="preserve">
+    <value>As rotinas são configuradas no app RemEx do seu celular. As que começam neste PC, como entrar em suspensão depois de 30 minutos ocioso, rodam aqui mesmo quando o celular está longe.
+
+Na página Rotinas você pode vê-las, desativá-las e conferir o histórico delas.</value>
+  </data>
+  <data name="Tutorial_P16_Routines_Safety" xml:space="preserve">
+    <value>Antes de uma rotina desligar, reiniciar, sair da sessão, suspender ou hibernar este PC, você tem 15 segundos para cancelar. Só Executar agora neste PC pula essa espera, depois que você confirma.</value>
+  </data>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
@@ -3068,6 +3079,48 @@ Você pode mudar:
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Sim. Abra as Configurações e use "Repetir tutorial" na seção Ajuda. Você pode fazer isso quantas vezes quiser.</value>
+  </data>
+  <data name="Faq_Q17_Question" xml:space="preserve">
+    <value>O que são rotinas?</value>
+  </data>
+  <data name="Faq_Q17_Answer" xml:space="preserve">
+    <value>Uma rotina executa algumas ações do RemEx para você quando algo acontece. Por exemplo, quando este PC fica ocioso por 30 minutos, ele pode entrar em suspensão sozinho.
+
+Você cria e altera rotinas no app RemEx do celular, em Mais e depois Rotinas. As que começam por algo que acontece neste PC rodam aqui, mesmo quando o celular não está conectado. A página Rotinas mostra essas rotinas e permite desativá-las, executá-las e conferir o histórico delas.</value>
+  </data>
+  <data name="Faq_Q18_Question" xml:space="preserve">
+    <value>Por que minha rotina não rodou?</value>
+  </data>
+  <data name="Faq_Q18_Answer" xml:space="preserve">
+    <value>Na página Rotinas, selecione a rotina e veja o histórico dela. Cada execução mostra todas as etapas, e uma execução que não começou explica o motivo.
+
+As causas mais comuns são: as rotinas estão pausadas neste PC ou no celular, a rotina está desativada, o celular que a criou está bloqueado neste PC, o sensor que ela acompanha parou de enviar leituras (por exemplo, porque o HWiNFO foi fechado) ou ela já estava rodando. As rotinas que começam no celular, como ao chegar em casa, rodam no celular, então confira o histórico delas no app do celular.</value>
+  </data>
+  <data name="Faq_Q19_Question" xml:space="preserve">
+    <value>O RemEx rastreia minha localização?</value>
+  </data>
+  <data name="Faq_Q19_Answer" xml:space="preserve">
+    <value>Não. O app do celular sabe quando você chega ou sai reconhecendo a rede Wi-Fi da sua casa, sem permissão de localização. Este PC nunca fica sabendo onde o celular está, só que uma rotina rodou.</value>
+  </data>
+  <data name="Faq_Q20_Question" xml:space="preserve">
+    <value>Uma rotina pode desligar meu PC enquanto estou usando?</value>
+  </data>
+  <data name="Faq_Q20_Answer" xml:space="preserve">
+    <value>Não sem avisar. Antes de uma rotina desligar, reiniciar, sair da sessão, suspender ou hibernar este PC, aparece uma contagem regressiva de 15 segundos com um botão Cancelar, mesmo quando a rotina foi iniciada pelo celular. Clique em Cancelar, ou pressione Esc ou Enter, para interromper. Se o celular estiver conectado, você também pode cancelar pela notificação dele. A única exceção é Executar agora na página Rotinas, que pede sua confirmação primeiro e depois não faz contagem regressiva. Bloquear o PC ou desligar a tela nunca tem contagem regressiva.
+
+Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página Rotinas. Nada começa sozinho até você clicar em Retomar.</value>
+  </data>
+  <data name="Faq_Q21_Question" xml:space="preserve">
+    <value>Posso editar rotinas no meu PC?</value>
+  </data>
+  <data name="Faq_Q21_Answer" xml:space="preserve">
+    <value>Não. Você cria e altera rotinas no app RemEx do celular, e ele envia para este PC as que começam aqui. Neste PC você pode desativar uma rotina, executá-la agora, ver o histórico dela ou bloquear as rotinas de um celular.</value>
+  </data>
+  <data name="Faq_Q22_Question" xml:space="preserve">
+    <value>Como as etiquetas NFC funcionam com as rotinas?</value>
+  </data>
+  <data name="Faq_Q22_Answer" xml:space="preserve">
+    <value>Etiquetas NFC são um recurso do celular. No celular, uma rotina pode começar quando você encosta em uma etiqueta NFC, e as etapas dela podem então controlar este PC. Se uma dessas etapas for desligar ou reiniciar este PC, a contagem regressiva aparece aqui primeiro do mesmo jeito.</value>
   </data>
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>O arquivo está chegando mais rápido do que a pasta escolhida consegue salvá-lo, então o download não pôde ser concluído. Tente salvar em uma pasta na unidade principal deste computador em vez de um pen drive ou pasta de rede.</value>
