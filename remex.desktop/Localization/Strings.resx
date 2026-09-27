@@ -3870,4 +3870,262 @@ You can change:
   <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
     <value>Block</value>
   </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>Blocked on this PC</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>Last run: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>This routine is damaged and can't run here. Build it again on your phone.</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>{0} more</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>Hasn't run yet</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>Switched off on {0}</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>Running now</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>Allow {0} to run on this PC</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>Switch off to stop this routine running on this PC. The phone keeps it.</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>Untitled routine</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>Routines on this PC</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>This page shows the routines that run on this PC. Use the switch to turn one off, or Run now to try it.</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>Made on your phone</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>To create or change routines, use the RemEx app on your phone.</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>Show the Routines tips again</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>Got it</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>From {0}, updated {1}</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>From {0}</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>No runs yet.</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>Select a routine to see its steps and history.</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>Then</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>When</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>No routines run on this PC yet</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>Routines are made in the RemEx app on your phone, under Routines. The ones that run on this PC show up here.</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>Learn about routines</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>Routines from {0} are blocked.</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>Last synced {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>Paused from {0}</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>Suspended: {0} not seen since {1}</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>Cancel run</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>Cancel the run started {0}</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>Show or hide the steps of the run started {0}</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>Step {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>Test from {0}</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>Idle detection isn't available on this desktop.</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>Lock detection isn't available on this desktop.</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>Show history</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>Turn off on this PC</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>Turn on on this PC</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>Pause all</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>Stops every routine on this PC from starting on its own. Run now still works.</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>Routines are paused on this PC. Automatic triggers are skipped until you resume.</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>Run now</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>Run {0} now</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>Run "{0}" now?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>You're at this PC, so its "{0}" step runs right away, with no countdown. Steps: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>Couldn't start {0}: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Made in the RemEx app on your phone. They run on this PC even when your phone is away.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Routines aren't available right now because the RemEx service in this app hasn't started.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>App not allowed</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>App didn't open</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>Not supported</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Refused by the system</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Power action failed</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Media keys unavailable</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>Sensor stopped reporting</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Idle not detectable</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Lock not detectable</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Not on the PC yet</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Refused by the PC</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Blocked by the PC</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>PC no longer paired</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Skipped: paused</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Skipped: paused on the PC</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Off on the PC</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Skipped: switched off</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Suspended: phone away</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Already running</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Skipped: too soon</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Skipped: flapping</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Skipped: too many runs</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Skipped: countdown busy</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Cancelled on the PC</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Cancelled on the phone</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Message waiting</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Message expired</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Simulated</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Dry run</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Countdown while locked</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Error</value>
+  </data>
 </root>

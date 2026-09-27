@@ -3829,4 +3829,298 @@ Możesz zmienić:
   <data name="Routine_Trigger_Manual" xml:space="preserve">
     <value>Uruchamiana ręcznie</value>
   </data>
+  <data name="Routine_Trigger_Nfc" xml:space="preserve">
+    <value>Tag NFC</value>
+  </data>
+  <data name="Routine_Trigger_SensorAbove" xml:space="preserve">
+    <value>{0} powyżej {1}</value>
+  </data>
+  <data name="Routine_Trigger_SensorBelow" xml:space="preserve">
+    <value>{0} poniżej {1}</value>
+  </data>
+  <data name="Routine_Trigger_Unknown" xml:space="preserve">
+    <value>Nieznany wyzwalacz</value>
+  </data>
+  <data name="Routines_ActionFailed" xml:space="preserve">
+    <value>To się nie udało. Szczegóły są w dzienniku.</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>Zablokuj ten telefon</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>Zablokuj rutyny z telefonu {0}</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>Odblokuj</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>Odblokuj rutyny z telefonu {0}</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>Zablokować rutyny z telefonu {0}?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>Żadna rutyna z tego telefonu nie uruchomi się na tym komputerze, dopóki go nie odblokujesz, a trwająca zostanie zatrzymana. Telefon zostanie o tym powiadomiony.</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>Zablokuj</value>
+  </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>Zablokowana na tym komputerze</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>Ostatnie uruchomienie: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>Ta rutyna jest uszkodzona i nie może tu działać. Utwórz ją ponownie na telefonie.</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>jeszcze {0}</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>Jeszcze nie uruchomiono</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>Wyłączona na telefonie {0}</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>Trwa teraz</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>Zezwól na uruchamianie rutyny {0} na tym komputerze</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>Wyłącz, aby ta rutyna nie działała na tym komputerze. Telefon ją zachowa.</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>Rutyna bez nazwy</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>Rutyny na tym komputerze</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>Ta strona pokazuje rutyny działające na tym komputerze. Użyj przełącznika, aby wyłączyć rutynę, lub przycisku Uruchom teraz, aby ją wypróbować.</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>Tworzone na telefonie</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>Aby tworzyć lub zmieniać rutyny, użyj aplikacji RemEx na telefonie.</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>Pokaż ponownie wskazówki dotyczące rutyn</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>Rozumiem</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>Dalej</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>Z telefonu {0}, zaktualizowano {1}</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>Z telefonu {0}</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>Historia</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>Brak uruchomień.</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>Wybierz rutynę, aby zobaczyć jej kroki i historię.</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>Wtedy</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>Kiedy</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>Na tym komputerze nie działają jeszcze żadne rutyny</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>Rutyny tworzy się w aplikacji RemEx na telefonie, w sekcji Rutyny. Te, które działają na tym komputerze, pojawiają się tutaj.</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>Dowiedz się więcej o rutynach</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>Rutyny z telefonu {0} są zablokowane.</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>Ostatnia synchronizacja: {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>Wstrzymane przez telefon {0}</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>Zawieszone: telefonu {0} nie widziano od {1}</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>Anuluj uruchomienie</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>Anuluj uruchomienie rozpoczęte: {0}</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>Pokaż lub ukryj kroki uruchomienia rozpoczętego: {0}</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>Krok {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>Kroki</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>Test z telefonu {0}</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>Wykrywanie bezczynności nie jest dostępne w tym środowisku pulpitu.</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>Wykrywanie blokady nie jest dostępne w tym środowisku pulpitu.</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>Pokaż historię</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>Wyłącz na tym komputerze</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>Włącz na tym komputerze</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>Wstrzymaj wszystko</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>Żadna rutyna na tym komputerze nie uruchomi się sama. Przycisk Uruchom teraz nadal działa.</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>Rutyny na tym komputerze są wstrzymane. Automatyczne wyzwalacze są pomijane do czasu wznowienia.</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>Wznów</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>Uruchom teraz</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>Uruchom teraz rutynę {0}</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>Uruchomić teraz „{0}”?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>Jesteś przy tym komputerze, więc krok „{0}” zostanie wykonany od razu, bez odliczania. Kroki: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>Nie udało się uruchomić rutyny {0}: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Tworzone w aplikacji RemEx na telefonie. Działają na tym komputerze, nawet gdy telefonu nie ma w pobliżu.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Rutyny są teraz niedostępne, ponieważ usługa RemEx w tej aplikacji nie została uruchomiona.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>Aplikacja niedozwolona</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>Aplikacja się nie otworzyła</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>Nieobsługiwane</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Odrzucone przez system</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Czynność zasilania nie powiodła się</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Klawisze multimedialne niedostępne</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>Czujnik przestał przesyłać dane</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Nie można wykryć bezczynności</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Nie można wykryć blokady</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Jeszcze nie ma jej na komputerze</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Odrzucona przez komputer</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Zablokowana przez komputer</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>Komputer nie jest już sparowany</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Pominięto: wstrzymane</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Pominięto: wstrzymane na komputerze</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Wyłączona na komputerze</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Pominięto: wyłączona</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Zawieszona: brak telefonu</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Już uruchomiona</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Pominięto: za wcześnie</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Pominięto: zbyt częste zmiany</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Pominięto: za dużo uruchomień</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Pominięto: trwa inne odliczanie</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Anulowano na komputerze</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Anulowano na telefonie</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Przerwano</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Wiadomość czeka</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Wiadomość wygasła</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Zasymulowano</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Tryb próbny</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Odliczanie przy zablokowanym ekranie</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Błąd</value>
+  </data>
 </root>

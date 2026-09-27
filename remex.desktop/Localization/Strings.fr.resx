@@ -4020,4 +4020,106 @@ Vous pouvez modifier :
   <data name="Routines_RunNow_Skipped" xml:space="preserve">
     <value>Impossible de lancer {0} : {1}</value>
   </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Créées dans l'application RemEx de votre téléphone. Elles s'exécutent sur ce PC même quand votre téléphone est absent.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Les routines ne sont pas disponibles pour l'instant, car le service RemEx de cette application n'a pas démarré.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>Application non autorisée</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>L'application ne s'est pas ouverte</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>Non pris en charge</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Refusé par le système</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Échec de l'action d'alimentation</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Touches multimédias indisponibles</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>Le capteur ne transmet plus</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Inactivité non détectable</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Verrouillage non détectable</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Pas encore sur le PC</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Refusée par le PC</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Bloquée par le PC</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>PC plus associé</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Ignorée : en pause</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Ignorée : en pause sur le PC</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Désactivée sur le PC</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Ignorée : désactivée</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Suspendue : téléphone absent</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Déjà en cours</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Ignorée : trop tôt</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Ignorée : changements trop rapides</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Ignorée : trop d'exécutions</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Ignorée : compte à rebours occupé</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Annulée sur le PC</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Annulée sur le téléphone</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Interrompue</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Message en attente</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Message expiré</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Simulée</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Simulation</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Compte à rebours pendant le verrouillage</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
 </root>

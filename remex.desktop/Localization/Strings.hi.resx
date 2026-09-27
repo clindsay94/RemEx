@@ -3715,7 +3715,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>रूटीन</value>
   </data>
   <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
-    <value>इस PC पर सहेजे गए रूटीन पढ़े नहीं जा सके, इसलिए उन्हें अलग रख दिया गया है और इनमें से कोई नहीं चलेगा। उन्हें फिर से भेजने के लिए अपने फ़ोन पर RemEx खोलें।</value>
+    <value>इस PC पर सहेजे गए रूटीन पढ़े नहीं जा सके, इसलिए उन्हें अलग रख दिया गया है और उनमें से कोई नहीं चलेगा। उन्हें फिर से भेजने के लिए अपने फ़ोन पर RemEx खोलें।</value>
   </data>
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>इस PC का रूटीन इतिहास पढ़ा नहीं जा सका, इसलिए उसे अलग रखकर फिर से शुरू किया गया।</value>
@@ -3842,5 +3842,284 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Routines_ActionFailed" xml:space="preserve">
     <value>यह काम नहीं किया। लॉग में विवरण है।</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>इस फ़ोन को ब्लॉक करें</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>{0} के रूटीन ब्लॉक करें</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>अनब्लॉक करें</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>{0} के रूटीन अनब्लॉक करें</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>{0} के रूटीन ब्लॉक करें?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>जब तक आप इसे अनब्लॉक नहीं करते, इस फ़ोन का कोई भी रूटीन इस PC पर नहीं चलेगा, और जो चल रहा है वह रुक जाएगा। फ़ोन को इसकी जानकारी दी जाएगी।</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>ब्लॉक करें</value>
+  </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>इस PC पर ब्लॉक है</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>पिछली बार: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>यह रूटीन खराब है और यहां नहीं चल सकता। इसे अपने फ़ोन पर फिर से बनाएं।</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>{0} और</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>अभी तक नहीं चला</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>{0} पर बंद है</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>अभी चल रहा है</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>{0} को इस PC पर चलने दें</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>इस PC पर इस रूटीन को चलने से रोकने के लिए बंद करें। फ़ोन में यह बना रहता है।</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>बिना नाम का रूटीन</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>इस PC पर रूटीन</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>यह पेज उन रूटीन को दिखाता है जो इस PC पर चलते हैं। किसी को बंद करने के लिए स्विच का, या आज़माने के लिए अभी चलाएं का उपयोग करें।</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>फ़ोन पर बनाए जाते हैं</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>रूटीन बनाने या बदलने के लिए, अपने फ़ोन पर RemEx ऐप का उपयोग करें।</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>रूटीन के सुझाव फिर से दिखाएं</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>समझ गया</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>आगे</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>{0} से, {1} को अपडेट किया गया</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>{0} से</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>इतिहास</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>अभी तक कोई रन नहीं।</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>किसी रूटीन के चरण और इतिहास देखने के लिए उसे चुनें।</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>तब</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>जब</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>खारिज करें</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>इस PC पर अभी कोई रूटीन नहीं चलता</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>रूटीन आपके फ़ोन के RemEx ऐप में, रूटीन सेक्शन में बनाए जाते हैं। जो इस PC पर चलते हैं, वे यहां दिखते हैं।</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>रूटीन के बारे में जानें</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>{0} के रूटीन ब्लॉक हैं।</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>पिछला सिंक: {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>{0} से रोका गया</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>निलंबित: {0} {1} से नहीं दिखा</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>रन रद्द करें</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>{0} को शुरू हुआ रन रद्द करें</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>{0} को शुरू हुए रन के चरण दिखाएं या छिपाएं</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>चरण {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>चरण</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>{0} से परीक्षण</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>इस डेस्कटॉप पर निष्क्रियता का पता नहीं लगाया जा सकता।</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>इस डेस्कटॉप पर लॉक का पता नहीं लगाया जा सकता।</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>इतिहास दिखाएं</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>इस PC पर बंद करें</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>इस PC पर चालू करें</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>सभी रोकें</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>इस PC पर कोई भी रूटीन अपने आप शुरू नहीं होगा। अभी चलाएं फिर भी काम करता है।</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>इस PC पर रूटीन रोके गए हैं। फिर से शुरू करने तक अपने आप चलने वाले ट्रिगर छोड़ दिए जाते हैं।</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>फिर से शुरू करें</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>अभी चलाएं</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>{0} अभी चलाएं</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>"{0}" अभी चलाएं?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>आप इस PC पर हैं, इसलिए इसका "{0}" चरण बिना उलटी गिनती के तुरंत चलेगा। चरण: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>{0} शुरू नहीं हो सका: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>आपके फ़ोन के RemEx ऐप में बनाए गए। ये इस PC पर तब भी चलते हैं जब आपका फ़ोन दूर हो।</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>रूटीन अभी उपलब्ध नहीं हैं क्योंकि इस ऐप की RemEx सेवा शुरू नहीं हुई है।</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>ऐप की अनुमति नहीं</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>ऐप नहीं खुला</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>समर्थित नहीं</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>सिस्टम ने मना किया</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>पावर कार्य विफल</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>मीडिया कीज़ उपलब्ध नहीं</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>सेंसर ने डेटा भेजना बंद किया</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>निष्क्रियता का पता नहीं चल सकता</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>लॉक का पता नहीं चल सकता</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>अभी PC पर नहीं</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>PC ने अस्वीकार किया</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>PC ने ब्लॉक किया</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>PC अब पेयर नहीं है</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>छोड़ा गया: रोका हुआ</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>छोड़ा गया: PC पर रोका हुआ</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>PC पर बंद</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>छोड़ा गया: बंद</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>निलंबित: फ़ोन दूर</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>पहले से चल रहा है</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>छोड़ा गया: बहुत जल्दी</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>छोड़ा गया: बार-बार बदलाव</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>छोड़ा गया: बहुत ज़्यादा बार चला</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>छोड़ा गया: काउंटडाउन व्यस्त</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>PC पर रद्द</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>फ़ोन पर रद्द</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>बीच में रुका</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>संदेश इंतज़ार में</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>संदेश की समय-सीमा खत्म</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>सिम्युलेट किया गया</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>ड्राई रन</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>लॉक रहते हुए काउंटडाउन</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>त्रुटि</value>
   </data>
 </root>

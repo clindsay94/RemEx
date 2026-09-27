@@ -3805,4 +3805,325 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Routine_Step_NotifyPhone" xml:space="preserve">
     <value>Telefona mesaj</value>
   </data>
+  <data name="Routine_Step_Unknown" xml:space="preserve">
+    <value>Bilinmeyen adım</value>
+  </data>
+  <data name="Routine_Step_WaitOnline" xml:space="preserve">
+    <value>Bilgisayarı bekle</value>
+  </data>
+  <data name="Routine_Step_Wake" xml:space="preserve">
+    <value>Bilgisayarı uyandır</value>
+  </data>
+  <data name="Routine_Trigger_HomeArrive" xml:space="preserve">
+    <value>Eve varış</value>
+  </data>
+  <data name="Routine_Trigger_HomeLeave" xml:space="preserve">
+    <value>Evden çıkış</value>
+  </data>
+  <data name="Routine_Trigger_Idle" xml:space="preserve">
+    <value>Bilgisayar {0} dk boşta</value>
+  </data>
+  <data name="Routine_Trigger_Locked" xml:space="preserve">
+    <value>Bilgisayar kilitlendi</value>
+  </data>
+  <data name="Routine_Trigger_Unlocked" xml:space="preserve">
+    <value>Bilgisayarın kilidi açıldı</value>
+  </data>
+  <data name="Routine_Trigger_Manual" xml:space="preserve">
+    <value>Elle çalıştırma</value>
+  </data>
+  <data name="Routine_Trigger_Nfc" xml:space="preserve">
+    <value>NFC etiketi</value>
+  </data>
+  <data name="Routine_Trigger_SensorAbove" xml:space="preserve">
+    <value>{0}, {1} üzerinde</value>
+  </data>
+  <data name="Routine_Trigger_SensorBelow" xml:space="preserve">
+    <value>{0}, {1} altında</value>
+  </data>
+  <data name="Routine_Trigger_Unknown" xml:space="preserve">
+    <value>Bilinmeyen tetikleyici</value>
+  </data>
+  <data name="Routines_ActionFailed" xml:space="preserve">
+    <value>Bu işe yaramadı. Ayrıntılar günlükte.</value>
+  </data>
+  <data name="Routines_Block" xml:space="preserve">
+    <value>Bu telefonu engelle</value>
+  </data>
+  <data name="Routines_BlockName" xml:space="preserve">
+    <value>{0} rutinlerini engelle</value>
+  </data>
+  <data name="Routines_Unblock" xml:space="preserve">
+    <value>Engeli kaldır</value>
+  </data>
+  <data name="Routines_UnblockName" xml:space="preserve">
+    <value>{0} rutinlerinin engelini kaldır</value>
+  </data>
+  <data name="Routines_BlockConfirm_Title" xml:space="preserve">
+    <value>{0} rutinleri engellensin mi?</value>
+  </data>
+  <data name="Routines_BlockConfirm_Message" xml:space="preserve">
+    <value>Engeli kaldırana kadar bu telefonun hiçbir rutini bu bilgisayarda çalışmaz ve çalışan rutin durur. Telefona bildirilir.</value>
+  </data>
+  <data name="Routines_BlockConfirm_Btn" xml:space="preserve">
+    <value>Engelle</value>
+  </data>
+  <data name="Routines_Card_Blocked" xml:space="preserve">
+    <value>Bu bilgisayarda engellendi</value>
+  </data>
+  <data name="Routines_Card_LastRun" xml:space="preserve">
+    <value>Son çalışma: {0}, {1}</value>
+  </data>
+  <data name="Routines_Card_Malformed" xml:space="preserve">
+    <value>Bu rutin bozuk ve burada çalışamaz. Telefonunuzda yeniden oluşturun.</value>
+  </data>
+  <data name="Routines_Card_MoreChips" xml:space="preserve">
+    <value>{0} tane daha</value>
+  </data>
+  <data name="Routines_Card_NeverRan" xml:space="preserve">
+    <value>Henüz çalışmadı</value>
+  </data>
+  <data name="Routines_Card_OffOnPhone" xml:space="preserve">
+    <value>{0} üzerinde kapatıldı</value>
+  </data>
+  <data name="Routines_Card_Running" xml:space="preserve">
+    <value>Şu anda çalışıyor</value>
+  </data>
+  <data name="Routines_Card_ToggleName" xml:space="preserve">
+    <value>{0} rutininin bu bilgisayarda çalışmasına izin ver</value>
+  </data>
+  <data name="Routines_Card_ToggleTooltip" xml:space="preserve">
+    <value>Bu rutinin bu bilgisayarda çalışmasını durdurmak için kapatın. Telefon onu saklar.</value>
+  </data>
+  <data name="Routines_Card_Unnamed" xml:space="preserve">
+    <value>Adsız rutin</value>
+  </data>
+  <data name="Routines_Coach1_Title" xml:space="preserve">
+    <value>Bu bilgisayardaki rutinler</value>
+  </data>
+  <data name="Routines_Coach1_Body" xml:space="preserve">
+    <value>Bu sayfa bu bilgisayarda çalışan rutinleri gösterir. Birini kapatmak için anahtarı, denemek için Şimdi çalıştır düğmesini kullanın.</value>
+  </data>
+  <data name="Routines_Coach2_Title" xml:space="preserve">
+    <value>Telefonda oluşturulur</value>
+  </data>
+  <data name="Routines_Coach2_Body" xml:space="preserve">
+    <value>Rutin oluşturmak veya değiştirmek için telefonunuzdaki RemEx uygulamasını kullanın.</value>
+  </data>
+  <data name="Routines_CoachReplay" xml:space="preserve">
+    <value>Rutin ipuçlarını yeniden göster</value>
+  </data>
+  <data name="Routines_Coach_GotIt" xml:space="preserve">
+    <value>Anladım</value>
+  </data>
+  <data name="Routines_Coach_Next" xml:space="preserve">
+    <value>İleri</value>
+  </data>
+  <data name="Routines_Detail_From" xml:space="preserve">
+    <value>{0} kaynaklı, {1} tarihinde güncellendi</value>
+  </data>
+  <data name="Routines_Detail_FromNoDate" xml:space="preserve">
+    <value>{0} kaynaklı</value>
+  </data>
+  <data name="Routines_Detail_History" xml:space="preserve">
+    <value>Geçmiş</value>
+  </data>
+  <data name="Routines_Detail_NoHistory" xml:space="preserve">
+    <value>Henüz çalıştırma yok.</value>
+  </data>
+  <data name="Routines_Detail_Select" xml:space="preserve">
+    <value>Adımlarını ve geçmişini görmek için bir rutin seçin.</value>
+  </data>
+  <data name="Routines_Detail_Then" xml:space="preserve">
+    <value>Sonra</value>
+  </data>
+  <data name="Routines_Detail_When" xml:space="preserve">
+    <value>Ne zaman</value>
+  </data>
+  <data name="Routines_DismissStatus" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Routines_Empty_Title" xml:space="preserve">
+    <value>Bu bilgisayarda henüz çalışan rutin yok</value>
+  </data>
+  <data name="Routines_Empty_Body" xml:space="preserve">
+    <value>Rutinler telefonunuzdaki RemEx uygulamasında, Rutinler bölümünde oluşturulur. Bu bilgisayarda çalışanlar burada görünür.</value>
+  </data>
+  <data name="Routines_Empty_Learn" xml:space="preserve">
+    <value>Rutinler hakkında bilgi edinin</value>
+  </data>
+  <data name="Routines_Group_Blocked" xml:space="preserve">
+    <value>{0} rutinleri engellendi.</value>
+  </data>
+  <data name="Routines_Group_LastSeen" xml:space="preserve">
+    <value>Son eşitleme: {0}</value>
+  </data>
+  <data name="Routines_Group_Paused" xml:space="preserve">
+    <value>{0} tarafından duraklatıldı</value>
+  </data>
+  <data name="Routines_Group_Suspended" xml:space="preserve">
+    <value>Askıya alındı: {0}, {1} tarihinden beri görülmedi</value>
+  </data>
+  <data name="Routines_History_Cancel" xml:space="preserve">
+    <value>Çalıştırmayı iptal et</value>
+  </data>
+  <data name="Routines_History_CancelName" xml:space="preserve">
+    <value>{0} başlayan çalıştırmayı iptal et</value>
+  </data>
+  <data name="Routines_History_ExpandName" xml:space="preserve">
+    <value>{0} başlayan çalıştırmanın adımlarını göster veya gizle</value>
+  </data>
+  <data name="Routines_History_StepNumber" xml:space="preserve">
+    <value>Adım {0}</value>
+  </data>
+  <data name="Routines_History_Steps" xml:space="preserve">
+    <value>Adımlar</value>
+  </data>
+  <data name="Routines_History_TestFrom" xml:space="preserve">
+    <value>{0} üzerinden test</value>
+  </data>
+  <data name="Routines_IdleUnavailable" xml:space="preserve">
+    <value>Bu masaüstünde boşta kalma algılanamıyor.</value>
+  </data>
+  <data name="Routines_SessionUnavailable" xml:space="preserve">
+    <value>Bu masaüstünde kilitlenme algılanamıyor.</value>
+  </data>
+  <data name="Routines_Menu_History" xml:space="preserve">
+    <value>Geçmişi göster</value>
+  </data>
+  <data name="Routines_Menu_TurnOff" xml:space="preserve">
+    <value>Bu bilgisayarda kapat</value>
+  </data>
+  <data name="Routines_Menu_TurnOn" xml:space="preserve">
+    <value>Bu bilgisayarda aç</value>
+  </data>
+  <data name="Routines_PauseAll" xml:space="preserve">
+    <value>Tümünü duraklat</value>
+  </data>
+  <data name="Routines_PauseAllTooltip" xml:space="preserve">
+    <value>Bu bilgisayardaki hiçbir rutin kendiliğinden başlamaz. Şimdi çalıştır yine çalışır.</value>
+  </data>
+  <data name="Routines_PausedBanner" xml:space="preserve">
+    <value>Rutinler bu bilgisayarda duraklatıldı. Sürdürene kadar otomatik tetikleyiciler atlanır.</value>
+  </data>
+  <data name="Routines_Resume" xml:space="preserve">
+    <value>Sürdür</value>
+  </data>
+  <data name="Routines_RunNow" xml:space="preserve">
+    <value>Şimdi çalıştır</value>
+  </data>
+  <data name="Routines_RunNowName" xml:space="preserve">
+    <value>{0} rutinini şimdi çalıştır</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmTitle" xml:space="preserve">
+    <value>"{0}" şimdi çalıştırılsın mı?</value>
+  </data>
+  <data name="Routines_RunNow_ConfirmMessage" xml:space="preserve">
+    <value>Bu bilgisayarın başındasınız, bu yüzden "{0}" adımı geri sayım olmadan hemen çalışır. Adımlar: {1}</value>
+  </data>
+  <data name="Routines_RunNow_Skipped" xml:space="preserve">
+    <value>{0} başlatılamadı: {1}</value>
+  </data>
+  <data name="Routines_Subheader" xml:space="preserve">
+    <value>Telefonunuzdaki RemEx uygulamasında oluşturulur. Telefonunuz yakında olmasa da bu bilgisayarda çalışır.</value>
+  </data>
+  <data name="Routines_Unavailable" xml:space="preserve">
+    <value>Bu uygulamadaki RemEx hizmeti başlamadığı için rutinler şu anda kullanılamıyor.</value>
+  </data>
+  <data name="Routine_History_launch_not_allowed" xml:space="preserve">
+    <value>Uygulamaya izin verilmiyor</value>
+  </data>
+  <data name="Routine_History_launch_failed" xml:space="preserve">
+    <value>Uygulama açılmadı</value>
+  </data>
+  <data name="Routine_History_power_unsupported" xml:space="preserve">
+    <value>Desteklenmiyor</value>
+  </data>
+  <data name="Routine_History_power_denied_by_os" xml:space="preserve">
+    <value>Sistem reddetti</value>
+  </data>
+  <data name="Routine_History_power_failed" xml:space="preserve">
+    <value>Güç işlemi başarısız</value>
+  </data>
+  <data name="Routine_History_media_unavailable" xml:space="preserve">
+    <value>Medya tuşları kullanılamıyor</value>
+  </data>
+  <data name="Routine_History_sensor_unavailable" xml:space="preserve">
+    <value>Sensör veri göndermeyi bıraktı</value>
+  </data>
+  <data name="Routine_History_idle_source_unavailable" xml:space="preserve">
+    <value>Boşta olma algılanamıyor</value>
+  </data>
+  <data name="Routine_History_session_source_unavailable" xml:space="preserve">
+    <value>Kilit algılanamıyor</value>
+  </data>
+  <data name="Routine_History_routine_not_found" xml:space="preserve">
+    <value>Henüz bilgisayarda değil</value>
+  </data>
+  <data name="Routine_History_rejected_by_pc" xml:space="preserve">
+    <value>Bilgisayar reddetti</value>
+  </data>
+  <data name="Routine_History_blocked_by_pc" xml:space="preserve">
+    <value>Bilgisayar engelledi</value>
+  </data>
+  <data name="Routine_History_pc_not_paired" xml:space="preserve">
+    <value>Bilgisayar artık eşleştirilmiş değil</value>
+  </data>
+  <data name="Routine_History_paused_on_phone" xml:space="preserve">
+    <value>Atlandı: duraklatıldı</value>
+  </data>
+  <data name="Routine_History_paused_on_pc" xml:space="preserve">
+    <value>Atlandı: bilgisayarda duraklatıldı</value>
+  </data>
+  <data name="Routine_History_disabled_on_pc" xml:space="preserve">
+    <value>Bilgisayarda kapalı</value>
+  </data>
+  <data name="Routine_History_skipped_disabled" xml:space="preserve">
+    <value>Atlandı: kapalı</value>
+  </data>
+  <data name="Routine_History_owner_absent" xml:space="preserve">
+    <value>Askıya alındı: telefon yok</value>
+  </data>
+  <data name="Routine_History_already_running" xml:space="preserve">
+    <value>Zaten çalışıyor</value>
+  </data>
+  <data name="Routine_History_cooldown" xml:space="preserve">
+    <value>Atlandı: çok erken</value>
+  </data>
+  <data name="Routine_History_flap_suppressed" xml:space="preserve">
+    <value>Atlandı: sık değişim</value>
+  </data>
+  <data name="Routine_History_rate_limited" xml:space="preserve">
+    <value>Atlandı: çok fazla çalıştırma</value>
+  </data>
+  <data name="Routine_History_conflict_countdown_active" xml:space="preserve">
+    <value>Atlandı: geri sayım meşgul</value>
+  </data>
+  <data name="Routine_History_cancelled_on_pc" xml:space="preserve">
+    <value>Bilgisayarda iptal edildi</value>
+  </data>
+  <data name="Routine_History_cancelled_on_phone" xml:space="preserve">
+    <value>Telefonda iptal edildi</value>
+  </data>
+  <data name="Routine_History_interrupted_pc" xml:space="preserve">
+    <value>Yarıda kesildi</value>
+  </data>
+  <data name="Routine_History_notify_queued" xml:space="preserve">
+    <value>Mesaj bekliyor</value>
+  </data>
+  <data name="Routine_History_notify_expired" xml:space="preserve">
+    <value>Mesajın süresi doldu</value>
+  </data>
+  <data name="Routine_History_simulated" xml:space="preserve">
+    <value>Benzetildi</value>
+  </data>
+  <data name="Routine_History_dry_run" xml:space="preserve">
+    <value>Deneme modu</value>
+  </data>
+  <data name="Routine_History_countdown_unseen" xml:space="preserve">
+    <value>Kilitliyken geri sayım</value>
+  </data>
+  <data name="Routine_History_internal_error" xml:space="preserve">
+    <value>Hata</value>
+  </data>
 </root>

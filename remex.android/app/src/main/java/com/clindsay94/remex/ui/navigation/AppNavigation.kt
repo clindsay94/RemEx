@@ -157,9 +157,6 @@ fun AppNavigation() {
         // Initial true so a cold start never flashes a badge the user already dismissed.
         val routinesOpened by settingsManager.routinesOpenedFlow.collectAsStateWithLifecycle(initialValue = true)
 
-        // Initial true so a cold start never flashes a badge the user already dismissed.
-        val routinesOpened by settingsManager.routinesOpenedFlow.collectAsStateWithLifecycle(initialValue = true)
-
         // Live Handshake (RemEx-8g6n0) is an overlay ABOVE the app rather than a route: the
         // dashboard composes underneath and the portal opens into it, refracted by the lens on
         // the content layer below.
@@ -207,9 +204,6 @@ fun AppNavigation() {
                                                 onNavigateToQrScanner = onQr
                                         )
                                 },
-                        )
-                }
-                liveHandshake.session?.let { session ->
                         )
                 }
                 liveHandshake.session?.let { session ->
