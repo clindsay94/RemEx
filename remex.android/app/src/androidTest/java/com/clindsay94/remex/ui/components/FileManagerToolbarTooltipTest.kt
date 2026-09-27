@@ -39,6 +39,7 @@ class FileManagerToolbarTooltipTest {
                     canWrite = true,
                     onNewFolder = {},
                     onUpload = {},
+                    onUploadFolder = {},
                 )
             }
         }
