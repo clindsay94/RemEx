@@ -3666,4 +3666,25 @@ Vous pouvez modifier :
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>une routine</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>inactivité du PC</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>verrouillage ou déverrouillage du PC</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>capteur du PC</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Exécuter maintenant sur ce PC</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Les routines enregistrées sur ce PC n'ont pas pu être lues : elles ont été mises de côté et aucune ne s'exécutera. Ouvrez RemEx sur votre téléphone pour les renvoyer.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>L'historique des routines de ce PC n'a pas pu être lu : il a été mis de côté et recommencé.</value>
+  </data>
 </root>

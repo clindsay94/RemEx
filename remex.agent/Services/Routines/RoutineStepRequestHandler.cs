@@ -41,16 +41,20 @@ public sealed class RoutineStepRequestHandler
     private readonly Dictionary<(string ClientId, string RunId, int StepIndex), Entry> _entries = new();
     private readonly Dictionary<string, Queue<long>> _recentRequests = new(StringComparer.Ordinal);
 
+    private readonly RoutineCausality? _causality;
+
     public RoutineStepRequestHandler(
         RoutineStepExecutor executor,
         RoutineCountdownCoordinator countdown,
         TimeProvider time,
-        ILogger<RoutineStepRequestHandler> logger)
+        ILogger<RoutineStepRequestHandler> logger,
+        RoutineCausality? causality = null)
     {
         _executor = executor;
         _countdown = countdown;
         _time = time;
         _logger = logger;
+        _causality = causality;
     }
 
     /// <summary>
@@ -127,6 +131,9 @@ public sealed class RoutineStepRequestHandler
             LogName(request.RoutineName), request.TestRun ? " [test]" : string.Empty);
 
         var announced = false;
+
+        // A phone run's LOCK is a routine's own step too: the edge it causes must trigger nothing (T9).
+        using var causedByRun = _causality?.BeginStep();
         var result = await _executor.ExecuteAsync(
             new RoutineStepExecution(
                 clientId,

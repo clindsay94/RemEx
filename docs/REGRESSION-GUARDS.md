@@ -448,9 +448,9 @@ and `RoutineCountdownSurfaceTests.ClosingTheWindowIsWiredToCancel`).
 
 ### Routines: a test run never issues a destructive verb
 
-`remex.agent/Services/Routines/RoutineStepExecutor.cs:232` (`if (execution.TestRun)` returns `simulated`
+`remex.agent/Services/Routines/RoutineStepExecutor.cs:234` (`if (execution.TestRun)` returns `simulated`
 before the pre-issue announcement and before `IRoutinePowerExecutor`), and
-`RoutineStepRequestHandler.cs:140` (`PresenceConfirmed: false` for every wire request); pinned by
+`RoutineStepRequestHandler.cs:147` (`PresenceConfirmed: false` for every wire request); pinned by
 `TestRunSimulationTests` and `CountdownCancelTests.EveryWireInitiatedStepCountsDown` — RemEx-pp0rt.4,
 spec D7, T21, T22.
 
@@ -461,6 +461,51 @@ do less. Moving it below the dry-run branch or the "succeeded before the verb" s
 real shutdown whose history then says `simulated`. The same file is also why no wire field may map to
 `presenceConfirmed`: it skips the countdown, so it is set in-process only, by the PC's own confirmed Run
 now (S4).
+
+### Routines: Run now's presence flag has no wire representation
+
+`remex.desktop/Services/Routines/IRoutinesHost.cs:89` (`RunNowAsync(…, bool presenceConfirmed)`, the only
+entry that can set it), `remex.agent/Services/Routines/RoutineHostService.cs:264` (passes it through as
+`manual.pcRunNow`) and `:461` (`PresenceConfirmed: false` for `routine_run_request`); pinned by
+`RunNowCountdownBypassTests` (`NoWirePayloadCanExpressPresence`, `APhoneRunRequestAlwaysCountsDown`,
+`ATriggerAlwaysCountsDown`) — RemEx-pp0rt.9, spec D3, T21.
+
+`presenceConfirmed` is the one thing that lets a routine shut down, restart, sign out, sleep or
+hibernate the PC without the 15 s countdown. It means "the person at this PC just confirmed it in
+`ConfirmationDialogHost`", which is only true for the PC's own Run now. Add a field to
+`routine_run_request`, `routine_step_request` or `routines_sync` that maps onto it, or derive it from a
+source string the phone sends, and any paired phone (a lost one, a buggy one) can power the PC off with
+nobody given the chance to press Cancel; nothing logs it as unusual, because the verb path is the normal
+one. A confirmation dialog that cannot show must pass false (fail closed). The runner never decides the
+countdown itself: it only passes this flag through to `RoutineStepExecutor`.
+
+### Routines: the session source owns its own message-only window
+
+`remex.agent/Services/Routines/RoutineWindowsSources.cs:139` (`WtsSessionStateSource.Pump`: its own
+thread, `CreateWindowExW(… HWND_MESSAGE …)` at `:167`, `WTSRegisterSessionNotification` at `:175`);
+pinned by `WtsSessionStateSourceTests` — RemEx-pp0rt.9, spec §8.5.3.
+
+`pc.session` routines ("lock the PC → sleep") hear lock and unlock through `WM_WTSSESSION_CHANGE`, which
+Windows delivers only to a window registered for it. Hooking the Avalonia main window instead looks
+equivalent and is silent when it fails: after a `--minimized` logon start `MainWindow` may never be
+constructed (see the countdown-window guard above), so no window is registered, no edge ever arrives and
+every session routine simply never fires, with no error anywhere. Keep the dedicated thread and the
+message-only window. **Keep the window class unique per source too**: a class carries the window
+procedure of whoever registered it, and a second source reusing a per-process class name ran on the first
+source's collected delegate, which terminated the test host ("callback on a garbage collected delegate").
+
+### Routines: logind Lock/Unlock signals are requests, not state
+
+`remex.agent/Services/Routines/RoutineLinuxSources.cs:33` (`LogindParsing.ParseLockedHint`, only the
+`LockedHint` property of `org.freedesktop.login1.Session`) and `:387` (the `PropertiesChanged` match
+rule); pinned by `LogindSessionSourceTests` — RemEx-pp0rt.9, spec §8.5.3.
+
+logind's Session `Lock()` / `Unlock()` signals are logind asking the screen locker to act: they are sent
+whether or not a locker is running or obeys, and a lock the locker starts on its own (idle timeout, the
+user's shortcut) never produces one. Subscribing to them fires "on lock" routines for locks that never
+happened and misses real ones, and the only symptom is routines running at the wrong times or not at all.
+`LockedHint` is set by the locker once the screen really is locked. Follow the property through
+`PropertiesChanged` (re-reading it when it is only invalidated), never the signals.
 
 ### `protocolVersion` bumps must be coordinated
 

@@ -293,6 +293,8 @@ public static class HostBootstrapper
         builder.Services.AddSingleton(Remex.Desktop.Services.Routines.RoutineDryRunMode.FromCommandLine(args));
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<Remex.Desktop.Services.Routines.IRoutineUi, Remex.Desktop.Services.Routines.AvaloniaRoutineUi>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineTriggerAvailability>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineCausality>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.ISessionLockProbe, Remex.Agent.Services.Routines.SessionLockProbe>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePowerExecutor, Remex.Agent.Services.Routines.SharedVerbRoutinePowerExecutor>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineMediaKeys, Remex.Agent.Services.Routines.InputSimulationMediaKeys>();
@@ -300,6 +302,49 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineCountdownCoordinator>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineStepExecutor>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineStepRequestHandler>();
+
+        // ── 3.0 Routines: PC-run routines (RemEx-pp0rt.9, spec §6.9, §7.4, §8.4, §8.5) ──
+        // routines.json / routine_runs.json in the host state directory, the sync handler, the runner, the
+        // idle and session sources, and the IRoutinesHost backend of the PC Routines page. Still in-process
+        // only: nothing here reaches RemexNetworkListener (T15).
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineStateFiles, Remex.Agent.Services.Routines.RoutineStateFiles>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostStore>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineRunStore>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePhoneChannel, Remex.Agent.Services.Routines.SessionRoutinePhoneChannel>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePhoneNotifier, Remex.Agent.Services.Routines.LiveOnlyRoutinePhoneNotifier>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePlatformSources, Remex.Agent.Services.Routines.RoutinePlatformSources>();
+        builder.Services.AddSingleton(sp =>
+        {
+            // This PC's routine identity: the key the phone binds a routine to (wrong_pc otherwise).
+            var certificates = sp.GetRequiredService<ICertificateService>();
+            return new Remex.Agent.Services.Routines.RoutineHostIdentity(certificates.GetSpkiSha256Base64);
+        });
+        builder.Services.AddSingleton(sp => new Remex.Agent.Services.Routines.RoutineHostValidator(
+            sp.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(),
+            sp.GetRequiredService<IHostCapabilitiesProvider>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineTriggerAvailability>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostIdentity>().Get));
+        builder.Services.AddSingleton(sp => new Remex.Agent.Services.Routines.RoutineHostRunner(
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostStore>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineRunStore>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepExecutor>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineCountdownCoordinator>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutineOwnerDirectory>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutinePhoneChannel>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutinePhoneNotifier>(),
+            sp.GetRequiredService<Remex.Desktop.Services.Routines.IRoutineUi>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineCausality>(),
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostIdentity>().Get,
+            sp.GetRequiredService<TimeProvider>(),
+            sp.GetRequiredService<ILogger<Remex.Agent.Services.Routines.RoutineHostRunner>>()));
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineSyncHandler>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostMessageHandler>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostService>());
+        builder.Services.AddSingleton<Remex.Desktop.Services.Routines.IRoutinesHost>(
+            sp => sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostService>());
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutineOwnerLifecycle>(
+            sp => sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostService>());
 
         // The phone's last-known palette, for "Match my phone" (RemEx-sudp8). Interface lives in
         // Remex.Core so the desktop can depend on it without referencing Remex.Agent, resolved there
@@ -333,7 +378,8 @@ public static class HostBootstrapper
                 sp.GetRequiredService<PairedDeviceActivityStore>(),
                 sp.GetRequiredService<IFileTrustService>(),
                 sp.GetRequiredService<IPairedDeviceDisconnector>(),
-                sp.GetRequiredService<ILogger<PairedDeviceRevoker>>()));
+                sp.GetRequiredService<ILogger<PairedDeviceRevoker>>(),
+                sp.GetRequiredService<Remex.Agent.Services.Routines.IRoutineOwnerLifecycle>()));
 
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(
             sp => new PairedDeviceDirectory(
@@ -615,7 +661,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>(),
-                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>());
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

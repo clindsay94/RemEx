@@ -3672,4 +3672,25 @@ You can change:
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>a routine</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>PC idle</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>PC lock or unlock</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>PC sensor</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Run now on this PC</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Routines</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>The routines saved on this PC could not be read, so they were set aside and none of them will run. Open RemEx on your phone to send them again.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>The routine history on this PC could not be read, so it was set aside and started again.</value>
+  </data>
 </root>
