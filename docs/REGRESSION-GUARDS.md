@@ -491,8 +491,8 @@ app" while connected, and no routine can open an app. Keep `AppEntry.Id` on the 
 
 ### Routines: the countdown window must not depend on `MainWindow`
 
-`remex.desktop/Services/Routines/AvaloniaRoutineUi.cs:52-53` (ownerless `new RoutineCountdownWindow(…)`
-then `Show()`), `remex.desktop/Views/RoutineCountdownWindow.axaml.cs`; pinned by
+`remex.desktop/Services/Routines/AvaloniaRoutineUi.cs:56-67` (ownerless `new RoutineCountdownWindow(…)`
+then `ShowCentred()`), `remex.desktop/Views/RoutineCountdownWindow.axaml.cs`; pinned by
 `RoutineCountdownSurfaceTests.TheCountdownWindowNeverReachesForMainWindow` and
 `RoutineCountdownWindowRenderTests` — RemEx-pp0rt.4, spec §8.6.
 
@@ -506,11 +506,21 @@ anyone. Keep it a top-level, ownerless, topmost window, and keep the tray "Cance
 (`RoutineCountdownTrayState`) armed before the window is attempted, so a window that fails still leaves a
 way to cancel.
 
-**Closing the countdown window is a cancel.** It keeps system chrome, so X, Alt+F4 and the taskbar can
-dismiss it; `RoutineCountdownWindow.OnClosing` runs Cancel whenever `!e.IsProgrammatic`. Drop that and
-the window disappears while the agent's 15 s keep running, and the PC shuts down right after the person
-dismissed the warning (pinned by `RoutineCountdownWindowRenderTests.AUserCloseFromTheChromeCancelsExactlyOnce`
-and `RoutineCountdownSurfaceTests.ClosingTheWindowIsWiredToCancel`).
+**Any close before the countdown ends is a cancel; `IsProgrammatic` is not a safe signal, because
+Avalonia-drawn caption buttons close programmatically.** The window uses
+`ExtendClientAreaToDecorationsHint`, so its X is drawn by Avalonia and calls `Window.Close()` itself: a
+real mouse click on it arrives as `IsProgrammatic = true`. The first version cancelled only when
+`!e.IsProgrammatic`, so Alt+F4 cancelled but the X closed the window while the agent's 15 s ran on, and
+SHUTDOWN was issued at 15 s (RemEx-pp0rt.16, live test 2026-09-27). `RoutineCountdownWindow.OnClosing`
+(`RoutineCountdownWindow.axaml.cs:106`) now cancels on every close unless the countdown has already
+ended; the only exempt close is the coordinator's, through `AvaloniaRoutineUi.CloseWindowOnUiThread` →
+`CloseAfterCountdownEnded()` (`AvaloniaRoutineUi.cs:129`), which marks the countdown ended before it
+closes. Never key the rule on who called `Close()`. The window also has no Minimize or Maximize
+(`CanMinimize`/`CanMaximize="False"`): a minimized countdown hides the only warning. Pinned by
+`RoutineCountdownWindowRenderTests.ClosingTheWindowWhileTheCountdownRunsCancelsExactlyOnce` (the real
+`Close()` path), `TheCoordinatorsCloseAfterTheCountdownEndedDoesNotCancel`,
+`ThroughTheRoutineUiTheCoordinatorsCloseDoesNotCancelButAnyEarlierCloseDoes` and
+`ItCannotBeMinimizedOrMaximized`.
 
 ### Routines: a test run never issues a destructive verb
 

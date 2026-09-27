@@ -3879,6 +3879,15 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>अभी तक नहीं चला</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}। {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>इस PC पर चालू</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>इस PC पर बंद</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>{0} पर बंद है</value>
   </data>
@@ -3965,6 +3974,9 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>{0} को शुरू हुआ रन रद्द करें</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}।</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>{0} को शुरू हुए रन के चरण दिखाएं या छिपाएं</value>

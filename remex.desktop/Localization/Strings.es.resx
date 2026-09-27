@@ -3893,6 +3893,15 @@ Puedes cambiar:
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>Aún no se ha ejecutado</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}. {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>activada en este PC</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>desactivada en este PC</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Desactivada en {0}</value>
   </data>
@@ -3979,6 +3988,9 @@ Puedes cambiar:
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>Cancelar la ejecución iniciada: {0}</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}.</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>Mostrar u ocultar los pasos de la ejecución iniciada: {0}</value>

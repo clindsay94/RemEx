@@ -77,6 +77,21 @@ public static class NotificationRouter
     }
 
     /// <summary>
+    /// Chooses the channel for an IMMINENT action the person at the PC can still stop: the routine
+    /// countdown (routines spec §8.6). Always the tray balloon, whether or not the main window is
+    /// visible.
+    /// </summary>
+    /// <remarks>
+    /// This is the one event that ignores the window-visible rule above, deliberately. The rule exists
+    /// to avoid a second notification for something already on screen; here the main window being
+    /// visible says nothing about whether the person is looking at the COUNTDOWN, and the balloon is
+    /// the surface the spec guarantees (on Wayland a topmost window is only a request). Routing it as
+    /// an Outcome sent it to an in-app toast whenever RemEx was open, so no balloon appeared at all
+    /// (RemEx-pp0rt.16).
+    /// </remarks>
+    public static NotificationChannel RouteImminent() => NotificationChannel.TrayBalloon;
+
+    /// <summary>
     /// Whether an event should ALSO be written to the in-app log regardless of channel.
     /// </summary>
     /// <remarks>

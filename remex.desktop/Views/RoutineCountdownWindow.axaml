@@ -9,6 +9,8 @@
         Width="400"
         SizeToContent="Height"
         CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
         Topmost="True"
         ShowInTaskbar="True"
         WindowStartupLocation="Manual"
@@ -21,7 +23,9 @@
          constructed at a minimized logon start, and a countdown that needed it would be a countdown
          nobody sees (docs/REGRESSION-GUARDS.md, "The countdown window must not depend on MainWindow").
          One button, Cancel, which is both the default and the cancel button, so Enter, Space and Esc
-         all cancel. -->
+         all cancel. No Minimize and no Maximize (RemEx-pp0rt.16): a countdown that can be minimized
+         hides the only warning. The one caption button left, the (Avalonia-drawn) X, is a Cancel: any
+         close before the countdown ends cancels it, see RoutineCountdownWindow.OnClosing. -->
     <StackPanel Margin="24,44,24,24" Spacing="12">
         <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="TimerOutline" Width="24" Height="24" VerticalAlignment="Center"

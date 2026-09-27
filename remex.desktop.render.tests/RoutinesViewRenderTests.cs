@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -30,7 +31,9 @@ public sealed class RoutinesViewRenderTests
 
         public RoutinesHostSnapshot GetSnapshot() => Snapshot;
 
-        public IReadOnlyList<RoutineRun> GetHistory(string? ownerClientId = null, string? routineId = null) => [];
+        public List<RoutineRun> History { get; } = new();
+
+        public IReadOnlyList<RoutineRun> GetHistory(string? ownerClientId = null, string? routineId = null) => History;
 
         public Task SetHostPausedAsync(bool paused) => Task.CompletedTask;
 
@@ -115,6 +118,78 @@ public sealed class RoutinesViewRenderTests
 
         vm.IsWideLayout.Should().Be(wide);
         view.FindControl<Border>("DetailPane")!.IsVisible.Should().Be(wide);
+        window.Close();
+    }
+
+    /// <summary>
+    /// RemEx-pp0rt.16: the live UIA tree announced every card as "RoutineCardViewModel". Asked of the
+    /// real automation peers, not of the XAML text, because a name on an element with no announced
+    /// peer is announced by nothing (see DialogContentAccessibleNamesTests).
+    /// </summary>
+    [AvaloniaFact]
+    public void ListItemsAndHistoryRowsAnnounceTheRoutineAndItsState()
+    {
+        var host = WithOneRoutine();
+        host.History.Add(new RoutineRun
+        {
+            RunId = "run-1",
+            OwnerClientId = "client-1",
+            RoutineId = "r1",
+            Outcome = RoutineRunOutcomes.Succeeded,
+            Source = "manual.app",
+            StartedAtUnixMs = DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeMilliseconds(),
+        });
+        var (window, view, vm) = Open(host, 1280);
+
+        var item = view.GetVisualDescendants().OfType<ListBoxItem>().Single();
+        var itemName = ControlAutomationPeer.CreatePeerForElement(item).GetName();
+        itemName.Should().Contain("Sleep when idle").And.NotContain("ViewModel");
+        itemName.Should().Contain(vm.Groups[0].Routines[0].IsOn
+            ? Remex.Desktop.Services.LocalizationService.Instance["Routines_Card_StateOn"]
+            : Remex.Desktop.Services.LocalizationService.Instance["Routines_Card_StateOff"]);
+
+        vm.Groups[0].SelectedRoutine = vm.Groups[0].Routines[0];
+        Dispatcher.UIThread.RunJobs();
+
+        var rows = view.FindControl<Border>("DetailPane")!.GetVisualDescendants().OfType<Border>()
+            .Where(b => b.Classes.Contains("history-row"))
+            .ToList();
+        rows.Should().NotBeEmpty("the selected routine has one run in its history");
+        foreach (var row in rows)
+        {
+            var peer = ControlAutomationPeer.CreatePeerForElement(row);
+            peer.GetName().Should().NotBeNullOrWhiteSpace().And.NotContain("ViewModel");
+            peer.IsControlElement().Should().BeTrue("a history row must be in the control view to be announced");
+            peer.GetAutomationControlType().Should().Be(AutomationControlType.ListItem);
+        }
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// RemEx-pp0rt.16: a paired phone with no routines still shows its group header, and on the empty
+    /// page that header sat 8 px under the Learn button. The gap now matches the 32 above the empty state.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheEmptyStateLeavesRoomAboveAPhoneGroupHeader()
+    {
+        var host = new Host
+        {
+            Snapshot = new RoutinesHostSnapshot(false, false, "idle", "session",
+                [new RoutineOwnerView("client-1", "Pixel", false, false, false, 0, [])], []),
+        };
+        var (window, view, vm) = Open(host, 1280);
+        vm.IsEmpty.Should().BeTrue();
+
+        var empty = view.FindControl<StackPanel>("EmptyState")!;
+        var groups = view.FindControl<ItemsControl>("RoutineGroups")!;
+        empty.IsVisible.Should().BeTrue();
+        groups.ItemCount.Should().Be(1, "the paired phone's group shows even with no routines");
+
+        var emptyBottom = empty.TranslatePoint(new Point(0, empty.Bounds.Height), view)!.Value.Y;
+        var groupsTop = groups.TranslatePoint(new Point(0, 0), view)!.Value.Y;
+        (groupsTop - emptyBottom).Should().BeGreaterThanOrEqualTo(32,
+            "the group header must not crowd the empty state's Learn button");
         window.Close();
     }
 

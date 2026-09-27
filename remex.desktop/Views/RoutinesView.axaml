@@ -53,7 +53,8 @@
                 <ItemsControl x:Name="HistoryList" ItemsSource="{Binding History}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:RoutineRunViewModel">
-                            <Border Classes="history-row">
+                            <Border Classes="history-row" AutomationProperties.Name="{Binding AccessibleName}"
+                                    AutomationProperties.ControlTypeOverride="ListItem" AutomationProperties.IsControlElementOverride="True">
                                 <StackPanel Spacing="6">
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                         <mi:MaterialIcon Grid.Column="0" Classes="status" Kind="{Binding Icon}" Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,10,0"
@@ -268,6 +269,11 @@
             <Setter Property="Margin" Value="0,0,0,12"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
         </Style>
+        <!-- The list item is what a screen reader lands on; without a name it announced the view
+             model's type name (RemEx-pp0rt.16). -->
+        <Style Selector="ListBox.routine-list > ListBoxItem" x:DataType="vm:RoutineCardViewModel">
+            <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleName}"/>
+        </Style>
 
         <!-- P-M1: cards stagger in on the first visit per process, 30 ms apart, 200 ms each on the
              Material standard curve (KeySpline 0.2,0,0,1). Opacity + TranslateTransform.Y only, never
@@ -385,8 +391,10 @@
         <Grid x:Name="ContentGrid" Grid.Row="2" ColumnDefinitions="*,24,*">
             <ScrollViewer x:Name="ListScroller" Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="8">
-                    <!-- P3 empty state -->
-                    <StackPanel x:Name="EmptyState" Spacing="12" Margin="0,32,0,0" MaxWidth="560" HorizontalAlignment="Left" IsVisible="{Binding IsEmpty}">
+                    <!-- P3 empty state. The 24 below it (with the list's 8 spacing, 32 in all, matching
+                         the 32 above) keeps a paired phone's group header from sitting on the Learn
+                         button: a phone with no routines still shows its group (RemEx-pp0rt.16). -->
+                    <StackPanel x:Name="EmptyState" Spacing="12" Margin="0,32,0,24" MaxWidth="560" HorizontalAlignment="Left" IsVisible="{Binding IsEmpty}">
                         <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
                             <Border Classes="chip trigger"><TextBlock Theme="{StaticResource CaptionTextBlock}" Text="{local:Localize Routine_Source_PcIdle}"/></Border>
                             <mi:MaterialIcon Kind="ArrowRightThin" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>

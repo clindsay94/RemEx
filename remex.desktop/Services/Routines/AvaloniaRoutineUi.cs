@@ -32,8 +32,12 @@ public sealed class AvaloniaRoutineUi : IRoutineUi
         // The tray item and the balloon do not depend on the window: arm them first, so a window
         // that fails to open still leaves a way to cancel from the tray.
         RoutineCountdownTrayState.Instance.Activate(prompt.RunId, onCancel);
-        NotificationService.Instance.Notify(
-            NotificationImportance.Outcome,
+
+        // THE BALLOON IS NOT ROUTED LIKE AN OUTCOME. It used to be Notify(Outcome), which the router
+        // sends to an in-app toast whenever the main window is visible - so with RemEx open no balloon
+        // appeared at all (RemEx-pp0rt.16). The spec makes the balloon the guaranteed countdown surface
+        // (§8.6; on Wayland the topmost window is only a request), so it goes through the imminent route.
+        NotificationService.Instance.NotifyImminent(
             prompt.RoutineName,
             RoutineStrings.Format(
                 "Routine_Tray_CountdownMessage", RoutineStrings.ActionLabel(prompt.Verb), prompt.Seconds));
@@ -50,7 +54,17 @@ public sealed class AvaloniaRoutineUi : IRoutineUi
                 CloseWindowOnUiThread();
                 var viewModel = new RoutineCountdownViewModel(prompt, onCancel);
                 var window = new RoutineCountdownWindow(viewModel);
-                window.Show();
+                window.Closed += (_, _) =>
+                {
+                    // Closed by the person (a Cancel): drop the slot so the coordinator's later close
+                    // does not reach for a dead window.
+                    if (ReferenceEquals(_window, window))
+                    {
+                        _window = null;
+                        _windowRunId = null;
+                    }
+                };
+                window.ShowCentred();
                 _window = window;
                 _windowRunId = prompt.RunId;
                 return window.IsVisible;
@@ -102,11 +116,16 @@ public sealed class AvaloniaRoutineUi : IRoutineUi
         }
     }
 
+    /// <summary>The countdown window currently shown, for tests. UI thread only.</summary>
+    internal RoutineCountdownWindow? CurrentWindow => _window;
+
+    // Only the coordinator reaches this (CloseCountdown), or a new countdown replacing a finished one;
+    // either way the countdown is over, so this close must not be a Cancel. Every other close is.
     private void CloseWindowOnUiThread()
     {
         var window = _window;
         _window = null;
         _windowRunId = null;
-        window?.Close();
+        window?.CloseAfterCountdownEnded();
     }
 }

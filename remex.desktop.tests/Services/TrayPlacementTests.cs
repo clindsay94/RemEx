@@ -56,6 +56,49 @@ public class TrayPlacementTests
             "a logical margin doubles in physical pixels when the display does");
     }
 
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.25)]
+    [InlineData(1.5)]
+    [InlineData(2.0)]
+    public void CenterPutsTheWindowInTheMiddleOfTheWorkAreaAtEveryScaling(double scaling)
+    {
+        // The routine countdown (RemEx-pp0rt.16): centred, in the screen's own physical pixels.
+        var area = WorkArea(scaling);
+
+        var at = TrayPlacement.Center(area, widthLogical: 400, heightLogical: 260, scaling);
+
+        var width = (int)Math.Ceiling(400 * scaling);
+        var height = (int)Math.Ceiling(260 * scaling);
+        var leftGap = at.X - area.X;
+        var rightGap = area.Right - (at.X + width);
+        var topGap = at.Y - area.Y;
+        var bottomGap = area.Bottom - (at.Y + height);
+        Math.Abs(leftGap - rightGap).Should().BeLessThanOrEqualTo(1);
+        Math.Abs(topGap - bottomGap).Should().BeLessThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public void CenterIsRelativeToTheWorkAreaNotTheDesktopOrigin()
+    {
+        // A primary screen that is not at (0,0) of the virtual desktop, with a taskbar on top.
+        var area = new PixelRect(2560, 48, 2560, 1392);
+
+        var at = TrayPlacement.Center(area, 400, 200, 1.0);
+
+        at.Should().Be(new PixelPoint(2560 + 1080, 48 + 596));
+    }
+
+    [Fact]
+    public void AWindowLargerThanTheWorkAreaIsPinnedToItsTopLeft()
+    {
+        var area = new PixelRect(100, 50, 800, 600);
+
+        var at = TrayPlacement.Center(area, 1000, 700, 1.0);
+
+        at.Should().Be(new PixelPoint(100, 50), "the title bar and Cancel must stay on screen");
+    }
+
     [Fact]
     public void ScalingTheRESULTIsWhatWasWrong()
     {

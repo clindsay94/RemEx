@@ -136,6 +136,36 @@ public sealed class NotificationService
         }
     }
 
+    /// <summary>
+    /// Announces an imminent action the person at the PC can still stop (the routine countdown), from
+    /// any thread. Routed by <see cref="NotificationRouter.RouteImminent"/>: always a balloon.
+    /// </summary>
+    public void NotifyImminent(string title, string message) =>
+        Dispatch(() => PresentImminent(title, message, IsWindowVisible()));
+
+    /// <summary>
+    /// Routes and shows one imminent-action event. Call on the UI thread; prefer
+    /// <see cref="NotifyImminent"/> elsewhere.
+    /// </summary>
+    /// <remarks>
+    /// Shown with <see cref="NotificationImportance.Problem"/> presentation: it needs a decision, and a
+    /// Problem balloon lingers 15 s, as long as the countdown itself, where an Outcome's 8 s would
+    /// vanish halfway through. When the balloon cannot be shown and the window is visible, the toast is
+    /// the fallback, since it is then the only other surface anyone could see.
+    /// </remarks>
+    public NotificationDelivery PresentImminent(string title, string message, bool windowVisible)
+    {
+        const NotificationImportance presentation = NotificationImportance.Problem;
+        if (NotificationRouter.RouteImminent() == NotificationChannel.TrayBalloon
+            && TryShowBalloon(presentation, title, message))
+            return NotificationDelivery.TrayBalloon;
+
+        if (windowVisible && TryShowToast(presentation, title, message))
+            return NotificationDelivery.InApp;
+
+        return Unannounced(presentation, title, "the tray balloon could not be shown");
+    }
+
     /// <summary>Shows a toast, reporting rather than throwing when the surface cannot take it.</summary>
     /// <remarks>
     /// The sinks are set from outside this class, so "it threw" is as real a failure mode as "it is

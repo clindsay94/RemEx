@@ -14,6 +14,14 @@ namespace Remex.Desktop.Tests.Services;
 public class NotificationRouterTests
 {
     [Fact]
+    public void AnImminentActionIsAlwaysATrayBalloon()
+    {
+        // The routine countdown (§8.6, RemEx-pp0rt.16): the balloon is its guaranteed surface, so the
+        // window-visible rule that sends everything else to a toast does not apply.
+        Assert.Equal(NotificationChannel.TrayBalloon, NotificationRouter.RouteImminent());
+    }
+
+    [Fact]
     public void AProblemReachesTheUserWhereverTheyAre()
     {
         // The one importance that may interrupt. The alternative is the state this bead exists to

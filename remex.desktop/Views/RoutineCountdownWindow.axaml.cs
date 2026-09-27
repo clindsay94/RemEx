@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -26,6 +27,7 @@ namespace Remex.Desktop.Views;
 public partial class RoutineCountdownWindow : Window
 {
     private readonly DispatcherTimer _tick = new() { Interval = TimeSpan.FromSeconds(1) };
+    private bool _countdownEnded;
 
     /// <summary>For the XAML previewer and the loader. Production uses the view-model overload.</summary>
     public RoutineCountdownWindow()
@@ -33,6 +35,7 @@ public partial class RoutineCountdownWindow : Window
         InitializeComponent();
         _tick.Tick += OnTick;
         Opened += OnOpened;
+        SizeChanged += OnSizeChanged;
         Closing += OnClosing;
         Closed += OnClosed;
         AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
@@ -46,25 +49,65 @@ public partial class RoutineCountdownWindow : Window
 
     private RoutineCountdownViewModel? ViewModel => DataContext as RoutineCountdownViewModel;
 
+    /// <summary>
+    /// Whether the countdown this window shows has ended (elapsed or cancelled). Only then may the
+    /// window close without that close being a Cancel.
+    /// </summary>
+    internal bool CountdownEnded => _countdownEnded;
+
+    /// <summary>
+    /// The coordinator's close: the countdown has already elapsed or been cancelled, so closing is not
+    /// a Cancel. The ONLY close that is exempt; see <see cref="OnClosing"/>.
+    /// </summary>
+    internal void CloseAfterCountdownEnded()
+    {
+        _countdownEnded = true;
+        Close();
+    }
+
+    /// <summary>
+    /// Shows the window centred on the primary screen's work area. Positions it BEFORE it is shown as
+    /// well as after, so the platform never gets to pick a cascaded default position for it (the
+    /// window has <c>WindowStartupLocation="Manual"</c>, and on Win32 "Manual" with no position is
+    /// the OS's cascade - which is what stepped successive countdowns across a second monitor).
+    /// </summary>
+    internal void ShowCentred()
+    {
+        CenterOnPrimaryWorkArea(EstimatedLogicalHeight());
+        Show();
+    }
+
     private void OnOpened(object? sender, EventArgs e)
     {
-        CenterOnPrimaryWorkArea();
+        CenterOnPrimaryWorkArea(Bounds.Height);
         CancelButton.Focus();
         _tick.Start();
     }
 
-    // ANY CLOSE THE PERSON MAKES IS A CANCEL. The window keeps system chrome, so X, Alt+F4 and the
-    // taskbar's "Close window" all end it - and a window that simply went away while the agent's 15 s
-    // kept running would shut the PC down right after the user dismissed the warning. Only the
-    // coordinator's own Close() is programmatic, and by then the countdown is over, so Cancel is a
-    // no-op there (the view model runs it at most once, and the coordinator ignores a closed countdown).
-    private void OnClosing(object? sender, WindowClosingEventArgs e) => HandleClosing(e.IsProgrammatic);
-
-    /// <summary>The closing rule, separated so it is testable without a platform close request.</summary>
-    internal void HandleClosing(bool isProgrammatic)
+    // SizeToContent="Height" settles the real height after the first layout pass, which can land
+    // after Opened; re-centre then, so the vertical centre is the real one and not the pre-layout guess.
+    // The window is not resizable, so this only fires for that layout change (and a DPI move), never
+    // for the person dragging it.
+    private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
-        if (!isProgrammatic)
+        if (e.HeightChanged && IsVisible && !_countdownEnded)
         {
+            CenterOnPrimaryWorkArea(e.NewSize.Height);
+        }
+    }
+
+    // ANY CLOSE BEFORE THE COUNTDOWN ENDS IS A CANCEL, whoever called Close(). IsProgrammatic is NOT a
+    // safe signal: the caption buttons are Avalonia-drawn (ExtendClientAreaToDecorationsHint), and a
+    // drawn X calls Window.Close() itself, so a real mouse click on it arrives as IsProgrammatic = true.
+    // Keying on it let the X close the window while the agent's 15 s ran on, and the PC shut down
+    // right after the person dismissed the warning (RemEx-pp0rt.16). The only exempt close is the
+    // coordinator's own, after the countdown has ended (CloseAfterCountdownEnded); Cancel then is also
+    // a no-op on the agent side, which ignores a closed countdown.
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (!_countdownEnded)
+        {
+            _countdownEnded = true;
             ViewModel?.CancelCommand.Execute(null);
         }
     }
@@ -85,7 +128,10 @@ public partial class RoutineCountdownWindow : Window
         }
     }
 
-    private void CenterOnPrimaryWorkArea()
+    // Always the PRIMARY screen's work area and its own scaling (spec §8.6, §2.3 P4): never the screen
+    // the window happens to be on, never the previous countdown's position. WorkingArea is physical
+    // pixels and the size is logical, so the size is scaled into the screen's space (TrayPlacement).
+    private void CenterOnPrimaryWorkArea(double heightLogical)
     {
         var screen = Screens?.Primary;
         if (screen is null)
@@ -93,12 +139,26 @@ public partial class RoutineCountdownWindow : Window
             return;
         }
 
-        var area = screen.WorkingArea;
-        var scale = screen.Scaling;
-        var width = (int)Math.Ceiling(Bounds.Width * scale);
-        var height = (int)Math.Ceiling(Bounds.Height * scale);
-        Position = new PixelPoint(
-            area.X + Math.Max(0, (area.Width - width) / 2),
-            area.Y + Math.Max(0, (area.Height - height) / 2));
+        var widthLogical = Bounds.Width > 0 ? Bounds.Width : Width;
+        if (double.IsNaN(widthLogical) || widthLogical <= 0 || double.IsNaN(heightLogical) || heightLogical <= 0)
+        {
+            return;
+        }
+
+        Position = TrayPlacement.Center(screen.WorkingArea, widthLogical, heightLogical, screen.Scaling);
+    }
+
+    // Before the first layout pass the window has no height yet (SizeToContent="Height"), so measure
+    // the content at the window's fixed width. Good enough to land on the right screen near the centre;
+    // Opened and SizeChanged correct it to the exact centre.
+    private double EstimatedLogicalHeight()
+    {
+        if (Content is not Control content || double.IsNaN(Width))
+        {
+            return 0;
+        }
+
+        content.Measure(new Size(Width, double.PositiveInfinity));
+        return content.DesiredSize.Height;
     }
 }

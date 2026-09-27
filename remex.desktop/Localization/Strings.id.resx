@@ -3882,6 +3882,15 @@ Anda dapat mengubah:
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>Belum pernah berjalan</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}. {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>aktif di PC ini</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>nonaktif di PC ini</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Dinonaktifkan di {0}</value>
   </data>
@@ -3968,6 +3977,9 @@ Anda dapat mengubah:
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>Batalkan eksekusi yang dimulai {0}</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}.</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>Tampilkan atau sembunyikan langkah eksekusi yang dimulai {0}</value>

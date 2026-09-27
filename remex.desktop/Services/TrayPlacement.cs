@@ -35,4 +35,23 @@ public static class TrayPlacement
         new(
             (int)(workingArea.Right - ((widthLogical + marginLogical) * scaling)),
             (int)(workingArea.Bottom - ((heightLogical + marginLogical) * scaling)));
+
+    /// <summary>
+    /// Centres a window in a work area (the routine countdown, routines spec §8.6). A window larger
+    /// than the area is pinned to its top-left rather than pushed off it, so its title bar and its
+    /// Cancel stay reachable.
+    /// </summary>
+    /// <param name="workingArea">The screen's work area, in PHYSICAL pixels.</param>
+    /// <param name="widthLogical">The window's width, in LOGICAL units.</param>
+    /// <param name="heightLogical">The window's height, in LOGICAL units.</param>
+    /// <param name="scaling">Physical pixels per logical unit of THAT screen.</param>
+    public static PixelPoint Center(
+        PixelRect workingArea, double widthLogical, double heightLogical, double scaling)
+    {
+        var width = (int)Math.Ceiling(widthLogical * scaling);
+        var height = (int)Math.Ceiling(heightLogical * scaling);
+        return new PixelPoint(
+            workingArea.X + Math.Max(0, (workingArea.Width - width) / 2),
+            workingArea.Y + Math.Max(0, (workingArea.Height - height) / 2));
+    }
 }

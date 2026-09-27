@@ -71,6 +71,57 @@ public class NotificationServiceTests
         Assert.Empty(toasts.Shown);
     }
 
+    /// <summary>
+    /// RemEx-pp0rt.16: the routine countdown was announced as an Outcome, so with RemEx open it became
+    /// an in-app toast and no balloon appeared. It is the one event that balloons whatever the window.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnImminentActionAlwaysBalloonsAndNeverAlsoToasts(bool windowVisible)
+    {
+        var service = WithBothSurfaces(out var toasts, out var balloons);
+
+        var delivery = service.PresentImminent("Evening", "Shut down in 15 seconds.", windowVisible);
+
+        Assert.Equal(NotificationDelivery.TrayBalloon, delivery);
+        var shown = Assert.Single(balloons.Shown);
+        Assert.Equal(("Evening", "Shut down in 15 seconds."), (shown.Title, shown.Message));
+        Assert.Equal(NotificationImportance.Problem, shown.Importance); // lingers as long as the countdown
+        Assert.Empty(toasts.Shown);
+    }
+
+    [Fact]
+    public void AnImminentActionFallsBackToTheToastOnlyWhenTheWindowIsVisible()
+    {
+        var visible = WithBothSurfaces(out var visibleToasts, out _, balloonSucceeds: false);
+        Assert.Equal(NotificationDelivery.InApp, visible.PresentImminent("Evening", "m", windowVisible: true));
+        Assert.Single(visibleToasts.Shown);
+
+        var hidden = WithBothSurfaces(out var hiddenToasts, out _, balloonSucceeds: false);
+        Assert.Equal(NotificationDelivery.Failed, hidden.PresentImminent("Evening", "m", windowVisible: false));
+        Assert.Empty(hiddenToasts.Shown);
+    }
+
+    [Fact]
+    public void NotifyImminentGoesThroughTheDispatcher()
+    {
+        var balloons = new RecordingBalloonSink(succeeds: true);
+        var queued = new List<Action>();
+        var service = new NotificationService
+        {
+            TrayBalloon = balloons,
+            WindowVisibleProbe = () => true,
+            Dispatch = queued.Add,
+        };
+
+        service.NotifyImminent("Evening", "m");
+        Assert.Empty(balloons.Shown);
+
+        Assert.Single(queued).Invoke();
+        Assert.Single(balloons.Shown);
+    }
+
     [Fact]
     public void InformationalChatterTouchesNoSurfaceWhileHidden()
     {

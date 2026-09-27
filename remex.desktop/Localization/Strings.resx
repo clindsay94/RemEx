@@ -3885,6 +3885,15 @@ You can change:
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>Hasn't run yet</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}. {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>enabled on this PC</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>disabled on this PC</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Switched off on {0}</value>
   </data>
@@ -3971,6 +3980,9 @@ You can change:
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>Cancel the run started {0}</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}.</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>Show or hide the steps of the run started {0}</value>

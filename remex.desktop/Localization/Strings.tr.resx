@@ -3883,6 +3883,15 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>Henüz çalışmadı</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}. {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>bu bilgisayarda açık</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>bu bilgisayarda kapalı</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>{0} üzerinde kapatıldı</value>
   </data>
@@ -3969,6 +3978,9 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>{0} başlayan çalıştırmayı iptal et</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}.</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>{0} başlayan çalıştırmanın adımlarını göster veya gizle</value>

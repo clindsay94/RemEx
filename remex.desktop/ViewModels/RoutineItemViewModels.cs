@@ -184,6 +184,34 @@ public sealed partial class RoutineCardViewModel : ObservableObject
 
     public bool HasHistory => History.Count > 0;
 
+    /// <summary>
+    /// What a screen reader announces for the card's list item: name, on or off on this PC, the last
+    /// run, and the note when there is one. Without it the ListBoxItem fell back to the view model's
+    /// type name, "RoutineCardViewModel" (RemEx-pp0rt.16).
+    /// </summary>
+    /// <remarks>
+    /// Stored, not computed, like every other localized text here: <see cref="Apply"/> reruns on a
+    /// language change, and the switch refreshes it through <c>OnDisabledOnPcChanged</c>.
+    /// </remarks>
+    [ObservableProperty]
+    private string _accessibleName = string.Empty;
+
+    /// <inheritdoc />
+    public override string ToString() => AccessibleName;
+
+    partial void OnDisabledOnPcChanged(bool value) => AccessibleName = ComposeAccessibleName();
+
+    private string ComposeAccessibleName()
+    {
+        var loc = LocalizationService.Instance;
+        var name = RoutineStrings.Format(
+            "Routines_Card_AccessibleName",
+            Name,
+            IsOn ? loc["Routines_Card_StateOn"] : loc["Routines_Card_StateOff"],
+            LastRunText);
+        return HasNote ? $"{name} {Note}" : name;
+    }
+
     /// <summary>The enable switch. On means "may run on this PC"; switching it goes to the host and the phone.</summary>
     public bool IsOn
     {
@@ -276,6 +304,7 @@ public sealed partial class RoutineCardViewModel : ObservableObject
                 : RoutineStrings.Format("Routines_Detail_FromNoDate", group.PhoneName);
             ToggleName = RoutineStrings.Format("Routines_Card_ToggleName", Name);
             RunNowName = RoutineStrings.Format("Routines_RunNowName", Name);
+            AccessibleName = ComposeAccessibleName();
         }
         finally
         {
@@ -443,7 +472,17 @@ public sealed partial class RoutineRunViewModel : ObservableObject
     [ObservableProperty]
     private string _cancelName = string.Empty;
 
+    /// <summary>
+    /// What a screen reader announces for the history row: outcome, when, source, and the attributes
+    /// when there are any (RemEx-pp0rt.16).
+    /// </summary>
+    [ObservableProperty]
+    private string _accessibleName = string.Empty;
+
     public bool HasSteps => Steps.Count > 0;
+
+    /// <inheritdoc />
+    public override string ToString() => AccessibleName;
 
     public bool HasAttributes => !string.IsNullOrEmpty(AttributesText);
 
@@ -492,6 +531,8 @@ public sealed partial class RoutineRunViewModel : ObservableObject
         AttributesText = string.Join(", ", RoutinePresentation.AttributeTexts(run));
         ExpandName = RoutineStrings.Format("Routines_History_ExpandName", WhenText);
         CancelName = RoutineStrings.Format("Routines_History_CancelName", WhenText);
+        var accessible = RoutineStrings.Format("Routines_History_AccessibleName", StatusText, WhenText, SourceText);
+        AccessibleName = HasAttributes ? $"{accessible} {AttributesText}" : accessible;
 
         var steps = routine.Steps ?? [];
         var rows = (run.Steps ?? [])

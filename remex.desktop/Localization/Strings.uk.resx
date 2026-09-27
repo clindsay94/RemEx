@@ -3880,6 +3880,15 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routines_Card_NeverRan" xml:space="preserve">
     <value>Ще не запускалася</value>
   </data>
+  <data name="Routines_Card_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}. {2}</value>
+  </data>
+  <data name="Routines_Card_StateOn" xml:space="preserve">
+    <value>увімкнена на цьому комп'ютері</value>
+  </data>
+  <data name="Routines_Card_StateOff" xml:space="preserve">
+    <value>вимкнена на цьому комп'ютері</value>
+  </data>
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Вимкнено на телефоні {0}</value>
   </data>
@@ -3966,6 +3975,9 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Routines_History_CancelName" xml:space="preserve">
     <value>Скасувати запуск, розпочатий: {0}</value>
+  </data>
+  <data name="Routines_History_AccessibleName" xml:space="preserve">
+    <value>{0}, {1}, {2}.</value>
   </data>
   <data name="Routines_History_ExpandName" xml:space="preserve">
     <value>Показати або приховати кроки запуску, розпочатого: {0}</value>
