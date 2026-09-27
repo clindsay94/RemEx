@@ -1396,4 +1396,8 @@
     <string name="routines_problem_sensor_limit">Sınır için bir sayı girin.</string>
     <string name="routines_problem_sensor_sustain">5 saniye ile 10 dakika arasında bir süre seçin.</string>
     <string name="routine_message_sent_at">Gönderilme saati: %1$s</string>
+    <string name="routines_messages_blocked">Bildirimler kapalı, bu yüzden bilgisayarınızdan gelen mesajlar size ulaşamıyor. Bilgisayarınız onları bir saate kadar saklar.</string>
+    <string name="routines_messages_blocked_fix">Bildirimleri aç</string>
+    <string name="routines_template_sensor_missing">%1$s bu sensörü bildirmiyor.</string>
+    <string name="routines_trigger_sensor_none">%1$s hiçbir sensör bildirmiyor.</string>
 </resources>

@@ -155,6 +155,7 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         {
             _sensor.Fired += OnFired;
             _sensor.Unavailable += OnSensorUnavailable;
+            _sensor.Recovered += RaiseChanged;
             _availability.SetSensorAvailable(true);
         }
 
@@ -238,7 +239,11 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
                 _store.IsSuspended(owner),
                 owner.LastSeenUnixMs,
                 (owner.Routines ?? [])
-                    .Select(r => new RoutineHostEntry(r, owner.IsPcDisabled(r.Id), _runner.IsRunning(clientId, r.Id!)))
+                    .Select(r => new RoutineHostEntry(
+                        r,
+                        owner.IsPcDisabled(r.Id),
+                        _runner.IsRunning(clientId, r.Id!),
+                        WaitingForSensor: r.Id is not null && _sensor?.IsWaitingForSensor(clientId, r.Id) == true))
                     .ToList()));
         }
 

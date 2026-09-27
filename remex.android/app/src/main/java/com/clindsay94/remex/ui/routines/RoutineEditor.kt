@@ -429,6 +429,8 @@ internal fun RoutineEditorPane(
                         trigger = draft.trigger,
                         enabled = !readOnly,
                         sensors = sensors.second?.takeIf { sensors.first != null && sensors.first == draft.hostIdentity },
+                        connected = sensors.first != null && sensors.first == draft.hostIdentity,
+                        draftKey = viewModel.draftSession,
                         pcName = pcName,
                         onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
@@ -745,11 +747,13 @@ private fun TriggerParameters(
     trigger: RoutineTrigger?,
     enabled: Boolean,
     sensors: List<RoutineSensorOption>?,
+    connected: Boolean,
+    draftKey: Long,
     pcName: String?,
     onChange: (RoutineTrigger) -> Unit,
 ) {
     when (trigger?.type) {
-        RoutineTriggerTypes.PC_SENSOR -> SensorParameters(trigger, enabled, sensors, pcName, onChange)
+        RoutineTriggerTypes.PC_SENSOR -> SensorParameters(trigger, enabled, sensors, connected, draftKey, pcName, onChange)
         RoutineTriggerTypes.PC_IDLE -> {
             val minutes = trigger.idleMinutes ?: RoutineTriggerText.DEFAULT_IDLE_MINUTES
             Text(stringResource(R.string.routines_trigger_idle_for), style = MaterialTheme.typography.labelLarge)
@@ -803,6 +807,8 @@ private fun SensorParameters(
     trigger: RoutineTrigger,
     enabled: Boolean,
     sensors: List<RoutineSensorOption>?,
+    connected: Boolean,
+    draftKey: Long,
     pcName: String?,
     onChange: (RoutineTrigger) -> Unit,
 ) {
@@ -851,8 +857,13 @@ private fun SensorParameters(
         }
     }
     if (sensors.isNullOrEmpty()) {
+        // Connected with a catalog that is empty is a PC with no sensors, not a PC to connect to.
         Text(
-            stringResource(R.string.routines_trigger_sensor_connect, pcLabel(pcName)),
+            if (connected && sensors != null) {
+                stringResource(R.string.routines_trigger_sensor_none, pcLabel(pcName))
+            } else {
+                stringResource(R.string.routines_trigger_sensor_connect, pcLabel(pcName))
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -872,7 +883,7 @@ private fun SensorParameters(
 
     // Text state of its own: "8" on the way to "85" or "-" on the way to "-5" must survive typing,
     // so the trigger only changes when the text is a number (an empty field clears the limit).
-    var limitText by remember(trigger.sensorId) { mutableStateOf(RoutineSensorCatalog.formatLimit(trigger.threshold)) }
+    var limitText by remember(draftKey, trigger.sensorId) { mutableStateOf(RoutineSensorCatalog.formatLimit(trigger.threshold)) }
     val unit = chosen?.unit.orEmpty()
     OutlinedTextField(
         value = limitText,

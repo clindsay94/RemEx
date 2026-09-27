@@ -122,6 +122,7 @@ public sealed class SensorTriggerSource : IDisposable
     public void OnSample(TelemetryPayload payload)
     {
         List<(RoutineTriggerFire Fire, bool Missing)>? events = null;
+        var recovered = false;
         lock (_gate)
         {
             if (_armed.Count == 0)
@@ -155,6 +156,8 @@ public sealed class SensorTriggerSource : IDisposable
                     continue;
                 }
 
+                // Back after a reported absence: the PC page drops its "Waiting for sensor" note.
+                recovered |= state.MissingReported;
                 var live = SensorThreshold.IsLive(arming.Direction, arming.Threshold, reading.Value, state.WasLive);
                 if (!live)
                 {
@@ -210,6 +213,33 @@ public sealed class SensorTriggerSource : IDisposable
             {
                 _logger.LogWarning(ex, "A pc.sensor fire handler failed.");
             }
+        }
+
+        if (recovered)
+        {
+            try
+            {
+                Recovered?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "A pc.sensor recovery handler failed.");
+            }
+        }
+    }
+
+    /// <summary>Raised when a sensor that had been recorded as unavailable reports again.</summary>
+    public event Action? Recovered;
+
+    /// <summary>
+    /// §8.5.1 "Waiting for sensor": the routine's sensor has been missing long enough to be recorded as
+    /// unavailable, and has not come back.
+    /// </summary>
+    public bool IsWaitingForSensor(string ownerClientId, string routineId)
+    {
+        lock (_gate)
+        {
+            return _armed.TryGetValue((ownerClientId, routineId), out var state) && state.MissingReported;
         }
     }
 

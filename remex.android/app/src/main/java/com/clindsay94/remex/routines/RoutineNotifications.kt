@@ -186,6 +186,25 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
         return post("pcmessage:${notify.notifyId}".hashCode(), builder.build())
     }
 
+    override fun postPcCountdown(notify: RoutineNotifyPayload, timeoutMs: Long): Boolean {
+        if (!canPost()) return false
+        val body = notify.body.orEmpty()
+        val builder =
+            baseBuilder(RoutineNotificationChannels.PROGRESS)
+                .setContentTitle(notify.title?.takeIf { it.isNotBlank() } ?: notify.routineName.orEmpty())
+                .setContentText(body)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                // Gone when the PC's countdown ends: the live report that follows says what happened.
+                .setTimeoutAfter(timeoutMs.coerceAtLeast(1L))
+        notify.countdownEndsAtUnixMs?.let { builder.setWhen(it).setShowWhen(true).setUsesChronometer(true).setChronometerCountDown(true) }
+        notify.runId?.let { runId ->
+            builder.addAction(0, appContext.getString(R.string.routine_notification_cancel), cancelIntent(runId))
+            if (notify.routineId != null) builder.setContentIntent(openIntent(notify.routineId, runId, REQUEST_OPEN_PROGRESS))
+        }
+        return post("pccountdown:${notify.runId ?: notify.notifyId}".hashCode(), builder.build())
+    }
+
     /**
      * EVERY routine notification starts here: private on the lock screen, with the redacted public
      * version (T10). Building one any other way is what the redaction test looks for.
@@ -275,16 +294,18 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
         )
     }
 
-    private fun cancelIntent(run: RoutineRun): PendingIntent {
+    private fun cancelIntent(run: RoutineRun): PendingIntent = cancelIntent(run.runId)
+
+    private fun cancelIntent(runId: String?): PendingIntent {
         // Explicit component on a NON-exported receiver: no other app can cancel a run (T1).
         val intent =
             Intent(appContext, RoutineNotificationActionReceiver::class.java).apply {
                 action = RoutineNotificationActionReceiver.ACTION_CANCEL
-                putExtra(RoutineNotificationActionReceiver.EXTRA_RUN_ID, run.runId)
+                putExtra(RoutineNotificationActionReceiver.EXTRA_RUN_ID, runId)
             }
         return PendingIntent.getBroadcast(
             appContext,
-            REQUEST_CANCEL + (run.runId.orEmpty().hashCode() and REQUEST_MASK),
+            REQUEST_CANCEL + (runId.orEmpty().hashCode() and REQUEST_MASK),
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )

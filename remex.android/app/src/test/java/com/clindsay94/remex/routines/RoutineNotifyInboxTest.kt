@@ -40,13 +40,14 @@ class QueuedMessagePresenterTest {
     }
 
     @Test
-    fun `dedup remembers the last 200 ids`() {
+    fun `dedup remembers the last 200 shown ids`() {
         val dedup = RoutineNotifyDedup()
-        assertTrue(dedup.firstTime("a"))
-        assertFalse(dedup.firstTime("a"))
-        repeat(RoutineNotifyDedup.CAPACITY) { dedup.firstTime("id$it") }
+        assertFalse(dedup.contains("a"))
+        dedup.remember("a")
+        assertTrue(dedup.contains("a"))
+        repeat(RoutineNotifyDedup.CAPACITY) { dedup.remember("id$it") }
         // "a" has been pushed out of the window.
-        assertTrue(dedup.firstTime("a"))
+        assertFalse(dedup.contains("a"))
     }
 }
 
@@ -59,9 +60,19 @@ class QueuedMessagePresenterTest {
 class RoutineNotifyInboxTest {
     private class Sink : RoutineMessageSink {
         val posted = mutableListOf<Pair<RoutineNotifyPayload, Boolean>>()
+        val countdowns = mutableListOf<Pair<RoutineNotifyPayload, Long>>()
+
+        /** True: posts. False: notifications off. Null: the post throws. */
+        var canPost: Boolean? = true
 
         override fun postPcMessage(notify: RoutineNotifyPayload, queued: Boolean): Boolean {
-            posted += notify to queued
+            val can = canPost ?: throw IllegalStateException("notification manager exploded")
+            if (can) posted += notify to queued
+            return can
+        }
+
+        override fun postPcCountdown(notify: RoutineNotifyPayload, timeoutMs: Long): Boolean {
+            countdowns += notify to timeoutMs
             return true
         }
     }
@@ -118,6 +129,65 @@ class RoutineNotifyInboxTest {
 
             assertEquals(1, rig.sink.posted.size)
             assertEquals(listOf(message.notifyId, message.notifyId), rig.acks())
+        }
+
+    @Test
+    fun `with notifications off the message is not acknowledged, the screen is told, and the resend is shown later`() =
+        runTest {
+            val rig = Rig(this)
+            val message = step(rig)
+            rig.sink.canPost = false
+            rig.client.onNotify(message)
+            runCurrent()
+
+            assertTrue("the PC must keep an unseen message", rig.acks().isEmpty())
+            assertTrue(rig.client.pcMessagesBlocked.value)
+
+            // Notifications allowed again: the PC's next flush shows it and only then is it acknowledged.
+            rig.sink.canPost = true
+            rig.client.onNotify(message)
+            runCurrent()
+            assertEquals(1, rig.sink.posted.size)
+            assertEquals(listOf(message.notifyId), rig.acks())
+            assertFalse(rig.client.pcMessagesBlocked.value)
+        }
+
+    @Test
+    fun `a post that throws is neither acknowledged nor remembered`() =
+        runTest {
+            val rig = Rig(this)
+            val message = step(rig)
+            rig.sink.canPost = null
+            rig.client.onNotify(message)
+            runCurrent()
+            assertTrue(rig.acks().isEmpty())
+
+            // The resend is a fresh attempt, not "already shown".
+            rig.sink.canPost = true
+            rig.client.onNotify(message)
+            runCurrent()
+            assertEquals(1, rig.sink.posted.size)
+            assertEquals(listOf(message.notifyId), rig.acks())
+        }
+
+    @Test
+    fun `a countdown for an unknown run is posted with a timeout at its end`() =
+        runTest {
+            val rig = Rig(this)
+            val runId = uuid()
+            rig.client.onNotify(
+                RoutineNotifyPayload(
+                    notifyId = uuid(), kind = RoutineNotifyKinds.COUNTDOWN, routineId = uuid(), runId = runId, title = "Bedtime",
+                    countdownEndsAtUnixMs = rig.h.clock.now + 12_000, queuedAtUnixMs = rig.h.clock.now,
+                ),
+            )
+            runCurrent()
+
+            val (posted, timeout) = rig.sink.countdowns.single()
+            assertEquals(runId, posted.runId)
+            assertEquals(12_000L, timeout)
+            // Its Cancel reaches the connected PC even though no report named the run yet.
+            assertTrue(rig.client.cancelPcRun(runId))
         }
 
     @Test

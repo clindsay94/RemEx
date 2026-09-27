@@ -3897,6 +3897,9 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>{0} पर बंद है</value>
   </data>
+  <data name="Routines_Card_WaitingForSensor" xml:space="preserve">
+    <value>सेंसर की प्रतीक्षा है। इसने 10 मिनट से कोई डेटा नहीं भेजा।</value>
+  </data>
   <data name="Routines_Card_Running" xml:space="preserve">
     <value>अभी चल रहा है</value>
   </data>

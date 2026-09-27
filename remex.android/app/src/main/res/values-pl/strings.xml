@@ -1420,4 +1420,8 @@
     <string name="routines_problem_sensor_limit">Wpisz liczbę jako limit.</string>
     <string name="routines_problem_sensor_sustain">Wybierz czas od 5 sekund do 10 minut.</string>
     <string name="routine_message_sent_at">Wysłano o %1$s</string>
+    <string name="routines_messages_blocked">Powiadomienia są wyłączone, więc wiadomości z komputera do Ciebie nie dotrą. Komputer przechowuje je do godziny.</string>
+    <string name="routines_messages_blocked_fix">Włącz powiadomienia</string>
+    <string name="routines_template_sensor_missing">%1$s nie zgłasza tego czujnika.</string>
+    <string name="routines_trigger_sensor_none">%1$s nie zgłasza żadnych czujników.</string>
 </resources>

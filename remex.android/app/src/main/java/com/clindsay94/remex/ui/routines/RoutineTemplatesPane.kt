@@ -60,23 +60,22 @@ internal fun RoutineTemplatesPane(
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     val sensors by viewModel.sensors.collectAsStateWithLifecycle()
+    val pcs by viewModel.pcs.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
     val categories = RoutineTemplates.categories()
     val templates = RoutineTemplates.offered().filter { filter == null || it.category.name == filter }
     val canEdit = !status.readOnly
+    val sensorOptions = sensors.second?.takeIf { sensors.first != null && sensors.first == selectedPc }
+    val sensorMissingText = stringResource(R.string.routines_template_sensor_missing, pcLabel(pcs.firstOrNull { it.identity == selectedPc }?.name))
 
-    fun satisfied(requirement: RoutineRequirement): Boolean? =
+    fun satisfied(template: RoutineTemplate, requirement: RoutineRequirement): Boolean? =
         when (requirement) {
             RoutineRequirement.MAC_ADDRESS -> selectedMac != null
             RoutineRequirement.LAUNCHER_ENTRY -> launcher.first == selectedPc && !launcher.second.isNullOrEmpty()
             // Known only for the connected PC; a definite "no" shows the token as missing (spec 4.2).
             RoutineRequirement.MEDIA_KEYS -> mediaKeys.second.takeIf { mediaKeys.first != null && mediaKeys.first == selectedPc }
-            // Spec 4.2 "Sensor": the connected PC's catalog has a matching kind; unknown otherwise.
-            RoutineRequirement.TEMPERATURE_SENSOR, RoutineRequirement.MEMORY_SENSOR -> {
-                val list = sensors.second?.takeIf { sensors.first != null && sensors.first == selectedPc && it.isNotEmpty() }
-                val preset = if (requirement == RoutineRequirement.MEMORY_SENSOR) listOf(RoutineSensorPreset.RAM_LOAD) else listOf(RoutineSensorPreset.GPU_TEMP, RoutineSensorPreset.CPU_TEMP)
-                list?.let { options -> preset.any { RoutineSensorCatalog.preselect(options, it) != null } }
-            }
+            // Spec 4.2 "Sensor": THIS template's own sensor, in the connected PC's catalog.
+            RoutineRequirement.TEMPERATURE_SENSOR, RoutineRequirement.MEMORY_SENSOR -> RoutineSensorCatalog.templateSensorAvailable(template, sensorOptions)
         }
 
     Scaffold(
@@ -114,11 +113,14 @@ internal fun RoutineTemplatesPane(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(templates, key = { it.id }) { template ->
+                    // Spec 4.2: a definite "this PC has no such sensor" disables the card and says so.
+                    val sensorMissing = RoutineSensorCatalog.templateSensorAvailable(template, sensorOptions) == false
                     TemplateCard(
                         template = template,
                         compact = false,
-                        enabled = canEdit,
-                        satisfied = ::satisfied,
+                        enabled = canEdit && !sensorMissing,
+                        disabledReason = if (sensorMissing) sensorMissingText else null,
+                        satisfied = { satisfied(template, it) },
                         onClick = { onPick(template) },
                         modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
                     )
@@ -141,6 +143,7 @@ internal fun TemplateCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     satisfied: (RoutineRequirement) -> Boolean? = { null },
+    disabledReason: String? = null,
 ) {
     val name = stringResource(template.nameRes)
     Card(
@@ -157,6 +160,13 @@ internal fun TemplateCard(
             }
             if (!compact) {
                 Text(stringResource(template.whyRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            disabledReason?.let { reason ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.size(4.dp))
+                    Text(reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
             }
             RoutineChipChain(triggerType = template.trigger.type, steps = template.steps.map { it.step }, maxSteps = if (compact) 3 else 4)
             if (!compact && template.needs.isNotEmpty()) {

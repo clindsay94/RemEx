@@ -74,6 +74,17 @@ object RoutineSensorCatalog {
         }
     }
 
+    /**
+     * Spec 4.2 "Sensor" for one template: null when it needs no sensor or the catalog is unknown
+     * (not the connected PC, or no frame yet), else whether THIS template's own preset finds one. A
+     * CPU-only PC never satisfies the GPU template.
+     */
+    fun templateSensorAvailable(template: RoutineTemplate, options: List<RoutineSensorOption>?): Boolean? {
+        val preset = template.sensorPreset ?: return null
+        if (options == null) return null
+        return preselect(options, preset) != null
+    }
+
     /** [trigger] pointed at [option]: its id and a display snapshot of its name (≤ 64). */
     fun choose(trigger: RoutineTrigger, option: RoutineSensorOption): RoutineTrigger =
         trigger.copy(sensorId = option.id, sensorLabel = option.name.take(RoutineLimits.MAX_LABEL_LENGTH))

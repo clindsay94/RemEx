@@ -275,7 +275,10 @@ public sealed partial class RoutineCardViewModel : ObservableObject
                     ? (loc["Routines_Card_Blocked"], true)
                     : !entry.Routine.Enabled
                         ? (RoutineStrings.Format("Routines_Card_OffOnPhone", group.PhoneName), false)
-                        : (string.Empty, false);
+                        // §8.5.1: the sensor has been missing for 10 minutes and has not come back.
+                        : entry.WaitingForSensor
+                            ? (loc["Routines_Card_WaitingForSensor"], true)
+                            : (string.Empty, false);
 
             if (Running)
             {

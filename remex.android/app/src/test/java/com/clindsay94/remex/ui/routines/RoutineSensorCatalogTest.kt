@@ -53,6 +53,23 @@ class RoutineSensorCatalogTest {
     }
 
     @Test
+    fun `each health template is gated on its own sensor`() {
+        val gpu = checkNotNull(RoutineTemplates.byId("tpl.health.gpu"))
+        val cpu = checkNotNull(RoutineTemplates.byId("tpl.health.cpu"))
+        val ram = checkNotNull(RoutineTemplates.byId("tpl.health.ram"))
+        val cpuOnly = listOf(RoutineSensorOption("/cpu/0/temperature/0", "CPU Package", "°C", MetricKind.CPU_TEMP_C, "CPU", 50.0))
+
+        // A CPU-only PC must not satisfy the GPU template (spec 4.2).
+        assertEquals(false, RoutineSensorCatalog.templateSensorAvailable(gpu, cpuOnly))
+        assertEquals(true, RoutineSensorCatalog.templateSensorAvailable(cpu, cpuOnly))
+        assertEquals(false, RoutineSensorCatalog.templateSensorAvailable(ram, cpuOnly))
+        // A PC that reports nothing definitely lacks it; an unknown catalog decides nothing.
+        assertEquals(false, RoutineSensorCatalog.templateSensorAvailable(gpu, emptyList()))
+        assertNull(RoutineSensorCatalog.templateSensorAvailable(gpu, null))
+        assertNull(RoutineSensorCatalog.templateSensorAvailable(checkNotNull(RoutineTemplates.byId("tpl.power.sleep")), cpuOnly))
+    }
+
+    @Test
     fun `choosing a sensor stores its id and a label of at most 64 characters`() {
         val long = RoutineSensorOption("/id", "x".repeat(80), "°C", MetricKind.TEMP_C, "", 1.0)
         val trigger = RoutineSensorCatalog.choose(RoutineTriggerFamilies.newTrigger(RoutineTriggerTypes.PC_SENSOR), long)

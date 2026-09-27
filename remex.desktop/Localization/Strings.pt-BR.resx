@@ -3897,6 +3897,9 @@ Você pode mudar:
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Desativada em {0}</value>
   </data>
+  <data name="Routines_Card_WaitingForSensor" xml:space="preserve">
+    <value>Aguardando o sensor. Ele não envia dados há 10 minutos.</value>
+  </data>
   <data name="Routines_Card_Running" xml:space="preserve">
     <value>Em execução agora</value>
   </data>

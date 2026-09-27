@@ -119,6 +119,53 @@ public sealed class RoutineNotifyQueueTests
     }
 
     [Fact]
+    public async Task AnExpiryDuringARunningRunIsRecordedWhenTheRunEnds()
+    {
+        var bench = new RoutineHostTestBench(withQueue: true);
+        await bench.SyncAsync(1, routines: Routine(1, IdleTrigger(), Delay(600), NotifyPc("after")));
+        var handle = await bench.StartAsync(1, RoutineRunSources.ManualApp);
+        await bench.WaitForTimerAsync();
+
+        // A held message of this still-running run passes its hour.
+        var held = Message(bench, runId: handle.Initial.RunId) with { ExpiresAtUnixMs = bench.Time.GetUtcNow().ToUnixTimeMilliseconds() - 1 };
+        await bench.Queue!.NotifyAsync(Owner, held, 1);
+        await bench.Queue.SweepAsync();
+        Assert.Empty(bench.Queue.Pending(Owner));
+        Assert.Contains("deferredExpiries", bench.Files.Files[RoutineNotifyQueue.FileName], StringComparison.Ordinal);
+        Assert.Equal(RoutineRunOutcomes.Running, bench.Runs.Find(handle.Initial.RunId!)!.Outcome);
+
+        await bench.AdvanceUntilAsync(handle.Completion, TimeSpan.FromSeconds(30));
+
+        var record = bench.Runs.Find(handle.Initial.RunId!)!;
+        Assert.Equal(RoutineRunOutcomes.Succeeded, record.Outcome);
+        Assert.Equal(RoutineStepStatuses.Expired, record.Steps![1].Status);
+        Assert.Equal(RoutineReasonCodes.NotifyExpired, record.Steps[1].ReasonCode);
+        Assert.DoesNotContain("deferredExpiries", bench.Files.Files[RoutineNotifyQueue.FileName], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnExpiryDeferredAtShutdownIsRecordedOnTheNextStart()
+    {
+        var bench = new RoutineHostTestBench(withQueue: true);
+        await bench.SyncAsync(1, routines: Routine(1, IdleTrigger(), Delay(600), NotifyPc("after")));
+        var handle = await bench.StartAsync(1, RoutineRunSources.ManualApp);
+        await bench.WaitForTimerAsync();
+        var held = Message(bench, runId: handle.Initial.RunId) with { ExpiresAtUnixMs = bench.Time.GetUtcNow().ToUnixTimeMilliseconds() - 1 };
+        await bench.Queue!.NotifyAsync(Owner, held, 1);
+        await bench.Queue.SweepAsync();
+
+        // Restart: history sweeps the run to interrupted, then the queue applies what waited for it.
+        var runs = new RoutineRunStore(bench.Files, bench.Time, NullLogger<RoutineRunStore>.Instance);
+        await runs.LoadAndSweepAsync();
+        var restarted = new RoutineNotifyQueue(bench.Files, runs, bench.Channel, bench.Time, NullLogger<RoutineNotifyQueue>.Instance);
+        await restarted.LoadAsync();
+
+        var record = runs.Find(handle.Initial.RunId!)!;
+        Assert.Equal(RoutineRunOutcomes.Interrupted, record.Outcome);
+        Assert.Equal(RoutineStepStatuses.Expired, record.Steps![1].Status);
+    }
+
+    [Fact]
     public async Task AtMostTwentyPerOwnerTheOldestDropped()
     {
         var bench = new RoutineHostTestBench(withQueue: true);

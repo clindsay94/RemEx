@@ -3901,6 +3901,9 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>{0} üzerinde kapatıldı</value>
   </data>
+  <data name="Routines_Card_WaitingForSensor" xml:space="preserve">
+    <value>Sensör bekleniyor. 10 dakikadır veri göndermedi.</value>
+  </data>
   <data name="Routines_Card_Running" xml:space="preserve">
     <value>Şu anda çalışıyor</value>
   </data>

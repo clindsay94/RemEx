@@ -312,11 +312,27 @@ internal class RoutineSyncClient(
         }
     }
 
+    private val _pcMessagesBlocked = MutableStateFlow(false)
+
+    /**
+     * True after a PC message could not be posted because RemEx may not show notifications. Those
+     * messages are NOT acknowledged, so the PC keeps them (up to its hour) and sends them again on the
+     * next connection; the Routines screen says why and offers the settings (R-UX-33).
+     */
+    val pcMessagesBlocked: StateFlow<Boolean> = _pcMessagesBlocked.asStateFlow()
+
+    /** Notifications are allowed again: the next flush can show the held messages. */
+    fun clearPcMessagesBlocked() {
+        _pcMessagesBlocked.value = false
+    }
+
     /**
      * A `routine_notify` from the PC (routines S5, §7.3.5, §8.6):
      * - `step`: posted on the messages channel (lock-screen redacted, T10), with "Sent at <time>" when
-     *   the PC held it (R-UX-33); an expired one is not shown. Always acknowledged, even a duplicate:
-     *   a resend means the PC never got the first ack, and only the ack takes it out of the PC's queue.
+     *   the PC held it (R-UX-33). Acknowledged ONLY when it was shown, is a resend of one already
+     *   shown (the PC never got the first ack), or is past its expiry. A post that failed or threw is
+     *   not acknowledged: the ack is what takes it out of the PC's queue, so acknowledging an unseen
+     *   message loses it for good.
      * - `countdown`: the PC run's countdown mirrored on its progress notification, whose Cancel sends
      *   `routine_cancel` (R-UX-34). Never held by the PC, so never acknowledged.
      *
@@ -326,16 +342,20 @@ internal class RoutineSyncClient(
         try {
             val id = notify.notifyId ?: return
             val now = clock.nowUnixMs()
-            val countdown = notify.kind == RoutineNotifyKinds.COUNTDOWN
-            if (notifyDedup.firstTime(id)) {
-                if (countdown) {
+            if (notify.kind == RoutineNotifyKinds.COUNTDOWN) {
+                if (!notifyDedup.contains(id)) {
+                    notifyDedup.remember(id)
                     showCountdownMirror(notify, now)
-                } else if (!QueuedMessagePresenter.isExpired(notify, now)) {
-                    val shown = messages?.postPcMessage(notify, QueuedMessagePresenter.wasQueued(notify, now)) ?: false
-                    RoutineLog.i("PC message ${RoutineLog.id(id)} ${if (shown) "shown" else "not shown (notifications off)"}.")
                 }
+                return
             }
-            if (!countdown) sendIo(RoutineOutbound.notifyAck(RoutineNotifyAckPayload(notifyIds = listOf(id))))
+            val ack =
+                when {
+                    notifyDedup.contains(id) -> true
+                    QueuedMessagePresenter.isExpired(notify, now) -> true
+                    else -> postStep(id, notify, now)
+                }
+            if (ack) sendIo(RoutineOutbound.notifyAck(RoutineNotifyAckPayload(notifyIds = listOf(id))))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -343,13 +363,36 @@ internal class RoutineSyncClient(
         }
     }
 
+    /** Posts one step message; true only when it is on screen. */
+    private fun postStep(id: String, notify: RoutineNotifyPayload, now: Long): Boolean {
+        val shown =
+            try {
+                messages?.postPcMessage(notify, QueuedMessagePresenter.wasQueued(notify, now)) ?: false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Not acknowledged and not remembered: the PC's resend gets a fresh attempt.
+                RoutineLog.e("Posting PC message ${RoutineLog.id(id)} failed; it stays on the PC.", e)
+                return false
+            }
+        if (shown) {
+            notifyDedup.remember(id)
+            _pcMessagesBlocked.value = false
+        } else {
+            RoutineLog.w("PC message ${RoutineLog.id(id)} not shown (notifications off); it stays on the PC.")
+            _pcMessagesBlocked.value = true
+        }
+        return shown
+    }
+
     private suspend fun showCountdownMirror(notify: RoutineNotifyPayload, now: Long) {
         val endsAt = notify.countdownEndsAtUnixMs?.takeIf { it > now } ?: return
         val run = notify.runId?.let { store.findRun(it) }
         val routine = notify.routineId?.let { store.routine(it) }
         if (run == null || routine == null) {
-            // The live report that names the run never arrived: still say it, without a Cancel.
-            messages?.postPcMessage(notify, queued = false)
+            // The live report that names the run never arrived: still say it, gone when the countdown
+            // ends, with a Cancel whenever the run id is known.
+            messages?.postPcCountdown(notify, endsAt - now)
             return
         }
         val running = run.steps.orEmpty().firstOrNull { it.status == RoutineStepStatuses.RUNNING }?.index
@@ -449,9 +492,15 @@ internal class RoutineSyncClient(
 
     /** Stop for a PC run in progress (§7.3.7): only the sender's own runs are cancellable on the PC. */
     suspend fun cancelPcRun(runId: String): Boolean {
-        val run = store.findRun(runId) ?: return false
-        if (run.origin != RoutineRunOrigins.PC || run.outcome != RoutineRunOutcomes.RUNNING) return false
-        if (link.authenticatedHostIdentity() != run.hostIdentity) return false
+        val run = store.findRun(runId)
+        if (run != null) {
+            if (run.origin != RoutineRunOrigins.PC || run.outcome != RoutineRunOutcomes.RUNNING) return false
+            if (link.authenticatedHostIdentity() != run.hostIdentity) return false
+        } else if (link.authenticatedHostIdentity() == null) {
+            // A countdown heads-up for a run whose report never arrived (S5): the connected PC is the
+            // one that sent it, and it only honours a cancel for this phone's own run (T17).
+            return false
+        }
         return sendIo(RoutineOutbound.cancel(RoutineCancelPayload(runId = runId, reason = RoutineCancelReasons.USER)))
     }
 

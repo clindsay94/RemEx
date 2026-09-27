@@ -1394,4 +1394,8 @@
     <string name="routines_problem_sensor_limit">Escribe un número para el límite.</string>
     <string name="routines_problem_sensor_sustain">Elige un tiempo entre 5 segundos y 10 minutos.</string>
     <string name="routine_message_sent_at">Enviado a las %1$s</string>
+    <string name="routines_messages_blocked">Las notificaciones están desactivadas, así que los mensajes de tu PC no pueden llegarte. Tu PC los guarda hasta una hora.</string>
+    <string name="routines_messages_blocked_fix">Activar notificaciones</string>
+    <string name="routines_template_sensor_missing">%1$s no informa de este sensor.</string>
+    <string name="routines_trigger_sensor_none">%1$s no informa de ningún sensor.</string>
 </resources>

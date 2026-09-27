@@ -229,6 +229,17 @@ public sealed class RoutinesViewModelTests : IAsyncLifetime
         OnlyCard(vm).CanToggle.Should().BeTrue("the PC's own switch is independent of the phone's");
     }
 
+    [Fact]
+    public void ASensorRoutineWhoseSensorStoppedReportingSaysItIsWaiting()
+    {
+        _host.SetOwners(FakeRoutinesHost.Owner(Owner, "Pixel",
+            FakeRoutinesHost.Entry(FakeRoutinesHost.Routine("r1", "One", FakeRoutinesHost.Notify())) with { WaitingForSensor = true }));
+        var vm = Create();
+
+        OnlyCard(vm).Note.Should().Be(LocalizationService.Instance["Routines_Card_WaitingForSensor"]);
+        OnlyCard(vm).NoteIsProblem.Should().BeTrue();
+    }
+
     // ═══ Run now (R-UX-36, §8.6, D3, T21) ═══
 
     [Fact]

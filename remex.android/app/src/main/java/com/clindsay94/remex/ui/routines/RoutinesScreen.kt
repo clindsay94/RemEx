@@ -333,6 +333,12 @@ private fun RoutinesListPane(
     val coachSeen by viewModel.coachSeen.collectAsStateWithLifecycle()
     val pcActive by viewModel.pcActiveRuns.collectAsStateWithLifecycle()
     val hostSync by viewModel.hostSync.collectAsStateWithLifecycle()
+    val messagesBlocked by viewModel.pcMessagesBlocked.collectAsStateWithLifecycle()
+    // Back from the settings with notifications allowed: the notice goes, and the PC's next flush shows them.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.recheckNotifications()
+        onPauseOrDispose {}
+    }
     val view = LocalView.current
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     val readOnly = status.readOnly
@@ -468,6 +474,16 @@ private fun RoutinesListPane(
                                     body = RoutineReasonText.message(context, RoutineReasonCodes.STORE_RESET, null),
                                     actionLabel = stringResource(R.string.routines_dismiss),
                                     onAction = viewModel::dismissStoreReset,
+                                )
+                            }
+                        }
+                        if (messagesBlocked) {
+                            item(key = "messages-blocked") {
+                                NoticeCard(
+                                    title = null,
+                                    body = stringResource(R.string.routines_messages_blocked),
+                                    actionLabel = stringResource(R.string.routines_messages_blocked_fix),
+                                    onAction = viewModel::openNotificationSettings,
                                 )
                             }
                         }

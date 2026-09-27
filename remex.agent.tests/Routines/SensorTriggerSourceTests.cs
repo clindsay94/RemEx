@@ -289,6 +289,31 @@ public sealed class SensorRoutineHostTests
     }
 
     [Fact]
+    public async Task AMissingSensorShowsWaitingOnThePcPageUntilItReportsAgain()
+    {
+        var bench = new RoutineHostTestBench(withTelemetry: true);
+        await bench.InitializeAsync();
+        bench.Telemetry!.Publish((FakeTelemetry.GpuTemp, 60));
+        await bench.SyncAsync(1, routines: Routine(1, SensorTrigger(), NotifyPc()));
+
+        bool Waiting() => bench.Service.GetSnapshot().Owners.Single().Routines.Single().WaitingForSensor;
+        for (var i = 0; i <= 10; i++)
+        {
+            bench.Telemetry.Publish((FakeTelemetry.RamLoad, 40));
+            bench.Time.Advance(TimeSpan.FromMinutes(1));
+        }
+
+        bench.Telemetry.Publish((FakeTelemetry.RamLoad, 40));
+        Assert.True(Waiting());
+        await WaitUntilAsync(
+            () => bench.Runs.Query(Owner, Id(1)).Any(r => r.ReasonCode == RoutineReasonCodes.SensorUnavailable),
+            "no sensor_unavailable record");
+
+        bench.Telemetry.Publish((FakeTelemetry.GpuTemp, 60));
+        Assert.False(Waiting());
+    }
+
+    [Fact]
     public async Task ASustainedBreachStartsARun()
     {
         var bench = new RoutineHostTestBench(withTelemetry: true);

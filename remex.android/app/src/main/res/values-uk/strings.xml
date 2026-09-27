@@ -1420,4 +1420,8 @@
     <string name="routines_problem_sensor_limit">Введіть число для порогу.</string>
     <string name="routines_problem_sensor_sustain">Виберіть час від 5 секунд до 10 хвилин.</string>
     <string name="routine_message_sent_at">Надіслано о %1$s</string>
+    <string name="routines_messages_blocked">Сповіщення вимкнено, тому повідомлення з вашого ПК не можуть до вас дійти. ПК зберігає їх до години.</string>
+    <string name="routines_messages_blocked_fix">Увімкнути сповіщення</string>
+    <string name="routines_template_sensor_missing">%1$s не передає цей датчик.</string>
+    <string name="routines_trigger_sensor_none">%1$s не передає жодного датчика.</string>
 </resources>

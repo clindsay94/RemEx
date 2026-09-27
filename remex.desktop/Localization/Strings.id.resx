@@ -3900,6 +3900,9 @@ Anda dapat mengubah:
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Dinonaktifkan di {0}</value>
   </data>
+  <data name="Routines_Card_WaitingForSensor" xml:space="preserve">
+    <value>Menunggu sensor. Sensor tidak melapor selama 10 menit.</value>
+  </data>
   <data name="Routines_Card_Running" xml:space="preserve">
     <value>Sedang berjalan</value>
   </data>

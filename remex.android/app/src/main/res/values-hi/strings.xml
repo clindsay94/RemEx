@@ -1394,4 +1394,8 @@
     <string name="routines_problem_sensor_limit">सीमा के लिए कोई संख्या लिखें।</string>
     <string name="routines_problem_sensor_sustain">5 सेकंड से 10 मिनट के बीच का समय चुनें।</string>
     <string name="routine_message_sent_at">%1$s पर भेजा गया</string>
+    <string name="routines_messages_blocked">सूचनाएँ बंद हैं, इसलिए आपके PC के संदेश आप तक नहीं पहुँच सकते। आपका PC उन्हें एक घंटे तक रखता है।</string>
+    <string name="routines_messages_blocked_fix">सूचनाएँ चालू करें</string>
+    <string name="routines_template_sensor_missing">%1$s यह सेंसर नहीं दिखाता।</string>
+    <string name="routines_trigger_sensor_none">%1$s कोई सेंसर नहीं दिखाता।</string>
 </resources>

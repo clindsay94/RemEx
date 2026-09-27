@@ -673,7 +673,7 @@ the handler. Neither handler may throw either, or the collection ends for the li
 
 `remex.agent/Services/Routines/RoutineSensorSource.cs:83` (`SensorTriggerSource.SetArmed`: one
 `AcquireDemand()` lease at `:109` while at least one `pc.sensor` routine is armed, released when none is)
-and `remex.agent/Services/Routines/RoutineHostService.cs:435` (`Rearm` passing the armed set on every
+and `remex.agent/Services/Routines/RoutineHostService.cs:440` (`Rearm` passing the armed set on every
 store change and pause); pinned by `SensorTriggerSourceTests.DemandIsHeldOnlyWhileASensorRoutineIsArmed`
 and `SensorRoutineHostTests.AnArmedSensorRoutineHoldsDemandAndPauseReleasesIt` — RemEx-pp0rt.10, spec
 §8.5.1, §14 S5.
@@ -688,7 +688,7 @@ lease for the same reason: without it an idle PC would reject every sensor routi
 
 ### Routines: a held message is on disk before the live send, and leaves only on ack or expiry
 
-`remex.agent/Services/Routines/RoutineNotifyQueue.cs:144` (`NotifyAsync`: `SaveAsync` before
+`remex.agent/Services/Routines/RoutineNotifyQueue.cs:164` (`NotifyAsync`: `SaveAsync` before
 `TrySendAsync`), `AckAsync` (owner-scoped removal) and `SweepAsync` (one-hour expiry); flushed from
 `RoutineSyncHandler.DrainAsync` after the sync result; pinned by `RoutineNotifyQueueTests` —
 RemEx-pp0rt.10, spec §7.3.5, §17 Q6, T17.
@@ -698,7 +698,9 @@ down within a second, so a message saved after the send attempt (or only in memo
 it matters, with the step already recorded `succeeded`. A live send is not proof of display either: the
 item stays until `routine_notify_ack` names it, and an ack is applied only to the sending phone's items,
 so one phone can never clear another's. The file goes through `IRoutineStateFiles` (atomic, same ACL and
-trust check as `routines.json`, T14); an untrusted file is set aside, never loaded.
+trust check as `routines.json`, T14); an untrusted file is set aside, never loaded. An expiry for a run
+that is still going is held (`DeferredExpiries`, on disk) and applied by `RunEndedAsync` once the runner
+has saved and reported the final record: writing it earlier is overwritten by the runner's next save.
 
 
 ### `protocolVersion` bumps must be coordinated

@@ -22,18 +22,26 @@ internal object QueuedMessagePresenter {
 }
 
 /**
- * The last [capacity] notify ids (§7.3.5: the phone de-duplicates the last 200). Delivery is at least
- * once, so the same message can come live and again in the next connection's flush.
+ * The last [capacity] notify ids the phone actually SHOWED (§7.3.5: the phone de-duplicates the last
+ * 200). Delivery is at least once, so the same message can come live and again in the next
+ * connection's flush.
+ *
+ * **AN ID IS REMEMBERED ONLY AFTER A SUCCESSFUL POST.** Remembering it on arrival would make a post
+ * that failed (notifications off, a thrown error) look like "already shown" on the resend, which would
+ * then be acknowledged and dropped by the PC unseen.
  */
 internal class RoutineNotifyDedup(private val capacity: Int = CAPACITY) {
     private val ids = LinkedHashSet<String>()
 
-    /** True the first time [id] is seen. */
+    /** True when [id] was already shown. */
     @Synchronized
-    fun firstTime(id: String): Boolean {
-        if (!ids.add(id)) return false
+    fun contains(id: String): Boolean = id in ids
+
+    /** Records [id] as shown. */
+    @Synchronized
+    fun remember(id: String) {
+        if (!ids.add(id)) return
         while (ids.size > capacity) ids.remove(ids.first())
-        return true
     }
 
     companion object {
@@ -48,4 +56,10 @@ internal interface RoutineMessageSink {
      * notifications.
      */
     fun postPcMessage(notify: RoutineNotifyPayload, queued: Boolean): Boolean
+
+    /**
+     * A countdown heads-up for a run the phone has no record of yet: the PC's text, gone after
+     * [timeoutMs] (when the countdown ends), with a Cancel when the run id is known.
+     */
+    fun postPcCountdown(notify: RoutineNotifyPayload, timeoutMs: Long): Boolean
 }

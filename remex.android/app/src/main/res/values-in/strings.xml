@@ -1389,4 +1389,8 @@
     <string name="routines_problem_sensor_limit">Masukkan angka untuk batas.</string>
     <string name="routines_problem_sensor_sustain">Pilih waktu antara 5 detik dan 10 menit.</string>
     <string name="routine_message_sent_at">Dikirim pukul %1$s</string>
+    <string name="routines_messages_blocked">Notifikasi nonaktif, jadi pesan dari PC Anda tidak bisa sampai. PC Anda menyimpannya hingga satu jam.</string>
+    <string name="routines_messages_blocked_fix">Aktifkan notifikasi</string>
+    <string name="routines_template_sensor_missing">%1$s tidak melaporkan sensor ini.</string>
+    <string name="routines_trigger_sensor_none">%1$s tidak melaporkan sensor apa pun.</string>
 </resources>

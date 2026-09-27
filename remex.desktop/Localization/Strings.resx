@@ -3903,6 +3903,9 @@ You can change:
   <data name="Routines_Card_OffOnPhone" xml:space="preserve">
     <value>Switched off on {0}</value>
   </data>
+  <data name="Routines_Card_WaitingForSensor" xml:space="preserve">
+    <value>Waiting for sensor. It hasn't reported for 10 minutes.</value>
+  </data>
   <data name="Routines_Card_Running" xml:space="preserve">
     <value>Running now</value>
   </data>

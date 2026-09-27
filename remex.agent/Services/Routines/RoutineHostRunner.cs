@@ -686,6 +686,21 @@ public sealed class RoutineHostRunner
         active.Record = await _runs.UpsertAsync(record);
         _logger.LogInformation("Routine run {RunId} ended: {Outcome} ({Reason}).", active.RunId, record.Outcome, record.ReasonCode);
         await ReportAsync(active.Record, live: false);
+
+        // A held message that expired while this run was still going is recorded now (S5 review): after
+        // the final report, so the phone receives the newer record last.
+        if (_notifier is IRoutineRunEndObserver observer)
+        {
+            try
+            {
+                await observer.RunEndedAsync(active.Record);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Recording expired messages for run {RunId} failed.", active.RunId);
+            }
+        }
+
         RaiseChanged();
         return active.Record;
     }

@@ -6,7 +6,7 @@ namespace Remex.Desktop.Services.Routines;
 /// <param name="Routine">The definition the owner phone synced. Read-only on the PC (D8).</param>
 /// <param name="DisabledOnPc">Switched off by the person at the PC (<c>pcDisabled</c>).</param>
 /// <param name="Running">A run of it is active right now.</param>
-public sealed record RoutineHostEntry(Routine Routine, bool DisabledOnPc, bool Running);
+public sealed record RoutineHostEntry(Routine Routine, bool DisabledOnPc, bool Running, bool WaitingForSensor = false);
 
 /// <summary>One owner phone's routines on this PC.</summary>
 /// <param name="ClientId">The owner's paired client id. Never shown; pass it back to the mutators.</param>

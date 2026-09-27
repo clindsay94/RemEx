@@ -27,6 +27,15 @@ public sealed record RoutineNotifyQueueDocument
     public int FileVersion { get; init; } = RoutineHostDocument.CurrentFileVersion;
 
     public List<RoutineQueuedNotify>? Items { get; init; }
+
+    /// <summary>Expired items whose run was still running: applied to history when that run ends.</summary>
+    public List<RoutineQueuedNotify>? DeferredExpiries { get; init; }
+}
+
+/// <summary>Told when a PC run has reached its final record (after it was saved and reported).</summary>
+public interface IRoutineRunEndObserver
+{
+    Task RunEndedAsync(RoutineRun run);
 }
 
 /// <summary>
@@ -49,7 +58,7 @@ public sealed record RoutineNotifyQueueDocument
 /// A <c>countdown</c> heads-up is never queued: it means nothing 15 s later.
 /// </para>
 /// </remarks>
-public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
+public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IRoutineRunEndObserver, IDisposable
 {
     public const string FileName = "routine_notify_queue.json";
     public const int MaxPerOwner = 20;
@@ -64,6 +73,7 @@ public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly object _gate = new();
     private List<RoutineQueuedNotify> _items = [];
+    private List<RoutineQueuedNotify> _deferred = [];
     private ITimer? _timer;
     private bool _writesBlocked;
     private bool _disposed;
@@ -134,7 +144,17 @@ public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
             _items = (loaded?.Items ?? [])
                 .Where(i => i is { Notify.NotifyId: not null } && !string.IsNullOrEmpty(i.OwnerClientId))
                 .ToList();
+            _deferred = (loaded?.DeferredExpiries ?? [])
+                .Where(i => i is { Notify.RunId: not null } && !string.IsNullOrEmpty(i.OwnerClientId))
+                .ToList();
             UpdateTimerLocked();
+        }
+
+        // History was loaded and swept first (RoutineHostService): a run still "running" at shutdown is
+        // "interrupted" now, so every expiry that waited for its run can be applied.
+        foreach (var item in await TakeDeferredAsync(null))
+        {
+            await ExpireAsync(item);
         }
 
         await SweepAsync();
@@ -272,13 +292,51 @@ public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Called by the runner after the final record was saved and reported, so the expired step's record
+    /// (with a newer <c>seq</c>) reaches the phone after the run's own final report. Never throws.
+    /// </remarks>
+    public async Task RunEndedAsync(RoutineRun run)
+    {
+        if (run.RunId is not { } runId)
+        {
+            return;
+        }
+
+        foreach (var item in await TakeDeferredAsync(runId))
+        {
+            await ExpireAsync(item);
+        }
+    }
+
+    /// <summary>Removes (and saves) the deferred expiries of one run, or of every run when null.</summary>
+    private async Task<List<RoutineQueuedNotify>> TakeDeferredAsync(string? runId)
+    {
+        List<RoutineQueuedNotify> taken;
+        lock (_gate)
+        {
+            taken = _deferred.Where(i => runId is null || string.Equals(i.Notify!.RunId, runId, StringComparison.Ordinal)).ToList();
+            if (taken.Count == 0)
+            {
+                return taken;
+            }
+
+            _deferred.RemoveAll(i => taken.Contains(i));
+        }
+
+        await SaveAsync();
+        return taken;
+    }
+
     /// <summary>Deletes one owner's items (revoke, T7). Throws when the save fails.</summary>
     public async Task ForgetOwnerAsync(string ownerClientId)
     {
         int removed;
         lock (_gate)
         {
-            removed = _items.RemoveAll(i => string.Equals(i.OwnerClientId, ownerClientId, StringComparison.Ordinal));
+            removed = _items.RemoveAll(i => string.Equals(i.OwnerClientId, ownerClientId, StringComparison.Ordinal))
+                + _deferred.RemoveAll(i => string.Equals(i.OwnerClientId, ownerClientId, StringComparison.Ordinal));
             UpdateTimerLocked();
         }
 
@@ -329,10 +387,23 @@ public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
 
             if (_runs.Find(runId) is not { } run
                 || !string.Equals(run.OwnerClientId, item.OwnerClientId, StringComparison.Ordinal)
-                || run.Outcome == RoutineRunOutcomes.Running
                 || run.Steps is null
                 || index < 0 || index >= run.Steps.Count)
             {
+                return;
+            }
+
+            if (run.Outcome == RoutineRunOutcomes.Running)
+            {
+                // The runner still owns this record and would overwrite the change with its next save.
+                // Held (on disk) until the run ends, then applied by RunEndedAsync.
+                lock (_gate)
+                {
+                    _deferred.Add(item);
+                }
+
+                await SaveAsync();
+                _logger.LogInformation("A routine message expired while its run {RunId} is still going; recorded when it ends.", runId);
                 return;
             }
 
@@ -407,7 +478,9 @@ public sealed class RoutineNotifyQueue : IRoutinePhoneNotifier, IDisposable
             string json;
             lock (_gate)
             {
-                json = JsonSerializer.Serialize(new RoutineNotifyQueueDocument { Items = [.. _items] }, RoutineHostStore.JsonOptions);
+                json = JsonSerializer.Serialize(
+                    new RoutineNotifyQueueDocument { Items = [.. _items], DeferredExpiries = _deferred.Count == 0 ? null : [.. _deferred] },
+                    RoutineHostStore.JsonOptions);
             }
 
             await _files.WriteAsync(FileName, json);

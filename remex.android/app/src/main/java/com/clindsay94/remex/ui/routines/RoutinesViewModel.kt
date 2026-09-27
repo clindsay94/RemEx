@@ -186,6 +186,29 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
 
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
 
+    /**
+     * A PC message could not be shown because notifications are off (routines S5). The PC keeps it
+     * (unacknowledged) for up to an hour; the list says so and opens the settings.
+     */
+    val pcMessagesBlocked: StateFlow<Boolean> = syncClient.pcMessagesBlocked
+
+    /** Called when the screen resumes: notifications allowed again clears the notice. */
+    fun recheckNotifications() {
+        val permitted =
+            androidx.core.content.ContextCompat.checkSelfPermission(app, android.Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (permitted && androidx.core.app.NotificationManagerCompat.from(app).areNotificationsEnabled()) syncClient.clearPcMessagesBlocked()
+    }
+
+    /** RemEx's notification settings, where notifications can be allowed. */
+    fun openNotificationSettings() {
+        val intent =
+            android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, app.packageName)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { app.startActivity(intent) }.onFailure { Log.w(TAG, "Opening notification settings failed", it) }
+    }
+
     val coachSeen: StateFlow<Boolean?> =
         settings.routinesCoachSeenFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
