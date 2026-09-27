@@ -326,6 +326,12 @@ public sealed class SessionTriggerSource : IDisposable
     /// <summary>Raised when a settled edge fires a routine.</summary>
     public event Action<RoutineTriggerFire>? Fired;
 
+    /// <summary>
+    /// Raised, per routine that WOULD have fired, when the loop guard suppressed a settled edge. The listener
+    /// records it: a suppressed edge is never a silent drop.
+    /// </summary>
+    public event Action<RoutineTriggerFire>? Suppressed;
+
     /// <summary>Seeds the settled state from the source's initial reading. Not an edge.</summary>
     public void SetInitialState(bool? locked)
     {
@@ -382,6 +388,7 @@ public sealed class SessionTriggerSource : IDisposable
     private void OnSettled()
     {
         List<RoutineTriggerFire>? fires = null;
+        var suppressed = false;
         lock (_gate)
         {
             if (_pending is not { } locked)
@@ -393,15 +400,14 @@ public sealed class SessionTriggerSource : IDisposable
             _settled = locked;
             _settleTimer?.Dispose();
             _settleTimer = null;
-            var caused = _pendingCaused;
+            suppressed = _pendingCaused;
             _pendingCaused = false;
 
-            if (caused)
+            if (suppressed)
             {
                 _logger.LogInformation(
                     "Session {State} edge was caused by a routine step; no routine triggered (loop guard).",
                     locked ? "lock" : "unlock");
-                return;
             }
 
             var now = _time.GetTimestamp();
@@ -409,6 +415,13 @@ public sealed class SessionTriggerSource : IDisposable
             {
                 if (arming.OnLocked != locked)
                 {
+                    continue;
+                }
+
+                if (suppressed)
+                {
+                    // Recorded by the listener, and not counted against the hourly cap: nothing ran.
+                    (fires ??= []).Add(Fire(arming, locked));
                     continue;
                 }
 
@@ -430,14 +443,7 @@ public sealed class SessionTriggerSource : IDisposable
                 }
 
                 window.Enqueue(now);
-                (fires ??= []).Add(new RoutineTriggerFire(
-                    arming.OwnerClientId,
-                    arming.RoutineId,
-                    RoutineRunSources.PcSession,
-                    new RoutineRunSourceDetail
-                    {
-                        SessionState = locked ? RoutineSessionStates.Locked : RoutineSessionStates.Unlocked,
-                    }));
+                (fires ??= []).Add(Fire(arming, locked));
             }
         }
 
@@ -445,7 +451,7 @@ public sealed class SessionTriggerSource : IDisposable
         {
             try
             {
-                Fired?.Invoke(fire);
+                (suppressed ? Suppressed : Fired)?.Invoke(fire);
             }
             catch (Exception ex)
             {
@@ -453,4 +459,13 @@ public sealed class SessionTriggerSource : IDisposable
             }
         }
     }
+
+    private static RoutineTriggerFire Fire(SessionArming arming, bool locked) => new(
+        arming.OwnerClientId,
+        arming.RoutineId,
+        RoutineRunSources.PcSession,
+        new RoutineRunSourceDetail
+        {
+            SessionState = locked ? RoutineSessionStates.Locked : RoutineSessionStates.Unlocked,
+        });
 }

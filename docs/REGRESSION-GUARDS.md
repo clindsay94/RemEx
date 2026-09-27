@@ -450,7 +450,7 @@ and `RoutineCountdownSurfaceTests.ClosingTheWindowIsWiredToCancel`).
 
 `remex.agent/Services/Routines/RoutineStepExecutor.cs:234` (`if (execution.TestRun)` returns `simulated`
 before the pre-issue announcement and before `IRoutinePowerExecutor`), and
-`RoutineStepRequestHandler.cs:147` (`PresenceConfirmed: false` for every wire request); pinned by
+`RoutineStepRequestHandler.cs:140` (`PresenceConfirmed: false` for every wire request); pinned by
 `TestRunSimulationTests` and `CountdownCancelTests.EveryWireInitiatedStepCountsDown` — RemEx-pp0rt.4,
 spec D7, T21, T22.
 
@@ -465,8 +465,8 @@ now (S4).
 ### Routines: Run now's presence flag has no wire representation
 
 `remex.desktop/Services/Routines/IRoutinesHost.cs:89` (`RunNowAsync(…, bool presenceConfirmed)`, the only
-entry that can set it), `remex.agent/Services/Routines/RoutineHostService.cs:264` (passes it through as
-`manual.pcRunNow`) and `:461` (`PresenceConfirmed: false` for `routine_run_request`); pinned by
+entry that can set it), `remex.agent/Services/Routines/RoutineHostService.cs:284` (passes it through as
+`manual.pcRunNow`) and `:507` (`PresenceConfirmed: false` for `routine_run_request`); pinned by
 `RunNowCountdownBypassTests` (`NoWirePayloadCanExpressPresence`, `APhoneRunRequestAlwaysCountsDown`,
 `ATriggerAlwaysCountsDown`) — RemEx-pp0rt.9, spec D3, T21.
 
@@ -497,7 +497,7 @@ source's collected delegate, which terminated the test host ("callback on a garb
 ### Routines: logind Lock/Unlock signals are requests, not state
 
 `remex.agent/Services/Routines/RoutineLinuxSources.cs:33` (`LogindParsing.ParseLockedHint`, only the
-`LockedHint` property of `org.freedesktop.login1.Session`) and `:387` (the `PropertiesChanged` match
+`LockedHint` property of `org.freedesktop.login1.Session`) and `:396` (the `PropertiesChanged` match
 rule); pinned by `LogindSessionSourceTests` — RemEx-pp0rt.9, spec §8.5.3.
 
 logind's Session `Lock()` / `Unlock()` signals are logind asking the screen locker to act: they are sent

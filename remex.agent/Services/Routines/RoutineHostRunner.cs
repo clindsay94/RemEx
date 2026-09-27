@@ -72,7 +72,6 @@ public sealed class RoutineHostRunner
     private readonly IRoutinePhoneChannel _channel;
     private readonly IRoutinePhoneNotifier _notifier;
     private readonly IRoutineUi _ui;
-    private readonly RoutineCausality _causality;
     private readonly Func<string?> _hostIdentity;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
@@ -92,7 +91,6 @@ public sealed class RoutineHostRunner
         IRoutinePhoneChannel channel,
         IRoutinePhoneNotifier notifier,
         IRoutineUi ui,
-        RoutineCausality causality,
         Func<string?> hostIdentity,
         TimeProvider time,
         ILogger<RoutineHostRunner> logger)
@@ -105,7 +103,6 @@ public sealed class RoutineHostRunner
         _channel = channel;
         _notifier = notifier;
         _ui = ui;
-        _causality = causality;
         _hostIdentity = hostIdentity;
         _time = time;
         _logger = logger;
@@ -251,6 +248,37 @@ public sealed class RoutineHostRunner
         catch (TimeoutException)
         {
             _logger.LogWarning("A cancelled routine run of a removed owner did not stop within {Wait}.", OwnerCancelWait);
+        }
+    }
+
+    /// <summary><c>reasonArgs.detail</c> of a trigger edge the loop guard suppressed.</summary>
+    public const string CausedByRunDetail = "caused_by_run";
+
+    /// <summary>
+    /// Records (saves and reports) a trigger that did not start a run, for a skip decided outside
+    /// <see cref="StartAsync"/> (the loop guard). Never throws.
+    /// </summary>
+    public async Task<RoutineRun?> RecordSkipAsync(RoutineRunStart start, string reason, string? detail)
+    {
+        try
+        {
+            var routine = _store.Current.Owner(start.OwnerClientId)?.Find(start.RoutineId);
+            var skipped = SkippedRecord(start, routine, reason) with
+            {
+                ReasonArgs = detail is null ? null : new RoutineReasonArgs { Detail = detail },
+            };
+            skipped = await _runs.UpsertAsync(skipped);
+            await ReportAsync(skipped, live: false);
+            _logger.LogInformation(
+                "Routine trigger recorded as skipped ({Reason}, {Detail}) for {Owner}.",
+                reason, detail, LogRedaction.RedactClientId(start.OwnerClientId));
+            RaiseChanged();
+            return skipped;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "A skipped routine trigger could not be recorded.");
+            return null;
         }
     }
 
@@ -456,26 +484,24 @@ public sealed class RoutineHostRunner
                 return await NotifyPhoneAsync(routine, active, index, step);
         }
 
-        RoutineStepResultPayload result;
-        using (_causality.BeginStep())
-        {
-            result = await _executor.ExecuteAsync(
-                new RoutineStepExecution(
-                    active.Owner, active.RunId, routine.Id!, Name(routine), index, step, start.Source, start.TestRun,
-                    start.PresenceConfirmed),
-                async early =>
+        // The loop guard (T9) is marked around the verb issue alone, by CausalityMarkingPowerExecutor; a
+        // 15 s countdown here is NOT a window in which the person's own lock is ignored.
+        var result = await _executor.ExecuteAsync(
+            new RoutineStepExecution(
+                active.Owner, active.RunId, routine.Id!, Name(routine), index, step, start.Source, start.TestRun,
+                start.PresenceConfirmed),
+            async early =>
+            {
+                // §7.3.4: the machine may be gone a moment from now. Record and report success first.
+                ApplyStepResult(active, index, step, early, start.PresenceConfirmed);
+                await FinishAsync(active, CompleteRemaining(active.Record, index) with
                 {
-                    // §7.3.4: the machine may be gone a moment from now. Record and report success first.
-                    ApplyStepResult(active, index, step, early, start.PresenceConfirmed);
-                    await FinishAsync(active, CompleteRemaining(active.Record, index) with
-                    {
-                        Outcome = RoutineRunOutcomes.Succeeded,
-                        ReasonCode = RoutineReasonCodes.Ok,
-                        EndedAtUnixMs = NowMs(),
-                    });
-                    markFinalized();
+                    Outcome = RoutineRunOutcomes.Succeeded,
+                    ReasonCode = RoutineReasonCodes.Ok,
+                    EndedAtUnixMs = NowMs(),
                 });
-        }
+                markFinalized();
+            });
 
         ApplyStepResult(active, index, step, result, start.PresenceConfirmed);
         return result.Outcome switch

@@ -158,9 +158,12 @@ internal static class RoutineDbus
 
 /// <summary><c>gnome.idlemonitor</c>: Mutter's <c>GetIdletime</c> (ms) on the session bus.</summary>
 [SupportedOSPlatform("linux")]
-internal sealed class MutterIdleSource(DBusConnection session) : IIdleSource
+internal sealed class MutterIdleSource(DBusConnection session) : IIdleSource, IDisposable
 {
     public string Id => "gnome.idlemonitor";
+
+    /// <summary>The source owns its session-bus connection; closed on host shutdown.</summary>
+    public void Dispose() => session.Dispose();
 
     public async Task<TimeSpan?> GetIdleAsync(CancellationToken ct)
     {
@@ -190,9 +193,12 @@ internal sealed class MutterIdleSource(DBusConnection session) : IIdleSource
 
 /// <summary><c>freedesktop.screensaver</c>: <c>GetSessionIdleTime</c> (seconds) on the session bus (KDE and others).</summary>
 [SupportedOSPlatform("linux")]
-internal sealed class ScreenSaverIdleSource(DBusConnection session) : IIdleSource
+internal sealed class ScreenSaverIdleSource(DBusConnection session) : IIdleSource, IDisposable
 {
     public string Id => "freedesktop.screensaver";
+
+    /// <summary>The source owns its session-bus connection; closed on host shutdown.</summary>
+    public void Dispose() => session.Dispose();
 
     public async Task<TimeSpan?> GetIdleAsync(CancellationToken ct)
     {
@@ -227,9 +233,12 @@ internal sealed class ScreenSaverIdleSource(DBusConnection session) : IIdleSourc
 
 /// <summary><c>logind.idlehint</c>: the coarse fallback from the session object's idle hints.</summary>
 [SupportedOSPlatform("linux")]
-internal sealed class LogindIdleHintSource(DBusConnection system, string sessionPath) : IIdleSource
+internal sealed class LogindIdleHintSource(DBusConnection system, string sessionPath) : IIdleSource, IDisposable
 {
     public string Id => "logind.idlehint";
+
+    /// <summary>The source owns its system-bus connection; closed on host shutdown.</summary>
+    public void Dispose() => system.Dispose();
 
     public async Task<TimeSpan?> GetIdleAsync(CancellationToken ct)
     {

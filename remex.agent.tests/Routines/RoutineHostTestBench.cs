@@ -12,10 +12,17 @@ internal sealed class FakeStateFiles : IRoutineStateFiles
 {
     public Dictionary<string, string> Files { get; } = new(StringComparer.Ordinal);
     public List<string> Quarantined { get; } = [];
+    public Dictionary<string, string> Untrusted { get; } = new(StringComparer.Ordinal);
     public bool FailWrites { get; set; }
+    public bool FailQuarantine { get; set; }
     public int Writes { get; private set; }
 
     public string? Read(string fileName) => Files.TryGetValue(fileName, out var text) ? text : null;
+
+    public bool Exists(string fileName) => Files.ContainsKey(fileName);
+
+    public string? TrustProblem(string fileName) =>
+        Files.ContainsKey(fileName) && Untrusted.TryGetValue(fileName, out var why) ? why : null;
 
     public Task WriteAsync(string fileName, string contents)
     {
@@ -31,7 +38,7 @@ internal sealed class FakeStateFiles : IRoutineStateFiles
 
     public string? Quarantine(string fileName, DateTimeOffset now)
     {
-        if (!Files.Remove(fileName, out var text))
+        if (FailQuarantine || !Files.Remove(fileName, out var text))
         {
             return null;
         }
@@ -148,23 +155,38 @@ internal sealed class RoutineHostTestBench
     public FakeIdleSource IdleSource { get; } = new();
     public FakeSessionSource SessionSource { get; } = new();
     public RoutineHostService Service { get; }
+    public RoutineHostReadiness Readiness { get; } = new();
+    public RoutineStepExecutor Executor { get; }
     public bool MediaPlaying { get; set; }
 
-    public RoutineHostTestBench()
+    /// <param name="ready">False leaves the start-up gate closed, for the readiness tests.</param>
+    public RoutineHostTestBench(bool ready = true)
     {
         Core = new RoutineTestBench();
         Causality = new RoutineCausality(Time);
+        if (ready)
+        {
+            Readiness.MarkReady();
+        }
+
         Availability.SetIdleSource(IdleSource.Id);
         Availability.SetSessionSource(SessionSource.Id);
         Store = new RoutineHostStore(Files, Time, NullLogger<RoutineHostStore>.Instance);
         Runs = new RoutineRunStore(Files, Time, NullLogger<RoutineRunStore>.Instance);
         Validator = new RoutineHostValidator(Core.Launchers, FakeCapabilities.For(Core.AdvertisedVerbs), Availability, () => HostId);
+
+        // The production wiring: the loop guard is marked around the verb issue only.
+        Executor = new RoutineStepExecutor(
+            new CausalityMarkingPowerExecutor(Core.Power, Causality), Core.Launchers, Core.Launcher, Core.Media, Core.Ui,
+            Core.Owners, FakeCapabilities.For(Core.AdvertisedVerbs), Core.Countdown,
+            Remex.Desktop.Services.Routines.RoutineDryRunMode.Off, Time, NullLogger<RoutineStepExecutor>.Instance);
         Runner = new RoutineHostRunner(
-            Store, Runs, Core.Executor, Core.Countdown, Core.Owners, Channel, new LiveOnlyRoutinePhoneNotifier(Channel),
-            Core.Ui, Causality, () => HostId, Time, NullLogger<RoutineHostRunner>.Instance);
+            Store, Runs, Executor, Core.Countdown, Core.Owners, Channel, new LiveOnlyRoutinePhoneNotifier(Channel),
+            Core.Ui, () => HostId, Time, NullLogger<RoutineHostRunner>.Instance);
         Sync = new RoutineSyncHandler(
-            Store, Runs, Validator, Runner, Core.Countdown, Availability, Channel, Time, NullLogger<RoutineSyncHandler>.Instance);
-        Messages = new RoutineHostMessageHandler(Sync, Runner, Runs, Time, NullLogger<RoutineHostMessageHandler>.Instance);
+            Store, Runs, Validator, Runner, Core.Countdown, Availability, Channel, Readiness, Core.Owners, Time,
+            NullLogger<RoutineSyncHandler>.Instance);
+        Messages = new RoutineHostMessageHandler(Sync, Runner, Runs, Readiness, Time, NullLogger<RoutineHostMessageHandler>.Instance);
 
         var media = new Mock<Remex.Agent.Services.Media.IMediaSessionMonitor>();
         media.Setup(m => m.Current).Returns(() => MediaPlaying
@@ -172,8 +194,8 @@ internal sealed class RoutineHostTestBench
             : null);
         Service = new RoutineHostService(
             Store, Runs, Runner, Sync, Availability, new FakePlatformSources(IdleSource, SessionSource), Core.Countdown,
-            Core.Owners, Remex.Desktop.Services.Routines.RoutineDryRunMode.Off, Core.Ui, Causality, media.Object, Time,
-            NullLoggerFactory.Instance);
+            Core.Owners, Remex.Desktop.Services.Routines.RoutineDryRunMode.Off, Core.Ui, Causality, media.Object, Readiness,
+            Time, NullLoggerFactory.Instance);
     }
 
     public Task InitializeAsync() => Service.InitializeAsync(CancellationToken.None);

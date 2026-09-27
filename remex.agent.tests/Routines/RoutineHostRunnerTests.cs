@@ -394,7 +394,9 @@ public sealed class UnsolicitedSyncResultTests
         bench.Channel.Reachable.Add(Owner);
         await bench.Service.SetBlockedAsync(Owner, blocked: true);
 
-        Assert.Single(bench.Channel.SyncResults(Owner));
+        var unsolicited = Assert.Single(bench.Channel.SyncResults(Owner));
+        Assert.True(unsolicited.Unsolicited);
+        Assert.Equal(RoutineSyncStatuses.BlockedByPc, unsolicited.Status);
         Assert.Equal(RoutineSyncStatuses.BlockedByPc, (await bench.SyncAsync(2)).Status);
     }
 

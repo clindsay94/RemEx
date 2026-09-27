@@ -8,6 +8,41 @@ using Remex.Core.Routines;
 namespace Remex.Agent.Services.Routines;
 
 /// <summary>
+/// Set once <c>RoutineHostService.InitializeAsync</c> has loaded both stores and probed the trigger sources.
+/// Every phone-facing routine handler waits on it (bounded) before touching state.
+/// </summary>
+public sealed class RoutineHostReadiness
+{
+    /// <summary>How long a message waits for start-up before it is answered "try again".</summary>
+    public static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(10);
+
+    private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public bool IsReady => _ready.Task.IsCompleted;
+
+    public void MarkReady() => _ready.TrySetResult();
+
+    /// <summary>True once ready; false when <see cref="MaxWait"/> passed first.</summary>
+    public async Task<bool> WaitAsync(TimeProvider time)
+    {
+        if (_ready.Task.IsCompleted)
+        {
+            return true;
+        }
+
+        try
+        {
+            await _ready.Task.WaitAsync(MaxWait, time);
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+}
+
+/// <summary>
 /// The host end of <c>routines_sync</c> (routines spec §7.3.1, §7.3.2, §7.4.2) and every
 /// <c>routine_sync_result</c> the PC sends, solicited or not.
 /// </summary>
@@ -43,6 +78,8 @@ public sealed class RoutineSyncHandler
     private readonly RoutineCountdownCoordinator _countdown;
     private readonly RoutineTriggerAvailability _availability;
     private readonly IRoutinePhoneChannel _channel;
+    private readonly RoutineHostReadiness _readiness;
+    private readonly IRoutineOwnerDirectory _owners;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
     private readonly object _gate = new();
@@ -56,6 +93,8 @@ public sealed class RoutineSyncHandler
         RoutineCountdownCoordinator countdown,
         RoutineTriggerAvailability availability,
         IRoutinePhoneChannel channel,
+        RoutineHostReadiness readiness,
+        IRoutineOwnerDirectory owners,
         TimeProvider time,
         ILogger<RoutineSyncHandler> logger)
     {
@@ -66,9 +105,20 @@ public sealed class RoutineSyncHandler
         _countdown = countdown;
         _availability = availability;
         _channel = channel;
+        _readiness = readiness;
+        _owners = owners;
         _time = time;
         _logger = logger;
     }
+
+    /// <summary>
+    /// Reason codes that only mean "this PC's trigger source was not found YET" (the D-Bus probes finish
+    /// after start). A stored result carrying one is never replayed for an equal revision: the set is
+    /// validated again, so a sync that raced the probes cannot keep a routine rejected for good.
+    /// </summary>
+    internal static bool IsTransientRejection(RoutineSyncItemResult result) =>
+        !result.Accepted
+        && result.ReasonCode is RoutineReasonCodes.IdleSourceUnavailable or RoutineReasonCodes.SessionSourceUnavailable;
 
     /// <summary>
     /// Handles one <c>routines_sync</c> from the proven client <paramref name="clientId"/>, replying through
@@ -82,6 +132,17 @@ public sealed class RoutineSyncHandler
             if (payload is not null && SerializedSize(payload) > RoutineLimits.MaxSyncPayloadBytes)
             {
                 await ReplyAsync(send, Result(clientId, payload.Revision, RoutineSyncStatuses.PayloadTooLarge));
+                return;
+            }
+
+            // NOTHING IS APPLIED BEFORE THE STORE IS LOADED AND THE SOURCES ARE PROBED. A sync that beat
+            // Load() would save an empty document over every other owner (and their block flags); one that
+            // beat the probes would reject pc.idle / pc.session. Past the bounded wait the phone is told to
+            // try again (rate_limited) and nothing is validated, stored or rejected.
+            if (!await _readiness.WaitAsync(_time))
+            {
+                _logger.LogWarning("routines_sync from {ClientId} arrived before routines were ready; asked to retry.", LogRedaction.RedactClientId(clientId));
+                await ReplyAsync(send, Result(clientId, payload?.Revision ?? 0, RoutineSyncStatuses.RateLimited));
                 return;
             }
 
@@ -141,11 +202,15 @@ public sealed class RoutineSyncHandler
             return;
         }
 
-        var result = Result(clientId, owner.Revision, StatusOf(owner.LastResults)) with
-        {
-            Results = owner.LastResults ?? [],
-            Unsolicited = true,
-        };
+        // A blocked phone must hear "blocked", not the ok/partial of its last accepted sync (§7.4.1 step 3:
+        // blocked_by_pc is what stops the phone and surfaces the state).
+        var result = owner.BlockedByPc
+            ? Result(clientId, owner.Revision, RoutineSyncStatuses.BlockedByPc) with { Unsolicited = true }
+            : Result(clientId, owner.Revision, StatusOf(owner.LastResults)) with
+            {
+                Results = owner.LastResults ?? [],
+                Unsolicited = true,
+            };
         await _channel.TrySendAsync(clientId, RoutineMessages.SyncResult(result));
     }
 
@@ -279,9 +344,13 @@ public sealed class RoutineSyncHandler
                 return Result(clientId, payload.Revision, RoutineSyncStatuses.RevisionConflict);
             }
 
-            // An idempotent retry: the stored result again.
-            await TouchAsync(clientId, nowMs);
-            return Result(clientId, payload.Revision, StatusOf(owner.LastResults)) with { Results = owner.LastResults ?? [] };
+            // An idempotent retry: the stored result again, unless it rejected something only because a
+            // trigger source was not probed yet. Then the same content is validated again below.
+            if (!(owner.LastResults ?? []).Any(IsTransientRejection))
+            {
+                await TouchAsync(clientId, nowMs);
+                return Result(clientId, payload.Revision, StatusOf(owner.LastResults)) with { Results = owner.LastResults ?? [] };
+            }
         }
 
         // Step 7: validate, keep only what passes.
@@ -299,8 +368,16 @@ public sealed class RoutineSyncHandler
         var wasPaused = owner?.Paused ?? false;
 
         // Step 8: saved before the reply.
-        var (saved, _) = await _store.UpdateAsync(doc =>
+        var (saved, stillPaired) = await _store.UpdateAsync<bool>(doc =>
         {
+            // UNDER THE STORE'S WRITE GATE, THE SAME ONE A REVOKE'S FORGET TAKES. The revoker unpairs first
+            // and forgets second, so a queued or in-flight sync either lands before the forget (which then
+            // removes it) or sees the phone unpaired here; it can never re-create a revoked owner.
+            if (!_owners.IsPaired(clientId))
+            {
+                return (null, false);
+            }
+
             var current = doc.Owner(clientId);
             var next = new RoutineOwnerRecord
             {
@@ -315,11 +392,17 @@ public sealed class RoutineSyncHandler
                 Routines = accepted,
                 LastResults = results,
             };
-            return (doc.WithOwner(clientId, next), 0);
+            return (doc.WithOwner(clientId, next), true);
         });
 
         if (!saved)
         {
+            return Result(clientId, payload.Revision, RoutineSyncStatuses.InternalError);
+        }
+
+        if (!stillPaired)
+        {
+            _logger.LogWarning("routines_sync from {ClientId} dropped: the phone is no longer paired.", LogRedaction.RedactClientId(clientId));
             return Result(clientId, payload.Revision, RoutineSyncStatuses.InternalError);
         }
 

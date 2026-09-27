@@ -216,11 +216,13 @@ public sealed class CausalSuppressionTests
         var causality = new RoutineCausality(time);
         var session = new SessionTriggerSource(time, causality, NullLogger.Instance);
         var fires = new List<RoutineTriggerFire>();
+        var suppressed = new List<RoutineTriggerFire>();
         session.Fired += fires.Add;
+        session.Suppressed += suppressed.Add;
         session.SetInitialState(false);
         session.SetArmed([new SessionArming(Owner, Id(1), OnLocked: true)]);
 
-        // A routine's LOCK: the lock edge arrives while the step is still running.
+        // A routine's LOCK: the lock edge arrives while the verb is still being issued.
         using (causality.BeginStep())
         {
             session.OnEdge(true);
@@ -228,6 +230,7 @@ public sealed class CausalSuppressionTests
 
         time.Advance(TimeSpan.FromSeconds(10));
         Assert.Empty(fires);
+        Assert.Equal(Id(1), Assert.Single(suppressed).RoutineId);
 
         // A person locking the PC later is a real edge again.
         session.OnEdge(false);
@@ -251,19 +254,54 @@ public sealed class CausalSuppressionTests
     }
 
     [Fact]
-    public async Task APhoneRunsStepRequestAlsoMarksCausality()
+    public async Task TheVerbIssueMarksTheGuard()
     {
-        var bench = new RoutineTestBench();
-        var causality = new RoutineCausality(bench.Time);
-        var handler = new RoutineStepRequestHandler(
-            bench.Executor, bench.Countdown, bench.Time, NullLogger<RoutineStepRequestHandler>.Instance, causality);
+        var time = new ManualTimeProvider();
+        var causality = new RoutineCausality(time);
+        var power = new CausalityMarkingPowerExecutor(new FakePowerExecutor(), causality);
 
-        await handler.HandleStepRequestAsync(
-            Owner,
-            new Remex.Core.Messages.Routines.RoutineStepRequestPayload { RunId = "run-1", Step = RoutineTestBench.PowerStep(RoutinePowerVerbs.Lock) },
-            _ => Task.CompletedTask);
+        Assert.False(causality.IsCausedByRunNow());
+        await power.ExecuteAsync(RoutinePowerVerbs.Lock, null);
 
         Assert.True(causality.IsCausedByRunNow());
+    }
+
+    [Fact]
+    public async Task ARealLockDuringACountdownIsNotSuppressed()
+    {
+        var bench = new RoutineHostTestBench();
+        await bench.InitializeAsync();
+        await bench.SyncAsync(1, routines: [Routine(1, IdleTrigger(), Power(RoutinePowerVerbs.Sleep)), Routine(2, SessionTrigger(locked: true), NotifyPc("locked"))]);
+        var sleeping = await bench.StartAsync(1, RoutineRunSources.ManualApp);
+        await bench.Core.WaitForCountdownAsync();
+
+        // The person locks the PC while the 15 s countdown runs: no verb has been issued yet.
+        Assert.False(bench.Causality.IsCausedByRunNow());
+        bench.SessionSource.Raise(true);
+        bench.Time.Advance(SessionTriggerSource.Settle);
+        await WaitUntilAsync(() => bench.Core.Ui.Notifications.Any(n => n.Title == "locked"), "the real lock was swallowed");
+
+        bench.Core.ElapseCountdown();
+        await sleeping.Completion;
+    }
+
+    [Fact]
+    public async Task ASuppressedEdgeIsRecordedNotDropped()
+    {
+        var bench = new RoutineHostTestBench();
+        await bench.InitializeAsync();
+        await bench.SyncAsync(1, routines: [Routine(1, IdleTrigger(), Power(RoutinePowerVerbs.Lock)), Routine(2, SessionTrigger(locked: true), NotifyPc("locked"))]);
+
+        await (await bench.StartAsync(1, RoutineRunSources.ManualApp)).Completion;
+        bench.SessionSource.Raise(true);
+        bench.Time.Advance(SessionTriggerSource.Settle);
+
+        await WaitUntilAsync(() => bench.Runs.Query(Owner, Id(2)).Count == 1, "the suppressed edge left no record");
+        var record = bench.Runs.Query(Owner, Id(2))[0];
+        Assert.Equal(RoutineRunOutcomes.Skipped, record.Outcome);
+        Assert.Equal(RoutineReasonCodes.FlapSuppressed, record.ReasonCode);
+        Assert.Equal(RoutineHostRunner.CausedByRunDetail, record.ReasonArgs!.Detail);
+        Assert.DoesNotContain(bench.Core.Ui.Notifications, n => n.Title == "locked");
     }
 }
 
