@@ -44,3 +44,17 @@ public sealed class WindowsOnlyFactAttribute : FactAttribute
             Skip = $"Windows-only: {because}";
     }
 }
+
+/// <summary>
+/// The Linux mirror of <see cref="WindowsOnlyFactAttribute"/>, for behaviour that only exists there (POSIX
+/// file modes, routines spec §6.9). Same reasoning: skip with the reason, never weaken the assertion.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public sealed class LinuxOnlyFactAttribute : FactAttribute
+{
+    public LinuxOnlyFactAttribute(string because)
+    {
+        if (!OperatingSystem.IsLinux())
+            Skip = $"Linux-only: {because}";
+    }
+}

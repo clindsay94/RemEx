@@ -58,6 +58,9 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
         /// <summary>Whether this client says it can render a consent prompt (RemEx-220r).</summary>
         public volatile bool SupportsPhonePrompt;
 
+        /// <summary>Whether this client says it implements Routines (routines spec §7.5).</summary>
+        public volatile bool SupportsRoutines;
+
         /// <summary>Whether the connection cleared the pairing gate. See <see cref="MarkAuthenticated"/>.</summary>
         public volatile bool Authenticated;
 
@@ -158,6 +161,21 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
         if (registration is Registration handle && _sessions.TryGetValue(handle.Id, out var entry))
             entry.SupportsPhonePrompt = supported;
     }
+
+    /// <summary>
+    /// Records whether a client implements Routines (<c>clientCapabilities.supportsRoutines</c>, routines
+    /// spec §7.5, RemEx-pp0rt.9). Absent means false: the host then never sends that client a
+    /// <c>routine_*</c> message, because an older phone's router has no <c>routine_</c> forward and would
+    /// drop it in silence (docs/REGRESSION-GUARDS.md).
+    /// </summary>
+    public void SetSupportsRoutines(IDisposable registration, bool supported)
+    {
+        if (registration is Registration handle && _sessions.TryGetValue(handle.Id, out var entry))
+            entry.SupportsRoutines = supported;
+    }
+
+    /// <summary>Whether that client's live session advertises Routines. Same lookup rule as <see cref="Find"/>.</summary>
+    public bool SupportsRoutines(string? clientId) => Find(clientId)?.SupportsRoutines ?? false;
 
     /// <summary>
     /// Every AUTHENTICATED live session, in the shape <see cref="PhonePresence"/> already consumes.

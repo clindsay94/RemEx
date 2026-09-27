@@ -3667,4 +3667,25 @@ Możesz zmienić:
   <data name="Routine_Source_Other" xml:space="preserve">
     <value>rutyna</value>
   </data>
+  <data name="Routine_Source_PcIdle" xml:space="preserve">
+    <value>bezczynność komputera</value>
+  </data>
+  <data name="Routine_Source_PcSession" xml:space="preserve">
+    <value>zablokowanie lub odblokowanie komputera</value>
+  </data>
+  <data name="Routine_Source_PcSensor" xml:space="preserve">
+    <value>czujnik komputera</value>
+  </data>
+  <data name="Routine_Source_PcRunNow" xml:space="preserve">
+    <value>Uruchom teraz na tym komputerze</value>
+  </data>
+  <data name="Routine_Warning_Title" xml:space="preserve">
+    <value>Rutyny</value>
+  </data>
+  <data name="Routine_Warning_StoreUnreadable" xml:space="preserve">
+    <value>Nie udało się odczytać rutyn zapisanych na tym komputerze, więc zostały odłożone i żadna z nich się nie uruchomi. Otwórz RemEx na telefonie, aby wysłać je ponownie.</value>
+  </data>
+  <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
+    <value>Nie udało się odczytać historii rutyn na tym komputerze, więc została odłożona i rozpoczęta od nowa.</value>
+  </data>
 </root>

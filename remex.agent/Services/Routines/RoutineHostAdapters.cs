@@ -123,17 +123,18 @@ public interface ISessionLockProbe
 
 /// <summary>
 /// <see cref="ISessionLockProbe"/>: on Windows the input desktop is <c>Default</c> while unlocked and
-/// <c>Winlogon</c> (or unopenable) while locked or at a secure prompt. Linux answers "unknown" until
-/// the logind <c>LockedHint</c> source lands with the session trigger (routines S4).
+/// <c>Winlogon</c> (or unopenable) while locked or at a secure prompt. Linux reads the session source's
+/// last state (logind <c>LockedHint</c>, or the ScreenSaver <c>ActiveChanged</c> fallback, routines S4);
+/// with no session source it answers "unknown", which must not suppress the window.
 /// </summary>
-public sealed class SessionLockProbe : ISessionLockProbe
+public sealed class SessionLockProbe(RoutineTriggerAvailability? availability = null) : ISessionLockProbe
 {
     /// <inheritdoc />
     public bool IsLocked()
     {
         if (!OperatingSystem.IsWindows())
         {
-            return false;
+            return availability?.SessionLocked ?? false;
         }
 
         try
