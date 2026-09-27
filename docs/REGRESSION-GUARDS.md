@@ -669,6 +669,37 @@ burst behind a stalled collector is dropped, not queued: history pages vanish an
 "no answer". Back-offs and resends are launched in the connection's sync session scope, never awaited in
 the handler. Neither handler may throw either, or the collection ends for the life of the process.
 
+### Routines: sensor routines must hold telemetry demand or they never see a sample
+
+`remex.agent/Services/Routines/RoutineSensorSource.cs:83` (`SensorTriggerSource.SetArmed`: one
+`AcquireDemand()` lease at `:109` while at least one `pc.sensor` routine is armed, released when none is)
+and `remex.agent/Services/Routines/RoutineHostService.cs:435` (`Rearm` passing the armed set on every
+store change and pause); pinned by `SensorTriggerSourceTests.DemandIsHeldOnlyWhileASensorRoutineIsArmed`
+and `SensorRoutineHostTests.AnArmedSensorRoutineHoldsDemandAndPauseReleasesIt` — RemEx-pp0rt.10, spec
+§8.5.1, §14 S5.
+
+The telemetry sampler idles whenever nothing holds a lease (perf audit P0-10, `SamplingDemand`) and an
+idle sampler publishes nothing. `TelemetryPublished` is then simply never raised, so a sensor routine that
+only subscribes looks correct in every test that publishes by hand, and on a real PC with no window open
+and no phone streaming it sits armed forever and never fires, with no error and no log line. Hold the
+lease from the sensor source, only while something is armed (an unconditional lease brings back the idle
+1 Hz poll on every PC). The sync validator's catalog lookup (`RoutineSensorCatalog`) takes its own short
+lease for the same reason: without it an idle PC would reject every sensor routine as `sensor_unavailable`.
+
+### Routines: a held message is on disk before the live send, and leaves only on ack or expiry
+
+`remex.agent/Services/Routines/RoutineNotifyQueue.cs:144` (`NotifyAsync`: `SaveAsync` before
+`TrySendAsync`), `AckAsync` (owner-scoped removal) and `SweepAsync` (one-hour expiry); flushed from
+`RoutineSyncHandler.DrainAsync` after the sync result; pinned by `RoutineNotifyQueueTests` —
+RemEx-pp0rt.10, spec §7.3.5, §17 Q6, T17.
+
+"Notify the phone, then shut down" is the headline pattern: the step after the notify can take the PC
+down within a second, so a message saved after the send attempt (or only in memory) is lost exactly when
+it matters, with the step already recorded `succeeded`. A live send is not proof of display either: the
+item stays until `routine_notify_ack` names it, and an ack is applied only to the sending phone's items,
+so one phone can never clear another's. The file goes through `IRoutineStateFiles` (atomic, same ACL and
+trust check as `routines.json`, T14); an untrusted file is set aside, never loaded.
+
 
 ### `protocolVersion` bumps must be coordinated
 

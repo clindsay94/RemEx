@@ -2,7 +2,12 @@ package com.clindsay94.remex.routines
 
 import com.clindsay94.remex.routines.model.RoutineCancelPayload
 import com.clindsay94.remex.routines.model.RoutineCancelReasons
+import com.clindsay94.remex.routines.model.RoutineNotifyAckPayload
+import com.clindsay94.remex.routines.model.RoutineNotifyKinds
+import com.clindsay94.remex.routines.model.RoutineNotifyPayload
 import com.clindsay94.remex.routines.model.RoutineOutbound
+import com.clindsay94.remex.routines.model.RoutinePowerVerbs
+import com.clindsay94.remex.routines.model.RoutineStepTypes
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
 import com.clindsay94.remex.routines.model.RoutineRunOrigins
@@ -103,7 +108,10 @@ internal class RoutineSyncClient(
     private val newId: () -> String = { UUID.randomUUID().toString() },
     /** Where the blocking JNI sends run; tests pass their own scheduler's dispatcher. */
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    /** Where PC messages are posted (routines S5, §7.3.5); null drops them after the ack. */
+    private val messages: RoutineMessageSink? = null,
 ) {
+    private val notifyDedup = RoutineNotifyDedup()
     private class Session(val hostIdentity: String, val scope: CoroutineScope) {
         val wake = Channel<Unit>(Channel.CONFLATED)
 
@@ -302,6 +310,55 @@ internal class RoutineSyncClient(
         } catch (e: Exception) {
             RoutineLog.e("Handling a routine_run_report failed.", e)
         }
+    }
+
+    /**
+     * A `routine_notify` from the PC (routines S5, §7.3.5, §8.6):
+     * - `step`: posted on the messages channel (lock-screen redacted, T10), with "Sent at <time>" when
+     *   the PC held it (R-UX-33); an expired one is not shown. Always acknowledged, even a duplicate:
+     *   a resend means the PC never got the first ack, and only the ack takes it out of the PC's queue.
+     * - `countdown`: the PC run's countdown mirrored on its progress notification, whose Cancel sends
+     *   `routine_cancel` (R-UX-34). Never held by the PC, so never acknowledged.
+     *
+     * Never throws: it runs inside the routine message collector.
+     */
+    suspend fun onNotify(notify: RoutineNotifyPayload) {
+        try {
+            val id = notify.notifyId ?: return
+            val now = clock.nowUnixMs()
+            val countdown = notify.kind == RoutineNotifyKinds.COUNTDOWN
+            if (notifyDedup.firstTime(id)) {
+                if (countdown) {
+                    showCountdownMirror(notify, now)
+                } else if (!QueuedMessagePresenter.isExpired(notify, now)) {
+                    val shown = messages?.postPcMessage(notify, QueuedMessagePresenter.wasQueued(notify, now)) ?: false
+                    RoutineLog.i("PC message ${RoutineLog.id(id)} ${if (shown) "shown" else "not shown (notifications off)"}.")
+                }
+            }
+            if (!countdown) sendIo(RoutineOutbound.notifyAck(RoutineNotifyAckPayload(notifyIds = listOf(id))))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            RoutineLog.e("Handling a routine_notify failed.", e)
+        }
+    }
+
+    private suspend fun showCountdownMirror(notify: RoutineNotifyPayload, now: Long) {
+        val endsAt = notify.countdownEndsAtUnixMs?.takeIf { it > now } ?: return
+        val run = notify.runId?.let { store.findRun(it) }
+        val routine = notify.routineId?.let { store.routine(it) }
+        if (run == null || routine == null) {
+            // The live report that names the run never arrived: still say it, without a Cancel.
+            messages?.postPcMessage(notify, queued = false)
+            return
+        }
+        val running = run.steps.orEmpty().firstOrNull { it.status == RoutineStepStatuses.RUNNING }?.index
+        val step =
+            running
+                ?: routine.steps.orEmpty().indexOfLast { it?.type == RoutineStepTypes.POWER && RoutinePowerVerbs.isDestructive(it.verb) }
+                    .takeIf { it >= 0 }
+                ?: return
+        observer.onCountdown(run, routine, step, endsAt)
     }
 
     /**

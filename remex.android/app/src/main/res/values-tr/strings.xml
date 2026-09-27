@@ -1367,4 +1367,33 @@
     <string name="routines_saved_sent_pc">Kaydedildi ve %1$s cihazına gönderildi.</string>
     <string name="routines_saved_pc_later">Kaydedildi. Bir sonraki bağlantınızda %1$s cihazına gidecek.</string>
     <string name="routines_forget_pc_residual">%1$s için rutinler bu telefondan kaldırıldı. Bilgisayar, bu telefonu orada kaldırana kadar kendi kopyasını tutar. Bu telefon 30 gün bağlanmazsa bilgisayar onları duraklatır.</string>
+    <string name="routines_trigger_sensor_chip">Sensör sınırı</string>
+    <string name="routines_trigger_sensor_title">Bir bilgisayar sensörü sınırı geçiyor</string>
+    <string name="routines_trigger_sensor_supporting">Örneğin, GPU 30 saniye boyunca 85 °C üzerinde</string>
+    <string name="routines_trigger_sensor_above">Üzerinde</string>
+    <string name="routines_trigger_sensor_below">Altında</string>
+    <string name="routines_trigger_sensor_which">Sensör</string>
+    <string name="routines_trigger_sensor_choose">Bir sensör seçin</string>
+    <string name="routines_trigger_sensor_connect">Sensörlerinden seçmek için %1$s ile bağlantı kurun.</string>
+    <string name="routines_trigger_sensor_limit">Sınır</string>
+    <string name="routines_trigger_sensor_for">Sınırın ötesinde kalma süresi</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s rutinlere sensör bildirmiyor.</string>
+    <string name="routines_more_options">Daha fazla seçenek</string>
+    <string name="routines_category_health">Sıcaklık ve sağlık</string>
+    <string name="routines_need_temperature_sensor">Bilgisayarda bir sıcaklık sensörü</string>
+    <string name="routines_need_memory_sensor">Bilgisayarda bir bellek yükü sensörü</string>
+    <string name="routines_tpl_health_gpu_name">GPU çok ısınıyor</string>
+    <string name="routines_tpl_health_gpu_why">Bir oyun ya da render GPU\'nuzu pişirdiğinde haberiniz olsun.</string>
+    <string name="routines_tpl_health_gpu_message">GPU\'nuz 30 saniyedir 85 °C üzerinde.</string>
+    <string name="routines_tpl_health_cpu_name">Zarar görmeden soğut</string>
+    <string name="routines_tpl_health_cpu_why">CPU tehlikeli derecede sıcak kalırsa bilgisayarı uyutur.</string>
+    <string name="routines_tpl_health_cpu_message">Bilgisayarınız çok ısındı ve uyku moduna geçiyor.</string>
+    <string name="routines_tpl_health_ram_name">Bellek neredeyse dolu</string>
+    <string name="routines_tpl_health_ram_why">Bilgisayar yavaşlamadan önce kontrolden çıkan uygulamayı yakalayın.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">Bilgisayarınızın belleği 2 dakikadır %90\'ın üzerinde.</string>
+    <string name="routines_problem_choose_sensor">Bir sensör seçin.</string>
+    <string name="routines_problem_sensor_missing">{pc} şu anda bu sensörü bildirmiyor. Başka birini seçin.</string>
+    <string name="routines_problem_sensor_limit">Sınır için bir sayı girin.</string>
+    <string name="routines_problem_sensor_sustain">5 saniye ile 10 dakika arasında bir süre seçin.</string>
+    <string name="routine_message_sent_at">Gönderilme saati: %1$s</string>
 </resources>

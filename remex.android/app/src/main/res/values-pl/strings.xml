@@ -1391,4 +1391,33 @@
     <string name="routines_saved_sent_pc">Zapisano i wysłano do %1$s.</string>
     <string name="routines_saved_pc_later">Zapisano. Trafi do %1$s przy następnym połączeniu.</string>
     <string name="routines_forget_pc_residual">Rutyny dla %1$s usunięto z tego telefonu. Komputer zachowa swoją kopię, dopóki nie usuniesz tam tego telefonu. Jeśli ten telefon nie połączy się przez 30 dni, komputer je wstrzyma.</string>
+    <string name="routines_trigger_sensor_chip">Limit czujnika</string>
+    <string name="routines_trigger_sensor_title">Czujnik komputera przekracza limit</string>
+    <string name="routines_trigger_sensor_supporting">Na przykład GPU powyżej 85 °C przez 30 sekund</string>
+    <string name="routines_trigger_sensor_above">Powyżej</string>
+    <string name="routines_trigger_sensor_below">Poniżej</string>
+    <string name="routines_trigger_sensor_which">Czujnik</string>
+    <string name="routines_trigger_sensor_choose">Wybierz czujnik</string>
+    <string name="routines_trigger_sensor_connect">Połącz się z %1$s, aby wybrać jeden z jego czujników.</string>
+    <string name="routines_trigger_sensor_limit">Limit</string>
+    <string name="routines_trigger_sensor_for">Poza limitem przez</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s nie udostępnia czujników rutynom.</string>
+    <string name="routines_more_options">Więcej opcji</string>
+    <string name="routines_category_health">Temperatura i kondycja</string>
+    <string name="routines_need_temperature_sensor">Czujnik temperatury w komputerze</string>
+    <string name="routines_need_memory_sensor">Czujnik obciążenia pamięci w komputerze</string>
+    <string name="routines_tpl_health_gpu_name">GPU się grzeje</string>
+    <string name="routines_tpl_health_gpu_why">Dowiedz się, kiedy gra lub renderowanie przegrzewa GPU.</string>
+    <string name="routines_tpl_health_gpu_message">Twoje GPU od 30 sekund ma ponad 85 °C.</string>
+    <string name="routines_tpl_health_cpu_name">Ostudź, zanim coś się uszkodzi</string>
+    <string name="routines_tpl_health_cpu_why">Usypia komputer, gdy CPU pozostaje niebezpiecznie gorące.</string>
+    <string name="routines_tpl_health_cpu_message">Twój komputer był za gorący i przechodzi w uśpienie.</string>
+    <string name="routines_tpl_health_ram_name">Pamięć prawie pełna</string>
+    <string name="routines_tpl_health_ram_why">Złap aplikację, która wymknęła się spod kontroli, zanim komputer zwolni.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">Pamięć Twojego komputera od 2 minut przekracza 90%.</string>
+    <string name="routines_problem_choose_sensor">Wybierz czujnik.</string>
+    <string name="routines_problem_sensor_missing">{pc} nie zgłasza teraz tego czujnika. Wybierz inny.</string>
+    <string name="routines_problem_sensor_limit">Wpisz liczbę jako limit.</string>
+    <string name="routines_problem_sensor_sustain">Wybierz czas od 5 sekund do 10 minut.</string>
+    <string name="routine_message_sent_at">Wysłano o %1$s</string>
 </resources>

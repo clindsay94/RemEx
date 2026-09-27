@@ -183,6 +183,18 @@ enum class EditorProblemCode {
     COUNTDOWN,
     BUDGET_EXCEEDED,
     MEDIA_KEYS,
+
+    /** `pc.sensor` with no sensor chosen yet (a health template before the PC's catalog arrived). */
+    CHOOSE_SENSOR,
+
+    /** The connected target PC's catalog does not have the chosen sensor (the PC would refuse it). */
+    SENSOR_MISSING,
+
+    /** The limit is empty or not a number. */
+    SENSOR_LIMIT,
+
+    /** The hold time is outside 5-600 s (§6.3). */
+    SENSOR_SUSTAIN,
 }
 
 data class EditorProblem(
@@ -200,10 +212,13 @@ data class EditorProblem(
  *   (not connected yet). An unknown list never produces [EditorProblemCode.APP_MISSING].
  * @property mediaKeysSupported whether the target PC accepts key presses, or null while unknown
  *   (not the connected PC). Only a definite false produces [EditorProblemCode.MEDIA_KEYS].
+ * @property sensors the target PC's sensor catalog, or null while unknown (not the connected PC, or
+ *   no telemetry yet). An unknown catalog never produces [EditorProblemCode.SENSOR_MISSING].
  */
 data class EditorEnvironment(
     val launcherAppIds: Set<String>? = null,
     val mediaKeysSupported: Boolean? = null,
+    val sensors: List<RoutineSensorOption>? = null,
 )
 
 /** Whether a PC's `host_info` says it accepts key presses (spec 4.2 "Media keys"). */
@@ -274,6 +289,7 @@ object RoutineEditorRules {
 
         if (draft.hostIdentity.isNullOrEmpty()) out += EditorProblem(ProblemTarget.Pc, EditorProblemCode.NO_PC, ProblemKind.ERROR)
         if (draft.trigger?.type == null) out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.NO_TRIGGER, ProblemKind.ERROR)
+        draft.trigger?.takeIf { it.type == RoutineTriggerTypes.PC_SENSOR }?.let { out += sensorProblems(it, env) }
         if (steps.isEmpty()) out += EditorProblem(ProblemTarget.Steps, EditorProblemCode.NO_STEPS, ProblemKind.ERROR)
 
         val seen = HashMap<String, Int>()
@@ -339,6 +355,24 @@ object RoutineEditorRules {
             if (RoutineValidator.budgetSeconds(probe) > max) {
                 out += EditorProblem(ProblemTarget.Steps, EditorProblemCode.BUDGET_EXCEEDED, ProblemKind.ERROR)
             }
+        }
+        return out
+    }
+
+    /** `pc.sensor` (§6.3, §6.5): a sensor the PC has, a numeric limit, and a hold time of 5-600 s. */
+    private fun sensorProblems(trigger: RoutineTrigger, env: EditorEnvironment): List<EditorProblem> {
+        val out = mutableListOf<EditorProblem>()
+        val id = trigger.sensorId
+        when {
+            id.isNullOrEmpty() -> out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.CHOOSE_SENSOR, ProblemKind.ERROR)
+            env.sensors != null && env.sensors.none { it.id == id } ->
+                out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.SENSOR_MISSING, ProblemKind.ERROR)
+        }
+        val limit = trigger.threshold
+        if (limit == null || !limit.isFinite()) out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.SENSOR_LIMIT, ProblemKind.ERROR)
+        val sustain = trigger.sustainSeconds ?: RoutineLimits.DEFAULT_SUSTAIN_SECONDS
+        if (sustain !in RoutineLimits.MIN_SUSTAIN_SECONDS..RoutineLimits.MAX_SUSTAIN_SECONDS) {
+            out += EditorProblem(ProblemTarget.Trigger, EditorProblemCode.SENSOR_SUSTAIN, ProblemKind.ERROR)
         }
         return out
     }

@@ -28,6 +28,7 @@ import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import com.clindsay94.remex.routines.model.RoutineRun
 import com.clindsay94.remex.routines.model.RoutineRunSources
 import com.clindsay94.remex.routines.model.RoutineStepTypes
+import com.clindsay94.remex.routines.model.RoutineTriggerTypes
 import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
 import kotlinx.coroutines.CancellationException
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -128,6 +130,37 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
     val launcher: StateFlow<Pair<String?, List<RoutineAppChoice>?>> =
         combine(connectedPc, launcherApps) { pc, apps -> pc to (if (pc == null) null else apps) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+
+    /**
+     * The connected PC and its sensor catalog (routines S5), from its telemetry stream; the list is
+     * null until a frame arrives. Parsed off the main thread, and only when the set of sensors could
+     * have changed: a 1 Hz frame whose ids are unchanged keeps the previous list.
+     */
+    val sensors: StateFlow<Pair<String?, List<RoutineSensorOption>?>> =
+        combine(connectedPc, RemexClientManager.telemetry.mapLatest { json -> withContext(Dispatchers.Default) { RoutineSensorCatalog.parse(json) } }) { pc, list ->
+            pc to (if (pc == null) null else list)
+        }.distinctUntilChangedBy { (pc, list) -> pc to list?.map { it.id } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null to null)
+
+    /**
+     * A health template opened before the PC's catalog arrived has no sensor; once the catalog of the
+     * draft's PC is known it gets the template's sensor (by kind, then name), in the original too, so
+     * the fill is not an unsaved change. The person can still pick another.
+     */
+    fun adoptTemplateSensor() {
+        val current = _draft.value ?: return
+        if (!current.isNew) return
+        val preset = RoutineTemplates.byId(current.templateId)?.sensorPreset ?: return
+        val trigger = current.trigger?.takeIf { it.type == RoutineTriggerTypes.PC_SENSOR && it.sensorId == null } ?: return
+        val (pc, list) = sensors.value
+        if (pc == null || pc != current.hostIdentity) return
+        val option = RoutineSensorCatalog.preselect(list, preset) ?: return
+
+        fun fill(d: RoutineDraft): RoutineDraft =
+            if (d.trigger?.sensorId == null && d.trigger?.type == RoutineTriggerTypes.PC_SENSOR) d.copy(trigger = RoutineSensorCatalog.choose(trigger, option)) else d
+        _draft.value = fill(current)
+        _draftOriginal.value = _draftOriginal.value?.let(::fill)
+    }
 
     /**
      * The connected PC and whether it accepts key presses (`supportsInputSimulation`), for the media
@@ -284,9 +317,12 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
     fun environmentFor(identity: String?): EditorEnvironment {
         val (pc, apps) = launcher.value
         val (keysPc, keys) = mediaKeys.value
+        val (sensorPc, sensorList) = sensors.value
         return EditorEnvironment(
             launcherAppIds = if (pc != null && pc == identity && !apps.isNullOrEmpty()) apps.map { it.id }.toSet() else null,
             mediaKeysSupported = if (keysPc != null && keysPc == identity) keys else null,
+            // An empty frame says nothing about the catalog; only a non-empty one can say "missing".
+            sensors = if (sensorPc != null && sensorPc == identity && !sensorList.isNullOrEmpty()) sensorList else null,
         )
     }
 

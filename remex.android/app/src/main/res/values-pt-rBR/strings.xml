@@ -1365,4 +1365,33 @@
     <string name="routines_saved_sent_pc">Salva e enviada para %1$s.</string>
     <string name="routines_saved_pc_later">Salva. Ela vai para %1$s na próxima vez que você conectar.</string>
     <string name="routines_forget_pc_residual">As rotinas de %1$s foram removidas deste celular. O PC mantém a cópia dele até você remover este celular lá. Se este celular ficar 30 dias sem conectar, o PC as pausa.</string>
+    <string name="routines_trigger_sensor_chip">Limite de sensor</string>
+    <string name="routines_trigger_sensor_title">Um sensor do PC passa de um limite</string>
+    <string name="routines_trigger_sensor_supporting">Por exemplo, GPU acima de 85 °C por 30 segundos</string>
+    <string name="routines_trigger_sensor_above">Acima</string>
+    <string name="routines_trigger_sensor_below">Abaixo</string>
+    <string name="routines_trigger_sensor_which">Sensor</string>
+    <string name="routines_trigger_sensor_choose">Escolha um sensor</string>
+    <string name="routines_trigger_sensor_connect">Conecte-se a %1$s para escolher entre os sensores dele.</string>
+    <string name="routines_trigger_sensor_limit">Limite</string>
+    <string name="routines_trigger_sensor_for">Além do limite por</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s não informa sensores às rotinas.</string>
+    <string name="routines_more_options">Mais opções</string>
+    <string name="routines_category_health">Temperatura e saúde</string>
+    <string name="routines_need_temperature_sensor">Um sensor de temperatura no PC</string>
+    <string name="routines_need_memory_sensor">Um sensor de uso de memória no PC</string>
+    <string name="routines_tpl_health_gpu_name">GPU esquentando</string>
+    <string name="routines_tpl_health_gpu_why">Saiba quando um jogo ou uma renderização está fritando sua GPU.</string>
+    <string name="routines_tpl_health_gpu_message">Sua GPU está acima de 85 °C há 30 segundos.</string>
+    <string name="routines_tpl_health_cpu_name">Esfriar antes do estrago</string>
+    <string name="routines_tpl_health_cpu_why">Suspende o PC se a CPU continuar perigosamente quente.</string>
+    <string name="routines_tpl_health_cpu_message">Seu PC estava quente demais e vai ser suspenso.</string>
+    <string name="routines_tpl_health_ram_name">Memória quase cheia</string>
+    <string name="routines_tpl_health_ram_why">Pegue um app descontrolado antes que o PC fique lento.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">A memória do seu PC está acima de 90% há 2 minutos.</string>
+    <string name="routines_problem_choose_sensor">Escolha um sensor.</string>
+    <string name="routines_problem_sensor_missing">{pc} não informa este sensor agora. Escolha outro.</string>
+    <string name="routines_problem_sensor_limit">Digite um número para o limite.</string>
+    <string name="routines_problem_sensor_sustain">Escolha um tempo entre 5 segundos e 10 minutos.</string>
+    <string name="routine_message_sent_at">Enviada às %1$s</string>
 </resources>

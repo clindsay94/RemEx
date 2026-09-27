@@ -470,22 +470,16 @@ public partial class SensorViewModel : ObservableObject
     private double _trippedThreshold = double.NaN;
 
     /// <summary>Fraction of |threshold| a value must retreat past it before a live alert re-arms.</summary>
-    internal const double AlertClearDeadbandFraction = 0.02;
+    internal const double AlertClearDeadbandFraction = SensorThreshold.ClearDeadbandFraction;
 
     /// <summary>
-    /// HYSTERESIS (perf audit P3-57). Crossing the threshold goes live exactly as before; clearing
-    /// needs the value to retreat <see cref="AlertClearDeadbandFraction"/> of the threshold past it.
-    /// Without the deadband a sensor sitting on its threshold flipped live/clear every other tick, and
-    /// every flip back to live re-ran the tracker's Trip and the canvas's card walk. Relative, not
-    /// absolute, because thresholds span volts to RPM; a zero threshold has no band and behaves as before.
+    /// HYSTERESIS (perf audit P3-57): the rule now lives in core as <see cref="SensorThreshold.IsLive"/>,
+    /// shared with the <c>pc.sensor</c> routine trigger (routines S5), so an alert and a routine on the
+    /// same sensor and threshold always agree. Every flip back to live re-ran the tracker's Trip and the
+    /// canvas's card walk, which is what the deadband stops.
     /// </summary>
-    internal static bool IsAlertLive(AlertDirection direction, double threshold, double value, bool wasLive)
-    {
-        var band = wasLive ? Math.Abs(threshold) * AlertClearDeadbandFraction : 0;
-        return direction == AlertDirection.Above
-            ? value > threshold - band
-            : value < threshold + band;
-    }
+    internal static bool IsAlertLive(AlertDirection direction, double threshold, double value, bool wasLive) =>
+        SensorThreshold.IsLive(direction, threshold, value, wasLive);
 
     // ═══════════════ Auto Resolution ═══════════════
 

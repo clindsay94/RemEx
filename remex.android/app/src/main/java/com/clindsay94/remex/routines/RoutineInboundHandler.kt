@@ -24,8 +24,8 @@ internal object RoutineInboundHandler {
                 }
                 // Solicited or not (§7.3.2): stored per PC and turned into sync states (RemEx-pp0rt.12).
                 is RoutineInboundMessage.SyncResult -> Routines.syncClient(context).onSyncResult(message.payload)
-                // Presented by the S5 queue slice (RoutineNotificationPresenter for PC-run notifies).
-                is RoutineInboundMessage.Notify -> RoutineLog.d("routine_notify received; PC-run notifications are not in this build.")
+                // PC messages and the PC-run countdown mirror (routines S5, §7.3.5, §8.6), then the ack.
+                is RoutineInboundMessage.Notify -> Routines.syncClient(context).onNotify(message.payload)
                 is RoutineInboundMessage.Malformed -> RoutineLog.w("Unreadable ${message.type} from the PC was ignored.")
                 is RoutineInboundMessage.StepResult, is RoutineInboundMessage.Ignored -> Unit
             }

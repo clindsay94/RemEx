@@ -59,6 +59,7 @@ internal fun RoutineTemplatesPane(
     val launcher by viewModel.launcher.collectAsStateWithLifecycle()
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
+    val sensors by viewModel.sensors.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
     val categories = RoutineTemplates.categories()
     val templates = RoutineTemplates.offered().filter { filter == null || it.category.name == filter }
@@ -70,6 +71,12 @@ internal fun RoutineTemplatesPane(
             RoutineRequirement.LAUNCHER_ENTRY -> launcher.first == selectedPc && !launcher.second.isNullOrEmpty()
             // Known only for the connected PC; a definite "no" shows the token as missing (spec 4.2).
             RoutineRequirement.MEDIA_KEYS -> mediaKeys.second.takeIf { mediaKeys.first != null && mediaKeys.first == selectedPc }
+            // Spec 4.2 "Sensor": the connected PC's catalog has a matching kind; unknown otherwise.
+            RoutineRequirement.TEMPERATURE_SENSOR, RoutineRequirement.MEMORY_SENSOR -> {
+                val list = sensors.second?.takeIf { sensors.first != null && sensors.first == selectedPc && it.isNotEmpty() }
+                val preset = if (requirement == RoutineRequirement.MEMORY_SENSOR) listOf(RoutineSensorPreset.RAM_LOAD) else listOf(RoutineSensorPreset.GPU_TEMP, RoutineSensorPreset.CPU_TEMP)
+                list?.let { options -> preset.any { RoutineSensorCatalog.preselect(options, it) != null } }
+            }
         }
 
     Scaffold(

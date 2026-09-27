@@ -24,6 +24,11 @@ namespace Remex.Agent.Services.Routines;
 /// <c>ConfirmationDialogHost</c> (routines S4's <c>RoutineRunNow</c>). It skips the countdown. No field
 /// of any wire message maps to it; <see cref="RoutineStepRequestHandler"/> always passes false.
 /// </param>
+/// <param name="CountdownStarted">
+/// Called once when this step's countdown actually starts (not for a refused one). A PC run uses it to
+/// send the phone its countdown heads-up (routines S5, §8.6); a phone step request passes null, because
+/// the phone shows its own countdown for the step it sent.
+/// </param>
 public sealed record RoutineStepExecution(
     string OwnerClientId,
     string RunId,
@@ -33,7 +38,8 @@ public sealed record RoutineStepExecution(
     RoutineStep? Step,
     string? Source,
     bool TestRun,
-    bool PresenceConfirmed = false);
+    bool PresenceConfirmed = false,
+    Func<Task>? CountdownStarted = null);
 
 /// <summary>
 /// Executes the host-side routine steps (routines spec §8.4): <c>power</c> through
@@ -199,7 +205,8 @@ public sealed class RoutineStepExecutor
                     execution.Source,
                     (int)RoutineCountdownCoordinator.Length.TotalSeconds,
                     execution.TestRun,
-                    _dryRun.IsEnabled)));
+                    _dryRun.IsEnabled),
+                execution.CountdownStarted));
 
             switch (result.Status)
             {

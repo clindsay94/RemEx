@@ -128,6 +128,7 @@ import com.clindsay94.remex.routines.model.RoutineNotifyTargets
 import com.clindsay94.remex.routines.model.RoutinePowerVerbs
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineRun
+import com.clindsay94.remex.routines.model.RoutineSensorDirections
 import com.clindsay94.remex.routines.model.RoutineStep
 import com.clindsay94.remex.routines.model.RoutineStepStatuses
 import com.clindsay94.remex.routines.model.RoutineStepTypes
@@ -172,8 +173,11 @@ internal fun RoutineEditorPane(
     val pausedAll by viewModel.pausedAll.collectAsStateWithLifecycle()
     val routinesSupport by viewModel.routinesSupport.collectAsStateWithLifecycle()
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val sensors by viewModel.sensors.collectAsStateWithLifecycle()
     // A new draft opened before the PCs loaded picks up the default PC and its MAC once they do.
     LaunchedEffect(draftOrNull?.isNew, pcs, selectedPc, selectedMac) { viewModel.adoptDefaultPc() }
+    // A health template opened before the PC's sensors arrived picks its sensor once they do.
+    LaunchedEffect(draftOrNull?.templateId, draftOrNull?.hostIdentity, sensors) { viewModel.adoptTemplateSensor() }
     val context = LocalContext.current
     val resources = LocalResources.current
     val view = LocalView.current
@@ -187,7 +191,7 @@ internal fun RoutineEditorPane(
         return
     }
     // Recomputed whenever the connected PC's launcher list or the selected MAC changes.
-    val env = remember(draft.hostIdentity, launcher, mediaKeys, selectedMac, selectedPc) { viewModel.environmentFor(draft.hostIdentity) }
+    val env = remember(draft.hostIdentity, launcher, mediaKeys, sensors, selectedMac, selectedPc) { viewModel.environmentFor(draft.hostIdentity) }
     val problems = RoutineEditorRules.problems(draft, env)
     val errors = RoutineEditorRules.errors(problems)
     val dirty = original?.let { !draft.sameContentAs(it) } ?: false
@@ -424,6 +428,8 @@ internal fun RoutineEditorPane(
                     TriggerParameters(
                         trigger = draft.trigger,
                         enabled = !readOnly,
+                        sensors = sensors.second?.takeIf { sensors.first != null && sensors.first == draft.hostIdentity },
+                        pcName = pcName,
                         onChange = { trigger -> viewModel.updateDraft { it.copy(trigger = trigger) } },
                     )
                     Connector(dashed = false)
@@ -517,6 +523,8 @@ internal fun RoutineEditorPane(
                 when {
                     !RoutineTriggerTypes.isHostRun(type) -> null
                     pcTooOld -> resources.getString(R.string.routines_trigger_pc_too_old, pcLabelText(resources, pcName))
+                    RoutineSyncStates.triggerAvailable(type, pcView) == false && type == RoutineTriggerTypes.PC_SENSOR ->
+                        resources.getString(R.string.routines_trigger_sensor_unavailable, pcLabelText(resources, pcName))
                     RoutineSyncStates.triggerAvailable(type, pcView) == false ->
                         RoutineReasonText.message(
                             context,
@@ -728,12 +736,20 @@ private fun pcLabelText(resources: android.content.res.Resources, name: String?)
 
 /**
  * The WHEN card's parameters for the PC triggers (spec A4 progressive disclosure): how long the PC
- * must be idle, whether playing media keeps it awake, and which lock edge starts the routine.
+ * must be idle, whether playing media keeps it awake, which lock edge starts the routine, and for a
+ * sensor, which one, above or below what limit, and for how long (§6.3).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TriggerParameters(trigger: RoutineTrigger?, enabled: Boolean, onChange: (RoutineTrigger) -> Unit) {
+private fun TriggerParameters(
+    trigger: RoutineTrigger?,
+    enabled: Boolean,
+    sensors: List<RoutineSensorOption>?,
+    pcName: String?,
+    onChange: (RoutineTrigger) -> Unit,
+) {
     when (trigger?.type) {
+        RoutineTriggerTypes.PC_SENSOR -> SensorParameters(trigger, enabled, sensors, pcName, onChange)
         RoutineTriggerTypes.PC_IDLE -> {
             val minutes = trigger.idleMinutes ?: RoutineTriggerText.DEFAULT_IDLE_MINUTES
             Text(stringResource(R.string.routines_trigger_idle_for), style = MaterialTheme.typography.labelLarge)
@@ -776,6 +792,121 @@ private fun TriggerParameters(trigger: RoutineTrigger?, enabled: Boolean, onChan
     }
 }
 
+/**
+ * `pc.sensor` (routines S5, §6.3): the sensor, picked from the target PC's own catalog by name and
+ * group (its id is what the PC watches), above or below, the limit in the sensor's unit, and how long
+ * it must hold (5 s to 10 min) under "More options" (spec 1.3 step 5).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SensorParameters(
+    trigger: RoutineTrigger,
+    enabled: Boolean,
+    sensors: List<RoutineSensorOption>?,
+    pcName: String?,
+    onChange: (RoutineTrigger) -> Unit,
+) {
+    var picking by remember { mutableStateOf(false) }
+    val chosen = sensors?.firstOrNull { it.id == trigger.sensorId }
+    val label = chosen?.name ?: trigger.sensorLabel
+
+    Text(stringResource(R.string.routines_trigger_sensor_which), style = MaterialTheme.typography.labelLarge)
+    Box {
+        OutlinedButton(
+            onClick = { picking = true },
+            enabled = enabled && !sensors.isNullOrEmpty(),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        ) {
+            Text(
+                label ?: stringResource(R.string.routines_trigger_sensor_choose),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = picking, onDismissRequest = { picking = false }, modifier = Modifier.heightIn(max = 360.dp)) {
+            sensors.orEmpty().forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(option.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            val detail = listOf(option.group, option.unit).filter { it.isNotBlank() }
+                            if (detail.isNotEmpty()) {
+                                // Two data values (the PC's group and unit), not a sentence.
+                                Text(
+                                    detail.joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        picking = false
+                        onChange(RoutineSensorCatalog.choose(trigger, option))
+                    },
+                )
+            }
+        }
+    }
+    if (sensors.isNullOrEmpty()) {
+        Text(
+            stringResource(R.string.routines_trigger_sensor_connect, pcLabel(pcName)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(RoutineSensorDirections.ABOVE, RoutineSensorDirections.BELOW).forEach { direction ->
+            FilterChip(
+                selected = trigger.direction == direction,
+                onClick = { onChange(trigger.copy(direction = direction)) },
+                enabled = enabled,
+                label = { Text(stringResource(RoutineTriggerText.sensorDirection(direction))) },
+                modifier = Modifier.heightIn(min = 48.dp),
+            )
+        }
+    }
+
+    // Text state of its own: "8" on the way to "85" or "-" on the way to "-5" must survive typing,
+    // so the trigger only changes when the text is a number (an empty field clears the limit).
+    var limitText by remember(trigger.sensorId) { mutableStateOf(RoutineSensorCatalog.formatLimit(trigger.threshold)) }
+    val unit = chosen?.unit.orEmpty()
+    OutlinedTextField(
+        value = limitText,
+        onValueChange = { text ->
+            limitText = text
+            onChange(trigger.copy(threshold = RoutineSensorCatalog.parseLimit(text)))
+        },
+        enabled = enabled,
+        singleLine = true,
+        label = { Text(stringResource(R.string.routines_trigger_sensor_limit)) },
+        suffix = if (unit.isNotBlank()) {
+            { Text(unit) }
+        } else {
+            null
+        },
+        isError = RoutineSensorCatalog.parseLimit(limitText) == null,
+        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    var more by rememberSaveable { mutableStateOf(false) }
+    TextButton(onClick = { more = !more }, modifier = Modifier.heightIn(min = 48.dp)) {
+        Text(stringResource(R.string.routines_more_options))
+    }
+    if (more) {
+        Text(stringResource(R.string.routines_trigger_sensor_for), style = MaterialTheme.typography.labelLarge)
+        if (enabled) {
+            DurationChoices(RoutineSensorCatalog.sustainChoices, trigger.sustainSeconds ?: RoutineLimits.DEFAULT_SUSTAIN_SECONDS) { seconds ->
+                onChange(trigger.copy(sustainSeconds = seconds))
+            }
+        }
+    }
+}
+
 /** One editor message (spec 1.8). Errors show once Save was tried (templates flag them at once). */
 @Composable
 private fun ProblemLine(problem: EditorProblem, pcName: String?, showProblems: Boolean) {
@@ -813,6 +944,10 @@ internal fun problemText(problem: EditorProblem, pcName: String?): String {
             EditorProblemCode.COUNTDOWN -> R.string.routines_problem_countdown
             EditorProblemCode.BUDGET_EXCEEDED -> R.string.routine_reason_budget_exceeded
             EditorProblemCode.MEDIA_KEYS -> R.string.routine_reason_media_unavailable
+            EditorProblemCode.CHOOSE_SENSOR -> R.string.routines_problem_choose_sensor
+            EditorProblemCode.SENSOR_MISSING -> R.string.routines_problem_sensor_missing
+            EditorProblemCode.SENSOR_LIMIT -> R.string.routines_problem_sensor_limit
+            EditorProblemCode.SENSOR_SUSTAIN -> R.string.routines_problem_sensor_sustain
         }
     return RoutineReasonText.render(context, stringResource(res), RoutineReasonArgs(pc = pcName, app = problem.app))
 }

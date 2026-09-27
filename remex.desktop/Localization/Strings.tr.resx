@@ -3724,6 +3724,12 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Bu bilgisayardaki rutin geçmişi okunamadı, bu yüzden bir kenara ayrıldı ve yeniden başlatıldı.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>Bu bilgisayarın telefonunuz için beklettiği mesajlar okunamadı, bu yüzden bir kenara ayrıldı. Yeni mesajlar etkilenmez.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>{0} saniye içinde çalışacak. Durdurmak için iptal edin.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Rutinler</value>
   </data>

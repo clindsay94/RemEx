@@ -133,6 +133,59 @@ internal sealed class FakePlatformSources(IIdleSource? idle, ISessionStateSource
     public Task<ISessionStateSource?> ResolveSessionAsync(CancellationToken ct) => Task.FromResult(session);
 }
 
+/// <summary>A telemetry sampler the test publishes by hand, counting who holds demand.</summary>
+internal sealed class FakeTelemetry : Remex.Core.Services.ITelemetryBroadcaster
+{
+    public const string GpuTemp = "/gpu-nvidia/0/temperature/0";
+    public const string RamLoad = "/ram/load/0";
+
+    private int _leases;
+
+    public TelemetryPayload? CurrentTelemetry { get; set; }
+
+    public event Action<TelemetryPayload>? TelemetryPublished;
+
+    /// <summary>Leases currently held.</summary>
+    public int Leases => Volatile.Read(ref _leases);
+
+    /// <summary>Raised when a lease is taken, so a test can publish in answer.</summary>
+    public Action? OnAcquire { get; set; }
+
+    public IDisposable AcquireDemand()
+    {
+        Interlocked.Increment(ref _leases);
+        OnAcquire?.Invoke();
+        return new Lease(this);
+    }
+
+    /// <summary>Publishes one sample with the given readings.</summary>
+    public TelemetryPayload Publish(params (string Id, double Value)[] readings)
+    {
+        var payload = Sample(readings);
+        CurrentTelemetry = payload;
+        TelemetryPublished?.Invoke(payload);
+        return payload;
+    }
+
+    public static TelemetryPayload Sample(params (string Id, double Value)[] readings) => new()
+    {
+        Sensors = readings.Select(r => new SensorReading { Id = r.Id, Name = r.Id, Value = r.Value, Unit = "°C" }).ToList(),
+    };
+
+    private sealed class Lease(FakeTelemetry owner) : IDisposable
+    {
+        private int _done;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _done, 1) == 0)
+            {
+                Interlocked.Decrement(ref owner._leases);
+            }
+        }
+    }
+}
+
 /// <summary>The S4a host wired to fakes: stores, sync, runner, host service.</summary>
 internal sealed class RoutineHostTestBench
 {
@@ -159,8 +212,16 @@ internal sealed class RoutineHostTestBench
     public RoutineStepExecutor Executor { get; }
     public bool MediaPlaying { get; set; }
 
+    /// <summary>The S5 notify queue, when the bench was built with one; null otherwise (live-only notifier).</summary>
+    public RoutineNotifyQueue? Queue { get; }
+
+    /// <summary>The fake telemetry sampler, when the bench was built with one (S5 <c>pc.sensor</c>).</summary>
+    public FakeTelemetry? Telemetry { get; }
+
     /// <param name="ready">False leaves the start-up gate closed, for the readiness tests.</param>
-    public RoutineHostTestBench(bool ready = true)
+    /// <param name="withQueue">Wires the S5 notify queue as production does, instead of the live-only notifier.</param>
+    /// <param name="withTelemetry">Wires a fake telemetry sampler: the sensor source and catalog (S5).</param>
+    public RoutineHostTestBench(bool ready = true, bool withQueue = false, bool withTelemetry = false)
     {
         Core = new RoutineTestBench();
         Causality = new RoutineCausality(Time);
@@ -173,7 +234,11 @@ internal sealed class RoutineHostTestBench
         Availability.SetSessionSource(SessionSource.Id);
         Store = new RoutineHostStore(Files, Time, NullLogger<RoutineHostStore>.Instance);
         Runs = new RoutineRunStore(Files, Time, NullLogger<RoutineRunStore>.Instance);
-        Validator = new RoutineHostValidator(Core.Launchers, FakeCapabilities.For(Core.AdvertisedVerbs), Availability, () => HostId);
+        Telemetry = withTelemetry ? new FakeTelemetry() : null;
+        Validator = new RoutineHostValidator(
+            Core.Launchers, FakeCapabilities.For(Core.AdvertisedVerbs), Availability, () => HostId,
+            Telemetry is null ? null : new RoutineSensorCatalog(Telemetry, Time));
+        Queue = withQueue ? new RoutineNotifyQueue(Files, Runs, Channel, Time, NullLogger<RoutineNotifyQueue>.Instance) : null;
 
         // The production wiring: the loop guard is marked around the verb issue only.
         Executor = new RoutineStepExecutor(
@@ -181,12 +246,13 @@ internal sealed class RoutineHostTestBench
             Core.Owners, FakeCapabilities.For(Core.AdvertisedVerbs), Core.Countdown,
             Remex.Desktop.Services.Routines.RoutineDryRunMode.Off, Time, NullLogger<RoutineStepExecutor>.Instance);
         Runner = new RoutineHostRunner(
-            Store, Runs, Executor, Core.Countdown, Core.Owners, Channel, new LiveOnlyRoutinePhoneNotifier(Channel),
+            Store, Runs, Executor, Core.Countdown, Core.Owners, Channel,
+            Queue is null ? new LiveOnlyRoutinePhoneNotifier(Channel) : Queue,
             Core.Ui, () => HostId, Time, NullLogger<RoutineHostRunner>.Instance);
         Sync = new RoutineSyncHandler(
             Store, Runs, Validator, Runner, Core.Countdown, Availability, Channel, Readiness, Core.Owners, Time,
-            NullLogger<RoutineSyncHandler>.Instance);
-        Messages = new RoutineHostMessageHandler(Sync, Runner, Runs, Readiness, Time, NullLogger<RoutineHostMessageHandler>.Instance);
+            NullLogger<RoutineSyncHandler>.Instance, Queue);
+        Messages = new RoutineHostMessageHandler(Sync, Runner, Runs, Readiness, Time, NullLogger<RoutineHostMessageHandler>.Instance, Queue);
 
         var media = new Mock<Remex.Agent.Services.Media.IMediaSessionMonitor>();
         media.Setup(m => m.Current).Returns(() => MediaPlaying
@@ -195,8 +261,18 @@ internal sealed class RoutineHostTestBench
         Service = new RoutineHostService(
             Store, Runs, Runner, Sync, Availability, new FakePlatformSources(IdleSource, SessionSource), Core.Countdown,
             Core.Owners, Remex.Desktop.Services.Routines.RoutineDryRunMode.Off, Core.Ui, Causality, media.Object, Readiness,
-            Time, NullLoggerFactory.Instance);
+            Time, NullLoggerFactory.Instance, Telemetry, Queue);
     }
+
+    public static RoutineTrigger SensorTrigger(string sensorId = FakeTelemetry.GpuTemp, double threshold = 85, int sustain = 30, bool above = true) => new()
+    {
+        Type = RoutineTriggerTypes.PcSensor,
+        SensorId = sensorId,
+        SensorLabel = "GPU temperature",
+        Direction = above ? RoutineSensorDirections.Above : RoutineSensorDirections.Below,
+        Threshold = threshold,
+        SustainSeconds = sustain,
+    };
 
     public Task InitializeAsync() => Service.InitializeAsync(CancellationToken.None);
 

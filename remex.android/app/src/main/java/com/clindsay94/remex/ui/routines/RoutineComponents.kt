@@ -72,6 +72,7 @@ val RoutineIcon: ImageVector get() = Icons.Default.Route
 fun triggerIcon(type: String?): ImageVector =
     when (type) {
         RoutineTriggerTypes.MANUAL -> Icons.Default.PlayCircle
+        RoutineTriggerTypes.PC_SENSOR -> com.clindsay94.remex.ui.components.ThermostatGlyph
         RoutineTriggerTypes.PC_IDLE -> Icons.Default.Schedule
         RoutineTriggerTypes.PC_SESSION -> Icons.Default.Lock
         else -> Icons.Default.Route

@@ -56,17 +56,24 @@ public sealed class RoutineHostValidator
     private readonly IHostCapabilitiesProvider _capabilities;
     private readonly RoutineTriggerAvailability _availability;
     private readonly Func<string?> _ownIdentity;
+    private readonly RoutineSensorCatalog? _sensors;
 
+    /// <param name="sensors">
+    /// This PC's sensor catalog (routines S5). Null means no sensor source: every <c>pc.sensor</c> routine
+    /// is refused with <c>sensor_unavailable</c>, as before S5.
+    /// </param>
     public RoutineHostValidator(
         ILauncherStorageService launchers,
         IHostCapabilitiesProvider capabilities,
         RoutineTriggerAvailability availability,
-        Func<string?> ownIdentity)
+        Func<string?> ownIdentity,
+        RoutineSensorCatalog? sensors = null)
     {
         _launchers = launchers;
         _capabilities = capabilities;
         _availability = availability;
         _ownIdentity = ownIdentity;
+        _sensors = sensors;
     }
 
     /// <summary>One result per routine, in request order.</summary>
@@ -78,6 +85,10 @@ public sealed class RoutineHostValidator
         var entries = routines.Any(r => r?.Steps?.Any(s => s?.Type == RoutineStepTypes.LaunchApp) == true)
             ? await _launchers.LoadEntriesAsync()
             : [];
+        var sensorIds = _sensors is not null && _availability.SensorAvailable
+            && routines.Any(r => r?.Trigger?.Type == RoutineTriggerTypes.PcSensor)
+            ? await _sensors.GetSensorIdsAsync()
+            : null;
 
         var results = new List<RoutineSyncItemResult>(routines.Count);
         for (var i = 0; i < routines.Count; i++)
@@ -88,7 +99,7 @@ public sealed class RoutineHostValidator
                 : setVerdict.Routines[i];
             if (verdict.IsValid)
             {
-                verdict = HostCheck(routine, ownIdentity, advertised, entries);
+                verdict = HostCheck(routine, ownIdentity, advertised, entries, sensorIds);
             }
 
             results.Add(new RoutineSyncItemResult
@@ -103,7 +114,8 @@ public sealed class RoutineHostValidator
         return results;
     }
 
-    private RoutineVerdict HostCheck(Routine routine, string? ownIdentity, List<string> advertised, List<Remex.Core.Models.AppEntry> entries)
+    private RoutineVerdict HostCheck(
+        Routine routine, string? ownIdentity, List<string> advertised, List<Remex.Core.Models.AppEntry> entries, IReadOnlySet<string>? sensorIds)
     {
         var trigger = routine.Trigger!.Type;
         if (!RoutineTriggerTypes.IsHostRun(trigger))
@@ -122,8 +134,13 @@ public sealed class RoutineHostValidator
                 return new RoutineVerdict(RoutineReasonCodes.IdleSourceUnavailable, "trigger.type");
             case RoutineTriggerTypes.PcSession when _availability.SessionSourceId is null:
                 return new RoutineVerdict(RoutineReasonCodes.SessionSourceUnavailable, "trigger.type");
-            case RoutineTriggerTypes.PcSensor when !_availability.SensorAvailable:
+            case RoutineTriggerTypes.PcSensor when !_availability.SensorAvailable || _sensors is null:
                 return new RoutineVerdict(RoutineReasonCodes.SensorUnavailable, "trigger.type");
+
+            // §8.5.1: refused only when this PC's catalog genuinely lacks the sensor. No sample in time
+            // (a sampler that failed) is the same answer; the sync handler treats it as transient.
+            case RoutineTriggerTypes.PcSensor when sensorIds is null || !sensorIds.Contains(routine.Trigger.SensorId!):
+                return new RoutineVerdict(RoutineReasonCodes.SensorUnavailable, "trigger.sensorId");
         }
 
         var steps = routine.Steps!;

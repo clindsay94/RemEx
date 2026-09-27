@@ -3723,6 +3723,12 @@ Anda dapat mengubah:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Riwayat rutinitas di PC ini tidak dapat dibaca, jadi disisihkan dan dimulai dari awal.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>Pesan yang disimpan PC ini untuk ponsel Anda tidak dapat dibaca, jadi disisihkan. Pesan baru tidak terpengaruh.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Berjalan dalam {0} detik. Batalkan untuk menghentikannya.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Rutinitas</value>
   </data>

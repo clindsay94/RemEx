@@ -6,6 +6,7 @@ import com.clindsay94.remex.routines.model.RoutineLimits
 import com.clindsay94.remex.routines.model.RoutineMediaActions
 import com.clindsay94.remex.routines.model.RoutineNotifyTargets
 import com.clindsay94.remex.routines.model.RoutinePowerVerbs
+import com.clindsay94.remex.routines.model.RoutineSensorDirections
 import com.clindsay94.remex.routines.model.RoutineSessionStates
 import com.clindsay94.remex.routines.model.RoutineStep
 import com.clindsay94.remex.routines.model.RoutineStepTypes
@@ -24,19 +25,28 @@ import com.clindsay94.remex.routines.model.RoutineTriggerTypes
  */
 object RoutineTriggerFamilies {
     /** Triggers the editor's picker offers and the gallery shows templates for, in picker order. */
-    // S4 (RemEx-pp0rt.12) adds the PC idle and session families. `pc.sensor` is S5: not here.
-    val offered: List<String> = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+    // S4 (RemEx-pp0rt.12) added the PC idle and session families; S5 (RemEx-pp0rt.10) the sensor.
+    val offered: List<String> =
+        listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
 
     fun isOffered(type: String?): Boolean = type in offered
 
     /**
      * A trigger with its defaults (spec 4: everything RemEx can guess is filled), so a freshly
-     * picked trigger passes the validator: idle 10 minutes, session "locked".
+     * picked trigger passes the validator: idle 10 minutes, session "locked", a sensor above 85 for
+     * 60 s (the sensor itself is chosen from the PC's catalog).
      */
     fun newTrigger(type: String): RoutineTrigger =
         when (type) {
             RoutineTriggerTypes.PC_IDLE -> RoutineTrigger(type = type, idleMinutes = RoutineTriggerText.DEFAULT_IDLE_MINUTES, ignoreWhileMediaPlaying = true)
             RoutineTriggerTypes.PC_SESSION -> RoutineTrigger(type = type, sessionState = RoutineSessionStates.LOCKED)
+            RoutineTriggerTypes.PC_SENSOR ->
+                RoutineTrigger(
+                    type = type,
+                    direction = RoutineSensorDirections.ABOVE,
+                    threshold = RoutineTriggerText.DEFAULT_SENSOR_LIMIT,
+                    sustainSeconds = RoutineLimits.DEFAULT_SUSTAIN_SECONDS,
+                )
             else -> RoutineTrigger(type = type)
         }
 }
@@ -45,6 +55,9 @@ object RoutineTriggerFamilies {
 object RoutineTriggerText {
     const val DEFAULT_IDLE_MINUTES = 10
 
+    /** The `pc.sensor` limit a freshly picked trigger starts with (a GPU/CPU temperature in °C). */
+    const val DEFAULT_SENSOR_LIMIT = 85.0
+
     /** Choices for `pc.idle` minutes (1 to 240). */
     val idleChoices: List<Int> = listOf(1, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240)
 
@@ -52,6 +65,7 @@ object RoutineTriggerText {
     fun chip(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_chip
+            RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_chip
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_chip
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_chip
             else -> R.string.routines_trigger_unknown
@@ -61,6 +75,7 @@ object RoutineTriggerText {
     fun title(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_title
+            RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_title
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_title
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_title
             else -> R.string.routines_trigger_unknown
@@ -70,10 +85,15 @@ object RoutineTriggerText {
     fun supporting(type: String?): Int =
         when (type) {
             RoutineTriggerTypes.MANUAL -> R.string.routines_trigger_manual_supporting
+            RoutineTriggerTypes.PC_SENSOR -> R.string.routines_trigger_sensor_supporting
             RoutineTriggerTypes.PC_IDLE -> R.string.routines_trigger_idle_supporting
             RoutineTriggerTypes.PC_SESSION -> R.string.routines_trigger_session_supporting
             else -> R.string.routines_trigger_unknown
         }
+
+    @StringRes
+    fun sensorDirection(direction: String?): Int =
+        if (direction == RoutineSensorDirections.BELOW) R.string.routines_trigger_sensor_below else R.string.routines_trigger_sensor_above
 
     @StringRes
     fun sessionState(state: String?): Int =
@@ -220,6 +240,7 @@ enum class RoutineTemplateCategory(@StringRes val labelRes: Int) {
     GAMING(R.string.routines_category_gaming),
     MEDIA(R.string.routines_category_media),
     FOCUS(R.string.routines_category_focus),
+    HEALTH(R.string.routines_category_health),
     PRIVACY(R.string.routines_category_privacy),
     POWER(R.string.routines_category_power),
 }
@@ -229,6 +250,8 @@ enum class RoutineRequirement(@StringRes val labelRes: Int) {
     MAC_ADDRESS(R.string.routines_need_mac),
     LAUNCHER_ENTRY(R.string.routines_need_launcher),
     MEDIA_KEYS(R.string.routines_need_media_keys),
+    TEMPERATURE_SENSOR(R.string.routines_need_temperature_sensor),
+    MEMORY_SENSOR(R.string.routines_need_memory_sensor),
 }
 
 /**
@@ -242,7 +265,8 @@ data class RoutineTemplateStep(
 
 /**
  * A starter routine (spec 4.1). A notify step's title is the template's own localised name, which
- * is what a message from "Game night" should be headed with.
+ * is what a message from "Game night" should be headed with. [sensorPreset] is the sensor a health
+ * template picks from the PC's catalog when it opens (by kind, then by name).
  */
 data class RoutineTemplate(
     val id: String,
@@ -252,10 +276,20 @@ data class RoutineTemplate(
     val trigger: RoutineTrigger,
     val steps: List<RoutineTemplateStep>,
     val needs: List<RoutineRequirement>,
+    val sensorPreset: RoutineSensorPreset? = null,
 )
 
 object RoutineTemplates {
     private val wait5 = RoutineStep(type = RoutineStepTypes.WAIT_ONLINE, timeoutSeconds = 300)
+
+    /** A health template's trigger: "above" [limit] for [sustainSeconds]; the sensor is filled on open. */
+    private fun sensorTrigger(limit: Double, sustainSeconds: Int) =
+        RoutineTrigger(
+            type = RoutineTriggerTypes.PC_SENSOR,
+            direction = RoutineSensorDirections.ABOVE,
+            threshold = limit,
+            sustainSeconds = sustainSeconds,
+        )
 
     /** Every template this build knows, catalog order (spec 4.1). */
     val all: List<RoutineTemplate> =
@@ -322,6 +356,59 @@ object RoutineTemplates {
                         ),
                     ),
                 needs = listOf(RoutineRequirement.MAC_ADDRESS, RoutineRequirement.LAUNCHER_ENTRY),
+            ),
+            RoutineTemplate(
+                id = "tpl.health.gpu",
+                category = RoutineTemplateCategory.HEALTH,
+                nameRes = R.string.routines_tpl_health_gpu_name,
+                whyRes = R.string.routines_tpl_health_gpu_why,
+                trigger = sensorTrigger(limit = 85.0, sustainSeconds = 30),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PHONE),
+                            notifyBodyRes = R.string.routines_tpl_health_gpu_message,
+                        ),
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PC),
+                            notifyBodyRes = R.string.routines_tpl_health_gpu_message,
+                        ),
+                    ),
+                needs = listOf(RoutineRequirement.TEMPERATURE_SENSOR),
+                sensorPreset = RoutineSensorPreset.GPU_TEMP,
+            ),
+            RoutineTemplate(
+                id = "tpl.health.cpu",
+                category = RoutineTemplateCategory.HEALTH,
+                nameRes = R.string.routines_tpl_health_cpu_name,
+                whyRes = R.string.routines_tpl_health_cpu_why,
+                trigger = sensorTrigger(limit = 95.0, sustainSeconds = 60),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PHONE),
+                            notifyBodyRes = R.string.routines_tpl_health_cpu_message,
+                        ),
+                        RoutineTemplateStep(RoutineStep(type = RoutineStepTypes.POWER, verb = RoutinePowerVerbs.SLEEP)),
+                    ),
+                needs = listOf(RoutineRequirement.TEMPERATURE_SENSOR),
+                sensorPreset = RoutineSensorPreset.CPU_TEMP,
+            ),
+            RoutineTemplate(
+                id = "tpl.health.ram",
+                category = RoutineTemplateCategory.HEALTH,
+                nameRes = R.string.routines_tpl_health_ram_name,
+                whyRes = R.string.routines_tpl_health_ram_why,
+                trigger = sensorTrigger(limit = 90.0, sustainSeconds = 120),
+                steps =
+                    listOf(
+                        RoutineTemplateStep(
+                            RoutineStep(type = RoutineStepTypes.NOTIFY, target = RoutineNotifyTargets.PHONE),
+                            notifyBodyRes = R.string.routines_tpl_health_ram_message,
+                        ),
+                    ),
+                needs = listOf(RoutineRequirement.MEMORY_SENSOR),
+                sensorPreset = RoutineSensorPreset.RAM_LOAD,
             ),
             RoutineTemplate(
                 id = "tpl.priv.unlock",

@@ -3721,6 +3721,12 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Не вдалося прочитати історію рутин на цьому ПК, тому її відкладено й почато заново.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>Не вдалося прочитати повідомлення, які цей ПК зберігав для вашого телефона, тому їх відкладено. Нові повідомлення це не зачіпає.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Запуститься через {0} с. Скасуйте, щоб зупинити.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Рутини</value>
   </data>

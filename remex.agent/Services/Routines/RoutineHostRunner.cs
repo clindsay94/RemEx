@@ -256,16 +256,16 @@ public sealed class RoutineHostRunner
 
     /// <summary>
     /// Records (saves and reports) a trigger that did not start a run, for a skip decided outside
-    /// <see cref="StartAsync"/> (the loop guard). Never throws.
+    /// <see cref="StartAsync"/> (the loop guard, a sensor gone missing). Never throws.
     /// </summary>
-    public async Task<RoutineRun?> RecordSkipAsync(RoutineRunStart start, string reason, string? detail)
+    public async Task<RoutineRun?> RecordSkipAsync(RoutineRunStart start, string reason, string? detail, RoutineReasonArgs? args = null)
     {
         try
         {
             var routine = _store.Current.Owner(start.OwnerClientId)?.Find(start.RoutineId);
             var skipped = SkippedRecord(start, routine, reason) with
             {
-                ReasonArgs = detail is null ? null : new RoutineReasonArgs { Detail = detail },
+                ReasonArgs = detail is null ? args : (args ?? new RoutineReasonArgs()) with { Detail = detail },
             };
             skipped = await _runs.UpsertAsync(skipped);
             await ReportAsync(skipped, live: false);
@@ -489,7 +489,8 @@ public sealed class RoutineHostRunner
         var result = await _executor.ExecuteAsync(
             new RoutineStepExecution(
                 active.Owner, active.RunId, routine.Id!, Name(routine), index, step, start.Source, start.TestRun,
-                start.PresenceConfirmed),
+                start.PresenceConfirmed,
+                CountdownStarted: () => SendCountdownHeadsUpAsync(routine, active)),
             async early =>
             {
                 // §7.3.4: the machine may be gone a moment from now. Record and report success first.
@@ -533,8 +534,8 @@ public sealed class RoutineHostRunner
             Title = title,
             Body = body,
             QueuedAtUnixMs = now,
-            ExpiresAtUnixMs = now + 3_600_000,
-        });
+            ExpiresAtUnixMs = now + (long)RoutineNotifyQueue.Expiry.TotalMilliseconds,
+        }, index);
 
         switch (outcome)
         {
@@ -546,12 +547,50 @@ public sealed class RoutineHostRunner
                 AddAttribute(active, RoutineRunAttributes.NotifyQueued);
                 break;
             default:
-                // Not delivered and nothing holds it (the queue is routines S5). Said as it is; the run goes on.
+                // Not delivered and nothing holds it (a live-only notifier). Said as it is; the run goes on.
                 UpdateStep(active, index, s => s with { Status = RoutineStepStatuses.Expired, EndedAtUnixMs = NowMs(), ReasonCode = RoutineReasonCodes.NotifyExpired });
                 break;
         }
 
         return StepResult.Ok;
+    }
+
+    /// <summary>
+    /// The phone mirror of a PC run's countdown (§8.6, R-UX-34): <c>routine_notify{kind: countdown}</c> to
+    /// the owner, live only, sent when the PC countdown actually starts (never for a refused one). The
+    /// phone's Cancel sends <c>routine_cancel</c> for this run. A phone step request never gets one: the
+    /// phone already shows its own countdown for the step it sent. Never throws.
+    /// </summary>
+    private async Task SendCountdownHeadsUpAsync(Routine routine, ActiveRun active)
+    {
+        try
+        {
+            if (!_channel.CanReach(active.Owner))
+            {
+                return;
+            }
+
+            var now = NowMs();
+            var name = Name(routine);
+            await _notifier.NotifyAsync(active.Owner, new RoutineNotifyPayload
+            {
+                NotifyId = Guid.NewGuid().ToString(),
+                Kind = RoutineNotifyKinds.Countdown,
+                RoutineId = routine.Id,
+                RoutineName = name,
+                RunId = active.RunId,
+                Title = RoutineText.Sanitize(name),
+                Body = RoutineStrings.Format(
+                    "Routine_Countdown_PhoneBody", (int)RoutineCountdownCoordinator.Length.TotalSeconds),
+                CountdownEndsAtUnixMs = now + (long)RoutineCountdownCoordinator.Length.TotalMilliseconds,
+                QueuedAtUnixMs = now,
+                ExpiresAtUnixMs = now + (long)RoutineCountdownCoordinator.Length.TotalMilliseconds,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "The countdown heads-up for run {RunId} could not be sent.", active.RunId);
+        }
     }
 
     private void ApplyStepResult(ActiveRun active, int index, RoutineStep step, RoutineStepResultPayload result, bool presenceConfirmed)

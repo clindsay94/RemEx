@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -18,6 +19,7 @@ import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
 import com.clindsay94.remex.routines.model.Routine
 import com.clindsay94.remex.routines.model.RoutineLimits
+import com.clindsay94.remex.routines.model.RoutineNotifyPayload
 import com.clindsay94.remex.routines.model.RoutineNotifyTargets
 import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
@@ -26,6 +28,7 @@ import com.clindsay94.remex.routines.model.RoutineRunOutcomes
 import com.clindsay94.remex.routines.model.RoutineStep
 import com.clindsay94.remex.routines.model.RoutineStepStatuses
 import com.clindsay94.remex.routines.model.RoutineStepTypes
+import java.util.Date
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -96,7 +99,7 @@ internal object RoutineNotificationChannels {
  * countdown mirror for a destructive step this phone sent (§8.6), the result, and `notify(phone)`
  * messages. Also the extra the S1d screens read to open a run's detail.
  */
-internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserver {
+internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserver, RoutineMessageSink {
     private val appContext = context.applicationContext
 
     override fun onProgress(run: RoutineRun, routine: Routine, stepIndex: Int?) {
@@ -154,6 +157,33 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
                 .setContentIntent(openIntent(run, REQUEST_OPEN_MESSAGE))
                 .setAutoCancel(true)
         return post("message:${run.runId}:$stepIndex".hashCode(), builder.build())
+    }
+
+    /**
+     * A PC-run routine's message (`routine_notify`, §7.3.5). One notification per notify id, so an
+     * at-least-once resend replaces rather than repeats it. A held one says when it was sent (R-UX-33).
+     */
+    override fun postPcMessage(notify: RoutineNotifyPayload, queued: Boolean): Boolean {
+        if (!canPost()) return false
+        val title = notify.title?.takeIf { it.isNotBlank() } ?: notify.routineName.orEmpty()
+        val body = notify.body.orEmpty()
+        val builder =
+            baseBuilder(RoutineNotificationChannels.MESSAGES)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setAutoCancel(true)
+        if (notify.routineId != null && notify.runId != null) {
+            builder.setContentIntent(openIntent(notify.routineId, notify.runId, REQUEST_OPEN_MESSAGE))
+        }
+        if (queued && notify.queuedAtUnixMs > 0) {
+            val time = DateFormat.getTimeFormat(appContext).format(Date(notify.queuedAtUnixMs))
+            builder
+                .setSubText(appContext.getString(R.string.routine_message_sent_at, time))
+                .setWhen(notify.queuedAtUnixMs)
+                .setShowWhen(true)
+        }
+        return post("pcmessage:${notify.notifyId}".hashCode(), builder.build())
     }
 
     /**
@@ -228,16 +258,18 @@ internal class RoutineNotificationPresenter(context: Context) : RoutineRunObserv
         }
     }
 
-    private fun openIntent(run: RoutineRun, requestBase: Int): PendingIntent {
+    private fun openIntent(run: RoutineRun, requestBase: Int): PendingIntent = openIntent(run.routineId, run.runId, requestBase)
+
+    private fun openIntent(routineId: String?, runId: String?, requestBase: Int): PendingIntent {
         val intent =
             Intent(appContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra(EXTRA_OPEN_ROUTINE_ID, run.routineId)
-                putExtra(EXTRA_OPEN_RUN_ID, run.runId)
+                putExtra(EXTRA_OPEN_ROUTINE_ID, routineId)
+                putExtra(EXTRA_OPEN_RUN_ID, runId)
             }
         return PendingIntent.getActivity(
             appContext,
-            requestBase + (run.runId.orEmpty().hashCode() and REQUEST_MASK),
+            requestBase + (runId.orEmpty().hashCode() and REQUEST_MASK),
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )

@@ -93,6 +93,7 @@ object Routines {
                 connections = com.clindsay94.remex.RemexClientManager.authenticatedConnection.map { it?.epoch },
                 observer = presenter,
                 clock = SystemRoutineClock,
+                messages = presenter,
             )
     }
 }

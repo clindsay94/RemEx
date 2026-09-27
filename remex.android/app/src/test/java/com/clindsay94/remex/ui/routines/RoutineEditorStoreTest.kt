@@ -52,12 +52,15 @@ class RoutineEditorStoreTest {
 
     @Test
     fun `every offered template is a valid routine once its blanks are filled`() {
+        val sensor = RoutineSensorOption("/gpu/0/temperature/0", "GPU Core", "°C", com.clindsay94.remex.ui.telemetry.MetricKind.GPU_TEMP_C, "GPU", 60.0)
         for (template in RoutineTemplates.offered()) {
             val draft = RoutineDrafts.fromTemplate(template, "Name", HOST, mac) { "Body" }
-            val filled =
+            val withApps =
                 draft.steps.foldIndexed(draft) { i, d, s ->
                     if (s.step.type == RoutineStepTypes.LAUNCH_APP) d.updateStep(i, s.step.copy(appId = app, appLabel = "Steam")) else d
                 }
+            // A health template's sensor is the one blank only the PC's catalog can fill.
+            val filled = withApps.trigger?.takeIf { template.sensorPreset != null }?.let { withApps.copy(trigger = RoutineSensorCatalog.choose(it, sensor)) } ?: withApps
             val routine = filled.toRoutine("x").copy(id = uuid(), revision = 1, createdAtUnixMs = 1, updatedAtUnixMs = 1)
             assertEquals(template.id, "ok", RoutineValidator.validateRoutine(routine).reasonCode)
             assertTrue(template.id, RoutineEditorRules.errors(RoutineEditorRules.problems(filled, EditorEnvironment(setOf(app)))).isEmpty())
@@ -65,14 +68,15 @@ class RoutineEditorStoreTest {
     }
 
     @Test
-    fun `S4 offers manual, idle and session templates and features three of them`() {
-        val expected = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
+    fun `S5 offers manual, sensor, idle and session templates and features three of them`() {
+        val expected = listOf(RoutineTriggerTypes.MANUAL, RoutineTriggerTypes.PC_SENSOR, RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)
         assertEquals(expected, RoutineTriggerFamilies.offered)
-        // pc.sensor is S5: neither the picker nor the gallery may offer it yet.
-        assertTrue(RoutineTemplates.offered().none { it.trigger.type == RoutineTriggerTypes.PC_SENSOR })
         assertTrue(RoutineTemplates.offered().all { it.trigger.type in expected })
         val s4 = listOf("tpl.home.lock", "tpl.home.sleep", "tpl.priv.unlock", "tpl.power.sleep", "tpl.power.screen")
         assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s4))
+        val s5 = listOf("tpl.health.gpu", "tpl.health.cpu", "tpl.health.ram")
+        assertTrue(RoutineTemplates.offered().map { it.id }.containsAll(s5))
+        assertTrue(RoutineTemplates.offered().filter { it.id in s5 }.all { it.sensorPreset != null && it.trigger.sensorId == null })
         assertEquals(3, RoutineTemplates.featured(hasNfc = true).size)
         assertEquals(3, RoutineTemplates.featured(hasNfc = false).size)
         // The spec's featured order: Sleep my PC when it's idle is offered now, so it leads; without
@@ -83,11 +87,14 @@ class RoutineEditorStoreTest {
 
     @Test
     fun `a picked PC trigger arrives with defaults the validator accepts`() {
-        for (type in listOf(RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION)) {
+        for (type in listOf(RoutineTriggerTypes.PC_IDLE, RoutineTriggerTypes.PC_SESSION, RoutineTriggerTypes.PC_SENSOR)) {
+            val fresh = RoutineTriggerFamilies.newTrigger(type)
+            // A sensor trigger's sensor comes from the PC's catalog; everything else has a default.
+            val trigger = if (type == RoutineTriggerTypes.PC_SENSOR) fresh.copy(sensorId = "/cpu/0/temperature/0", sensorLabel = "CPU Package") else fresh
             val routine =
                 com.clindsay94.remex.routines.model.Routine(
                     id = uuid(), name = "x", hostIdentity = HOST, enabled = true, revision = 1, createdAtUnixMs = 1, updatedAtUnixMs = 1,
-                    trigger = RoutineTriggerFamilies.newTrigger(type),
+                    trigger = trigger,
                     steps = listOf(com.clindsay94.remex.routines.model.RoutineStep(type = RoutineStepTypes.POWER, verb = "LOCK")),
                 )
             assertEquals(type, "ok", RoutineValidator.validateRoutine(routine).reasonCode)

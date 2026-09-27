@@ -51,6 +51,8 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
     private readonly ILogger _logger;
     private readonly IdleTriggerSource _idle;
     private readonly SessionTriggerSource _session;
+    private readonly SensorTriggerSource? _sensor;
+    private readonly RoutineNotifyQueue? _notifyQueue;
     private readonly List<string> _warnings = [];
     private readonly object _gate = new();
     private readonly RoutineHostReadiness _readiness;
@@ -72,9 +74,17 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         IMediaSessionMonitor media,
         RoutineHostReadiness readiness,
         TimeProvider time,
-        ILoggerFactory loggers)
+        ILoggerFactory loggers,
+        Remex.Core.Services.ITelemetryBroadcaster? telemetry = null,
+        RoutineNotifyQueue? notifyQueue = null)
     {
         _readiness = readiness;
+        _notifyQueue = notifyQueue;
+
+        // No telemetry sampler, no pc.sensor: the sync validator then refuses sensor routines.
+        _sensor = telemetry is null
+            ? null
+            : new SensorTriggerSource(telemetry, time, loggers.CreateLogger<SensorTriggerSource>());
         _store = store;
         _runs = runs;
         _runner = runner;
@@ -100,6 +110,9 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
     /// <summary>The session rule, exposed for tests.</summary>
     internal SessionTriggerSource Session => _session;
 
+    /// <summary>The sensor rule, exposed for tests; null without a telemetry sampler.</summary>
+    internal SensorTriggerSource? Sensor => _sensor;
+
     /// <summary>
     /// Loads the stores, sweeps interrupted runs, starts the sources and arms. Separate from
     /// <see cref="ExecuteAsync"/> so tests can run it with fake sources.
@@ -121,11 +134,29 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
             Warn(RoutineStrings.Format("Routine_Warning_HistoryUnreadable"));
         }
 
+        if (_notifyQueue is not null)
+        {
+            // After the history: an item the downtime outlived turns its run's step "expired".
+            await _notifyQueue.LoadAsync();
+            if (_notifyQueue.LoadWarning is not null)
+            {
+                Warn(RoutineStrings.Format("Routine_Warning_QueueUnreadable"));
+            }
+
+            _notifyQueue.Changed += RaiseChanged;
+        }
+
         _store.Changed += OnStoreChanged;
         _runner.Changed += RaiseChanged;
         _idle.Fired += OnFired;
         _session.Fired += OnFired;
         _session.Suppressed += OnSuppressed;
+        if (_sensor is not null)
+        {
+            _sensor.Fired += OnFired;
+            _sensor.Unavailable += OnSensorUnavailable;
+            _availability.SetSensorAvailable(true);
+        }
 
         var idleSource = await _platform.ResolveIdleAsync(ct);
         lock (_gate)
@@ -178,6 +209,7 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
     {
         _idle.Dispose();
         _session.Dispose();
+        _sensor?.Dispose();
         lock (_gate)
         {
             _sessionSource?.Dispose();
@@ -295,7 +327,13 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
         var (saved, _) = await _store.UpdateAsync(doc => (doc.Owner(clientId) is null ? null : doc.WithOwner(clientId, null), 0));
         ThrowIfNotSaved(saved);
         await _runs.ForgetOwnerAsync(clientId);
-        _logger.LogInformation("Routines and routine history cleared for {ClientId}.", LogRedaction.RedactClientId(clientId));
+        if (_notifyQueue is not null)
+        {
+            // T7: a revoked phone's held messages go with it.
+            await _notifyQueue.ForgetOwnerAsync(clientId);
+        }
+
+        _logger.LogInformation("Routines, routine history and held messages cleared for {ClientId}.", LogRedaction.RedactClientId(clientId));
     }
 
     private void OnStoreChanged()
@@ -328,12 +366,26 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
             RoutineHostRunner.CausedByRunDetail);
     }
 
-    /// <summary>Recomputes which <c>pc.idle</c> / <c>pc.session</c> routines are armed.</summary>
+    /// <summary>
+    /// A sensor missing for 10 minutes (§8.5.1): one <c>sensor_unavailable</c> record, so "the routine
+    /// never fired" has an answer in history ("Waiting for sensor").
+    /// </summary>
+    private void OnSensorUnavailable(RoutineTriggerFire fire)
+    {
+        _ = _runner.RecordSkipAsync(
+            new RoutineRunStart(fire.OwnerClientId, fire.RoutineId, fire.Source, Detail: fire.Detail),
+            RoutineReasonCodes.SensorUnavailable,
+            detail: null,
+            new RoutineReasonArgs { Sensor = fire.Detail.SensorName });
+    }
+
+    /// <summary>Recomputes which <c>pc.idle</c> / <c>pc.session</c> / <c>pc.sensor</c> routines are armed.</summary>
     internal void Rearm()
     {
         var document = _store.Current;
         var idle = new List<IdleArming>();
         var session = new List<SessionArming>();
+        var sensor = new List<SensorArming>();
         if (!document.HostPaused)
         {
             foreach (var (clientId, owner) in document.Owners ?? [])
@@ -358,12 +410,29 @@ public sealed class RoutineHostService : BackgroundService, IRoutinesHost, IRout
                     {
                         session.Add(new SessionArming(clientId, routine.Id, trigger.SessionState == RoutineSessionStates.Locked));
                     }
+                    else if (trigger.Type == RoutineTriggerTypes.PcSensor
+                        && !string.IsNullOrEmpty(trigger.SensorId)
+                        && SensorTriggerSource.DirectionOf(trigger.Direction) is { } direction
+                        && trigger.Threshold is { } threshold && double.IsFinite(threshold))
+                    {
+                        sensor.Add(new SensorArming(
+                            clientId,
+                            routine.Id,
+                            trigger.SensorId,
+                            trigger.SensorLabel,
+                            direction,
+                            threshold,
+                            trigger.SustainSeconds ?? RoutineLimits.DefaultSustainSeconds));
+                    }
                 }
             }
         }
 
         _idle.SetArmed(idle);
         _session.SetArmed(session);
+
+        // Holding or releasing the telemetry lease happens here: an armed sensor routine holds it (§14 S5).
+        _sensor?.SetArmed(sensor);
     }
 
     private void Warn(string message)
@@ -428,6 +497,7 @@ public sealed class RoutineHostMessageHandler
     private readonly RoutineHostReadiness _readiness;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
+    private readonly RoutineNotifyQueue? _notifyQueue;
     private readonly object _gate = new();
     private readonly Dictionary<(string ClientId, string RunId), long> _seenRunIds = new();
 
@@ -437,8 +507,10 @@ public sealed class RoutineHostMessageHandler
         RoutineRunStore runs,
         RoutineHostReadiness readiness,
         TimeProvider time,
-        ILogger<RoutineHostMessageHandler> logger)
+        ILogger<RoutineHostMessageHandler> logger,
+        RoutineNotifyQueue? notifyQueue = null)
     {
+        _notifyQueue = notifyQueue;
         _sync = sync;
         _runner = runner;
         _runs = runs;
@@ -511,6 +583,28 @@ public sealed class RoutineHostMessageHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "routine_run_request from {ClientId} failed unexpectedly.", LogRedaction.RedactClientId(clientId));
+        }
+    }
+
+    /// <summary>
+    /// <c>routine_notify_ack</c> from the proven client (§7.3.5): removes only that owner's held messages
+    /// (T17); an id belonging to another phone matches nothing. Never throws.
+    /// </summary>
+    public async Task HandleNotifyAckAsync(string clientId, Remex.Core.Messages.Routines.RoutineNotifyAckPayload? ack)
+    {
+        try
+        {
+            if (_notifyQueue is null || ack?.NotifyIds is not { Count: > 0 } ids)
+            {
+                return;
+            }
+
+            var removed = await _notifyQueue.AckAsync(clientId, ids);
+            _logger.LogDebug("routine_notify_ack from {ClientId} removed {Count} held message(s).", LogRedaction.RedactClientId(clientId), removed);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "routine_notify_ack from {ClientId} failed.", LogRedaction.RedactClientId(clientId));
         }
     }
 

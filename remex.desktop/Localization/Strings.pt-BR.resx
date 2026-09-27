@@ -3720,6 +3720,12 @@ Você pode mudar:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Não foi possível ler o histórico de rotinas deste PC, então ele foi separado e recomeçado.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>Não foi possível ler as mensagens que este PC guardava para o seu celular, então elas foram separadas. As mensagens novas não são afetadas.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Será executada em {0} segundos. Cancele para impedir.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Rotinas</value>
   </data>

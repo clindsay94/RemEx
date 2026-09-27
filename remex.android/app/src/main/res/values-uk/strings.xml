@@ -1391,4 +1391,33 @@
     <string name="routines_saved_sent_pc">Збережено й надіслано на %1$s.</string>
     <string name="routines_saved_pc_later">Збережено. Потрапить на %1$s під час наступного підключення.</string>
     <string name="routines_forget_pc_residual">Рутини для %1$s видалено з цього телефону. ПК зберігає свою копію, доки ви не видалите там цей телефон. Якщо телефон не підключатиметься 30 днів, ПК їх призупинить.</string>
+    <string name="routines_trigger_sensor_chip">Поріг датчика</string>
+    <string name="routines_trigger_sensor_title">Датчик ПК перетинає поріг</string>
+    <string name="routines_trigger_sensor_supporting">Наприклад, GPU понад 85 °C протягом 30 секунд</string>
+    <string name="routines_trigger_sensor_above">Вище</string>
+    <string name="routines_trigger_sensor_below">Нижче</string>
+    <string name="routines_trigger_sensor_which">Датчик</string>
+    <string name="routines_trigger_sensor_choose">Виберіть датчик</string>
+    <string name="routines_trigger_sensor_connect">Підключіться до %1$s, щоб вибрати один із його датчиків.</string>
+    <string name="routines_trigger_sensor_limit">Поріг</string>
+    <string name="routines_trigger_sensor_for">За порогом протягом</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s не передає датчики рутинам.</string>
+    <string name="routines_more_options">Більше параметрів</string>
+    <string name="routines_category_health">Температура і стан</string>
+    <string name="routines_need_temperature_sensor">Датчик температури на ПК</string>
+    <string name="routines_need_memory_sensor">Датчик навантаження пам\'яті на ПК</string>
+    <string name="routines_tpl_health_gpu_name">GPU перегрівається</string>
+    <string name="routines_tpl_health_gpu_why">Дізнавайтеся, коли гра чи рендер перегріває GPU.</string>
+    <string name="routines_tpl_health_gpu_message">Ваш GPU вже 30 секунд гарячіший за 85 °C.</string>
+    <string name="routines_tpl_health_cpu_name">Охолодити до пошкодження</string>
+    <string name="routines_tpl_health_cpu_why">Присипляє ПК, якщо CPU лишається небезпечно гарячим.</string>
+    <string name="routines_tpl_health_cpu_message">Ваш ПК був надто гарячим і переходить у режим сну.</string>
+    <string name="routines_tpl_health_ram_name">Пам\'ять майже заповнена</string>
+    <string name="routines_tpl_health_ram_why">Помітьте застосунок, що вийшов з-під контролю, до того як ПК загальмує.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">Пам\'ять вашого ПК уже 2 хвилини заповнена понад 90%.</string>
+    <string name="routines_problem_choose_sensor">Виберіть датчик.</string>
+    <string name="routines_problem_sensor_missing">{pc} зараз не передає цей датчик. Виберіть інший.</string>
+    <string name="routines_problem_sensor_limit">Введіть число для порогу.</string>
+    <string name="routines_problem_sensor_sustain">Виберіть час від 5 секунд до 10 хвилин.</string>
+    <string name="routine_message_sent_at">Надіслано о %1$s</string>
 </resources>

@@ -106,6 +106,8 @@ data class RoutinePcSyncView(
     val ownerSuspended: Boolean,
     val idleSource: String?,
     val sessionSource: String?,
+    /** The PC runs a `pc.sensor` source (§7.3.2 `sensorTrigger`, routines S5). */
+    val sensorTrigger: Boolean = false,
 )
 
 object RoutineSyncStates {
@@ -129,6 +131,7 @@ object RoutineSyncStates {
             ownerSuspended = result?.ownerSuspended == RoutineReasonCodes.OWNER_ABSENT,
             idleSource = result?.idleSource,
             sessionSource = result?.sessionSource,
+            sensorTrigger = result?.sensorTrigger == true,
         )
     }
 
@@ -155,13 +158,14 @@ object RoutineSyncStates {
 
     /**
      * Whether the PC can offer [triggerType] per its last answer (§7.5 gating): null while unknown
-     * (no answer yet), false when the PC reported no idle or session source.
+     * (no answer yet), false when the PC reported no idle or session source, or no sensor source.
      */
     fun triggerAvailable(triggerType: String?, pc: RoutinePcSyncView?): Boolean? {
         if (pc == null || !pc.hasResult || pc.blocked) return null
         return when (triggerType) {
             RoutineTriggerTypes.PC_IDLE -> pc.idleSource != null
             RoutineTriggerTypes.PC_SESSION -> pc.sessionSource != null
+            RoutineTriggerTypes.PC_SENSOR -> pc.sensorTrigger
             else -> null
         }
     }

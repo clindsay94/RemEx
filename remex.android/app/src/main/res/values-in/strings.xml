@@ -1360,4 +1360,33 @@
     <string name="routines_saved_sent_pc">Tersimpan dan dikirim ke %1$s.</string>
     <string name="routines_saved_pc_later">Tersimpan. Akan dikirim ke %1$s saat Anda terhubung lagi.</string>
     <string name="routines_forget_pc_residual">Rutinitas untuk %1$s dihapus dari ponsel ini. PC menyimpan salinannya sampai Anda menghapus ponsel ini di sana. Jika ponsel ini tidak terhubung selama 30 hari, PC menjedanya.</string>
+    <string name="routines_trigger_sensor_chip">Batas sensor</string>
+    <string name="routines_trigger_sensor_title">Sensor PC melewati batas</string>
+    <string name="routines_trigger_sensor_supporting">Misalnya, GPU di atas 85 °C selama 30 detik</string>
+    <string name="routines_trigger_sensor_above">Di atas</string>
+    <string name="routines_trigger_sensor_below">Di bawah</string>
+    <string name="routines_trigger_sensor_which">Sensor</string>
+    <string name="routines_trigger_sensor_choose">Pilih sensor</string>
+    <string name="routines_trigger_sensor_connect">Hubungkan ke %1$s untuk memilih dari sensornya.</string>
+    <string name="routines_trigger_sensor_limit">Batas</string>
+    <string name="routines_trigger_sensor_for">Melewati batas selama</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s tidak melaporkan sensor ke rutinitas.</string>
+    <string name="routines_more_options">Opsi lainnya</string>
+    <string name="routines_category_health">Suhu dan kesehatan</string>
+    <string name="routines_need_temperature_sensor">Sensor suhu di PC</string>
+    <string name="routines_need_memory_sensor">Sensor beban memori di PC</string>
+    <string name="routines_tpl_health_gpu_name">GPU terlalu panas</string>
+    <string name="routines_tpl_health_gpu_why">Ketahui saat game atau render membuat GPU Anda kepanasan.</string>
+    <string name="routines_tpl_health_gpu_message">GPU Anda di atas 85 °C selama 30 detik.</string>
+    <string name="routines_tpl_health_cpu_name">Dinginkan sebelum rusak</string>
+    <string name="routines_tpl_health_cpu_why">Menidurkan PC jika CPU tetap terlalu panas.</string>
+    <string name="routines_tpl_health_cpu_message">PC Anda terlalu panas dan akan tidur.</string>
+    <string name="routines_tpl_health_ram_name">Memori hampir penuh</string>
+    <string name="routines_tpl_health_ram_why">Tangkap aplikasi yang lepas kendali sebelum PC melambat.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">Memori PC Anda di atas 90% selama 2 menit.</string>
+    <string name="routines_problem_choose_sensor">Pilih sensor.</string>
+    <string name="routines_problem_sensor_missing">{pc} tidak melaporkan sensor ini sekarang. Pilih yang lain.</string>
+    <string name="routines_problem_sensor_limit">Masukkan angka untuk batas.</string>
+    <string name="routines_problem_sensor_sustain">Pilih waktu antara 5 detik dan 10 menit.</string>
+    <string name="routine_message_sent_at">Dikirim pukul %1$s</string>
 </resources>

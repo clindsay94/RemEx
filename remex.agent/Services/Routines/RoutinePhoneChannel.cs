@@ -61,18 +61,24 @@ public enum RoutinePhoneNotifyOutcome
 /// <summary>Delivers <c>routine_notify</c> to an owner phone.</summary>
 public interface IRoutinePhoneNotifier
 {
-    Task<RoutinePhoneNotifyOutcome> NotifyAsync(string ownerClientId, RoutineNotifyPayload notify);
+    /// <param name="ownerClientId">The owner phone (T17: nothing else ever receives it).</param>
+    /// <param name="notify">The message.</param>
+    /// <param name="stepIndex">
+    /// The <c>notify(phone)</c> step it came from, so an expiry can mark that step <c>expired</c> in the
+    /// run's history (§8.8). Null for a countdown heads-up, which is never queued.
+    /// </param>
+    Task<RoutinePhoneNotifyOutcome> NotifyAsync(string ownerClientId, RoutineNotifyPayload notify, int? stepIndex = null);
 }
 
 /// <summary>
-/// The S4a notifier: live delivery only. The persistent one-hour queue and <c>routine_notify_ack</c> are
-/// routines S5 (RemEx-pp0rt), which replaces this registration; until then an undelivered message is
-/// reported as such (<c>notify_expired</c> on the step) rather than claimed as queued.
+/// Live delivery only, with no queue: an undelivered message is reported as such (<c>notify_expired</c> on
+/// the step) rather than claimed as queued. Production uses <see cref="RoutineNotifyQueue"/> (routines S5);
+/// this stays for tests that pin the runner's handling of an undelivered message.
 /// </summary>
 public sealed class LiveOnlyRoutinePhoneNotifier(IRoutinePhoneChannel channel) : IRoutinePhoneNotifier
 {
     /// <inheritdoc />
-    public async Task<RoutinePhoneNotifyOutcome> NotifyAsync(string ownerClientId, RoutineNotifyPayload notify) =>
+    public async Task<RoutinePhoneNotifyOutcome> NotifyAsync(string ownerClientId, RoutineNotifyPayload notify, int? stepIndex = null) =>
         await channel.TrySendAsync(ownerClientId, new RemexMessage { Type = MessageTypes.RoutineNotify, RoutineNotify = notify })
             ? RoutinePhoneNotifyOutcome.Delivered
             : RoutinePhoneNotifyOutcome.NotDelivered;
@@ -177,6 +183,12 @@ internal static class RoutineMessages
     {
         Type = MessageTypes.RoutineSyncResult,
         RoutineSyncResult = result,
+    };
+
+    public static RemexMessage Notify(RoutineNotifyPayload notify) => new()
+    {
+        Type = MessageTypes.RoutineNotify,
+        RoutineNotify = notify,
     };
 
     /// <summary><c>ownerClientId</c> is PC-only and never sent to the phone (§8.8).</summary>

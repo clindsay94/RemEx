@@ -35,7 +35,12 @@ public sealed record RoutineCountdownResult(
 /// <param name="RunId">The run it belongs to; what a phone's <c>routine_cancel</c> names.</param>
 /// <param name="OwnerClientId">The phone that owns the run. Only it may cancel from the phone side (T17).</param>
 /// <param name="Prompt">What the PC surfaces show.</param>
-public sealed record RoutineCountdownRequest(string RunId, string OwnerClientId, RoutineCountdownPrompt Prompt);
+/// <param name="Started">
+/// Called once the countdown has really started (never for a <see cref="RoutineCountdownStatus.Conflict"/>),
+/// without being awaited: the phone heads-up of a PC run (routines S5) must not delay the 15 s.
+/// </param>
+public sealed record RoutineCountdownRequest(
+    string RunId, string OwnerClientId, RoutineCountdownPrompt Prompt, Func<Task>? Started = null);
 
 /// <summary>
 /// The destructive-step countdown (routines spec §8.6): 15 s, one at a time on the PC, cancellable
@@ -139,6 +144,10 @@ public sealed class RoutineCountdownCoordinator
                 request.RunId, request.Prompt.Verb, shown);
 
             var elapsed = Task.Delay(Length, _time);
+            if (request.Started is { } started)
+            {
+                _ = RaiseStartedAsync(started, request.RunId);
+            }
             var finished = await Task.WhenAny(elapsed, active.Cancelled.Task);
 
             if (finished == active.Cancelled.Task)
@@ -182,6 +191,18 @@ public sealed class RoutineCountdownCoordinator
             {
                 _logger.LogWarning(ex, "Routine countdown surface failed to close.");
             }
+        }
+    }
+
+    private async Task RaiseStartedAsync(Func<Task> started, string runId)
+    {
+        try
+        {
+            await started();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "The countdown-started callback for run {RunId} failed.", runId);
         }
     }
 

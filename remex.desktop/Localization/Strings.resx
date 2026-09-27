@@ -3726,6 +3726,12 @@ You can change:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>The routine history on this PC could not be read, so it was set aside and started again.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>The messages this PC was holding for your phone could not be read, so they were set aside. New messages are not affected.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Runs in {0} seconds. Cancel to stop it.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Routines</value>
   </data>

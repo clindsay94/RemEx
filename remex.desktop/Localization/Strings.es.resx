@@ -3734,6 +3734,12 @@ Puedes cambiar:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>No se pudo leer el historial de rutinas de este PC, así que se apartó y se empezó de nuevo.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>No se pudieron leer los mensajes que este PC guardaba para tu teléfono, así que se apartaron. Los mensajes nuevos no se ven afectados.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Se ejecuta en {0} segundos. Cancela para detenerla.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Rutinas</value>
   </data>

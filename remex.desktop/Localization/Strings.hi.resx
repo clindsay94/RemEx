@@ -3720,6 +3720,12 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>इस PC का रूटीन इतिहास पढ़ा नहीं जा सका, इसलिए उसे अलग रखकर फिर से शुरू किया गया।</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>यह PC आपके फ़ोन के लिए जो संदेश रखे हुए था, वे पढ़े नहीं जा सके, इसलिए उन्हें अलग रख दिया गया। नए संदेशों पर इसका असर नहीं है।</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>{0} सेकंड में चलेगा। रोकने के लिए रद्द करें।</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>रूटीन</value>
   </data>

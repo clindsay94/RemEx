@@ -1365,4 +1365,33 @@
     <string name="routines_saved_sent_pc">सहेजा गया और %1$s को भेजा गया।</string>
     <string name="routines_saved_pc_later">सहेजा गया। अगली बार कनेक्ट करने पर यह %1$s पर पहुंचेगा।</string>
     <string name="routines_forget_pc_residual">%1$s के रूटीन इस फ़ोन से हटा दिए गए। PC अपनी कॉपी तब तक रखता है जब तक आप वहां से यह फ़ोन नहीं हटाते। अगर यह फ़ोन 30 दिनों तक कनेक्ट नहीं होता, तो PC उन्हें रोक देता है।</string>
+    <string name="routines_trigger_sensor_chip">सेंसर सीमा</string>
+    <string name="routines_trigger_sensor_title">PC का कोई सेंसर सीमा पार करे</string>
+    <string name="routines_trigger_sensor_supporting">उदाहरण के लिए, GPU 30 सेकंड तक 85 °C से ऊपर</string>
+    <string name="routines_trigger_sensor_above">ऊपर</string>
+    <string name="routines_trigger_sensor_below">नीचे</string>
+    <string name="routines_trigger_sensor_which">सेंसर</string>
+    <string name="routines_trigger_sensor_choose">कोई सेंसर चुनें</string>
+    <string name="routines_trigger_sensor_connect">इसके सेंसर में से चुनने के लिए %1$s से कनेक्ट करें।</string>
+    <string name="routines_trigger_sensor_limit">सीमा</string>
+    <string name="routines_trigger_sensor_for">इतनी देर सीमा से पार</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s रूटीन को सेंसर की जानकारी नहीं देता।</string>
+    <string name="routines_more_options">और विकल्प</string>
+    <string name="routines_category_health">तापमान और सेहत</string>
+    <string name="routines_need_temperature_sensor">PC पर तापमान सेंसर</string>
+    <string name="routines_need_memory_sensor">PC पर मेमोरी लोड सेंसर</string>
+    <string name="routines_tpl_health_gpu_name">GPU बहुत गर्म</string>
+    <string name="routines_tpl_health_gpu_why">जानें कि कब कोई गेम या रेंडर आपके GPU को तपा रहा है।</string>
+    <string name="routines_tpl_health_gpu_message">आपका GPU 30 सेकंड से 85 °C से ऊपर है।</string>
+    <string name="routines_tpl_health_cpu_name">नुकसान से पहले ठंडा करें</string>
+    <string name="routines_tpl_health_cpu_why">CPU ख़तरनाक रूप से गर्म रहे तो PC को स्लीप करता है।</string>
+    <string name="routines_tpl_health_cpu_message">आपका PC बहुत गर्म था और स्लीप में जा रहा है।</string>
+    <string name="routines_tpl_health_ram_name">मेमोरी लगभग भरी</string>
+    <string name="routines_tpl_health_ram_why">PC धीमा होने से पहले बेकाबू ऐप को पकड़ें।</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">आपके PC की मेमोरी 2 मिनट से 90% से ऊपर है।</string>
+    <string name="routines_problem_choose_sensor">कोई सेंसर चुनें।</string>
+    <string name="routines_problem_sensor_missing">{pc} अभी यह सेंसर नहीं दिखा रहा। कोई दूसरा चुनें।</string>
+    <string name="routines_problem_sensor_limit">सीमा के लिए कोई संख्या लिखें।</string>
+    <string name="routines_problem_sensor_sustain">5 सेकंड से 10 मिनट के बीच का समय चुनें।</string>
+    <string name="routine_message_sent_at">%1$s पर भेजा गया</string>
 </resources>

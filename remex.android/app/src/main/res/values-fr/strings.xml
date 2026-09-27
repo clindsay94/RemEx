@@ -1365,4 +1365,33 @@
     <string name="routines_saved_sent_pc">Enregistrée et envoyée à %1$s.</string>
     <string name="routines_saved_pc_later">Enregistrée. Elle arrivera sur %1$s à la prochaine connexion.</string>
     <string name="routines_forget_pc_residual">Les routines de %1$s ont été supprimées de ce téléphone. Le PC garde sa copie jusqu\'à ce que vous y retiriez ce téléphone. Si ce téléphone reste absent 30 jours, le PC les met en pause.</string>
+    <string name="routines_trigger_sensor_chip">Seuil de capteur</string>
+    <string name="routines_trigger_sensor_title">Un capteur du PC dépasse un seuil</string>
+    <string name="routines_trigger_sensor_supporting">Par exemple, le GPU au-dessus de 85 °C pendant 30 secondes</string>
+    <string name="routines_trigger_sensor_above">Au-dessus</string>
+    <string name="routines_trigger_sensor_below">En dessous</string>
+    <string name="routines_trigger_sensor_which">Capteur</string>
+    <string name="routines_trigger_sensor_choose">Choisissez un capteur</string>
+    <string name="routines_trigger_sensor_connect">Connectez-vous à %1$s pour choisir parmi ses capteurs.</string>
+    <string name="routines_trigger_sensor_limit">Seuil</string>
+    <string name="routines_trigger_sensor_for">Au-delà du seuil pendant</string>
+    <string name="routines_trigger_sensor_unavailable">%1$s ne transmet pas ses capteurs aux routines.</string>
+    <string name="routines_more_options">Plus d\'options</string>
+    <string name="routines_category_health">Chaleur et santé</string>
+    <string name="routines_need_temperature_sensor">Un capteur de température sur le PC</string>
+    <string name="routines_need_memory_sensor">Un capteur de charge mémoire sur le PC</string>
+    <string name="routines_tpl_health_gpu_name">GPU qui chauffe</string>
+    <string name="routines_tpl_health_gpu_why">Sachez quand un jeu ou un rendu fait trop chauffer votre GPU.</string>
+    <string name="routines_tpl_health_gpu_message">Votre GPU dépasse 85 °C depuis 30 secondes.</string>
+    <string name="routines_tpl_health_cpu_name">Refroidir avant les dégâts</string>
+    <string name="routines_tpl_health_cpu_why">Met le PC en veille si le CPU reste dangereusement chaud.</string>
+    <string name="routines_tpl_health_cpu_message">Votre PC était trop chaud et va se mettre en veille.</string>
+    <string name="routines_tpl_health_ram_name">Mémoire presque pleine</string>
+    <string name="routines_tpl_health_ram_why">Repérez une application qui s\'emballe avant que le PC ne rame.</string>
+    <string name="routines_tpl_health_ram_message" formatted="false">La mémoire de votre PC dépasse 90 % depuis 2 minutes.</string>
+    <string name="routines_problem_choose_sensor">Choisissez un capteur.</string>
+    <string name="routines_problem_sensor_missing">{pc} ne transmet pas ce capteur pour le moment. Choisissez-en un autre.</string>
+    <string name="routines_problem_sensor_limit">Saisissez un nombre pour le seuil.</string>
+    <string name="routines_problem_sensor_sustain">Choisissez une durée entre 5 secondes et 10 minutes.</string>
+    <string name="routine_message_sent_at">Envoyé à %1$s</string>
 </resources>

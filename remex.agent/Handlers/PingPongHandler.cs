@@ -688,10 +688,22 @@ public sealed class PingPongHandler(
 
                         break;
 
-                    // The one-hour notify queue that this acknowledges is routines S5; nothing is queued
-                    // yet, so an ack has nothing to remove. Handled (not left to the default) so it is not
-                    // logged as an unknown type.
+                    // Routines S5 (§7.3.5): removes the acknowledged messages from the one-hour notify
+                    // queue. Scoped to the PROVEN identity, so one phone can never clear another's (T17).
+                    // Detached like the other routine cases: the queue saves to disk.
                     case MessageTypes.RoutineNotifyAck:
+                        if (routineHost is null || !identityProven || string.IsNullOrWhiteSpace(connectionClientId))
+                        {
+                            logger.LogWarning("Ignored routine_notify_ack: no routines host or no proven client identity.");
+                            break;
+                        }
+
+                        {
+                            var ackOwner = connectionClientId;
+                            var ack = message.RoutineNotifyAck;
+                            _ = RunDetachedAsync(() => routineHost.HandleNotifyAckAsync(ackOwner, ack), "routine_notify_ack");
+                        }
+
                         break;
 
                     // ── 3.0 Routines (RemEx-pp0rt.4, spec §7.3.3, §7.3.7) ──

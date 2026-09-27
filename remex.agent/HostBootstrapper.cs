@@ -317,7 +317,15 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineHostStore>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineRunStore>();
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePhoneChannel, Remex.Agent.Services.Routines.SessionRoutinePhoneChannel>();
-        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePhoneNotifier, Remex.Agent.Services.Routines.LiveOnlyRoutinePhoneNotifier>();
+        // Routines S5 (§7.3.5, Q6): live when the owner is connected, otherwise held on disk for an hour.
+        // One instance under both names: the runner notifies through it, the sync handler flushes it and
+        // the message handler acknowledges it, so a second instance would hold messages nobody delivers.
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.RoutineNotifyQueue>();
+        builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePhoneNotifier>(
+            sp => sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineNotifyQueue>());
+        builder.Services.AddSingleton(sp => new Remex.Agent.Services.Routines.RoutineSensorCatalog(
+            sp.GetRequiredService<Remex.Core.Services.ITelemetryBroadcaster>(),
+            sp.GetRequiredService<TimeProvider>()));
         builder.Services.AddSingleton<Remex.Agent.Services.Routines.IRoutinePlatformSources, Remex.Agent.Services.Routines.RoutinePlatformSources>();
         builder.Services.AddSingleton(sp =>
         {
@@ -329,7 +337,8 @@ public static class HostBootstrapper
             sp.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(),
             sp.GetRequiredService<IHostCapabilitiesProvider>(),
             sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineTriggerAvailability>(),
-            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostIdentity>().Get));
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostIdentity>().Get,
+            sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineSensorCatalog>()));
         builder.Services.AddSingleton(sp => new Remex.Agent.Services.Routines.RoutineHostRunner(
             sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostStore>(),
             sp.GetRequiredService<Remex.Agent.Services.Routines.RoutineRunStore>(),

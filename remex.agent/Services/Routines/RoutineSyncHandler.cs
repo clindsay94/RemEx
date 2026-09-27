@@ -82,9 +82,14 @@ public sealed class RoutineSyncHandler
     private readonly IRoutineOwnerDirectory _owners;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
+    private readonly RoutineNotifyQueue? _notifyQueue;
     private readonly object _gate = new();
     private readonly Dictionary<string, Pending> _pending = new(StringComparer.Ordinal);
 
+    /// <param name="notifyQueue">
+    /// The S5 notify queue, flushed right after the sync result of an accepted sync (§7.3.5). Null: no
+    /// queue (the pre-S5 live-only notifier), nothing to flush.
+    /// </param>
     public RoutineSyncHandler(
         RoutineHostStore store,
         RoutineRunStore runs,
@@ -96,8 +101,10 @@ public sealed class RoutineSyncHandler
         RoutineHostReadiness readiness,
         IRoutineOwnerDirectory owners,
         TimeProvider time,
-        ILogger<RoutineSyncHandler> logger)
+        ILogger<RoutineSyncHandler> logger,
+        RoutineNotifyQueue? notifyQueue = null)
     {
+        _notifyQueue = notifyQueue;
         _store = store;
         _runs = runs;
         _validator = validator;
@@ -113,12 +120,14 @@ public sealed class RoutineSyncHandler
 
     /// <summary>
     /// Reason codes that only mean "this PC's trigger source was not found YET" (the D-Bus probes finish
-    /// after start). A stored result carrying one is never replayed for an equal revision: the set is
-    /// validated again, so a sync that raced the probes cannot keep a routine rejected for good.
+    /// after start; a sensor can appear once its driver loads). A stored result carrying one is never
+    /// replayed for an equal revision: the set is validated again, so a sync that raced the probes cannot
+    /// keep a routine rejected for good.
     /// </summary>
     internal static bool IsTransientRejection(RoutineSyncItemResult result) =>
         !result.Accepted
-        && result.ReasonCode is RoutineReasonCodes.IdleSourceUnavailable or RoutineReasonCodes.SessionSourceUnavailable;
+        && result.ReasonCode is RoutineReasonCodes.IdleSourceUnavailable or RoutineReasonCodes.SessionSourceUnavailable
+            or RoutineReasonCodes.SensorUnavailable;
 
     /// <summary>
     /// Handles one <c>routines_sync</c> from the proven client <paramref name="clientId"/>, replying through
@@ -272,10 +281,15 @@ public sealed class RoutineSyncHandler
             slot.LastProcessed = _time.GetTimestamp();
             await ReplyAsync(next.Value.Send, result);
 
-            // §7.4.2 step 9: after an ok/partial, the history the phone has not seen (routine_notify flush is S5).
+            // §7.4.2 step 9: after an ok/partial, the history the phone has not seen, then the messages
+            // held for it (§7.3.5: the queue flush follows the routine_sync_result of a connection).
             if (result.Status is RoutineSyncStatuses.Ok or RoutineSyncStatuses.Partial && next.Value.Payload is { Forget: false } applied)
             {
                 await FlushReportsAsync(clientId, applied.RunCursor, next.Value.Send);
+                if (_notifyQueue is not null)
+                {
+                    await _notifyQueue.FlushAsync(clientId, next.Value.Send);
+                }
             }
         }
     }

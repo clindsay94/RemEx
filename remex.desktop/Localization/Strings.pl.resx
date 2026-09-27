@@ -3721,6 +3721,12 @@ Możesz zmienić:
   <data name="Routine_Warning_HistoryUnreadable" xml:space="preserve">
     <value>Nie udało się odczytać historii rutyn na tym komputerze, więc została odłożona i rozpoczęta od nowa.</value>
   </data>
+  <data name="Routine_Warning_QueueUnreadable" xml:space="preserve">
+    <value>Nie udało się odczytać wiadomości, które ten komputer przechowywał dla Twojego telefonu, więc zostały odłożone. Nowe wiadomości działają normalnie.</value>
+  </data>
+  <data name="Routine_Countdown_PhoneBody" xml:space="preserve">
+    <value>Uruchomi się za {0} s. Anuluj, aby zatrzymać.</value>
+  </data>
   <data name="Nav_Routines" xml:space="preserve">
     <value>Rutyny</value>
   </data>

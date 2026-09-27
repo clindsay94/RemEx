@@ -13,6 +13,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- Routines can now watch a PC sensor: "A PC sensor passes a limit" starts a routine when a sensor you
+  pick from the PC's own list stays above or below a limit for a while (5 seconds to 10 minutes). It
+  waits for a sustained reading, ignores a value hovering on the limit, and won't fire again for five
+  minutes or until the reading goes back to normal. The PC keeps its sensors sampled only while such a
+  routine is switched on, and records it in the history if the sensor stops reporting for ten minutes.
+  Three new templates use it: GPU running hot, Cool down before damage, and Memory nearly full.
+  Messages a PC routine sends to your phone now wait up to an hour when the phone isn't connected, even
+  across a PC restart, and arrive the next time it connects marked with the time they were sent; one
+  that runs out of time shows as expired in the run's history. When a PC routine is about to shut down,
+  restart, sign out, sleep or hibernate the PC, a connected phone shows the countdown too, with a Cancel
+  that stops it. (RemEx-pp0rt.10)
+
 - Routines that run on the PC, from the phone: two new triggers, "My PC is idle" and "My PC locks or
   unlocks", and five templates that use them (lock the PC when you're gone, sleep it when you lock it,
   tell you when it unlocks, sleep it when idle, and turn the screen off when idle). The phone sends each

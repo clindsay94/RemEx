@@ -16,6 +16,7 @@ public sealed class RoutineTriggerAvailability
     private volatile string? _idle;
     private volatile string? _session;
     private volatile object? _locked;
+    private volatile bool _sensor;
 
     /// <summary>The idle source id (<c>win32.lastinput</c>, <c>gnome.idlemonitor</c>, …), or null.</summary>
     public string? IdleSourceId => _idle;
@@ -24,10 +25,11 @@ public sealed class RoutineTriggerAvailability
     public string? SessionSourceId => _session;
 
     /// <summary>
-    /// <c>pc.sensor</c> (routines S5). False until the sensor source lands, so a sensor routine is refused
-    /// with <c>sensor_unavailable</c> rather than stored and never fired.
+    /// <c>pc.sensor</c> (routines S5): true once the sensor source is running on this PC's telemetry
+    /// sampler. Whether a PARTICULAR sensor exists is the validator's question (<c>sensor_unavailable</c>
+    /// only for a sensor this PC's catalog does not have).
     /// </summary>
-    public bool SensorAvailable => false;
+    public bool SensorAvailable => _sensor;
 
     /// <summary>The last lock state the session source reported, or null when unknown.</summary>
     public bool? SessionLocked => _locked as bool?;
@@ -35,6 +37,8 @@ public sealed class RoutineTriggerAvailability
     public void SetIdleSource(string? id) => _idle = id;
 
     public void SetSessionSource(string? id) => _session = id;
+
+    public void SetSensorAvailable(bool available) => _sensor = available;
 
     public void SetSessionLocked(bool? locked) => _locked = locked;
 }
