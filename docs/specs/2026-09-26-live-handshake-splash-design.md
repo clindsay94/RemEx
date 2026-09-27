@@ -56,27 +56,65 @@ single in-flight discovery). It opens and immediately closes one TCP socket per 
 Both platforms implement the same pure function, unit-tested against
 `docs/specs/live-handshake-director-vectors.json` (both test suites read that file).
 
-Constants: FLOOR 0.9 s, GRACE 1.2 s, CAP 2.6 s, LOCK_HOLD 0.5 s, EXIT 0.72 s, FADE_EXIT 0.28 s,
-FIRST_PULSE 0.32 s, PULSE_PERIOD 1.0 s.
+Constants: FLOOR 1.4 s, GRACE 1.2 s, CAP 3.0 s, LOCK_HOLD 0.7 s, EXIT 0.72 s, FADE_EXIT 0.28 s,
+FIRST_PULSE 0.32 s, PULSE_PERIOD 1.0 s, ANSWER_MIN 0.62 s, ANSWER_GAP 0.18 s, LOCK_AFTER 0.5 s,
+LINE_GAP 0.32 s.
+
+**Staging (revised 2026-09-26 after the first device test).** On a fast LAN every real event lands
+inside ~0.5 s, and the first build flashed through. Events are never faked or reordered, but each
+is SHOWN no sooner than it can be read:
+- A link also counts as the target answering: the target's *effective* answer time is the earlier
+  of its probe answer and `linkedAt`.
+- Answers are shown in real order at `shown_i = max(effective_i, ANSWER_MIN, shown_{i-1} +
+  ANSWER_GAP)` (ANSWER_MIN is roughly when the first pulse's wave reaches the orbit).
+- The lock is shown at `lockShown = max(linkedAt, shown(target) + LOCK_AFTER)`.
+- Nothing staged past the hand-off is shown. The director uses shown times for everything visual
+  and for the hand-off.
 
 `candidate(known)` where `known` holds only events whose time <= now:
 ```
 if skipAt known:                         c = skipAt
 else if readyAt unknown:                 c = CAP
 else if peers == 0 or no target:         c = max(FLOOR, readyAt)
-else if linkedAt known:                  c = max(linkedAt + LOCK_HOLD, FLOOR, readyAt)
+else if linkedAt known:                  c = max(lockShown + LOCK_HOLD, FLOOR, readyAt)
 else if failedAt known:                  c = max(FLOOR, readyAt, failedAt)
 else:                                    c = max(FLOOR, min(readyAt + GRACE, CAP))
 return min(c, CAP)
 ```
 The hand-off starts on the first frame where `now >= candidate(known)`; after that it is fixed and
-later events are ignored. Exit origin: the target node if it was linked before the hand-off and
-the platform opens from nodes (Android), else the mark (always the mark on PC). Pulses start at
-FIRST_PULSE + k * PULSE_PERIOD while strictly before the hand-off; none under reduced motion.
-Tests step `now` from 0 in 1 ms increments and expect the hand-off within 2 ms of `expectHandoff`.
+later events are ignored. Exit origin: the target node if the lock was SHOWN at or before the
+hand-off and the platform opens from nodes (Android), else the mark (always the mark on PC). Pulses
+start at FIRST_PULSE + k * PULSE_PERIOD while strictly before the hand-off; none under reduced
+motion. Tests step `now` from 0 in 1 ms increments and expect the hand-off within 2 ms of
+`expectHandoff`, plus `expectLockShown` and `expectAnswersShown`.
 
-The cap is shorter than today's default (Cosmic Zoom, 3.1 s); a normal launch hands off in
-about 1.0 to 1.6 s. Tap/click skips at any moment.
+A fast launch now hands off at ~1.8 s (portal done ~2.5 s); asleep ~1.9 s; the cap is 3.0 s,
+still under Cosmic Zoom's 3.1 s. Tap/click skips at any moment.
+
+## The console (revised 2026-09-26)
+
+The single status line is replaced by a three-line terminal readout under the wordmark, matching
+the terminal-window mark. It narrates the same staged events:
+
+| Line (en) | Due | Android | PC |
+|---|---|---|---|
+| `Pinging %d PC(s)` / `%d phone(s) paired` | FIRST_PULSE | yes | yes (phones) |
+| `No PCs paired yet` / `No phones paired yet` | FIRST_PULSE, when there are none | yes | yes |
+| `Listening on port %d` (or `Listening`) | listeningAt (not before 0.4) | | yes |
+| `%1$s answered in %2$d ms` | each answer's shown time | yes | |
+| `Linked to %1$s` / `%1$s is linked` | lockShown (accent colour) | yes | yes |
+| `%1$s is not answering` | min(readyAt + 0.5, hand-off - 0.3), target never linked | yes | |
+| `Opening RemEx` | hand-off (accent colour) | yes | yes |
+
+Lines are sorted by due time and each appears at `max(due, previous + LINE_GAP)`. Only three are
+visible: newest at full ink (accent when marked), the one above at 55 % alpha, the oldest at 30 %.
+A new line types in at 55 chars/s with the amber block cursor, and the stack slides up one line
+height over 0.18 s (standard easing) as it arrives; the cursor keeps blinking (0.53 s) on the newest
+line. Prefix `›` in accent. Monospace, 12 dp (PC 13.5 dp), line height 19 dp (PC 21 dp), a
+left-aligned column `min(W - 48 dp, 320 dp)` wide (PC 420 dp) centred under the wordmark. The
+wordmark moves up to 0.785H (PC 0.80H) and the console starts 30 dp (PC 34 dp) below it; keep it
+clear of the PC host's version label and skip hint. Node labels grow to 12 dp (PC 14 dp). Reduced
+motion: lines appear whole, no slide, same timing. The lab (`solo` scenario) is the reference.
 
 ## Choreography (reference values; dp = density-independent px)
 
@@ -131,26 +169,21 @@ about 1.0 to 1.6 s. Tap/click skips at any moment.
 
 ## Strings (new, all locales)
 
-Android (en + es fr hi in pl pt-rBR tr uk) and PC (Strings.resx + 8). Rendered upper-case at draw
-time with the current locale. Style label "Live Handshake" follows whatever convention the other
-style names use on that platform.
+Android (en + es fr hi in pl pt-rBR tr uk) and PC (Strings.resx + 8). Sentence case, drawn as
+written (the console reads as a terminal log, not a caps banner). Style label "Live Handshake"
+follows whatever convention the other style names use on that platform. The console lines are in
+the table under "The console"; besides those:
 
-- starting: "Starting"
-- pinging (plural): "Pinging %d PC" / "Pinging %d PCs" (PC: phones)
-- awake: "%1$d of %2$d awake" (PC: "%1$d of %2$d linked")
-- linked: "Linked · %1$s"
-- not answering: "%1$s is not answering"
-- none paired: "No PCs paired yet" (PC: "No phones paired yet")
-- listening (PC): "Listening on port %1$d" and "Listening"
-- rtt unit: "%1$d ms" (uk uses "мс")
+- rtt unit for node labels and range rings: "%1$d ms" (uk uses "мс")
+- PC node suffix for a linked phone: "linked"
 
 ## Defaults and migration
 
-New installs get `LiveHandshake`. Existing users whose stored value is the **previous default**
-(PC: `CosmicZoom`; Android: whatever the previous default value is) are moved to `LiveHandshake`
-once, following the precedent of the RemexCommand to CosmicZoom move. Anyone who picked a
-non-default style keeps it. PC: a new `CustomizationMigration` schema-8 arm. Android: a one-time
-migration flag in personalization preferences.
+New installs get `LiveHandshake`. **Everyone who upgrades to 3.0 is moved to `LiveHandshake`
+once, whatever style they had** (Connor, 2026-09-26: small user base, the 3.0 splash should be
+seen). After that one move, a style picked in the picker sticks. PC: the `CustomizationMigration`
+schema-8 arm rewrites any stored `SplashStyle`. Android: the one-time migration flag moves any
+stored value.
 
 ## Out of scope
 

@@ -184,6 +184,7 @@
         <li><b>Ignite</b><span>That PC answered. Its distance from the mark is the measured round trip.</span></li>
         <li><b>Lock-on</b><span>The connection to your last PC finished its handshake. The phone ticks once.</span></li>
         <li><b>Portal</b><span>The dashboard is live, so the splash opens into it from that PC.</span></li>
+        <li><b>Console</b><span>Narrates the same events in words. On a fast network each beat is held just long enough to read; the log shows when it was heard and when it was shown.</span></li>
       </ul>
     </fieldset>
     <p class="note">Click the preview to skip, the same as a tap in the app. Move the pointer over it for depth.</p>
@@ -235,8 +236,8 @@ const SCENARIOS = {
   trio:   { plat: 'android', title: 'Three PCs, one asleep', desc: 'Your desktop answers first and locks on. The laptop stays dark.',
             nodes: [ { name: 'DESKTOP-RIG', rtt: 9, answer: 0.46, target: true }, { name: 'MEDIA-HTPC', rtt: 24, answer: 0.63 }, { name: 'OFFICE-LAPTOP', rtt: null } ],
             connectStart: 0.30, connected: 1.02, ready: 0.72 },
-  solo:   { plat: 'android', title: 'One PC', desc: 'The common case. Quick answer, quick lock, straight in.',
-            nodes: [ { name: 'STUDIO-PC', rtt: 6, answer: 0.40, target: true } ], connectStart: 0.28, connected: 0.84, ready: 0.60 },
+  solo:   { plat: 'android', title: 'One PC, fast link', desc: 'Everything really lands inside half a second. The splash still shows each beat long enough to read.',
+            nodes: [ { name: 'DESKTOP-NH3EDFR', rtt: 8, answer: 0.18, target: true } ], connectStart: 0.10, connected: 0.44, ready: 0.35 },
   slow:   { plat: 'android', title: 'Slow Wi-Fi', desc: 'The PC answers late and far out. The splash waits for it, but never past its budget.',
             nodes: [ { name: 'CABIN-PC', rtt: 148, answer: 1.32, target: true }, { name: 'DESKTOP-RIG', rtt: null } ], connectStart: 0.30, connected: 1.74, ready: 0.70 },
   asleep: { plat: 'android', title: 'Your PC is asleep', desc: 'No lock-on. After a short grace period it opens from the mark and the dashboard offers Wake.',
@@ -248,32 +249,71 @@ const SCENARIOS = {
             connectStart: 0.22, connected: 0.86, ready: 0.55, listenAt: 0.40, exitFromMark: true },
 };
 
-const FLOOR = 0.9, GRACE = 1.2, CAP = 2.6, LOCK_HOLD = 0.5, EXIT = 0.72, FADE_EXIT = 0.28;
+const FLOOR = 1.4, GRACE = 1.2, CAP = 3.0, LOCK_HOLD = 0.7, EXIT = 0.72, FADE_EXIT = 0.28;
+// Staging: real events are never faked or reordered, but each one is SHOWN no sooner than it can
+// be read. A fast network lands everything inside half a second; this spreads it back out.
+const ANSWER_MIN = 0.62, ANSWER_GAP = 0.18, LOCK_AFTER = 0.5, LINE_GAP = 0.32;
+
+// When each answer is shown: real order, never before the first pulse has had time to reach it,
+// and at least ANSWER_GAP apart so several PCs read as several events.
+function stageAnswers(nodes) {
+  const m = new Map(); let prev = -1;
+  for (const n of nodes.filter(x => x.answer != null).sort((a, b) => a.answer - b.answer)) {
+    const s = Math.max(n.answer, ANSWER_MIN, prev + ANSWER_GAP); m.set(n.name, s); prev = s;
+  }
+  return m;
+}
 
 function buildTimeline(sc, reduced) {
   const target = sc.nodes.find(n => n.target);
+  const shownAll = stageAnswers(sc.nodes);
+  let lockAt = Infinity;
+  if (target && sc.connected != null) {
+    // A link with no probe answer (probe lost, link won) still shows an answer first.
+    if (!shownAll.has(target.name)) shownAll.set(target.name, Math.max(sc.connected, ANSWER_MIN));
+    lockAt = Math.max(sc.connected, shownAll.get(target.name) + LOCK_AFTER);
+  }
+  const pending = Math.max(FLOOR, Math.min(sc.ready + GRACE, CAP));
   let handoff, fromNode = false;
-  if (!sc.nodes.length) handoff = Math.max(FLOOR, sc.ready);
-  else if (target && sc.connected != null && sc.connected <= Math.min(sc.ready + GRACE, CAP)) {
-    handoff = Math.max(sc.connected + LOCK_HOLD, FLOOR, sc.ready);
+  if (!sc.nodes.length || !target) handoff = Math.max(FLOOR, sc.ready);
+  else if (sc.connected != null && sc.connected <= pending) {
+    handoff = Math.min(Math.max(lockAt + LOCK_HOLD, FLOOR, sc.ready), CAP);
     fromNode = !sc.exitFromMark;
-  } else handoff = Math.max(FLOOR, Math.min(sc.ready + GRACE, CAP));
-  const locked = !!(target && sc.connected != null && sc.connected < handoff);
+  } else handoff = pending;
+  const locked = lockAt < handoff;
+  if (!locked) { lockAt = Infinity; fromNode = false; }
+  const shown = new Map([...shownAll].filter(([, v]) => v < handoff));
   const pulses = [];
   if (!reduced) for (let tp = 0.32; tp < handoff; tp += 1.0) pulses.push(tp);
+
+  // The console under the mark narrates the same events, one readable line at a time.
+  const n = sc.nodes.length, isPc = sc.plat === 'pc';
+  const noun = isPc ? (n === 1 ? 'phone' : 'phones') : (n === 1 ? 'PC' : 'PCs');
+  const lines = [];
+  if (!n) lines.push({ due: 0.32, text: isPc ? 'No phones paired yet' : 'No PCs paired yet' });
+  else lines.push({ due: 0.32, text: isPc ? `${n} ${noun} paired` : `Pinging ${n} ${noun}` });
+  if (sc.listenAt != null) lines.push({ due: Math.max(sc.listenAt, 0.4), text: 'Listening on port 5005' });
+  if (!isPc) for (const nd of sc.nodes) if (shown.has(nd.name) && nd.rtt) lines.push({ due: shown.get(nd.name), text: `${nd.name} answered in ${nd.rtt} ms` });
+  if (locked) lines.push({ due: lockAt, text: isPc ? `${target.name} is linked` : `Linked to ${target.name}`, hot: true });
+  else if (target) lines.push({ due: Math.min(sc.ready + 0.5, handoff - 0.3), text: `${target.name} is not answering` });
+  lines.push({ due: handoff, text: 'Opening RemEx', hot: true });
+  lines.sort((a, b) => a.due - b.due);
+  let prevLine = -9;
+  for (const L of lines) { L.at = Math.max(L.due, prevLine + LINE_GAP); prevLine = L.at; }
+
   const events = [];
   pulses.forEach((tp, i) => events.push({ t: tp, kind: 'pulse', text: `pulse ${i + 1} out` }));
-  sc.nodes.forEach(n => { if (n.answer != null && n.answer < handoff) events.push({ t: n.answer, kind: 'answer', hi: true, text: `${n.name} answered in ${n.rtt} ms` }); });
+  sc.nodes.forEach(nd => { if (shown.has(nd.name) && nd.answer != null) events.push({ t: shown.get(nd.name), kind: 'answer', hi: true, text: `${nd.name} answered in ${nd.rtt} ms (heard at ${nd.answer.toFixed(2)} s)` }); });
   if (sc.listenAt != null) events.push({ t: sc.listenAt, kind: 'listen', hi: true, text: 'listening on port 5005' });
   if (target && sc.connectStart != null) events.push({ t: sc.connectStart, kind: 'connect', text: `connecting to ${target.name}` });
   events.push({ t: sc.ready, kind: 'ready', text: 'app ready' });
-  if (locked) events.push({ t: sc.connected, kind: 'lock', hi: true, text: `linked to ${target.name}` });
+  if (locked) events.push({ t: lockAt, kind: 'lock', hi: true, text: `linked to ${target.name} (acked at ${sc.connected.toFixed(2)} s)` });
   if (target && !locked) events.push({ t: handoff, kind: 'giveup', text: `${target.name} not answering, opening anyway` });
   events.push({ t: handoff, kind: 'handoff', hi: true, text: fromNode ? `opening from ${target.name}` : 'opening from the mark' });
   const done = handoff + (reduced ? FADE_EXIT : EXIT);
   events.push({ t: done, kind: 'done', text: sc.plat === 'pc' ? 'shell' : (sc.nodes.length ? 'dashboard' : 'pairing') });
   events.sort((a, b) => a.t - b.t);
-  return { handoff, fromNode, locked, target, pulses, events, done };
+  return { handoff, fromNode, locked, lockAt, shown, lines, target, pulses, events, done };
 }
 
 // ---------------------------------------------------------------- brand mark (RemexBrandData, 108-unit space)
@@ -460,10 +500,14 @@ function layoutNodes() {
     const ang = base + i * TAU / Math.max(n, 1) + (n === 2 ? 0.4 : 0);
     return { ...nd, ang, appear: 0.16 + i * 0.08, f: nd.rtt ? radiusFor(nd.rtt) : 1 };
   });
+  applyShown();
+}
+function applyShown() {
+  for (const nd of S.nodes) nd.shownAt = S.T && S.T.shown.has(nd.name) ? S.T.shown.get(nd.name) : null;
 }
 function nodePos(nd, t) {
   let f = 1;
-  if (nd.answer != null && t >= nd.answer) f = lerp(1, nd.f, spring(t - nd.answer));
+  if (nd.shownAt != null && t >= nd.shownAt) f = lerp(1, nd.f, spring(t - nd.shownAt));
   return [S.C[0] + Math.cos(nd.ang) * S.orbit.rx * f, S.C[1] + Math.sin(nd.ang) * S.orbit.ry * f];
 }
 
@@ -657,18 +701,18 @@ function drawVectors(t) {
     const x0 = cx + ux * r0, y0 = cy + uy * r0, x1 = nx - ux * r1, y1 = ny - uy * r1;
     const grow = reduced ? 1 : EMPH_DEC(clamp((t - sc.connectStart) / 0.35));
     const ex = lerp(x0, x1, grow), ey = lerp(y0, y1, grow);
-    const lockedNow = T.locked && t >= sc.connected;
+    const lockedNow = t >= T.lockAt;
     c.save(); c.lineCap = 'round';
     if (!lockedNow) {
       c.strokeStyle = rgba(pal.acc, 0.55); c.lineWidth = 1.3 * px; c.setLineDash([2 * px, 7 * px]); c.lineDashOffset = -t * 70 * px;
       c.beginPath(); c.moveTo(x0, y0); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
     } else {
-      const la = t - sc.connected;
+      const la = t - T.lockAt;
       const flare = Math.exp(-la * 4);
       c.strokeStyle = rgba(pal.acc, 0.10 + 0.25 * flare); c.lineWidth = (7 + 10 * flare) * px; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
       c.strokeStyle = rgba(pal.acc, 0.65 + 0.35 * flare); c.lineWidth = 1.6 * px; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
       if (!reduced) for (let k = 0; k < 6; k++) {
-        const out = k < 3, st = sc.connected + (out ? 0 : 0.2) + (k % 3) * 0.07, u = (t - st) / 0.24;
+        const out = k < 3, st = T.lockAt + (out ? 0 : 0.2) + (k % 3) * 0.07, u = (t - st) / 0.24;
         if (u < 0 || u > 1) continue;
         const e = STD(u), px_ = out ? lerp(x0, x1, e) : lerp(x1, x0, e), py_ = out ? lerp(y0, y1, e) : lerp(y1, y0, e);
         c.save(); c.shadowColor = pal.acc; c.shadowBlur = 10 * px; c.fillStyle = out ? '#FFFFFF' : pal.acc;
@@ -679,7 +723,7 @@ function drawVectors(t) {
     // Reticle: hunts while connecting, snaps on lock.
     let size, rot, ra;
     if (!lockedNow) { size = (28 + 2.5 * Math.sin(t * 7)) * px; rot = t * 1.1; ra = 0.75 * grow; }
-    else { const k = reduced ? 1 : spring(t - sc.connected); size = lerp(28, 19, k) * px; rot = lerp((sc.connected * 1.1) % (Math.PI / 2), 0, k); ra = 1; }
+    else { const k = reduced ? 1 : spring(t - T.lockAt); size = lerp(28, 19, k) * px; rot = lerp((T.lockAt * 1.1) % (Math.PI / 2), 0, k); ra = 1; }
     c.save(); c.translate(nx, ny); c.rotate(rot); c.globalAlpha = fade * ra;
     c.strokeStyle = pal.acc; c.lineWidth = 1.8 * px; c.lineCap = 'round';
     const L = 7 * px;
@@ -688,13 +732,13 @@ function drawVectors(t) {
   }
 
   // Nodes.
-  c.font = `500 ${(isPc ? 13 : 10.5) * px}px "IBM Plex Mono", monospace`;
+  c.font = `500 ${(isPc ? 14 : 12) * px}px "IBM Plex Mono", monospace`;
   try { c.letterSpacing = `${0.6 * px}px`; } catch (e) {}
   for (const nd of S.nodes) {
     if (t < nd.appear && !reduced) continue;
     const ga = reduced ? 1 : smooth(nd.appear, nd.appear + 0.3, t);
-    const answered = nd.answer != null && t >= nd.answer && nd.answer < T.handoff;
-    const la = answered ? t - nd.answer : 0;
+    const answered = nd.shownAt != null && t >= nd.shownAt;
+    const la = answered ? t - nd.shownAt : 0;
     const lit = answered ? (reduced ? 1 : smooth(0, 0.12, la)) : 0;
     const [x, y] = nodePos(nd, reduced && answered ? 99 : t);
     if (answered && !reduced) {
@@ -755,34 +799,49 @@ function drawVectors(t) {
     c.restore(); c.globalAlpha = fade;
   }
 
-  // Wordmark + live status line.
-  const by = isPc ? S.H * 0.86 : S.H * 0.84;
+  // Wordmark + the console: a three-line terminal readout narrating what is really happening.
+  const by = isPc ? S.H * 0.80 : S.H * 0.785;
   c.textAlign = 'center';
   c.globalAlpha = fade * intro;
   c.fillStyle = pal.ink; c.font = `600 ${22 * px}px "IBM Plex Sans", system-ui, sans-serif`;
   c.fillText('RemEx', cx, by);
-  c.font = `500 ${10.5 * px}px "IBM Plex Mono", monospace`;
-  try { c.letterSpacing = `${1.6 * px}px`; } catch (e) {}
-  const st = statusText(t);
-  c.fillStyle = st.hot ? pal.acc : pal.muted;
-  c.fillText(st.text, cx, by + 26 * px);
-  c.textAlign = 'left'; try { c.letterSpacing = '0px'; } catch (e) {}
+  c.textAlign = 'left';
+  drawConsole(c, t, cx, by + (isPc ? 34 : 30) * px, pal, fade * intro, isPc);
   c.globalAlpha = 1;
 }
 
-function statusText(t) {
-  const sc = SCENARIOS[S.scenario], T = S.T, n = sc.nodes.length;
-  const noun = sc.plat === 'pc' ? (n === 1 ? 'PHONE' : 'PHONES') : (n === 1 ? 'PC' : 'PCS');
-  if (!n) return { text: t < 0.32 ? 'STARTING' : 'NO PCS PAIRED YET' };
-  if (T.locked && t >= sc.connected) {
-    const tg = T.target; return { text: sc.plat === 'pc' ? `LINKED · ${tg.name.toUpperCase()}` : `LINKED · ${tg.name} · ${tg.rtt} MS`, hot: true };
-  }
-  if (T.target && !T.locked && t >= sc.ready + 0.5) return { text: `${T.target.name.toUpperCase()} IS NOT ANSWERING` };
-  const awake = S.nodes.filter(x => x.answer != null && t >= x.answer && x.answer < T.handoff).length;
-  if (sc.plat === 'pc' && sc.listenAt != null && t >= sc.listenAt && awake === 0) return { text: 'LISTENING ON PORT 5005' };
-  if (t < 0.32) return { text: 'STARTING' };
-  const dots = '.'.repeat(1 + Math.floor(t * 3) % 3).padEnd(3, ' ');
-  return { text: awake ? `${awake} OF ${n} ${noun} ${sc.plat === 'pc' ? 'LINKED' : 'AWAKE'}` : `PINGING ${n} ${noun}${dots}` };
+function drawConsole(c, t, cx, top, pal, alpha, isPc) {
+  const px = S.px, T = S.T, reduced = S.reduced;
+  const lh = (isPc ? 21 : 19) * px, colW = Math.min(S.W - 48 * px, (isPc ? 420 : 320) * px), x0 = cx - colW / 2;
+  const shown = T.lines.filter(L => L.at <= t);
+  if (!shown.length) return;
+  const newest = shown[shown.length - 1];
+  const age = t - newest.at;
+  // The stack enters one line low and slides up as each new line arrives.
+  const slide = reduced ? 0 : lh * (1 - STD(clamp(age / 0.18)));
+  c.font = `500 ${(isPc ? 13.5 : 12) * px}px "IBM Plex Mono", monospace`;
+  const visible = shown.slice(-4);
+  visible.forEach((L, i) => {
+    const k = visible.length - 1 - i;            // 0 = newest
+    const y = top + (2 - k) * lh + slide;
+    if (k >= 3 && slide <= 0.5) return;          // scrolled out
+    const a = k === 0 ? 1 : k === 1 ? 0.55 : k === 2 ? 0.3 : 0.3 * (slide / lh);
+    const chars = k === 0 && !reduced ? Math.floor(age * 55) : L.text.length;
+    const txt = L.text.slice(0, chars);
+    c.globalAlpha = alpha * a;
+    c.fillStyle = pal.acc; c.fillText('›', x0, y);
+    c.fillStyle = k === 0 && L.hot ? pal.acc : (k === 0 ? pal.ink : pal.muted);
+    const tx = x0 + 14 * px;
+    c.fillText(txt, tx, y);
+    if (k === 0) {
+      const typing = chars < L.text.length;
+      if (typing || Math.floor(t / 0.53) % 2 === 0) {
+        const w = c.measureText(txt).width;
+        c.fillStyle = pal.acc; c.fillRect(tx + w + 3 * px, y - 10 * px, 6 * px, 12 * px);
+      }
+    }
+  });
+  c.globalAlpha = 1;
 }
 
 function exitOrigin(t) {
@@ -807,8 +866,8 @@ function drawField(t) {
   const rings = [];
   if (!reduced) {
     for (const p of T.pulses) rings.push([S.C[0], S.C[1], p, 1.0]);
-    for (const nd of S.nodes) if (nd.answer != null && nd.answer < T.handoff) { const [x, y] = nodePos(nd, nd.answer + 0.6); rings.push([x, y, nd.answer, 0.5]); }
-    if (T.locked) { const tg = S.nodes.find(n => n.target); const [x, y] = nodePos(tg, sc.connected + 0.6); rings.push([x, y, sc.connected, 0.85]); }
+    for (const nd of S.nodes) if (nd.shownAt != null) { const [x, y] = nodePos(nd, nd.shownAt + 0.6); rings.push([x, y, nd.shownAt, 0.5]); }
+    if (T.locked) { const tg = S.nodes.find(n => n.target); const [x, y] = nodePos(tg, T.lockAt + 0.6); rings.push([x, y, T.lockAt, 0.85]); }
     if (sc.listenAt != null) rings.push([S.C[0], S.C[1], sc.listenAt, 0.6]);
     const E = exitOrigin(t); rings.push([E[0], E[1], T.handoff, 1.4]);
   }
@@ -868,6 +927,7 @@ function updateLog(t) {
 // ---------------------------------------------------------------- loop
 function replay() {
   S.T = buildTimeline(SCENARIOS[S.scenario], S.reduced);
+  applyShown();
   S.clock = 0; S.lastNow = performance.now(); S.logged = 0; S.skipAt = null;
   $('#log').innerHTML = ''; $('#hint').classList.remove('show');
   buildDashboard();
@@ -893,7 +953,10 @@ dev.addEventListener('click', () => {
   if (t > S.T.done) { replay(); return; }
   if (t < S.T.handoff) {
     const T = S.T; T.handoff = t; T.done = t + (S.reduced ? FADE_EXIT : EXIT);
-    if (!(T.locked && t >= SCENARIOS[S.scenario].connected)) { T.fromNode = false; T.locked = T.locked && t >= SCENARIOS[S.scenario].connected; }
+    if (!(t >= T.lockAt)) { T.fromNode = false; T.locked = false; T.lockAt = Infinity; }
+    T.lines = T.lines.filter(L => L.at <= t).concat([{ at: t, due: t, text: 'Opening RemEx', hot: true }]);
+    for (const [k, v] of T.shown) if (v > t) T.shown.delete(k);
+    applyShown();
     T.pulses = T.pulses.filter(p => p <= t);
     T.events = T.events.filter(e => e.t <= t && e.kind !== 'handoff' && e.kind !== 'done' && e.kind !== 'giveup');
     T.events.push({ t, kind: 'handoff', hi: true, text: 'tapped: opening now' }, { t: T.done, kind: 'done', text: 'dashboard' });

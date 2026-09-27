@@ -19,12 +19,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   round trip, the PC you are connecting to locks on when its connection is accepted (the phone ticks
   once), and the app opens out of that PC. On the phone the dashboard bends through the edge of the
   opening as it appears. On the PC the splash shows the phones it knows, rings the mark when the
-  host is listening, and lights a phone that is already connected. It ends as soon as the app is
-  ready: about 1 to 1.6 seconds normally, never more than 2.6 seconds, and a tap or click skips it.
-  If your PC is asleep it says so and opens into a dashboard that offers Wake. Remove animations
-  gets a still frame and a short fade. Cosmic Zoom, Pong and RemEx Command are still in the picker;
-  anyone on the old default moves to Live Handshake once, and anyone who picked a style keeps it.
-  Both apps draw the background with the same GPU shader. (RemEx-8g6n0)
+  host is listening, and lights a phone that is already connected. A short console under the logo
+  says what is happening as it happens ("Pinging 1 PC", "DESKTOP answered in 8 ms", "Linked to
+  DESKTOP"). On a fast network everything really lands in half a second, so each step is held just
+  long enough to read; it opens after about 1.8 seconds, never more than 3, and a tap or click skips
+  it. If your PC is asleep it says so and opens into a dashboard that offers Wake. Remove
+  animations gets a still frame and a short fade. Everyone moves to Live Handshake once with 3.0;
+  Cosmic Zoom, Pong and RemEx Command are still in the picker afterwards. Both apps draw the
+  background with the same GPU shader. (RemEx-8g6n0)
 
 - The Personalize panel can be resized. Drag its left edge to make it as wide as you like (from
   440 up to 60% of the window), double-click the edge to go back to the default, and the width you
