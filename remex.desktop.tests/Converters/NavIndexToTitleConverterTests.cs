@@ -59,6 +59,7 @@ public class NavIndexToTitleConverterTests : IDisposable
     [InlineData(7, "Files")]
     [InlineData(8, "Diagnostics")]
     [InlineData(9, "Settings")]
+    [InlineData(10, "Routines")]
     public void KnownIndex_ReturnsTheSameLocalizedText_TheDrawerListItemUses(int index, string englishSubstring)
     {
         // Not asserting the exact resx string (that would duplicate Strings.resx and drift the

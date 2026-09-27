@@ -41,6 +41,7 @@ public class NavIndexToTitleConverter : IValueConverter
             7 => "Nav_Files",
             8 => "Shell_LogsDiagnostics",
             9 => "Nav_Settings",
+            10 => "Nav_Routines",
             _ => null,
         };
 
